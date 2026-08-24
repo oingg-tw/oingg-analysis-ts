@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:types": "tsc --noEmit -p tests/tsconfig.json",
     "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma",
     "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",

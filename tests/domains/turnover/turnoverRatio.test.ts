@@ -1,0 +1,47 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { calculateTurnoverRatio } from '../../../src/domains/turnover/turnoverRatio/service';
+import prisma from '../../../src/adapters/prisma/index';
+import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+
+// 對照 src/domains/turnover/README.md「DIO/DSO/DPO/CCC 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+test('turnoverRatio: 2330 115Q2 合併報表——五個周轉率、DIO/DSO/DPO/CCC', async () => {
+  const result = await calculateTurnoverRatio({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+
+  assert.equal(result.inventoryTurnoverQuarterly, 1.06);
+  assert.equal(result.inventoryTurnoverQuarterlyAnnualized, 4.24);
+  assert.equal(result.inventoryTurnoverTtm, 7.06);
+
+  assert.equal(result.receivablesTurnoverQuarterly, 2.92);
+  assert.equal(result.receivablesTurnoverQuarterlyAnnualized, 11.68);
+  assert.equal(result.receivablesTurnoverTtm, 16.53);
+
+  assert.equal(result.assetTurnoverQuarterly, 0.14);
+  assert.equal(result.assetTurnoverQuarterlyAnnualized, 0.56);
+  assert.equal(result.assetTurnoverTtm, 0.77);
+
+  assert.equal(result.fixedAssetTurnoverQuarterly, 0.3);
+  assert.equal(result.fixedAssetTurnoverQuarterlyAnnualized, 1.2);
+  assert.equal(result.fixedAssetTurnoverTtm, 1.67);
+
+  assert.equal(result.payablesTurnoverQuarterly, 3.77);
+  assert.equal(result.payablesTurnoverQuarterlyAnnualized, 15.08);
+  assert.equal(result.payablesTurnoverTtm, 25);
+
+  assert.equal(result.inventoryDaysQuarterlyAnnualized, 86.08);
+  assert.equal(result.inventoryDaysTtm, 51.7);
+  assert.equal(result.receivablesDaysQuarterlyAnnualized, 31.25);
+  assert.equal(result.receivablesDaysTtm, 22.08);
+  assert.equal(result.payablesDaysQuarterlyAnnualized, 24.2);
+  assert.equal(result.payablesDaysTtm, 14.6);
+
+  assert.equal(result.cashConversionCycleQuarterlyAnnualized, 93.13);
+  assert.equal(result.cashConversionCycleTtm, 59.18);
+
+  assert.deepEqual(result.warnings, []);
+});
+
+after(async () => {
+  await prisma.$disconnect();
+  await analysisPrisma.$disconnect();
+});

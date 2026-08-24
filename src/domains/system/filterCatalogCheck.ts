@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { filterCatalog } from './filterCatalog';
+import { filterCatalog, type FilterCategory } from './filterCatalog';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,29 +48,21 @@ const parseAnalysisSchemaFilterableFields = (schemaText: string): Map<string, { 
 };
 
 /**
- * 伺服器啟動時自我檢測：filterCatalog.ts 列的分類/指標/欄位，是否跟
- * prisma/analysis/schema.prisma 目前定義的表/欄位一致。
- *
- * 直接讀 schema.prisma 原始檔（不是查活的資料庫，也不是用 Prisma DMMF），因為 schema.prisma
- * 本身就是這個服務對 analysis DB 的 schema 唯一真相來源——照專案慣例，改 model 一定要接著跑
- * `pnpm prisma:analysis:migrate`，schema.prisma 才會落地成真的表/欄位，所以 schema.prisma
- * 有沒有同步更新，就等於資料庫有沒有同步更新。
+ * 純比對邏輯，拆出來獨立匯出方便測試（見 tests/system/filterCatalogCheck.test.ts）——
+ * 不碰檔案系統，catalog/schemaText 都是參數，測試可以直接餵假資料，不用真的改
+ * filterCatalog.ts 或 schema.prisma 來製造「不一致」的情境。
  *
  * 兩個方向都會抓：
- * 1. filterCatalog.ts 列了但 schema.prisma 裡已經沒有的 metric/欄位（指標被移除、欄位改名、key 打錯）。
- * 2. schema.prisma 有、但 filterCatalog.ts 忘記加的 metric/欄位（新增指標或欄位後忘記同步）。
- *
- * 開發環境（非 production）發現不一致就直接 throw，讓問題在啟動當下就爆出來，不要等前端來問
- * 為什麼 filter 清單缺東西；production 只記錄錯誤 log，不因為這種 metadata 落差讓整個服務掛掉。
+ * 1. catalog 列了但 schemaText 裡已經沒有的 metric/欄位（指標被移除、欄位改名、key 打錯）。
+ * 2. schemaText 有、但 catalog 忘記加的 metric/欄位（新增指標或欄位後忘記同步）。
  */
-export const checkFilterCatalogConsistency = (isProduction: boolean): void => {
-  const schemaText = readFileSync(analysisSchemaPath, 'utf-8');
+export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText: string): string[] => {
   const dbMetrics = parseAnalysisSchemaFilterableFields(schemaText);
 
   const catalogMetricKeys = new Set<string>();
   const problems: string[] = [];
 
-  for (const category of filterCatalog) {
+  for (const category of catalog) {
     for (const metric of category.metrics) {
       catalogMetricKeys.add(metric.key);
       const dbMetric = dbMetrics.get(metric.key);
@@ -105,6 +97,25 @@ export const checkFilterCatalogConsistency = (isProduction: boolean): void => {
       );
     }
   }
+
+  return problems;
+};
+
+/**
+ * 伺服器啟動時自我檢測：filterCatalog.ts 列的分類/指標/欄位，是否跟
+ * prisma/analysis/schema.prisma 目前定義的表/欄位一致。
+ *
+ * 直接讀 schema.prisma 原始檔（不是查活的資料庫，也不是用 Prisma DMMF），因為 schema.prisma
+ * 本身就是這個服務對 analysis DB 的 schema 唯一真相來源——照專案慣例，改 model 一定要接著跑
+ * `pnpm prisma:analysis:migrate`，schema.prisma 才會落地成真的表/欄位，所以 schema.prisma
+ * 有沒有同步更新，就等於資料庫有沒有同步更新。
+ *
+ * 開發環境（非 production）發現不一致就直接 throw，讓問題在啟動當下就爆出來，不要等前端來問
+ * 為什麼 filter 清單缺東西；production 只記錄錯誤 log，不因為這種 metadata 落差讓整個服務掛掉。
+ */
+export const checkFilterCatalogConsistency = (isProduction: boolean): void => {
+  const schemaText = readFileSync(analysisSchemaPath, 'utf-8');
+  const problems = findFilterCatalogProblems(filterCatalog, schemaText);
 
   if (problems.length === 0) {
     console.log('[filter-catalog-check]: filterCatalog.ts 跟 prisma/analysis/schema.prisma 一致。');
