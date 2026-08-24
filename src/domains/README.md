@@ -6,12 +6,12 @@
 
 | 資料夾 | 中文名稱 | scope | 狀態 |
 |---|---|---|---|
-| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率） |
-| [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/總資產/固定資產周轉率、資本支出佔營收比） |
-| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 只剩 Altman Z-Score（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比都完成了） |
-| [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF） |
-| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield，直接採用 oingg-twse 現成數字） |
-| [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`——用到 oingg-mops-ts 新增的特別股欄位） |
+| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR；只剩 CFROI） |
+| [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
+| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 只剩 Altman Z-Score（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比都完成了；股價資料源已接上，原始版 Altman Z-Score 已無資料缺口，待實作） |
+| [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率；只剩 FCF_Yield（需股價）、Beneish M-Score） |
+| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield，直接採用 oingg-twse 現成數字；PSR/P_FCF/EV_EBITDA 所需市值資料源已接上，待實作） |
+| [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本） |
 | [`technical/`](technical/README.md) | 技術分析與價格量能指標 | Security | 未實作——需要日線價量資料源，目前完全沒有 |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 未實作——需要「投資組合」這個資料模型，目前只有單一公司查詢 |
 | [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 未實作——需要總體經濟/債券/選擇權資料源，跟公司財報完全無關 |

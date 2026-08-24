@@ -108,19 +108,27 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /profitability/eps` | 計算單一公司單一季度的 EPS（單季、單季年化、TTM 三種數值） |
 | `GET /profitability/revenue-per-share` | 計算單一公司單一季度的每股營收（單季、單季年化、TTM 三種數值） |
 | `GET /profitability/margins` | 計算單一公司單一季度的毛利率、營業利益率、稅後淨利率（單季、TTM 兩種數值） |
+| `GET /profitability/roic` | 計算單一公司單一季度的投入資本回報率（ROIC，單季、單季年化、TTM 三種數值） |
+| `GET /profitability/roce` | 計算單一公司單一季度的使用資本報酬率（ROCE，單季、單季年化、TTM 三種數值） |
+| `GET /profitability/dividend-payout-ratio` | 計算單一公司配息率（只有 TTM 口徑） |
+| `GET /profitability/sgr` | 計算單一公司可持續成長率（SGR，只有 TTM 口徑，複合指標） |
 | `GET /cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
+| `GET /cash-flow/ocf-to-net-income` | 計算單一公司單一季度的營運現金流對淨利比（單季、TTM 兩種數值） |
+| `GET /cash-flow/accruals-ratio` | 計算單一公司單一季度的應計項目比率（單季、單季年化、TTM 三種數值） |
 | `GET /solvency/debt-ratio` | 計算單一公司單一季度的負債比率 |
 | `GET /solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率、速動比率與現金比率 |
 | `GET /solvency/de-ratio` | 計算單一公司單一季度的負債權益比 |
 | `GET /solvency/interest-coverage` | 計算單一公司單一季度的利息保障倍數（單季、TTM 兩種數值） |
 | `GET /solvency/net-debt-to-ebitda` | 計算單一公司單一季度的淨負債對 EBITDA 比（簡易年化、TTM 兩種數值） |
-| `GET /turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/總資產/固定資產周轉率（單季、單季年化、TTM 三種數值） |
+| `GET /turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO 週轉天數與 CCC 現金轉換週期 |
 | `GET /turnover/capex-to-revenue` | 計算單一公司單一季度的資本支出佔營收比（單季、TTM 兩種數值） |
 | `GET /valuation/market-ratios` | 查詢單一公司最新（或指定日期）的 PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字） |
 | `GET /guru/graham-number` | 計算單一公司單一季度的葛拉漢數（`sqrt(22.5 x EPS(TTM) x BVPS)`） |
 | `GET /guru/ncav` | 計算單一公司單一季度的葛拉漢淨流動資產價值（NCAV）與安全邊際價 |
+| `GET /guru/owner-earnings` | 計算單一公司單一季度的每股股東盈餘（Buffett Owner Earnings，單季、單季年化、TTM 三種數值） |
+| `GET /filters` | 列出目前可用來 filter 的分類/指標/欄位清單，見 [`src/domains/system/filterCatalog.ts`](src/domains/system/filterCatalog.ts) |
 
-Query 參數：`GET /valuation/market-ratios` 是例外，跟其他 API 不是同一組（見下方「PER/PBR/股利殖利率計算口徑」的說明）。其餘十五支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數：`GET /valuation/market-ratios` 是例外，跟其他 API 不是同一組（見下方「PER/PBR/股利殖利率計算口徑」的說明）；`GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr` 只回傳 TTM 口徑（沒有 `season` 以外的差異，查詢參數格式相同）。其餘二十支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
