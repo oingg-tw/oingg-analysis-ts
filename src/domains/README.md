@@ -12,9 +12,13 @@
 | [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率；只剩 FCF_Yield（需股價）、Beneish M-Score） |
 | [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield，直接採用 oingg-twse 現成數字；PSR/P_FCF/EV_EBITDA 所需市值資料源已接上，待實作） |
 | [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本） |
-| [`technical/`](technical/README.md) | 技術分析與價格量能指標 | Security | 未實作——需要日線價量資料源，目前完全沒有 |
+| [`technicals/`](technicals/README.md) | 技術分析與價格量能指標 | Security | 未實作——需要日線價量資料源，oingg-twse 已接上但目前只有 2 天歷史 |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 未實作——需要「投資組合」這個資料模型，目前只有單一公司查詢 |
 | [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 未實作——需要總體經濟/債券/選擇權資料源，跟公司財報完全無關 |
+| [`securityInfo/`](securityInfo/README.md) | 證券基本資訊 | Security | 未實作——見下方「第二套分類方案」 |
+| [`marketData/`](marketData/README.md) | 市場行情數據 | Security | 未實作——見下方「第二套分類方案」 |
+| [`financials/`](financials/README.md) | 財務報表 | Security | 未實作——見下方「第二套分類方案」 |
+| [`growth/`](growth/README.md) | 成長性指標 | Security | 未實作——見下方「第二套分類方案」 |
 
 ## 跨分類的時間轉換算子（temporal_transformation_operators）
 
@@ -31,3 +35,12 @@
 ## 跟既有指標的對應說明（現況 vs 理想 taxonomy）
 
 taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每股營收）不是 taxonomy 明列的獨立 code，是因為跟 EPS 同屬「每股基礎財務數字」家族，被放進 `profitability`——各分類 README 裡有標注哪些是「taxonomy 明列」、哪些是「本服務自行歸類」，也有標注哪些指標的公式跟 taxonomy 原文有差異（例如用期末值取代平均值、用有息負債取代總負債）。詳細的已實作/未實作清單、公式、口徑差異都在各分類自己的 README，這裡不重複列，只維護分類層級的總覽。
+
+## 第二套分類方案（8 類 + 大師策略，評估中）
+
+2026-08-24 討論過一套不同的分類軸線（`securityInfo`／`marketData`／`technicals`／`financials`／`valuation`／`growth`／`marginsAndRatios`／`dividends`，共 8 類，加上保留現有的 `guru` 大師策略），跟這份文件的 investment_metrics_taxonomy v3.0 是**兩套不同的切分邏輯**——v3.0 照「分析目的/方法論」切（獲利能力、償債能力、現金流品質⋯⋯），第二套照「資料型態」切（原始資訊 vs 市場數據 vs 計算出來的比率⋯⋯），不是誰取代誰，是還沒拍板要不要換。
+
+拆成兩種改動，分開處理：
+
+- **既有 21 支指標重新分組**：`marginsAndRatios` 會吃掉現有 `profitability`/`solvency`/`turnover`/`cashFlow` 四個資料夾的比率類指標；`dividends` 要從 `profitability`（配息率/SGR）跟 `valuation/marketRatios`（殖利率，目前跟 PER/PBR 同一支 API）拆出來。folder 搬動本身機制不難（相對 import 深度不變），但 `marketRatios` 那支 API 要不要真的拆表/拆 API，還是只在 `filterCatalog.ts` 讓同一個底層欄位掛兩個分類，**還沒決定，先不動**。
+- **全新的空分類先建骨架**：`securityInfo`、`marketData`、`financials`、`growth` 這四類目前完全沒有對應的程式碼（`technicals` 沿用原本的 `technical/`，只是改名跟第二套方案的 id 對齊），跟 `portfolio`/`macro` 一樣「有骨架沒程式碼」——只有 `README.md` 記錄範疇跟已知會用到的資料來源，`要不要真的動工再個別討論`，這裡不重複列規劃過程，各自的 `README.md` 有寫。原始分類表只給了每類的項目數量（26/37/47/9），沒有給到逐項清單，所以這四份 `README.md` 沒有像 `technical/`/`portfolio/`/`macro/` 那樣列出完整的「指標清單」表格，只列已知能對到的真實資料來源。

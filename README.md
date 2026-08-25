@@ -28,7 +28,7 @@ pnpm dev              # tsx watch src/index.ts，預設監聽 :8081
 `src/domains` 底下依 [investment_metrics_taxonomy](src/domains/README.md)（v3.0）分九大類，每一類一個資料夾，每個資料夾都有自己的 `README.md` 說明這一類的範疇跟指標清單（含尚未實作的）——完整索引跟每一類的定位說明見 [src/domains/README.md](src/domains/README.md)，這裡不重複列。
 
 - `domains/profitability/`、`domains/cashFlow/`、`domains/solvency/`、`domains/turnover/`：目前唯四有實作的分類，底下才有真的 domain（`types.ts` / `service.ts` / `controller.ts` / `route.ts`）。
-- `domains/valuation/`、`domains/guru/`、`domains/technical/`、`domains/portfolio/`、`domains/macro/`：目前只有 `README.md` 記錄這一類要放哪些指標，還沒有任何程式碼——這是刻意的，先把分類骨架跟每個指標的公式/口徑記下來，之後要做哪個再回頭建 domain。
+- `domains/valuation/`、`domains/guru/`、`domains/technicals/`、`domains/portfolio/`、`domains/macro/`、`domains/securityInfo/`、`domains/marketData/`、`domains/financials/`、`domains/growth/`：目前只有 `README.md` 記錄這一類要放哪些指標，還沒有任何程式碼——這是刻意的，先把分類骨架跟每個指標的公式/口徑記下來，之後要做哪個再回頭建 domain。後四個是另一套評估中的分類方案，見 [`src/domains/README.md`](src/domains/README.md) 的「第二套分類方案」說明。
 
 URL 路徑跟這個分類結構一一對應（`/<分類>/<指標>`，例如 `/profitability/roe`），維護時可以直接照 URL 找到程式碼位置，不用另外記一份對照表。這條路徑經過三次刻意的演進：一開始是扁平的 `/api/ratios/eps`；加上分類結構後改成 `/api/ratios/profitability/eps`；發現分類本身已經表達了「這是財務指標」，`ratios` 這層純粹是重複資訊，拿掉變成 `/api/profitability/eps`；最後因為本服務沒有網頁前端要伺服、不會跟其他路徑混淆，`api` 這層前綴也是多餘的，才拿掉變成現在的 `/profitability/eps`。每一次都是一次性 breaking change，沒有保留舊路徑。各分類底下的路由怎麼掛，見 [`src/routes.ts`](src/routes.ts)（用 `apiRouter.use('/profitability', roeRouter, roaRouter, ...)` 這種方式把分類前綴跟各指標的 router 組起來，每個指標自己的 `route.ts` 不需要知道自己屬於哪個分類前綴）。
 
