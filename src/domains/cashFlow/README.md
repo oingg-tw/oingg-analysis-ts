@@ -11,7 +11,8 @@
 | `FCF_Yield` | 自由現金流殖利率 | `Free Cash Flow Per Share / Stock Price` | TTM, FY | ⬜ 未實作，需要股價，屬於 [`../valuation/`](../valuation/README.md) 那條資料源缺口 |
 | `OCF_to_Net_Income` | 營運現金流對淨利比 | `Operating Cash Flow / Net Income` | TTM, FY | ✅ 已實作 — [`ocfToNetIncome/`](ocfToNetIncome/)，`GET /cash-flow/ocf-to-net-income`（單季/TTM，沒有年化，見下方說明） |
 | `Accruals_Ratio` | 應計項目比率 | `(Net Income - OCF - ICF) / Average Total Assets` | TTM, FY | ✅ 已實作 — [`accrualsRatio/`](accrualsRatio/)，`GET /cash-flow/accruals-ratio`（單季/年化/TTM）。分母用期末總資產，不是平均值，見下方說明 |
-| `Beneish_M_Score` | 貝尼許 M 分數 | 8 變量加權會計異常指數 | FY, TTM | ⬜ 未實作，多變量模型，優先度較低 |
+
+`Beneish_M_Score`（貝尼許 M 分數）2026-08-25 改歸類到 [`../guru/`](../guru/README.md)（大師策略）——公式本身是 8 變量加權會計異常指數，跟 `Altman_Z_Score` 從 `solvency` 移過去是同一個判斷標準（以學者/研究者命名的複合模型，不是單純的財報比率），不算在這一類。這個分類拿掉 `Beneish_M_Score` 之後只剩 `FCF_Yield` 未實作（見上方，需要股價）。
 
 ## 已實作但跟 taxonomy 定義範疇不同的地方
 

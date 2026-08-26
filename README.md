@@ -294,11 +294,10 @@ Query 參數：`GET /valuation/market-ratios` 是例外，跟其他 API 不是�
 
 ## 已知缺口 / Backlog
 
-- **已實作**：ROE、ROA、BVPS、EPS、每股營收、每股現金流、負債比率、流動比率／速動比率／現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比、周轉率（存貨/應收帳款/總資產/固定資產）、資本支出佔營收比、毛利率／營業利益率／稅後淨利率、PER／PBR／股利殖利率（採用 oingg-twse 現成數字，見上方說明）、葛拉漢數（本服務第一個複合指標）、Graham_NCAV／安全邊際價。`solvency` 只剩 Altman Z-Score 等股價、`turnover` 分類已全數完成。分類進度見 [`src/domains/README.md`](src/domains/README.md)。
-- **`daily_price` 已接上但還沒用到**：oingg-twse 的股價資料只鏡像了 `DailyPrice`，之後做市值/PSR/EV_EBITDA 等需要「市值 = 股價 × 流通股數」的指標時會用到，流通股數已經有（`capital_stock_history`）。
+- **已實作**：見 [`src/domains/README.md`](src/domains/README.md) 的分類索引，每個分類底下的狀態欄有最新進度，這裡不重複維護一份會過期的清單。`solvency` 分類已全數完成；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/`（見 [`src/domains/guru/README.md`](src/domains/guru/README.md)），資料已無缺口，待實作。
+- **市值計算**：`daily_price.close`（oingg-twse 股價） x `company_profile.issued_shares`（oingg-twse 公司基本資料，已發行股數）——2026-08-21 驗證過兩張表 join 得到的數字量級正確，`issued_shares` 覆蓋率完整（1394 家公司都有值）。`capital_stock_history`（mops，逐月生效股本歷史）目前只用在每股類指標（EPS/BVPS/每股現金流⋯⋯）的流通股數，不是市值計算用的來源——這兩個是不同的股數概念，不要混用。`daily_price` 截至 2026-08-21 只有 2 個交易日的歷史，需要「配到某季財報報告日股價」的指標（PSR/P_FCF/EV_EBITDA/`Altman_Z_Score`）現在大部分查詢還是會拿到 `null`，是資料量還沒累積的問題，不是程式邏輯問題。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
-- **PER、PBR 等估值指標尚未實作**：卡在還沒有股價資料源，見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
-- **沒有自動化測試**：跟 oingg-mops-ts 一樣，目前靠實測真實資料驗證，沒有 unit test。
+- **測試**：[`tests/`](tests/README.md)——用 Node.js 內建 `node:test`（`pnpm test`），大多是打真的開發資料庫的整合測試，把各分類 README 記錄的實測數字釘成自動化斷言，不是每支既有 API 都有覆蓋，新增/修改指標時建議照 [`tests/README.md`](tests/README.md) 的慣例補一個。
 - **沒有身份驗證**：跟 oingg-mops-ts 的 ingest API 一樣，目前完全開放。
 - **ESM import 不帶 `.js` 副檔名**：跟 oingg-mops-ts 相同慣例與理由（`tsconfig.json` 用 `moduleResolution: "Bundler"` + `tsx` 執行，非原生 Node ESM）。

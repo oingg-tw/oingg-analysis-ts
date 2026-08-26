@@ -14,21 +14,8 @@
 | `Debt_to_Assets` | 資產負債率 | `Total Liabilities / Total Assets` | MRQ, FY | ✅ 已實作 — [`debtRatio/`](debtRatio/)，`GET /solvency/debt-ratio` |
 | `Net_Debt_to_EBITDA` | 淨負債對 EBITDA 比 | `(Total Debt - Cash) / EBITDA` | TTM, FY | ✅ 已實作 — [`netDebtToEbitda/`](netDebtToEbitda/)，`GET /solvency/net-debt-to-ebitda`（簡單年化/TTM，沒有原始單季版本，見下方說明） |
 | `Interest_Coverage` | 利息保障倍數 | `EBIT / Interest Expense` | TTM, FY | ✅ 已實作 — [`interestCoverage/`](interestCoverage/)，`GET /solvency/interest-coverage`（單季/TTM，見下方說明） |
-| `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ⬜ 未實作，見下方說明 |
 
-## Altman Z-Score 卡在哪裡
-
-taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），拆開五個變數：
-
-| 變數 | 公式 | 有資料嗎 |
-|---|---|---|
-| X1 | (流動資產 − 流動負債) / 總資產 | ✅ 有 |
-| X2 | 保留盈餘（`retainedEarnings`） / 總資產 | ✅ 有 |
-| X3 | EBIT / 總資產 | ✅ 有（`interestCoverage`/`netDebtToEbitda` 已經在算 EBIT） |
-| X4 | **股票市值** / 總負債 | ❌ 沒有——需要股價，跟 `../valuation/`（PER、PBR）卡住的是同一個資料源缺口 |
-| X5 | 營收 / 總資產 | ✅ 有——就是 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的總資產週轉率，公式完全一樣 |
-
-五個變數四個都有資料，只差 X4 卡在股價。有一個常見變體 **Z'-Score**（非上市公司版）把 X4 的「股票市值」換成「權益帳面價值」（`totalEquity`/`equityAttributableToParent`，本服務已經有），係數也不同（0.717/0.847/3.107/0.420/0.998），不需要股價就能算。2026-08-20 跟使用者確認過：**先擱置，等 `valuation` 分類接上股價資料源後直接做原始版**，不做 Z' 替代版本。
+`Altman_Z_Score`（奧特曼 Z 分數）2026-08-24 改歸類到 [`../guru/`](../guru/README.md)（大師策略），不算在這一類——雖然公式本身是加權財務比率、性質很像本分類，但跟其他「大師以自己名字提出的複合公式」放在一起比較合理。這個分類目前**全部指標都已實作**（`Current_Ratio`/`Quick_Ratio`/`Cash_Ratio`/`DE_Ratio`/`Debt_to_Assets`/`Net_Debt_to_EBITDA`/`Interest_Coverage`）。
 
 ## 已實作但跟 taxonomy 公式略有差異的地方
 
