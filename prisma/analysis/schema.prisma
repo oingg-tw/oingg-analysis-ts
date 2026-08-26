@@ -806,3 +806,28 @@ model OwnerEarningsResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("guru_owner_earnings")
 }
+
+// Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+as_of_date（基準日），
+// 跟 MarketRatiosResult 同一種模式，不是 symbol+year+season+dataType+subsidiaryCompanyId。
+// 欄位對應 src/domains/portfolio/beta/types.ts 的 BetaResult。
+model BetaResult {
+  symbol   String
+  asOfDate DateTime @map("as_of_date") @db.Date
+
+  beta1Y Decimal? @map("beta_1y") @db.Decimal(10, 4)
+  beta2Y Decimal? @map("beta_2y") @db.Decimal(10, 4)
+  beta5Y Decimal? @map("beta_5y") @db.Decimal(10, 4)
+
+  // 各窗口實際用到的重疊交易日數（樣本數不足門檻時 beta 為 null，但這裡仍記錄實際天數方便追蹤）。
+  observations1Y Int? @map("observations_1y")
+  observations2Y Int? @map("observations_2y")
+  observations5Y Int? @map("observations_5y")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, asOfDate])
+  @@map("portfolio_beta")
+}

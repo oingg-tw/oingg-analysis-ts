@@ -304,4 +304,20 @@ export const filterCatalog: FilterCategory[] = [
       },
     ],
   },
+  {
+    key: 'portfolio',
+    name: '投資組合風險、超額報酬與量化因子',
+    metrics: [
+      {
+        key: 'beta',
+        name: '貝塔係數（Beta）',
+        path: '/portfolio/beta',
+        fields: [
+          { key: 'beta1Y', name: 'Beta（1 年）', period: 'daily' },
+          { key: 'beta2Y', name: 'Beta（2 年）', period: 'daily' },
+          { key: 'beta5Y', name: 'Beta（5 年）', period: 'daily' },
+        ],
+      },
+    ],
+  },
 ];

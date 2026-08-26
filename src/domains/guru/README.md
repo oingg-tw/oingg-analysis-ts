@@ -8,11 +8,23 @@
 
 `guru` 這一類收的是「以特定投資人/學者命名、帶有該流派主觀判斷的複合公式」，不是嚴格照 investment_metrics_taxonomy v3.0 的分類走——`Altman_Z_Score` 2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來、`Beneish_M_Score` 2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來都是這個原因：公式本身是財務比率加權組合，跟原分類其他「直接算一個比率」的指標性質不同，但更接近「以學者命名的複合模型」，跟葛拉漢數、NCAV、股東盈餘放在一起比較合理。判斷標準大致是「公式夠複雜（多變量加權組合，不是單一比率）+ 掛名特定研究者/投資人」，之後如果有新的大師公式（無論 taxonomy 有沒有明列），都照這個標準判斷該不該放進來，不是只看 taxonomy 有沒有這個 code——單純的單一比率（例如 Novy-Marx 的 GP/A = 毛利/總資產，本質上是換分子的 ROA）即使有掛名，也不算，該進哪一類還沒決定。
 
-## 為什麼其他 taxonomy 明列的指標還沒做
+## 未實作指標的現況分三種，不要混為一談
 
-這類指標是組合多個基礎指標、通常還要加市場價格或成長率假設的「大師公式」，帶有特定投資人流派的主觀判斷，跟其他分類「直接從財報算出來的數字」性質不同。`Greenblatt_Magic_Formula`、`Lynch_PEG_Fair_Value`、`Potential_Payback_Period`、`Altman_Z_Score` 需要股價/市值——[`../valuation/`](../valuation/README.md) 已經接上 oingg-twse 的股價資料源，理論上可以做了，`Altman_Z_Score` 只差市值這項就沒有其他資料缺口（見下方），但 `Lynch_PEG_Fair_Value`、`Potential_Payback_Period` 還需要「預期成長率」這種前瞻性假設（不是資料庫裡現成的欄位，taxonomy 也沒定義怎麼推算），`Greenblatt_Magic_Formula` 則需要跨公司排名（`Rank(...)`），不是本服務目前「查單一公司單一季度」這種查詢介面能直接套的，這兩類都還需要先做架構/口徑決策，不是單純缺資料。`Piotroski_F_Score`、`Beneish_M_Score` 是同一種架構問題——`Piotroski_F_Score` 9 項訊號、`Beneish_M_Score` 8 個變量（DSRI/GMI/AQI/SGI/DEPI/SGAI/TATA/LVGI）全部是「今年 vs 去年同期」的自我比較（YoY, self-referential），所需財報欄位都已經有，但目前 21 支 API 都是單季/TTM 查詢，沒有這種跨期比較的查詢模式，是架構上還沒做，不是資料缺漏。
+2026-08-25 盤點時發現，之前把 `Piotroski_F_Score`/`Beneish_M_Score` 的 YoY 比較講得太嚴重——`getPastNQuarters`（[`../../shared/rocQuarter.ts`](../../shared/rocQuarter.ts)）這個既有 helper 本來就能定位「去年同季」是哪一季，每支算 TTM 的 API 都在用它抓 4 季，YoY 只需要抓 1 季（比 TTM 更簡單），不是新架構，是舊 pattern 換個查法，優先度應該跟 `Altman_Z_Score` 一樣高。真正分成三種現況：
 
-`Mohanram_G_Score` **不是**跟 Piotroski 同一種架構問題——2026-08-25 核對過原始論文（Mohanram, 2005）的 8 項訊號定義：G1/G2/G4/G5/G6/G7/G8 這 7 項都是「跟同產業其他公司的中位數比」（cross-sectional，需要同時查一批同產業公司才能算出中位數），只有 G3（CFO > Net Income）是單一公司的絕對值判斷，完全沒有 YoY 比較的成分。架構上更接近 `Greenblatt_Magic_Formula` 的「跨公司排名」問題（需要一次查一批公司算相對名次/中位數），不是本服務目前「查單一公司單一季度」這種查詢介面能直接套的。另外 G4/G5 要「過去 16 季（4 年）ROA/營收成長率變異數」，mops 財報資料目前只有 6 個年度（約 24 季），數量勉強夠但緊繃。
+**A. 現在就能補——不缺資料、不缺架構，純粹還沒排到：**
+- `Altman_Z_Score`：五個變數全部有資料（見下方），只差查詢介面設計（year/season 選填 + 市值配日期），是目前唯一已經跟使用者確認過「等資料到位就做」的項目。
+- `Nissim_Penman_RNOA`：四個變數全部有資料，只差「NOA 怎麼切營業/融資」這個定義決策要先拍板（見下方），拍板後架構比 `Altman_Z_Score` 更單純。
+- `Piotroski_F_Score`：9 項訊號都是跟自己去年同季比較，重用 `getPastNQuarters` 抓 1 季即可，財報欄位全部都有。
+- `Beneish_M_Score`：8 個變量同上，也是跟自己去年同期比較，重用同一套查詢模式。
+
+**B. 卡在跨公司查詢——本服務目前完全沒有「一次查多家公司」這種查詢型態：**
+- `Greenblatt_Magic_Formula`：需要對一批公司的 Earnings Yield/ROC 排名（`Rank(...)`）。
+- `Mohanram_G_Score`：8 項訊號有 7 項要跟同產業其他公司的中位數比（cross-sectional），只有 G3 是單一公司絕對值判斷；另外 G4/G5 要「過去 16 季（4 年）」的變異數，mops 財報資料現在剛好有 6 個年度（約 24 季），數量勉強夠但緊繃——這兩個問題要一起解，不只是跨公司查詢的事。
+
+**C. 真的缺資料——不是架構問題，是資料庫裡沒有這個維度的資料：**
+- `Lynch_PEG_Fair_Value`、`Potential_Payback_Period`：都需要「預期成長率」這種前瞻性假設，不是財報現成欄位，taxonomy 也沒定義怎麼推算（用歷史 EPS CAGR 當代理變數是一個選項，但那是要拍板的設計決策，不是查得到查不到的問題）。
+- `Greenwald_EPV`：WACC 需要 Beta，Beta 需要歷史股價序列的共變異數，`daily_price` 目前只有 2 天歷史，算不出任何有意義的 Beta，跟 [`../technicals/README.md`](../technicals/README.md)/[`../portfolio/README.md`](../portfolio/README.md) 卡住的是同一個根本問題。
 
 ## 指標清單
 

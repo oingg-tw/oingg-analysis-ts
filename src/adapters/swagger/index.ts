@@ -38,6 +38,7 @@ const options: swaggerJSDoc.Options = {
       { name: 'Turnover', description: '營運週轉與資產效率——存貨/應收帳款/總資產/固定資產周轉率、資本支出佔營收比' },
       { name: 'Valuation', description: '估值與市場定價指標——PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字，不是本服務自己算的）' },
       { name: 'Guru', description: '大師策略與複合量化估值模型——葛拉漢數、Graham NCAV（淨流動資產價值）與安全邊際價' },
+      { name: 'Portfolio', description: '投資組合風險、超額報酬與量化因子——目前只有 Beta（貝塔係數）' },
     ],
   },
   // Path to the API docs. It's crucial to use absolute paths created with `join`.

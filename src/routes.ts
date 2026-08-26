@@ -25,6 +25,7 @@ import marketRatiosRouter from './domains/valuation/marketRatios/route';
 import grahamNumberRouter from './domains/guru/grahamNumber/route';
 import ncavRouter from './domains/guru/ncav/route';
 import ownerEarningsRouter from './domains/guru/ownerEarnings/route';
+import betaRouter from './domains/portfolio/beta/route';
 
 const router = Router();
 
@@ -53,6 +54,7 @@ apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter,
 apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
 apiRouter.use('/valuation', marketRatiosRouter);
 apiRouter.use('/guru', grahamNumberRouter, ncavRouter, ownerEarningsRouter);
+apiRouter.use('/portfolio', betaRouter);
 
 router.use(apiRouter);
 
