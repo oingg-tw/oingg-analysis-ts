@@ -6,7 +6,7 @@
 
 | 資料夾 | 中文名稱 | scope | 狀態 |
 |---|---|---|---|
-| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR；只剩 CFROI） |
+| [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 部分實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法——2026-08-27 新增，自行歸類非 guru；只剩 CFROI） |
 | [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
 | [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/` |
 | [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 部分實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率；只剩 FCF_Yield，需股價）；`Beneish_M_Score` 2026-08-25 改歸類到 `guru/` |

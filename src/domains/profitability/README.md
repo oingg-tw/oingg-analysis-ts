@@ -27,6 +27,7 @@
 |---|---|---|
 | BVPS（每股淨值） | `Shareholders' Equity / Paid-in Shares` | ✅ 已實作 — [`bvps/`](bvps/)，`GET /profitability/bvps` |
 | 每股營收 | `Revenue / Paid-in Shares` | ✅ 已實作 — [`revenuePerShare/`](revenuePerShare/)，`GET /profitability/revenue-per-share`（單季/年化/TTM） |
+| 杜邦分析法（DuPont Analysis） | `ROE = Net Profit Margin x Asset Turnover x Equity Multiplier` | ✅ 已實作 — [`dupont/`](dupont/)，`GET /profitability/dupont`（單季/TTM）。**不是大師指標**：杜邦公司（企業）發展出來的標準拆解技巧，不是特定投資人/學者的主觀複合公式，所以放在這裡不是 `guru`。見下方「杜邦分析法計算口徑」 |
 
 ## 實作慣例（給之後要做剩餘指標的人）
 
@@ -48,3 +49,11 @@
 - **配息率只提供 TTM 口徑**：現金股利通常一年只發放一到兩次，不是每季平均發放，單季配息率會因為「剛好有沒有發股利的那一季」劇烈失真，近四季加總才是有意義的年度口徑。
 - payoutRatioTtm = `|近四季現金股利發放（quarterly_cash_flow_statement.dividendsPaid）加總| / 近四季淨利加總 * 100`。`dividendsPaid` 某季缺值視為 0（該季沒有發放，不是資料缺漏），跟 `deRatio`/`netDebtToEbitda` 的有息負債欄位處理邏輯一致；只有淨利缺漏才會讓 TTM 視為不齊。近四季淨利加總為零或負數時無法計算。
 - **SGR 是本服務第二個複合指標**：[`sgr/service.ts`](sgr/service.ts) 直接引用 `roe`/`dividendPayoutRatio` 已經算好的 TTM 數值，不重複查詢，跟 `guru/grahamNumber` 引用 `eps`/`bvps` 同一種模式。因為配息率只有 TTM 口徑，SGR 自然也只有 TTM。
+
+## 杜邦分析法計算口徑
+
+- **3 步版**（不是拆到稅負擔/利息負擔的 5 步版）：`ROE = 淨利率 x 總資產週轉率 x 權益乘數`。
+- **本服務第三個複合指標**：[`dupont/service.ts`](dupont/service.ts) 直接引用 `margins`/`turnoverRatio`/`roe` 三支服務已經算好的數值，不重複查詢損益表/資產負債表，跟 `sgr` 引用 `roe`/`dividendPayoutRatio` 同一種模式。副作用是呼叫 `GET /profitability/dupont` 時，`margins`/`turnoverRatio`/`roe` 三支服務也會各自照常把自己的結果 upsert 進對應的表，這是預期行為。
+- **權益乘數** = 總資產 / 權益，純資產負債表時點快照，單季/TTM 共用同一個值——跟 ROE 用期末權益、不分單季/TTM 是同一個道理。
+- **不是大師指標**：跟 Altman Z-Score、Beneish M-Score 不同，杜邦分析法不是某個投資人/學者提出、帶有主觀判斷的複合公式，是杜邦公司（企業，不是個人）在 1920 年代發展出來的標準財務拆解技巧，不符合 [`../guru/README.md`](../guru/README.md) 的分類規則（掛名特定研究者/投資人），所以歸類在這裡。
+- **交叉驗證設計**：回傳的 `decomposedRoeQuarterlyPct`/`decomposedRoeTtmPct` 是用三個因子重新相乘組裝出來的 ROE，理論上應該接近 `roe/` 直接算出來、原樣回傳的 `actualRoeQuarterlyPct`/`actualRoeTtmPct`。實測 2330 115Q2：分解版單季 11.37% vs 實際單季 10.98%、分解版 TTM 34.57% vs 實際 TTM 34.78%——兩者不完全相等，差異來自中間值（尤其 `assetTurnoverQuarterly` 只取到小數點後 2 位，單季週轉率數值本身較小時，四捨五入的相對誤差會被放大）四捨五入造成的正常誤差，不是計算邏輯錯誤；小差距本身也順便驗證了杜邦拆解跟 ROE 計算邏輯彼此一致。

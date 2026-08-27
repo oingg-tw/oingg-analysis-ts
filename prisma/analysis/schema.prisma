@@ -939,3 +939,40 @@ model BeneishMScoreResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("guru_beneish_m_score")
 }
+
+// 杜邦分析（3 步版：ROE = 淨利率 x 總資產週轉率 x 權益乘數）計算結果——本服務第二個純組裝型
+// 複合指標（直接引用 margins/turnoverRatio/roe 已經算好的值，不重複查詢），歸類在 profitability
+// 不是 guru（不是掛名特定投資人/學者的公式，是通用分析技巧）。
+// 欄位對應 src/domains/profitability/dupont/types.ts 的 DupontResult。
+model DupontResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  netProfitMarginQuarterly Decimal? @map("net_profit_margin_quarterly") @db.Decimal(10, 2)
+  netProfitMarginTtm       Decimal? @map("net_profit_margin_ttm") @db.Decimal(10, 2)
+  assetTurnoverQuarterly   Decimal? @map("asset_turnover_quarterly") @db.Decimal(14, 4)
+  assetTurnoverTtm         Decimal? @map("asset_turnover_ttm") @db.Decimal(14, 4)
+  equityMultiplier         Decimal? @map("equity_multiplier") @db.Decimal(14, 4)
+
+  decomposedRoeQuarterlyPct Decimal? @map("decomposed_roe_quarterly_pct") @db.Decimal(10, 2)
+  decomposedRoeTtmPct       Decimal? @map("decomposed_roe_ttm_pct") @db.Decimal(10, 2)
+  actualRoeQuarterlyPct     Decimal? @map("actual_roe_quarterly_pct") @db.Decimal(10, 2)
+  actualRoeTtmPct           Decimal? @map("actual_roe_ttm_pct") @db.Decimal(10, 2)
+
+  totalAssetsValue BigInt? @map("total_assets_value")
+  equityFieldUsed  String? @map("equity_field_used")
+  equityValue      BigInt? @map("equity_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("profitability_dupont")
+}

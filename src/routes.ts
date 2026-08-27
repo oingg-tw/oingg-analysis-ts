@@ -11,6 +11,7 @@ import dividendPayoutRatioRouter from './domains/profitability/dividendPayoutRat
 import sgrRouter from './domains/profitability/sgr/route';
 import roicRouter from './domains/profitability/roic/route';
 import roceRouter from './domains/profitability/roce/route';
+import dupontRouter from './domains/profitability/dupont/route';
 import cashFlowPerShareRouter from './domains/cashFlow/cashFlowPerShare/route';
 import ocfToNetIncomeRouter from './domains/cashFlow/ocfToNetIncome/route';
 import accrualsRatioRouter from './domains/cashFlow/accrualsRatio/route';
@@ -50,7 +51,8 @@ apiRouter.use(
   dividendPayoutRatioRouter,
   sgrRouter,
   roicRouter,
-  roceRouter
+  roceRouter,
+  dupontRouter
 );
 apiRouter.use('/cash-flow', cashFlowPerShareRouter, ocfToNetIncomeRouter, accrualsRatioRouter);
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);

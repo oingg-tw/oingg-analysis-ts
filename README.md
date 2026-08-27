@@ -101,6 +101,7 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /profitability/roce` | 計算單一公司單一季度的使用資本報酬率（ROCE，單季、單季年化、TTM 三種數值） |
 | `GET /profitability/dividend-payout-ratio` | 計算單一公司配息率（只有 TTM 口徑） |
 | `GET /profitability/sgr` | 計算單一公司可持續成長率（SGR，只有 TTM 口徑，複合指標） |
+| `GET /profitability/dupont` | 計算單一公司杜邦分析法（3 步拆解 ROE = 淨利率 x 總資產週轉率 x 權益乘數，單季、TTM 兩種數值，複合指標） |
 | `GET /cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
 | `GET /cash-flow/ocf-to-net-income` | 計算單一公司單一季度的營運現金流對淨利比（單季、TTM 兩種數值） |
 | `GET /cash-flow/accruals-ratio` | 計算單一公司單一季度的應計項目比率（單季、單季年化、TTM 三種數值） |

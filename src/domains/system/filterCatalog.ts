@@ -115,6 +115,22 @@ export const filterCatalog: FilterCategory[] = [
         ],
       },
       {
+        key: 'dupont',
+        name: '杜邦分析（3 步拆解 ROE）',
+        path: '/profitability/dupont',
+        fields: [
+          { key: 'netProfitMarginQuarterly', name: '淨利率（單季）', period: 'quarterly' },
+          { key: 'netProfitMarginTtm', name: '淨利率（TTM）', period: 'ttm' },
+          { key: 'assetTurnoverQuarterly', name: '總資產週轉率（單季）', period: 'quarterly' },
+          { key: 'assetTurnoverTtm', name: '總資產週轉率（TTM）', period: 'ttm' },
+          { key: 'equityMultiplier', name: '權益乘數', period: 'snapshot' },
+          { key: 'decomposedRoeQuarterlyPct', name: '組裝 ROE（單季）', period: 'quarterly' },
+          { key: 'decomposedRoeTtmPct', name: '組裝 ROE（TTM）', period: 'ttm' },
+          { key: 'actualRoeQuarterlyPct', name: '實際 ROE（單季，引用自 roe/）', period: 'quarterly' },
+          { key: 'actualRoeTtmPct', name: '實際 ROE（TTM，引用自 roe/）', period: 'ttm' },
+        ],
+      },
+      {
         key: 'dividendPayoutRatio',
         name: '配息率',
         path: '/profitability/dividend-payout-ratio',
