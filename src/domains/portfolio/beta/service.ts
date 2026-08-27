@@ -1,9 +1,9 @@
 import prisma from '../../../adapters/prisma/index';
 import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '../../../shared/metricStatus';
-import type { BetaQuery, BetaResult, BetaWindow } from './types';
+import type { BetaQuery, BetaResult, BetaSamplingFrequency, BetaWindow } from './types';
 
-const MIN_OBSERVATIONS = 20; // 至少要有 20 個重疊交易日（19 個報酬率樣本）才計算，樣本太少的 Beta 沒有統計意義
+const MIN_OBSERVATIONS = 20; // 降頻後至少要有 20 個取樣點（19 個報酬率樣本）才計算，樣本太少的 Beta 沒有統計意義；三個窗口共用同一個門檻，不分頻率調整
 
 const toDateString = (d: Date): string => d.toISOString().slice(0, 10);
 
@@ -35,22 +35,57 @@ const computeBeta = (stockReturns: number[], indexReturns: number[]): number | n
   return Math.round((covariance / varianceIndex) * 10000) / 10000;
 };
 
-interface OverlapPoint {
+export interface OverlapPoint {
   tradeDate: string; // YYYY-MM-DD
   stockClose: number;
   indexClose: number;
 }
 
-// 給定重疊交易日序列（依日期升冪排序），算窗口內的 Beta。
-const computeWindow = (points: OverlapPoint[], windowEnd: Date, years: number): BetaWindow => {
+// ISO 8601 週數（週一為一週開始，該週的週四落在哪個西元年就算哪一年的第幾週）——只是用來把
+// 交易日分桶，桶的邊界要跟真實曆法週一致，不需要非常講究「第幾週」這個數字本身正不正確。
+const getIsoWeekKey = (dateStr: string): string => {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  const dayNum = (d.getUTCDay() + 6) % 7; // 週一=0 ... 週日=6
+  const thursday = new Date(d);
+  thursday.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const isoYear = thursday.getUTCFullYear();
+  const firstThursday = new Date(Date.UTC(isoYear, 0, 4));
+  const firstThursdayDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  const firstWeekMonday = new Date(firstThursday);
+  firstWeekMonday.setUTCDate(firstThursday.getUTCDate() - firstThursdayDayNum);
+  const weekNum = Math.round((thursday.getTime() - firstWeekMonday.getTime()) / (7 * 24 * 3600 * 1000)) + 1;
+  return `${isoYear}-W${String(weekNum).padStart(2, '0')}`;
+};
+
+const getMonthKey = (dateStr: string): string => dateStr.slice(0, 7); // YYYY-MM
+
+// 2026-08-26 起改成長窗口降頻取樣，對齊 Bloomberg（2Y 用週）、Yahoo Finance（5Y 用月）常見做法。
+// 降頻方式：每個週期（週/月）取「最後一個重疊交易日」當代表點，不是隨便挑或用平均——`points`
+// 已經依日期升冪排序，用 Map 依序覆寫同一個週期 key，最後留下的就是該週期最晚的一筆。
+export const resample = (points: OverlapPoint[], frequency: BetaSamplingFrequency): OverlapPoint[] => {
+  if (frequency === 'daily') return points;
+  const keyFn = frequency === 'weekly' ? getIsoWeekKey : getMonthKey;
+  const lastByPeriod = new Map<string, OverlapPoint>();
+  for (const p of points) {
+    lastByPeriod.set(keyFn(p.tradeDate), p);
+  }
+  return Array.from(lastByPeriod.values());
+};
+
+// 給定重疊交易日序列（依日期升冪排序），算窗口內的 Beta——先按日期範圍切窗口，再依 frequency 降頻，
+// 最後用降頻後相鄰兩點的報酬率算 Beta。三個窗口共用同一份 MIN_OBSERVATIONS 門檻（見上方），
+// 不分頻率調整，門檻定義是「取樣點數」不是「交易日數」。
+const computeWindow = (points: OverlapPoint[], windowEnd: Date, years: number, frequency: BetaSamplingFrequency): BetaWindow => {
   const windowStartDate = subtractYears(windowEnd, years);
   const windowStartStr = toDateString(windowStartDate);
   const windowEndStr = toDateString(windowEnd);
-  const windowed = points.filter((p) => p.tradeDate >= windowStartStr && p.tradeDate <= windowEndStr);
+  const windowedDaily = points.filter((p) => p.tradeDate >= windowStartStr && p.tradeDate <= windowEndStr);
+  const windowed = resample(windowedDaily, frequency);
 
   if (windowed.length < MIN_OBSERVATIONS) {
     return {
       value: null,
+      samplingFrequency: frequency,
       windowStart: windowed[0]?.tradeDate ?? null,
       windowEnd: windowed[windowed.length - 1]?.tradeDate ?? null,
       observations: windowed.length,
@@ -69,6 +104,7 @@ const computeWindow = (points: OverlapPoint[], windowEnd: Date, years: number): 
 
   return {
     value: computeBeta(stockReturns, indexReturns),
+    samplingFrequency: frequency,
     windowStart: windowed[0]!.tradeDate,
     windowEnd: windowed[windowed.length - 1]!.tradeDate,
     observations: windowed.length,
@@ -111,7 +147,13 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     },
   };
 
-  const emptyWindow = (): BetaWindow => ({ value: null, windowStart: null, windowEnd: null, observations: 0 });
+  const emptyWindow = (frequency: BetaSamplingFrequency): BetaWindow => ({
+    value: null,
+    samplingFrequency: frequency,
+    windowStart: null,
+    windowEnd: null,
+    observations: 0,
+  });
 
   // daily_stock_price 目前只有 2330 有資料——查無資料視為「不適用」，不是「查無資料待補」，
   // 因為這不是時間到了就會自己有的資料缺口，是覆蓋率本身的限制，見 portfolio/README.md 說明。
@@ -124,9 +166,9 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     return {
       companyId,
       asOfDate: null,
-      beta1Y: emptyWindow(),
-      beta2Y: emptyWindow(),
-      beta5Y: emptyWindow(),
+      beta1Y: emptyWindow('daily'),
+      beta2Y: emptyWindow('weekly'),
+      beta5Y: emptyWindow('monthly'),
       dataCoverage,
       fieldStatuses: buildFieldStatuses([
         ['beta1Y', notApplicable],
@@ -158,9 +200,9 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     return {
       companyId,
       asOfDate: null,
-      beta1Y: emptyWindow(),
-      beta2Y: emptyWindow(),
-      beta5Y: emptyWindow(),
+      beta1Y: emptyWindow('daily'),
+      beta2Y: emptyWindow('weekly'),
+      beta5Y: emptyWindow('monthly'),
       dataCoverage,
       fieldStatuses: buildFieldStatuses([
         ['beta1Y', noData],
@@ -178,38 +220,19 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     warnings.push(`指定日期 ${asOfDate} 不是股價與指數同時有資料的交易日，改用往前最近的重疊交易日 ${effectiveAsOf}。`);
   }
 
-  const beta1Y = computeWindow(overlap, effectiveAsOfDate, 1);
-  const beta2Y = computeWindow(overlap, effectiveAsOfDate, 2);
-  const beta5Y = computeWindow(overlap, effectiveAsOfDate, 5);
+  // 1Y 用日資料、2Y 用週資料（對齊 Bloomberg）、5Y 用月資料（對齊 Yahoo Finance）——
+  // 見 src/domains/portfolio/README.md「Beta 計算口徑」的說明。
+  const beta1Y = computeWindow(overlap, effectiveAsOfDate, 1, 'daily');
+  const beta2Y = computeWindow(overlap, effectiveAsOfDate, 2, 'weekly');
+  const beta5Y = computeWindow(overlap, effectiveAsOfDate, 5, 'monthly');
+
+  const insufficientSampleMessage = (window: BetaWindow): string =>
+    `降頻成${window.samplingFrequency === 'daily' ? '日' : window.samplingFrequency === 'weekly' ? '週' : '月'}資料後只有 ${window.observations} 個取樣點，少於門檻 ${MIN_OBSERVATIONS}，樣本數不足以計算有意義的 Beta。5 年窗口容易卡在指數資料（${dataCoverage.marketIndexDateRange.max}）比股價資料（${dataCoverage.stockPriceDateRange.max}）舊，重疊區間比想像中短。`;
 
   const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    beta1Y.value === null
-      ? [
-          'beta1Y',
-          {
-            status: 'calculation_error' as const,
-            message: `窗口內重疊交易日只有 ${beta1Y.observations} 天，少於門檻 ${MIN_OBSERVATIONS} 天，樣本數不足以計算有意義的 Beta。`,
-          },
-        ]
-      : null,
-    beta2Y.value === null
-      ? [
-          'beta2Y',
-          {
-            status: 'calculation_error' as const,
-            message: `窗口內重疊交易日只有 ${beta2Y.observations} 天，少於門檻 ${MIN_OBSERVATIONS} 天，樣本數不足以計算有意義的 Beta。`,
-          },
-        ]
-      : null,
-    beta5Y.value === null
-      ? [
-          'beta5Y',
-          {
-            status: 'calculation_error' as const,
-            message: `窗口內重疊交易日只有 ${beta5Y.observations} 天，少於門檻 ${MIN_OBSERVATIONS} 天，樣本數不足以計算有意義的 Beta。5 年窗口容易卡在指數資料（${dataCoverage.marketIndexDateRange.max}）比股價資料（${dataCoverage.stockPriceDateRange.max}）舊，重疊區間比想像中短。`,
-          },
-        ]
-      : null,
+    beta1Y.value === null ? ['beta1Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta1Y) }] : null,
+    beta2Y.value === null ? ['beta2Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta2Y) }] : null,
+    beta5Y.value === null ? ['beta5Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta5Y) }] : null,
   ];
 
   // 存進 oingg-analysis DB 的 portfolio_beta，PK 用 symbol+asOfDate（逐日基準日，不是財務季度），

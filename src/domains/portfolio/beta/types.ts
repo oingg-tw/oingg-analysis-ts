@@ -7,11 +7,14 @@ export interface BetaQuery {
   asOfDate?: string;
 }
 
+export type BetaSamplingFrequency = 'daily' | 'weekly' | 'monthly';
+
 export interface BetaWindow {
   value: number | null;
-  windowStart: string | null; // 這個窗口實際用到的最早交易日（重疊交易日，不是理論上的 asOfDate - N 年）
+  samplingFrequency: BetaSamplingFrequency;
+  windowStart: string | null; // 這個窗口實際用到的最早取樣點日期（降頻後的重疊交易日，不是理論上的 asOfDate - N 年）
   windowEnd: string | null;
-  observations: number; // 重疊交易日數；報酬率樣本數 = observations - 1
+  observations: number; // 降頻後的取樣點數（daily 就是重疊交易日數，weekly/monthly 是各週/月最後一個重疊交易日的數量）；報酬率樣本數 = observations - 1
 }
 
 export interface BetaResult {
@@ -19,8 +22,11 @@ export interface BetaResult {
   // 實際使用的基準日——股價跟指數都有資料的最新（或指定日期之前最近）一個重疊交易日。
   asOfDate: string | null;
 
-  // Beta = Cov(個股日報酬率, 加權股價指數日報酬率) / Var(加權股價指數日報酬率)。
-  // 三個窗口獨立計算（各自取 asOfDate 往前 N 年的重疊交易日），不是用短窗口的資料去湊長窗口。
+  // Beta = Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)。
+  // 三個窗口獨立計算（各自取 asOfDate 往前 N 年的重疊交易日再降頻），不是用短窗口的資料去湊長窗口。
+  // 2026-08-26 起改成三個窗口不同取樣頻率（1Y 日、2Y 週、5Y 月），對齊 Bloomberg（2Y 用週）、
+  // Yahoo Finance（5Y 用月）常見做法——長窗口用日資料會把雜訊/非同步交易的短期波動也算進長期
+  // 結構性風險，不是業界慣例，見 src/domains/portfolio/README.md「Beta 計算口徑」的說明。
   beta1Y: BetaWindow;
   beta2Y: BetaWindow;
   beta5Y: BetaWindow;
