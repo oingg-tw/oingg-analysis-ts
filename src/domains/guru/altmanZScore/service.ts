@@ -1,0 +1,245 @@
+import prisma from '../../../adapters/prisma/index';
+import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
+import { getMarketCapAsOf } from '../../../shared/marketCap';
+import { calculateInterestCoverage } from '../../solvency/interestCoverage/service';
+import { calculateTurnoverRatio } from '../../turnover/turnoverRatio/service';
+import { buildFieldStatuses, type MetricStatus } from '../../../shared/metricStatus';
+import type { Season } from '../../../shared/rocQuarter';
+import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';
+
+// 2026-08-24 從 solvency 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本
+// 校準的，X5（營收/總資產）對產業結構特別敏感，套用到非製造業時分數僅供參考。這個警告固定出現
+// 在每一次回應裡，不是條件式的（跟其他 warnings 只在真的缺資料/算不出來時才出現不一樣）。
+const INDUSTRY_APPLICABILITY_WARNING =
+  '原始版 Altman Z-Score 是用上市製造業樣本校準的模型，X5（營收/總資產）對產業結構特別敏感——套用到台股非製造業（電子代工以外的科技股、金融、服務、營建等）時，X5 會把跨產業的結構差異誤讀為財務訊號，分數僅供參考，不是精確的破產風險預測。若要全市場穩定判讀，Z\'\'-Score（非上市公司版）較適合，本服務目前只做原始版（應要求提供）。';
+
+// year/season 沒指定時，自動抓最新一季有資產負債表資料的季度——這是本服務第一個「兩個查詢維度
+// （財報季度 + 市值日期）都選填、都自動抓最新」的指標，跟 valuation/marketRatios 只有市值日期
+// 選填不一樣（那支根本沒有財報季度維度）。
+const resolveQuarter = async (
+  companyId: string,
+  dataType: string,
+  subsidiaryCompanyId: string,
+  year: string | undefined,
+  season: Season | undefined
+): Promise<{ year: string; season: Season } | null> => {
+  if (year !== undefined && season !== undefined) return { year, season };
+
+  const latest = await prisma.quarterlyBalanceSheet.findFirst({
+    where: { symbol: companyId, dataType, subsidiaryCompanyId },
+    orderBy: [{ year: 'desc' }, { quarter: 'desc' }],
+    select: { year: true, quarter: true },
+  });
+  if (!latest) return null;
+  return { year: String(latest.year), season: String(latest.quarter) as Season };
+};
+
+const toRatio = (numerator: number, denominator: number): number | null => {
+  if (denominator === 0) return null;
+  return Math.round((numerator / denominator) * 10000) / 10000; // 保留 4 位小數（原始比率，不是百分比）
+};
+
+export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<AltmanZScoreResult> => {
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [INDUSTRY_APPLICABILITY_WARNING];
+
+  const emptyResult = (year: string | null, season: Season | null, statuses: Array<[string, MetricStatus]>): AltmanZScoreResult => ({
+    companyId,
+    year,
+    season,
+    dataType,
+    subsidiaryCompanyId,
+    reportDate: null,
+    zScore: null,
+    zone: null,
+    x1: null,
+    x2: null,
+    x3: null,
+    x4: null,
+    x5: null,
+    marketCap: { value: null, tradeDate: null },
+    fieldStatuses: buildFieldStatuses(statuses),
+    warnings,
+  });
+
+  const resolvedQuarter = await resolveQuarter(companyId, dataType, subsidiaryCompanyId, query.year, query.season);
+  if (!resolvedQuarter) {
+    warnings.push('查無任何一季的資產負債表資料，無法決定要用哪一季計算 Altman Z-Score。');
+    const noData: MetricStatus = { status: 'no_data', message: '查無任何一季的資產負債表資料。' };
+    return emptyResult(null, null, [
+      ['zScore', noData],
+      ['x1', noData],
+      ['x2', noData],
+      ['x3', noData],
+      ['x4', noData],
+      ['x5', noData],
+    ]);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const yearNum = Number(year);
+  const seasonNum = Number(season);
+  const composedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+
+  // X3（EBIT TTM）、X5（營收 TTM/總資產）直接引用已經做好的 interestCoverage/turnoverRatio 服務，
+  // 不重複實作 TTM 查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這兩支服務
+  // 也會各自照常把自己的結果 upsert 進 solvency_interest_coverage/turnover_ratio，是預期行為。
+  const [balanceSheet, interestCoverageResult, turnoverRatioResult] = await Promise.all([
+    prisma.quarterlyBalanceSheet.findUnique({
+      where: {
+        symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
+      },
+    }),
+    calculateInterestCoverage(composedQuery),
+    calculateTurnoverRatio(composedQuery),
+  ]);
+
+  if (!balanceSheet) warnings.push(`查無 ${year}Q${season} 的資產負債表資料。`);
+
+  const totalAssets = balanceSheet?.totalAssets ?? null;
+  const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
+  const currentAssets = balanceSheet?.currentAssets ?? null;
+  const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
+  const retainedEarnings = balanceSheet?.retainedEarnings ?? null;
+
+  if (balanceSheet && currentAssets === null) {
+    warnings.push(
+      '該季資產負債表流動資產欄位為 null——常見於金融/保險業（資產負債表不按流動/非流動分類，跟 Graham_NCAV 踩過的坑一樣），X1 無法計算，這個公式本來就不適用這類產業。'
+    );
+  }
+  if (balanceSheet && totalAssets === null) warnings.push('該季資產負債表總資產欄位為 null，X1/X2/X3/X5 都無法計算。');
+  if (balanceSheet && totalLiabilities === null) warnings.push('該季資產負債表總負債欄位為 null，X4 無法計算。');
+  if (balanceSheet && retainedEarnings === null) warnings.push('該季資產負債表保留盈餘欄位為 null，X2 無法計算。');
+
+  let x1: number | null = null;
+  if (currentAssets !== null && currentLiabilities !== null && totalAssets !== null) {
+    x1 = toRatio(Number(currentAssets - currentLiabilities), Number(totalAssets));
+  }
+
+  let x2: number | null = null;
+  if (retainedEarnings !== null && totalAssets !== null) {
+    x2 = toRatio(Number(retainedEarnings), Number(totalAssets));
+  }
+
+  const ebitTtmValue = interestCoverageResult.ebitTtm.value;
+  let x3: number | null = null;
+  if (ebitTtmValue !== null && totalAssets !== null) {
+    x3 = toRatio(Number(ebitTtmValue), Number(totalAssets));
+  } else if (ebitTtmValue === null) {
+    warnings.push('EBIT（TTM）無法取得（詳見 interestCoverage 服務的 warnings），X3 無法計算。');
+  }
+
+  const reportDate = balanceSheet?.reportDate ?? null;
+  let marketCapValue: number | null = null;
+  let marketCapTradeDate: string | null = null;
+  let x4: number | null = null;
+  if (reportDate) {
+    const marketCap = await getMarketCapAsOf(companyId, reportDate);
+    if (marketCap) {
+      marketCapValue = marketCap.marketCap;
+      marketCapTradeDate = marketCap.tradeDate;
+      if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities));
+    } else {
+      warnings.push(
+        `查無 ${companyId} 在 ${reportDate.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算——daily_stock_price 目前只有 2330 有資料，其他公司請見 fieldStatuses。`
+      );
+    }
+  }
+
+  // turnoverRatio 的 assetTurnoverTtm 本來就是「營收(TTM)/總資產」，單位（次）跟 X5 定義完全一樣，
+  // 不需要另外換算或重新查詢。
+  const x5 = turnoverRatioResult.assetTurnoverTtm;
+  if (x5 === null) warnings.push('營收(TTM)/總資產無法取得（詳見 turnoverRatio 服務的 warnings），X5 無法計算。');
+
+  let zScore: number | null = null;
+  if (x1 !== null && x2 !== null && x3 !== null && x4 !== null && x5 !== null) {
+    zScore = Math.round((1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5) * 100) / 100;
+  }
+
+  let zone: 'safe' | 'grey' | 'distress' | null = null;
+  if (zScore !== null) {
+    zone = zScore > 2.99 ? 'safe' : zScore < 1.81 ? 'distress' : 'grey';
+  }
+
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    x1 === null
+      ? [
+          'x1',
+          currentAssets === null
+            ? { status: 'not_applicable' as const, message: '該季資產負債表沒有流動資產欄位，這個產業（多半是金融/保險業）不適用這個公式。' }
+            : { status: 'no_data' as const, message: '流動資產、流動負債或總資產缺漏，無法計算 X1。' },
+        ]
+      : null,
+    x2 === null ? ['x2', { status: 'no_data' as const, message: '保留盈餘或總資產缺漏，無法計算 X2。' }] : null,
+    x3 === null ? ['x3', { status: 'no_data' as const, message: 'EBIT（TTM）或總資產缺漏，無法計算 X3。' }] : null,
+    x4 === null
+      ? [
+          'x4',
+          companyId === '2330'
+            ? { status: 'no_data' as const, message: '市值或總負債缺漏，無法計算 X4。' }
+            : { status: 'not_applicable' as const, message: 'daily_stock_price 目前只有 2330 有資料，這家公司不適用（不是資料還沒補齊）。' },
+        ]
+      : null,
+    x5 === null ? ['x5', { status: 'no_data' as const, message: '營收（TTM）或總資產缺漏，無法計算 X5。' }] : null,
+    zScore === null ? ['zScore', { status: 'no_data' as const, message: 'X1~X5 任一為 null，無法計算 Z-Score，見對應變數的 fieldStatuses。' }] : null,
+  ];
+
+  // 存進 oingg-analysis DB 的 guru_altman_z_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
+  try {
+    await analysisPrisma.altmanZScoreResult.upsert({
+      where: {
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+      },
+      create: {
+        symbol: companyId,
+        year: yearNum,
+        season: seasonNum,
+        dataType,
+        subsidiaryCompanyId,
+        reportDate,
+        zScore,
+        x1,
+        x2,
+        x3,
+        x4,
+        x5,
+        marketCapValue,
+        marketCapTradeDate: marketCapTradeDate ? new Date(`${marketCapTradeDate}T00:00:00.000Z`) : null,
+        warnings,
+      },
+      update: {
+        reportDate,
+        zScore,
+        x1,
+        x2,
+        x3,
+        x4,
+        x5,
+        marketCapValue,
+        marketCapTradeDate: marketCapTradeDate ? new Date(`${marketCapTradeDate}T00:00:00.000Z`) : null,
+        warnings,
+      },
+    });
+  } catch (error) {
+    console.error('[altman-z-score]: 寫入 guru_altman_z_score 失敗，不影響本次回傳結果。', error);
+  }
+
+  return {
+    companyId,
+    year,
+    season,
+    dataType,
+    subsidiaryCompanyId,
+    reportDate: reportDate ? reportDate.toISOString().slice(0, 10) : null,
+    zScore,
+    zone,
+    x1,
+    x2,
+    x3,
+    x4,
+    x5,
+    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
+    warnings,
+  };
+};

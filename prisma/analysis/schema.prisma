@@ -831,3 +831,37 @@ model BetaResult {
   @@id([symbol, asOfDate])
   @@map("portfolio_beta")
 }
+
+// Altman Z-Score（原始版，5 變數加權模型）計算結果——2026-08-24 從 solvency 移到 guru 分類，
+// 2026-08-26 實作。X4（市值/總負債）需要市值，來自 mops 的 daily_stock_price（目前只有 2330），
+// 跟 BetaResult 同一個資料源。query 介面 year/season 選填，不給就自動抓最新一季，見
+// src/domains/guru/altmanZScore/service.ts 的 resolveQuarter，跟其他指標「必填」不同。
+model AltmanZScoreResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  zScore Decimal? @map("z_score") @db.Decimal(10, 4)
+
+  // X1~X5 都是原始比率（不是百分比），跟 1.2/1.4/3.3/0.6/0.999 這組係數搭配使用。
+  x1 Decimal? @map("x1") @db.Decimal(14, 6)
+  x2 Decimal? @map("x2") @db.Decimal(14, 6)
+  x3 Decimal? @map("x3") @db.Decimal(14, 6)
+  x4 Decimal? @map("x4") @db.Decimal(14, 6)
+  x5 Decimal? @map("x5") @db.Decimal(14, 6)
+
+  marketCapValue     Decimal?  @map("market_cap_value") @db.Decimal(24, 4)
+  marketCapTradeDate DateTime? @map("market_cap_trade_date") @db.Date
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_altman_z_score")
+}
