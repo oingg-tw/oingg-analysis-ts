@@ -865,3 +865,77 @@ model AltmanZScoreResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("guru_altman_z_score")
 }
+
+// Piotroski F-Score（9 項二元訊號，跟去年同季比較）計算結果。
+// score 刻意用 Decimal 存（雖然值一定是 0~9 的整數）——filterCatalogCheck.ts 判斷「可以拿來 filter
+// 的計算結果」的規則是「型別是 Decimal 且不是 *Value 結尾」，用 Int 會跳出這個自動檢查網。
+// 9 個訊號布林值不算「計算結果」（是中繼判斷，不是最終指標），型別維持 Boolean，不受這條規則影響。
+// 欄位對應 src/domains/guru/piotroskiFScore/types.ts 的 PiotroskiFScoreResult。
+model PiotroskiFScoreResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  score Decimal? @map("score") @db.Decimal(2, 0)
+
+  positiveRoa            Boolean? @map("positive_roa")
+  positiveCfo             Boolean? @map("positive_cfo")
+  roaImproved             Boolean? @map("roa_improved")
+  accrualQuality          Boolean? @map("accrual_quality")
+  leverageDecreased       Boolean? @map("leverage_decreased")
+  liquidityImproved       Boolean? @map("liquidity_improved")
+  noDilution              Boolean? @map("no_dilution")
+  grossMarginImproved     Boolean? @map("gross_margin_improved")
+  assetTurnoverImproved   Boolean? @map("asset_turnover_improved")
+
+  priorYear        Int?      @map("prior_year")
+  priorSeason      Int?      @map("prior_season")
+  priorReportDate  DateTime? @map("prior_report_date") @db.Date
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_piotroski_f_score")
+}
+
+// Beneish M-Score（8 變量法務會計造假預警模型，跟去年同季比較，TATA 除外）計算結果。
+// 欄位對應 src/domains/guru/beneishMScore/types.ts 的 BeneishMScoreResult。
+model BeneishMScoreResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  mScore Decimal? @map("m_score") @db.Decimal(10, 4)
+
+  dsri Decimal? @map("dsri") @db.Decimal(14, 4)
+  gmi  Decimal? @map("gmi") @db.Decimal(14, 4)
+  aqi  Decimal? @map("aqi") @db.Decimal(14, 4)
+  sgi  Decimal? @map("sgi") @db.Decimal(14, 4)
+  depi Decimal? @map("depi") @db.Decimal(14, 4)
+  sgai Decimal? @map("sgai") @db.Decimal(14, 4)
+  tata Decimal? @map("tata") @db.Decimal(14, 4)
+  lvgi Decimal? @map("lvgi") @db.Decimal(14, 4)
+
+  priorYear       Int?      @map("prior_year")
+  priorSeason     Int?      @map("prior_season")
+  priorReportDate DateTime? @map("prior_report_date") @db.Date
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_beneish_m_score")
+}

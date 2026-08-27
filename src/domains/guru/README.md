@@ -2,7 +2,7 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、葛拉漢數——最後者是本服務自行歸類的指標，見下方）；`Altman_Z_Score` 資料已無缺口，待實作；`Beneish_M_Score`（2026-08-25 從 `cashFlow` 移入）、`Nissim_Penman_RNOA`／`Greenwald_EPV`（本服務自行歸類，見下方）都還沒做。
+- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數——最後者是本服務自行歸類的指標，見下方）；`Nissim_Penman_RNOA`／`Greenwald_EPV`（本服務自行歸類，見下方）還沒做。
 
 ## 分類範圍：不是只有 taxonomy 明列的 code
 
@@ -10,13 +10,10 @@
 
 ## 未實作指標的現況分三種，不要混為一談
 
-2026-08-25 盤點時發現，之前把 `Piotroski_F_Score`/`Beneish_M_Score` 的 YoY 比較講得太嚴重——`getPastNQuarters`（[`../../shared/rocQuarter.ts`](../../shared/rocQuarter.ts)）這個既有 helper 本來就能定位「去年同季」是哪一季，每支算 TTM 的 API 都在用它抓 4 季，YoY 只需要抓 1 季（比 TTM 更簡單），不是新架構，是舊 pattern 換個查法，優先度應該跟 `Altman_Z_Score` 一樣高。真正分成三種現況：
+2026-08-25 盤點時發現，之前把 `Piotroski_F_Score`/`Beneish_M_Score` 的 YoY 比較講得太嚴重——`getPastNQuarters`（[`../../shared/rocQuarter.ts`](../../shared/rocQuarter.ts)）這個既有 helper 本來就能定位「去年同季」是哪一季，每支算 TTM 的 API 都在用它抓 4 季，YoY 只需要抓 1 季（比 TTM 更簡單），不是新架構，是舊 pattern 換個查法。2026-08-27 兩個都已實作（見下方指標清單），真正判斷剩下的分兩種現況：
 
 **A. 現在就能補——不缺資料、不缺架構，純粹還沒排到：**
-- `Altman_Z_Score`：五個變數全部有資料（見下方），只差查詢介面設計（year/season 選填 + 市值配日期），是目前唯一已經跟使用者確認過「等資料到位就做」的項目。
-- `Nissim_Penman_RNOA`：四個變數全部有資料，只差「NOA 怎麼切營業/融資」這個定義決策要先拍板（見下方），拍板後架構比 `Altman_Z_Score` 更單純。
-- `Piotroski_F_Score`：9 項訊號都是跟自己去年同季比較，重用 `getPastNQuarters` 抓 1 季即可，財報欄位全部都有。
-- `Beneish_M_Score`：8 個變量同上，也是跟自己去年同期比較，重用同一套查詢模式。
+- `Nissim_Penman_RNOA`：四個變數全部有資料，只差「NOA 怎麼切營業/融資」這個定義決策要先拍板（見下方），架構比 `Altman_Z_Score` 更單純。
 
 **B. 卡在跨公司查詢——本服務目前完全沒有「一次查多家公司」這種查詢型態：**
 - `Greenblatt_Magic_Formula`：需要對一批公司的 Earnings Yield/ROC 排名（`Rank(...)`）。
@@ -34,11 +31,11 @@
 | `Greenblatt_Magic_Formula` | 葛林布雷神奇公式 | `Rank(Earnings Yield = EBIT/EV) + Rank(ROC = EBIT/(Net Working Capital + Net Fixed Assets))` | TTM, FY | ⬜ 未實作。財務數字都已經有（EV = 市值 + 淨負債，市值/淨負債都已經算過），卡在「跨公司排名」不是單一公司查詢，需要新的查詢介面 |
 | `Lynch_PEG_Fair_Value` | 彼得林區本益成長模型 | `PEG = PER / Expected Growth Rate; Fair Value = Expected Growth Rate * EPS` | Forward, TTM | ⬜ 未實作，需要「預期成長率」這種前瞻性假設，資料庫沒有現成欄位 |
 | `Buffett_Owner_Earnings` | 巴菲特股東盈餘 | `Net Income + D&A - Maintenance CapEx` | TTM, FY | ✅ 已實作（每股版本） — [`ownerEarnings/`](ownerEarnings/)，`GET /guru/owner-earnings`（單季/年化/TTM）。taxonomy 是公司總額，本服務改成每股版本，見下方說明 |
-| `Piotroski_F_Score` | 皮爾托斯基分數 | 9 項基本面二元會計訊號加總（0~9） | TTM, FY | ⬜ 未實作。綜合獲利能力、財務槓桿/流動性及營運效率改善之 9 分制質量評分，9 項全部是跟自己去年同季比較 |
+| `Piotroski_F_Score` | 皮爾托斯基分數 | 9 項基本面二元會計訊號加總（0~9） | TTM, FY | ✅ 已實作，2026-08-27 — [`piotroskiFScore/`](piotroskiFScore/)，`GET /guru/piotroski-f-score`。9 項全部是跟自己去年同季比較，計算口徑見下方 |
 | `Mohanram_G_Score` | 莫罕拉姆 G 分數 | 8 項基本面成長/研發效率訊號加總（0~8） | TTM, FY | ⬜ 未實作。針對高估值與高成長標的設計的基本面評分，彌補 F-Score 偏重價值股的限制；跟 `Piotroski_F_Score` 看起來像同一類但架構不同，見下方說明——需要跨公司產業中位數，不是跨期比較 |
 | `Potential_Payback_Period` | 潛在回本期模型 | `ln(1 + (Stock Price * ln(1 + g)) / EPS_0) / ln(1 + g)` | Forward_3Y, Forward_5Y | ⬜ 未實作。考量獲利複合成長率下，動態推算收回購股成本所需的真實年數；需要「預期成長率」前瞻假設，跟 `Lynch_PEG_Fair_Value` 卡在同一個問題 |
-| `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ⬜ 未實作，2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來（見上方「分類範圍」說明），資料已無缺口，待實作 |
-| `Beneish_M_Score` | 貝尼許 M 分數 | `-4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI` | FY, TTM | ⬜ 未實作，2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來（見上方「分類範圍」說明）。8 個變量都是跟去年同期比較，跟 `Piotroski_F_Score` 同一種架構問題，需要跨期比較的查詢模式 |
+| `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ✅ 已實作（原始版），2026-08-27 — [`altmanZScore/`](altmanZScore/)，`GET /guru/altman-z-score`。2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來（見上方「分類範圍」說明），計算口徑見下方 |
+| `Beneish_M_Score` | 貝尼許 M 分數 | `-4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI` | FY, TTM | ✅ 已實作，2026-08-27 — [`beneishMScore/`](beneishMScore/)，`GET /guru/beneish-m-score`。2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來（見上方「分類範圍」說明），8 個變量除了 TATA 都跟去年同期比較，計算口徑見下方 |
 
 ## 本服務自行歸類的指標（不在 taxonomy 明列的 code 裡）
 
@@ -52,7 +49,7 @@ taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡
 
 **本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
 
-葛拉漢數用 **TTM EPS**（不是單季或簡單年化版本）；EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值）。已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 133.01 x 248.05)` = 葛拉漢數 861.59 元。
+葛拉漢數用 **TTM EPS**（不是單季或簡單年化版本）；EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值）。已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 86.27 x 248.05)` = 葛拉漢數 693.89 元（2026-08-27 更新：oingg-mops-ts 修正 `quarterly_income_statement` 的 Q4 資料後 TTM EPS 改變，原本是 133.01 元/葛拉漢數 861.59 元，見 [`../../../README.md`](../../../README.md) 的說明）。
 
 ## Graham_NCAV（NCAV）計算口徑
 
@@ -68,19 +65,66 @@ taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡
 - 用「總資本支出」代替 taxonomy 定義的「維護性資本支出」（Maintenance CapEx）——財報沒有拆分維護性/成長性資本支出，這是跟 FCF 一樣的簡化，算出來的數值會比嚴格定義的股東盈餘保守（偏低）。
 - 跟 [`../cashFlow/cashFlowPerShare/`](../cashFlow/cashFlowPerShare/) 同一種單季/年化/TTM 三數值結構。
 
-## Altman_Z_Score 卡在哪裡（2026-08-24 從 solvency 移過來）
+## Altman_Z_Score 計算口徑（2026-08-24 從 solvency 移過來，2026-08-27 實作）
 
-taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），拆開五個變數：
+taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 
-| 變數 | 公式 | 有資料嗎 |
+| 變數 | 公式 | 資料來源 |
 |---|---|---|
-| X1 | (流動資產 − 流動負債) / 總資產 | ✅ 有 |
-| X2 | 保留盈餘（`retainedEarnings`） / 總資產 | ✅ 有 |
-| X3 | EBIT / 總資產 | ✅ 有（[`../solvency/interestCoverage/`](../solvency/interestCoverage/)/[`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 已經在算 EBIT） |
-| X4 | **股票市值** / 總負債 | ✅ 有——2026-08-21 驗證過 oingg-twse 的 `company_profile.issued_shares` x `daily_price.close`（見 [`../securityInfo/README.md`](../securityInfo/README.md)），1394 家公司 `issued_shares` 覆蓋率完整；`daily_price` 目前只有 2 天歷史，配到「某季財報報告日」的股價還是會常常是 `null`，跟 [`../valuation/marketRatios/`](../valuation/marketRatios/) 踩過的坑一樣 |
-| X5 | 營收 / 總資產 | ✅ 有——就是 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的總資產週轉率，公式完全一樣 |
+| X1 | (流動資產 − 流動負債) / 總資產 | 資產負債表，純時點快照 |
+| X2 | 保留盈餘（`retainedEarnings`） / 總資產 | 資產負債表 |
+| X3 | EBIT（TTM） / 總資產 | 直接引用 [`../solvency/interestCoverage/`](../solvency/interestCoverage/) 已經算好的 `ebitTtm`，不重複查詢 |
+| X4 | **股權市值** / 總負債帳面值 | 見下方「市值資料源」 |
+| X5 | 營收（TTM） / 總資產 | 直接引用 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的 `assetTurnoverTtm`（本來就是「營收 TTM/總資產」，公式完全一樣） |
 
-五個變數現在全部有資料，2026-08-20 曾經跟使用者確認過「先擱置，等 valuation 接上股價資料源後直接做原始版，不做 Z'-Score（權益帳面價值版）替代版本」——那個前提條件現在已經滿足了，待實作。查詢介面要仿照 [`../valuation/marketRatios/`](../valuation/marketRatios/) 的教訓，不要套用季度查詢模板去配股價，應該用「季度基本面（X1/X2/X3/X5）+ 選填日期的股價（X4）」這種介面，跟 [`../valuation/README.md`](../valuation/README.md) 討論 PSR/P_FCF/EV_EBITDA 查詢介面時同一個設計決策（year/season 選填，沒指定就抓最新）。
+**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價，報告日或之前最近一個交易日） x `capital_stock_history`（報告日當下生效的股本，`getPaidInSharesAsOf`）。**目前 `daily_stock_price` 只有 2330 有資料**，其他公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+
+**查詢介面**：`year`/`season` 選填（要嘛都給要嘛都不給），不給就自動抓最新一季有資產負債表資料的季度——跟 [`../valuation/marketRatios/`](../valuation/marketRatios/) 只有市值日期選填不同，這是本服務第一個「財報季度 + 市值日期都自動抓最新」的指標。市值抓的是「該季報告日或之前最近一個交易日」的收盤價，不是查詢當下的最新股價。
+
+**單位陷阱**：`daily_stock_price` 算出來的市值是「股價 x 實際股數」的真實新台幣金額，但財報金額欄位（`totalLiabilities` 等）單位是千元——X4 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍。這是跟 BVPS 曾經漏過的同一個坑，開發時就踩到一次（有測試在，抓出來了才修正）。
+
+判讀切點：`Z > 2.99` Safe、`1.81 ≤ Z ≤ 2.99` Grey、`Z < 1.81` Distress（原始版切點，跟 Z''-Score 不同，本服務只做原始版，見上方適用性警告）。
+
+已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：X1=0.2888、X2=0.6454、X3=0.2858、X5=0.47（都是純財報衍生，不受股價影響）；X4 因為要配股價會隨時間變動，2026-08-27 測得 21.54（市值約 62.5 兆元 ÷ 總負債約 2.9 兆元）；Z = 15.59，落在 Safe 區間，符合台積電財務體質極佳、幾乎零槓桿的直覺。
+
+## Piotroski_F_Score 計算口徑（2026-08-27 實作）
+
+9 項二元訊號，全部是「本季 vs 去年同季」的自我比較（YoY, self-referential），不需要跨公司或跨產業比較：
+
+| # | 訊號 | 判斷條件 |
+|---|---|---|
+| 1 | ROA 為正 | 本季淨利 / 本季總資產 > 0 |
+| 2 | 營運現金流為正 | 本季 CFO > 0 |
+| 3 | ROA 較去年同季提升 | 本季 ROA > 去年同季 ROA |
+| 4 | 盈餘品質 | 本季 CFO > 本季淨利 |
+| 5 | 長期負債比率下降 | (長期借款/總資產)本季 < (長期借款/總資產)去年同季 |
+| 6 | 流動比率提升 | (流動資產/流動負債)本季 > 去年同季 |
+| 7 | 無稀釋 | 本季流通股數 ≤ 去年同季流通股數（`capital_stock_history`，用報告日各自對應生效的股本） |
+| 8 | 毛利率提升 | (毛利/營收)本季 > 去年同季 |
+| 9 | 總資產週轉率提升 | (營收/總資產)本季 > 去年同季 |
+
+**「去年同季」用 `getPastNQuarters` 往前推 4 季定位**（跟每支算 TTM 的 API 定位「近四季」用同一個 helper，只是這裡只取頭尾兩個點，不加總）。**9 項全部能判斷才給總分**——任一項因為本季或去年同季資料缺漏而無法判斷，`score` 整個是 `null`（不會用「幾項算出來就算幾項」湊一個打折的分數），`signals` 陣列列出每一項各自的判斷結果，方便定位是哪一項卡住。
+
+已用台積電（2330）115Q2 vs 114Q2（去年同季）合併報表實測驗證：score = 8/9，唯一沒過的是「長期負債比率下降」——台積電這幾年持續舉債擴廠支應先進製程資本支出，長期負債比率上升是預期中的，不是財務體質變差的訊號，其餘 8 項（獲利能力、現金流品質、流動性、無稀釋、毛利率、週轉率）都過。
+
+## Beneish_M_Score 計算口徑（2026-08-25 從 cashFlow 移過來，2026-08-27 實作）
+
+8 個變量，除了 TATA（只看本季）以外全部是「本季 vs 去年同季」的自我比較：
+
+| 變量 | 公式 | 說明 |
+|---|---|---|
+| DSRI | (應收帳款/營收)本季 ÷ (應收帳款/營收)去年同季 | 應收帳款增速異常飆升 → 灌水營收的訊號 |
+| GMI | (毛利率)去年同季 ÷ (毛利率)本季 | >1 代表毛利率惡化（去年比較高），是造假動機指標 |
+| AQI | [1-(流動資產+PPE)/總資產]本季 ÷ 去年同季 | 簡化版：原始定義還要扣有價證券，財報沒有單獨的有價證券欄位 |
+| SGI | 本季營收 ÷ 去年同季營收 | 唯一直接比、不是「比率再比」的變量 |
+| DEPI | (折舊率)去年同季 ÷ (折舊率)本季 | 折舊率 = 折舊/(折舊+PPE)，只用 `depreciation`（不含 `amortization`），對應嚴格定義的固定資產折舊率 |
+| SGAI | (SGA/營收)本季 ÷ 去年同季 | SGA = `sellingExpenses` + `adminExpenses`（財報是分開兩個欄位，這裡加總） |
+| TATA | (本季淨利 − 本季 CFO) / 本季總資產 | 唯一不跟去年比較的變量，衡量帳面利潤與現金脫鉤程度 |
+| LVGI | (總負債/總資產)本季 ÷ 去年同季 | 簡化版：原始定義是「長期負債+流動負債」，這裡直接用總負債（等於兩者加總） |
+
+`M = -4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI`，**8 個變量全部能計算才給 M-Score**。判別門檻是原始論文定的，不是本服務自訂：`M-Score > -1.78` 財務造假/營收灌水風險較高（`flagged: true`），`M-Score ≤ -1.78` 財務數據可信度較高。
+
+**已知限制：對高成長公司容易偽陽性**——模型裡權重最大的兩個係數（SGI 的 0.892、TATA 的 4.037）都跟「成長」有關，一家正常高速成長的公司（營收大幅成長、應收帳款/資本支出跟著等比例擴張）很容易被模型誤判成「疑似造假」，這是 Beneish M-Score 本身的已知限制，不是本服務的計算錯誤。已用台積電（2330）115Q2 vs 114Q2（去年同季）合併報表實測驗證：SGI=1.3605（營收 YoY 成長 36%）、TATA=-0.0082（應計項目其實是負的，代表現金流比帳面淨利還好，是正面訊號），M-Score = -1.4827，`flagged: true`——這是模型對台積電這種高速成長期公司的典型偽陽性，不代表台積電財報有異常（NCAV、Piotroski F-Score、Altman Z-Score 這幾個已實作指標都顯示台積電財務體質良好）。
 
 ## Nissim_Penman_RNOA 卡在哪裡
 

@@ -6,15 +6,17 @@ import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
 
 // 對照 src/domains/guru/README.md「Buffett_Owner_Earnings（股東盈餘）計算口徑」——
 // 2330（台積電）115Q2 合併報表實測值。
+// 2026-08-27 更新：見 ocfToNetIncome.test.ts 開頭註解，mops 現金流量表修正後折舊/攤銷/資本支出
+// 本季數字都變了（paidInShares 來自 capital_stock_history，不受這次修正影響，數字不變）。
 test('ownerEarnings: 2330 115Q2 合併報表（每股版本）', async () => {
   const result = await calculateOwnerEarnings({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.equal(result.ownerEarningsPerShareQuarterly, 8.63);
-  assert.equal(result.ownerEarningsPerShareQuarterlyAnnualized, 34.52);
-  assert.equal(result.ownerEarningsPerShareTtm, 69.69);
+  assert.equal(result.ownerEarningsPerShareQuarterly, 15.78);
+  assert.equal(result.ownerEarningsPerShareQuarterlyAnnualized, 63.12);
+  assert.equal(result.ownerEarningsPerShareTtm, 55.33);
   assert.equal(result.netIncome.value, '706561938');
-  assert.equal(result.depreciationAndAmortization.value, '363988605');
-  assert.equal(result.capitalExpenditures.value, '-846764746');
+  assert.equal(result.depreciationAndAmortization.value, '198538168');
+  assert.equal(result.capitalExpenditures.value, '-496001947');
   assert.equal(result.paidInShares.value, '25932370067');
   assert.deepEqual(result.warnings, []);
 });

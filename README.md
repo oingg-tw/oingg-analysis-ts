@@ -115,10 +115,13 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /guru/graham-number` | 計算單一公司單一季度的葛拉漢數（`sqrt(22.5 x EPS(TTM) x BVPS)`） |
 | `GET /guru/ncav` | 計算單一公司單一季度的葛拉漢淨流動資產價值（NCAV）與安全邊際價 |
 | `GET /guru/owner-earnings` | 計算單一公司單一季度的每股股東盈餘（Buffett Owner Earnings，單季、單季年化、TTM 三種數值） |
+| `GET /guru/altman-z-score` | 計算單一公司原始版 Altman Z-Score（`year`/`season` 選填，不給就抓最新一季；X4 目前只有 2330 有股價資料） |
+| `GET /guru/piotroski-f-score` | 計算單一公司皮爾托斯基 F 分數（0~9 分，9 項訊號跟去年同季比較） |
+| `GET /guru/beneish-m-score` | 計算單一公司貝尼許 M 分數（法務會計造假預警，8 個變量跟去年同季比較，TATA 除外） |
 | `GET /portfolio/beta` | 計算單一公司相對加權股價指數的貝塔係數（1Y/2Y/5Y 三種窗口；目前只有 2330 有股價資料） |
 | `GET /filters` | 列出目前可用來 filter 的分類/指標/欄位清單，見 [`src/domains/system/filterCatalog.ts`](src/domains/system/filterCatalog.ts) |
 
-Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外，跟其他 API 不是同一組——只有 `companyId`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta` 是 `asOfDate`），因為兩者都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」跟 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 的說明；`GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr` 只回傳 TTM 口徑（沒有 `season` 以外的差異，查詢參數格式相同）。其餘二十支 API 共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
+Query 參數，三種介面：(1) `GET /valuation/market-ratios`、`GET /portfolio/beta` 只有 `companyId`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta` 是 `asOfDate`），因為兩者都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」跟 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 的說明。(2) `GET /guru/altman-z-score` 的 `year`/`season` 選填但要成對（要嘛都給要嘛都不給），不給就自動抓最新一季，因為這支同時需要「財報季度」跟「市值日期」兩種時間刻度，見 [`src/domains/guru/README.md`](src/domains/guru/README.md) 的計算口徑。(3) 其餘 API（含 `GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr`，只回傳 TTM 口徑但查詢參數格式相同）共用同一組：`companyId`、`year`（民國年）、`season`（`'1'`~`'4'`）為必填；`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串）選填。
 
 ## ROE 計算口徑（未來 session 接手前務必看）
 
@@ -148,7 +151,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **`epsQuarterlyAnnualized`**：`epsQuarterly` 簡單 x4，跟 ROE 的年化邏輯一致，非以近四季實際加總計算。
 - **`epsTtm`**：近四季（含本季）淨利加總 / 本季報告日對應的流通股數。近四季資料須全部存在且淨利欄位皆非 null，否則整個回傳 `null`（不會用部分資料湊數字），缺的季度只列在 `warnings` 文字裡。
 - **流通股數／單位換算**：跟 BVPS 完全一樣的做法——查 `capital_stock_history` 抓報告日當時生效的股數，金額欄位（千元）要先 x1000 換算成元再除。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季淨利 706,561,938 千元 → epsQuarterly 27.25 元、epsQuarterlyAnnualized 109 元；近四季（114Q3~115Q2）淨利加總 3,449,225,724 千元 → epsTtm 133.01 元。TTM 高於單季年化是因為本季淨利比前三季平均低，兩個數字本來就會分歧，不是計算錯誤。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季淨利 706,561,938 千元 → epsQuarterly 27.25 元、epsQuarterlyAnnualized 109 元；近四季（114Q3~115Q2）淨利加總 2,237,087,087 千元 → epsTtm 86.27 元。2026-08-27 更新：oingg-mops-ts 修正 `quarterly_income_statement` 的 Q4（原本存的是全年累計數，不是單季數）後，TTM 數字全部改變，這裡是修正後的數字；單季數字不受影響。
 
 ## 每股營收計算口徑
 
@@ -158,7 +161,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **`revenuePerShareQuarterlyAnnualized`**：`revenuePerShareQuarterly` 簡單 x4。
 - **`revenuePerShareTtm`**：近四季（含本季）營收加總 / 本季報告日對應的流通股數，近四季資料須完整存在才會計算，否則為 `null`。
 - 流通股數／單位換算做法跟 BVPS、EPS 完全一樣（查 `capital_stock_history`、金額 x1000 換算成元）。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季營收 1,270,380,250 千元 → 每股營收 48.99 元、年化 195.96 元；近四季營收加總 7,203,456,280 千元 → TTM 每股營收 277.78 元。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季營收 1,270,380,250 千元 → 每股營收 48.99 元、年化 195.96 元；近四季營收加總 4,440,492,429 千元 → TTM 每股營收 171.23 元（2026-08-27 mops Q4 資料修正後的數字，見上方 EPS 段落說明）。
 
 ## 每股現金流（OCF/FCF）計算口徑
 
@@ -169,7 +172,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **`*QuarterlyAnnualized`**：對應單季數值簡單 x4。
 - **`*Ttm`**：近四季（含本季）加總 / 流通股數。一季只要 `netCashFromOperatingActivities` 或 `capitalExpenditures` 任一為 `null`，該季就整個視為不齊，OCF 跟 FCF 共用同一組「資料齊不齊」判斷，不分開追蹤兩套缺季清單。
 - 流通股數／單位換算做法跟 BVPS、EPS、每股營收完全一樣。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季 OCF 1,482,341,242 千元、資本支出 -846,764,746 千元 → OCF 每股 57.16 元、FCF 每股 24.51 元；近四季 OCF 加總 6,005,759,970 千元、資本支出加總 -3,385,442,599 千元 → TTM OCF 每股 231.59 元、TTM FCF 每股 101.04 元。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：本季 OCF 783,364,977 千元、資本支出 -496,001,947 千元 → OCF 每股 30.21 元、FCF 每股 11.08 元；近四季 OCF 加總 2,634,679,110 千元、資本支出加總 -1,491,122,744 千元 → TTM OCF 每股 101.60 元、TTM FCF 每股 44.10 元。2026-08-27 更新：oingg-mops-ts 修正 `quarterly_cash_flow_statement`（原本每一季存的都是當年累計數，不是單季數，不是只有 Q4）後，本季跟 TTM 數字都改變了，這裡是修正後的數字。
 
 ## ROA 計算口徑
 
@@ -213,7 +216,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **`interestCoverageQuarterly`**：本季 EBIT / 本季利息費用。
 - **`interestCoverageTtm`**：近四季（含本季）EBIT/利息費用各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`。
 - 利息費用為零時無法計算（除以零），會列在 `warnings`。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：EBIT 865,515,135 千元 ÷ 利息費用 3,085,049 千元 = 利息保障倍數 280.55 次（TTM 195.85 次）——數字很高，符合台積電低負債的財務體質。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：EBIT 865,515,135 千元 ÷ 利息費用 3,085,049 千元 = 利息保障倍數 280.55 次（TTM 227.02 次，2026-08-27 mops Q4 資料修正後的數字）——數字很高，符合台積電低負債的財務體質。
 
 ## 淨負債對 EBITDA 比計算口徑
 
@@ -223,7 +226,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **EBITDA** = EBIT（`profitBeforeTax` + `financeCosts`） + 折舊（`depreciation`） + 攤銷（`amortization`），折舊/攤銷來自現金流量表的間接法加回項目。
 - **`netDebtToEbitdaQuarterlyAnnualized`**：淨負債 / (本季 EBITDA x4)。
 - **`netDebtToEbitdaTtm`**：淨負債 / 近四季 EBITDA 實際加總，近四季資料須完整存在才會計算，否則為 `null`。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：有息負債 864,263,674 千元 − 現金 3,134,218,213 千元 = 淨負債 -2,269,954,539 千元（負數，淨現金部位）；本季 EBITDA 1,229,503,740 千元 → 年化比率 -0.46；近四季 EBITDA 加總 5,881,912,176 千元 → TTM 比率 -0.39。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：有息負債 864,263,674 千元 − 現金 3,134,218,213 千元 = 淨負債 -2,269,954,539 千元（負數，淨現金部位）；本季 EBITDA 1,064,053,303 千元 → 年化比率 -0.53；近四季 EBITDA 加總 3,368,653,910 千元 → TTM 比率 -0.67。2026-08-27 更新：EBITDA 用到現金流量表的折舊/攤銷，mops 現金流量表修正後本季跟 TTM 數字都改變了（淨負債純資產負債表數字不受影響）。
 
 ## 周轉率計算口徑
 
@@ -236,7 +239,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - 分母都用**期末餘額**，不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
 - **`*QuarterlyAnnualized`**：對應單季數值簡單 x4。
 - **`*Ttm`**：近四季（含本季）營業成本／營收加總 / 本季期末餘額，近四季資料須完整存在才會計算，否則為 `null`。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：存貨周轉率 1.06 次（TTM 7.06 次）、應收帳款周轉率 2.92 次（TTM 16.53 次）、總資產周轉率 0.14 次（TTM 0.77 次）、固定資產周轉率 0.30 次（TTM 1.67 次）。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：存貨周轉率 1.06 次（TTM 4.12 次）、應收帳款周轉率 2.92 次（TTM 10.19 次）、總資產周轉率 0.14 次（TTM 0.47 次）、固定資產周轉率 0.30 次（TTM 1.03 次）。2026-08-27 更新：mops Q4 資料修正後 TTM 數字改變，單季數字不受影響。
 
 ## 資本支出佔營收比計算口徑
 
@@ -244,7 +247,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 
 - **`capexToRevenueQuarterly`**：|本季資本支出（`capitalExpenditures`）| / 本季營收 x 100。資料庫裡 `capitalExpenditures` 本身是負數（現金流出），計算比率時取絕對值——資本支出佔營收比慣例上是正數百分比，不是負的。
 - **`capexToRevenueTtm`**：近四季（含本季）營收/資本支出各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：資本支出 846,764,746 千元 ÷ 營收 1,270,380,250 千元 = 資本支出佔營收比 66.65%（TTM 47.00%）——資本密集度很高，符合台積電先進製程持續大量投資的財務體質。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：資本支出 496,001,947 千元 ÷ 營收 1,270,380,250 千元 = 資本支出佔營收比 39.04%（TTM 33.58%，2026-08-27 mops 現金流量表修正後的數字）——資本密集度很高，符合台積電先進製程持續大量投資的財務體質。
 
 ## 毛利率/營業利益率/稅後淨利率計算口徑
 
@@ -254,7 +257,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **`operatingMarginQuarterly`（營業利益率）**：本季營業利益（`operatingIncome`） / 本季營收 x 100。
 - **`netProfitMarginQuarterly`（稅後淨利率）**：本季淨利 / 本季營收 x 100，淨利欄位跟 ROE 一樣優先採用「歸屬於母公司」口徑（`netIncomeAttributableToParent`），缺漏時退回 `netIncome`。
 - **`*Ttm`**：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 `null`——一季只要任一欄位為 `null`，該季就整個視為不齊，三個比率共用同一組完整性判斷。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：毛利率 67.72%（TTM 62.21%）、營業利益率 60.34%（TTM 53.62%）、稅後淨利率 55.62%（TTM 47.88%）。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：毛利率 67.72%（TTM 64.23%）、營業利益率 60.34%（TTM 56.10%）、稅後淨利率 55.62%（TTM 50.38%）。2026-08-27 更新：mops Q4 資料修正後 TTM 數字改變，單季數字不受影響。
 
 ## PER/PBR/股利殖利率計算口徑
 
@@ -273,7 +276,7 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 - **EPS 用 TTM**（近四季滾動），不是單季或簡單年化版本。
 - EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值），會在 `warnings` 註明。
 - 這跟 taxonomy 的 `Graham_NCAV`（葛拉漢淨流動資產價值）是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，是本服務自行歸類進 `guru` 分類的指標。
-- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 133.01 x 248.05)` = 葛拉漢數 861.59 元。
+- 已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 86.27 x 248.05)` = 葛拉漢數 693.89 元（2026-08-27 更新：TTM EPS 因為 mops Q4 資料修正而改變，見上方 EPS 段落說明）。
 
 ## Graham_NCAV（NCAV）計算口徑
 
@@ -284,8 +287,9 @@ Query 參數：`GET /valuation/market-ratios`、`GET /portfolio/beta` 是例外�
 
 ## 已知缺口 / Backlog
 
-- **已實作**：見 [`src/domains/README.md`](src/domains/README.md) 的分類索引，每個分類底下的狀態欄有最新進度，這裡不重複維護一份會過期的清單。`solvency` 分類已全數完成；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/`（見 [`src/domains/guru/README.md`](src/domains/guru/README.md)），資料已無缺口，待實作。
-- **市值計算**：`daily_price.close`（oingg-twse 股價） x `company_profile.issued_shares`（oingg-twse 公司基本資料，已發行股數）——2026-08-21 驗證過兩張表 join 得到的數字量級正確，`issued_shares` 覆蓋率完整（1394 家公司都有值）。`capital_stock_history`（mops，逐月生效股本歷史）目前只用在每股類指標（EPS/BVPS/每股現金流⋯⋯）的流通股數，不是市值計算用的來源——這兩個是不同的股數概念，不要混用。`daily_price` 截至 2026-08-21 只有 2 個交易日的歷史，需要「配到某季財報報告日股價」的指標（PSR/P_FCF/EV_EBITDA/`Altman_Z_Score`）現在大部分查詢還是會拿到 `null`，是資料量還沒累積的問題，不是程式邏輯問題。
+- **已實作**：見 [`src/domains/README.md`](src/domains/README.md) 的分類索引，每個分類底下的狀態欄有最新進度，這裡不重複維護一份會過期的清單。`solvency` 分類已全數完成；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/`、2026-08-27 實作（見 [`src/domains/guru/README.md`](src/domains/guru/README.md)）。
+- **mops 財報資料曾經有「累計數混單季數」的問題，2026-08-27 已由 oingg-mops-ts 修正**：`quarterly_income_statement` 的 Q4（原本存的是全年累計數）跟 `quarterly_cash_flow_statement` 的每一季（原本全部都存當年累計數，不是只有 Q4）都改成真的單季數，另外新增 `annual_income_statement`/`annual_cash_flow_statement`（全年總額）、`cumulative_cash_flow_statement`（保留原始累計數，供需要的人用）。修正前用簡單「近四季加總」算 TTM 的指標，只要窗口跨到 Q4 就會算錯（過度計入），這是本服務發現的既有資料 bug，不是本服務自己的邏輯錯誤——修正後所有既有 TTM 計算都自動變正確，不需要改程式碼，但涉及的數字都變了，各分類 README 的「已實測驗證」段落已經更新成修正後的數字。
+- **市值計算**：改用 mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（報告日當下生效股本，`getPaidInSharesAsOf`），不是 2026-08-21 一開始討論的 oingg-twse `company_profile.issued_shares` x `daily_price.close`（那條路線的 `issued_shares` 是「現在」的股數快照，不是歷史時點的股數，配歷史財報季度市值會不準）。**目前 `daily_stock_price` 只有 2330（台積電）一檔股票有資料**，其他公司市值相關欄位（`Altman_Z_Score` 的 X4、`portfolio/beta`）會是 `null`，`fieldStatuses` 標成 `not_applicable`，是覆蓋率限制，不是程式邏輯問題。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。
 - **測試**：[`tests/`](tests/README.md)——用 Node.js 內建 `node:test`（`pnpm test`），大多是打真的開發資料庫的整合測試，把各分類 README 記錄的實測數字釘成自動化斷言，不是每支既有 API 都有覆蓋，新增/修改指標時建議照 [`tests/README.md`](tests/README.md) 的慣例補一個。

@@ -138,7 +138,10 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     if (marketCap) {
       marketCapValue = marketCap.marketCap;
       marketCapTradeDate = marketCap.tradeDate;
-      if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities));
+      // marketCapValue 是「股價 x 實際股數」算出來的真實新台幣金額，但財報金額欄位（包含
+      // totalLiabilities）單位是千元——分母要先 x1000 換算成同一個單位再除，不然 X4 會差 1000 倍。
+      // 這是 BVPS 曾經漏過的同一個坑（見 profitability/bvps/service.ts 的 toPerShare 註解）。
+      if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities) * 1000);
     } else {
       warnings.push(
         `查無 ${companyId} 在 ${reportDate.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算——daily_stock_price 目前只有 2330 有資料，其他公司請見 fieldStatuses。`
@@ -165,9 +168,11 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     x1 === null
       ? [
           'x1',
-          currentAssets === null
+          // 要區分「整張資產負債表都查無資料」跟「資產負債表有資料、但流動資產欄位本身是 null」——
+          // 後者才是「這個產業不適用」（金融/保險業資產負債表不按流動/非流動分類），前者單純是缺資料。
+          balanceSheet && currentAssets === null
             ? { status: 'not_applicable' as const, message: '該季資產負債表沒有流動資產欄位，這個產業（多半是金融/保險業）不適用這個公式。' }
-            : { status: 'no_data' as const, message: '流動資產、流動負債或總資產缺漏，無法計算 X1。' },
+            : { status: 'no_data' as const, message: '查無該季資產負債表，或流動資產/流動負債/總資產欄位缺漏，無法計算 X1。' },
         ]
       : null,
     x2 === null ? ['x2', { status: 'no_data' as const, message: '保留盈餘或總資產缺漏，無法計算 X2。' }] : null,

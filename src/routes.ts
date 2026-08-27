@@ -25,6 +25,9 @@ import marketRatiosRouter from './domains/valuation/marketRatios/route';
 import grahamNumberRouter from './domains/guru/grahamNumber/route';
 import ncavRouter from './domains/guru/ncav/route';
 import ownerEarningsRouter from './domains/guru/ownerEarnings/route';
+import altmanZScoreRouter from './domains/guru/altmanZScore/route';
+import piotroskiFScoreRouter from './domains/guru/piotroskiFScore/route';
+import beneishMScoreRouter from './domains/guru/beneishMScore/route';
 import betaRouter from './domains/portfolio/beta/route';
 
 const router = Router();
@@ -53,7 +56,7 @@ apiRouter.use('/cash-flow', cashFlowPerShareRouter, ocfToNetIncomeRouter, accrua
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);
 apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
 apiRouter.use('/valuation', marketRatiosRouter);
-apiRouter.use('/guru', grahamNumberRouter, ncavRouter, ownerEarningsRouter);
+apiRouter.use('/guru', grahamNumberRouter, ncavRouter, ownerEarningsRouter, altmanZScoreRouter, piotroskiFScoreRouter, beneishMScoreRouter);
 apiRouter.use('/portfolio', betaRouter);
 
 router.use(apiRouter);
