@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { TurnoverRatioQuery, TurnoverRatioResult } from './types';
 
 // 周轉率用期末餘額（存貨、應收帳款、應付帳款、總資產），不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
@@ -15,11 +16,65 @@ const toDays = (annualizedTurnover: number | null): number | null => {
   return Math.round((365 / annualizedTurnover) * 100) / 100;
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): TurnoverRatioResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  inventoryTurnoverQuarterly: null,
+  inventoryTurnoverQuarterlyAnnualized: null,
+  inventoryTurnoverTtm: null,
+  receivablesTurnoverQuarterly: null,
+  receivablesTurnoverQuarterlyAnnualized: null,
+  receivablesTurnoverTtm: null,
+  assetTurnoverQuarterly: null,
+  assetTurnoverQuarterlyAnnualized: null,
+  assetTurnoverTtm: null,
+  fixedAssetTurnoverQuarterly: null,
+  fixedAssetTurnoverQuarterlyAnnualized: null,
+  fixedAssetTurnoverTtm: null,
+  payablesTurnoverQuarterly: null,
+  payablesTurnoverQuarterlyAnnualized: null,
+  payablesTurnoverTtm: null,
+  inventoryDaysQuarterlyAnnualized: null,
+  inventoryDaysTtm: null,
+  receivablesDaysQuarterlyAnnualized: null,
+  receivablesDaysTtm: null,
+  payablesDaysQuarterlyAnnualized: null,
+  payablesDaysTtm: null,
+  cashConversionCycleQuarterlyAnnualized: null,
+  cashConversionCycleTtm: null,
+  operatingCost: { value: null },
+  operatingCostTtm: { value: null },
+  operatingRevenue: { value: null },
+  operatingRevenueTtm: { value: null },
+  inventory: { value: null },
+  accountsReceivable: { value: null },
+  totalAssets: { value: null },
+  propertyPlantEquipment: { value: null },
+  accountsPayable: { value: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise<TurnoverRatioResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季——不同公司財報申報
+  // 進度不同步，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算周轉率。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

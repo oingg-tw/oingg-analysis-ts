@@ -216,6 +216,31 @@ model DailyStockPrice {
   @@map("daily_stock_price")
 }
 
+// 財報實際公告日——2026-08-28 發現存在，之前沒鏡像過。跟 quarterly_balance_sheet 等表的 reportDate
+// 不一樣：reportDate 是財報涵蓋期間的「期末日」（會計期間，例如 114Q2 的 reportDate 是 2025-06-30），
+// 這張表的 announcementDate 才是「市場真正知道這份財報數字的那一天」（依規定約在期末後 45 天，
+// 2330 114Q2 期末 6/30、公告 8/12，差 43 天）。任何把股價/市值跟財報數字放在一起算的指標
+// （Altman_Z_Score 的 X4、Beta、PSR/EV_EBITDA 這類）股價基準都應該用這張表的 announcementDate，
+// 不能用 reportDate——用 reportDate 等於假設市場提早一個半月就知道財報結果，是 look-ahead bias。
+// 純財務比率（ROE、DuPont 這類不牽涉股價的）繼續用 reportDate 排序 TTM/YoY，不受影響。
+// **目前覆蓋範圍**：整張表 12 筆，負責 ingest 的服務已用 2330/2887/6488 三家公司 114 年度資料
+// 驗證過（各 4/4 筆：114Q1~Q3 + 113 年報，0 警訊），是刻意先驗證這個範圍，不是漏抓；還沒涵蓋
+// 到本服務常用測試季度 115Q2，查無資料時退回 reportDate，見 src/shared/reportAnnouncementDate.ts。
+model FinancialReportAnnouncement {
+  symbol           String
+  fiscalYear       Int      @map("fiscal_year")
+  fiscalQuarter    Int      @map("fiscal_quarter")
+  dataType         String?  @map("data_type")
+  announcementDate DateTime @map("announcement_date") @db.Date
+  announcementTime String   @map("announcement_time")
+  rawTitle         String   @map("raw_title")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @map("updated_at")
+
+  @@id([symbol, fiscalYear, fiscalQuarter])
+  @@map("financial_report_announcement")
+}
+
 model dividend_distribution {
   symbol                              String
   rights_record_date                  DateTime  @db.Date

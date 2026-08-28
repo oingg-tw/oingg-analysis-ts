@@ -1,6 +1,8 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getMarketCapAsOf } from '@/shared/marketCap';
+import { getPriceAnchorDate } from '@/shared/reportAnnouncementDate';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import { calculateInterestCoverage } from '@/domains/solvency/interestCoverage/service';
 import { calculateTurnoverRatio } from '@/domains/turnover/turnoverRatio/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
@@ -13,9 +15,10 @@ import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';
 const INDUSTRY_APPLICABILITY_WARNING =
   '原始版 Altman Z-Score 是用上市製造業樣本校準的模型，X5（營收/總資產）對產業結構特別敏感——套用到台股非製造業（電子代工以外的科技股、金融、服務、營建等）時，X5 會把跨產業的結構差異誤讀為財務訊號，分數僅供參考，不是精確的破產風險預測。若要全市場穩定判讀，Z\'\'-Score（非上市公司版）較適合，本服務目前只做原始版（應要求提供）。';
 
-// year/season 沒指定時，自動抓最新一季有資產負債表資料的季度——這是本服務第一個「兩個查詢維度
-// （財報季度 + 市值日期）都選填、都自動抓最新」的指標，跟 valuation/marketRatios 只有市值日期
-// 選填不一樣（那支根本沒有財報季度維度）。
+// year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季（X1/X2/X4 用
+// 資產負債表、X3/X5 透過 interestCoverage/turnoverRatio 用到損益表），不是只看單一張表——
+// 見 shared/latestQuarter.ts 的說明，不同公司財報進度不同步是實測驗證過的真實狀況（2887 損益表
+// 曾經卡在比資產負債表舊 3 季），只看資產負債表會誤判成「有資料」但其實那一季損益表是空的。
 const resolveQuarter = async (
   companyId: string,
   dataType: string,
@@ -24,14 +27,7 @@ const resolveQuarter = async (
   season: Season | undefined
 ): Promise<{ year: string; season: Season } | null> => {
   if (year !== undefined && season !== undefined) return { year, season };
-
-  const latest = await prisma.quarterlyBalanceSheet.findFirst({
-    where: { symbol: companyId, dataType, subsidiaryCompanyId },
-    orderBy: [{ year: 'desc' }, { quarter: 'desc' }],
-    select: { year: true, quarter: true },
-  });
-  if (!latest) return null;
-  return { year: String(latest.year), season: String(latest.quarter) as Season };
+  return getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
 };
 
 const toRatio = (numerator: number, denominator: number): number | null => {
@@ -57,7 +53,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     x3: null,
     x4: null,
     x5: null,
-    marketCap: { value: null, tradeDate: null },
+    marketCap: { value: null, tradeDate: null, priceAnchorSource: null },
     fieldStatuses: buildFieldStatuses(statuses),
     warnings,
   });
@@ -130,11 +126,21 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   }
 
   const reportDate = balanceSheet?.reportDate ?? null;
+  // X4 的股價基準要用「市場真正知道這季財報的那天」（財報公告日），不是財報期末日——期末日
+  // 只是會計期間的結尾，市場那天根本還不知道財報數字，拿期末日當股價基準會有 look-ahead bias。
+  // 優先查 financial_report_announcement 的公告日，查無資料（目前覆蓋率很低）才退回期末日，
+  // 見 shared/reportAnnouncementDate.ts 的說明。
+  const priceAnchor = await getPriceAnchorDate(companyId, yearNum, seasonNum, reportDate);
   let marketCapValue: number | null = null;
   let marketCapTradeDate: string | null = null;
   let x4: number | null = null;
-  if (reportDate) {
-    const marketCap = await getMarketCapAsOf(companyId, reportDate);
+  if (priceAnchor) {
+    if (priceAnchor.source === 'report_date_fallback') {
+      warnings.push(
+        `查無 ${year}Q${season} 的財報公告日（financial_report_announcement 目前只涵蓋少數公司/季度），X4 市值改用財報期末日（${priceAnchor.date.toISOString().slice(0, 10)}）估算，可能有 look-ahead bias——市場實際上要到公告日才知道這一季財報數字。`
+      );
+    }
+    const marketCap = await getMarketCapAsOf(companyId, priceAnchor.date);
     if (marketCap) {
       marketCapValue = marketCap.marketCap;
       marketCapTradeDate = marketCap.tradeDate;
@@ -144,7 +150,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
       if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities) * 1000);
     } else {
       warnings.push(
-        `查無 ${companyId} 在 ${reportDate.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算——daily_stock_price 目前只有 2330 有資料，其他公司請見 fieldStatuses。`
+        `查無 ${companyId} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算——daily_stock_price 目前只有 2330 有資料，其他公司請見 fieldStatuses。`
       );
     }
   }
@@ -243,7 +249,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     x3,
     x4,
     x5,
-    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate },
+    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate, priceAnchorSource: priceAnchor?.source ?? null },
     fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };

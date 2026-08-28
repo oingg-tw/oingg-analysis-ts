@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { RoceQuery, RoceResult } from './types';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -14,11 +15,38 @@ const calculateEbit = (record: { profitBeforeTax: bigint | null; financeCosts: b
   return record.profitBeforeTax + record.financeCosts;
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RoceResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  roceQuarterlyPct: null,
+  roceQuarterlyAnnualizedPct: null,
+  roceTtmPct: null,
+  ebit: { value: null },
+  ebitTtm: { value: null },
+  capitalEmployed: { value: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateRoce = async (query: RoceQuery): Promise<RoceResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算 ROCE。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

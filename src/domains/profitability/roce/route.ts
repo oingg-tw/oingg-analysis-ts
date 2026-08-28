@@ -21,6 +21,10 @@ const router = Router();
  *         （約等於權益 + 長期負債），用期末餘額，不是平均值，跟 ROE 用期末權益同一種刻意簡化。
  *       - *QuarterlyAnnualized：對應單季數值簡單 x4。
  *       - *Ttm：近四季（含本季）EBIT 加總 / 本季期末使用資本，近四季資料須完整存在才會計算，否則為 null。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季兩張表都有資料時，year/season 回傳 null。
  *     tags:
  *       - Profitability
  *     parameters:
@@ -33,18 +37,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

@@ -23,6 +23,11 @@ const router = Router();
  *       - 判別標準（原始論文門檻，不是本服務自訂）：`M-Score > -1.78` 財務造假風險較高，
  *         `M-Score <= -1.78` 財務數據可信度較高，回應的 `flagged` 欄位是這個判斷的布林值。
  *       - 「去年同季」用 `getPastNQuarters` 往前推 4 季定位，不是「上一季」。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
+ *       最新一季（不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季三張表都有資料時，year/season 回傳 null。
+ *       這裡的自動解析只決定「本季」，YoY 比較用的「去年同季」邏輯不受影響。
  *     tags:
  *       - Guru
  *     parameters:
@@ -35,18 +40,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

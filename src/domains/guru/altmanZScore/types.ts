@@ -1,5 +1,6 @@
 import type { Season } from '@/shared/rocQuarter';
 import type { MetricStatus } from '@/shared/metricStatus';
+import type { PriceAnchorSource } from '@/shared/reportAnnouncementDate';
 
 export interface AltmanZScoreQuery {
   companyId: string;
@@ -36,7 +37,10 @@ export interface AltmanZScoreResult {
 
   marketCap: {
     value: number | null;
-    tradeDate: string | null; // 實際用到的股價交易日（reportDate 或之前最近一個重疊交易日）
+    tradeDate: string | null; // 實際用到的股價交易日（股價基準日或之前最近一個重疊交易日）
+    // 股價基準日的來源：'announcement' = 財報公告日（正確口徑）；'report_date_fallback' = 查無
+    // 公告日，退回財報期末日估算（可能有 look-ahead bias，見 shared/reportAnnouncementDate.ts）。
+    priceAnchorSource: PriceAnchorSource | null;
   };
 
   fieldStatuses: Record<string, MetricStatus>;

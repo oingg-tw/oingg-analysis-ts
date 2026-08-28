@@ -976,3 +976,45 @@ model DupontResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("profitability_dupont")
 }
+
+model NissimPenmanRnoaResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  rnoaQuarterlyPct           Decimal? @map("rnoa_quarterly_pct") @db.Decimal(10, 2)
+  rnoaQuarterlyAnnualizedPct Decimal? @map("rnoa_quarterly_annualized_pct") @db.Decimal(10, 2)
+  rnoaTtmPct                 Decimal? @map("rnoa_ttm_pct") @db.Decimal(10, 2)
+
+  flev Decimal? @map("flev") @db.Decimal(14, 4)
+
+  nbcQuarterlyPct    Decimal? @map("nbc_quarterly_pct") @db.Decimal(10, 2)
+  nbcTtmPct          Decimal? @map("nbc_ttm_pct") @db.Decimal(10, 2)
+  spreadQuarterlyPct Decimal? @map("spread_quarterly_pct") @db.Decimal(10, 2)
+  spreadTtmPct       Decimal? @map("spread_ttm_pct") @db.Decimal(10, 2)
+
+  reconstructedRoeQuarterlyPct Decimal? @map("reconstructed_roe_quarterly_pct") @db.Decimal(10, 2)
+  reconstructedRoeTtmPct       Decimal? @map("reconstructed_roe_ttm_pct") @db.Decimal(10, 2)
+  actualRoeQuarterlyPct        Decimal? @map("actual_roe_quarterly_pct") @db.Decimal(10, 2)
+  actualRoeTtmPct              Decimal? @map("actual_roe_ttm_pct") @db.Decimal(10, 2)
+
+  nopatValue    BigInt? @map("nopat_value")
+  nopatTtmValue BigInt? @map("nopat_ttm_value")
+  noaValue      BigInt? @map("noa_value")
+  nfoValue      BigInt? @map("nfo_value")
+
+  equityFieldUsed String? @map("equity_field_used")
+  equityValue     BigInt? @map("equity_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_nissim_penman_rnoa")
+}

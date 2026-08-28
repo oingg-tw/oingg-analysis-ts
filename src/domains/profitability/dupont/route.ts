@@ -26,6 +26,12 @@ const router = Router();
  *       - `decomposedRoeQuarterlyPct`/`decomposedRoeTtmPct` 是用三個因子重新相乘組裝出來的 ROE，
  *         理論上應該等於（或極接近）`roe/` 直接算出來的 `actualRoeQuarterlyPct`/`actualRoeTtmPct`——
  *         兩者對照著看可以互相驗證杜邦拆解跟 ROE 計算邏輯是否一致，小數點誤差是四捨五入造成的正常現象。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+ *       （margins/turnoverRatio/roe 三支底層服務各自需要的表的聯集，不是任一張表自己的最新一季，
+ *       不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts），解析出來的季度會以固定值傳給
+ *       底層三支服務，不會各自重複解析。只給其中一個視為無效請求（400）。查無任何一季兩張表都有資料時，
+ *       year/season 回傳 null。
  *     tags:
  *       - Profitability
  *     parameters:
@@ -38,18 +44,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

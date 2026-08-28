@@ -3,16 +3,20 @@ import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface DupontQuery {
   companyId: string;
-  year: string; // 民國年，例如 "115"
-  season: Season;
+  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+  // （見 shared/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+  // 解析出來的季度會以固定值傳給 margins/turnoverRatio/roe 三支底層服務，不會讓它們各自再重複解析一次。
+  year?: string; // 民國年，例如 "115"
+  season?: Season;
   dataType: '1' | '2'; // 1 = 個體, 2 = 合併
   subsidiaryCompanyId: string;
 }
 
 export interface DupontResult {
   companyId: string;
-  year: string;
-  season: Season;
+  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
+  year: string | null;
+  season: Season | null;
   dataType: '1' | '2';
   subsidiaryCompanyId: string;
   reportDate: string | null;

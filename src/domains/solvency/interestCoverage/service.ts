@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { InterestCoverageQuery, InterestCoverageResult } from './types';
 
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
@@ -8,11 +9,37 @@ const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100; // 四捨五入到小數 2 位，單位是「次」
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): InterestCoverageResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  interestCoverageQuarterly: null,
+  interestCoverageTtm: null,
+  ebit: { value: null },
+  ebitTtm: { value: null },
+  interestExpense: { value: null },
+  interestExpenseTtm: { value: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateInterestCoverage = async (query: InterestCoverageQuery): Promise<InterestCoverageResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司損益表有資料」的最新一季——不同公司財報
+  // 申報進度不同步（實測驗證過：2887 損益表曾經卡在比資產負債表舊 3 季），見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined ? { year: query.year, season: query.season } : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算利息保障倍數。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

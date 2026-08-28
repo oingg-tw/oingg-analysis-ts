@@ -20,6 +20,12 @@ const router = Router();
  *         兩者乘積上限 15 x 1.5 = 22.5，推導出合理價上限 sqrt(22.5 x EPS x BVPS)。
  *       - EPS 用 TTM（近四季滾動），不是單季或簡單年化版本。
  *       - EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值），會在 warnings 註明。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+ *       （eps/bvps 兩個組成指標各自需要的表的聯集，不是任一張表自己的最新一季，不同公司財報申報
+ *       進度不同步，見 src/shared/latestQuarter.ts）。解析出來的具體季度會原樣傳給 eps/bvps，
+ *       兩者不會各自再解析出不同季度。只給其中一個視為無效請求（400）。查無任何一季兩張表都有
+ *       資料時，year/season 回傳 null。
  *     tags:
  *       - Guru
  *     parameters:
@@ -32,18 +38,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

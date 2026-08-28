@@ -2,6 +2,7 @@ import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/capitalStock';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { RevenuePerShareQuery, RevenuePerShareResult } from './types';
 
 // 財報金額欄位單位是「千元」，但流通股數是實際股數，不是千股，兩者單位不同，
@@ -11,11 +12,38 @@ const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RevenuePerShareResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  revenuePerShareQuarterly: null,
+  revenuePerShareQuarterlyAnnualized: null,
+  revenuePerShareTtm: null,
+  operatingRevenue: { value: null },
+  operatingRevenueTtm: { value: null },
+  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Promise<RevenuePerShareResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司損益表有資料」的最新一季，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算每股營收。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

@@ -1,0 +1,32 @@
+-- CreateTable
+CREATE TABLE "guru_nissim_penman_rnoa" (
+    "symbol" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "season" INTEGER NOT NULL,
+    "data_type" TEXT NOT NULL,
+    "subsidiary_company_id" TEXT NOT NULL DEFAULT '',
+    "report_date" DATE,
+    "rnoa_quarterly_pct" DECIMAL(10,2),
+    "rnoa_quarterly_annualized_pct" DECIMAL(10,2),
+    "rnoa_ttm_pct" DECIMAL(10,2),
+    "flev" DECIMAL(14,4),
+    "nbc_quarterly_pct" DECIMAL(10,2),
+    "nbc_ttm_pct" DECIMAL(10,2),
+    "spread_quarterly_pct" DECIMAL(10,2),
+    "spread_ttm_pct" DECIMAL(10,2),
+    "reconstructed_roe_quarterly_pct" DECIMAL(10,2),
+    "reconstructed_roe_ttm_pct" DECIMAL(10,2),
+    "actual_roe_quarterly_pct" DECIMAL(10,2),
+    "actual_roe_ttm_pct" DECIMAL(10,2),
+    "nopat_value" BIGINT,
+    "nopat_ttm_value" BIGINT,
+    "noa_value" BIGINT,
+    "nfo_value" BIGINT,
+    "equity_field_used" TEXT,
+    "equity_value" BIGINT,
+    "warnings" TEXT[],
+    "computed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "guru_nissim_penman_rnoa_pkey" PRIMARY KEY ("symbol","year","season","data_type","subsidiary_company_id")
+);

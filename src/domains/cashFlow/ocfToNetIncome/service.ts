@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { OcfToNetIncomeQuery, OcfToNetIncomeResult } from './types';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -18,11 +19,39 @@ const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100; // 四捨五入到小數 2 位，單位是「倍」
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): OcfToNetIncomeResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  ocfToNetIncomeQuarterly: null,
+  ocfToNetIncomeTtm: null,
+  operatingCashFlow: { value: null },
+  operatingCashFlowTtm: { value: null },
+  netIncome: { fieldUsed: null, value: null },
+  netIncomeTtm: { value: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateOcfToNetIncome = async (query: OcfToNetIncomeQuery): Promise<OcfToNetIncomeResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司損益表跟現金流量表都有資料」的最新一季——不同公司財報申報
+  // 進度不同步，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement', 'cashFlowStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表/現金流量表都有資料的季度，無法決定要用哪一季計算營運現金流對淨利比。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

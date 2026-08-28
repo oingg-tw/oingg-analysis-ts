@@ -2,6 +2,7 @@ import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/capitalStock';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { PiotroskiFScoreQuery, PiotroskiFScoreResult, PiotroskiSignal } from './types';
 
@@ -73,9 +74,40 @@ const ratio = (numerator: bigint | null, denominator: bigint | null): number | n
   return Number(numerator) / Number(denominator);
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): PiotroskiFScoreResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  score: null,
+  maxScore: 9,
+  signals: [],
+  priorYear: null,
+  priorSeason: null,
+  priorReportDate: null,
+  fieldStatuses: buildFieldStatuses([]),
+  warnings,
+});
+
 export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Promise<PiotroskiFScoreResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——
+  // 只決定「本季」，YoY 比較用的「去年同季」邏輯不受影響，照常用 getPastNQuarters 往前推。
+  // 不同公司財報申報進度不同步（實測驗證過：2887 損益表曾經卡在比資產負債表舊 3 季），見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+      '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 Piotroski F-Score。',
+    ]);
+  }
+  const { year, season } = resolvedQuarter;
 
   // 「去年同季」= 用 getPastNQuarters 往前推 5 季（含本季），取最舊那一筆——跟每支算 TTM 的 API
   // 定位「近四季」是同一個 helper，只是這裡只需要頭尾兩個點，不是四季加總。

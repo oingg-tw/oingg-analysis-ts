@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { MarginsQuery, MarginsResult } from './types';
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -18,11 +19,46 @@ const toPct = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100; // 四捨五入到小數 2 位
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): MarginsResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  grossMarginQuarterly: null,
+  grossMarginTtm: null,
+  operatingMarginQuarterly: null,
+  operatingMarginTtm: null,
+  netProfitMarginQuarterly: null,
+  netProfitMarginTtm: null,
+  operatingRevenue: { value: null },
+  operatingRevenueTtm: { value: null },
+  grossProfit: { value: null },
+  grossProfitTtm: { value: null },
+  operatingIncome: { value: null },
+  operatingIncomeTtm: { value: null },
+  netIncome: { fieldUsed: null, value: null },
+  netIncomeTtm: { value: null },
+  ttm: { quartersUsed: [], quartersMissing: [] },
+  warnings,
+});
+
 export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司損益表有資料」的最新一季，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算毛利率/營業利益率/稅後淨利率。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const where = {
     symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },

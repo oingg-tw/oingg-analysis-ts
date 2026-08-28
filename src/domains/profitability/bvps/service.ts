@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPaidInSharesAsOf } from '@/shared/capitalStock';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { BvpsQuery, BvpsResult } from './types';
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -20,11 +21,34 @@ const toPerShare = (equityInThousands: bigint, shares: bigint): number | null =>
   return Math.round(((Number(equityInThousands) * 1000) / Number(shares)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): BvpsResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  bvps: null,
+  equity: { fieldUsed: null, value: null },
+  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
+  warnings,
+});
+
 export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表有資料」的最新一季，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表有資料的季度，無法決定要用哪一季計算 BVPS。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
 
   const balanceSheet = await prisma.quarterlyBalanceSheet.findUnique({
     where: {

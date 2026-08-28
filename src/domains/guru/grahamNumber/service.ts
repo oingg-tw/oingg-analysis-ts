@@ -1,17 +1,46 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateEps } from '@/domains/profitability/eps/service';
 import { calculateBvps } from '@/domains/profitability/bvps/service';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { GrahamNumberQuery, GrahamNumberResult } from './types';
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): GrahamNumberResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  grahamNumber: null,
+  epsTtm: { value: null },
+  bvps: { value: null },
+  warnings,
+});
+
 export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<GrahamNumberResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季——eps/bvps 兩個
+  // 組成指標各自需要的表的聯集。不同公司財報申報進度不同步（實測驗證過：2887 損益表曾經卡在比
+  // 資產負債表舊 3 季），見 shared/latestQuarter.ts。解析出來的具體季度原樣往下傳給 eps/bvps，
+  // 不讓它們各自再解析一次——避免兩個組成指標各自解析出不同季度（跟 altmanZScore 引用
+  // interestCoverage/turnoverRatio 同一種模式）。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算葛拉漢數。']);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
+  const composedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
 
   // 直接引用已經做好的 eps/、bvps/ 服務，不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯——
   // 副作用是這兩支服務各自也會 upsert 自己的 profitability_eps/profitability_bvps，這是預期行為，不是意外。
-  const [epsResult, bvpsResult] = await Promise.all([calculateEps(query), calculateBvps(query)]);
+  const [epsResult, bvpsResult] = await Promise.all([calculateEps(composedQuery), calculateBvps(composedQuery)]);
 
   const epsTtm = epsResult.epsTtm;
   const bvps = bvpsResult.bvps;

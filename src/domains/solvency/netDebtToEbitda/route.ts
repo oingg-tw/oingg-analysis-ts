@@ -24,6 +24,10 @@ const router = Router();
  *         （本季 EBITDA 簡單 x4）跟 netDebtToEbitdaTtm（近四季 EBITDA 實際加總）兩種口徑。
  *       - TTM：近四季（含本季）EBITDA 各自加總，一季只要稅前淨利/利息費用/折舊/攤銷任一為 null 就視為該季不齊，
  *         近四季資料須完整存在才會計算 TTM 版本，否則為 null。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季三張表都有資料時，year/season 回傳 null。
  *     tags:
  *       - Solvency
  *     parameters:
@@ -36,18 +40,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

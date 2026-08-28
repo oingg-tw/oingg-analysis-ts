@@ -3,22 +3,61 @@ import { calculateMargins } from '@/domains/profitability/margins/service';
 import { calculateTurnoverRatio } from '@/domains/turnover/turnoverRatio/service';
 import { calculateRoe } from '@/domains/profitability/roe/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { DupontQuery, DupontResult } from './types';
 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): DupontResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  netProfitMarginQuarterly: null,
+  netProfitMarginTtm: null,
+  assetTurnoverQuarterly: null,
+  assetTurnoverTtm: null,
+  equityMultiplier: null,
+  decomposedRoeQuarterlyPct: null,
+  decomposedRoeTtmPct: null,
+  actualRoeQuarterlyPct: null,
+  actualRoeTtmPct: null,
+  totalAssets: { value: null },
+  equity: { fieldUsed: null, value: null },
+  fieldStatuses: {},
+  warnings,
+});
+
 export const calculateDupont = async (query: DupontQuery): Promise<DupontResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季——margins
+  // （['incomeStatement']）、turnoverRatio、roe（['balanceSheet','incomeStatement']）三支底層服務
+  // 需要的表的聯集就是 ['balanceSheet','incomeStatement']，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算杜邦分析。']);
+  }
+  const { year, season } = resolvedQuarter;
+
+  // 把解析出來的固定季度傳給 margins/turnoverRatio/roe，三支底層服務都收到已經確定的 year/season，
+  // 不會各自再重複解析一次（也不會各自解析出不同季度）。
+  const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
 
   // 3 步杜邦分析的三個因子分別引用已經做好的 margins/、turnoverRatio/、roe/ 服務，不重複實作
   // 損益表/資產負債表查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這三支服務
   // 也會各自照常把自己的結果 upsert 進 profitability_margins/turnover_ratio/profitability_roe，
   // 這是預期行為，不是意外。
   const [marginsResult, turnoverRatioResult, roeResult] = await Promise.all([
-    calculateMargins(query),
-    calculateTurnoverRatio(query),
-    calculateRoe(query),
+    calculateMargins(resolvedQuery),
+    calculateTurnoverRatio(resolvedQuery),
+    calculateRoe(resolvedQuery),
   ]);
 
   const netProfitMarginQuarterly = marginsResult.netProfitMarginQuarterly;

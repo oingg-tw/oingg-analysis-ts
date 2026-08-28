@@ -38,6 +38,26 @@ test('piotroskiFScore: 查無資料的公司回傳 score=null，9 項訊號都�
   assert.equal(result.fieldStatuses.score?.status, 'no_data');
 });
 
+// 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
+test('piotroskiFScore: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
+  const explicit = await calculatePiotroskiFScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculatePiotroskiFScore({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+
+  assert.equal(auto.year, explicit.year);
+  assert.equal(auto.season, explicit.season);
+  assert.equal(auto.score, explicit.score);
+});
+
+// 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
+test('piotroskiFScore: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
+  const result = await calculatePiotroskiFScore({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+
+  assert.equal(result.year, null);
+  assert.equal(result.season, null);
+  assert.equal(result.score, null);
+  assert.ok(result.warnings.length > 0);
+});
+
 after(async () => {
   await prisma.$disconnect();
   await analysisPrisma.$disconnect();

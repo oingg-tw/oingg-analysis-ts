@@ -1,6 +1,7 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BeneishMScoreQuery, BeneishMScoreResult } from './types';
 
@@ -83,9 +84,47 @@ const indexOf = (a: number | null, b: number | null): number | null => {
 
 const round4 = (x: number | null): number | null => (x === null ? null : Math.round(x * 10000) / 10000);
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): BeneishMScoreResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  mScore: null,
+  flagged: null,
+  dsri: null,
+  gmi: null,
+  aqi: null,
+  sgi: null,
+  depi: null,
+  sgai: null,
+  tata: null,
+  lvgi: null,
+  priorYear: null,
+  priorSeason: null,
+  priorReportDate: null,
+  fieldStatuses: buildFieldStatuses([]),
+  warnings,
+});
+
 export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise<BeneishMScoreResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——
+  // 只決定「本季」，YoY 比較用的「去年同季」邏輯不受影響，照常用 getPastNQuarters 往前推。
+  // 不同公司財報申報進度不同步（實測驗證過：2887 損益表曾經卡在比資產負債表舊 3 季），見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+      '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 Beneish M-Score。',
+    ]);
+  }
+  const { year, season } = resolvedQuarter;
 
   const fiveQuartersBack = getPastNQuarters({ rocYear: Number(year), season }, 5);
   const prior = fiveQuartersBack[0]!;

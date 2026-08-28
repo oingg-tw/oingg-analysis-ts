@@ -1,18 +1,50 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRoe } from '@/domains/profitability/roe/service';
 import { calculateDividendPayoutRatio } from '@/domains/profitability/dividendPayoutRatio/service';
+import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import type { SgrQuery, SgrResult } from './types';
 
+const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): SgrResult => ({
+  companyId,
+  year: null,
+  season: null,
+  dataType,
+  subsidiaryCompanyId,
+  reportDate: null,
+  sgrTtm: null,
+  roeTtm: { value: null },
+  payoutRatioTtm: { value: null },
+  warnings,
+});
+
 export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
-  const { companyId, year, season, dataType, subsidiaryCompanyId } = query;
+  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const warnings: string[] = [];
+
+  // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——取
+  // roe（['balanceSheet','incomeStatement']）跟 dividendPayoutRatio（['incomeStatement','cashFlowStatement']）
+  // 兩支底層服務各自需要的表的聯集，見 shared/latestQuarter.ts。
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  if (!resolvedQuarter) {
+    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+      '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 SGR。',
+    ]);
+  }
+  const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const warnings: string[] = [];
+
+  // 把解析出來的固定季度傳給 roe/dividendPayoutRatio，兩支底層服務都收到已經確定的 year/season，
+  // 不會各自再重複解析一次（也不會各自解析出不同季度）。
+  const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
 
   // 直接引用已經做好的 roe/、dividendPayoutRatio/ 服務，不重複實作查詢邏輯——
   // 副作用是這兩支服務各自也會 upsert 自己的 profitability_roe/profitability_dividend_payout_ratio，
   // 這是預期行為，不是意外（跟 grahamNumber 引用 eps/bvps 同一種模式）。
-  const [roeResult, payoutRatioResult] = await Promise.all([calculateRoe(query), calculateDividendPayoutRatio(query)]);
+  const [roeResult, payoutRatioResult] = await Promise.all([calculateRoe(resolvedQuery), calculateDividendPayoutRatio(resolvedQuery)]);
 
   const roeTtm = roeResult.roeTtmPct;
   const payoutRatioTtm = payoutRatioResult.payoutRatioTtm;

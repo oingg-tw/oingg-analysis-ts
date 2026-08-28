@@ -21,6 +21,10 @@ const router = Router();
  *         近四季資料須完整存在才會計算，否則為 null。
  *       - 數值越高代表淨利中「應計項目」（非現金認列的獲利）佔比越高，是財報品質/盈餘操縱風險的常用篩選指標，
  *         常搭配 [`ocfToNetIncome`](../ocfToNetIncome/route.ts) 一起判讀。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季三張表都有資料時，year/season 回傳 null。
  *     tags:
  *       - Cash Flow
  *     parameters:
@@ -33,18 +37,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

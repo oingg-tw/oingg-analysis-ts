@@ -22,6 +22,10 @@ const router = Router();
  *       - 流通股數查股本歷史（capital_stock_history）：取生效日（西元年月）小於等於本季報告日的最新一筆，
  *         不是抓整張表最新一筆——股本是會隨現金增資、盈餘轉增資、減資等變動的歷史資料。
  *       - 若指定 subsidiaryCompanyId，流通股數仍是母公司（上市櫃公司本身）的股本結構，會在 warnings 中註明。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司現金流量表有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季有資料時，year/season 回傳 null。
  *     tags:
  *       - Cash Flow
  *     parameters:
@@ -34,18 +38,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

@@ -17,6 +17,10 @@ const router = Router();
  *       - quickRatioPct（速動比率） = (currentAssets - inventory) / currentLiabilities x 100。
  *       - cashRatioPct（現金比率） = 本季期末現金及約當現金（cashAndEquivalents） / currentLiabilities x 100。
  *       - 純資產負債表的時點快照，不像 ROE/ROA 有單季/年化/TTM 的區別。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季有資料時，year/season 回傳 null。
  *     tags:
  *       - Solvency
  *     parameters:
@@ -29,18 +33,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

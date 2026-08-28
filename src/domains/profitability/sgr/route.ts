@@ -20,6 +20,12 @@ const router = Router();
  *       - **只有 TTM 口徑**：因為配息率本身只提供 TTM 口徑（現金股利不是每季平均發放），SGR 自然也只有 TTM。
  *       - sgrTtm = ROE(TTM) x (1 - 配息率(TTM))。
  *       - ROE(TTM) 或配息率(TTM) 任一無法取得時，SGR 也無法計算，原因見 warnings。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季
+ *       （取 roe 跟 dividendPayoutRatio 兩支底層服務各自需要的表的聯集，不是任一張表自己的最新一季，
+ *       不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts），解析出來的季度會以固定值傳給
+ *       底層兩支服務，不會各自重複解析。只給其中一個視為無效請求（400）。查無任何一季三張表都有資料時，
+ *       year/season 回傳 null。
  *     tags:
  *       - Profitability
  *     parameters:
@@ -32,18 +38,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

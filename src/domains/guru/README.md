@@ -2,24 +2,21 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數——最後者是本服務自行歸類的指標，見下方）；`Nissim_Penman_RNOA`（本服務自行歸類，見下方）還沒做。`Greenwald_EPV` 2026-08-25 曾列入評估，2026-08-28 決定不做並移除，見下方「為什麼不做 Greenwald_EPV」。
+- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數、`Nissim_Penman_RNOA`——後兩者是本服務自行歸類的指標，見下方）。`Greenwald_EPV` 2026-08-25 曾列入評估，2026-08-28 決定不做並移除，見下方「為什麼不做 Greenwald_EPV」。
 
 ## 分類範圍：不是只有 taxonomy 明列的 code
 
 `guru` 這一類收的是「以特定投資人/學者命名、帶有該流派主觀判斷的複合公式」，不是嚴格照 investment_metrics_taxonomy v3.0 的分類走——`Altman_Z_Score` 2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來、`Beneish_M_Score` 2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來都是這個原因：公式本身是財務比率加權組合，跟原分類其他「直接算一個比率」的指標性質不同，但更接近「以學者命名的複合模型」，跟葛拉漢數、NCAV、股東盈餘放在一起比較合理。判斷標準大致是「公式夠複雜（多變量加權組合，不是單一比率）+ 掛名特定研究者/投資人」，之後如果有新的大師公式（無論 taxonomy 有沒有明列），都照這個標準判斷該不該放進來，不是只看 taxonomy 有沒有這個 code——單純的單一比率（例如 Novy-Marx 的 GP/A = 毛利/總資產，本質上是換分子的 ROA）即使有掛名，也不算，該進哪一類還沒決定。
 
-## 未實作指標的現況分三種，不要混為一談
+## 未實作指標的現況分兩種，不要混為一談
 
-2026-08-25 盤點時發現，之前把 `Piotroski_F_Score`/`Beneish_M_Score` 的 YoY 比較講得太嚴重——`getPastNQuarters`（[`../../shared/rocQuarter.ts`](../../shared/rocQuarter.ts)）這個既有 helper 本來就能定位「去年同季」是哪一季，每支算 TTM 的 API 都在用它抓 4 季，YoY 只需要抓 1 季（比 TTM 更簡單），不是新架構，是舊 pattern 換個查法。2026-08-27 兩個都已實作（見下方指標清單），真正判斷剩下的分兩種現況：
+2026-08-25 盤點時發現，之前把 `Piotroski_F_Score`/`Beneish_M_Score` 的 YoY 比較講得太嚴重——`getPastNQuarters`（[`../../shared/rocQuarter.ts`](../../shared/rocQuarter.ts)）這個既有 helper 本來就能定位「去年同季」是哪一季，每支算 TTM 的 API 都在用它抓 4 季，YoY 只需要抓 1 季（比 TTM 更簡單），不是新架構，是舊 pattern 換個查法。2026-08-27 兩個都已實作，2026-08-28 `Nissim_Penman_RNOA` 也實作了（見下方指標清單），真正判斷剩下的分兩種現況：
 
-**A. 現在就能補——不缺資料、不缺架構，純粹還沒排到：**
-- `Nissim_Penman_RNOA`：四個變數全部有資料，只差「NOA 怎麼切營業/融資」這個定義決策要先拍板（見下方），架構比 `Altman_Z_Score` 更單純。
-
-**B. 卡在跨公司查詢——本服務目前完全沒有「一次查多家公司」這種查詢型態：**
+**A. 卡在跨公司查詢——本服務目前完全沒有「一次查多家公司」這種查詢型態：**
 - `Greenblatt_Magic_Formula`：需要對一批公司的 Earnings Yield/ROC 排名（`Rank(...)`）。
 - `Mohanram_G_Score`：8 項訊號有 7 項要跟同產業其他公司的中位數比（cross-sectional），只有 G3 是單一公司絕對值判斷；另外 G4/G5 要「過去 16 季（4 年）」的變異數，mops 財報資料現在剛好有 6 個年度（約 24 季），數量勉強夠但緊繃——這兩個問題要一起解，不只是跨公司查詢的事。
 
-**C. 真的缺資料——不是架構問題，是資料庫裡沒有這個維度的資料：**
+**B. 真的缺資料——不是架構問題，是資料庫裡沒有這個維度的資料：**
 - `Lynch_PEG_Fair_Value`、`Potential_Payback_Period`：都需要「預期成長率」這種前瞻性假設，不是財報現成欄位，taxonomy 也沒定義怎麼推算（用歷史 EPS CAGR 當代理變數是一個選項，但那是要拍板的設計決策，不是查得到查不到的問題）。
 
 ## 指標清單
@@ -41,7 +38,7 @@
 | 指標 | 提出者 | 公式 | 狀態 |
 |---|---|---|---|
 | 葛拉漢數（Graham Number） | Benjamin Graham | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /guru/graham-number` |
-| Nissim & Penman RNOA 拆解 | Doron Nissim & Stephen Penman（2001） | `ROE = RNOA + (FLEV x SPREAD)`，見下方 | ⬜ 未實作，2026-08-25 列入。大部分能做，見下方「Nissim_Penman_RNOA 卡在哪裡」 |
+| Nissim & Penman RNOA 拆解 | Doron Nissim & Stephen Penman（2001） | `ROE = RNOA + (FLEV x SPREAD)`，見下方 | ✅ 已實作，2026-08-28 — [`nissimPenmanRnoa/`](nissimPenmanRnoa/)，`GET /guru/nissim-penman-rnoa`（單季/年化/TTM），計算口徑見下方 |
 
 taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman 也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定；Greenwald EPV 也曾經列入評估，2026-08-28 決定移除，見下方「為什麼不做 Greenwald_EPV」。
 
@@ -75,7 +72,11 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 | X4 | **股權市值** / 總負債帳面值 | 見下方「市值資料源」 |
 | X5 | 營收（TTM） / 總資產 | 直接引用 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的 `assetTurnoverTtm`（本來就是「營收 TTM/總資產」，公式完全一樣） |
 
-**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價，報告日或之前最近一個交易日） x `capital_stock_history`（報告日當下生效的股本，`getPaidInSharesAsOf`）。**目前 `daily_stock_price` 只有 2330 有資料**，其他公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（股價基準日當下生效的股本，`getPaidInSharesAsOf`）。**目前 `daily_stock_price` 只有 2330 有資料**，其他公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+
+**股價基準日不是財報期末日，是財報公告日（2026-08-28 修正）**：一開始直接拿 `reportDate`（資產負債表的期末日，例如 115Q2 是 2026-06-30）當股價基準日，這是錯的——期末日只是會計期間的結尾，市場在那天根本還不知道這一季財報數字（依規定財報要再等約 45 天才會公告），拿期末日查股價等於是 look-ahead bias（用了市場當時還不知道的未來資訊）。正確作法是用 `financial_report_announcement` 這張表的 `announcementDate`（財報實際對外公告、市場才真的能反應的那一天）；查無公告日才退回 `reportDate` 並在 `warnings` 註明可能有 look-ahead bias，見 [`../../shared/reportAnnouncementDate.ts`](../../shared/reportAnnouncementDate.ts) 的 `getPriceAnchorDate`。回應多了 `marketCap.priceAnchorSource`（`'announcement'` 或 `'report_date_fallback'`）標明這次用的是哪一種。已用 2330 114Q2（有公告日 2025-08-12，比期末日 2025-06-30 晚 43 天）驗證正確優先採用公告日。
+
+**`financial_report_announcement` 目前覆蓋範圍**（2026-08-28 更新，非缺陷）：負責 ingest 的服務提供了 `POST /api/ingest/financial-report-announcements/backfill`，目前已用 2330/2887/6488 三家公司 114 年度整年真實資料驗證過（各抓到 4/4 筆：114Q1~Q3 + 113 年報，0 警訊），資料正確、不是漏抓。覆蓋範圍是刻意先驗證這 3 家公司，還沒涵蓋到本服務常用的測試季度 115Q2（會落到 `reportDate` fallback），之後可以再對其他公司/季度呼叫 backfill API 擴大範圍，`getPriceAnchorDate` 的 fallback 設計本來就是為了讓覆蓋範圍逐步擴大時不用改程式碼。
 
 **查詢介面**：`year`/`season` 選填（要嘛都給要嘛都不給），不給就自動抓最新一季有資產負債表資料的季度——跟 [`../valuation/marketRatios/`](../valuation/marketRatios/) 只有市值日期選填不同，這是本服務第一個「財報季度 + 市值日期都自動抓最新」的指標。市值抓的是「該季報告日或之前最近一個交易日」的收盤價，不是查詢當下的最新股價。
 
@@ -124,18 +125,22 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 
 **已知限制：對高成長公司容易偽陽性**——模型裡權重最大的兩個係數（SGI 的 0.892、TATA 的 4.037）都跟「成長」有關，一家正常高速成長的公司（營收大幅成長、應收帳款/資本支出跟著等比例擴張）很容易被模型誤判成「疑似造假」，這是 Beneish M-Score 本身的已知限制，不是本服務的計算錯誤。已用台積電（2330）115Q2 vs 114Q2（去年同季）合併報表實測驗證：SGI=1.3605（營收 YoY 成長 36%）、TATA=-0.0082（應計項目其實是負的，代表現金流比帳面淨利還好，是正面訊號），M-Score = -1.4827，`flagged: true`——這是模型對台積電這種高速成長期公司的典型偽陽性，不代表台積電財報有異常（NCAV、Piotroski F-Score、Altman Z-Score 這幾個已實作指標都顯示台積電財務體質良好）。
 
-## Nissim_Penman_RNOA 卡在哪裡
+## Nissim_Penman_RNOA 計算口徑（2026-08-28 實作）
 
-核心公式 `ROE = RNOA + (FLEV x SPREAD)`，把 ROE 拆成「營業活動賺的報酬」跟「financial leverage 放大的部分」，用意是揪出「ROE 很高但其實是借錢堆出來的」公司。拆開來看每個變數：
+核心公式 `ROE = RNOA + (FLEV x SPREAD)`，把 ROE 拆成「營業活動賺的報酬」跟「financial leverage 放大的部分」，用意是揪出「ROE 很高但其實是借錢堆出來的」公司。
 
-| 變數 | 公式 | 有資料嗎 |
+| 變數 | 公式 | 說明 |
 |---|---|---|
-| NOPAT | `營業利益（operatingIncome） x (1 - 有效稅率)` | ✅ 有——比 `roic/`/`roce/` 用的 EBIT（稅前淨利+利息費用反推）更單純，`operatingIncome` 是財報現成欄位，不用反推；有效稅率算法跟 `roic/` 一致（`incomeTaxExpense / profitBeforeTax`） |
-| 淨營業資產（NOA） | 營業資產 − 營業負債 | 🟡 財報沒有「營業 vs 融資」的分類欄位，要自己訂規則：營業負債大致 = 總負債 − 有息負債（`shortTermBorrowings`+`bondsPayable`+`longTermBorrowings`，`deRatio`/`roic` 已經在用的口徑）；營業資產大致 = 總資產 − 現金及約當現金（把現金當成非營業的金融資產）。這是這個指標唯一要先拍板的地方，不是缺資料 |
-| 淨金融負債 | 有息負債 − 現金及約當現金 | ✅ 有——`roic/` 已經算過同樣的東西 |
-| NBC（淨借貸利率） | `financeCosts / 淨金融負債` | ✅ 有 |
+| NOPAT | `營業利益（operatingIncome） x (1 - 有效稅率)` | 比 `roic/`/`roce/` 用的 EBIT（稅前淨利+利息費用反推）更單純，`operatingIncome` 是財報現成欄位，不用反推；有效稅率算法跟 `roic/` 一致（`incomeTaxExpense / profitBeforeTax`），稅前淨利為零或負數時無法計算 |
+| NOA（淨營業資產） | `權益 + NFO` | 財報沒有「營業 vs 融資」的分類欄位，用數學恆等式繞開逐科目分類：`NOA = 營業資產 - 營業負債 = (總資產-金融資產) - (總負債-金融負債) = 總權益 + (金融負債-金融資產) = 總權益 + NFO`。金融資產只能是 `cashAndEquivalents`（mops 沒有更細的「短期投資」欄位可選）；金融負債沿用 `deRatio`/`roic` 已經在用的「有息負債」口徑（`shortTermBorrowings`+`bondsPayable`+`longTermBorrowings`） |
+| NFO（淨金融負債） | `有息負債 − 現金及約當現金` | `roic/` 已經算過同樣的東西 |
+| FLEV（財務槓桿） | `NFO / 權益` | 純資產負債表時點快照，單季/TTM 共用同一個值，是原始比率（倍數），跟 `dupont` 的 `equityMultiplier` 同一種道理 |
+| NBC（淨借貸利率） | `稅後淨利息費用 / NFO` | **不是**直接拿稅前的 `financeCosts` 除以 NFO——要做兩件事才能讓 `ROE = RNOA + FLEV x SPREAD` 這個恆等式對得起來：(1) 淨額，`financeCosts - interestIncome`（NFO 本身是淨額，現金賺的利息收入要算進同一個「金融活動」損益，不能只算負債那一邊）；(2) 用跟 NOPAT 一樣的有效稅率把稅盾效果扣掉 |
+| SPREAD | `RNOA - NBC` | |
 
-跟 `Altman_Z_Score` 不一樣的地方：這個不是「卡資料」，是卡「NOA 怎麼切」這個定義決策——決策一旦拍板，四個變數都能算，沒有資料缺口，也不需要跨公司/跨期比較，架構上比 `Greenblatt_Magic_Formula`/`Piotroski_F_Score` 都單純，是這次盤點裡除了 `Altman_Z_Score` 之外最接近「可以直接動工」的一個。
+**唯一要先拍板的邊角案例**（已拍板）：`preferredStockLiability`（分類為負債的可贖回特別股）本質上比較像融資工具，嚴謹一點該算進金融負債，但這個欄位目前只有 5 家金控/保險股有值，決定先不處理，跟 `deRatio`/`roic` 現有「有息負債」定義保持一致，避免為了邊角案例讓公式複雜化。
+
+**交叉驗證發現的真實限制**：`reconstructedRoeQuarterlyPct`/`reconstructedRoeTtmPct`（用 `RNOA + FLEV x SPREAD` 重組出來的 ROE）對照 `actualRoeQuarterlyPct`/`actualRoeTtmPct`（`roe/` 直接算出來的），實測 2330 115Q2：重組 TTM ROE 33.83% vs 實際 TTM ROE 34.78%，差距比 `dupont` 的交叉驗證略大——原因不是算錯，是這個模型把「營業 vs 融資」簡化成兩分法，沒有拆出權益法投資收益、處分利益、匯兌損益這類其他非營業項目（實測發現台積電這類非利息的非營業收支規模不小，遠大於利息收支淨額）。修過一輪：NBC 原本直接用毛的 `financeCosts`，重組 ROE 跟實際 ROE 差距高達 ~11%；改成「淨利息費用扣掉利息收入、再稅後化」之後差距收斂到 TTM ~3%（單季因為分母本身較小，相對誤差會被放大，跟 `dupont` 踩過的坑一樣）——這是模型本身簡化程度的問題，不會再進一步處理（要更精確就要逐科目拆權益法投資收益等項目算進金融/營業，那已經不是「拍板一個定義」能解決的事，是另一個規模的工程）。
 
 ## 為什麼不做 Greenwald_EPV（2026-08-28 決定移除）
 

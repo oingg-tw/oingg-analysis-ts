@@ -19,6 +19,10 @@ const router = Router();
  *       - 現金股利發放某一季缺值（null）視為 0（該季沒有發放），不是資料缺漏；只有淨利缺漏才會讓
  *         TTM 視為不齊，這點跟 deRatio/netDebtToEbitda 的有息負債欄位處理邏輯一致。
  *       - 近四季淨利加總為零或負數時無法計算（分母須為正）。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司損益表跟現金流量表都有資料」的最新一季
+ *       （不是任一張表自己的最新一季，不同公司財報申報進度不同步，見 src/shared/latestQuarter.ts）。
+ *       只給其中一個視為無效請求（400）。查無任何一季兩張表都有資料時，year/season 回傳 null。
  *     tags:
  *       - Profitability
  *     parameters:
@@ -31,18 +35,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType

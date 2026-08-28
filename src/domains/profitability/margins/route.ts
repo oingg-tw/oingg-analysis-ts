@@ -21,6 +21,9 @@ const router = Router();
  *         兩種口徑，沒有簡單 x4 年化的版本。
  *       - *Ttm：近四季（含本季）營收/毛利/營業利益/淨利各自加總後再算比率，近四季資料須完整存在才會計算，否則為 null——
  *         一季只要任一欄位為 null，該季就整個視為不齊，三個比率共用同一組完整性判斷。
+ *
+ *       year/season 選填但要成對——不給就自動抓「這家公司損益表有資料」的最新一季
+ *       （見 src/shared/latestQuarter.ts）。只給其中一個視為無效請求（400）。查無任何一季資料時，year/season 回傳 null。
  *     tags:
  *       - Profitability
  *     parameters:
@@ -33,18 +36,16 @@ const router = Router();
  *         example: "2330"
  *       - in: query
  *         name: year
- *         required: true
  *         schema:
  *           type: string
- *         description: 民國年
+ *         description: 民國年，選填（不給就自動抓最新一季，需與 season 成對）
  *         example: "115"
  *       - in: query
  *         name: season
- *         required: true
  *         schema:
  *           type: string
  *           enum: ["1", "2", "3", "4"]
- *         description: 季度
+ *         description: 季度，選填（不給就自動抓最新一季，需與 year 成對）
  *         example: "2"
  *       - in: query
  *         name: dataType
