@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateRoic } from '../../../src/domains/profitability/roic/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateRoic } from '@/domains/profitability/roic/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/profitability/README.md「ROIC/ROCE 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：見 turnoverRatio.test.ts 開頭註解，mops Q4 資料修正後 TTM 系列數字改變。

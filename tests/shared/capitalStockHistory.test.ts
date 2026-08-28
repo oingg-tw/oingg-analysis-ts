@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import prisma from '../../src/adapters/prisma/index';
-import { getPaidInSharesAsOf } from '../../src/shared/capitalStock';
+import prisma from '@/adapters/prisma/index';
+import { getPaidInSharesAsOf } from '@/shared/capitalStock';
 
 // 使用者問「MOPS 資料庫裡面抓得到 capital_stock_history 股本變更歷史嗎」——這裡直接查真的
 // capital_stock_history 表驗證：不只是「查得到最新股本」，是查得到「每一次股本變動的歷史紀錄」

@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAccrualsRatio } from '../../../src/domains/cashFlow/accrualsRatio/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateAccrualsRatio } from '@/domains/cashFlow/accrualsRatio/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：見 ocfToNetIncome.test.ts 開頭註解，mops 現金流量表修正後 OCF/ICF 本季數字都變了

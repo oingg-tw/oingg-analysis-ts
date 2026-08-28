@@ -2,7 +2,7 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數——最後者是本服務自行歸類的指標，見下方）；`Nissim_Penman_RNOA`／`Greenwald_EPV`（本服務自行歸類，見下方）還沒做。
+- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數——最後者是本服務自行歸類的指標，見下方）；`Nissim_Penman_RNOA`（本服務自行歸類，見下方）還沒做。`Greenwald_EPV` 2026-08-25 曾列入評估，2026-08-28 決定不做並移除，見下方「為什麼不做 Greenwald_EPV」。
 
 ## 分類範圍：不是只有 taxonomy 明列的 code
 
@@ -21,7 +21,6 @@
 
 **C. 真的缺資料——不是架構問題，是資料庫裡沒有這個維度的資料：**
 - `Lynch_PEG_Fair_Value`、`Potential_Payback_Period`：都需要「預期成長率」這種前瞻性假設，不是財報現成欄位，taxonomy 也沒定義怎麼推算（用歷史 EPS CAGR 當代理變數是一個選項，但那是要拍板的設計決策，不是查得到查不到的問題）。
-- `Greenwald_EPV`：WACC 需要股權成本（CAPM），Beta 這塊 2026-08-26 已經解了（[`../portfolio/beta/`](../portfolio/beta/)，只有 2330 能算），但 CAPM 還需要「無風險利率」（政府公債殖利率），本服務完全沒有這個資料源，見下方「Greenwald_EPV 卡在哪裡」——是新發現的缺口，不是 Beta 沒做完。
 
 ## 指標清單
 
@@ -43,9 +42,8 @@
 |---|---|---|---|
 | 葛拉漢數（Graham Number） | Benjamin Graham | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /guru/graham-number` |
 | Nissim & Penman RNOA 拆解 | Doron Nissim & Stephen Penman（2001） | `ROE = RNOA + (FLEV x SPREAD)`，見下方 | ⬜ 未實作，2026-08-25 列入。大部分能做，見下方「Nissim_Penman_RNOA 卡在哪裡」 |
-| Greenwald 盈餘能力價值（EPV） | Bruce Greenwald（2001） | `EPV = Adjusted NOPAT / WACC + 過剩現金 - 總負債`，見下方 | ⬜ 未實作，2026-08-25 列入。Beta 已經解了，卡在 WACC 還需要無風險利率，見下方「Greenwald_EPV 卡在哪裡」 |
 
-taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman、Greenwald 這兩個也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定。
+taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman 也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定；Greenwald EPV 也曾經列入評估，2026-08-28 決定移除，見下方「為什麼不做 Greenwald_EPV」。
 
 **本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
 
@@ -139,14 +137,11 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 
 跟 `Altman_Z_Score` 不一樣的地方：這個不是「卡資料」，是卡「NOA 怎麼切」這個定義決策——決策一旦拍板，四個變數都能算，沒有資料缺口，也不需要跨公司/跨期比較，架構上比 `Greenblatt_Magic_Formula`/`Piotroski_F_Score` 都單純，是這次盤點裡除了 `Altman_Z_Score` 之外最接近「可以直接動工」的一個。
 
-## Greenwald_EPV 卡在哪裡（2026-08-26 更新：卡住的地方變了）
+## 為什麼不做 Greenwald_EPV（2026-08-28 決定移除）
 
-跟前面幾個不一樣，這個是真的卡資料，不是卡架構或定義——但 2026-08-26 [`../portfolio/beta/`](../portfolio/beta/) 做出來之後，卡住的地方已經不是原本以為的那個：
+2026-08-25 列入評估，一路解到只剩最後一塊：常態化營業利潤、Beta（2330 限定）、無風險利率（2026-08-28 接上 CBC 解決）、市場風險溢酬都有資料源或可行的代理算法，WACC 算得出來——但 Greenwald 完整三段式輸出（Asset Value / EPV / Franchise Value）裡的 **Asset Value（資產重置成本）** 沒有辦法用忠於資料的方式算：
 
-- **常態化營業利潤**（過去 5 年平均營業利益率 x 當前營收）勉強算得出來——mops 財報資料現在有 6 個年度，5 年平均在可行範圍內。
-- **Beta 這塊已經解了**：WACC 需要股權成本（CAPM：無風險利率 + Beta x 市場風險溢酬），原本以為 Beta 卡在缺歷史股價序列（誤查了 oingg-twse 的 `daily_price`，只有 2 天歷史），後來發現 mops 資料庫另外有 `daily_stock_price`（個股日成交，2021-09 至今）跟 `daily_market_index`（加權股價指數），Beta 已經做出來了——**但目前只有 2330 一檔股票能算**，其他公司一樣卡在缺股價資料，見 [`../portfolio/README.md`](../portfolio/README.md)。
-- **CAPM 還缺「無風險利率」**：market risk premium = 大盤預期報酬 − 無風險利率，無風險利率通常用政府公債殖利率，本服務完全沒有這個資料源（`macro` 分類的 `YTM` 指標一樣卡在這裡，見 [`../macro/README.md`](../macro/README.md)）——這是新卡住的點，跟 Beta 是兩個獨立的資料缺口，Beta 解決了不代表 WACC 就有了。
-- 債務成本（Cost of Debt）用 `financeCosts / totalDebt` 勉強可以估。
-- 就算 WACC 有辦法算出來，「資產重置成本（Reproduction Cost of Assets）」這個判斷護城河用的比較基準，本身也需要額外的資產評估邏輯，不是財報現成欄位——這個問題 Beta 也沒幫上忙。
+- **嚴謹版**（Greenwald 原始定義：存貨用重置成本、PP&E 用通膨調整後重置成本、歷年 SG&A/研發費用資本化估帳外無形資產）需要產業別重置成本指數、資產鑑價資料、至少 10~20 年的歷史費用序列——這些不是「查得到查不到」的問題，是本服務資料來源架構完全不涵蓋的維度，接再多資料庫也不會解決。
+- **簡化版**（`Asset Value ≈ 總資產 − 總負債`，即帳面權益）雖然算得出來，但本質上是拿 BVPS 冒充資產重置成本，跟真正的 Greenwald 護城河判斷邏輯已經不是同一件事，容易誤導使用者。
 
-跟 `Altman_Z_Score`/`Nissim_Penman_RNOA` 不同，這個指標不會因為做完前面幾個就跟著解套——政府公債殖利率是全新的資料源，需要另外確認 mops/twse 有沒有，還是要接第三個資料源。
+2026-08-28 討論後決定：**不用不忠於原始定義的簡化版硬做，整個指標移除**，`guru` 分類只保留能用可靠資料完整算出來的指標。CBC 的無風險利率資料源（`MonthlyGovBondYield10y`，見 [`../../shared/riskFreeRate.ts`](../../shared/riskFreeRate.ts)）不隨這個決定移除——它是通用的資料維度，`macro` 分類的 `YTM` 未來仍然用得到，見 [`../macro/README.md`](../macro/README.md)。

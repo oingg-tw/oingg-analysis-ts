@@ -5,14 +5,16 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "test": "tsx --test tests/**/*.test.ts",
     "test:types": "tsc --noEmit -p tests/tsconfig.json",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/cbc/schema.prisma",
     "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",
     "prisma:twse:pull": "prisma db pull --schema=prisma/twse/schema.prisma",
-    "prisma:twse:studio": "prisma studio --schema=prisma/twse/schema.prisma"
+    "prisma:twse:studio": "prisma studio --schema=prisma/twse/schema.prisma",
+    "prisma:cbc:pull": "prisma db pull --schema=prisma/cbc/schema.prisma",
+    "prisma:cbc:studio": "prisma studio --schema=prisma/cbc/schema.prisma"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +41,7 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^5.22.0",
+    "tsc-alias": "^1.9.2",
     "tsx": "^4.23.1",
     "typescript": "^5.5.3"
   }

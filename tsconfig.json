@@ -17,6 +17,12 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
 
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
     /* Build options */
     "outDir": "dist",
     "rootDir": "src"

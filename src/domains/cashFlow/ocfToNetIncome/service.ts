@@ -1,6 +1,6 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getPastNQuarters } from '../../../shared/rocQuarter';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getPastNQuarters } from '@/shared/rocQuarter';
 import type { OcfToNetIncomeQuery, OcfToNetIncomeResult } from './types';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。

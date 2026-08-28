@@ -1,6 +1,6 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getPastNQuarters } from '../../../shared/rocQuarter';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getPastNQuarters } from '@/shared/rocQuarter';
 import type { TurnoverRatioQuery, TurnoverRatioResult } from './types';
 
 // 周轉率用期末餘額（存貨、應收帳款、應付帳款、總資產），不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。

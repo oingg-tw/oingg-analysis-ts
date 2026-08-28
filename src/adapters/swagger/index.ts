@@ -2,7 +2,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { config } from '../../shared/config';
+import { config } from '@/shared/config';
 
 // Since this is an ES Module, __dirname is not available.
 // We can recreate it using import.meta.url.

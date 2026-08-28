@@ -1,7 +1,7 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getPastNQuarters } from '../../../shared/rocQuarter';
-import { getPaidInSharesAsOf } from '../../../shared/capitalStock';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getPastNQuarters } from '@/shared/rocQuarter';
+import { getPaidInSharesAsOf } from '@/shared/capitalStock';
 import type { RevenuePerShareQuery, RevenuePerShareResult } from './types';
 
 // 財報金額欄位單位是「千元」，但流通股數是實際股數，不是千股，兩者單位不同，

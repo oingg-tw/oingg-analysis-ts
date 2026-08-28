@@ -1,6 +1,6 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus } from '../../../shared/metricStatus';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BetaQuery, BetaResult, BetaSamplingFrequency, BetaWindow } from './types';
 
 const MIN_OBSERVATIONS = 20; // 降頻後至少要有 20 個取樣點（19 個報酬率樣本）才計算，樣本太少的 Beta 沒有統計意義；三個窗口共用同一個門檻，不分頻率調整

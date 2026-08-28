@@ -1,5 +1,5 @@
-import type { Season } from '../../../shared/rocQuarter';
-import type { MetricStatus } from '../../../shared/metricStatus';
+import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface DupontQuery {
   companyId: string;

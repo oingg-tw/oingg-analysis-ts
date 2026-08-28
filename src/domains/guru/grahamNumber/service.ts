@@ -1,6 +1,6 @@
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { calculateEps } from '../../profitability/eps/service';
-import { calculateBvps } from '../../profitability/bvps/service';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { calculateEps } from '@/domains/profitability/eps/service';
+import { calculateBvps } from '@/domains/profitability/bvps/service';
 import type { GrahamNumberQuery, GrahamNumberResult } from './types';
 
 export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<GrahamNumberResult> => {

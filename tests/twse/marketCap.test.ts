@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { twsePrisma } from '../../src/adapters/prisma/twseClient';
+import { twsePrisma } from '@/adapters/prisma/twseClient';
 
 // `company_profile` 這張表 2026-08-21 才發現存在（prisma/twse/schema.prisma 開頭註解沒提到，
 // 是舊的），還沒鏡像進 schema，這裡先用 raw query 驗證欄位名稱／join 邏輯，是之後要做

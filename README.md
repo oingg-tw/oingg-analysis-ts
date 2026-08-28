@@ -85,6 +85,21 @@ pnpm prisma:twse:pull     # 重新對 oingg-twse 跑 db pull 內省（不要對�
 pnpm prisma:twse:studio   # Prisma Studio 開這個 DB
 ```
 
+## `prisma/cbc/schema.prisma` 是第四個資料庫（唯讀鏡像，同一種模式）
+
+2026-08-28 原本為了 `guru/Greenwald_EPV` 的 CAPM 無風險利率接上，連到獨立的 Neon 專案（`.env` 的 `CBC_DATABASE_URL` / `CBC_DIRECT_URL`），本服務只讀，不擁有這裡的表格 schema/migration，資料由另一支負責 ingest 央行統計資料庫 API 的服務寫入。`Greenwald_EPV` 後來因為「資產重置成本」無法用忠於資料的方式算，2026-08-28 決定移除（見 [`src/domains/guru/README.md`](src/domains/guru/README.md) 的「為什麼不做 Greenwald_EPV」），但這個資料源本身是通用的無風險利率資料，沒有一併移除，[`src/domains/macro/`](src/domains/macro/README.md) 的 `YTM` 未來用得到。
+
+目前只有一張表：
+
+- **`MonthlyGovBondYield10y`**（`monthly_gov_bond_yield_10y`）：10年期政府公債次級市場殖利率，月資料，1994-12 至今（368 筆）。來源是央行 API 的 `EG43M01en`（資本市場利率）第 20 欄「Bond market - 10-year gov't bond rates in secondary market」——特別挑這一欄不是發行端利率，是因為 CAPM 要的是市場實際交易出來的殖利率。查詢用 [`src/shared/riskFreeRate.ts`](src/shared/riskFreeRate.ts) 的 `getRiskFreeRateAsOf(asOfDate)`。
+
+這個 schema 有自己的 generator output（`generated/cbc-client`，已加入 `.gitignore`）。改動/重新內省用：
+
+```bash
+pnpm prisma:cbc:pull     # 重新對 CBC 資料庫跑 db pull 內省（不要對這份 schema 跑 migrate）
+pnpm prisma:cbc:studio   # Prisma Studio 開這個 DB
+```
+
 ## API 一覽
 
 URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<指標>`），維護時可以直接照路徑找到程式碼位置（見 [`src/domains/README.md`](src/domains/README.md) 的分類索引）。

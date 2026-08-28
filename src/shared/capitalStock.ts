@@ -1,4 +1,4 @@
-import prisma from '../adapters/prisma/index';
+import prisma from '@/adapters/prisma/index';
 
 export interface PaidInSharesAsOf {
   paidInShares: bigint;

@@ -1,4 +1,4 @@
-import type { MetricStatus } from '../../../shared/metricStatus';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface BetaQuery {
   companyId: string;

@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAltmanZScore } from '../../../src/domains/guru/altmanZScore/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateAltmanZScore } from '@/domains/guru/altmanZScore/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/guru/README.md「Altman_Z_Score 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
 // X4（市值/總負債）用 daily_stock_price 的收盤價，價格每天在變，X4/zScore 不釘死確切數字，

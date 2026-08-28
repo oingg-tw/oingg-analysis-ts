@@ -1,5 +1,5 @@
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getDailyValuationAsOf } from '../../../shared/twseMarketData';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getDailyValuationAsOf } from '@/shared/twseMarketData';
 import type { MarketRatiosQuery, MarketRatiosResult } from './types';
 
 export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<MarketRatiosResult> => {

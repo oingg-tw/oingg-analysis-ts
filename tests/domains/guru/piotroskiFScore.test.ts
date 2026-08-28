@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculatePiotroskiFScore } from '../../../src/domains/guru/piotroskiFScore/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculatePiotroskiFScore } from '@/domains/guru/piotroskiFScore/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2330（台積電）115Q2 vs 114Q2（去年同季）合併報表實測值。
 test('piotroskiFScore: 2330 115Q2 vs 114Q2，9 項訊號全部能判斷，score=8', async () => {

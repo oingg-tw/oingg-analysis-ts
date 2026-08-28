@@ -1,10 +1,10 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getMarketCapAsOf } from '../../../shared/marketCap';
-import { calculateInterestCoverage } from '../../solvency/interestCoverage/service';
-import { calculateTurnoverRatio } from '../../turnover/turnoverRatio/service';
-import { buildFieldStatuses, type MetricStatus } from '../../../shared/metricStatus';
-import type { Season } from '../../../shared/rocQuarter';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getMarketCapAsOf } from '@/shared/marketCap';
+import { calculateInterestCoverage } from '@/domains/solvency/interestCoverage/service';
+import { calculateTurnoverRatio } from '@/domains/turnover/turnoverRatio/service';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import type { Season } from '@/shared/rocQuarter';
 import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';
 
 // 2026-08-24 從 solvency 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本

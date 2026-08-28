@@ -1,6 +1,6 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getPaidInSharesAsOf } from '../../../shared/capitalStock';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getPaidInSharesAsOf } from '@/shared/capitalStock';
 import type { BvpsQuery, BvpsResult } from './types';
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。

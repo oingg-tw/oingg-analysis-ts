@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBeta, resample, type OverlapPoint } from '../../../src/domains/portfolio/beta/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateBeta, resample, type OverlapPoint } from '@/domains/portfolio/beta/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 const point = (tradeDate: string): OverlapPoint => ({ tradeDate, stockClose: 100, indexClose: 100 });
 

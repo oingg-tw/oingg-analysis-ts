@@ -1,6 +1,6 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { getPastNQuarters } from '../../../shared/rocQuarter';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { getPastNQuarters } from '@/shared/rocQuarter';
 import type { RoceQuery, RoceResult } from './types';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {

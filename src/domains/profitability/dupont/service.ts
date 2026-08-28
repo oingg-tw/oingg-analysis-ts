@@ -1,8 +1,8 @@
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { calculateMargins } from '../margins/service';
-import { calculateTurnoverRatio } from '../../turnover/turnoverRatio/service';
-import { calculateRoe } from '../roe/service';
-import { buildFieldStatuses, type MetricStatus } from '../../../shared/metricStatus';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { calculateMargins } from '@/domains/profitability/margins/service';
+import { calculateTurnoverRatio } from '@/domains/turnover/turnoverRatio/service';
+import { calculateRoe } from '@/domains/profitability/roe/service';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { DupontQuery, DupontResult } from './types';
 
 const round2 = (x: number): number => Math.round(x * 100) / 100;

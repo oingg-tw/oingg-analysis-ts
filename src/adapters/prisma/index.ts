@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from '../../shared/config';
+import { config } from '@/shared/config';
 
 // Instantiate a single PrismaClient instance to be used across the application.
 // 本服務只讀（見 prisma/schema.prisma 開頭註解），永遠不對這些表跑 write/migrate。

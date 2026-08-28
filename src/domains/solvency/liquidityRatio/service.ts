@@ -1,5 +1,5 @@
-import prisma from '../../../adapters/prisma/index';
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import type { LiquidityRatioQuery, LiquidityRatioResult } from './types';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {

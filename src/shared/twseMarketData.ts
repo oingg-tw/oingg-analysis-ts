@@ -1,4 +1,4 @@
-import twsePrisma from '../adapters/prisma/twseClient';
+import twsePrisma from '@/adapters/prisma/twseClient';
 
 export interface DailyValuationAsOf {
   tradeDate: Date;

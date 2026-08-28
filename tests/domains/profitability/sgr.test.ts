@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateSgr } from '../../../src/domains/profitability/sgr/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateSgr } from '@/domains/profitability/sgr/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/profitability/README.md「配息率／SGR 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 複合指標，直接引用 roe/、dividendPayoutRatio/ 的 TTM 數值，這裡順便驗證組裝邏輯本身沒錯

@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOwnerEarnings } from '../../../src/domains/guru/ownerEarnings/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateOwnerEarnings } from '@/domains/guru/ownerEarnings/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/guru/README.md「Buffett_Owner_Earnings（股東盈餘）計算口徑」——
 // 2330（台積電）115Q2 合併報表實測值。

@@ -1,6 +1,6 @@
-import { analysisPrisma } from '../../../adapters/prisma/analysisClient';
-import { calculateRoe } from '../roe/service';
-import { calculateDividendPayoutRatio } from '../dividendPayoutRatio/service';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { calculateRoe } from '@/domains/profitability/roe/service';
+import { calculateDividendPayoutRatio } from '@/domains/profitability/dividendPayoutRatio/service';
 import type { SgrQuery, SgrResult } from './types';
 
 export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {

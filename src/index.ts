@@ -9,6 +9,7 @@ import morgan from 'morgan';
 import { connectDb } from './adapters/prisma/index';
 import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { connectTwseDb } from './adapters/prisma/twseClient';
+import { connectCbcDb } from './adapters/prisma/cbcClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
@@ -46,6 +47,7 @@ const startServer = async () => {
     await connectDb();
     await connectAnalysisDb();
     await connectTwseDb();
+    await connectCbcDb();
     const host = config.isProduction ? '0.0.0.0' : 'localhost';
     const port = Number(config.port);
     app.listen(port, host, () => {

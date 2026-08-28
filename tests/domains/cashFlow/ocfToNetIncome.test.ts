@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOcfToNetIncome } from '../../../src/domains/cashFlow/ocfToNetIncome/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateOcfToNetIncome } from '@/domains/cashFlow/ocfToNetIncome/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：mops 修正 quarterly_cash_flow_statement 為真的單季數（之前每季存的其實是

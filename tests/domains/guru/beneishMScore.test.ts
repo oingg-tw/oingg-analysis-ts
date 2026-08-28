@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBeneishMScore } from '../../../src/domains/guru/beneishMScore/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateBeneishMScore } from '@/domains/guru/beneishMScore/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2330（台積電）115Q2 vs 114Q2（去年同季）合併報表實測值。
 test('beneishMScore: 2330 115Q2 vs 114Q2，8 個變量全部能計算', async () => {

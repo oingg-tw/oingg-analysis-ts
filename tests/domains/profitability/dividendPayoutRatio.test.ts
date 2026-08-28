@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDividendPayoutRatio } from '../../../src/domains/profitability/dividendPayoutRatio/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateDividendPayoutRatio } from '@/domains/profitability/dividendPayoutRatio/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/profitability/README.md「配息率／SGR 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：mops 修正 quarterly_cash_flow_statement 為真的單季數（原本全部季度都是

@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateTurnoverRatio } from '../../../src/domains/turnover/turnoverRatio/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateTurnoverRatio } from '@/domains/turnover/turnoverRatio/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/turnover/README.md「DIO/DSO/DPO/CCC 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：oingg-mops-ts 把 quarterly_income_statement 的 Q4（原本存的是全年累計數，

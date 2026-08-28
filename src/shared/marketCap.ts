@@ -1,4 +1,4 @@
-import prisma from '../adapters/prisma/index';
+import prisma from '@/adapters/prisma/index';
 import { getPaidInSharesAsOf } from './capitalStock';
 
 export interface MarketCapAsOf {

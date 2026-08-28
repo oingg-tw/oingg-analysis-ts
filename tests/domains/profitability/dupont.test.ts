@@ -1,8 +1,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDupont } from '../../../src/domains/profitability/dupont/service';
-import prisma from '../../../src/adapters/prisma/index';
-import { analysisPrisma } from '../../../src/adapters/prisma/analysisClient';
+import { calculateDupont } from '@/domains/profitability/dupont/service';
+import prisma from '@/adapters/prisma/index';
+import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/profitability/README.md「杜邦分析法計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 複合指標，直接引用 margins/、turnoverRatio/、roe/ 的數值，這裡順便驗證組裝邏輯本身沒錯

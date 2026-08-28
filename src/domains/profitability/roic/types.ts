@@ -1,4 +1,4 @@
-import type { Season } from '../../../shared/rocQuarter';
+import type { Season } from '@/shared/rocQuarter';
 
 export interface RoicQuery {
   companyId: string;
