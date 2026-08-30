@@ -13,7 +13,7 @@ pnpm test:types    # 只型別檢查 tests/（不影響 pnpm build 用的主 tsc
 
 `tests/domains/**` 就是把這些手動驗證過的數字釘死下來，跑真的 DB、斷言真的回傳值（例如 [`tests/domains/guru/ncav.test.ts`](domains/guru/ncav.test.ts) 斷言 2330 115Q2 NCAV = 64.19，對應 [`../src/domains/guru/README.md`](../src/domains/guru/README.md) 記錄的那次實測）——之後改到共用邏輯（例如 `rocQuarter.ts`、`capitalStock.ts`）不小心動到別的指標時，這些測試能立刻抓到，不用每次都重新手動 curl 一輪。
 
-**這些測試需要 `.env` 裡的四個 DB 連線都能連得到**（mops、analysis、twse、cbc），跟跑 `pnpm dev` 的前提一樣；CI 如果要跑這些測試，需要準備對應的開發資料庫連線。
+**這些測試需要 `.env` 裡的五個 DB 連線都能連得到**（mops、analysis、twse、gov、tpex），跟跑 `pnpm dev` 的前提一樣；CI 如果要跑這些測試，需要準備對應的開發資料庫連線。
 
 `tests/system/filterCatalogCheck.test.ts` 是例外——純邏輯比對，不連資料庫，餵假的 catalog/schema 字串進去測，跑起來很快，可以當一般單元測試用。
 

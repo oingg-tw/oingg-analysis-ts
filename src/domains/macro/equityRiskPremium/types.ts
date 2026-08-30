@@ -31,7 +31,7 @@ export interface EquityRiskPremiumResult {
 
   dataCoverage: {
     taiexDateRange: { min: string | null; max: string | null }; // oingg-twse daily_taiex_index 整體月底收盤涵蓋範圍（跟 query 無關）
-    riskFreeRateDateRange: { min: string | null; max: string | null }; // CBC monthly_gov_bond_yield_10y 整體涵蓋範圍
+    riskFreeRateDateRange: { min: string | null; max: string | null }; // GOV monthly_gov_bond_yield_10y 整體涵蓋範圍
   };
 
   // 只列出值為 null 的欄位（marketReturnGeometric/marketReturnArithmetic/avgRiskFreeRate/erpGeometric/erpArithmetic），見 src/shared/metricStatus.ts。

@@ -189,9 +189,9 @@ O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG
 
 ## 為什麼不做 Greenwald_EPV（2026-08-28 決定移除）
 
-2026-08-25 列入評估，一路解到只剩最後一塊：常態化營業利潤、Beta（2330 限定）、無風險利率（2026-08-28 接上 CBC 解決）、市場風險溢酬都有資料源或可行的代理算法，WACC 算得出來——但 Greenwald 完整三段式輸出（Asset Value / EPV / Franchise Value）裡的 **Asset Value（資產重置成本）** 沒有辦法用忠於資料的方式算：
+2026-08-25 列入評估，一路解到只剩最後一塊：常態化營業利潤、Beta（2330 限定）、無風險利率（2026-08-28 接上 GOV 解決）、市場風險溢酬都有資料源或可行的代理算法，WACC 算得出來——但 Greenwald 完整三段式輸出（Asset Value / EPV / Franchise Value）裡的 **Asset Value（資產重置成本）** 沒有辦法用忠於資料的方式算：
 
 - **嚴謹版**（Greenwald 原始定義：存貨用重置成本、PP&E 用通膨調整後重置成本、歷年 SG&A/研發費用資本化估帳外無形資產）需要產業別重置成本指數、資產鑑價資料、至少 10~20 年的歷史費用序列——這些不是「查得到查不到」的問題，是本服務資料來源架構完全不涵蓋的維度，接再多資料庫也不會解決。
 - **簡化版**（`Asset Value ≈ 總資產 − 總負債`，即帳面權益）雖然算得出來，但本質上是拿 BVPS 冒充資產重置成本，跟真正的 Greenwald 護城河判斷邏輯已經不是同一件事，容易誤導使用者。
 
-2026-08-28 討論後決定：**不用不忠於原始定義的簡化版硬做，整個指標移除**，`guru` 分類只保留能用可靠資料完整算出來的指標。CBC 的無風險利率資料源（`MonthlyGovBondYield10y`，見 [`../../shared/riskFreeRate.ts`](../../shared/riskFreeRate.ts)）不隨這個決定移除——它是通用的資料維度，`macro` 分類的 `YTM` 未來仍然用得到，見 [`../macro/README.md`](../macro/README.md)。
+2026-08-28 討論後決定：**不用不忠於原始定義的簡化版硬做，整個指標移除**，`guru` 分類只保留能用可靠資料完整算出來的指標。GOV 的無風險利率資料源（`MonthlyGovBondYield10y`，見 [`../../shared/riskFreeRate.ts`](../../shared/riskFreeRate.ts)）不隨這個決定移除——它是通用的資料維度，`macro` 分類的 `YTM` 未來仍然用得到，見 [`../macro/README.md`](../macro/README.md)。

@@ -10,9 +10,9 @@ const router = Router();
  *     summary: 計算歷史股權風險溢酬（Equity Risk Premium）——TAIEX 年化報酬率減同期 10 年期公債殖利率
  *     description: >
  *       歷史法（Historical Risk Premium Approach）：用 oingg-twse 的 `daily_taiex_index` 月底收盤
- *       算 TAIEX 年化報酬率，減去 CBC 的 `monthly_gov_bond_yield_10y`（10 年期政府公債次級市場殖利率）
+ *       算 TAIEX 年化報酬率，減去 GOV 的 `monthly_gov_bond_yield_10y`（10 年期政府公債次級市場殖利率）
  *       同期平均值。本服務不向任何來源抓取原始資料，只讀取兩個資料源已鏡像進資料庫的資料，若查無資料
- *       請先確認 oingg-twse / oingg-cbc-ts 那邊有沒有涵蓋所需月份。
+ *       請先確認 oingg-twse / oingg-gov-ts（原 oingg-cbc-ts，2026-08-31 改名）那邊有沒有涵蓋所需月份。
  *
  *       **樣本窗口越長越可信**：不指定 start/end 就用「TAIEX 與無風險利率都有資料」的完整重疊區間
  *       （目前約 1999-01 至今）。2026-08-30 實測過，5 年窗口（2021-09~2026-08）算出 ERP ≈ 21%、

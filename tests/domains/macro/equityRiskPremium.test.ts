@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/domains/macro/equityRiskPremium/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import cbcPrisma from '@/adapters/prisma/cbcClient';
+import govPrisma from '@/adapters/prisma/govClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // TAIEX/公債殖利率都是逐日/逐月更新的活資料（不是季度財報那種固定快照），所以這裡不釘死確切數值，
@@ -61,6 +61,6 @@ test('equityRiskPremium: 窗口內重疊月份不足 2 個月時回傳 calculati
 
 after(async () => {
   await twsePrisma.$disconnect();
-  await cbcPrisma.$disconnect();
+  await govPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

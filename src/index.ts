@@ -9,7 +9,7 @@ import morgan from 'morgan';
 import { connectDb } from './adapters/prisma/index';
 import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { connectTwseDb } from './adapters/prisma/twseClient';
-import { connectCbcDb } from './adapters/prisma/cbcClient';
+import { connectGovDb } from './adapters/prisma/govClient';
 import { connectTpexDb } from './adapters/prisma/tpexClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
@@ -49,7 +49,7 @@ const startServer = async () => {
     await connectDb();
     await connectAnalysisDb();
     await connectTwseDb();
-    await connectCbcDb();
+    await connectGovDb();
     await connectTpexDb();
     // dev 環境背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
     // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/industryCodes.ts 的說明。

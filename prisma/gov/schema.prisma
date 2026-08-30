@@ -1,12 +1,12 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../../generated/cbc-client"
+  output   = "../../generated/gov-client"
 }
 
 datasource db {
   provider  = "postgresql"
-  url       = env("CBC_DATABASE_URL")
-  directUrl = env("CBC_DIRECT_URL")
+  url       = env("GOV_DATABASE_URL")
+  directUrl = env("GOV_DIRECT_URL")
 }
 
 // 10年期政府公債次級市場殖利率（月資料）——來源是央行統計資料庫 EG43M01en（資本市場利率）

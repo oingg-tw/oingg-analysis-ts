@@ -1,5 +1,5 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
-import cbcPrisma from '@/adapters/prisma/cbcClient';
+import govPrisma from '@/adapters/prisma/govClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
@@ -34,7 +34,7 @@ const getTaiexMonthEndCloses = async (): Promise<Record<string, number>> => {
 };
 
 const getRiskFreeRateByMonth = async (): Promise<Record<string, number>> => {
-  const rows = await cbcPrisma.monthlyGovBondYield10y.findMany({ orderBy: [{ year: 'asc' }, { month: 'asc' }] });
+  const rows = await govPrisma.monthlyGovBondYield10y.findMany({ orderBy: [{ year: 'asc' }, { month: 'asc' }] });
   const byMonth: Record<string, number> = {};
   for (const row of rows) {
     byMonth[toKey(row.year, row.month)] = Number(row.yieldRate);
