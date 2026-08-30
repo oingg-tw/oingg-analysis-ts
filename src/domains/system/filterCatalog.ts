@@ -105,15 +105,36 @@ export const filterCatalog: FilterCategory[] = [
           { key: 'revenuePerShareTtm', name: '每股營收', period: 'ttm' },
         ],
       },
+      // 底下 3 個顯示分組都來自同一支 API（GET /profitability/margins）、同一個 model
+      // （MarginsResult），modelKey 統一填 'margins'——2026-08-30 從一個合併 metric（name 是
+      // 3 種利潤率硬湊在一起的長字串）拆開，讓使用者在 /filters 清單裡能個別看到毛利率、
+      // 營業利益率、稅後淨利率，跟 turnoverRatio 那次拆分同一種理由。
       {
-        key: 'margins',
-        name: '毛利率 營業利益率 稅後淨利率',
+        key: 'grossMargin',
+        name: '毛利率',
         path: '/profitability/margins',
+        modelKey: 'margins',
         fields: [
           { key: 'grossMarginQuarterly', name: '毛利率', period: 'quarterly' },
           { key: 'grossMarginTtm', name: '毛利率', period: 'ttm' },
+        ],
+      },
+      {
+        key: 'operatingMargin',
+        name: '營業利益率',
+        path: '/profitability/margins',
+        modelKey: 'margins',
+        fields: [
           { key: 'operatingMarginQuarterly', name: '營業利益率', period: 'quarterly' },
           { key: 'operatingMarginTtm', name: '營業利益率', period: 'ttm' },
+        ],
+      },
+      {
+        key: 'netProfitMargin',
+        name: '稅後淨利率',
+        path: '/profitability/margins',
+        modelKey: 'margins',
+        fields: [
           { key: 'netProfitMarginQuarterly', name: '稅後淨利率', period: 'quarterly' },
           { key: 'netProfitMarginTtm', name: '稅後淨利率', period: 'ttm' },
         ],
