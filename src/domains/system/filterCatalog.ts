@@ -38,6 +38,20 @@
 //   這種是真正的會計/財務概念中文翻譯，即使概念是某人提出的，翻譯本身有獨立意義，要保留
 //   （「貝塔」雖然也是希臘字母音譯，但「貝塔係數」是中文財務文獻通用的固定詞彙，不是「某人的姓氏」
 //   這種要靠額外背景知識才看得懂的音譯，跟 F/M/Z 分數的情況不同）。
+//
+// **`description`/`source` 撰寫原則（2026-08-30，應 oingg-bff-ts 要求新增，給前端 info icon
+// 提示用，競品研究報告點名「使用者不知道數字什麼意思/哪裡來的」是市場最大痛點之一）**：
+// - `description` 放真正的財務公式/概念（例如「近四季稅後淨利加總 ÷ 期末股東權益」），業界通用的
+//   方法論名稱也可以放（例如 Wilder's RSI——這是財務界公認的方法名，使用者可能會想查，不是我們
+//   自己取的內部代號）；不能放我們自己的實作細節（內部檔案路徑、程式碼裡呼叫了哪個 service/
+//   model、modelKey 是什麼），判斷標準跟 `name` 那條規則一樣：這句話是講給使用者聽的，還是講給
+//   下一個維護程式碼的人聽的。
+// - `source` 停在「哪份公開報表/哪個資料源」的顆粒度（例如「MOPS 季報財務比率」「TWSE 每日行情」
+//   「TWSE 已計算之估值比率」「CBC 中央銀行統計」），不要寫到內部資料表/資料庫名稱（不寫
+//   `quarterly_income_statement`，也不寫 `oingg-mops-ts 的資料庫`）。
+// - 兩者都填在 `FilterMetric` 層級，`FilterField` 層級留空，由前端沿用 metric 的說明——同一個
+//   指標底下單季/年化/TTM 概念相同，只有口徑不同，不需要每個 field 各寫一次幾乎一樣的句子；
+//   只有某個口徑的算法真的需要額外說明時，才在該 field 補上覆蓋 metric 層級的版本。
 
 export type FilterFieldPeriod = 'quarterly' | 'quarterlyAnnualized' | 'ttm' | 'snapshot' | 'daily' | 'weekly' | 'monthly';
 
@@ -49,6 +63,12 @@ export interface FilterField {
   period: FilterFieldPeriod;
   /** 給前端排序用，只在同一個 metric 的 fields 陣列內有意義（從 1 開始），不是全 catalog 唯一。 */
   sort: number;
+  /** 選填——只在這個口徑（單季/年化/TTM⋯）的算法需要額外說明、跟 metric 層級的 description
+   *  不夠涵蓋時才填，大多數情況留空、由前端沿用 metric.description，見檔案開頭「description/
+   *  source 撰寫原則」。跟 name 同一套規則：只放使用者看得懂、需要知道的資訊，不放實作細節。 */
+  description?: string;
+  /** 選填，同上，只在跟 metric 層級的 source 不同時才填（極少見）。 */
+  source?: string;
 }
 
 export interface FilterMetric {
@@ -65,6 +85,13 @@ export interface FilterMetric {
    *  'turnoverRatio'，但各自的 key 不一樣。不填時預設等於自己的 key（一般情況，一個 metric
    *  對應一個 model）。見 2026-08-30 filterCatalogCheck.ts 的說明。 */
   modelKey?: string;
+  /** 這個數字代表什麼意思、公式概念——給前端 info icon 提示用（2026-08-30 應 oingg-bff-ts
+   *  要求新增）。只放真正的財務公式/業界通用方法名稱，不放內部實作細節，見檔案開頭「description/
+   *  source 撰寫原則」。 */
+  description?: string;
+  /** 這個數字算自哪份公開報表/資料源——停在「MOPS 季報」「TWSE 每日行情」這種顆粒度，
+   *  不要寫到內部資料表/資料庫名稱，見檔案開頭「description/source 撰寫原則」。 */
+  source?: string;
   fields: FilterField[];
 }
 
@@ -85,6 +112,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'eps',
         name: '每股盈餘 EPS',
         path: '/profitability/eps',
+        description: '本期淨利 ÷ 流通股數，衡量每一股份分配到的獲利',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'epsQuarterly', name: 'EPS', period: 'quarterly', sort: 1 },
           { key: 'epsQuarterlyAnnualized', name: 'EPS', period: 'quarterlyAnnualized', sort: 2 },
@@ -95,12 +124,16 @@ export const filterCatalog: FilterCategory[] = [
         key: 'bvps',
         name: '每股淨值 BVPS',
         path: '/profitability/bvps',
+        description: '股東權益 ÷ 流通股數，衡量每一股份對應的帳面淨值',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'bvps', name: '每股淨值 BVPS', period: 'snapshot', sort: 1 }],
       },
       {
         key: 'revenuePerShare',
         name: '每股營收',
         path: '/profitability/revenue-per-share',
+        description: '本期營收 ÷ 流通股數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'revenuePerShareQuarterly', name: '每股營收', period: 'quarterly', sort: 1 },
           { key: 'revenuePerShareQuarterlyAnnualized', name: '每股營收', period: 'quarterlyAnnualized', sort: 2 },
@@ -116,6 +149,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '毛利率',
         path: '/profitability/margins',
         modelKey: 'margins',
+        description: '(營收 − 銷貨成本) ÷ 營收，衡量產品或服務本身的獲利能力',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'grossMarginQuarterly', name: '毛利率', period: 'quarterly', sort: 1 },
           { key: 'grossMarginTtm', name: '毛利率', period: 'ttm', sort: 2 },
@@ -126,6 +161,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '營業利益率',
         path: '/profitability/margins',
         modelKey: 'margins',
+        description: '營業利益 ÷ 營收，衡量本業經營的獲利能力',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'operatingMarginQuarterly', name: '營業利益率', period: 'quarterly', sort: 1 },
           { key: 'operatingMarginTtm', name: '營業利益率', period: 'ttm', sort: 2 },
@@ -136,6 +173,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '稅後淨利率',
         path: '/profitability/margins',
         modelKey: 'margins',
+        description: '稅後淨利 ÷ 營收，衡量最終回歸股東的獲利比率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'netProfitMarginQuarterly', name: '稅後淨利率', period: 'quarterly', sort: 1 },
           { key: 'netProfitMarginTtm', name: '稅後淨利率', period: 'ttm', sort: 2 },
@@ -145,6 +184,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'roe',
         name: '股東權益報酬率 ROE',
         path: '/profitability/roe',
+        description: '稅後淨利 ÷ 股東權益，衡量股東出資賺到的報酬率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'roeQuarterlyPct', name: 'ROE', period: 'quarterly', sort: 1 },
           { key: 'roeQuarterlyAnnualizedPct', name: 'ROE', period: 'quarterlyAnnualized', sort: 2 },
@@ -155,6 +196,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'roa',
         name: '總資產報酬率 ROA',
         path: '/profitability/roa',
+        description: '稅後淨利 ÷ 總資產，衡量運用全部資產創造獲利的效率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'roaQuarterlyPct', name: 'ROA', period: 'quarterly', sort: 1 },
           { key: 'roaQuarterlyAnnualizedPct', name: 'ROA', period: 'quarterlyAnnualized', sort: 2 },
@@ -165,6 +208,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'roic',
         name: '投入資本回報率 ROIC',
         path: '/profitability/roic',
+        description: '稅後淨營業利益 ÷ 投入資本（有息負債加股東權益），排除財務槓桿影響後的本業報酬率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'roicQuarterlyPct', name: 'ROIC', period: 'quarterly', sort: 1 },
           { key: 'roicQuarterlyAnnualizedPct', name: 'ROIC', period: 'quarterlyAnnualized', sort: 2 },
@@ -175,6 +220,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'roce',
         name: '使用資本報酬率 ROCE',
         path: '/profitability/roce',
+        description: '稅前息前淨利 ÷ (總資產 − 流動負債)，衡量運用長期資本創造獲利的效率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'roceQuarterlyPct', name: 'ROCE', period: 'quarterly', sort: 1 },
           { key: 'roceQuarterlyAnnualizedPct', name: 'ROCE', period: 'quarterlyAnnualized', sort: 2 },
@@ -185,6 +232,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'dupont',
         name: '杜邦分析',
         path: '/profitability/dupont',
+        description: '把 ROE 拆解成淨利率、總資產週轉率、權益乘數三個因子，找出獲利能力的驅動來源',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'netProfitMarginQuarterly', name: '淨利率', period: 'quarterly', sort: 1 },
           { key: 'netProfitMarginTtm', name: '淨利率', period: 'ttm', sort: 2 },
@@ -203,12 +252,16 @@ export const filterCatalog: FilterCategory[] = [
         key: 'dividendPayoutRatio',
         name: '配息率',
         path: '/profitability/dividend-payout-ratio',
+        description: '現金股利總額 ÷ 稅後淨利，衡量獲利中有多少比例回饋給股東',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'payoutRatioTtm', name: '配息率', period: 'ttm', sort: 1 }],
       },
       {
         key: 'sgr',
         name: '可持續成長率 SGR',
         path: '/profitability/sgr',
+        description: 'ROE × (1 − 配息率)，估計不靠外部融資、單靠保留盈餘能支撐的最高成長速度',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'sgrTtm', name: 'SGR', period: 'ttm', sort: 1 }],
       },
     ],
@@ -225,6 +278,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '每股營業現金流 OCF',
         path: '/cash-flow/cash-flow-per-share',
         modelKey: 'cashFlowPerShare',
+        description: '本期營業活動現金流量 ÷ 流通股數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'ocfPerShareQuarterly', name: '每股營業現金流 OCF', period: 'quarterly', sort: 1 },
           { key: 'ocfPerShareQuarterlyAnnualized', name: '每股營業現金流 OCF', period: 'quarterlyAnnualized', sort: 2 },
@@ -236,6 +291,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '每股自由現金流 FCF',
         path: '/cash-flow/cash-flow-per-share',
         modelKey: 'cashFlowPerShare',
+        description: '(營業活動現金流量 + 資本支出) ÷ 流通股數，衡量扣除維持營運所需資本支出後，真正能自由運用的現金',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'fcfPerShareQuarterly', name: '每股自由現金流 FCF', period: 'quarterly', sort: 1 },
           { key: 'fcfPerShareQuarterlyAnnualized', name: '每股自由現金流 FCF', period: 'quarterlyAnnualized', sort: 2 },
@@ -246,6 +303,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'ocfToNetIncome',
         name: '營運現金流對淨利比',
         path: '/cash-flow/ocf-to-net-income',
+        description: '營業活動現金流量 ÷ 稅後淨利，比值明顯低於 1 代表帳面獲利缺乏真實現金流量支撐',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'ocfToNetIncomeQuarterly', name: '營運現金流對淨利比', period: 'quarterly', sort: 1 },
           { key: 'ocfToNetIncomeTtm', name: '營運現金流對淨利比', period: 'ttm', sort: 2 },
@@ -255,6 +314,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'accrualsRatio',
         name: '應計項目比率',
         path: '/cash-flow/accruals-ratio',
+        description: '(稅後淨利 − 營業現金流 − 投資現金流) ÷ 總資產，數值偏高代表獲利中應計項目（非現金）比重偏高，盈餘品質存疑',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'accrualsRatioQuarterly', name: '應計項目比率', period: 'quarterly', sort: 1 },
           { key: 'accrualsRatioQuarterlyAnnualized', name: '應計項目比率', period: 'quarterlyAnnualized', sort: 2 },
@@ -265,6 +326,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'fcfYield',
         name: '自由現金流殖利率',
         path: '/cash-flow/fcf-yield',
+        description: '每股自由現金流 ÷ 股價，用現金流角度衡量股價相對便宜或昂貴的程度',
+        source: 'MOPS 季報財務比率與 TWSE 每日行情',
         fields: [
           { key: 'fcfYieldQuarterlyAnnualizedPct', name: '自由現金流殖利率', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'fcfYieldTtmPct', name: '自由現金流殖利率', period: 'ttm', sort: 2 },
@@ -284,6 +347,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '流動比率',
         path: '/solvency/liquidity-ratio',
         modelKey: 'liquidityRatio',
+        description: '流動資產 ÷ 流動負債，衡量短期償債能力',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'currentRatioPct', name: '流動比率', period: 'snapshot', sort: 1 }],
       },
       {
@@ -291,6 +356,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '速動比率',
         path: '/solvency/liquidity-ratio',
         modelKey: 'liquidityRatio',
+        description: '(流動資產 − 存貨) ÷ 流動負債，比流動比率更嚴格，排除變現能力較差的存貨',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'quickRatioPct', name: '速動比率', period: 'snapshot', sort: 1 }],
       },
       {
@@ -298,24 +365,32 @@ export const filterCatalog: FilterCategory[] = [
         name: '現金比率',
         path: '/solvency/liquidity-ratio',
         modelKey: 'liquidityRatio',
+        description: '現金及約當現金 ÷ 流動負債，衡量最極端情況下立即償債的能力',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'cashRatioPct', name: '現金比率', period: 'snapshot', sort: 1 }],
       },
       {
         key: 'debtRatio',
         name: '資產負債率',
         path: '/solvency/debt-ratio',
+        description: '總負債 ÷ 總資產，衡量資產中有多少比例是靠借款支應',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'debtRatioPct', name: '資產負債率', period: 'snapshot', sort: 1 }],
       },
       {
         key: 'deRatio',
         name: '負債權益比',
         path: '/solvency/de-ratio',
+        description: '總負債 ÷ 股東權益，衡量財務槓桿程度',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'deRatioPct', name: '負債權益比', period: 'snapshot', sort: 1 }],
       },
       {
         key: 'interestCoverage',
         name: '利息保障倍數',
         path: '/solvency/interest-coverage',
+        description: '稅前息前淨利 ÷ 利息費用，衡量本業獲利足夠支付多少倍的利息負擔',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'interestCoverageQuarterly', name: '利息保障倍數', period: 'quarterly', sort: 1 },
           { key: 'interestCoverageTtm', name: '利息保障倍數', period: 'ttm', sort: 2 },
@@ -325,6 +400,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'netDebtToEbitda',
         name: '淨負債對 EBITDA 比',
         path: '/solvency/net-debt-to-ebitda',
+        description: '(有息負債 − 現金) ÷ EBITDA，衡量用本業現金流量償還淨負債大約需要幾年',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'netDebtToEbitdaQuarterlyAnnualized', name: '淨負債對 EBITDA 比', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'netDebtToEbitdaTtm', name: '淨負債對 EBITDA 比', period: 'ttm', sort: 2 },
@@ -346,6 +423,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '存貨周轉率',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '銷貨成本 ÷ 期末存貨，衡量存貨去化的速度',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'inventoryTurnoverQuarterly', name: '存貨周轉率', period: 'quarterly', sort: 1 },
           { key: 'inventoryTurnoverQuarterlyAnnualized', name: '存貨周轉率', period: 'quarterlyAnnualized', sort: 2 },
@@ -357,6 +436,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '應收帳款周轉率',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '營收 ÷ 期末應收帳款，衡量收現的速度',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'receivablesTurnoverQuarterly', name: '應收帳款周轉率', period: 'quarterly', sort: 1 },
           { key: 'receivablesTurnoverQuarterlyAnnualized', name: '應收帳款周轉率', period: 'quarterlyAnnualized', sort: 2 },
@@ -368,6 +449,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '總資產周轉率',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '營收 ÷ 期末總資產，衡量運用資產創造營收的效率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'assetTurnoverQuarterly', name: '總資產周轉率', period: 'quarterly', sort: 1 },
           { key: 'assetTurnoverQuarterlyAnnualized', name: '總資產周轉率', period: 'quarterlyAnnualized', sort: 2 },
@@ -379,6 +462,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '固定資產周轉率',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '營收 ÷ 期末固定資產，衡量運用固定資產創造營收的效率',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'fixedAssetTurnoverQuarterly', name: '固定資產周轉率', period: 'quarterly', sort: 1 },
           { key: 'fixedAssetTurnoverQuarterlyAnnualized', name: '固定資產周轉率', period: 'quarterlyAnnualized', sort: 2 },
@@ -390,6 +475,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '應付帳款周轉率',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '銷貨成本 ÷ 期末應付帳款，衡量支付供應商貨款的速度',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'payablesTurnoverQuarterly', name: '應付帳款周轉率', period: 'quarterly', sort: 1 },
           { key: 'payablesTurnoverQuarterlyAnnualized', name: '應付帳款周轉率', period: 'quarterlyAnnualized', sort: 2 },
@@ -401,6 +488,8 @@ export const filterCatalog: FilterCategory[] = [
         name: 'DIO 存貨週轉天數',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '365 ÷ 存貨周轉率，換算成平均庫存天數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'inventoryDaysQuarterlyAnnualized', name: 'DIO 存貨週轉天數', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'inventoryDaysTtm', name: 'DIO 存貨週轉天數', period: 'ttm', sort: 2 },
@@ -411,6 +500,8 @@ export const filterCatalog: FilterCategory[] = [
         name: 'DSO 應收帳款週轉天數',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '365 ÷ 應收帳款周轉率，換算成平均收現天數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'receivablesDaysQuarterlyAnnualized', name: 'DSO 應收帳款週轉天數', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'receivablesDaysTtm', name: 'DSO 應收帳款週轉天數', period: 'ttm', sort: 2 },
@@ -421,6 +512,8 @@ export const filterCatalog: FilterCategory[] = [
         name: 'DPO 應付帳款週轉天數',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '365 ÷ 應付帳款周轉率，換算成平均付款天數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'payablesDaysQuarterlyAnnualized', name: 'DPO 應付帳款週轉天數', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'payablesDaysTtm', name: 'DPO 應付帳款週轉天數', period: 'ttm', sort: 2 },
@@ -431,6 +524,8 @@ export const filterCatalog: FilterCategory[] = [
         name: 'CCC 現金轉換週期',
         path: '/turnover/turnover-ratio',
         modelKey: 'turnoverRatio',
+        description: '存貨週轉天數 加 應收帳款週轉天數 減 應付帳款週轉天數，衡量從付款進貨到收到貨款之間資金被卡住的天數',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'cashConversionCycleQuarterlyAnnualized', name: 'CCC 現金轉換週期', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'cashConversionCycleTtm', name: 'CCC 現金轉換週期', period: 'ttm', sort: 2 },
@@ -440,6 +535,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'capexToRevenue',
         name: '資本支出佔營收比',
         path: '/turnover/capex-to-revenue',
+        description: '資本支出 ÷ 營收，衡量相對營收規模投入了多少資本支出',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'capexToRevenueQuarterly', name: '資本支出佔營收比', period: 'quarterly', sort: 1 },
           { key: 'capexToRevenueTtm', name: '資本支出佔營收比', period: 'ttm', sort: 2 },
@@ -459,6 +556,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '本益比 PER',
         path: '/valuation/market-ratios',
         modelKey: 'marketRatios',
+        description: '股價 ÷ 每股盈餘，衡量股價相對獲利的貴便宜程度',
+        source: 'TWSE 已計算之估值比率',
         fields: [{ key: 'peRatio', name: '本益比 PER', period: 'daily', sort: 1 }],
       },
       {
@@ -466,6 +565,8 @@ export const filterCatalog: FilterCategory[] = [
         name: '股價淨值比 PBR',
         path: '/valuation/market-ratios',
         modelKey: 'marketRatios',
+        description: '股價 ÷ 每股淨值，衡量股價相對帳面資產的貴便宜程度',
+        source: 'TWSE 已計算之估值比率',
         fields: [{ key: 'pbRatio', name: '股價淨值比 PBR', period: 'daily', sort: 1 }],
       },
       {
@@ -473,12 +574,16 @@ export const filterCatalog: FilterCategory[] = [
         name: '股息殖利率',
         path: '/valuation/market-ratios',
         modelKey: 'marketRatios',
+        description: '近一年現金股利 ÷ 股價，衡量持股領取現金股利的報酬率',
+        source: 'TWSE 已計算之估值比率',
         fields: [{ key: 'dividendYieldPct', name: '股息殖利率', period: 'daily', sort: 1 }],
       },
       {
         key: 'psr',
         name: '股價營收比 PSR',
         path: '/valuation/psr',
+        description: '市值 ÷ 營收，用營收角度衡量股價的貴便宜程度，適合評估獲利尚未穩定的公司',
+        source: 'MOPS 季報財務比率與 TWSE 每日行情',
         fields: [
           { key: 'psrQuarterlyAnnualized', name: '股價營收比 PSR', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'psrTtm', name: '股價營收比 PSR', period: 'ttm', sort: 2 },
@@ -488,6 +593,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'pFcf',
         name: '股價自由現金流比',
         path: '/valuation/p-fcf',
+        description: '市值 ÷ 自由現金流，用現金流角度衡量股價的貴便宜程度',
+        source: 'MOPS 季報財務比率與 TWSE 每日行情',
         fields: [
           { key: 'pFcfQuarterlyAnnualized', name: '股價自由現金流比', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'pFcfTtm', name: '股價自由現金流比', period: 'ttm', sort: 2 },
@@ -497,6 +604,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'evEbitda',
         name: '企業價值倍數',
         path: '/valuation/ev-ebitda',
+        description: '企業價值（市值加淨負債）÷ EBITDA，衡量收購整家公司要付出的代價相對其稅前息前折舊攤銷前獲利的倍數，比本益比更不受資本結構跟折舊政策影響',
+        source: 'MOPS 季報財務比率與 TWSE 每日行情',
         fields: [
           { key: 'evToEbitdaQuarterlyAnnualized', name: '企業價值倍數', period: 'quarterlyAnnualized', sort: 1 },
           { key: 'evToEbitdaTtm', name: '企業價值倍數', period: 'ttm', sort: 2 },
@@ -512,12 +621,16 @@ export const filterCatalog: FilterCategory[] = [
         key: 'grahamNumber',
         name: 'Graham Number',
         path: '/guru/graham-number',
+        description: 'sqrt(22.5 × 每股盈餘 × 每股淨值)，葛拉漢提出的保守估價公式，股價低於這個數字代表相對安全',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'grahamNumber', name: 'Graham Number', period: 'ttm', sort: 1 }],
       },
       {
         key: 'ncav',
         name: '淨流動資產價值 NCAV',
         path: '/guru/ncav',
+        description: '(流動資產 − 總負債 − 特別股) ÷ 流通股數，葛拉漢提出的極端保守清算價值估算，股價低於這個數字的三分之二被視為有足夠安全邊際',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'ncav', name: 'NCAV 淨流動資產價值', period: 'snapshot', sort: 1 },
           { key: 'marginOfSafetyPrice', name: '安全邊際價', period: 'snapshot', sort: 2 },
@@ -527,6 +640,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'ownerEarnings',
         name: '每股股東盈餘 Owner Earnings',
         path: '/guru/owner-earnings',
+        description: '淨利加折舊攤銷減資本支出，巴菲特提出用來取代帳面淨利的股東實質可分配盈餘概念',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'ownerEarningsPerShareQuarterly', name: '每股股東盈餘', period: 'quarterly', sort: 1 },
           { key: 'ownerEarningsPerShareQuarterlyAnnualized', name: '每股股東盈餘', period: 'quarterlyAnnualized', sort: 2 },
@@ -537,6 +652,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'altmanZScore',
         name: 'Altman Z-Score 原始版',
         path: '/guru/altman-z-score',
+        description: '五個財務比率加權組合，用來預測公司財務危機或破產風險的統計模型；原始版用上市製造業樣本校準，套用到非製造業僅供參考',
+        source: 'MOPS 季報財務比率與 TWSE 每日行情',
         fields: [
           { key: 'zScore', name: 'Z 分數', period: 'snapshot', sort: 1 },
           // X1~X5 各自的公式見 src/domains/guru/README.md「Altman_Z_Score 計算口徑」，
@@ -553,12 +670,16 @@ export const filterCatalog: FilterCategory[] = [
         name: 'Piotroski F-Score',
         path: '/guru/piotroski-f-score',
         // 分數範圍 0~9 屬於文件該講的事，不放進 name。
+        description: '9 項財務體質訊號的加總分數（0～9 分），分數越高代表財務體質與獲利趨勢同時改善',
+        source: 'MOPS 季報財務比率',
         fields: [{ key: 'score', name: 'F 分數', period: 'snapshot', sort: 1 }],
       },
       {
         key: 'beneishMScore',
         name: 'Beneish M-Score',
         path: '/guru/beneish-m-score',
+        description: '8 個財務比率組成的統計模型，用來偵測財報有沒有操縱獲利的跡象',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'mScore', name: 'M 分數', period: 'snapshot', sort: 1 },
           { key: 'dsri', name: 'DSRI 應收帳款指數', period: 'snapshot', sort: 2 },
@@ -575,6 +696,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'nissimPenmanRnoa',
         name: 'Nissim Penman RNOA',
         path: '/guru/nissim-penman-rnoa',
+        description: '把 ROE 拆解成本業報酬率（RNOA）跟財務槓桿放大效果兩部分，用來分辨高 ROE 是本業真的賺錢還是借錢堆出來的',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'rnoaQuarterlyPct', name: 'RNOA 本業報酬率', period: 'quarterly', sort: 1 },
           { key: 'rnoaQuarterlyAnnualizedPct', name: 'RNOA 本業報酬率', period: 'quarterlyAnnualized', sort: 2 },
@@ -597,6 +720,8 @@ export const filterCatalog: FilterCategory[] = [
         name: 'Zmijewski Score',
         path: '/guru/zmijewski-score',
         // 門檻/機率範圍屬於文件該講的事，不放進 name。
+        description: '財務危機統計預警模型，係數是用 1970～80 年代美國公司資料校準，套用到台股時絕對機率數字僅供參考，較適合看同一家公司的相對趨勢變化',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'xScore', name: 'X 分數', period: 'snapshot', sort: 1 },
           { key: 'probabilityOfDistress', name: '財務危機機率', period: 'snapshot', sort: 2 },
@@ -608,6 +733,8 @@ export const filterCatalog: FilterCategory[] = [
         path: '/guru/ohlson-o-score',
         // 九個子變數（SIZE/TLTA/WCTA/CLCA/OENEG/NITA/FUTL/INTWO/CHIN）的公式見
         // src/domains/guru/README.md，公式細節屬於文件該講的事，不放進 name。
+        description: '財務危機統計預警模型，係數同樣是美國歷史資料校準，解讀限制跟 Zmijewski Score 相同',
+        source: 'MOPS 季報財務比率',
         fields: [
           { key: 'oScore', name: 'O 分數', period: 'snapshot', sort: 1 },
           { key: 'probabilityOfBankruptcy', name: '財務危機機率', period: 'snapshot', sort: 2 },
@@ -632,6 +759,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'beta',
         name: '貝塔係數 Beta',
         path: '/portfolio/beta',
+        description: '個股報酬率相對大盤報酬率的共變異數除以大盤報酬率的變異數，衡量個股相對大盤的系統性風險',
+        source: 'TWSE 每日行情',
         fields: [
           // period 描述取樣頻率（1Y 用日資料、2Y 用週資料對齊 Bloomberg、5Y 用月資料對齊
           // Yahoo Finance，見 portfolio/beta/service.ts），不是回看窗口長度——兩者剛好一一對應
@@ -651,6 +780,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'equityRiskPremium',
         name: '股權風險溢酬',
         path: '/macro/equity-risk-premium',
+        description: '大盤長期年化報酬率減去無風險利率（十年期公債殖利率），估計股票市場相對無風險資產要求的額外報酬',
+        source: 'TWSE 每日行情與 CBC 中央銀行統計',
         fields: [
           // period 用 'snapshot'：這不是每季/每日重複發布的指標，是「給定一段窗口」算出來的單一
           // 歷史平均值，跟 bvps 的 snapshot 是同一種「非固定週期」用途，不是完全相同的語意，但
@@ -673,6 +804,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'ma',
         name: '移動平均線 MA',
         path: '/technicals/ma',
+        description: '特定天數收盤價的簡單移動平均，用來平滑短期波動、判斷價格趨勢',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'ma5d', name: '5 日均線', period: 'daily', sort: 1 },
           { key: 'ma10d', name: '10 日均線', period: 'daily', sort: 2 },
@@ -686,6 +819,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'rsi',
         name: '相對強弱指標 RSI',
         path: '/technicals/rsi',
+        description: '特定天數內漲跌幅的相對強弱程度，用來判斷是否超買或超賣',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'rsi6d', name: '6 日 RSI', period: 'daily', sort: 1 },
           { key: 'rsi14d', name: '14 日 RSI', period: 'daily', sort: 2 },
@@ -696,6 +831,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'kd',
         name: '隨機指標 KD',
         path: '/technicals/kd',
+        description: '收盤價落在特定天數高低區間的相對位置，用來判斷短期動能轉折',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'k9d', name: '9 日 K值', period: 'daily', sort: 1 },
           { key: 'd9d', name: '9 日 D值', period: 'daily', sort: 2 },
@@ -707,6 +844,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'bollingerBands',
         name: '布林通道',
         path: '/technicals/bollinger-bands',
+        description: '移動平均線加減兩個標準差的價格區間，用來判斷波動區間跟潛在極值',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'middle', name: '布林通道中軌', period: 'daily', sort: 1 },
           { key: 'upper', name: '布林通道上軌', period: 'daily', sort: 2 },
@@ -717,6 +856,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'atr',
         name: '真實波動區間均值 ATR',
         path: '/technicals/atr',
+        description: '特定天數內真實波動幅度的平均，衡量價格的絕對波動程度',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'atr14d', name: '14 日 ATR', period: 'daily', sort: 1 },
           { key: 'atr20d', name: '20 日 ATR', period: 'daily', sort: 2 },
@@ -726,6 +867,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'bias',
         name: '乖離率 BIAS',
         path: '/technicals/bias',
+        description: '收盤價偏離移動平均線的百分比，用來判斷股價是否過度偏離均值',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'bias5d', name: '5 日乖離率', period: 'daily', sort: 1 },
           { key: 'bias20d', name: '20 日乖離率', period: 'daily', sort: 2 },
@@ -736,6 +879,8 @@ export const filterCatalog: FilterCategory[] = [
         key: 'macd',
         name: 'MACD',
         path: '/technicals/macd',
+        description: '兩條不同天期指數移動平均線的差離值，用來判斷趨勢轉折跟動能強弱',
+        source: 'TWSE 每日行情',
         fields: [
           { key: 'dif', name: 'DIF', period: 'daily', sort: 1 },
           { key: 'dem', name: 'DEM', period: 'daily', sort: 2 },
