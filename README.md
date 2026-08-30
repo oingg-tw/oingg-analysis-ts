@@ -1,4 +1,4 @@
-# oingg-ratios-ts
+# oingg-analysis-ts
 
 從 [oingg-mops-ts](../oingg-mops-ts) 已寫入資料庫的季度財報資料（損益表、資產負債表、現金流量表）計算財務比率，目前只做 ROE。本服務**只讀**，不擁有任何表的 schema、不做 migration，也不向 MOPS 抓取資料——資料必須先透過 oingg-mops-ts 的 ingest API 寫入才能被查到。
 
@@ -36,7 +36,7 @@ URL 路徑跟這個分類結構一一對應（`/<分類>/<指標>`，例如 `/pr
 
 ## `prisma/schema.prisma` 是唯讀鏡像
 
-最初的三個 model（`QuarterlyIncomeStatement`、`QuarterlyBalanceSheet`、`QuarterlyCashFlowStatement`）是用 `node node_modules/prisma/build/index.js db pull` 對既有資料庫內省後，手動整理成跟 oingg-mops-ts 原本 schema 一致的 camelCase + `@map` 命名風格；後續陸續發現這個資料庫還有其他表沒鏡像過（`CapitalStockHistory`、`MonthlyCpi`，2026-08-26 又發現 `DailyMarketIndex`/`DailyStockPrice`，2026-08-28 又發現 `FinancialReportAnnouncement`，還有已知存在但還沒鏡像的 `dividend_distribution`/`preferred_stock_right`——**這個資料庫實際有幾張表，`prisma/schema.prisma` 不一定跟得上，需要新資料源時先用 `information_schema.tables` 內省確認一次，不要假設沒鏡像到的就是不存在**），現有 model 清單以 `prisma/schema.prisma` 本身為準，這裡不重複列。**永遠不要對這些表跑 `prisma migrate`**——表格定義變更一律由 oingg-mops-ts 負責。如果 oingg-mops-ts 那邊改了 schema，重新跑一次 `db pull` 內省、對照調整即可（見 schema 檔開頭註解）。
+最初的三個 model（`QuarterlyIncomeStatement`、`QuarterlyBalanceSheet`、`QuarterlyCashFlowStatement`）是用 `node node_modules/prisma/build/index.js db pull` 對既有資料庫內省後，手動整理成跟 oingg-mops-ts 原本 schema 一致的 camelCase + `@map` 命名風格；後續陸續發現這個資料庫還有其他表沒鏡像過（`CapitalStockHistory`、`MonthlyCpi`，2026-08-28 發現 `FinancialReportAnnouncement`，還有已知存在但還沒鏡像的 `dividend_distribution`/`preferred_stock_right`——**這個資料庫實際有幾張表，`prisma/schema.prisma` 不一定跟得上，需要新資料源時先用 `information_schema.tables` 內省確認一次，不要假設沒鏡像到的就是不存在**），現有 model 清單以 `prisma/schema.prisma` 本身為準，這裡不重複列。**永遠不要對這些表跑 `prisma migrate`**——表格定義變更一律由 oingg-mops-ts 負責。如果 oingg-mops-ts 那邊改了 schema，重新跑一次 `db pull` 內省、對照調整即可（見 schema 檔開頭註解）。反過來也會發生表格消失：`DailyMarketIndex`/`DailyStockPrice`（2026-08-26 曾經鏡像過）2026-08-30 從資料庫裡整個消失了，已經從 schema 移除，市值/Beta 需要的股價資料改用下面「`prisma/twse/schema.prisma`」一節說明的 oingg-twse 資料源。
 
 `pnpm-workspace.yaml`（`blockExoticSubdeps: false` + `allowBuilds`）是從 oingg-mops-ts 複製過來的——`ultimate-express` 依賴 `uWebSockets.js`（git 來源的 exotic subdependency），沒有這個設定 `pnpm install` 會失敗，且這個設定**不能**用簡單的 `.npmrc` 達成。
 
@@ -46,7 +46,7 @@ URL 路徑跟這個分類結構一一對應（`/<分類>/<指標>`，例如 `/pr
 
 `QuarterlyBalanceSheet` 2026-08-20 新增了 `preferredStockCapital`（特別股，分類為權益）跟 `preferredStockLiability`（特別股，分類為金融負債，通常是可贖回特別股）——**`preferredStockLiability` 已經算在 `totalLiabilities` 裡面**，用到總負債的地方（負債比率、NCAV…）不要再額外扣一次 `preferredStockLiability`，會重複扣。這是用實際資料驗證 `totalLiabilities + totalEquity = totalAssets` 這個恆等式成立才確認的。目前只有 [`src/domains/guru/ncav/`](src/domains/guru/ncav/) 用到 `preferredStockCapital`。
 
-`DailyMarketIndex`（`daily_market_index`）跟 `DailyStockPrice`（`daily_stock_price`）是 2026-08-26 為了做 [`src/domains/portfolio/beta/`](src/domains/portfolio/beta/) 才發現、補鏡像進來的——加權股價指數（TAIEX）跟個股日成交，欄位都是 snake_case（不像 `daily_price`/`daily_valuation` 那樣是 camelCase，要注意這張表命名風格不一致）。**`DailyStockPrice` 覆蓋率會持續成長**：2026-08-26 剛鏡進來時只有 2330（台積電）一檔，2026-08-28 已擴大到 7 家種子公司（2330/2412/2881/2887/2838/2850/2867，對齊 oingg-mops-ts 的驗證名單），還不是全市場，見 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 說明。
+股價/大盤指數資料原本是 mops 的 `DailyMarketIndex`/`DailyStockPrice`，2026-08-30 這兩張表整個從資料庫消失（見上一節），已改用 `prisma/twse/schema.prisma` 的 `DailyPrice`（`daily_price`，個股日成交）跟 `DailyTaiexIndex`（`daily_taiex_index`，加權股價指數），供 [`src/domains/portfolio/beta/`](src/domains/portfolio/beta/) 跟市值計算（`src/shared/marketCap.ts`）使用——欄位都是 camelCase。**覆蓋率會持續成長**：6 家種子公司（2330/2881/2867/2801/2207/2855）回填了約 5 年歷史（2021-09 至今），其他公司多半只有近幾個月，還不是全市場，查詢時一律用 `hasStockPriceCoverage` 現查現算，不要寫死公司代號，見 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 說明。
 
 `FinancialReportAnnouncement`（`financial_report_announcement`）是 2026-08-28 發現、補鏡像進來的——財報**實際公告日**（`announcementDate`），跟三張季度財報表的 `reportDate`（財報涵蓋期間的**期末日**）是兩個不同的日期概念：期末日只是會計期間的結尾，市場在那天還不知道財報數字（依規定約在期末後 45 天才公告，2330 114Q2 期末 2025-06-30、公告 2025-08-12，差 43 天）。任何把股價/市值跟財報數字放一起算的指標（`Altman_Z_Score` X4、之後的 `Beta`/`PSR`/`EV_EBITDA`）股價基準都該用 `announcementDate` 不能用 `reportDate`，否則有 look-ahead bias，見 [`src/shared/reportAnnouncementDate.ts`](src/shared/reportAnnouncementDate.ts)。負責 ingest 的服務提供了 `POST /api/ingest/financial-report-announcements/backfill`，**目前已用 2330/2887/6488 三家公司 114 年度資料驗證過**（各 4/4 筆：114Q1~Q3 + 113 年報，0 警訊），是刻意先驗證這個範圍，不是漏抓；還沒涵蓋到本服務常用測試季度 115Q2，查無資料時上述指標會退回用 `reportDate` 並在 `warnings` 註明，之後可以再擴大 backfill 範圍。
 
@@ -70,12 +70,13 @@ pnpm prisma:analysis:studio    # Prisma Studio 開這個 DB
 
 連到獨立的 Neon 專案 **oingg-twse**（`.env` 的 `TWSE_DATABASE_URL` / `TWSE_DIRECT_URL`），本服務只讀，不擁有這裡的表格 schema/migration——跟主 schema（唯讀鏡像 oingg-mops-ts）是同一種模式，跟自己擁有 schema 的 `prisma/analysis/schema.prisma` 不同。
 
-oingg-twse 這個資料庫實際上有 5 張表，目前鏡像了 2 張：
+oingg-twse 這個資料庫實際上有多張表，目前鏡像了 3 張：
 
-- **`DailyPrice`**（`daily_price`）：每日開高低收、成交量、成交金額、成交筆數。目前還沒有指標直接用到，是之後做市值/PSR/EV 系列時的備用資料源。
+- **`DailyPrice`**（`daily_price`）：每日開高低收、成交量、成交金額、成交筆數。市值計算（`shared/marketCap.ts`）跟 `Beta`、`Altman_Z_Score` X4、`PSR`/`P_FCF`/`EV_EBITDA` 都靠這張表，2026-08-30 取代已消失的 mops `daily_stock_price`。
 - **`DailyValuation`**（`daily_valuation`）：已經有算好的 `peRatio`/`pbRatio`/`dividendYield`。2026-08-19 拍板：`valuation` 分類的 PER/PBR/股利殖利率**直接採用這張表現成的數字**，不用本服務自己的 EPS/BVPS 重算——見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md) 的權衡說明跟「PER/PBR/股利殖利率計算口徑」。
+- **`DailyTaiexIndex`**（`daily_taiex_index`）：加權股價指數（TAIEX）每日開高低收，`Beta` 計算的市場報酬率來源，2026-08-30 取代已消失的 mops `daily_market_index`。
 
-其他 2 張表先不鏡像，還沒決定要不要用：
+其他表先不鏡像，還沒決定要不要用：
 
 - **`quarterly_balance_sheet`** / **`quarterly_income_statement`**：跟 oingg-mops-ts 的財報表部分重疊但欄位不完全一樣（例如這邊直接有 `book_value_per_share`），用途跟資料來源都還不清楚，先不用。
 - **`twse_raw`**：原始資料 JSON payload，不是整理過的結構化資料，用不到。
@@ -130,16 +131,19 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /turnover/turnover-ratio` | 計算單一公司單一季度的存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO 週轉天數與 CCC 現金轉換週期 |
 | `GET /turnover/capex-to-revenue` | 計算單一公司單一季度的資本支出佔營收比（單季、TTM 兩種數值） |
 | `GET /valuation/market-ratios` | 查詢單一公司最新（或指定日期）的 PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字） |
+| `GET /valuation/psr` | 計算單一公司股價營收比（PSR，簡易年化、TTM 兩種數值，複合指標） |
+| `GET /valuation/p-fcf` | 計算單一公司股價自由現金流比（P_FCF，簡易年化、TTM 兩種數值，複合指標） |
+| `GET /valuation/ev-ebitda` | 計算單一公司企業價值倍數（EV_EBITDA，簡易年化、TTM 兩種數值，複合指標） |
 | `GET /guru/graham-number` | 計算單一公司單一季度的葛拉漢數（`sqrt(22.5 x EPS(TTM) x BVPS)`） |
 | `GET /guru/ncav` | 計算單一公司單一季度的葛拉漢淨流動資產價值（NCAV）與安全邊際價 |
 | `GET /guru/owner-earnings` | 計算單一公司單一季度的每股股東盈餘（Buffett Owner Earnings，單季、單季年化、TTM 三種數值） |
-| `GET /guru/altman-z-score` | 計算單一公司原始版 Altman Z-Score（`year`/`season` 選填，不給就抓最新一季；X4 目前只有 7 家種子公司有股價資料） |
+| `GET /guru/altman-z-score` | 計算單一公司原始版 Altman Z-Score（`year`/`season` 選填，不給就抓最新一季；X4 依股價覆蓋率決定能不能算） |
 | `GET /guru/piotroski-f-score` | 計算單一公司皮爾托斯基 F 分數（0~9 分，9 項訊號跟去年同季比較） |
 | `GET /guru/beneish-m-score` | 計算單一公司貝尼許 M 分數（法務會計造假預警，8 個變量跟去年同季比較，TATA 除外） |
 | `GET /guru/nissim-penman-rnoa` | 計算單一公司 Nissim & Penman RNOA 拆解（`ROE = RNOA + FLEV x SPREAD`，單季、單季年化、TTM 三種數值，複合指標） |
 | `GET /guru/zmijewski-score` | 計算單一公司 Zmijewski Score（財務危機 Probit 預警模型） |
 | `GET /guru/ohlson-o-score` | 計算單一公司 Ohlson O-Score（財務危機 Logit 預警模型） |
-| `GET /portfolio/beta` | 計算單一公司相對加權股價指數的貝塔係數（1Y/2Y/5Y 三種窗口；目前只有 7 家種子公司有股價資料） |
+| `GET /portfolio/beta` | 計算單一公司相對加權股價指數的貝塔係數（1Y/2Y/5Y 三種窗口；6 家種子公司歷史深度最完整） |
 | `GET /filters` | 列出目前可用來 filter 的分類/指標/欄位清單，見 [`src/domains/system/filterCatalog.ts`](src/domains/system/filterCatalog.ts) |
 
 Query 參數，兩種介面：(1) `GET /valuation/market-ratios`、`GET /portfolio/beta` 只有 `companyId`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta` 是 `asOfDate`），因為兩者都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」跟 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 的說明。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`solvency`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr`）共用同一組：`companyId`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
@@ -319,7 +323,7 @@ Query 參數，兩種介面：(1) `GET /valuation/market-ratios`、`GET /portfol
 
 - **已實作**：見 [`src/domains/README.md`](src/domains/README.md) 的分類索引，每個分類底下的狀態欄有最新進度，這裡不重複維護一份會過期的清單。`solvency` 分類已全數完成；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/`、2026-08-27 實作（見 [`src/domains/guru/README.md`](src/domains/guru/README.md)）。
 - **mops 財報資料曾經有「累計數混單季數」的問題，2026-08-27 已由 oingg-mops-ts 修正**：`quarterly_income_statement` 的 Q4（原本存的是全年累計數）跟 `quarterly_cash_flow_statement` 的每一季（原本全部都存當年累計數，不是只有 Q4）都改成真的單季數，另外新增 `annual_income_statement`/`annual_cash_flow_statement`（全年總額）、`cumulative_cash_flow_statement`（保留原始累計數，供需要的人用）。修正前用簡單「近四季加總」算 TTM 的指標，只要窗口跨到 Q4 就會算錯（過度計入），這是本服務發現的既有資料 bug，不是本服務自己的邏輯錯誤——修正後所有既有 TTM 計算都自動變正確，不需要改程式碼，但涉及的數字都變了，各分類 README 的「已實測驗證」段落已經更新成修正後的數字。
-- **市值計算**：改用 mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（股價基準日當下生效股本，`getPaidInSharesAsOf`），不是 2026-08-21 一開始討論的 oingg-twse `company_profile.issued_shares` x `daily_price.close`（那條路線的 `issued_shares` 是「現在」的股數快照，不是歷史時點的股數，配歷史財報季度市值會不準）。**`daily_stock_price` 覆蓋率會持續成長**：2026-08-26 剛鏡進來時只有 2330（台積電）一檔，2026-08-28 已擴大到 7 家種子公司（2330/2412/2881/2887/2838/2850/2867）。查詢邏輯一律現查有沒有資料（見 [`src/shared/marketCap.ts`](src/shared/marketCap.ts) 的 `hasStockPriceCoverage`），不要在程式碼裡寫死特定公司代號——2026-08-28 才修過一次 `Altman_Z_Score` 誤把 `companyId === '2330'` 當判斷依據的 bug。不在覆蓋範圍內的公司市值相關欄位（`Altman_Z_Score` 的 X4、`portfolio/beta`）會是 `null`，`fieldStatuses` 標成 `not_applicable`，是覆蓋率限制，不是程式邏輯問題。
+- **市值計算**：個股收盤價 x `capital_stock_history`（mops，股價基準日當下生效股本，`getPaidInSharesAsOf`）。收盤價原本用 mops 的 `daily_stock_price`，該表 2026-08-30 從資料庫消失，改用 oingg-twse 的 `daily_price`（見 [`src/shared/marketCap.ts`](src/shared/marketCap.ts)）——不是 2026-08-21 一開始討論的 `company_profile.issued_shares` x `daily_price.close` 那條路線（`issued_shares` 是「現在」的股數快照，不是歷史時點的股數，配歷史財報季度市值會不準；`capital_stock_history` 才是歷史股數的正確來源）。**`daily_price` 覆蓋率會持續成長**：6 家種子公司（2330/2881/2867/2801/2207/2855）回填了約 5 年歷史，其他公司多半只有近幾個月。查詢邏輯一律現查有沒有資料（見 `hasStockPriceCoverage`），不要在程式碼裡寫死特定公司代號——2026-08-28 才修過一次 `Altman_Z_Score` 誤把 `companyId === '2330'` 當判斷依據的 bug。不在覆蓋範圍內的公司市值相關欄位（`Altman_Z_Score` 的 X4、`portfolio/beta`）會是 `null`，`fieldStatuses` 標成 `not_applicable`，是覆蓋率限制，不是程式邏輯問題。
 - **股價基準日 2026-08-28 修正**：原本拿財報期末日（`reportDate`）當股價基準日是錯的——期末日只是會計期間結尾，市場那天還不知道財報數字，正確要用財報實際**公告日**（`financial_report_announcement.announcementDate`）。查無公告日（該表目前只涵蓋 2330/2887/6488 三家公司、113Q4~114Q3 四個季度，覆蓋率很低）才退回期末日並在 `warnings` 註明可能有 look-ahead bias。見 [`src/shared/reportAnnouncementDate.ts`](src/shared/reportAnnouncementDate.ts) 跟 [`src/domains/guru/README.md`](src/domains/guru/README.md) 的「市值資料源」說明，目前只有 `Altman_Z_Score` 的 X4 套用了這個修正。
 - **五年加權 ROE 暫緩**：使用者想要的是中國證監會「加權平均淨資產收益率」那種逐月加權權益的算法（見 `src/domains/profitability/roe/` 相關討論），但現有資料只有季度期末餘額，股利發放日期、其他綜合損益變動都沒有精確日期，只有股本變動（`capital_stock_history`）有精確月份——股本只是權益的小部分，保留盈餘（獲利累積）才是主要變動來源且完全沒有日期資料。使用者決定先暫停，等他準備好股利發放日期等資料後再繼續，目前先做其他不受此限制的指標。
 - **ROE 用期末權益而非期初期末平均權益**：見上方「ROE 計算口徑」，是刻意的 v1 簡化，非 bug。

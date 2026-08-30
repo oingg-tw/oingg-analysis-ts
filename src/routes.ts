@@ -23,6 +23,9 @@ import netDebtToEbitdaRouter from './domains/solvency/netDebtToEbitda/route';
 import turnoverRatioRouter from './domains/turnover/turnoverRatio/route';
 import capexToRevenueRouter from './domains/turnover/capexToRevenue/route';
 import marketRatiosRouter from './domains/valuation/marketRatios/route';
+import psrRouter from './domains/valuation/psr/route';
+import pFcfRouter from './domains/valuation/pFcf/route';
+import evEbitdaRouter from './domains/valuation/evEbitda/route';
 import grahamNumberRouter from './domains/guru/grahamNumber/route';
 import ncavRouter from './domains/guru/ncav/route';
 import ownerEarningsRouter from './domains/guru/ownerEarnings/route';
@@ -60,7 +63,7 @@ apiRouter.use(
 apiRouter.use('/cash-flow', cashFlowPerShareRouter, ocfToNetIncomeRouter, accrualsRatioRouter);
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);
 apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
-apiRouter.use('/valuation', marketRatiosRouter);
+apiRouter.use('/valuation', marketRatiosRouter, psrRouter, pFcfRouter, evEbitdaRouter);
 apiRouter.use(
   '/guru',
   grahamNumberRouter,

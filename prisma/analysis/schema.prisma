@@ -1,5 +1,6 @@
-// 本 schema 定義的表由 oingg-ratios-ts 自己擁有 schema/migration，連到獨立的 oingg-analysis
-// Neon 專案（見專案根目錄 .env 的 ANALYSIS_DATABASE_URL / ANALYSIS_DIRECT_URL）。
+// 本 schema 定義的表由 oingg-analysis-ts（本服務）自己擁有 schema/migration，連到獨立的
+// oingg-analysis Neon 專案（見專案根目錄 .env 的 ANALYSIS_DATABASE_URL / ANALYSIS_DIRECT_URL——
+// 服務名跟 Neon 專案名很像但是兩個不同的東西，不要混淆）。
 // 跟 ../schema.prisma（唯讀鏡像 oingg-mops-ts 的季度財報表）是完全不同的資料庫，不要混用連線。
 //
 // 這裡存的是「算完的投資指標結果」，每個指標各自一張表（ROE、PER、PBR…），
@@ -1101,4 +1102,103 @@ model IndustryCode {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("reference_industry_code")
+}
+
+// PSR（股價營收比）計算結果。2026-08-30 實作，市值/淨負債/EBITDA 這類需要股價的複合指標
+// 統一改走 oingg-twse daily_price（mops daily_stock_price 已消失），見
+// src/domains/valuation/psr/service.ts、src/shared/marketCap.ts。
+model PsrResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  // PSR = 市值 / 營收，市值是存量、營收是流量，拿市值除以「一季」的營收沒有標準意義，
+  // 只提供簡單年化（x4）跟 TTM（近四季實際加總）兩種口徑，沒有純單季版本。
+  psrQuarterlyAnnualized Decimal? @map("psr_quarterly_annualized") @db.Decimal(14, 4)
+  psrTtm                 Decimal? @map("psr_ttm") @db.Decimal(14, 4)
+
+  marketCapValue     Decimal?  @map("market_cap_value") @db.Decimal(24, 4)
+  marketCapTradeDate DateTime? @map("market_cap_trade_date") @db.Date
+
+  operatingRevenueValue    BigInt? @map("operating_revenue_value") // 本季營收（千元）
+  operatingRevenueTtmValue BigInt? @map("operating_revenue_ttm_value") // 近四季加總（千元），資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("valuation_psr")
+}
+
+// P_FCF（股價自由現金流比）計算結果。2026-08-30 實作，跟 PsrResult 同一種「市值(存量)/流量」
+// 結構，見 src/domains/valuation/pFcf/service.ts。
+model PFcfResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  // P_FCF = 市值 / 自由現金流（FCF），只提供簡單年化（x4）跟 TTM（近四季實際加總）兩種口徑，
+  // 沒有純單季版本，理由跟 PsrResult 一樣。
+  pFcfQuarterlyAnnualized Decimal? @map("p_fcf_quarterly_annualized") @db.Decimal(14, 4)
+  pFcfTtm                 Decimal? @map("p_fcf_ttm") @db.Decimal(14, 4)
+
+  marketCapValue     Decimal?  @map("market_cap_value") @db.Decimal(24, 4)
+  marketCapTradeDate DateTime? @map("market_cap_trade_date") @db.Date
+
+  // FCF = 營業活動現金流量 + 資本支出（capitalExpenditures 在資料庫裡本來就是負數）。
+  freeCashFlowValue    BigInt? @map("free_cash_flow_value") // 本季 FCF（千元）
+  freeCashFlowTtmValue BigInt? @map("free_cash_flow_ttm_value") // 近四季加總（千元），資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("valuation_p_fcf")
+}
+
+// EV_EBITDA（企業價值倍數）計算結果。2026-08-30 實作，跟 PsrResult/PFcfResult 同一種
+// 「存量/流量」結構，見 src/domains/valuation/evEbitda/service.ts。
+model EvEbitdaResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  // EV_EBITDA = 企業價值 / EBITDA，只提供簡單年化（x4）跟 TTM（近四季實際加總）兩種口徑，
+  // 沒有純單季版本，理由跟 PsrResult 一樣。
+  evToEbitdaQuarterlyAnnualized Decimal? @map("ev_to_ebitda_quarterly_annualized") @db.Decimal(14, 4)
+  evToEbitdaTtm                 Decimal? @map("ev_to_ebitda_ttm") @db.Decimal(14, 4)
+
+  // 企業價值（元） = 市值 + 淨負債（本季期末，換算成元）。
+  enterpriseValue Decimal? @map("enterprise_value") @db.Decimal(24, 4)
+
+  marketCapValue     Decimal?  @map("market_cap_value") @db.Decimal(24, 4)
+  marketCapTradeDate DateTime? @map("market_cap_trade_date") @db.Date
+
+  netDebtValue         BigInt? @map("net_debt_value") // 本季期末（千元），可能為負數（淨現金部位）
+  ebitdaQuarterlyValue BigInt? @map("ebitda_quarterly_value") // 本季 EBITDA（千元）
+  ebitdaTtmValue       BigInt? @map("ebitda_ttm_value") // 近四季加總（千元），資料不齊則為 null
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("valuation_ev_ebitda")
 }

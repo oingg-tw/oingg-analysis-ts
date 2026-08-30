@@ -178,43 +178,11 @@ model MonthlyCpi {
   @@map("monthly_cpi")
 }
 
-// 加權股價指數（TAIEX）每日收盤——2026-08-26 發現存在，之前沒鏡像過。用來當
-// src/domains/portfolio/beta/ 計算 Beta 用的市場基準報酬序列。646 個交易日，
-// 2021-09-01 ~ 2026-06-30（見 beta/README 相關說明）。
-model DailyMarketIndex {
-  tradeDate  DateTime @map("trade_date") @db.Date
-  openIndex  Decimal? @map("open_index") @db.Decimal(12, 4)
-  highIndex  Decimal? @map("high_index") @db.Decimal(12, 4)
-  lowIndex   Decimal? @map("low_index") @db.Decimal(12, 4)
-  closeIndex Decimal? @map("close_index") @db.Decimal(12, 4)
-  createdAt  DateTime @map("created_at")
-  updatedAt  DateTime @map("updated_at")
-
-  @@id([tradeDate])
-  @@map("daily_market_index")
-}
-
-// 個股每日成交——2026-08-26 發現存在，之前沒鏡像過。**目前只有 2330（台積電）一檔股票有資料**
-// （1210 筆，2021-09-01 ~ 2026-08-26），其他公司查詢會是查無資料，不是程式邏輯的問題，
-// 見 src/domains/portfolio/README.md 說明。
-model DailyStockPrice {
-  symbol       String
-  tradeDate    DateTime @map("trade_date") @db.Date
-  openPrice    Decimal? @map("open_price") @db.Decimal(10, 4)
-  highPrice    Decimal? @map("high_price") @db.Decimal(10, 4)
-  lowPrice     Decimal? @map("low_price") @db.Decimal(10, 4)
-  closePrice   Decimal? @map("close_price") @db.Decimal(10, 4)
-  priceChange  Decimal? @map("price_change") @db.Decimal(10, 4)
-  volume       BigInt?
-  tradeValue   BigInt?  @map("trade_value")
-  transactions BigInt?
-  note         String?
-  createdAt    DateTime @map("created_at")
-  updatedAt    DateTime @map("updated_at")
-
-  @@id([symbol, tradeDate])
-  @@map("daily_stock_price")
-}
+// 2026-08-30 移除：daily_market_index、daily_stock_price 這兩張表已經從 mops 資料庫裡消失
+// （不是覆蓋率限制，是表本身不存在了，原因不明，可能是對方在重構）。市值/Beta 需要的股價、
+// 大盤指數資料改用 oingg-twse 的 daily_price、daily_taiex_index（覆蓋率更完整，見
+// src/shared/marketCap.ts、src/domains/portfolio/beta/service.ts 開頭的說明），
+// src/ 底下已經沒有任何地方引用這兩個 model 了。
 
 // 財報實際公告日——2026-08-28 發現存在，之前沒鏡像過。跟 quarterly_balance_sheet 等表的 reportDate
 // 不一樣：reportDate 是財報涵蓋期間的「期末日」（會計期間，例如 114Q2 的 reportDate 是 2025-06-30），

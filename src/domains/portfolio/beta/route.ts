@@ -9,12 +9,12 @@ const router = Router();
  *   get:
  *     summary: 計算單一公司相對加權股價指數（TAIEX）的貝塔係數（1Y/2Y/5Y）
  *     description: >
- *       直接讀取 oingg-mops-ts 已寫入資料庫的個股日成交（`daily_stock_price`）與加權股價指數
- *       （`daily_market_index`）計算，本服務本身不向任何來源抓取股價資料，若查無資料請先確認
- *       oingg-mops-ts 那邊有沒有這個資料源。
+ *       直接讀取 oingg-twse 已寫入資料庫的個股日成交（`daily_price`）與加權股價指數
+ *       （`daily_taiex_index`）計算，本服務本身不向任何來源抓取股價資料，若查無資料請先確認
+ *       oingg-twse 那邊有沒有這個資料源。
  *
- *       **`daily_stock_price` 覆蓋率會持續成長**（2026-08-28 是 7 家種子公司：
- *       2330/2412/2881/2887/2838/2850/2867），查詢範圍外的公司會回傳
+ *       **覆蓋率會持續成長**（6 家種子公司 2330/2881/2867/2801/2207/2855 回填了約 5 年歷史，
+ *       其他公司多半只有近幾個月），查詢範圍外的公司會回傳
  *       `fieldStatuses` 標註 `not_applicable`，不是伺服器錯誤，也不是查無資料待補——是這張表
  *       目前的覆蓋率限制，見 [`../README.md`](../README.md) 說明。
  *
@@ -41,7 +41,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: 公司代號（目前只有 7 家種子公司有資料）
+ *         description: 公司代號（6 家種子公司歷史深度最完整，其他公司覆蓋率會持續成長）
  *         example: "2330"
  *       - in: query
  *         name: asOfDate

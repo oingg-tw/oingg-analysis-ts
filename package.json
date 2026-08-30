@@ -1,5 +1,5 @@
 {
-  "name": "oingg-ratios-ts",
+  "name": "oingg-analysis-ts",
   "version": "1.0.0",
   "description": "Financial ratio calculations (ROE, ...) computed from oingg-mops-ts's ingested quarterly report data.",
   "main": "index.js",

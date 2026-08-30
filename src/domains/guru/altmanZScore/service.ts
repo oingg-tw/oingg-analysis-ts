@@ -171,7 +171,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   }
 
   // 覆蓋率會持續成長（見 shared/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
-  // 在 daily_stock_price 裡有沒有任何資料，用來區分 X4 是「這家公司結構性不在覆蓋範圍內」
+  // 在 oingg-twse daily_price 裡有沒有任何資料，用來區分 X4 是「這家公司結構性不在覆蓋範圍內」
   // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
   const stockPriceCovered = x4 === null ? await hasStockPriceCoverage(companyId) : true;
 
@@ -193,7 +193,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
           'x4',
           stockPriceCovered
             ? { status: 'no_data' as const, message: '市值或總負債缺漏，無法計算 X4。' }
-            : { status: 'not_applicable' as const, message: 'daily_stock_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' },
+            : { status: 'not_applicable' as const, message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' },
         ]
       : null,
     x5 === null ? ['x5', { status: 'no_data' as const, message: '營收（TTM）或總資產缺漏，無法計算 X5。' }] : null,

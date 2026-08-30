@@ -9,8 +9,8 @@ const router = Router();
  *   get:
  *     summary: 計算單一公司原始版 Altman Z-Score（破產風險預警）
  *     description: >
- *       直接讀取 oingg-mops-ts 已寫入資料庫的資產負債表、損益表資料，加上 mops 的
- *       `daily_stock_price`（股價）計算，本服務本身不向任何來源抓取資料。
+ *       直接讀取 oingg-mops-ts 已寫入資料庫的資產負債表、損益表資料，加上 oingg-twse 的
+ *       `daily_price`（股價）計算，本服務本身不向任何來源抓取資料。
  *
  *       **適用性警告**：原始版模型是用上市製造業樣本校準的，X5（營收/總資產）對產業結構特別敏感，
  *       套用到非製造業（金融、服務、營建等）時分數僅供參考，不是精確的破產風險預測——這個警告
@@ -22,10 +22,10 @@ const router = Router();
  *         X4 = 股權市值 / 總負債帳面值；X5 = 營收（TTM） / 總資產。
  *       - X3、X5 直接引用 [`interestCoverage`](../../solvency/interestCoverage/route.ts)、
  *         [`turnoverRatio`](../../turnover/turnoverRatio/route.ts) 已經算好的 TTM 數值，不重複查詢。
- *       - X4 的市值 = mops `daily_stock_price` 收盤價（報告日或之前最近一個交易日） x 流通股數
- *         （`capital_stock_history`，報告日當下生效的股本）——**`daily_stock_price` 覆蓋率會持續
- *         成長**（2026-08-28 是 7 家種子公司：2330/2412/2881/2887/2838/2850/2867），不在覆蓋
- *         範圍內的公司 X4 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+ *       - X4 的市值 = oingg-twse `daily_price` 收盤價（報告日或之前最近一個交易日） x 流通股數
+ *         （mops `capital_stock_history`，報告日當下生效的股本）——**覆蓋率會持續成長**
+ *         （6 家種子公司 2330/2881/2867/2801/2207/2855 回填了約 5 年歷史，其他公司多半只有近
+ *         幾個月），不在覆蓋範圍內的公司 X4 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
  *       - 判讀切點：`Z > 2.99` 為 Safe，`1.81 ≤ Z ≤ 2.99` 為 Grey，`Z < 1.81` 為 Distress。
  *       - `year`/`season` 選填但要成對——不給就自動抓最新一季有資產負債表資料的季度；市值抓的是
  *         「該季報告日或之前最近一個交易日」的收盤價，不是查詢當下的最新股價。
@@ -37,7 +37,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: 公司代號（目前只有 7 家種子公司能算出完整 Z-Score，其他公司 X4 會是 null）
+ *         description: 公司代號（6 家種子公司歷史深度最完整能穩定算出完整 Z-Score，其他公司 X4 視覆蓋率可能是 null）
  *         example: "2330"
  *       - in: query
  *         name: year

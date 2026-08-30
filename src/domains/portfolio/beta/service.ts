@@ -1,4 +1,4 @@
-import prisma from '@/adapters/prisma/index';
+import twsePrisma from '@/adapters/prisma/twseClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BetaQuery, BetaResult, BetaSamplingFrequency, BetaWindow } from './types';
@@ -122,20 +122,22 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   const upperBoundClause = requestedAsOf ? { lte: requestedAsOf } : undefined;
 
   const [stockRows, indexRows, stockRange, indexRange] = await Promise.all([
-    prisma.dailyStockPrice.findMany({
+    twsePrisma.dailyPrice.findMany({
       where: { symbol: companyId, tradeDate: { gte: fiveYearsBack, ...upperBoundClause } },
       orderBy: { tradeDate: 'asc' },
-      select: { tradeDate: true, closePrice: true },
+      select: { tradeDate: true, close: true },
     }),
-    prisma.dailyMarketIndex.findMany({
+    twsePrisma.dailyTaiexIndex.findMany({
       where: { tradeDate: { gte: fiveYearsBack, ...upperBoundClause } },
       orderBy: { tradeDate: 'asc' },
-      select: { tradeDate: true, closeIndex: true },
+      select: { tradeDate: true, close: true },
     }),
-    prisma.dailyStockPrice.aggregate({ where: { symbol: companyId }, _min: { tradeDate: true }, _max: { tradeDate: true } }),
-    prisma.dailyMarketIndex.aggregate({ _min: { tradeDate: true }, _max: { tradeDate: true } }),
+    twsePrisma.dailyPrice.aggregate({ where: { symbol: companyId }, _min: { tradeDate: true }, _max: { tradeDate: true } }),
+    twsePrisma.dailyTaiexIndex.aggregate({ _min: { tradeDate: true }, _max: { tradeDate: true } }),
   ]);
 
+  // 股價、大盤指數都改用 oingg-twse（daily_price / daily_taiex_index），不再用 mops 已消失的
+  // daily_stock_price / daily_market_index——見 shared/marketCap.ts 開頭的說明。
   const dataCoverage = {
     stockPriceDateRange: {
       min: stockRange._min.tradeDate ? toDateString(stockRange._min.tradeDate) : null,
@@ -155,15 +157,16 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     observations: 0,
   });
 
-  // daily_stock_price 覆蓋率會持續成長（2026-08-26 剛鏡進來時只有 2330，2026-08-28 已擴大到
-  // 7 家種子公司）——查無資料視為「不適用」，不是「查無資料待補」，因為這不是時間到了就會自己
-  // 有的資料缺口，是覆蓋率本身的限制，見 portfolio/README.md 說明。這裡本來就是現查
-  // stockRange（不是寫死公司代號判斷），只有訊息文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
+  // oingg-twse daily_price 覆蓋率會持續成長（2026-08-30 起改用這張表，個別公司歷史深度不一：
+  // 6 家種子公司回填了約 5 年，其他公司多半只有近幾個月）——查無資料視為「不適用」，不是
+  // 「查無資料待補」，因為這不是時間到了就會自己有的資料缺口，是覆蓋率本身的限制，見
+  // portfolio/README.md 說明。這裡本來就是現查 stockRange（不是寫死公司代號判斷），只有訊息
+  // 文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
   if (stockRange._min.tradeDate === null) {
-    warnings.push(`daily_stock_price 目前沒有 ${companyId} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
+    warnings.push(`daily_price 目前沒有 ${companyId} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
     const notApplicable: MetricStatus = {
       status: 'not_applicable',
-      message: `daily_stock_price 目前沒有涵蓋 ${companyId}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
+      message: `daily_price 目前沒有涵蓋 ${companyId}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
     };
     return {
       companyId,
@@ -184,15 +187,15 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // 建立「股價跟指數都有資料」的重疊交易日序列（依日期字串比對，兩張表都已經是 YYYY-MM-DD 顆粒度）。
   const indexByDate = new Map<string, number>();
   for (const row of indexRows) {
-    if (row.closeIndex !== null) indexByDate.set(toDateString(row.tradeDate), Number(row.closeIndex));
+    if (row.close !== null) indexByDate.set(toDateString(row.tradeDate), Number(row.close));
   }
   const overlap: OverlapPoint[] = [];
   for (const row of stockRows) {
-    if (row.closePrice === null) continue;
+    if (row.close === null) continue;
     const dateStr = toDateString(row.tradeDate);
     const indexClose = indexByDate.get(dateStr);
     if (indexClose !== undefined) {
-      overlap.push({ tradeDate: dateStr, stockClose: Number(row.closePrice), indexClose });
+      overlap.push({ tradeDate: dateStr, stockClose: Number(row.close), indexClose });
     }
   }
 

@@ -32,8 +32,8 @@ export interface BetaResult {
   beta5Y: BetaWindow;
 
   dataCoverage: {
-    stockPriceDateRange: { min: string | null; max: string | null }; // 這個 symbol 在 daily_stock_price 的資料範圍；查無資料則兩者皆 null
-    marketIndexDateRange: { min: string | null; max: string | null }; // daily_market_index 整體資料範圍，跟 symbol 無關
+    stockPriceDateRange: { min: string | null; max: string | null }; // 這個 symbol 在 oingg-twse daily_price 的資料範圍；查無資料則兩者皆 null
+    marketIndexDateRange: { min: string | null; max: string | null }; // oingg-twse daily_taiex_index 整體資料範圍，跟 symbol 無關
   };
 
   // 2026-08-26 起新指標統一用這個規範標註「值為 null 的原因」，見 src/shared/metricStatus.ts；

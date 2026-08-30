@@ -76,7 +76,7 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 | X4 | **股權市值** / 總負債帳面值 | 見下方「市值資料源」 |
 | X5 | 營收（TTM） / 總資產 | 直接引用 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的 `assetTurnoverTtm`（本來就是「營收 TTM/總資產」，公式完全一樣） |
 
-**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（股價基準日當下生效的股本，`getPaidInSharesAsOf`）。**`daily_stock_price` 覆蓋率會持續成長**（2026-08-26 剛鏡進來時只有 2330，2026-08-28 已擴大到 7 家種子公司：2330/2412/2881/2887/2838/2850/2867），完全查無資料的公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`；覆蓋範圍內但這次查詢缺別的東西（例如 `capital_stock_history` 對不上股價基準日），標成 `no_data`——判斷邏輯見 [`../../shared/marketCap.ts`](../../shared/marketCap.ts) 的 `hasStockPriceCoverage`，不要在程式碼裡寫死特定公司代號判斷「這家公司有沒有股價資料」。
+**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：個股收盤價 x `capital_stock_history`（mops，股價基準日當下生效的股本，`getPaidInSharesAsOf`）。收盤價原本用 mops 的 `daily_stock_price`，該表 2026-08-30 從資料庫消失，改用 oingg-twse 的 `daily_price`（見 [`../../shared/marketCap.ts`](../../shared/marketCap.ts)）。**覆蓋率會持續成長**（6 家種子公司 2330/2881/2867/2801/2207/2855 回填了約 5 年歷史，其他公司多半只有近幾個月），完全查無資料的公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`；覆蓋範圍內但這次查詢缺別的東西（例如 `capital_stock_history` 對不上股價基準日），標成 `no_data`——判斷邏輯見 `hasStockPriceCoverage`，不要在程式碼裡寫死特定公司代號判斷「這家公司有沒有股價資料」。
 
 **股價基準日不是財報期末日，是財報公告日（2026-08-28 修正）**：一開始直接拿 `reportDate`（資產負債表的期末日，例如 115Q2 是 2026-06-30）當股價基準日，這是錯的——期末日只是會計期間的結尾，市場在那天根本還不知道這一季財報數字（依規定財報要再等約 45 天才會公告），拿期末日查股價等於是 look-ahead bias（用了市場當時還不知道的未來資訊）。正確作法是用 `financial_report_announcement` 這張表的 `announcementDate`（財報實際對外公告、市場才真的能反應的那一天）；查無公告日才退回 `reportDate` 並在 `warnings` 註明可能有 look-ahead bias，見 [`../../shared/reportAnnouncementDate.ts`](../../shared/reportAnnouncementDate.ts) 的 `getPriceAnchorDate`。回應多了 `marketCap.priceAnchorSource`（`'announcement'` 或 `'report_date_fallback'`）標明這次用的是哪一種。已用 2330 114Q2（有公告日 2025-08-12，比期末日 2025-06-30 晚 43 天）驗證正確優先採用公告日。
 
@@ -84,7 +84,7 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 
 **查詢介面**：`year`/`season` 選填（要嘛都給要嘛都不給），不給就自動抓最新一季有資產負債表資料的季度——跟 [`../valuation/marketRatios/`](../valuation/marketRatios/) 只有市值日期選填不同，這是本服務第一個「財報季度 + 市值日期都自動抓最新」的指標。市值抓的是「該季報告日或之前最近一個交易日」的收盤價，不是查詢當下的最新股價。
 
-**單位陷阱**：`daily_stock_price` 算出來的市值是「股價 x 實際股數」的真實新台幣金額，但財報金額欄位（`totalLiabilities` 等）單位是千元——X4 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍。這是跟 BVPS 曾經漏過的同一個坑，開發時就踩到一次（有測試在，抓出來了才修正）。
+**單位陷阱**：市值算出來是「股價 x 實際股數」的真實新台幣金額，但財報金額欄位（`totalLiabilities` 等）單位是千元——X4 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍。這是跟 BVPS 曾經漏過的同一個坑，開發時就踩到一次（有測試在，抓出來了才修正）。
 
 判讀切點：`Z > 2.99` Safe、`1.81 ≤ Z ≤ 2.99` Grey、`Z < 1.81` Distress（原始版切點，跟 Z''-Score 不同，本服務只做原始版，見上方適用性警告）。
 

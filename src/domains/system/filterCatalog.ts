@@ -392,6 +392,33 @@ export const filterCatalog: FilterCategory[] = [
           { key: 'dividendYieldPct', name: '股息殖利率', period: 'daily' },
         ],
       },
+      {
+        key: 'psr',
+        name: '股價營收比 PSR',
+        path: '/valuation/psr',
+        fields: [
+          { key: 'psrQuarterlyAnnualized', name: '股價營收比 PSR', period: 'quarterlyAnnualized' },
+          { key: 'psrTtm', name: '股價營收比 PSR', period: 'ttm' },
+        ],
+      },
+      {
+        key: 'pFcf',
+        name: '股價自由現金流比',
+        path: '/valuation/p-fcf',
+        fields: [
+          { key: 'pFcfQuarterlyAnnualized', name: '股價自由現金流比', period: 'quarterlyAnnualized' },
+          { key: 'pFcfTtm', name: '股價自由現金流比', period: 'ttm' },
+        ],
+      },
+      {
+        key: 'evEbitda',
+        name: '企業價值倍數',
+        path: '/valuation/ev-ebitda',
+        fields: [
+          { key: 'evToEbitdaQuarterlyAnnualized', name: '企業價值倍數', period: 'quarterlyAnnualized' },
+          { key: 'evToEbitdaTtm', name: '企業價值倍數', period: 'ttm' },
+        ],
+      },
     ],
   },
   {

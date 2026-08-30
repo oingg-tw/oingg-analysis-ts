@@ -4,11 +4,12 @@
 // 那邊改了 schema，重新跑一次 `prisma db pull --schema=prisma/twse/schema.prisma` 內省、
 // 再對照調整即可。
 //
-// oingg-twse 這個資料庫實際上有 5 張表（daily_price、daily_valuation、quarterly_balance_sheet、
-// quarterly_income_statement、twse_raw），目前鏡像了 daily_price（股價）跟 daily_valuation
-// （已經算好的 PER/PBR/殖利率，2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，
-// 見 src/domains/valuation/marketRatios/）。另外兩張跟 oingg-mops-ts 的財報表部分重疊但欄位
-// 不完全一樣，用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
+// 2026-08-30 用 information_schema 現查過一次，oingg-twse 實際上還有 attention_stock、
+// company_profile、company_status、foreign_holding、margin_balance、material_announcement、
+// twse_raw 等表，目前鏡像了 daily_price（股價）、daily_valuation（已經算好的 PER/PBR/殖利率，
+// 2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，見
+// src/domains/valuation/marketRatios/）、daily_taiex_index（大盤加權指數，Beta 計算的市場報酬率
+// 來源，見 src/domains/portfolio/beta/）。其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
   provider = "prisma-client-js"
@@ -52,4 +53,18 @@ model DailyValuation {
 
   @@id([symbol, tradeDate])
   @@map("daily_valuation")
+}
+
+// 每日大盤加權指數（不分股票，全市場一份）——Beta = Cov(個股報酬率, 這張表的報酬率) / Var(...)
+// 的市場報酬率來源，取代 oingg-mops-ts 已消失的 daily_market_index，見 src/domains/portfolio/beta/。
+// 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
+model DailyTaiexIndex {
+  tradeDate DateTime @db.Date
+  open      Decimal? @db.Decimal(10, 2)
+  high      Decimal? @db.Decimal(10, 2)
+  low       Decimal? @db.Decimal(10, 2)
+  close     Decimal? @db.Decimal(10, 2)
+
+  @@id([tradeDate])
+  @@map("daily_taiex_index")
 }

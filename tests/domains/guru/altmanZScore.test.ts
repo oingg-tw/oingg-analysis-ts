@@ -1,6 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateAltmanZScore } from '@/domains/guru/altmanZScore/service';
+import { hasStockPriceCoverage } from '@/shared/marketCap';
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
@@ -71,13 +72,16 @@ test('altmanZScore: 不指定 year/season 時自動抓最新一季，結果應�
   assert.equal(auto.x2, explicit.x2);
 });
 
-test('altmanZScore: X4 對沒有股價資料的公司回傳 not_applicable，不影響 X1/X2/X3/X5 照常計算', async () => {
+// 2026-08-30 改用 oingg-twse daily_price 當市值資料源後，覆蓋率大幅擴大（1380+ 檔股票都有
+// 近幾個月的資料），1101 現在很可能也在覆蓋範圍內了——不寫死「1101 一定沒有股價資料」，改成
+// 現查 hasStockPriceCoverage 決定期望的 fieldStatus，避免又像 financial_report_announcement/
+// 2887 那次一樣，因為資料自己變好而測試變紅。
+test('altmanZScore: 1101 在這個開發資料庫裡查無財報資料，X1/X2/X3/X5 應該是 no_data；X4 依實際股價覆蓋率決定是 no_data 還是 not_applicable', async () => {
+  const covered = await hasStockPriceCoverage('1101');
   const result = await calculateAltmanZScore({ companyId: '1101', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  // 1101（台泥）在這個開發資料庫裡目前查無財報資料，X1/X2/X3/X5 應該全部因為查無資產負債表/損益表
-  // 而是 no_data；X4 則是不管有沒有財報資料都會是 not_applicable（daily_stock_price 只有 2330）。
   assert.equal(result.x4, null);
-  assert.equal(result.fieldStatuses.x4?.status, 'not_applicable');
+  assert.equal(result.fieldStatuses.x4?.status, covered ? 'no_data' : 'not_applicable');
   assert.equal(result.zScore, null);
 });
 

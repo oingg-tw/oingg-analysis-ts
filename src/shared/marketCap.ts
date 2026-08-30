@@ -1,4 +1,4 @@
-import prisma from '@/adapters/prisma/index';
+import twsePrisma from '@/adapters/prisma/twseClient';
 import { getPaidInSharesAsOf } from './capitalStock';
 
 export interface MarketCapAsOf {
@@ -8,43 +8,46 @@ export interface MarketCapAsOf {
   paidInShares: bigint;
 }
 
-// 市值 = 個股收盤價（mops 的 daily_stock_price，asOfDate 或之前最近一個交易日）
-// x 流通股數（capital_stock_history，asOfDate 當下生效的股本，見 getPaidInSharesAsOf）。
+// 市值 = 個股收盤價 x 流通股數（capital_stock_history，asOfDate 當下生效的股本，見
+// getPaidInSharesAsOf）——跨兩個資料庫組合：股價查 oingg-twse 的 daily_price，股本查 mops 的
+// capital_stock_history，各自獨立查詢後在這裡合併，不是一個 join。
 //
-// 跟 src/domains/portfolio/beta/ 用的是同一張股價表——**覆蓋率會持續成長**（2026-08-26 剛鏡進來
-// 時只有 2330，2026-08-28 已經擴大到 7 家公司：2330/2412/2881/2887/2838/2850/2867，對齊
-// oingg-mops-ts 的種子公司名單），查詢時請用 `hasStockPriceCoverage` 現查現算，不要在呼叫端
-// 寫死特定公司代號判斷「這家公司有沒有股價資料」，覆蓋率之後還會繼續變。
+// **2026-08-30 改用 oingg-twse `daily_price`，不再用 mops `daily_stock_price`**：mops 那張表
+// 在同一天連 `daily_market_index` 一起從資料庫裡消失了（不是覆蓋率限制，是表本身不存在了，
+// 原因不明，可能是對方在重構），會讓查詢直接噴 `PrismaClientKnownRequestError`。剛好同一時間
+// oingg-twse 的 `daily_price` 針對種子公司（2330/2881/2867/2801/2207/2855）回填了完整歷史
+// （2021-09 至今，約 5 年，用 `pnpm prisma:twse:pull` 重新內省過，欄位是 `close` 不是
+// `closePrice`），涵蓋深度已經追上、甚至超過 mops 原本能提供的範圍，改用這條路線同時解決了
+// mops 那張表消失的問題，也讓歷史回溯能力變得更好（可以查到這幾家公司歷史上幾乎每一季的市值，
+// 不是只有最新一季）。
 //
-// 沒有用 oingg-twse 的 daily_price/company_profile（2026-08-21 驗證過的另一條路線）：
-// 那條路線的 company_profile.issued_shares 是「現在的」已發行股數快照，不是某個歷史時點的股數，
-// 拿去配歷史財報季度的市值會不準；oingg-twse 的 daily_price 歷史也只有幾天，配歷史報告日
-// 幾乎都會是 null。mops 這條路線雖然目前只涵蓋種子公司，但兩個資料源都能正確反映「某個歷史時點」，
-// 跟 Altman Z-Score/PSR 這類需要「某季財報那天的市值」的指標比較搭。
+// 覆蓋率限於這 6 家種子公司（歷史深度）+ 其他公司近幾個月（2026-06 起，見 hasStockPriceCoverage
+// 的說明）——查詢時請用 `hasStockPriceCoverage` 現查現算，不要在呼叫端寫死特定公司代號判斷
+// 「這家公司有沒有股價資料」，覆蓋率之後還會繼續變。
 export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null> => {
   const [priceRow, shares] = await Promise.all([
-    prisma.dailyStockPrice.findFirst({
+    twsePrisma.dailyPrice.findFirst({
       where: { symbol, tradeDate: { lte: asOfDate } },
       orderBy: { tradeDate: 'desc' },
-      select: { tradeDate: true, closePrice: true },
+      select: { tradeDate: true, close: true },
     }),
     getPaidInSharesAsOf(symbol, asOfDate),
   ]);
 
-  if (!priceRow || priceRow.closePrice === null || !shares) return null;
+  if (!priceRow || priceRow.close === null || !shares) return null;
 
   return {
-    marketCap: Number(priceRow.closePrice) * Number(shares.paidInShares),
+    marketCap: Number(priceRow.close) * Number(shares.paidInShares),
     tradeDate: priceRow.tradeDate.toISOString().slice(0, 10),
-    closePrice: Number(priceRow.closePrice),
+    closePrice: Number(priceRow.close),
     paidInShares: shares.paidInShares,
   };
 };
 
-// 這家公司在 daily_stock_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性不在
-// 覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端寫死
-// 特定公司代號判斷，覆蓋率會持續成長（見上方 getMarketCapAsOf 的說明）。
+// 這家公司在 oingg-twse daily_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性
+// 不在覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端
+// 寫死特定公司代號判斷，覆蓋率會持續成長（見上方 getMarketCapAsOf 的說明）。
 export const hasStockPriceCoverage = async (symbol: string): Promise<boolean> => {
-  const row = await prisma.dailyStockPrice.findFirst({ where: { symbol }, select: { symbol: true } });
+  const row = await twsePrisma.dailyPrice.findFirst({ where: { symbol }, select: { symbol: true } });
   return row !== null;
 };
