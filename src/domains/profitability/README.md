@@ -15,9 +15,12 @@
 | `ROA` | 總資產報酬率 | `Net Income / Total Assets` | MRQ_Annualized, TTM, FY | ✅ 已實作 — [`roa/`](roa/)，`GET /profitability/roa`（單季/年化/TTM） |
 | `ROIC` | 投入資本回報率 | `NOPAT / Invested Capital` | TTM, FY | ✅ 已實作 — [`roic/`](roic/)，`GET /profitability/roic`（單季/年化/TTM）。見下方「ROIC/ROCE 計算口徑」 |
 | `ROCE` | 使用資本報酬率 | `EBIT / (Total Assets - Current Liabilities)` | TTM, FY | ✅ 已實作 — [`roce/`](roce/)，`GET /profitability/roce`（單季/年化/TTM） |
-| `CFROI` | 現金流投資回報率 | `Gross Cash Flow / Gross Invested Capital` | TTM, FY | ⬜ 未實作——taxonomy 定義本身模糊（通常需要通膨調整的重置成本會計），優先度較低 |
 | `Dividend_Payout_Ratio` | 配息率 | `Total Dividends / Net Income` | TTM, FY | ✅ 已實作 — [`dividendPayoutRatio/`](dividendPayoutRatio/)，`GET /profitability/dividend-payout-ratio`（只有 TTM，見下方說明） |
 | `SGR` | 可持續成長率 | `ROE * (1 - Dividend Payout Ratio)` | TTM, FY | ✅ 已實作 — [`sgr/`](sgr/)，`GET /profitability/sgr`（只有 TTM，複合指標直接引用 `roe`/`dividendPayoutRatio`） |
+
+## 為什麼不做 CFROI（2026-08-30 決定移除）
+
+`CFROI`（現金流投資回報率）是 HOLT（後來被瑞信收購）發展出來的指標，taxonomy 寫的 `Gross Cash Flow / Gross Invested Capital` 只是極度簡化的表示法——原始方法論其實是把這個比率當成內部報酬率（IRR）反推，`Gross Investment` 要用**通膨調整後的重置成本**，不是帳面歷史成本，需要逐筆資產的取得年份才能換算，mops 財報只有資產負債表期末總額，做不到。市面上也沒有統一公認的簡化版公式可以拿來對照驗證，硬做一個近似版只會讓使用者誤以為拿到業界標準的 CFROI，其實口徑早就走樣——跟 `../guru/README.md` 移除 `Greenwald_EPV` 是同一種判斷（資產重置成本這個資料維度本服務的資料源架構完全不涵蓋，不是查得到查不到的問題）。CFROI 想衡量的「現金流角度的資本報酬率」已經被 `ROIC`、`OCF_to_Net_Income`（見 [`../cashFlow/README.md`](../cashFlow/README.md)）部分覆蓋，不勉強做。
 
 ## 本服務自行歸類的指標（不在 taxonomy 明列的 code 裡）
 

@@ -2,7 +2,7 @@
 
 - **scope**：Security
 - **說明**：衡量個股或證券市價相對各項基礎財務維度的市場定價乘數與折溢價幅度。
-- **狀態**：部分實作（`PER`、`PBR`、`Dividend_Yield` 透過 oingg-twse 的現成數字；`PSR`、`P_FCF`、`EV_EBITDA` 2026-08-30 自己組合既有服務算出來，見下方）。
+- **狀態**：部分實作（`PER`、`PBR`、`Dividend_Yield` 透過 oingg-twse 的現成數字；`PSR`、`P_FCF`、`EV_EBITDA` 2026-08-30 自己組合既有服務算出來，見下方）。`NAV_Discount_Premium` 2026-08-30 決定移除，見下方指標清單後的說明。
 
 ## 股價資料源：oingg-twse
 
@@ -44,4 +44,7 @@
 | `P_FCF` | 股價自由現金流比 | `Market Cap / Free Cash Flow` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`pFcf/`](pFcf/)，`GET /valuation/p-fcf`。FCF 引用 [`../cashFlow/cashFlowPerShare/`](../cashFlow/cashFlowPerShare/) 已算好的營業現金流+資本支出 |
 | `EV_EBITDA` | 企業價值倍數 | `Enterprise Value / EBITDA` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`evEbitda/`](evEbitda/)，`GET /valuation/ev-ebitda`。淨負債、EBITDA 引用 [`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 已算好的數字，EV = 市值 + 淨負債 |
 | `Dividend_Yield` | 股息殖利率 | `Annual Dividend Per Share / Stock Price` | TTM, Forward, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.dividendYield` |
-| `NAV_Discount_Premium` | 淨值折溢價率 | `(Market Price - NAV) / NAV` | Daily, MRQ | ⬜ 未實作，適用於封閉式基金/ETF/REITs，不是一般個股，優先度低 |
+
+## 為什麼不做 NAV_Discount_Premium（2026-08-30 決定移除）
+
+`NAV_Discount_Premium`（淨值折溢價率）衡量的是「市價相對淨資產價值的折溢價」，適用對象是封閉式基金、ETF、REITs 這類「持有一籃子資產、有明確可計算 NAV」的證券——這一類的 NAV 是逐日公告的官方數字，折溢價才有意義。本服務的 `scope` 是個股（Security），沒有這種標的，套用到一般上市櫃公司沒有對應的官方 NAV 可以拿來比較（用 BVPS 冒充 NAV 是兩個不同概念，公司股價偏離帳面淨值有非常多合理原因，跟基金折溢價的意義不一樣），不是資料源缺口，是這個指標本身跟本服務的適用範疇不合，直接移除，不用不對的資料硬做。
