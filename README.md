@@ -123,6 +123,7 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /cash-flow/cash-flow-per-share` | 計算單一公司單一季度的每股營業現金流（OCF）與每股自由現金流（FCF） |
 | `GET /cash-flow/ocf-to-net-income` | 計算單一公司單一季度的營運現金流對淨利比（單季、TTM 兩種數值） |
 | `GET /cash-flow/accruals-ratio` | 計算單一公司單一季度的應計項目比率（單季、單季年化、TTM 三種數值） |
+| `GET /cash-flow/fcf-yield` | 計算單一公司自由現金流殖利率（FCF_Yield，簡易年化、TTM 兩種數值，複合指標） |
 | `GET /solvency/debt-ratio` | 計算單一公司單一季度的負債比率 |
 | `GET /solvency/liquidity-ratio` | 計算單一公司單一季度的流動比率、速動比率與現金比率 |
 | `GET /solvency/de-ratio` | 計算單一公司單一季度的負債權益比 |
@@ -144,9 +145,17 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /guru/zmijewski-score` | 計算單一公司 Zmijewski Score（財務危機 Probit 預警模型） |
 | `GET /guru/ohlson-o-score` | 計算單一公司 Ohlson O-Score（財務危機 Logit 預警模型） |
 | `GET /portfolio/beta` | 計算單一公司相對加權股價指數的貝塔係數（1Y/2Y/5Y 三種窗口；6 家種子公司歷史深度最完整） |
+| `GET /technicals/ma` | 計算單一公司移動平均線（MA，5D/10D/20D/60D/120D/200D，SMA） |
+| `GET /technicals/macd` | 計算單一公司平滑異同移動平均線（MACD，12/26/9） |
+| `GET /technicals/kd` | 計算單一公司隨機指標（KD，9D/14D） |
+| `GET /technicals/rsi` | 計算單一公司相對強弱指標（RSI，6D/14D/24D，Wilder's RSI） |
+| `GET /technicals/bollinger-bands` | 計算單一公司布林通道（Bollinger Bands，20D，2 個標準差） |
+| `GET /technicals/atr` | 計算單一公司真實波動區間均值（ATR，14D/20D） |
+| `GET /technicals/bias` | 計算單一公司乖離率（BIAS，5D/20D/60D） |
+| `GET /technicals/obv` | 計算單一公司能量潮（OBV；taxonomy 的 VWAP_OBV 只做了 OBV，VWAP 結構性做不到） |
 | `GET /filters` | 列出目前可用來 filter 的分類/指標/欄位清單，見 [`src/domains/system/filterCatalog.ts`](src/domains/system/filterCatalog.ts) |
 
-Query 參數，兩種介面：(1) `GET /valuation/market-ratios`、`GET /portfolio/beta` 只有 `companyId`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta` 是 `asOfDate`），因為兩者都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」跟 [`src/domains/portfolio/README.md`](src/domains/portfolio/README.md) 的說明。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`solvency`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr`）共用同一組：`companyId`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
+Query 參數，兩種介面：(1) `GET /valuation/market-ratios`、`GET /portfolio/beta`、`GET /technicals/*`（8 個技術指標）只有 `companyId`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta`/`technicals` 是 `asOfDate`），因為都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」、[`src/domains/portfolio/README.md`](src/domains/portfolio/README.md)、[`src/domains/technicals/README.md`](src/domains/technicals/README.md) 的說明。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`solvency`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `GET /profitability/dividend-payout-ratio`、`GET /profitability/sgr`）共用同一組：`companyId`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
 
 ### year/season 選填、自動抓最新一季的設計（2026-08-28）
 

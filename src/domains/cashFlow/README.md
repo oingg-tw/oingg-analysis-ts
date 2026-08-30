@@ -8,11 +8,11 @@
 | code | 中文名稱 | 公式 | supported_periods | 狀態 |
 |---|---|---|---|---|
 | `FCF` | 自由現金流 | `Operating Cash Flow - Capital Expenditures` | TTM, FY, MRQ | ✅ 已實作（每股版本） — [`cashFlowPerShare/`](cashFlowPerShare/)，`GET /cash-flow/cash-flow-per-share`（單季/年化/TTM）。本服務算的是「每股 FCF」，不是 taxonomy 寫的公司總額，見下方說明 |
-| `FCF_Yield` | 自由現金流殖利率 | `Free Cash Flow Per Share / Stock Price` | TTM, FY | ⬜ 未實作，需要股價，屬於 [`../valuation/`](../valuation/README.md) 那條資料源缺口 |
+| `FCF_Yield` | 自由現金流殖利率 | `Free Cash Flow Per Share / Stock Price` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`fcfYield/`](fcfYield/)，`GET /cash-flow/fcf-yield`。2026-08-30 股價來源解禁後補上，見下方說明 |
 | `OCF_to_Net_Income` | 營運現金流對淨利比 | `Operating Cash Flow / Net Income` | TTM, FY | ✅ 已實作 — [`ocfToNetIncome/`](ocfToNetIncome/)，`GET /cash-flow/ocf-to-net-income`（單季/TTM，沒有年化，見下方說明） |
 | `Accruals_Ratio` | 應計項目比率 | `(Net Income - OCF - ICF) / Average Total Assets` | TTM, FY | ✅ 已實作 — [`accrualsRatio/`](accrualsRatio/)，`GET /cash-flow/accruals-ratio`（單季/年化/TTM）。分母用期末總資產，不是平均值，見下方說明 |
 
-`Beneish_M_Score`（貝尼許 M 分數）2026-08-25 改歸類到 [`../guru/`](../guru/README.md)（大師策略）——公式本身是 8 變量加權會計異常指數，跟 `Altman_Z_Score` 從 `solvency` 移過去是同一個判斷標準（以學者/研究者命名的複合模型，不是單純的財報比率），不算在這一類。這個分類拿掉 `Beneish_M_Score` 之後只剩 `FCF_Yield` 未實作（見上方，需要股價）。
+`Beneish_M_Score`（貝尼許 M 分數）2026-08-25 改歸類到 [`../guru/`](../guru/README.md)（大師策略）——公式本身是 8 變量加權會計異常指數，跟 `Altman_Z_Score` 從 `solvency` 移過去是同一個判斷標準（以學者/研究者命名的複合模型，不是單純的財報比率），不算在這一類。這個分類拿掉 `Beneish_M_Score` 之後 `FCF_Yield` 也在 2026-08-30 做完了，目前全數實作完成。
 
 ## 已實作但跟 taxonomy 定義範疇不同的地方
 
@@ -26,3 +26,4 @@ taxonomy 的 `FCF` 是公司層級的總額（Operating Cash Flow - CapEx，單�
 - OCF、FCF 共用同一支 API/同一張表，也共用同一組 TTM 完整性判斷（一季只要 OCF 或資本支出任一為 `null`，該季就整個視為不齊）。
 - `OCF_to_Net_Income` 是「流量/流量」比率（OCF / 淨利），結構跟 `../profitability/margins/` 一樣：只有單季跟 TTM 兩種口徑，沒有年化。比率明顯低於 1（尤其是負值）代表帳面淨利缺乏真實現金流量支撐，常跟 `Accruals_Ratio` 一起判讀盈餘品質。
 - `Accruals_Ratio` 需要用到 `netCashFromInvestingActivities`（ICF，投資活動現金流）——這個欄位資料庫裡一直都有，但在這之前沒有任何 service 用過。
+- `FCF_Yield` 直接用「每股 FCF ÷ 股價」，兩者都已經是每股金額（元），不需要像 [`../valuation/pFcf/`](../valuation/pFcf/) 那樣重建市值總額、也不需要查流通股數——用 [`../../shared/marketCap.ts`](../../shared/marketCap.ts) 新拆出來的 `getStockPriceAsOf`（只查股價，不查股本），比 `getMarketCapAsOf` 少一次查詢。股價基準日邏輯（優先用財報公告日）、覆蓋率判斷（`hasStockPriceCoverage`）都跟 `pFcf/`/`Altman_Z_Score` X4 完全一致。

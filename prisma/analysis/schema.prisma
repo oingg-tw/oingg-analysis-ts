@@ -1091,6 +1091,151 @@ model OhlsonOScoreResult {
   @@map("guru_ohlson_o_score")
 }
 
+// 技術分析類指標（technicals/）——2026-08-30 實作，PK 是 symbol+tradeDate（逐日市場資料，
+// 跟財務季度脫鉤），跟 BetaResult/MarketRatiosResult 同一種模式。資料源是 oingg-twse 的
+// daily_price，見各自 service.ts 開頭的說明。
+
+model MaResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  ma5d   Decimal? @map("ma_5d") @db.Decimal(10, 2)
+  ma10d  Decimal? @map("ma_10d") @db.Decimal(10, 2)
+  ma20d  Decimal? @map("ma_20d") @db.Decimal(10, 2)
+  ma60d  Decimal? @map("ma_60d") @db.Decimal(10, 2)
+  ma120d Decimal? @map("ma_120d") @db.Decimal(10, 2)
+  ma200d Decimal? @map("ma_200d") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_ma")
+}
+
+model RsiResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  rsi6d  Decimal? @map("rsi_6d") @db.Decimal(6, 2)
+  rsi14d Decimal? @map("rsi_14d") @db.Decimal(6, 2)
+  rsi24d Decimal? @map("rsi_24d") @db.Decimal(6, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_rsi")
+}
+
+model KdResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  k9d  Decimal? @map("k_9d") @db.Decimal(6, 2)
+  d9d  Decimal? @map("d_9d") @db.Decimal(6, 2)
+  k14d Decimal? @map("k_14d") @db.Decimal(6, 2)
+  d14d Decimal? @map("d_14d") @db.Decimal(6, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_kd")
+}
+
+model BollingerBandsResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  middle Decimal? @map("middle") @db.Decimal(10, 2)
+  upper  Decimal? @map("upper") @db.Decimal(10, 2)
+  lower  Decimal? @map("lower") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_bollinger_bands")
+}
+
+model AtrResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  atr14d Decimal? @map("atr_14d") @db.Decimal(10, 2)
+  atr20d Decimal? @map("atr_20d") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_atr")
+}
+
+model BiasResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  bias5d  Decimal? @map("bias_5d") @db.Decimal(10, 2)
+  bias20d Decimal? @map("bias_20d") @db.Decimal(10, 2)
+  bias60d Decimal? @map("bias_60d") @db.Decimal(10, 2)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_bias")
+}
+
+model MacdResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  dif Decimal? @map("dif") @db.Decimal(10, 4)
+  dem Decimal? @map("dem") @db.Decimal(10, 4)
+  osc Decimal? @map("osc") @db.Decimal(10, 4)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_macd")
+}
+
+// obv 刻意用 BigInt（實際股數的累積值，可能是負數），不是 Decimal——這代表 filterCatalogCheck.ts
+// 的「型別是 Decimal 才算可 filter 的指標」規則會自動把這個 model 判定成沒有可 filter 的欄位，
+// 不需要出現在 filterCatalog.ts，是刻意的：OBV 的絕對值本身沒有跨公司比較意義（不同公司歷史起點
+// 不同），不適合當篩選欄位，只適合查單一公司的時間序列變化，見 src/domains/technicals/obv/。
+model ObvResult {
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  obv BigInt? @map("obv")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, tradeDate])
+  @@map("technicals_obv")
+}
+
 // 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
 // 產業代碼服務，見 src/shared/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」
 // 的指標結果表命名規則，另外取名 reference_industry_code。存起來的目的是「抓不到的時候還有
@@ -1166,6 +1311,34 @@ model PFcfResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("valuation_p_fcf")
+}
+
+// FCF_Yield（自由現金流殖利率）計算結果。2026-08-30 實作，跟 PsrResult/PFcfResult 同一批但分類
+// 不同（taxonomy 把 FCF_Yield 歸在 cash_flow_and_earnings_quality，不是 valuation）——分子分母
+// 都已經是「每股」金額，不用像 valuation 那三個一樣處理千元/元換算，也不需要流通股數，
+// 見 src/domains/cashFlow/fcfYield/service.ts。
+model FcfYieldResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  fcfYieldQuarterlyAnnualizedPct Decimal? @map("fcf_yield_quarterly_annualized_pct") @db.Decimal(10, 2)
+  fcfYieldTtmPct                 Decimal? @map("fcf_yield_ttm_pct") @db.Decimal(10, 2)
+
+  stockPriceValue     Decimal?  @map("stock_price_value") @db.Decimal(10, 4)
+  stockPriceTradeDate DateTime? @map("stock_price_trade_date") @db.Date
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("cash_flow_fcf_yield")
 }
 
 // EV_EBITDA（企業價值倍數）計算結果。2026-08-30 實作，跟 PsrResult/PFcfResult 同一種

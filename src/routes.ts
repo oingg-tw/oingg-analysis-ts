@@ -15,6 +15,7 @@ import dupontRouter from './domains/profitability/dupont/route';
 import cashFlowPerShareRouter from './domains/cashFlow/cashFlowPerShare/route';
 import ocfToNetIncomeRouter from './domains/cashFlow/ocfToNetIncome/route';
 import accrualsRatioRouter from './domains/cashFlow/accrualsRatio/route';
+import fcfYieldRouter from './domains/cashFlow/fcfYield/route';
 import debtRatioRouter from './domains/solvency/debtRatio/route';
 import liquidityRatioRouter from './domains/solvency/liquidityRatio/route';
 import deRatioRouter from './domains/solvency/deRatio/route';
@@ -36,6 +37,14 @@ import nissimPenmanRnoaRouter from './domains/guru/nissimPenmanRnoa/route';
 import zmijewskiScoreRouter from './domains/guru/zmijewskiScore/route';
 import ohlsonOScoreRouter from './domains/guru/ohlsonOScore/route';
 import betaRouter from './domains/portfolio/beta/route';
+import maRouter from './domains/technicals/ma/route';
+import rsiRouter from './domains/technicals/rsi/route';
+import kdRouter from './domains/technicals/kd/route';
+import bollingerBandsRouter from './domains/technicals/bollingerBands/route';
+import atrRouter from './domains/technicals/atr/route';
+import biasRouter from './domains/technicals/bias/route';
+import macdRouter from './domains/technicals/macd/route';
+import obvRouter from './domains/technicals/obv/route';
 
 const router = Router();
 
@@ -60,7 +69,7 @@ apiRouter.use(
   roceRouter,
   dupontRouter
 );
-apiRouter.use('/cash-flow', cashFlowPerShareRouter, ocfToNetIncomeRouter, accrualsRatioRouter);
+apiRouter.use('/cash-flow', cashFlowPerShareRouter, ocfToNetIncomeRouter, accrualsRatioRouter, fcfYieldRouter);
 apiRouter.use('/solvency', debtRatioRouter, liquidityRatioRouter, deRatioRouter, interestCoverageRouter, netDebtToEbitdaRouter);
 apiRouter.use('/turnover', turnoverRatioRouter, capexToRevenueRouter);
 apiRouter.use('/valuation', marketRatiosRouter, psrRouter, pFcfRouter, evEbitdaRouter);
@@ -77,6 +86,7 @@ apiRouter.use(
   ohlsonOScoreRouter
 );
 apiRouter.use('/portfolio', betaRouter);
+apiRouter.use('/technicals', maRouter, rsiRouter, kdRouter, bollingerBandsRouter, atrRouter, biasRouter, macdRouter, obvRouter);
 
 router.use(apiRouter);
 

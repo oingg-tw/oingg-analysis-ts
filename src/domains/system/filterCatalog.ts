@@ -27,6 +27,17 @@
 //   不代表可以互相取代，拿掉窗口長度前端會需要額外知道「weekly 就是指 2 年」這種隱性對應關係），
 //   才留；如果是公式細節或數值範圍這種該讓
 //   README/文件講的東西（例如 Altman X1~X5 的公式、F-Score 的 0~9 分範圍），就整段拿掉。
+//
+// **人名/字母代號翻中文，沒有獨立會計意義就不要放（2026-08-30）**：判斷標準是「這段中文除了
+// 告訴讀者『這是某個人發明的』或『這個字母是某人選的』以外，有沒有自己的意思」——
+// - 「奧特曼」「皮爾托斯基」「貝尼許」「葛拉漢」這種人名音譯本身沒有會計意義，只用英文
+//   （Altman Z-Score、Piotroski F-Score、Beneish M-Score、Graham Number）。
+// - 「F 分數」「M 分數」「Z 分數」這類也一併拿掉——F/M/Z 只是發明者當初隨意選的字母，翻成中文
+//   不會多出任何意義，跟人名音譯是同一種情況，不是「有會計意義的中文詞」。
+// - 反過來，「淨流動資產價值」（NCAV）、「每股股東盈餘」（Owner Earnings）、「貝塔係數」（Beta）
+//   這種是真正的會計/財務概念中文翻譯，即使概念是某人提出的，翻譯本身有獨立意義，要保留
+//   （「貝塔」雖然也是希臘字母音譯，但「貝塔係數」是中文財務文獻通用的固定詞彙，不是「某人的姓氏」
+//   這種要靠額外背景知識才看得懂的音譯，跟 F/M/Z 分數的情況不同）。
 
 export type FilterFieldPeriod = 'quarterly' | 'quarterlyAnnualized' | 'ttm' | 'snapshot' | 'daily' | 'weekly' | 'monthly';
 
@@ -213,6 +224,15 @@ export const filterCatalog: FilterCategory[] = [
           { key: 'accrualsRatioQuarterly', name: '應計項目比率', period: 'quarterly' },
           { key: 'accrualsRatioQuarterlyAnnualized', name: '應計項目比率', period: 'quarterlyAnnualized' },
           { key: 'accrualsRatioTtm', name: '應計項目比率', period: 'ttm' },
+        ],
+      },
+      {
+        key: 'fcfYield',
+        name: '自由現金流殖利率',
+        path: '/cash-flow/fcf-yield',
+        fields: [
+          { key: 'fcfYieldQuarterlyAnnualizedPct', name: '自由現金流殖利率', period: 'quarterlyAnnualized' },
+          { key: 'fcfYieldTtmPct', name: '自由現金流殖利率', period: 'ttm' },
         ],
       },
     ],
@@ -427,13 +447,13 @@ export const filterCatalog: FilterCategory[] = [
     metrics: [
       {
         key: 'grahamNumber',
-        name: '葛拉漢數 Graham Number',
+        name: 'Graham Number',
         path: '/guru/graham-number',
-        fields: [{ key: 'grahamNumber', name: '葛拉漢數', period: 'ttm' }],
+        fields: [{ key: 'grahamNumber', name: 'Graham Number', period: 'ttm' }],
       },
       {
         key: 'ncav',
-        name: '葛拉漢淨流動資產價值 Graham NCAV',
+        name: '淨流動資產價值 NCAV',
         path: '/guru/ncav',
         fields: [
           { key: 'ncav', name: 'NCAV 淨流動資產價值', period: 'snapshot' },
@@ -442,7 +462,7 @@ export const filterCatalog: FilterCategory[] = [
       },
       {
         key: 'ownerEarnings',
-        name: '每股股東盈餘 Buffett Owner Earnings',
+        name: '每股股東盈餘 Owner Earnings',
         path: '/guru/owner-earnings',
         fields: [
           { key: 'ownerEarningsPerShareQuarterly', name: '每股股東盈餘', period: 'quarterly' },
@@ -452,7 +472,7 @@ export const filterCatalog: FilterCategory[] = [
       },
       {
         key: 'altmanZScore',
-        name: '奧特曼 Z 分數 Altman Z-Score 原始版',
+        name: 'Altman Z-Score 原始版',
         path: '/guru/altman-z-score',
         fields: [
           { key: 'zScore', name: 'Z 分數', period: 'snapshot' },
@@ -467,14 +487,14 @@ export const filterCatalog: FilterCategory[] = [
       },
       {
         key: 'piotroskiFScore',
-        name: '皮爾托斯基 F 分數 Piotroski F-Score',
+        name: 'Piotroski F-Score',
         path: '/guru/piotroski-f-score',
         // 分數範圍 0~9 屬於文件該講的事，不放進 name。
         fields: [{ key: 'score', name: 'F 分數', period: 'snapshot' }],
       },
       {
         key: 'beneishMScore',
-        name: '貝尼許 M 分數 Beneish M-Score',
+        name: 'Beneish M-Score',
         path: '/guru/beneish-m-score',
         fields: [
           { key: 'mScore', name: 'M 分數', period: 'snapshot' },
@@ -490,7 +510,7 @@ export const filterCatalog: FilterCategory[] = [
       },
       {
         key: 'nissimPenmanRnoa',
-        name: 'Nissim Penman RNOA 拆解',
+        name: 'Nissim Penman RNOA',
         path: '/guru/nissim-penman-rnoa',
         fields: [
           { key: 'rnoaQuarterlyPct', name: 'RNOA 本業報酬率', period: 'quarterly' },
@@ -558,6 +578,89 @@ export const filterCatalog: FilterCategory[] = [
           { key: 'beta5Y', name: 'Beta 5 年', period: 'monthly' },
         ],
       },
+    ],
+  },
+  {
+    key: 'technicals',
+    name: '技術指標',
+    metrics: [
+      {
+        key: 'ma',
+        name: '移動平均線 MA',
+        path: '/technicals/ma',
+        // period 統一是 daily（資料顆粒度是逐日收盤價），窗口長度（5/10/...200 天）是 period
+        // 不描述的另一個維度，留在 name 裡——跟 Beta 的 1年/2年/5年 同一種例外，見檔案開頭說明。
+        fields: [
+          { key: 'ma5d', name: '5 日均線', period: 'daily' },
+          { key: 'ma10d', name: '10 日均線', period: 'daily' },
+          { key: 'ma20d', name: '20 日均線', period: 'daily' },
+          { key: 'ma60d', name: '60 日均線', period: 'daily' },
+          { key: 'ma120d', name: '120 日均線', period: 'daily' },
+          { key: 'ma200d', name: '200 日均線', period: 'daily' },
+        ],
+      },
+      {
+        key: 'rsi',
+        name: '相對強弱指標 RSI',
+        path: '/technicals/rsi',
+        fields: [
+          { key: 'rsi6d', name: '6 日 RSI', period: 'daily' },
+          { key: 'rsi14d', name: '14 日 RSI', period: 'daily' },
+          { key: 'rsi24d', name: '24 日 RSI', period: 'daily' },
+        ],
+      },
+      {
+        key: 'kd',
+        name: '隨機指標 KD',
+        path: '/technicals/kd',
+        fields: [
+          { key: 'k9d', name: '9 日 K值', period: 'daily' },
+          { key: 'd9d', name: '9 日 D值', period: 'daily' },
+          { key: 'k14d', name: '14 日 K值', period: 'daily' },
+          { key: 'd14d', name: '14 日 D值', period: 'daily' },
+        ],
+      },
+      {
+        key: 'bollingerBands',
+        name: '布林通道',
+        path: '/technicals/bollinger-bands',
+        fields: [
+          { key: 'middle', name: '布林通道中軌', period: 'daily' },
+          { key: 'upper', name: '布林通道上軌', period: 'daily' },
+          { key: 'lower', name: '布林通道下軌', period: 'daily' },
+        ],
+      },
+      {
+        key: 'atr',
+        name: '真實波動區間均值 ATR',
+        path: '/technicals/atr',
+        fields: [
+          { key: 'atr14d', name: '14 日 ATR', period: 'daily' },
+          { key: 'atr20d', name: '20 日 ATR', period: 'daily' },
+        ],
+      },
+      {
+        key: 'bias',
+        name: '乖離率 BIAS',
+        path: '/technicals/bias',
+        fields: [
+          { key: 'bias5d', name: '5 日乖離率', period: 'daily' },
+          { key: 'bias20d', name: '20 日乖離率', period: 'daily' },
+          { key: 'bias60d', name: '60 日乖離率', period: 'daily' },
+        ],
+      },
+      {
+        key: 'macd',
+        name: 'MACD',
+        path: '/technicals/macd',
+        fields: [
+          { key: 'dif', name: 'DIF', period: 'daily' },
+          { key: 'dem', name: 'DEM', period: 'daily' },
+          { key: 'osc', name: 'OSC', period: 'daily' },
+        ],
+      },
+      // obv 刻意不列——BigInt 型別、絕對值沒有跨公司比較意義，不適合當篩選欄位，
+      // 見 prisma/analysis/schema.prisma 的 ObvResult 註解。
     ],
   },
 ];

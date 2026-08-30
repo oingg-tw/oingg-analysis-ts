@@ -8,6 +8,27 @@ export interface MarketCapAsOf {
   paidInShares: bigint;
 }
 
+export interface StockPriceAsOf {
+  closePrice: number;
+  tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
+}
+
+// 只查股價，不查股本——FCF_Yield 這類「每股數字 / 股價」的指標不需要流通股數（分子已經是
+// 每股金額，不用重建總額），用 getMarketCapAsOf 會多一次不必要的 capital_stock_history 查詢，
+// 也會因為股本查無資料而白白讓整個結果變 null。跟 getMarketCapAsOf 共用同一段股價查詢邏輯。
+const getPriceRowAsOf = (symbol: string, asOfDate: Date) =>
+  twsePrisma.dailyPrice.findFirst({
+    where: { symbol, tradeDate: { lte: asOfDate } },
+    orderBy: { tradeDate: 'desc' },
+    select: { tradeDate: true, close: true },
+  });
+
+export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise<StockPriceAsOf | null> => {
+  const priceRow = await getPriceRowAsOf(symbol, asOfDate);
+  if (!priceRow || priceRow.close === null) return null;
+  return { closePrice: Number(priceRow.close), tradeDate: priceRow.tradeDate.toISOString().slice(0, 10) };
+};
+
 // 市值 = 個股收盤價 x 流通股數（capital_stock_history，asOfDate 當下生效的股本，見
 // getPaidInSharesAsOf）——跨兩個資料庫組合：股價查 oingg-twse 的 daily_price，股本查 mops 的
 // capital_stock_history，各自獨立查詢後在這裡合併，不是一個 join。
@@ -25,14 +46,7 @@ export interface MarketCapAsOf {
 // 的說明）——查詢時請用 `hasStockPriceCoverage` 現查現算，不要在呼叫端寫死特定公司代號判斷
 // 「這家公司有沒有股價資料」，覆蓋率之後還會繼續變。
 export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null> => {
-  const [priceRow, shares] = await Promise.all([
-    twsePrisma.dailyPrice.findFirst({
-      where: { symbol, tradeDate: { lte: asOfDate } },
-      orderBy: { tradeDate: 'desc' },
-      select: { tradeDate: true, close: true },
-    }),
-    getPaidInSharesAsOf(symbol, asOfDate),
-  ]);
+  const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getPaidInSharesAsOf(symbol, asOfDate)]);
 
   if (!priceRow || priceRow.close === null || !shares) return null;
 
