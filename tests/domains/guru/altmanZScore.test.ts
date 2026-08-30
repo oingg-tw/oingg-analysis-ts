@@ -8,9 +8,12 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // X4（市值/總負債）用 daily_stock_price 的收盤價，價格每天在變，X4/zScore 不釘死確切數字，
 // 只驗證合理性；X1/X2/X3/X5（純財報衍生）不受股價影響，可以釘死。
 // 2026-08-28 更新：X4 股價基準日改成優先用 financial_report_announcement 的公告日，查無公告日
-// 才退回財報期末日（見 shared/reportAnnouncementDate.ts）。115Q2 目前查無公告日（該表覆蓋率很低，
-// 只有 113Q4~114Q3），會落到 fallback 分支並多一條 warning，見下方新增的斷言。
+// 才退回財報期末日（見 shared/reportAnnouncementDate.ts）。這張表覆蓋率會持續成長（同一天稍早
+// 115Q2 還查無公告日，寫完測試沒多久就補進來了）——不寫死是 'announcement' 還是
+// 'report_date_fallback'，改成直接查 financial_report_announcement 現查現算期望值，
+// 這樣不管覆蓋率漲到哪裡這個測試都不會因為資料變好而變紅，見 tests/README.md 的說明。
 test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
+  const announcement = await prisma.financialReportAnnouncement.findFirst({ where: { symbol: '2330', fiscalYear: 115, fiscalQuarter: 2 } });
   const result = await calculateAltmanZScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, '115');
@@ -29,13 +32,19 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
   assert.ok(result.zScore! > 0 && result.zScore! < 1000, `zScore=${result.zScore} 數量級異常`);
   assert.equal(result.zone, 'safe'); // TSMC 財務體質極佳，Z-Score 落在 Safe 區間是預期結果
 
-  assert.equal(result.marketCap.priceAnchorSource, 'report_date_fallback');
-  assert.equal(result.marketCap.tradeDate, '2026-06-30');
+  if (announcement) {
+    assert.equal(result.marketCap.priceAnchorSource, 'announcement');
+    assert.equal(result.marketCap.tradeDate, announcement.announcementDate.toISOString().slice(0, 10));
+    assert.equal(result.warnings.length, 1, '有公告日資料時不應該出現 fallback 警告，只剩固定的產業適用性警告');
+  } else {
+    assert.equal(result.marketCap.priceAnchorSource, 'report_date_fallback');
+    assert.equal(result.marketCap.tradeDate, '2026-06-30');
+    assert.equal(result.warnings.length, 2, '查無公告日時應該有固定的產業適用性警告 + fallback 到期末日的警告');
+    assert.match(result.warnings[1]!, /財報公告日/);
+  }
+  assert.match(result.warnings[0]!, /上市製造業樣本校準/);
 
   assert.deepEqual(result.fieldStatuses, {});
-  assert.ok(result.warnings.length === 2, '應該有固定的產業適用性警告 + fallback 到期末日的警告');
-  assert.match(result.warnings[0]!, /上市製造業樣本校準/);
-  assert.match(result.warnings[1]!, /財報公告日/);
 });
 
 // 114Q2 的 financial_report_announcement 有資料（2330 公告日 2025-08-12，比期末日 2025-06-30

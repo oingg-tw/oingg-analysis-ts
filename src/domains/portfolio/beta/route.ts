@@ -13,7 +13,8 @@ const router = Router();
  *       （`daily_market_index`）計算，本服務本身不向任何來源抓取股價資料，若查無資料請先確認
  *       oingg-mops-ts 那邊有沒有這個資料源。
  *
- *       **目前 `daily_stock_price` 只有 2330（台積電）一檔股票有資料**，查詢其他公司會回傳
+ *       **`daily_stock_price` 覆蓋率會持續成長**（2026-08-28 是 7 家種子公司：
+ *       2330/2412/2881/2887/2838/2850/2867），查詢範圍外的公司會回傳
  *       `fieldStatuses` 標註 `not_applicable`，不是伺服器錯誤，也不是查無資料待補——是這張表
  *       目前的覆蓋率限制，見 [`../README.md`](../README.md) 說明。
  *
@@ -40,7 +41,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: 公司代號（目前只有 2330 有資料）
+ *         description: 公司代號（目前只有 7 家種子公司有資料）
  *         example: "2330"
  *       - in: query
  *         name: asOfDate

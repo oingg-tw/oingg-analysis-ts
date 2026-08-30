@@ -55,20 +55,27 @@ const parseAnalysisSchemaFilterableFields = (schemaText: string): Map<string, { 
  * 兩個方向都會抓：
  * 1. catalog 列了但 schemaText 裡已經沒有的 metric/欄位（指標被移除、欄位改名、key 打錯）。
  * 2. schemaText 有、但 catalog 忘記加的 metric/欄位（新增指標或欄位後忘記同步）。
+ *
+ * 2026-08-30：一個 model 可能被拆成多個 filterCatalog 顯示分組（例如 turnoverRatio 拆成
+ * 「存貨周轉率」「應收帳款周轉率」...9 組，都對應同一個 TurnoverRatioResult），所以第 2 點
+ * 「這個 model 的欄位有沒有全部被 catalog 蓋到」要先用 modelKey 把同一個 model 底下的多個
+ * 顯示分組聚合起來看聯集，不能只看單一 metric 自己的 fields。
  */
 export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText: string): string[] => {
   const dbMetrics = parseAnalysisSchemaFilterableFields(schemaText);
 
-  const catalogMetricKeys = new Set<string>();
+  const modelKeysSeen = new Set<string>();
+  const fieldKeysSeenPerModel = new Map<string, Set<string>>();
   const problems: string[] = [];
 
   for (const category of catalog) {
     for (const metric of category.metrics) {
-      catalogMetricKeys.add(metric.key);
-      const dbMetric = dbMetrics.get(metric.key);
+      const modelKey = metric.modelKey ?? metric.key;
+      modelKeysSeen.add(modelKey);
+      const dbMetric = dbMetrics.get(modelKey);
       if (!dbMetric) {
         problems.push(
-          `filterCatalog.ts 的 ${category.key}.${metric.key} 在 prisma/analysis/schema.prisma 找不到對應的 model（預期 model 名稱：<PascalCase metric key>Result）——指標被移除了，或 key 打錯。`,
+          `filterCatalog.ts 的 ${category.key}.${metric.key}（modelKey: "${modelKey}"）在 prisma/analysis/schema.prisma 找不到對應的 model（預期 model 名稱：<PascalCase modelKey>Result）——指標被移除了，或 key/modelKey 打錯。`,
         );
         continue;
       }
@@ -79,22 +86,30 @@ export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText:
           );
         }
       }
-      const catalogFieldKeys = new Set(metric.fields.map((f) => f.key));
-      for (const dbFieldKey of dbMetric.fields) {
-        if (!catalogFieldKeys.has(dbFieldKey)) {
-          problems.push(
-            `${dbMetric.modelName}（schema.prisma）新增了 Decimal 欄位 ${dbFieldKey}，但 filterCatalog.ts 的 ${category.key}.${metric.key} 沒有列——新欄位忘記加進 filterCatalog.ts 了嗎？`,
-          );
-        }
+      let seen = fieldKeysSeenPerModel.get(modelKey);
+      if (!seen) {
+        seen = new Set();
+        fieldKeysSeenPerModel.set(modelKey, seen);
       }
+      metric.fields.forEach((f) => seen!.add(f.key));
     }
   }
 
   for (const [metricKey, dbMetric] of dbMetrics) {
-    if (dbMetric.fields.size > 0 && !catalogMetricKeys.has(metricKey)) {
+    if (dbMetric.fields.size === 0) continue;
+    if (!modelKeysSeen.has(metricKey)) {
       problems.push(
         `schema.prisma 有 ${dbMetric.modelName}（推導出的 metric key："${metricKey}"），但 filterCatalog.ts 完全沒有列這個指標——新指標忘記加進 filterCatalog.ts 了嗎？`,
       );
+      continue;
+    }
+    const seenFieldKeys = fieldKeysSeenPerModel.get(metricKey) ?? new Set<string>();
+    for (const dbFieldKey of dbMetric.fields) {
+      if (!seenFieldKeys.has(dbFieldKey)) {
+        problems.push(
+          `${dbMetric.modelName}（schema.prisma）新增了 Decimal 欄位 ${dbFieldKey}，但 filterCatalog.ts 底下所有 modelKey 為 "${metricKey}" 的顯示分組都沒有列——新欄位忘記加進 filterCatalog.ts 了嗎？`,
+        );
+      }
     }
   }
 

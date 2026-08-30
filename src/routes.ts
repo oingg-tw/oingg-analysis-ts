@@ -30,6 +30,8 @@ import altmanZScoreRouter from './domains/guru/altmanZScore/route';
 import piotroskiFScoreRouter from './domains/guru/piotroskiFScore/route';
 import beneishMScoreRouter from './domains/guru/beneishMScore/route';
 import nissimPenmanRnoaRouter from './domains/guru/nissimPenmanRnoa/route';
+import zmijewskiScoreRouter from './domains/guru/zmijewskiScore/route';
+import ohlsonOScoreRouter from './domains/guru/ohlsonOScore/route';
 import betaRouter from './domains/portfolio/beta/route';
 
 const router = Router();
@@ -67,7 +69,9 @@ apiRouter.use(
   altmanZScoreRouter,
   piotroskiFScoreRouter,
   beneishMScoreRouter,
-  nissimPenmanRnoaRouter
+  nissimPenmanRnoaRouter,
+  zmijewskiScoreRouter,
+  ohlsonOScoreRouter
 );
 apiRouter.use('/portfolio', betaRouter);
 

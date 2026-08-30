@@ -23,8 +23,9 @@ const router = Router();
  *       - X3、X5 直接引用 [`interestCoverage`](../../solvency/interestCoverage/route.ts)、
  *         [`turnoverRatio`](../../turnover/turnoverRatio/route.ts) 已經算好的 TTM 數值，不重複查詢。
  *       - X4 的市值 = mops `daily_stock_price` 收盤價（報告日或之前最近一個交易日） x 流通股數
- *         （`capital_stock_history`，報告日當下生效的股本）——**目前 `daily_stock_price` 只有 2330
- *         有資料**，其他公司 X4 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+ *         （`capital_stock_history`，報告日當下生效的股本）——**`daily_stock_price` 覆蓋率會持續
+ *         成長**（2026-08-28 是 7 家種子公司：2330/2412/2881/2887/2838/2850/2867），不在覆蓋
+ *         範圍內的公司 X4 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
  *       - 判讀切點：`Z > 2.99` 為 Safe，`1.81 ≤ Z ≤ 2.99` 為 Grey，`Z < 1.81` 為 Distress。
  *       - `year`/`season` 選填但要成對——不給就自動抓最新一季有資產負債表資料的季度；市值抓的是
  *         「該季報告日或之前最近一個交易日」的收盤價，不是查詢當下的最新股價。
@@ -36,7 +37,7 @@ const router = Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: 公司代號（目前只有 2330 能算出完整 Z-Score，其他公司 X4 會是 null）
+ *         description: 公司代號（目前只有 7 家種子公司能算出完整 Z-Score，其他公司 X4 會是 null）
  *         example: "2330"
  *       - in: query
  *         name: year

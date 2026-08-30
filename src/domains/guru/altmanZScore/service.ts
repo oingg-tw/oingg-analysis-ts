@@ -1,6 +1,6 @@
 import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { getMarketCapAsOf } from '@/shared/marketCap';
+import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/marketCap';
 import { getPriceAnchorDate } from '@/shared/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/latestQuarter';
 import { calculateInterestCoverage } from '@/domains/solvency/interestCoverage/service';
@@ -150,7 +150,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
       if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities) * 1000);
     } else {
       warnings.push(
-        `查無 ${companyId} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算——daily_stock_price 目前只有 2330 有資料，其他公司請見 fieldStatuses。`
+        `查無 ${companyId} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算，見 fieldStatuses。`
       );
     }
   }
@@ -170,6 +170,11 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     zone = zScore > 2.99 ? 'safe' : zScore < 1.81 ? 'distress' : 'grey';
   }
 
+  // 覆蓋率會持續成長（見 shared/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
+  // 在 daily_stock_price 裡有沒有任何資料，用來區分 X4 是「這家公司結構性不在覆蓋範圍內」
+  // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
+  const stockPriceCovered = x4 === null ? await hasStockPriceCoverage(companyId) : true;
+
   const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
     x1 === null
       ? [
@@ -186,9 +191,9 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     x4 === null
       ? [
           'x4',
-          companyId === '2330'
+          stockPriceCovered
             ? { status: 'no_data' as const, message: '市值或總負債缺漏，無法計算 X4。' }
-            : { status: 'not_applicable' as const, message: 'daily_stock_price 目前只有 2330 有資料，這家公司不適用（不是資料還沒補齊）。' },
+            : { status: 'not_applicable' as const, message: 'daily_stock_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' },
         ]
       : null,
     x5 === null ? ['x5', { status: 'no_data' as const, message: '營收（TTM）或總資產缺漏，無法計算 X5。' }] : null,

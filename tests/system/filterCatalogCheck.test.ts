@@ -56,6 +56,71 @@ describe('findFilterCatalogProblems', () => {
     assert.match(problems[0]!, /metric key："roe"/);
   });
 
+  test('modelKey 讓一個 model 拆成多個顯示分組時，只要聯集蓋滿所有欄位就不算缺漏', () => {
+    // 對應 turnoverRatio 拆成「存貨周轉率」「應收帳款周轉率」...9 個顯示分組，都指回同一個
+    // TurnoverRatioResult 的情境——modelKey 不同於各自的 key，聯集要涵蓋 model 的全部欄位。
+    const splitCatalog: FilterCategory[] = [
+      {
+        key: 'turnover',
+        name: '測試分類',
+        metrics: [
+          {
+            key: 'inventoryTurnoverRatio',
+            name: '存貨周轉率',
+            path: '/turnover/turnover-ratio',
+            modelKey: 'turnoverRatio',
+            fields: [{ key: 'inventoryTurnoverTtm', name: '存貨周轉率', period: 'ttm' }],
+          },
+          {
+            key: 'assetTurnoverRatio',
+            name: '總資產周轉率',
+            path: '/turnover/turnover-ratio',
+            modelKey: 'turnoverRatio',
+            fields: [{ key: 'assetTurnoverTtm', name: '總資產周轉率', period: 'ttm' }],
+          },
+        ],
+      },
+    ];
+    const fakeSchema = `
+      model TurnoverRatioResult {
+        symbol String
+        inventoryTurnoverTtm Decimal? @map("inventory_turnover_ttm") @db.Decimal(14, 4)
+        assetTurnoverTtm Decimal? @map("asset_turnover_ttm") @db.Decimal(14, 4)
+      }
+    `;
+    const problems = findFilterCatalogProblems(splitCatalog, fakeSchema);
+    assert.deepEqual(problems, []);
+  });
+
+  test('modelKey 拆成多個顯示分組時，聯集漏了 model 的某個欄位還是要抓出來', () => {
+    const splitCatalogMissingField: FilterCategory[] = [
+      {
+        key: 'turnover',
+        name: '測試分類',
+        metrics: [
+          {
+            key: 'inventoryTurnoverRatio',
+            name: '存貨周轉率',
+            path: '/turnover/turnover-ratio',
+            modelKey: 'turnoverRatio',
+            fields: [{ key: 'inventoryTurnoverTtm', name: '存貨周轉率', period: 'ttm' }],
+          },
+          // 故意漏掉 assetTurnoverRatio 這個顯示分組——assetTurnoverTtm 應該被抓出來沒被涵蓋。
+        ],
+      },
+    ];
+    const fakeSchema = `
+      model TurnoverRatioResult {
+        symbol String
+        inventoryTurnoverTtm Decimal? @map("inventory_turnover_ttm") @db.Decimal(14, 4)
+        assetTurnoverTtm Decimal? @map("asset_turnover_ttm") @db.Decimal(14, 4)
+      }
+    `;
+    const problems = findFilterCatalogProblems(splitCatalogMissingField, fakeSchema);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0]!, /新增了 Decimal 欄位 assetTurnoverTtm.*modelKey 為 "turnoverRatio".*都沒有列/);
+  });
+
   test('欄位名稱以 Value 結尾的 Decimal 欄位不算「可 filter 的計算結果」，不會被抓成缺漏', () => {
     // 對應 GrahamNumberResult.epsTtmValue/bvpsValue 這種引用自其他服務的中繼值，
     // 即使型別剛好是 Decimal，也不該出現在 filterCatalog.ts 裡。

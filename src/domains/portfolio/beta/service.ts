@@ -155,13 +155,15 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     observations: 0,
   });
 
-  // daily_stock_price 目前只有 2330 有資料——查無資料視為「不適用」，不是「查無資料待補」，
-  // 因為這不是時間到了就會自己有的資料缺口，是覆蓋率本身的限制，見 portfolio/README.md 說明。
+  // daily_stock_price 覆蓋率會持續成長（2026-08-26 剛鏡進來時只有 2330，2026-08-28 已擴大到
+  // 7 家種子公司）——查無資料視為「不適用」，不是「查無資料待補」，因為這不是時間到了就會自己
+  // 有的資料缺口，是覆蓋率本身的限制，見 portfolio/README.md 說明。這裡本來就是現查
+  // stockRange（不是寫死公司代號判斷），只有訊息文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
   if (stockRange._min.tradeDate === null) {
-    warnings.push(`daily_stock_price 目前只有 2330（台積電）有資料，查無 ${companyId} 的股價序列，無法計算 Beta。`);
+    warnings.push(`daily_stock_price 目前沒有 ${companyId} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
     const notApplicable: MetricStatus = {
       status: 'not_applicable',
-      message: `daily_stock_price 目前只有 2330 有資料，${companyId} 不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票）。`,
+      message: `daily_stock_price 目前沒有涵蓋 ${companyId}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
     };
     return {
       companyId,

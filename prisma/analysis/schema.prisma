@@ -630,8 +630,8 @@ model SgrResult {
   sgrTtm Decimal? @map("sgr_ttm") @db.Decimal(10, 2)
 
   // 引用自 profitability_roe.roe_ttm_pct / profitability_dividend_payout_ratio.payout_ratio_ttm。
-  roeTtmValue          Decimal? @map("roe_ttm_value") @db.Decimal(10, 2)
-  payoutRatioTtmValue  Decimal? @map("payout_ratio_ttm_value") @db.Decimal(10, 2)
+  roeTtmValue         Decimal? @map("roe_ttm_value") @db.Decimal(10, 2)
+  payoutRatioTtmValue Decimal? @map("payout_ratio_ttm_value") @db.Decimal(10, 2)
 
   warnings String[]
 
@@ -688,13 +688,13 @@ model AccrualsRatioResult {
   accrualsRatioTtm                 Decimal? @map("accruals_ratio_ttm") @db.Decimal(10, 2)
 
   netIncomeFieldUsed        String? @map("net_income_field_used")
-  netIncomeValue             BigInt? @map("net_income_value")
-  netIncomeTtmValue          BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
-  operatingCashFlowValue     BigInt? @map("operating_cash_flow_value")
-  operatingCashFlowTtmValue  BigInt? @map("operating_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
-  investingCashFlowValue     BigInt? @map("investing_cash_flow_value")
-  investingCashFlowTtmValue  BigInt? @map("investing_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
-  totalAssetsValue           BigInt? @map("total_assets_value") // 本季期末總資產（分母，用期末值）
+  netIncomeValue            BigInt? @map("net_income_value")
+  netIncomeTtmValue         BigInt? @map("net_income_ttm_value") // 近四季加總；資料不齊則為 null
+  operatingCashFlowValue    BigInt? @map("operating_cash_flow_value")
+  operatingCashFlowTtmValue BigInt? @map("operating_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
+  investingCashFlowValue    BigInt? @map("investing_cash_flow_value")
+  investingCashFlowTtmValue BigInt? @map("investing_cash_flow_ttm_value") // 近四季加總；資料不齊則為 null
+  totalAssetsValue          BigInt? @map("total_assets_value") // 本季期末總資產（分母，用期末值）
 
   warnings String[]
 
@@ -882,19 +882,19 @@ model PiotroskiFScoreResult {
 
   score Decimal? @map("score") @db.Decimal(2, 0)
 
-  positiveRoa            Boolean? @map("positive_roa")
-  positiveCfo             Boolean? @map("positive_cfo")
-  roaImproved             Boolean? @map("roa_improved")
-  accrualQuality          Boolean? @map("accrual_quality")
-  leverageDecreased       Boolean? @map("leverage_decreased")
-  liquidityImproved       Boolean? @map("liquidity_improved")
-  noDilution              Boolean? @map("no_dilution")
-  grossMarginImproved     Boolean? @map("gross_margin_improved")
-  assetTurnoverImproved   Boolean? @map("asset_turnover_improved")
+  positiveRoa           Boolean? @map("positive_roa")
+  positiveCfo           Boolean? @map("positive_cfo")
+  roaImproved           Boolean? @map("roa_improved")
+  accrualQuality        Boolean? @map("accrual_quality")
+  leverageDecreased     Boolean? @map("leverage_decreased")
+  liquidityImproved     Boolean? @map("liquidity_improved")
+  noDilution            Boolean? @map("no_dilution")
+  grossMarginImproved   Boolean? @map("gross_margin_improved")
+  assetTurnoverImproved Boolean? @map("asset_turnover_improved")
 
-  priorYear        Int?      @map("prior_year")
-  priorSeason      Int?      @map("prior_season")
-  priorReportDate  DateTime? @map("prior_report_date") @db.Date
+  priorYear       Int?      @map("prior_year")
+  priorSeason     Int?      @map("prior_season")
+  priorReportDate DateTime? @map("prior_report_date") @db.Date
 
   warnings String[]
 
@@ -1017,4 +1017,88 @@ model NissimPenmanRnoaResult {
 
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("guru_nissim_penman_rnoa")
+}
+
+model ZmijewskiScoreResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  xScore                Decimal? @map("x_score") @db.Decimal(10, 4)
+  probabilityOfDistress Decimal? @map("probability_of_distress") @db.Decimal(6, 4)
+  flagged               Boolean? @map("flagged")
+
+  netIncomeTtmFieldUsed   String? @map("net_income_ttm_field_used")
+  netIncomeTtmValue       BigInt? @map("net_income_ttm_value")
+  totalAssetsValue        BigInt? @map("total_assets_value")
+  totalLiabilitiesValue   BigInt? @map("total_liabilities_value")
+  currentAssetsValue      BigInt? @map("current_assets_value")
+  currentLiabilitiesValue BigInt? @map("current_liabilities_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_zmijewski_score")
+}
+
+model OhlsonOScoreResult {
+  symbol              String
+  year                Int    @map("year")
+  season              Int    @map("season")
+  dataType            String @map("data_type")
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  reportDate DateTime? @map("report_date") @db.Date
+
+  oScore                  Decimal? @map("o_score") @db.Decimal(10, 4)
+  probabilityOfBankruptcy Decimal? @map("probability_of_bankruptcy") @db.Decimal(6, 4)
+  flagged                 Boolean? @map("flagged")
+
+  size  Decimal? @map("size") @db.Decimal(14, 4)
+  tlta  Decimal? @map("tlta") @db.Decimal(14, 4)
+  wcta  Decimal? @map("wcta") @db.Decimal(14, 4)
+  clca  Decimal? @map("clca") @db.Decimal(14, 4)
+  // oeneg/intwo 是 0/1 二元旗標，用 Decimal(1,0) 不是 Int——filterCatalogCheck 的一致性檢查
+  // 只認得出 Decimal 欄位，跟 Piotroski 的 score 用 Decimal(2,0) 不用 Int 是同一個理由。
+  oeneg Decimal? @map("oeneg") @db.Decimal(1, 0)
+  nita  Decimal? @map("nita") @db.Decimal(14, 4)
+  futl  Decimal? @map("futl") @db.Decimal(14, 4)
+  intwo Decimal? @map("intwo") @db.Decimal(1, 0)
+  chin  Decimal? @map("chin") @db.Decimal(14, 4)
+
+  netIncomeTtmValue          BigInt? @map("net_income_ttm_value")
+  netIncomeTtmPriorYearValue BigInt? @map("net_income_ttm_prior_year_value")
+  operatingCashFlowTtmValue  BigInt? @map("operating_cash_flow_ttm_value")
+  totalAssetsValue           BigInt? @map("total_assets_value")
+  totalLiabilitiesValue      BigInt? @map("total_liabilities_value")
+  currentAssetsValue         BigInt? @map("current_assets_value")
+  currentLiabilitiesValue    BigInt? @map("current_liabilities_value")
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([symbol, year, season, dataType, subsidiaryCompanyId])
+  @@map("guru_ohlson_o_score")
+}
+
+// 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
+// 產業代碼服務，見 src/shared/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」
+// 的指標結果表命名規則，另外取名 reference_industry_code。存起來的目的是「抓不到的時候還有
+// 上次抓到的可以頂著用」，不是要當成本服務自己的資料來源真相（那個永遠是 localhost:8081）。
+model IndustryCode {
+  code String @id // 兩碼產業代碼，例如 "24"
+  name String // 中文產業名稱，例如 "半導體業"
+
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("reference_industry_code")
 }

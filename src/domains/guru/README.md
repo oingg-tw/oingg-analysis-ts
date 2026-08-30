@@ -2,11 +2,13 @@
 
 - **scope**：Security
 - **說明**：整合經典大師選股準則、動態成長折現與多因子基本面評分模型。
-- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數、`Nissim_Penman_RNOA`——後兩者是本服務自行歸類的指標，見下方）。`Greenwald_EPV` 2026-08-25 曾列入評估，2026-08-28 決定不做並移除，見下方「為什麼不做 Greenwald_EPV」。
+- **狀態**：部分實作（`Graham_NCAV`、`Buffett_Owner_Earnings`、`Altman_Z_Score`、`Piotroski_F_Score`、`Beneish_M_Score`、葛拉漢數、`Nissim_Penman_RNOA`、Zmijewski Score、Ohlson O-Score——後四者是本服務自行歸類的指標，見下方）。`Greenwald_EPV` 2026-08-25 曾列入評估，2026-08-28 決定不做並移除，見下方「為什麼不做 Greenwald_EPV」。
 
 ## 分類範圍：不是只有 taxonomy 明列的 code
 
 `guru` 這一類收的是「以特定投資人/學者命名、帶有該流派主觀判斷的複合公式」，不是嚴格照 investment_metrics_taxonomy v3.0 的分類走——`Altman_Z_Score` 2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來、`Beneish_M_Score` 2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來都是這個原因：公式本身是財務比率加權組合，跟原分類其他「直接算一個比率」的指標性質不同，但更接近「以學者命名的複合模型」，跟葛拉漢數、NCAV、股東盈餘放在一起比較合理。判斷標準大致是「公式夠複雜（多變量加權組合，不是單一比率）+ 掛名特定研究者/投資人」，之後如果有新的大師公式（無論 taxonomy 有沒有明列），都照這個標準判斷該不該放進來，不是只看 taxonomy 有沒有這個 code——單純的單一比率（例如 Novy-Marx 的 GP/A = 毛利/總資產，本質上是換分子的 ROA）即使有掛名，也不算，該進哪一類還沒決定。
+
+**2026-08-30 追加一條篩選條件：公式裡的係數是不是用特定歷史年代/國家資料迴歸校準出來的，如果是，implement 之前要先跟使用者確認，不是做完才補免責聲明。** `Zmijewski_Score`/`Ohlson_O_Score` 都是這種模型（1970~80 年代美國公司資料校準），套用到台股時絕對數值（尤其是機率）已經失去校準基礎，只能當同一家公司的相對趨勢參考——這件事雖然在實作完後有補上「已知限制」免責聲明，但使用者事後回饋這類模型應該在提案階段就先篩掉，不要等做完才講。之後如果還有類似的候選（例如 Fulmer H-Score、Springate、Taffler Z-Score 這種其他破產預警迴歸模型），要先跟使用者確認要不要做，不要直接動工。跟這條規則無關、可以正常做的：純粹是會計恆等式或比率組合的模型（`dupont`、`Nissim_Penman_RNOA`）、沒有校準權重的二元訊號加總（`Piotroski_F_Score`、`Mohanram_G_Score`）、跨公司排名比較（`Greenblatt_Magic_Formula`）——這些都沒有「校準會隨時間/地域失效」的問題。
 
 ## 未實作指標的現況分兩種，不要混為一談
 
@@ -39,8 +41,10 @@
 |---|---|---|---|
 | 葛拉漢數（Graham Number） | Benjamin Graham | `sqrt(22.5 x EPS(TTM) x BVPS)` | ✅ 已實作 — [`grahamNumber/`](grahamNumber/)，`GET /guru/graham-number` |
 | Nissim & Penman RNOA 拆解 | Doron Nissim & Stephen Penman（2001） | `ROE = RNOA + (FLEV x SPREAD)`，見下方 | ✅ 已實作，2026-08-28 — [`nissimPenmanRnoa/`](nissimPenmanRnoa/)，`GET /guru/nissim-penman-rnoa`（單季/年化/TTM），計算口徑見下方 |
+| Zmijewski Score | Mark Zmijewski（1984） | `X = -4.3 - 4.5*(NI/TA) + 5.7*(TL/TA) - 0.004*(CA/CL)`，見下方 | ✅ 已實作 — [`zmijewskiScore/`](zmijewskiScore/)，`GET /guru/zmijewski-score`，計算口徑見下方 |
+| Ohlson O-Score | James Ohlson（1980） | 9 個財務比率加權組合的 Logit 模型，見下方 | ✅ 已實作 — [`ohlsonOScore/`](ohlsonOScore/)，`GET /guru/ohlson-o-score`，計算口徑見下方 |
 
-taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman 也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定；Greenwald EPV 也曾經列入評估，2026-08-28 決定移除，見下方「為什麼不做 Greenwald_EPV」。
+taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman、Zmijewski、Ohlson 也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。Zmijewski Score、Ohlson O-Score 是 2026-08-30 使用者要求「破產預警模型，只要資料完整沒問題就做」新增列入並直接實作的——跟 `Altman_Z_Score` 同一種「以特定學者命名的財務危機預警複合模型」，資料需求量級也相同（都是資產負債表/損益表/現金流量表衍生比率，不需要跨公司比較或前瞻性假設）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定；Greenwald EPV 也曾經列入評估，2026-08-28 決定移除，見下方「為什麼不做 Greenwald_EPV」。
 
 **本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`../profitability/eps/service.ts`](../profitability/eps/service.ts)）跟 `calculateBvps`（[`../profitability/bvps/service.ts`](../profitability/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
 
@@ -72,7 +76,7 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 | X4 | **股權市值** / 總負債帳面值 | 見下方「市值資料源」 |
 | X5 | 營收（TTM） / 總資產 | 直接引用 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的 `assetTurnoverTtm`（本來就是「營收 TTM/總資產」，公式完全一樣） |
 
-**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（股價基準日當下生效的股本，`getPaidInSharesAsOf`）。**目前 `daily_stock_price` 只有 2330 有資料**，其他公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`。
+**市值資料源**：實際開發時發現 2026-08-21 討論過的 oingg-twse `company_profile.issued_shares` x `daily_price.close` 這條路線不適合——`issued_shares` 是「現在」的股數快照，不是某個歷史時點的股數，拿去配歷史財報季度的市值會不準；`daily_price` 歷史又太淺。改用跟 [`../portfolio/beta/`](../portfolio/beta/) 一樣的資料源：mops 的 `daily_stock_price`（個股收盤價） x `capital_stock_history`（股價基準日當下生效的股本，`getPaidInSharesAsOf`）。**`daily_stock_price` 覆蓋率會持續成長**（2026-08-26 剛鏡進來時只有 2330，2026-08-28 已擴大到 7 家種子公司：2330/2412/2881/2887/2838/2850/2867），完全查無資料的公司 X4/zScore 會是 `null`，`fieldStatuses` 標成 `not_applicable`；覆蓋範圍內但這次查詢缺別的東西（例如 `capital_stock_history` 對不上股價基準日），標成 `no_data`——判斷邏輯見 [`../../shared/marketCap.ts`](../../shared/marketCap.ts) 的 `hasStockPriceCoverage`，不要在程式碼裡寫死特定公司代號判斷「這家公司有沒有股價資料」。
 
 **股價基準日不是財報期末日，是財報公告日（2026-08-28 修正）**：一開始直接拿 `reportDate`（資產負債表的期末日，例如 115Q2 是 2026-06-30）當股價基準日，這是錯的——期末日只是會計期間的結尾，市場在那天根本還不知道這一季財報數字（依規定財報要再等約 45 天才會公告），拿期末日查股價等於是 look-ahead bias（用了市場當時還不知道的未來資訊）。正確作法是用 `financial_report_announcement` 這張表的 `announcementDate`（財報實際對外公告、市場才真的能反應的那一天）；查無公告日才退回 `reportDate` 並在 `warnings` 註明可能有 look-ahead bias，見 [`../../shared/reportAnnouncementDate.ts`](../../shared/reportAnnouncementDate.ts) 的 `getPriceAnchorDate`。回應多了 `marketCap.priceAnchorSource`（`'announcement'` 或 `'report_date_fallback'`）標明這次用的是哪一種。已用 2330 114Q2（有公告日 2025-08-12，比期末日 2025-06-30 晚 43 天）驗證正確優先採用公告日。
 
@@ -141,6 +145,47 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 **唯一要先拍板的邊角案例**（已拍板）：`preferredStockLiability`（分類為負債的可贖回特別股）本質上比較像融資工具，嚴謹一點該算進金融負債，但這個欄位目前只有 5 家金控/保險股有值，決定先不處理，跟 `deRatio`/`roic` 現有「有息負債」定義保持一致，避免為了邊角案例讓公式複雜化。
 
 **交叉驗證發現的真實限制**：`reconstructedRoeQuarterlyPct`/`reconstructedRoeTtmPct`（用 `RNOA + FLEV x SPREAD` 重組出來的 ROE）對照 `actualRoeQuarterlyPct`/`actualRoeTtmPct`（`roe/` 直接算出來的），實測 2330 115Q2：重組 TTM ROE 33.83% vs 實際 TTM ROE 34.78%，差距比 `dupont` 的交叉驗證略大——原因不是算錯，是這個模型把「營業 vs 融資」簡化成兩分法，沒有拆出權益法投資收益、處分利益、匯兌損益這類其他非營業項目（實測發現台積電這類非利息的非營業收支規模不小，遠大於利息收支淨額）。修過一輪：NBC 原本直接用毛的 `financeCosts`，重組 ROE 跟實際 ROE 差距高達 ~11%；改成「淨利息費用扣掉利息收入、再稅後化」之後差距收斂到 TTM ~3%（單季因為分母本身較小，相對誤差會被放大，跟 `dupont` 踩過的坑一樣）——這是模型本身簡化程度的問題，不會再進一步處理（要更精確就要逐科目拆權益法投資收益等項目算進金融/營業，那已經不是「拍板一個定義」能解決的事，是另一個規模的工程）。
+
+## Zmijewski_Score 計算口徑（2026-08-30 實作）
+
+Mark Zmijewski（1984）提出的財務危機 Probit 預警模型：
+
+```
+X = -4.3 - 4.5*(淨利 TTM/總資產) + 5.7*(總負債/總資產) - 0.004*(流動資產/流動負債)
+```
+
+三個變數都是財報衍生比率：淨利用 TTM（跟 ROE/ROA 的 TTM 邏輯一致，Zmijewski 原始模型是年度財報校準的，TTM 是最接近的替代口徑），總資產/總負債/流動資產/流動負債用本季期末資產負債表數字。`probabilityOfDistress = Φ(X)`（標準常態累積分布函數，用 Abramowitz & Stegun 近似公式，不需要額外統計函式庫），比單看沒有直覺單位的 X 好解讀；`flagged`（`probabilityOfDistress > 0.5`，等同 `xScore > 0`）是原始論文定的門檻。
+
+實測台積電（2330）115Q2 合併報表：X = -3.6198，`probabilityOfDistress` ≈ 0.0001，`flagged: false`——財務體質極佳的公司財務危機機率極低，符合預期。用 2887（台新新光金，金控業）驗證：資產負債表沒有流動資產/流動負債欄位（金融業結構性不分類），`xScore` 正確優雅降級成 `null`，不是丟例外。
+
+**已知限制**：模型係數是用 1970~80 年代美國上市公司資料校準的，套用到台股時絕對數值的校準基準已經過時且跨國/跨幣別，`probabilityOfDistress` 的絕對值不宜直接當成真實違約機率，比較適合當作同一套公司隨時間變化的相對趨勢指標，跟 `Altman_Z_Score`/`Beneish_M_Score` 的已知限制是同一種性質。
+
+## Ohlson_O_Score 計算口徑（2026-08-30 實作）
+
+James Ohlson（1980）提出的財務危機 Logit 預警模型：
+
+```
+O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG
+    - 2.37*NITA - 1.83*FUTL + 0.285*INTWO - 0.521*CHIN
+```
+
+| 變數 | 公式 | 說明 |
+|---|---|---|
+| SIZE | `ln(總資產)` | 原始論文用 GNP 物價指數平減過的資產（換算成 1968 年美元）——本服務沒有對應的平減資料源，也沒有正確的美元/年代校準基準可以換算，直接用未平減的原始總資產（千元台幣），見下方已知限制 |
+| TLTA | `總負債 / 總資產` | 純資產負債表時點快照 |
+| WCTA | `(流動資產 - 流動負債) / 總資產` | 跟 `Altman_Z_Score` 的 X1 分子同一個算法（營運資金），分母不同（X1 除總資產，這裡也是除總資產，其實完全一樣） |
+| CLCA | `流動負債 / 流動資產` | |
+| OENEG | 總負債 > 總資產記 1，否則記 0 | 權益為負的訊號 |
+| NITA | `淨利（TTM） / 總資產` | |
+| FUTL | `營運現金流（TTM） / 總負債` | FFO（Funds From Operations）財報沒有現成欄位，用營運現金流（`netCashFromOperatingActivities`）當代理變數——常見的實務替代做法，跟 Beneish AQI 省略證券項、DEPI 只用 depreciation 是同一種「用現有欄位近似原始定義」的簡化 |
+| INTWO | 今年、去年 TTM 淨利都是負數記 1，否則記 0 | 「去年」是用 `getPastNQuarters` 往前推 5 季（含本季）取最舊那一筆定位「去年同季」，再往前抓 4 季加總，跟 Piotroski/Beneish 定位「去年同季」同一個 helper、同一種用法 |
+| CHIN | `(今年 TTM 淨利 - 去年 TTM 淨利) / (\|今年\| + \|去年\|)` | |
+
+`probabilityOfBankruptcy = 1 / (1 + e^(-O))`，Logit 模型的標準機率轉換；`flagged`（`probabilityOfBankruptcy > 0.5`，等同 `oScore > 0`）是原始論文定的門檻。
+
+實測台積電（2330）115Q2 合併報表：SIZE=22.9614、TLTA=0.3094、WCTA=0.2888、CLCA=0.4069、OENEG=0、NITA=0.2386、FUTL=0.9081、INTWO=0、CHIN=0.2103，O-Score = -11.5187，`probabilityOfBankruptcy` ≈ 0，`flagged: false`——跟 Zmijewski Score 同一個結論。用 2887（台新新光金，金控業）驗證：WCTA/CLCA 因為流動資產/流動負債結構性為 null 而優雅降級成 `null`，導致整體 `oScore` 也是 `null`，但不依賴流動資產/負債的其他 7 個變數（SIZE/TLTA/OENEG/NITA/FUTL/INTWO/CHIN）照常算得出來，不會被拖累——這是刻意設計，讓使用者就算拿不到總分，也能看到個別變數的資訊。
+
+**已知限制**：SIZE 這個變數的絕對尺度已經跟原始校準基準（1970 年代美元、GNP 物價指數平減）完全不同，幣別、年代、有沒有平減都不一樣，`probabilityOfBankruptcy` 的絕對值不宜直接當成真實違約機率，比較適合當作同一套公司隨時間變化的相對趨勢指標，跟 `Altman_Z_Score`/`Beneish_M_Score`/`Zmijewski_Score` 的已知限制是同一種性質。
 
 ## 為什麼不做 Greenwald_EPV（2026-08-28 決定移除）
 
