@@ -38,6 +38,7 @@ import nissimPenmanRnoaRouter from './domains/guru/nissimPenmanRnoa/route';
 import zmijewskiScoreRouter from './domains/guru/zmijewskiScore/route';
 import ohlsonOScoreRouter from './domains/guru/ohlsonOScore/route';
 import betaRouter from './domains/portfolio/beta/route';
+import equityRiskPremiumRouter from './domains/macro/equityRiskPremium/route';
 import maRouter from './domains/technicals/ma/route';
 import rsiRouter from './domains/technicals/rsi/route';
 import kdRouter from './domains/technicals/kd/route';
@@ -87,6 +88,7 @@ apiRouter.use(
   ohlsonOScoreRouter
 );
 apiRouter.use('/portfolio', betaRouter);
+apiRouter.use('/macro', equityRiskPremiumRouter);
 apiRouter.use('/technicals', maRouter, rsiRouter, kdRouter, bollingerBandsRouter, atrRouter, biasRouter, macdRouter, obvRouter);
 
 router.use(apiRouter);

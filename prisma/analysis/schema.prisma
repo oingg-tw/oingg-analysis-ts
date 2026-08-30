@@ -1375,3 +1375,33 @@ model EvEbitdaResult {
   @@id([symbol, year, season, dataType, subsidiaryCompanyId])
   @@map("valuation_ev_ebitda")
 }
+
+// 股權風險溢酬（Equity Risk Premium）——歷史法：TAIEX 年化報酬率 - 同期 10年期公債次級市場殖利率
+// 平均值。跟公司無關（全市場單一數字），PK 用 window_start + window_end（YYYY-MM 字串），不是
+// symbol/as_of_date——同一組起訖窗口重算會覆蓋同一列，不同起訖窗口各自一列，方便比較不同樣本期間。
+// 欄位對應 src/domains/macro/equityRiskPremium/types.ts 的 EquityRiskPremiumResult。
+// 2026-08-30 使用者用真實資料驗證過：5 年窗口（2021-09~2026-08）算出 ERP ≈ 21%，10 年窗口
+// （2016-06~2026-06）≈ 17%，都明顯偏離文獻常見區間（4%~8%），原因是台股這幾年剛好處在單一段
+// 極端多頭；27 年窗口（1999-01~2026-06，TAIEX 回填完成後）才落回 5.8%~7.9%，見 MIN_RELIABLE_MONTHS
+// 的說明——這不是本服務的臆測，是這次開發過程中拿真實數字對照文獻得出的結論。
+model EquityRiskPremiumResult {
+  windowStart String @map("window_start") // YYYY-MM，樣本窗口第一個有資料的月份
+  windowEnd   String @map("window_end") // YYYY-MM，樣本窗口最後一個有資料的月份
+
+  months Int // 窗口內「TAIEX 與無風險利率都有資料」的月數，報酬率樣本數 = months - 1
+
+  // 全部以百分比數字儲存（例如 5.80 代表 5.80%），跟 MonthlyGovBondYield10y.yieldRate 同一種單位慣例。
+  marketReturnGeometric  Decimal? @map("market_return_geometric") @db.Decimal(8, 4)
+  marketReturnArithmetic Decimal? @map("market_return_arithmetic") @db.Decimal(8, 4)
+  avgRiskFreeRate        Decimal? @map("avg_risk_free_rate") @db.Decimal(8, 4)
+  erpGeometric           Decimal? @map("erp_geometric") @db.Decimal(8, 4)
+  erpArithmetic          Decimal? @map("erp_arithmetic") @db.Decimal(8, 4)
+
+  warnings String[]
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([windowStart, windowEnd])
+  @@map("macro_equity_risk_premium")
+}

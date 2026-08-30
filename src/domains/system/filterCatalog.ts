@@ -644,6 +644,28 @@ export const filterCatalog: FilterCategory[] = [
     ],
   },
   {
+    key: 'macro',
+    name: '總體經濟',
+    metrics: [
+      {
+        key: 'equityRiskPremium',
+        name: '股權風險溢酬',
+        path: '/macro/equity-risk-premium',
+        fields: [
+          // period 用 'snapshot'：這不是每季/每日重複發布的指標，是「給定一段窗口」算出來的單一
+          // 歷史平均值，跟 bvps 的 snapshot 是同一種「非固定週期」用途，不是完全相同的語意，但
+          // FilterFieldPeriod 目前沒有更貼切的選項——真正描述這個指標的維度是窗口起訖（windowStart/
+          // windowEnd），那是 API 回應裡的欄位，不是這裡的 period 分類。
+          { key: 'marketReturnGeometric', name: '加權指數年化報酬率 幾何', period: 'snapshot', sort: 1 },
+          { key: 'marketReturnArithmetic', name: '加權指數年化報酬率 算術', period: 'snapshot', sort: 2 },
+          { key: 'avgRiskFreeRate', name: '十年期公債殖利率均值', period: 'snapshot', sort: 3 },
+          { key: 'erpGeometric', name: '股權風險溢酬 幾何', period: 'snapshot', sort: 4 },
+          { key: 'erpArithmetic', name: '股權風險溢酬 算術', period: 'snapshot', sort: 5 },
+        ],
+      },
+    ],
+  },
+  {
     key: 'technicals',
     name: '技術指標',
     metrics: [
