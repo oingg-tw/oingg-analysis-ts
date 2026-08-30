@@ -18,6 +18,9 @@
     "moduleResolution": "Bundler",
 
     /* Path aliases */
+    // baseUrl 在 TS 7.0 會停用（新版編譯器的模組解析重寫），但 paths 目前仍然需要它才能運作
+    // （沒有原生替代方案）——先用 ignoreDeprecations 消掉警告，之後 TS 團隊提供替代寫法再遷移。
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

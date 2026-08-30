@@ -135,6 +135,7 @@ URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<�
 | `GET /valuation/psr` | 計算單一公司股價營收比（PSR，簡易年化、TTM 兩種數值，複合指標） |
 | `GET /valuation/p-fcf` | 計算單一公司股價自由現金流比（P_FCF，簡易年化、TTM 兩種數值，複合指標） |
 | `GET /valuation/ev-ebitda` | 計算單一公司企業價值倍數（EV_EBITDA，簡易年化、TTM 兩種數值，複合指標） |
+| `GET /valuation/ranking` | 依 PER、PBR 或殖利率排行全市場公司（唯一一支查全市場而不是查單一公司的端點） |
 | `GET /guru/graham-number` | 計算單一公司單一季度的葛拉漢數（`sqrt(22.5 x EPS(TTM) x BVPS)`） |
 | `GET /guru/ncav` | 計算單一公司單一季度的葛拉漢淨流動資產價值（NCAV）與安全邊際價 |
 | `GET /guru/owner-earnings` | 計算單一公司單一季度的每股股東盈餘（Buffett Owner Earnings，單季、單季年化、TTM 三種數值） |

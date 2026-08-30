@@ -2,7 +2,7 @@
 
 - **scope**：Security
 - **說明**：衡量個股或證券市價相對各項基礎財務維度的市場定價乘數與折溢價幅度。
-- **狀態**：部分實作（`PER`、`PBR`、`Dividend_Yield` 透過 oingg-twse 的現成數字；`PSR`、`P_FCF`、`EV_EBITDA` 2026-08-30 自己組合既有服務算出來，見下方）。`NAV_Discount_Premium` 2026-08-30 決定移除，見下方指標清單後的說明。
+- **狀態**：部分實作（`PER`、`PBR`、`Dividend_Yield` 透過 oingg-twse 的現成數字；`PSR`、`P_FCF`、`EV_EBITDA` 2026-08-30 自己組合既有服務算出來，見下方）。`NAV_Discount_Premium` 2026-08-30 決定移除，見下方指標清單後的說明。另外新增全市場排行端點，見下方「排行榜 vs 單一公司查詢」。
 
 ## 股價資料源：oingg-twse
 
@@ -18,6 +18,14 @@
 本服務其他每個指標都是「查某公司某季度」（`companyId` + `year` + `season` + `dataType` + `subsidiaryCompanyId`）。[`marketRatios/`](marketRatios/) 第一版直接套用這個模板，把 PER/PBR 綁在「該季財報報告日當天」的股價上——結果因為 oingg-twse 的市場資料才剛開始收集（2026-08-19 當下只有 3 天資料，遠晚於任何已報過的季度），查任何歷史季度都是 `null`。
 
 問題不在資料覆蓋不夠，而在**查詢介面本身套錯模板**：PER/PBR 是逐日的市場資料，時間刻度跟財務季度不是同一回事，taxonomy 的 `MRQ` 指的是分母用哪一期 EPS，不是說分子股價要對應到那一季發生的那一天。改成只用 `companyId`（+ 選填 `date`，不給就抓最新一筆），完全跟財務季度脫鉤，才是對的介面。
+
+## 排行榜 vs 單一公司查詢：[`ranking/`](ranking/)
+
+2026-08-30 新增，`GET /valuation/ranking`——本服務目前唯一一支「查全市場排行」而不是「查一家公司」的端點。跟其他指標最大的差別是資料來源本身就已經是全市場齊的：`daily_valuation` 是 oingg-twse 自己算好、每天更新給約 1080 檔股票的現成數字，排行榜只是對這張表下 `ORDER BY ... LIMIT N`，不需要先把每家公司都查過一次才有資料可以排。
+
+這跟本服務**自己算**的指標（ROE、Altman Z-Score⋯）形成鮮明對比：那些指標是「懶惰計算」，只有真的被查詢過的公司才會被算出來、存進 `oingg-analysis`——沒有排程主動幫全市場跑一輪，所以現在做不出「ROE 前 20 名」這種排行（資料不齊，不是查詢介面的問題）。`Greenblatt_Magic_Formula`、`Mohanram_G_Score` 卡住的也是同一個原因，見 [`../guru/README.md`](../guru/README.md)。要解這個問題得先有全市場批次計算的排程，是資料 pipeline 層級的工作，不是加一個排行 API 就好，之後如果要做，建議還是留在本服務裡開新分類（例如 `screener/`），不要切成獨立的 microservice——計算邏輯跟結果資料庫都已經在這裡，切出去只會變成重複實作，或每次排行查詢都要對這邊發上千次 API call。
+
+`peRatio`/`pbRatio` 排行會排除 `<= 0` 的公司（虧損或淨值為負不是「便宜」，是財務體質問題，混進「最低本益比」排行會誤導使用者），`dividendYield` 沒有這個排除。`order` 沒有預設值，呼叫端必須自己指定 `asc`/`desc`，避免對排序方向產生誤會。
 
 ## CAPE 卡在哪裡：不是通膨資料，是財報歷史深度不夠
 
