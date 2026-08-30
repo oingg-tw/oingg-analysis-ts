@@ -1,0 +1,37 @@
+// 本 schema 只用來「讀」oingg-tpex-ts 擁有的表格（上櫃股價/估值資料）。這些表的定義與 migration
+// 一律由 oingg-tpex-ts 那個服務負責，這裡永遠不要對它們跑 `prisma migrate`——欄位是用
+// `prisma db pull` 從既有資料庫內省後，依照本專案的 camelCase + `@map` 命名風格手動整理過。
+//
+// 2026-08-30 接上：本服務原本 `GET /valuation/ranking` 只查 oingg-twse 的 daily_valuation，
+// 遺漏整個上櫃市場（bff-ts 實測 TWSE ~870-1080 檔、TPEx ~670-890 檔），排行結果名不符實地
+// 標榜「全市場」——這個資料庫就是補上這個缺口用的。
+//
+// oingg-tpex-ts 實際上有 5 張表（company_profile、daily_price、daily_valuation、tpex_raw，
+// 還有一張），目前只鏡像了 daily_valuation（跟 oingg-twse 的同名表欄位完全一致：symbol/
+// tradeDate/peRatio/pbRatio/dividendYield），因為目前只有排行榜這個需求用到。daily_price、
+// company_profile 需要時再補，見 prisma/twse/schema.prisma 對同名表的說明（做法應該一致）。
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/tpex-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("TPEX_DATABASE_URL")
+  directUrl = env("TPEX_DIRECT_URL")
+}
+
+// 每日估值比率——跟 oingg-twse 的 DailyValuation 是同一種資料（上櫃版本），本服務直接採用，
+// 不自己重算，口徑黑盒的警告見 src/domains/valuation/README.md、marketRatios/ 的說明。
+// 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
+model DailyValuation {
+  symbol        String
+  tradeDate     DateTime @db.Date
+  peRatio       Decimal? @db.Decimal(10, 2)
+  pbRatio       Decimal? @db.Decimal(10, 2)
+  dividendYield Decimal? @db.Decimal(10, 2)
+
+  @@id([symbol, tradeDate])
+  @@map("daily_valuation")
+}

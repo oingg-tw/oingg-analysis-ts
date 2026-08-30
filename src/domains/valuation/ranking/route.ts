@@ -7,12 +7,14 @@ const router = Router();
  * @swagger
  * /valuation/ranking:
  *   get:
- *     summary: 依 PER、PBR 或殖利率排行全市場公司
+ *     summary: 依 PER、PBR 或殖利率排行全市場公司（上市+上櫃）
  *     description: >
- *       直接查詢 oingg-twse 的 `daily_valuation`（已經算好、每天更新，涵蓋約 1080 檔股票），
+ *       直接查詢 oingg-twse（上市，`daily_valuation`，約 1080 檔）跟 oingg-tpex（上櫃，
+ *       `daily_valuation`，約 890 檔）兩邊已經算好、每天更新的數字，合併排序後取前 N 名，
  *       本服務不重新計算，也不需要事先把每家公司都查過一次——跟本服務其他「查一家公司」的指標
- *       完全不同的查詢型態，這支是全市場排行，見 [`../README.md`](../README.md)「排行榜 vs
- *       單一公司查詢」的說明。
+ *       完全不同的查詢型態，這支是全市場（上市+上櫃）排行，見 [`../README.md`](../README.md)
+ *       「排行榜 vs 單一公司查詢」的說明。2026-08-30 補上 TPEx 之前，這支端點雖然文件上寫
+ *       「全市場」，實際上漏了整個上櫃市場，是 bff-ts 實測發現回報的。
  *
  *       計算口徑：
  *       - `metric=peRatio&order=asc`：低本益比排行。`metric=pbRatio&order=asc`：低淨值比排行。

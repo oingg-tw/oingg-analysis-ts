@@ -2,6 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateRanking } from '@/domains/valuation/ranking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
+import tpexPrisma from '@/adapters/prisma/tpexClient';
 
 // daily_valuation 每天更新，不釘死確切公司/數值，只驗證排序正確、排除邏輯有效——
 // 跟本服務其他吃即時市場資料的測試同一種風格。
@@ -40,6 +41,26 @@ test('ranking: 指定查無資料的日期，應該優雅降級回傳空陣列�
   assert.ok(result.warnings.length > 0);
 });
 
+// 2026-08-30 接上 TPEx 之後的關鍵案例：合併結果裡應該真的看得到上櫃公司，不是只有上市——
+// 用市場整體覆蓋率反推期望值（現查 twse/tpex 各自今天有沒有資料），不寫死是哪幾檔股票，
+// 覆蓋率之後會持續變。
+test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟上櫃公司', async () => {
+  const [twseCount, tpexCount] = await Promise.all([
+    twsePrisma.dailyValuation.count(),
+    tpexPrisma.dailyValuation.count(),
+  ]);
+  if (twseCount === 0 || tpexCount === 0) return; // 其中一邊完全沒資料時無從驗證跨市場合併，跳過。
+
+  const result = await calculateRanking({ metric: 'dividendYield', order: 'desc', limit: 500 });
+  const twseSymbols = new Set((await twsePrisma.dailyValuation.findMany({ where: { tradeDate: new Date(`${result.tradeDate}T00:00:00.000Z`) }, select: { symbol: true } })).map((r) => r.symbol));
+
+  const hasTwse = result.rankings.some((r) => twseSymbols.has(r.symbol));
+  const hasTpex = result.rankings.some((r) => !twseSymbols.has(r.symbol));
+  assert.ok(hasTwse, '合併結果裡應該有上市公司');
+  assert.ok(hasTpex, '合併結果裡應該有上櫃公司（沒有代表還是只查了 TWSE）');
+});
+
 after(async () => {
   await twsePrisma.$disconnect();
+  await tpexPrisma.$disconnect();
 });

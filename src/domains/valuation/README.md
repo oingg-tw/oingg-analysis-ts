@@ -21,7 +21,9 @@
 
 ## 排行榜 vs 單一公司查詢：[`ranking/`](ranking/)
 
-2026-08-30 新增，`GET /valuation/ranking`——本服務目前唯一一支「查全市場排行」而不是「查一家公司」的端點。跟其他指標最大的差別是資料來源本身就已經是全市場齊的：`daily_valuation` 是 oingg-twse 自己算好、每天更新給約 1080 檔股票的現成數字，排行榜只是對這張表下 `ORDER BY ... LIMIT N`，不需要先把每家公司都查過一次才有資料可以排。
+2026-08-30 新增，`GET /valuation/ranking`——本服務目前唯一一支「查全市場排行」而不是「查一家公司」的端點。跟其他指標最大的差別是資料來源本身就已經是全市場齊的：`daily_valuation` 是 oingg-twse（上市）跟 oingg-tpex（上櫃）各自算好、每天更新的現成數字，排行榜只是對這兩張表下 `ORDER BY ... LIMIT N` 再合併，不需要先把每家公司都查過一次才有資料可以排。
+
+**一開始漏了上櫃市場，是 bff-ts 實測發現回報的**：剛上線時這支端點只查了 oingg-twse，雖然文件上寫「全市場」，實際上完全沒有上櫃資料（約 890 檔），排行結果名不符實。跟接 twse/cbc 同一種模式，另外接上第四個資料庫 **oingg-tpex**（`.env` 的 `TPEX_DATABASE_URL` / `TPEX_DIRECT_URL`，見 [`../../../prisma/tpex/schema.prisma`](../../../prisma/tpex/schema.prisma)），目前只鏡像了 `DailyValuation`（跟 oingg-twse 同名表欄位完全一致），上市、上櫃各自查询、取前 limit 名再合併重排——這是「合併 k 個已排序列表取前 N 名」的標準作法，不是抓全部資料再排序。
 
 這跟本服務**自己算**的指標（ROE、Altman Z-Score⋯）形成鮮明對比：那些指標是「懶惰計算」，只有真的被查詢過的公司才會被算出來、存進 `oingg-analysis`——沒有排程主動幫全市場跑一輪，所以現在做不出「ROE 前 20 名」這種排行（資料不齊，不是查詢介面的問題）。`Greenblatt_Magic_Formula`、`Mohanram_G_Score` 卡住的也是同一個原因，見 [`../guru/README.md`](../guru/README.md)。要解這個問題得先有全市場批次計算的排程，是資料 pipeline 層級的工作，不是加一個排行 API 就好，之後如果要做，建議還是留在本服務裡開新分類（例如 `screener/`），不要切成獨立的 microservice——計算邏輯跟結果資料庫都已經在這裡，切出去只會變成重複實作，或每次排行查詢都要對這邊發上千次 API call。
 

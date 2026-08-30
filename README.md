@@ -103,6 +103,21 @@ pnpm prisma:cbc:pull     # 重新對 CBC 資料庫跑 db pull 內省（不要對
 pnpm prisma:cbc:studio   # Prisma Studio 開這個 DB
 ```
 
+## `prisma/tpex/schema.prisma` 是第五個資料庫（唯讀鏡像，同一種模式）
+
+2026-08-30 接上，補一個實際上線後才發現的缺口：`GET /valuation/ranking`（見 [`src/domains/valuation/README.md`](src/domains/valuation/README.md)）文件上寫「全市場排行」，但一開始只查了 oingg-twse，完全漏掉上櫃市場——是 bff-ts 實測比對兩邊資料量（TWSE ~1080 檔、TPEx ~890 檔）才回報發現的。連到獨立的 Neon 專案 **oingg-tpex**（`.env` 的 `TPEX_DATABASE_URL` / `TPEX_DIRECT_URL`），本服務只讀，不擁有這裡的表格 schema/migration——跟 oingg-twse 同一種模式，兩邊 `daily_valuation` 欄位定義完全一樣（`symbol`/`tradeDate`/`peRatio`/`pbRatio`/`dividendYield`）。
+
+目前只鏡像了一張表：
+
+- **`DailyValuation`**（`daily_valuation`）：上櫃版本的每日估值比率，跟 oingg-twse 的同名表是同一種資料，只是換一個市場。oingg-tpex 實際上還有其他表（`company_profile`、`daily_price`、`tpex_raw`），需要時再補。
+
+這個 schema 有自己的 generator output（`generated/tpex-client`，已加入 `.gitignore`）。改動/重新內省用：
+
+```bash
+pnpm prisma:tpex:pull     # 重新對 TPEx 資料庫跑 db pull 內省（不要對這份 schema 跑 migrate）
+pnpm prisma:tpex:studio   # Prisma Studio 開這個 DB
+```
+
 ## API 一覽
 
 URL 路徑跟 `src/domains` 底下的分類資料夾一一對應（`/<分類>/<指標>`），維護時可以直接照路徑找到程式碼位置（見 [`src/domains/README.md`](src/domains/README.md) 的分類索引）。

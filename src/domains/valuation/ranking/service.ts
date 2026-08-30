@@ -1,4 +1,5 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
+import tpexPrisma from '@/adapters/prisma/tpexClient';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
 // peRatio/pbRatio <= 0 代表虧損（EPS 為負）或淨值為負，不是「便宜」，是財務體質出問題，
@@ -11,15 +12,56 @@ const EXCLUDE_NON_POSITIVE: Record<RankingMetric, boolean> = {
   dividendYield: false,
 };
 
+interface MarketQueryResult {
+  rows: { symbol: string; value: number }[];
+  excludedNonPositiveCount: number;
+}
+
+// 上市（TWSE）、上櫃（TPEx）各自查詢——兩邊 daily_valuation 欄位定義完全一樣（symbol/tradeDate/
+// peRatio/pbRatio/dividendYield），2026-08-30 接上 TPEx 之前，這支端點雖然文件上寫「全市場」，
+// 實際上只查了 TWSE，漏掉整個上櫃市場（bff-ts 實測 TWSE ~870-1080 檔、TPEx ~670-890 檔）。
+// 各自先抓 limit 筆再合併重排，不是抓完全部再排序——兩邊個別的前 limit 名已經足夠湊出合併後
+// 真正的前 limit 名（標準的「合併 k 個已排序列表取前 N 名」作法，見 calculateRanking 合併邏輯）。
+const queryMarket = async (
+  client: typeof twsePrisma | typeof tpexPrisma,
+  tradeDate: Date,
+  metric: RankingMetric,
+  order: 'asc' | 'desc',
+  limit: number,
+  excludeNonPositive: boolean
+): Promise<MarketQueryResult> => {
+  const where = excludeNonPositive ? { tradeDate, [metric]: { gt: 0 } } : { tradeDate, [metric]: { not: null } };
+
+  const [rows, excludedNonPositiveCount] = await Promise.all([
+    client.dailyValuation.findMany({
+      where,
+      orderBy: { [metric]: order },
+      take: limit,
+      select: { symbol: true, peRatio: true, pbRatio: true, dividendYield: true },
+    }),
+    excludeNonPositive ? client.dailyValuation.count({ where: { tradeDate, [metric]: { lte: 0 } } }) : Promise.resolve(0),
+  ]);
+
+  return {
+    rows: rows.map((row) => ({ symbol: row.symbol, value: Number(row[metric]) })),
+    excludedNonPositiveCount,
+  };
+};
+
 const getLatestValuationDate = async (): Promise<Date | null> => {
-  const row = await twsePrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } });
-  return row?.tradeDate ?? null;
+  const [twseLatest, tpexLatest] = await Promise.all([
+    twsePrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } }),
+    tpexPrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } }),
+  ]);
+  const dates = [twseLatest?.tradeDate, tpexLatest?.tradeDate].filter((d): d is Date => d !== undefined);
+  if (dates.length === 0) return null;
+  return dates.reduce((latest, d) => (d > latest ? d : latest));
 };
 
 export const calculateRanking = async (query: RankingQuery): Promise<RankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [
-    'peRatio/pbRatio/dividendYield 直接來自 oingg-twse 的 daily_valuation，本服務沒有自己重算，見 valuation/marketRatios/ 的說明。',
+    'peRatio/pbRatio/dividendYield 直接來自 oingg-twse（上市）/oingg-tpex（上櫃）的 daily_valuation，本服務沒有自己重算，見 valuation/marketRatios/ 的說明。',
   ];
 
   const tradeDate = query.date ? new Date(`${query.date}T00:00:00.000Z`) : await getLatestValuationDate();
@@ -29,36 +71,26 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   }
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
-  const where = excludeNonPositive ? { tradeDate, [metric]: { gt: 0 } } : { tradeDate, [metric]: { not: null } };
-
-  const [rows, excludedNonPositiveCount] = await Promise.all([
-    twsePrisma.dailyValuation.findMany({
-      where,
-      orderBy: { [metric]: order },
-      take: limit,
-      select: { symbol: true, peRatio: true, pbRatio: true, dividendYield: true },
-    }),
-    excludeNonPositive
-      ? twsePrisma.dailyValuation.count({ where: { tradeDate, [metric]: { lte: 0 } } })
-      : Promise.resolve(0),
+  const [twseResult, tpexResult] = await Promise.all([
+    queryMarket(twsePrisma, tradeDate, metric, order, limit, excludeNonPositive),
+    queryMarket(tpexPrisma, tradeDate, metric, order, limit, excludeNonPositive),
   ]);
 
-  if (rows.length === 0) {
+  const merged = [...twseResult.rows, ...tpexResult.rows].sort((a, b) => (order === 'asc' ? a.value - b.value : b.value - a.value));
+  const limited = merged.slice(0, limit);
+
+  if (limited.length === 0) {
     warnings.push(`${tradeDate.toISOString().slice(0, 10)} 查無符合條件的資料，無法計算排行。`);
   }
 
-  const rankings: RankingRow[] = rows.map((row, index) => ({
-    rank: index + 1,
-    symbol: row.symbol,
-    value: Number(row[metric]),
-  }));
+  const rankings: RankingRow[] = limited.map((row, index) => ({ rank: index + 1, symbol: row.symbol, value: row.value }));
 
   return {
     metric,
     order,
     limit,
     tradeDate: tradeDate.toISOString().slice(0, 10),
-    excludedNonPositiveCount,
+    excludedNonPositiveCount: twseResult.excludedNonPositiveCount + tpexResult.excludedNonPositiveCount,
     rankings,
     warnings,
   };

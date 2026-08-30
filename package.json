@@ -8,13 +8,15 @@
     "build": "tsc && tsc-alias",
     "test": "tsx --test tests/**/*.test.ts",
     "test:types": "tsc --noEmit -p tests/tsconfig.json",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/cbc/schema.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/cbc/schema.prisma && prisma generate --schema=prisma/tpex/schema.prisma",
     "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",
     "prisma:twse:pull": "prisma db pull --schema=prisma/twse/schema.prisma",
     "prisma:twse:studio": "prisma studio --schema=prisma/twse/schema.prisma",
     "prisma:cbc:pull": "prisma db pull --schema=prisma/cbc/schema.prisma",
-    "prisma:cbc:studio": "prisma studio --schema=prisma/cbc/schema.prisma"
+    "prisma:cbc:studio": "prisma studio --schema=prisma/cbc/schema.prisma",
+    "prisma:tpex:pull": "prisma db pull --schema=prisma/tpex/schema.prisma",
+    "prisma:tpex:studio": "prisma studio --schema=prisma/tpex/schema.prisma"
   },
   "keywords": [],
   "author": "",
