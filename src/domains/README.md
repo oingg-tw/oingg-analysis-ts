@@ -14,7 +14,7 @@
 | [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本；`Altman_Z_Score`——2026-08-24 從 `solvency/` 移入，2026-08-27 實作；`Piotroski_F_Score`；`Beneish_M_Score`——2026-08-25 從 `cashFlow/` 移入，2026-08-27 實作；`Nissim_Penman_RNOA`——2026-08-25 新列入，2026-08-28 實作；Zmijewski Score、Ohlson O-Score——2026-08-30 新列入並實作，兩者都是財務危機預警模型，跟 `Altman_Z_Score` 同一種資料需求）；`Greenwald_EPV` 2026-08-25 曾列入，2026-08-28 因為資產重置成本無法忠於資料計算，決定移除 |
 | [`technicals/`](technicals/README.md) | 技術分析與價格量能指標 | Security | 全數實作（2026-08-30，`VWAP_OBV` 只做了 OBV，VWAP 結構性做不到）——6 家種子公司歷史夠深全部指標都算得出來，其他公司目前只有 3 天資料，見該分類 README |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26，見該分類 README「為什麼 Beta 是例外」）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
-| [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 未實作——需要總體經濟/債券/選擇權資料源，跟公司財報完全無關 |
+| [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 部分實作（`Equity_Risk_Premium`——2026-08-30 使用者要求加的，taxonomy 原始清單沒有這個指標，見該分類 README）；其餘（GDP、公司債利差、VIX、賣買權比⋯）需要總體經濟/選擇權資料源，跟公司財報完全無關 |
 | [`securityInfo/`](securityInfo/README.md) | 證券基本資訊 | Security | 未實作——見下方「第二套分類方案」 |
 | [`marketData/`](marketData/README.md) | 市場行情數據 | Security | 未實作——見下方「第二套分類方案」 |
 | [`financials/`](financials/README.md) | 財務報表 | Security | 未實作——見下方「第二套分類方案」 |
