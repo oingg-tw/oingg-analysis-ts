@@ -181,7 +181,7 @@ model MonthlyCpi {
 // 2026-08-30 移除：daily_market_index、daily_stock_price 這兩張表已經從 mops 資料庫裡消失
 // （不是覆蓋率限制，是表本身不存在了，原因不明，可能是對方在重構）。市值/Beta 需要的股價、
 // 大盤指數資料改用 oingg-twse 的 daily_price、daily_taiex_index（覆蓋率更完整，見
-// src/shared/marketCap.ts、src/domains/portfolio/beta/service.ts 開頭的說明），
+// src/shared/sourceData/marketCap.ts、src/domains/metrics/portfolio/beta/service.ts 開頭的說明），
 // src/ 底下已經沒有任何地方引用這兩個 model 了。
 
 // 財報實際公告日——2026-08-28 發現存在，之前沒鏡像過。跟 quarterly_balance_sheet 等表的 reportDate
@@ -193,7 +193,7 @@ model MonthlyCpi {
 // 純財務比率（ROE、DuPont 這類不牽涉股價的）繼續用 reportDate 排序 TTM/YoY，不受影響。
 // **目前覆蓋範圍**：整張表 12 筆，負責 ingest 的服務已用 2330/2887/6488 三家公司 114 年度資料
 // 驗證過（各 4/4 筆：114Q1~Q3 + 113 年報，0 警訊），是刻意先驗證這個範圍，不是漏抓；還沒涵蓋
-// 到本服務常用測試季度 115Q2，查無資料時退回 reportDate，見 src/shared/reportAnnouncementDate.ts。
+// 到本服務常用測試季度 115Q2，查無資料時退回 reportDate，見 src/shared/sourceData/reportAnnouncementDate.ts。
 model FinancialReportAnnouncement {
   symbol           String
   fiscalYear       Int      @map("fiscal_year")

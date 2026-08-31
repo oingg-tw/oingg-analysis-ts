@@ -1,6 +1,6 @@
 // 技術分析指標的純數學運算——只吃/吐數字陣列，不碰資料庫，方便獨立測試（見
 // tests/shared/technicalMath.test.ts）。所有函式都假設輸入陣列已經依日期**升冪**排序
-// （最舊的在前面，最新的在最後面），跟 src/shared/priceSeries.ts 回傳的順序一致。
+// （最舊的在前面，最新的在最後面），跟 src/shared/sourceData/priceSeries.ts 回傳的順序一致。
 //
 // **資料量不足一律回傳 null，不是拋錯或硬湊**——技術指標需要至少 N 期歷史才有意義，
 // 資料筆數不夠時代表「這家公司目前這個視窗還算不出來」，屬於 MetricStatusCode 的 'no_data'

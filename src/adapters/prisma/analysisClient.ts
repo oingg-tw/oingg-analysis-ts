@@ -4,7 +4,7 @@ import { config } from '@/shared/config';
 // oingg-analysis DB：本服務自己擁有 schema/migration，跟唯讀鏡像的 mops DB（見 ./index.ts）
 // 是完全獨立的連線，不要混用。
 export const analysisPrisma = new PrismaClient({
-  log: config.isProduction ? ['error'] : ['query', 'info', 'warn', 'error'],
+  log: config.isProduction ? ['error'] : ['info', 'warn', 'error'],
 });
 
 export const connectAnalysisDb = async () => {

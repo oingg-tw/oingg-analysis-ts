@@ -1,0 +1,93 @@
+// 本 schema 只用來讀 oingg-mops-ts 的 export schema（不是 public schema，那個在
+// ../schema.prisma）——2026-08-31 mops-ts 建好 export.quarterly_income_statement view、
+// export.ingestion_runs 握手表、etl_reader role（只能 SELECT export schema，讀不到 public，
+// 已實測驗證過隔離），連線用 .env 的 MOPS_EXPORT_DATABASE_URL / MOPS_EXPORT_DIRECT_URL。
+//
+// 這是「業務中台與後台資料邊界架構」契約下的正式來源，取代之前直連 public schema 唯讀鏡像的
+// 舊模式——mops 的季度財報三張表短期內還是繼續用 ../schema.prisma（現有 30+ 支指標都還沒切過來，
+// 見 prisma/analysis/schema.prisma 開頭的說明），這份 schema 目前只服務 src/shared/sync/ 的
+// curated 層同步流程，不要拿來給一般指標查詢用。
+//
+// quarterly_income_statement 是 view，沒有唯一識別欄位，Prisma Client 不會產生 model 存取子
+// （@@ignore），查詢一律走 $queryRaw，見 src/shared/sync/mopsQuarterlyIncomeStatementSync.ts。
+//
+// 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/mopsExport/schema.prisma`
+// 內省，這個 schema 由 mops-ts 擁有，本服務永遠不對它跑 migrate。
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../generated/mops-export-client"
+  previewFeatures = ["multiSchema", "views"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("MOPS_EXPORT_DATABASE_URL")
+  directUrl = env("MOPS_EXPORT_DIRECT_URL")
+  schemas   = ["export"]
+}
+
+// 握手表——見契約第二部分。每一列對應「一個 dataset、一家公司、一季」的 ingestion 結果
+// （不是涵蓋多家公司的日批次，2026-08-31 實測確認的顆粒度，見 src/shared/sync/types.ts 的
+// IngestionRun 註解）。中台只認 status = 'success' 的批次。
+model IngestionRun {
+  runId                BigInt   @id @default(autoincrement()) @map("run_id")
+  dataset              String
+  companyId            String   @map("company_id")
+  year                 Int
+  season               Int
+  dataDate             DateTime @map("data_date") @db.Date
+  completedAt          DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  rowCount             Int      @map("row_count")
+  status               String // 'success' | 'partial' | 'failed'，DB 端有 check constraint，Prisma 不強制
+  reconciliationDetail Json?    @map("reconciliation_detail")
+
+  @@unique([dataset, companyId, year, season])
+  @@index([dataset, status])
+  @@map("ingestion_runs")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+view QuarterlyIncomeStatement {
+  symbol                                   String?
+  year                                     Int?
+  quarter                                  Int?
+  dataType                                 String?   @map("data_type")
+  subsidiaryCompanyId                      String?   @map("subsidiary_company_id")
+  reportDate                               DateTime? @map("report_date") @db.Date
+  operatingRevenue                         BigInt?   @map("operating_revenue")
+  operatingCost                            BigInt?   @map("operating_cost")
+  grossProfitBeforeAdjustment              BigInt?   @map("gross_profit_before_adjustment")
+  grossProfit                              BigInt?   @map("gross_profit")
+  sellingExpenses                          BigInt?   @map("selling_expenses")
+  adminExpenses                            BigInt?   @map("admin_expenses")
+  rdExpenses                               BigInt?   @map("rd_expenses")
+  operatingExpenses                        BigInt?   @map("operating_expenses")
+  otherOperatingGainsLosses                BigInt?   @map("other_operating_gains_losses")
+  operatingIncome                          BigInt?   @map("operating_income")
+  interestIncome                           BigInt?   @map("interest_income")
+  otherIncome                              BigInt?   @map("other_income")
+  otherNonOperatingGainsLosses             BigInt?   @map("other_non_operating_gains_losses")
+  financeCosts                             BigInt?   @map("finance_costs")
+  shareOfAssociatesJvProfit                BigInt?   @map("share_of_associates_jv_profit")
+  nonOperatingIncomeExpenses               BigInt?   @map("non_operating_income_expenses")
+  profitBeforeTax                          BigInt?   @map("profit_before_tax")
+  incomeTaxExpense                         BigInt?   @map("income_tax_expense")
+  netIncomeFromContinuingOps               BigInt?   @map("net_income_from_continuing_ops")
+  netIncome                                BigInt?   @map("net_income")
+  otherComprehensiveIncome                 BigInt?   @map("other_comprehensive_income")
+  totalComprehensiveIncome                 BigInt?   @map("total_comprehensive_income")
+  netIncomeAttributableToParent            BigInt?   @map("net_income_attributable_to_parent")
+  netIncomeAttributableToNci               BigInt?   @map("net_income_attributable_to_nci")
+  comprehensiveIncomeAttributableToParent  BigInt?   @map("comprehensive_income_attributable_to_parent")
+  comprehensiveIncomeAttributableToNci     BigInt?   @map("comprehensive_income_attributable_to_nci")
+  eps                                      Decimal?  @db.Decimal(10, 2)
+  epsDiluted                               Decimal?  @map("eps_diluted") @db.Decimal(10, 2)
+  createdAt                                DateTime? @map("created_at")
+  updatedAt                                DateTime? @map("updated_at")
+
+  @@ignore
+  @@map("quarterly_income_statement")
+  @@schema("export")
+}

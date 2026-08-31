@@ -3,8 +3,17 @@
 // 服務名跟 Neon 專案名很像但是兩個不同的東西，不要混淆）。
 // 跟 ../schema.prisma（唯讀鏡像 oingg-mops-ts 的季度財報表）是完全不同的資料庫，不要混用連線。
 //
-// 這裡存的是「算完的投資指標結果」，每個指標各自一張表（ROE、PER、PBR…），
-// 不是原始財報資料——原始財報資料一律只在 ../schema.prisma 那三張表查。
+// 這裡存的主要是「算完的投資指標結果」，每個指標各自一張表（ROE、PER、PBR…）。
+//
+// 2026-08-31 加入「curated 層」（`curated_<backend>_<dataset>` 命名，例如
+// `curated_mops_quarterly_income_statement`）跟 `sync_state`——這是數據中台架構下，
+// 從各後台（mops/twse/gov/tpex/sitca）同步過來的資料備份，不是即時查詢對方 DB，是中台自己的
+// 資料副本，寫入方式是後台 export schema 的 ingestion_runs 握手 + watermark 同步（見
+// src/shared/sync/），不是本服務自己算出來的指標結果。目前只有 mops 的 quarterly_income_statement
+// 一個 pilot dataset，其餘 `../schema.prisma`／`../twse/schema.prisma`／`../gov/schema.prisma`／
+// `../tpex/schema.prisma` 這幾組唯讀鏡像暫時還是原有指標的資料來源，還沒切過來——後台的
+// export schema／ingestion_runs／etl_reader role 都還沒做，curated 層要等對面準備好才能真的
+// 同步，這次只先把中台自己這一側的骨架做出來。
 //
 // 異動這裡的 model 後，用 `pnpm prisma:analysis:migrate` 產生/套用 migration（不要對
 // ../schema.prisma 那份跑 migrate，那份永遠只用 db pull 內省）。
@@ -28,7 +37,7 @@ datasource db {
   directUrl = env("ANALYSIS_DIRECT_URL")
 }
 
-// ROE 計算結果——欄位對應 src/domains/profitability/roe/types.ts 的 RoeResult。
+// ROE 計算結果——欄位對應 src/domains/metrics/profitability/roe/types.ts 的 RoeResult。
 model RoeResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -56,7 +65,7 @@ model RoeResult {
   @@map("profitability_roe")
 }
 
-// BVPS（每股淨值）計算結果——欄位對應 src/domains/profitability/bvps/types.ts 的 BvpsResult。
+// BVPS（每股淨值）計算結果——欄位對應 src/domains/metrics/profitability/bvps/types.ts 的 BvpsResult。
 model BvpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -86,7 +95,7 @@ model BvpsResult {
 }
 
 // EPS（每股盈餘）計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult 同一種結構），
-// 不是各自開表。欄位對應 src/domains/profitability/eps/types.ts 的 EpsResult。
+// 不是各自開表。欄位對應 src/domains/metrics/profitability/eps/types.ts 的 EpsResult。
 model EpsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -120,7 +129,7 @@ model EpsResult {
 }
 
 // 每股營收計算結果——單季、單季年化、TTM 都是同一張表的欄位（跟 RoeResult / EpsResult 同一種結構）。
-// 欄位對應 src/domains/profitability/revenuePerShare/types.ts 的 RevenuePerShareResult。
+// 欄位對應 src/domains/metrics/profitability/revenuePerShare/types.ts 的 RevenuePerShareResult。
 model RevenuePerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -154,7 +163,7 @@ model RevenuePerShareResult {
 
 // 每股現金流（OCF/FCF）計算結果——單季、單季年化、TTM 都是同一張表的欄位，OCF 跟 FCF 也共用同一張表
 // （不是各自開表），跟 RoeResult / EpsResult 同一種結構。欄位對應
-// src/domains/cashFlow/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
+// src/domains/metrics/cashFlow/cashFlowPerShare/types.ts 的 CashFlowPerShareResult。
 model CashFlowPerShareResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -194,7 +203,7 @@ model CashFlowPerShareResult {
 }
 
 // ROA 計算結果——結構跟 RoeResult 一致（單季/年化/TTM 三欄位），分母換成總資產。
-// 欄位對應 src/domains/profitability/roa/types.ts 的 RoaResult。
+// 欄位對應 src/domains/metrics/profitability/roa/types.ts 的 RoaResult。
 model RoaResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -222,7 +231,7 @@ model RoaResult {
 }
 
 // 負債比率計算結果——純資產負債表的時點快照，沒有單季/年化/TTM 的區別（不像 RoeResult/RoaResult）。
-// 欄位對應 src/domains/solvency/debtRatio/types.ts 的 DebtRatioResult。
+// 欄位對應 src/domains/metrics/solvency/debtRatio/types.ts 的 DebtRatioResult。
 model DebtRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -248,7 +257,7 @@ model DebtRatioResult {
 
 // 流動比率／速動比率計算結果——兩個指標共用同一張表（跟 CashFlowPerShareResult 的 OCF/FCF 一樣的理由：
 // 速動比率一定要先有流動資產/流動負債，拆兩支 API 只會重複查同一張資產負債表）。純時點快照，
-// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/solvency/liquidityRatio/types.ts 的 LiquidityRatioResult。
+// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/metrics/solvency/liquidityRatio/types.ts 的 LiquidityRatioResult。
 model LiquidityRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -278,7 +287,7 @@ model LiquidityRatioResult {
 
 // 存貨／應收帳款／總資產周轉率計算結果——三個指標共用同一張表（同一組損益表+資產負債表查詢、
 // 同一組 TTM 完整性判斷），各自都有單季/年化/TTM 三欄位，跟 RoeResult 同一種結構。
-// 欄位對應 src/domains/turnover/turnoverRatio/types.ts 的 TurnoverRatioResult。
+// 欄位對應 src/domains/metrics/turnover/turnoverRatio/types.ts 的 TurnoverRatioResult。
 model TurnoverRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -342,7 +351,7 @@ model TurnoverRatioResult {
 }
 
 // 資本支出佔營收比計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
-// 欄位對應 src/domains/turnover/capexToRevenue/types.ts 的 CapexToRevenueResult。
+// 欄位對應 src/domains/metrics/turnover/capexToRevenue/types.ts 的 CapexToRevenueResult。
 model CapexToRevenueResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -373,7 +382,7 @@ model CapexToRevenueResult {
 // 毛利率／營業利益率／稅後淨利率計算結果——三個指標共用同一張表（同一組損益表查詢、同一組 TTM
 // 完整性判斷）。這三個都是「流量/流量」比率，本身不需要年化，只有單季/TTM 兩種口徑（沒有
 // QuarterlyAnnualized，跟 RoeResult 那種流量對存量的結構不同）。
-// 欄位對應 src/domains/profitability/margins/types.ts 的 MarginsResult。
+// 欄位對應 src/domains/metrics/profitability/margins/types.ts 的 MarginsResult。
 model MarginsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -413,7 +422,7 @@ model MarginsResult {
 }
 
 // 負債權益比計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別（跟 DebtRatioResult 同一種結構）。
-// 欄位對應 src/domains/solvency/deRatio/types.ts 的 DeRatioResult。
+// 欄位對應 src/domains/metrics/solvency/deRatio/types.ts 的 DeRatioResult。
 model DeRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -440,7 +449,7 @@ model DeRatioResult {
 }
 
 // 利息保障倍數計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
-// 欄位對應 src/domains/solvency/interestCoverage/types.ts 的 InterestCoverageResult。
+// 欄位對應 src/domains/metrics/solvency/interestCoverage/types.ts 的 InterestCoverageResult。
 model InterestCoverageResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -471,7 +480,7 @@ model InterestCoverageResult {
 // 淨負債對 EBITDA 比計算結果——第一個同時需要查三張財報表的指標（資產負債表算淨負債、
 // 損益表+現金流量表算 EBITDA）。淨負債是存量對 EBITDA 流量的比率，taxonomy 只支援 TTM/FY，
 // 沒有原始單季版本，只有簡單年化跟 TTM 兩種口徑。
-// 欄位對應 src/domains/solvency/netDebtToEbitda/types.ts 的 NetDebtToEbitdaResult。
+// 欄位對應 src/domains/metrics/solvency/netDebtToEbitda/types.ts 的 NetDebtToEbitdaResult。
 model NetDebtToEbitdaResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -508,7 +517,7 @@ model NetDebtToEbitdaResult {
 // 那套季度查詢模板，查歷史季度會永遠查不到資料（市場資料的起始日晚於任何已報過的季度），
 // 已改成用 symbol+tradeDate 做 PK，跟 oingg-twse daily_valuation 的資料顆粒度一致。
 // 數值來自 oingg-twse，本服務不知道對方 EPS 用的口徑，跟自己算的 EPS/BVPS 不保證一致，不要拿來互相驗證。
-// 欄位對應 src/domains/valuation/marketRatios/types.ts 的 MarketRatiosResult。
+// 欄位對應 src/domains/metrics/valuation/marketRatios/types.ts 的 MarketRatiosResult。
 model MarketRatiosResult {
   symbol    String
   tradeDate DateTime @map("trade_date") @db.Date
@@ -528,7 +537,7 @@ model MarketRatiosResult {
 
 // 葛拉漢數計算結果——本服務第一個複合指標，直接引用 EpsResult 的 TTM EPS 跟 BvpsResult 的 BVPS，
 // 不重複實作查詢邏輯。純時點快照（跟 BVPS 一樣，沒有單季/年化/TTM 的區別，本身已經是用 TTM EPS 算的）。
-// 欄位對應 src/domains/guru/grahamNumber/types.ts 的 GrahamNumberResult。
+// 欄位對應 src/domains/metrics/guru/grahamNumber/types.ts 的 GrahamNumberResult。
 model GrahamNumberResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -554,7 +563,7 @@ model GrahamNumberResult {
 }
 
 // 葛拉漢淨流動資產價值（NCAV）與安全邊際價計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別
-// （跟 DebtRatioResult 同一種結構）。欄位對應 src/domains/guru/ncav/types.ts 的 NcavResult。
+// （跟 DebtRatioResult 同一種結構）。欄位對應 src/domains/metrics/guru/ncav/types.ts 的 NcavResult。
 model NcavResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -587,7 +596,7 @@ model NcavResult {
 }
 
 // 配息率計算結果——只有 TTM 口徑（現金股利不是每季平均發放，單季配息率會嚴重失真）。
-// 欄位對應 src/domains/profitability/dividendPayoutRatio/types.ts 的 DividendPayoutRatioResult。
+// 欄位對應 src/domains/metrics/profitability/dividendPayoutRatio/types.ts 的 DividendPayoutRatioResult。
 model DividendPayoutRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -618,7 +627,7 @@ model DividendPayoutRatioResult {
 
 // SGR 可持續成長率計算結果——本服務第二個複合指標，直接引用 RoeResult 的 TTM ROE 跟
 // DividendPayoutRatioResult 的 TTM 配息率，不重複實作查詢邏輯。只有 TTM 口徑。
-// 欄位對應 src/domains/profitability/sgr/types.ts 的 SgrResult。
+// 欄位對應 src/domains/metrics/profitability/sgr/types.ts 的 SgrResult。
 model SgrResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -645,7 +654,7 @@ model SgrResult {
 
 // 營運現金流對淨利比計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化
 // （跟 InterestCoverageResult 同一種結構）。欄位對應
-// src/domains/cashFlow/ocfToNetIncome/types.ts 的 OcfToNetIncomeResult。
+// src/domains/metrics/cashFlow/ocfToNetIncome/types.ts 的 OcfToNetIncomeResult。
 model OcfToNetIncomeResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -674,7 +683,7 @@ model OcfToNetIncomeResult {
 }
 
 // 應計項目比率計算結果——分母用本季期末總資產（不是平均），跟 turnoverRatio 同一種刻意簡化。
-// 欄位對應 src/domains/cashFlow/accrualsRatio/types.ts 的 AccrualsRatioResult。
+// 欄位對應 src/domains/metrics/cashFlow/accrualsRatio/types.ts 的 AccrualsRatioResult。
 model AccrualsRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -707,7 +716,7 @@ model AccrualsRatioResult {
 }
 
 // ROCE 使用資本報酬率計算結果——跟 RoeResult/RoaResult 同一種單季/年化/TTM 三數值結構。
-// 欄位對應 src/domains/profitability/roce/types.ts 的 RoceResult。
+// 欄位對應 src/domains/metrics/profitability/roce/types.ts 的 RoceResult。
 model RoceResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -737,7 +746,7 @@ model RoceResult {
 }
 
 // ROIC 投入資本回報率計算結果——跟 RoeResult/RoaResult 同一種單季/年化/TTM 三數值結構。
-// 欄位對應 src/domains/profitability/roic/types.ts 的 RoicResult。
+// 欄位對應 src/domains/metrics/profitability/roic/types.ts 的 RoicResult。
 model RoicResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -771,7 +780,7 @@ model RoicResult {
 
 // 巴菲特股東盈餘（每股）計算結果——跟 CashFlowPerShareResult 同一種單季/年化/TTM 三數值結構，
 // taxonomy 原文是公司總額，本服務改成每股版本（理由見 types.ts 註解）。
-// 欄位對應 src/domains/guru/ownerEarnings/types.ts 的 OwnerEarningsResult。
+// 欄位對應 src/domains/metrics/guru/ownerEarnings/types.ts 的 OwnerEarningsResult。
 model OwnerEarningsResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -810,7 +819,7 @@ model OwnerEarningsResult {
 
 // Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+as_of_date（基準日），
 // 跟 MarketRatiosResult 同一種模式，不是 symbol+year+season+dataType+subsidiaryCompanyId。
-// 欄位對應 src/domains/portfolio/beta/types.ts 的 BetaResult。
+// 欄位對應 src/domains/metrics/portfolio/beta/types.ts 的 BetaResult。
 model BetaResult {
   symbol   String
   asOfDate DateTime @map("as_of_date") @db.Date
@@ -836,7 +845,7 @@ model BetaResult {
 // Altman Z-Score（原始版，5 變數加權模型）計算結果——2026-08-24 從 solvency 移到 guru 分類，
 // 2026-08-26 實作。X4（市值/總負債）需要市值，來自 mops 的 daily_stock_price（目前只有 2330），
 // 跟 BetaResult 同一個資料源。query 介面 year/season 選填，不給就自動抓最新一季，見
-// src/domains/guru/altmanZScore/service.ts 的 resolveQuarter，跟其他指標「必填」不同。
+// src/domains/metrics/guru/altmanZScore/service.ts 的 resolveQuarter，跟其他指標「必填」不同。
 model AltmanZScoreResult {
   symbol              String
   year                Int    @map("year")
@@ -871,7 +880,7 @@ model AltmanZScoreResult {
 // score 刻意用 Decimal 存（雖然值一定是 0~9 的整數）——filterCatalogCheck.ts 判斷「可以拿來 filter
 // 的計算結果」的規則是「型別是 Decimal 且不是 *Value 結尾」，用 Int 會跳出這個自動檢查網。
 // 9 個訊號布林值不算「計算結果」（是中繼判斷，不是最終指標），型別維持 Boolean，不受這條規則影響。
-// 欄位對應 src/domains/guru/piotroskiFScore/types.ts 的 PiotroskiFScoreResult。
+// 欄位對應 src/domains/metrics/guru/piotroskiFScore/types.ts 的 PiotroskiFScoreResult。
 model PiotroskiFScoreResult {
   symbol              String
   year                Int    @map("year")
@@ -907,7 +916,7 @@ model PiotroskiFScoreResult {
 }
 
 // Beneish M-Score（8 變量法務會計造假預警模型，跟去年同季比較，TATA 除外）計算結果。
-// 欄位對應 src/domains/guru/beneishMScore/types.ts 的 BeneishMScoreResult。
+// 欄位對應 src/domains/metrics/guru/beneishMScore/types.ts 的 BeneishMScoreResult。
 model BeneishMScoreResult {
   symbol              String
   year                Int    @map("year")
@@ -944,7 +953,7 @@ model BeneishMScoreResult {
 // 杜邦分析（3 步版：ROE = 淨利率 x 總資產週轉率 x 權益乘數）計算結果——本服務第二個純組裝型
 // 複合指標（直接引用 margins/turnoverRatio/roe 已經算好的值，不重複查詢），歸類在 profitability
 // 不是 guru（不是掛名特定投資人/學者的公式，是通用分析技巧）。
-// 欄位對應 src/domains/profitability/dupont/types.ts 的 DupontResult。
+// 欄位對應 src/domains/metrics/profitability/dupont/types.ts 的 DupontResult。
 model DupontResult {
   symbol              String
   year                Int    @map("year")
@@ -1220,7 +1229,7 @@ model MacdResult {
 // obv 刻意用 BigInt（實際股數的累積值，可能是負數），不是 Decimal——這代表 filterCatalogCheck.ts
 // 的「型別是 Decimal 才算可 filter 的指標」規則會自動把這個 model 判定成沒有可 filter 的欄位，
 // 不需要出現在 filterCatalog.ts，是刻意的：OBV 的絕對值本身沒有跨公司比較意義（不同公司歷史起點
-// 不同），不適合當篩選欄位，只適合查單一公司的時間序列變化，見 src/domains/technicals/obv/。
+// 不同），不適合當篩選欄位，只適合查單一公司的時間序列變化，見 src/domains/metrics/technicals/obv/。
 model ObvResult {
   symbol    String
   tradeDate DateTime @map("trade_date") @db.Date
@@ -1237,7 +1246,7 @@ model ObvResult {
 }
 
 // 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
-// 產業代碼服務，見 src/shared/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」
+// 產業代碼服務，見 src/shared/sourceData/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」
 // 的指標結果表命名規則，另外取名 reference_industry_code。存起來的目的是「抓不到的時候還有
 // 上次抓到的可以頂著用」，不是要當成本服務自己的資料來源真相（那個永遠是 localhost:8081）。
 model IndustryCode {
@@ -1251,7 +1260,7 @@ model IndustryCode {
 
 // PSR（股價營收比）計算結果。2026-08-30 實作，市值/淨負債/EBITDA 這類需要股價的複合指標
 // 統一改走 oingg-twse daily_price（mops daily_stock_price 已消失），見
-// src/domains/valuation/psr/service.ts、src/shared/marketCap.ts。
+// src/domains/metrics/valuation/psr/service.ts、src/shared/sourceData/marketCap.ts。
 model PsrResult {
   symbol              String
   year                Int    @map("year")
@@ -1282,7 +1291,7 @@ model PsrResult {
 }
 
 // P_FCF（股價自由現金流比）計算結果。2026-08-30 實作，跟 PsrResult 同一種「市值(存量)/流量」
-// 結構，見 src/domains/valuation/pFcf/service.ts。
+// 結構，見 src/domains/metrics/valuation/pFcf/service.ts。
 model PFcfResult {
   symbol              String
   year                Int    @map("year")
@@ -1316,7 +1325,7 @@ model PFcfResult {
 // FCF_Yield（自由現金流殖利率）計算結果。2026-08-30 實作，跟 PsrResult/PFcfResult 同一批但分類
 // 不同（taxonomy 把 FCF_Yield 歸在 cash_flow_and_earnings_quality，不是 valuation）——分子分母
 // 都已經是「每股」金額，不用像 valuation 那三個一樣處理千元/元換算，也不需要流通股數，
-// 見 src/domains/cashFlow/fcfYield/service.ts。
+// 見 src/domains/metrics/cashFlow/fcfYield/service.ts。
 model FcfYieldResult {
   symbol              String
   year                Int    @map("year")
@@ -1342,7 +1351,7 @@ model FcfYieldResult {
 }
 
 // EV_EBITDA（企業價值倍數）計算結果。2026-08-30 實作，跟 PsrResult/PFcfResult 同一種
-// 「存量/流量」結構，見 src/domains/valuation/evEbitda/service.ts。
+// 「存量/流量」結構，見 src/domains/metrics/valuation/evEbitda/service.ts。
 model EvEbitdaResult {
   symbol              String
   year                Int    @map("year")
@@ -1379,7 +1388,7 @@ model EvEbitdaResult {
 // 股權風險溢酬（Equity Risk Premium）——歷史法：TAIEX 年化報酬率 - 同期 10年期公債次級市場殖利率
 // 平均值。跟公司無關（全市場單一數字），PK 用 window_start + window_end（YYYY-MM 字串），不是
 // symbol/as_of_date——同一組起訖窗口重算會覆蓋同一列，不同起訖窗口各自一列，方便比較不同樣本期間。
-// 欄位對應 src/domains/macro/equityRiskPremium/types.ts 的 EquityRiskPremiumResult。
+// 欄位對應 src/domains/metrics/macro/equityRiskPremium/types.ts 的 EquityRiskPremiumResult。
 // 2026-08-30 使用者用真實資料驗證過：5 年窗口（2021-09~2026-08）算出 ERP ≈ 21%，10 年窗口
 // （2016-06~2026-06）≈ 17%，都明顯偏離文獻常見區間（4%~8%），原因是台股這幾年剛好處在單一段
 // 極端多頭；27 年窗口（1999-01~2026-06，TAIEX 回填完成後）才落回 5.8%~7.9%，見 MIN_RELIABLE_MONTHS
@@ -1404,4 +1413,91 @@ model EquityRiskPremiumResult {
 
   @@id([windowStart, windowEnd])
   @@map("macro_equity_risk_premium")
+}
+
+// ============================================================================
+// curated 層 + sync_state——數據中台架構，見檔案開頭 2026-08-31 的說明跟 src/shared/sync/。
+// ============================================================================
+
+// watermark 記錄表：一個 (backend, dataset) 一列，記錄同步進度。只有整批同步成功才推進，
+// 任何一步失敗（列數校驗不符、寫入失敗）都不動，下次自然從同一個 watermark 重試——
+// 見 src/shared/sync/syncDataset.ts 的說明。
+model SyncState {
+  backend String // 'mops' | 'twse' | 'gov' | 'tpex' | 'sitca'
+  dataset String // 對應後台 export schema 的 view 名稱
+
+  lastRunId       String?   @map("last_run_id") // 後台 ingestion_runs.run_id
+  lastCompletedAt DateTime? @map("last_completed_at") // 後台 ingestion_runs.completed_at
+
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([backend, dataset])
+  @@map("sync_state")
+}
+
+// mops quarterly_income_statement 的 curated 副本——第一個 pilot dataset。業務欄位比照
+// prisma/schema.prisma 的 QuarterlyIncomeStatement（唯讀鏡像現有形狀），等 mops-ts 那邊把
+// export.quarterly_income_statement view 定案後再對齊欄位名稱/型別，目前只是雛形，還沒有
+// 真的資料同步進來（後台的 export schema 還不存在）。
+model CuratedMopsQuarterlyIncomeStatement {
+  symbol               String
+  year                 Int
+  quarter              Int
+  dataType             String  @map("data_type")
+  subsidiaryCompanyId  String  @default("") @map("subsidiary_company_id")
+  reportDate           DateTime @map("report_date") @db.Date
+
+  operatingRevenue                        BigInt?  @map("operating_revenue")
+  grossProfit                             BigInt?  @map("gross_profit")
+  operatingIncome                         BigInt?  @map("operating_income")
+  profitBeforeTax                         BigInt?  @map("profit_before_tax")
+  netIncome                               BigInt?  @map("net_income")
+  eps                                     Decimal? @map("eps") @db.Decimal(10, 2)
+  adminExpenses                           BigInt?  @map("admin_expenses")
+  comprehensiveIncomeAttributableToNci    BigInt?  @map("comprehensive_income_attributable_to_nci")
+  comprehensiveIncomeAttributableToParent BigInt?  @map("comprehensive_income_attributable_to_parent")
+  epsDiluted                              Decimal? @map("eps_diluted") @db.Decimal(10, 2)
+  financeCosts                            BigInt?  @map("finance_costs")
+  grossProfitBeforeAdjustment             BigInt?  @map("gross_profit_before_adjustment")
+  incomeTaxExpense                        BigInt?  @map("income_tax_expense")
+  interestIncome                          BigInt?  @map("interest_income")
+  netIncomeAttributableToNci              BigInt?  @map("net_income_attributable_to_nci")
+  netIncomeAttributableToParent           BigInt?  @map("net_income_attributable_to_parent")
+  netIncomeFromContinuingOps              BigInt?  @map("net_income_from_continuing_ops")
+  nonOperatingIncomeExpenses              BigInt?  @map("non_operating_income_expenses")
+  operatingCost                           BigInt?  @map("operating_cost")
+  operatingExpenses                       BigInt?  @map("operating_expenses")
+  otherComprehensiveIncome                BigInt?  @map("other_comprehensive_income")
+  otherIncome                             BigInt?  @map("other_income")
+  otherNonOperatingGainsLosses            BigInt?  @map("other_non_operating_gains_losses")
+  otherOperatingGainsLosses               BigInt?  @map("other_operating_gains_losses")
+  rdExpenses                              BigInt?  @map("rd_expenses")
+  sellingExpenses                         BigInt?  @map("selling_expenses")
+  shareOfAssociatesJvProfit               BigInt?  @map("share_of_associates_jv_profit")
+  totalComprehensiveIncome                BigInt?  @map("total_comprehensive_income")
+
+  // 契約要求的同步元資料——不是業務欄位，記錄「這筆資料怎麼進來的」，point-in-time 查詢要靠
+  // completedAt（後台資料何時可得），不是 ingestedAt（中台何時拿到，可能因為排程延遲晚很多）。
+  sourceRunId String   @map("source_run_id") // 對應後台 ingestion_runs.run_id
+  completedAt DateTime @map("completed_at")
+  ingestedAt  DateTime @default(now()) @map("ingested_at")
+
+  @@id([symbol, year, quarter, dataType, subsidiaryCompanyId])
+  @@map("curated_mops_quarterly_income_statement")
+}
+
+// gov monthly_gov_bond_yield_10y 的 curated 副本——第二個 dataset，2026-08-31 gov-ts 完成
+// export schema 建置後接上。業務欄位比照 prisma/gov/schema.prisma 的 MonthlyGovBondYield10y。
+model CuratedGovMonthlyGovBondYield10y {
+  year      Int
+  month     Int
+  yieldRate Decimal @map("yield_rate") @db.Decimal(8, 4)
+
+  // 契約要求的同步元資料，見 curated_mops_quarterly_income_statement 的說明。
+  sourceRunId String   @map("source_run_id")
+  completedAt DateTime @map("completed_at")
+  ingestedAt  DateTime @default(now()) @map("ingested_at")
+
+  @@id([year, month])
+  @@map("curated_gov_monthly_gov_bond_yield_10y")
 }

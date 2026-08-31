@@ -11,13 +11,15 @@ import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { connectTwseDb } from './adapters/prisma/twseClient';
 import { connectGovDb } from './adapters/prisma/govClient';
 import { connectTpexDb } from './adapters/prisma/tpexClient';
+import { connectMopsExportDb } from './adapters/prisma/mopsExportClient';
+import { connectGovExportDb } from './adapters/prisma/govExportClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
-import { checkFilterCatalogConsistency } from './domains/system/filterCatalogCheck';
-import { loadIndustryCodes } from './shared/industryCodes';
+import { checkFilterCatalogConsistency } from './domains/filter/filterCatalogCheck';
+import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 
 const app = express();
 
@@ -51,8 +53,10 @@ const startServer = async () => {
     await connectTwseDb();
     await connectGovDb();
     await connectTpexDb();
+    await connectMopsExportDb();
+    await connectGovExportDb();
     // dev 環境背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
-    // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/industryCodes.ts 的說明。
+    // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();
     const host = config.isProduction ? '0.0.0.0' : 'localhost';
     const port = Number(config.port);

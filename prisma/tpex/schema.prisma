@@ -23,7 +23,7 @@ datasource db {
 }
 
 // 每日估值比率——跟 oingg-twse 的 DailyValuation 是同一種資料（上櫃版本），本服務直接採用，
-// 不自己重算，口徑黑盒的警告見 src/domains/valuation/README.md、marketRatios/ 的說明。
+// 不自己重算，口徑黑盒的警告見 src/domains/metrics/valuation/README.md、marketRatios/ 的說明。
 // 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
 model DailyValuation {
   symbol        String

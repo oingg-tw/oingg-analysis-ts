@@ -8,8 +8,8 @@
 // company_profile、company_status、foreign_holding、margin_balance、material_announcement、
 // twse_raw 等表，目前鏡像了 daily_price（股價）、daily_valuation（已經算好的 PER/PBR/殖利率，
 // 2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，見
-// src/domains/valuation/marketRatios/）、daily_taiex_index（大盤加權指數，Beta 計算的市場報酬率
-// 來源，見 src/domains/portfolio/beta/）。其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
+// src/domains/metrics/valuation/marketRatios/）、daily_taiex_index（大盤加權指數，Beta 計算的市場報酬率
+// 來源，見 src/domains/metrics/portfolio/beta/）。其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
   provider = "prisma-client-js"
@@ -43,7 +43,7 @@ model DailyPrice {
 // 每日估值比率——oingg-twse 已經算好的 PER/PBR/殖利率，本服務直接採用，不自己重算。
 // 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
 // 注意：EPS 用的是什麼口徑（單季/TTM/年度）不清楚，是外部黑盒數字，跟本服務自己算的 EPS/BVPS
-// 口徑不保證一致，見 src/domains/valuation/marketRatios/ 的說明。
+// 口徑不保證一致，見 src/domains/metrics/valuation/marketRatios/ 的說明。
 model DailyValuation {
   symbol        String
   tradeDate     DateTime @db.Date
@@ -56,7 +56,7 @@ model DailyValuation {
 }
 
 // 每日大盤加權指數（不分股票，全市場一份）——Beta = Cov(個股報酬率, 這張表的報酬率) / Var(...)
-// 的市場報酬率來源，取代 oingg-mops-ts 已消失的 daily_market_index，見 src/domains/portfolio/beta/。
+// 的市場報酬率來源，取代 oingg-mops-ts 已消失的 daily_market_index，見 src/domains/metrics/portfolio/beta/。
 // 這張表的欄位在資料庫裡本來就是 camelCase（不是 snake_case），所以不需要 @map。
 model DailyTaiexIndex {
   tradeDate DateTime @db.Date

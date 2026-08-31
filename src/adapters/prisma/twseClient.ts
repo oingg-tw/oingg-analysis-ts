@@ -3,7 +3,7 @@ import { config } from '@/shared/config';
 
 // oingg-twse DB：跟 mops 一樣是唯讀鏡像，本服務不擁有這裡的表格 schema/migration。
 export const twsePrisma = new PrismaClient({
-  log: config.isProduction ? ['error'] : ['query', 'info', 'warn', 'error'],
+  log: config.isProduction ? ['error'] : ['info', 'warn', 'error'],
 });
 
 export const connectTwseDb = async () => {

@@ -1,0 +1,53 @@
+// 本 schema 只用來讀 oingg-gov-ts 的 export schema（不是 public schema，那個在 ../gov/schema.prisma）
+// ——2026-08-31 gov-ts 建好 export.monthly_gov_bond_yield_10y view、export.ingestion_runs 握手表、
+// etl_reader role（只能 SELECT export schema，實測驗證過連 INSERT/CREATE TABLE 都會被拒絕，
+// 比 mops pilot 當初的驗證範圍更完整），連線用 .env 的 GOV_EXPORT_DATABASE_URL /
+// GOV_EXPORT_DIRECT_URL。
+//
+// 跟 prisma/mopsExport/schema.prisma 同一種模式，見該檔案開頭的說明。
+//
+// monthly_gov_bond_yield_10y 是 view，沒有唯一識別欄位，Prisma Client 不會產生 model 存取子
+// （@@ignore），查詢一律走 $queryRaw，見 src/shared/sync/govMonthlyGovBondYield10ySync.ts。
+//
+// 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/govExport/schema.prisma`
+// 內省，這個 schema 由 gov-ts 擁有，本服務永遠不對它跑 migrate。
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../generated/gov-export-client"
+  previewFeatures = ["multiSchema", "views"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("GOV_EXPORT_DATABASE_URL")
+  directUrl = env("GOV_EXPORT_DIRECT_URL")
+  schemas   = ["export"]
+}
+
+// 握手表——見契約第二部分。gov-ts 這邊沒有公司代號維度（全市場單一時間序列），顆粒度由
+// data_date 代表這批資料涵蓋到哪個月份。
+model IngestionRun {
+  runId       BigInt   @id @default(autoincrement()) @map("run_id")
+  dataset     String
+  dataDate    DateTime @map("data_date") @db.Date
+  completedAt DateTime @default(now()) @map("completed_at")
+  rowCount    Int      @map("row_count")
+  status      String // 'success' | 'partial' | 'failed'
+
+  @@index([dataset, status])
+  @@map("ingestion_runs")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+view MonthlyGovBondYield10y {
+  year      Int?
+  month     Int?
+  yieldRate Decimal?  @map("yield_rate") @db.Decimal(8, 4)
+  updatedAt DateTime? @map("updated_at")
+
+  @@ignore
+  @@map("monthly_gov_bond_yield_10y")
+  @@schema("export")
+}
