@@ -1,0 +1,24 @@
+SELECT
+  fund_id,
+  year,
+  type_code,
+  fund_name,
+  commission_amount,
+  commission_rate,
+  transaction_tax_amount,
+  transaction_tax_rate,
+  etf_trading_fee_amount,
+  etf_trading_fee_rate,
+  management_fee_amount,
+  management_fee_rate,
+  custodian_fee_amount,
+  custodian_fee_rate,
+  guarantee_fee_amount,
+  guarantee_fee_rate,
+  other_fee_amount,
+  other_fee_rate,
+  total_amount,
+  total_rate,
+  fetched_at
+FROM
+  fund_expense_ratio_annual;

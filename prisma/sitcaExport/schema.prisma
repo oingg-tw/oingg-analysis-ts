@@ -1,0 +1,90 @@
+// 本 schema 只用來讀 oingg-sitca-ts 的 export schema——2026-09-01 sitca-ts 建好
+// export.fund_expense_ratio_annual/export.fund_lifecycle_event 兩個 view、
+// export.ingestion_runs 握手表、etl_reader role（實測驗證過 7 項唯讀邊界：讀不到 export 以外
+// 的 schema、INSERT/UPDATE/DELETE/CREATE TABLE 全部被拒絕，兩個 view 可正常 SELECT），連線用
+// .env 的 SITCA_EXPORT_DATABASE_URL_DEV / SITCA_EXPORT_DATABASE_URL_PROD。
+//
+// sitca-ts 給的是 dev/prod 兩個獨立 Neon 專案，不是同一個專案的 pooler/direct 兩種連線方式——
+// 這裡的 datasource url 固定指到 _DEV，只給 `prisma db pull`/`generate` 這類 CLI 操作使用；
+// 實際 runtime 要連 dev 還是 prod，由 src/adapters/prisma/sitcaExportClient.ts 依照
+// config.isProduction 動態決定（見該檔案說明），跟 mops/gov export 那種「單一連線、不分
+// dev/prod」的模式不同。
+//
+// 這份 schema 目前沒有任何本服務的指標會消費（analysis-ts 還沒有基金相關指標），只是先把
+// export 管道接通、驗證過，之後真的要做基金分析時直接複用，見 src/shared/sync/ 的說明。
+//
+// 兩個 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走
+// $queryRaw。異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/sitcaExport/schema.prisma`
+// 內省，這個 schema 由 sitca-ts 擁有，本服務永遠不對它跑 migrate。
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../generated/sitca-export-client"
+  previewFeatures = ["multiSchema", "views"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("SITCA_EXPORT_DATABASE_URL_DEV")
+  directUrl = env("SITCA_EXPORT_DATABASE_URL_DEV")
+  schemas   = ["export"]
+}
+
+// 握手表——見契約第二部分。sitca-ts 兩個 dataset 共用同一張 ingestion_runs，用 dataset 欄位區分。
+model IngestionRun {
+  runId       BigInt   @id @default(autoincrement()) @map("run_id")
+  dataset     String
+  dataDate    DateTime @map("data_date") @db.Date
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  rowCount    BigInt   @map("row_count")
+  status      String // 'success' | 'partial' | 'failed'
+
+  @@index([dataset])
+  @@map("ingestion_runs")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+view FundExpenseRatioAnnual {
+  fundId              String?   @map("fund_id")
+  year                Int?
+  typeCode            String?   @map("type_code")
+  fundName            String?   @map("fund_name")
+  commissionAmount    BigInt?   @map("commission_amount")
+  commissionRate      Decimal?  @map("commission_rate") @db.Decimal(8, 4)
+  transactionTaxAmount BigInt?  @map("transaction_tax_amount")
+  transactionTaxRate  Decimal?  @map("transaction_tax_rate") @db.Decimal(8, 4)
+  etfTradingFeeAmount BigInt?   @map("etf_trading_fee_amount")
+  etfTradingFeeRate   Decimal?  @map("etf_trading_fee_rate") @db.Decimal(8, 4)
+  managementFeeAmount BigInt?   @map("management_fee_amount")
+  managementFeeRate   Decimal?  @map("management_fee_rate") @db.Decimal(8, 4)
+  custodianFeeAmount  BigInt?   @map("custodian_fee_amount")
+  custodianFeeRate    Decimal?  @map("custodian_fee_rate") @db.Decimal(8, 4)
+  guaranteeFeeAmount  BigInt?   @map("guarantee_fee_amount")
+  guaranteeFeeRate    Decimal?  @map("guarantee_fee_rate") @db.Decimal(8, 4)
+  otherFeeAmount      BigInt?   @map("other_fee_amount")
+  otherFeeRate        Decimal?  @map("other_fee_rate") @db.Decimal(8, 4)
+  totalAmount         BigInt?   @map("total_amount")
+  totalRate           Decimal?  @map("total_rate") @db.Decimal(8, 4)
+  fetchedAt           DateTime? @map("fetched_at")
+
+  @@ignore
+  @@map("fund_expense_ratio_annual")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+view FundLifecycleEvent {
+  id              BigInt?
+  fundId          String?   @map("fund_id")
+  companyName     String?   @map("company_name")
+  currentFundName String?   @map("current_fund_name")
+  eventDate       DateTime? @map("event_date") @db.Date
+  eventType       String?   @map("event_type")
+  description     String?
+  fetchedAt       DateTime? @map("fetched_at")
+
+  @@ignore
+  @@map("fund_lifecycle_event")
+  @@schema("export")
+}

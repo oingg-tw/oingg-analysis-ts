@@ -1,0 +1,11 @@
+SELECT
+  id,
+  fund_id,
+  company_name,
+  current_fund_name,
+  event_date,
+  event_type,
+  description,
+  fetched_at
+FROM
+  fund_lifecycle_event;

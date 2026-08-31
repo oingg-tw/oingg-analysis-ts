@@ -8,6 +8,8 @@
     "build": "tsc && tsc-alias",
     "test": "tsx --test tests/**/*.test.ts",
     "test:types": "tsc --noEmit -p tests/tsconfig.json",
+    "batch:compute": "tsx scripts/batchComputeIndicators.ts",
+    "batch:types": "tsc --noEmit -p scripts/tsconfig.json",
     "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/gov/schema.prisma && prisma generate --schema=prisma/tpex/schema.prisma && prisma generate --schema=prisma/mopsExport/schema.prisma && prisma generate --schema=prisma/govExport/schema.prisma",
     "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",
