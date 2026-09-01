@@ -15,8 +15,8 @@ const router = Router();
  *       [`src/shared/companyNameMiddleware.ts`](../../shared/companyNameMiddleware.ts)）是互補
  *       的兩條路，不是重複：那個只處理「回應最上層剛好只有一個 companyId」的形狀。
  *
- *       只涵蓋上市（TWSE）公司（`company_profile` 目前的覆蓋範圍），查不到簡稱的公司
- *       `companyName` 會是 `null`。這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。
+ *       涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 `companyName` 會是 `null`。
+ *       這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。
  *     tags:
  *       - System
  *     responses:

@@ -3,6 +3,7 @@ import rootRouter from './domains/system/root';
 import filtersRouter from './domains/filter/filters';
 import dataCompletenessRouter from './domains/dataCompleteness/route';
 import companiesRouter from './domains/companies/route';
+import stocksRouter from './domains/stocks/route';
 import roeRouter from './domains/metrics/profitability/roe/route';
 import roaRouter from './domains/metrics/profitability/roa/route';
 import bvpsRouter from './domains/metrics/profitability/bvps/route';
@@ -57,6 +58,7 @@ router.use(rootRouter);
 router.use(filtersRouter);
 router.use(dataCompletenessRouter);
 router.use(companiesRouter);
+router.use(stocksRouter);
 
 // --- API Routes ---
 // URL 路徑跟 src/domains 底下的分類資料夾一一對應，方便維護時直接照路徑找到程式碼位置。

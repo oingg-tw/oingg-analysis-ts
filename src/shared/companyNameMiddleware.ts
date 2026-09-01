@@ -12,7 +12,7 @@ import { getCompanyName } from './sourceData/companyProfile';
 // 已知不涵蓋的情況：
 // - `valuation/ranking` 回傳多家公司的陣列（沒有最上層 companyId），這支 middleware 不處理，
 //   要不要、怎麼幫陣列裡每個 item 補名稱是另外的設計。
-// - `company_profile` 只鏡像了上市（TWSE）公司，上櫃（TPEx）公司或本來就沒有的代號查無資料，
+// - `getCompanyName` 涵蓋上市（TWSE）+ 上櫃（TPEx），但本來就沒有的代號還是查無資料，
 //   `companyName` 會是 null，不是拋錯——跟本服務其他「查無資料回 null」的慣例一致。
 // - 查詢公司名稱本身失敗（例如 DB 暫時連不上）要吞掉錯誤、印 log、照原樣送出，不能讓這個
 //   附加行為害到本來就算好的指標結果送不出去，跟「存檔失敗不影響本次回傳」同一種容錯原則。
