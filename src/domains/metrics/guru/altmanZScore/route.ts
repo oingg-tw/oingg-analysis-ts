@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getAltmanZScore } from './controller';
 
 const router = Router();
@@ -74,6 +75,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤（例如只給 year 沒給 season）。
  */
-router.get('/altman-z-score', getAltmanZScore);
+registerCompanyRoute(router, '/altman-z-score', getAltmanZScore);
 
 export default router;

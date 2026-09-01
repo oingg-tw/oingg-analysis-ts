@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getOwnerEarnings } from './controller';
 
 const router = Router();
@@ -71,6 +72,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/owner-earnings', getOwnerEarnings);
+registerCompanyRoute(router, '/owner-earnings', getOwnerEarnings);
 
 export default router;

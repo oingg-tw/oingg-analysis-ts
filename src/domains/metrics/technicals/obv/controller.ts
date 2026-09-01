@@ -1,27 +1,21 @@
-import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { calculateObv } from './service';
-import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z.object({
   companyId: z.string({ required_error: 'companyId is required.' }).min(1),
   asOfDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'asOfDate must be in YYYY-MM-DD format.').optional(),
 });
 
-export const getObv = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+export const getObv = async (req: CompanyRouteRequest, res: CompanyRouteResponse) => {
     const validationResult = querySchema.safeParse(req.query);
     if (!validationResult.success) {
-      return res.status(400).json({
+      res.status(400).json({
         message: 'Invalid query parameters.',
         errors: validationResult.error.format(),
       });
+      return undefined;
     }
 
-    const result = await calculateObv(validationResult.data);
-    await sendWithCompanyName(res, result);
-  } catch (error) {
-    console.error('OBV calculation failed:', error);
-    next(error);
-  }
+    return calculateObv(validationResult.data);
 };

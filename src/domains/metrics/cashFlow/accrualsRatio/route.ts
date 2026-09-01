@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getAccrualsRatio } from './controller';
 
 const router = Router();
@@ -69,6 +70,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/accruals-ratio', getAccrualsRatio);
+registerCompanyRoute(router, '/accruals-ratio', getAccrualsRatio);
 
 export default router;

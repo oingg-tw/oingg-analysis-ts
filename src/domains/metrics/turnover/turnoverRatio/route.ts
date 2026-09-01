@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getTurnoverRatio } from './controller';
 
 const router = Router();
@@ -77,6 +78,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/turnover-ratio', getTurnoverRatio);
+registerCompanyRoute(router, '/turnover-ratio', getTurnoverRatio);
 
 export default router;

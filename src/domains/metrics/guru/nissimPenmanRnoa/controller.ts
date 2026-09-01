@@ -1,7 +1,6 @@
-import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { calculateNissimPenmanRnoa } from './service';
-import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -17,20 +16,15 @@ const querySchema = z
     path: ['year'],
   });
 
-export const getNissimPenmanRnoa = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+export const getNissimPenmanRnoa = async (req: CompanyRouteRequest, res: CompanyRouteResponse) => {
     const validationResult = querySchema.safeParse(req.query);
     if (!validationResult.success) {
-      return res.status(400).json({
+      res.status(400).json({
         message: 'Invalid query parameters.',
         errors: validationResult.error.format(),
       });
+      return undefined;
     }
 
-    const result = await calculateNissimPenmanRnoa(validationResult.data);
-    await sendWithCompanyName(res, result);
-  } catch (error) {
-    console.error('Nissim & Penman RNOA calculation failed:', error);
-    next(error);
-  }
+    return calculateNissimPenmanRnoa(validationResult.data);
 };

@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getEvEbitda } from './controller';
 
 const router = Router();
@@ -73,6 +74,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/ev-ebitda', getEvEbitda);
+registerCompanyRoute(router, '/ev-ebitda', getEvEbitda);
 
 export default router;

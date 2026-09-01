@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getOhlsonOScore } from './controller';
 
 const router = Router();
@@ -80,6 +81,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/ohlson-o-score', getOhlsonOScore);
+registerCompanyRoute(router, '/ohlson-o-score', getOhlsonOScore);
 
 export default router;

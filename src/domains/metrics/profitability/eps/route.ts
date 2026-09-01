@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getEps } from './controller';
 
 const router = Router();
@@ -70,6 +71,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/eps', getEps);
+registerCompanyRoute(router, '/eps', getEps);
 
 export default router;

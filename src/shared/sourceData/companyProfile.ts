@@ -6,7 +6,7 @@ interface RawTpexCompanyProfileRow {
   short_name: string | null;
 }
 
-// 只查公司簡稱，給 src/shared/sendWithCompanyName.ts（單一公司端點）用——company_profile 目前只鏡像了
+// 只查公司簡稱，給 src/shared/registerCompanyRoute.ts（單一公司端點）用——company_profile 目前只鏡像了
 // symbol/name/shortName 幾個欄位（見 prisma/twse/schema.prisma、prisma/tpexExport/schema.prisma
 // 開頭說明）。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料才回傳 null，不拋錯——
 // 呼叫端要把這個當作「查不到名稱」的正常情境。

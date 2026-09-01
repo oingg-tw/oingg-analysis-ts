@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getMarketRatios } from './controller';
 
 const router = Router();
@@ -50,6 +51,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/market-ratios', getMarketRatios);
+registerCompanyRoute(router, '/market-ratios', getMarketRatios);
 
 export default router;

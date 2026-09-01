@@ -12,9 +12,10 @@ const router = Router();
  *       給 bff-ts 自己快取用——2026-09-01 起，本服務多公司陣列結果（`screener`、
  *       `valuation/ranking`、`market/*-ranking` 這類）已經直接在回應裡帶 `companyName`/
  *       `name`，單一公司的一般指標 API 也會明確補上 `companyName`（見
- *       [`src/shared/sendWithCompanyName.ts`](../../shared/sendWithCompanyName.ts)，取代原本
- *       悄悄猜回應形狀的全域 middleware）。這支端點還留著，是給還沒被涵蓋到的情境、或 bff-ts
- *       想自己維護本地快取時用，不是唯一的補名稱管道。
+ *       [`src/shared/registerCompanyRoute.ts`](../../shared/registerCompanyRoute.ts)，取代原本
+ *       悄悄猜回應形狀的全域 middleware——現在是 route.ts 明確選擇要不要用這個函式掛路由，
+ *       且 TypeScript 會在編譯期強制 handler 的回傳型別要有 companyId）。這支端點還留著，
+ *       是給還沒被涵蓋到的情境、或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。
  *
  *       涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 `companyName` 會是 `null`。這是低頻
  *       異動的參考資料，建議 bff-ts 自己快取、不用每次都打。

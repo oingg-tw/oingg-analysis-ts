@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getCapexToRevenue } from './controller';
 
 const router = Router();
@@ -67,6 +68,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/capex-to-revenue', getCapexToRevenue);
+registerCompanyRoute(router, '/capex-to-revenue', getCapexToRevenue);
 
 export default router;

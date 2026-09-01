@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getNissimPenmanRnoa } from './controller';
 
 const router = Router();
@@ -76,6 +77,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/nissim-penman-rnoa', getNissimPenmanRnoa);
+registerCompanyRoute(router, '/nissim-penman-rnoa', getNissimPenmanRnoa);
 
 export default router;

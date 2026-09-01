@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getDividendPayoutRatio } from './controller';
 
 const router = Router();
@@ -67,6 +68,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/dividend-payout-ratio', getDividendPayoutRatio);
+registerCompanyRoute(router, '/dividend-payout-ratio', getDividendPayoutRatio);
 
 export default router;

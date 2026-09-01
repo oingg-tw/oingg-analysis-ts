@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getOcfToNetIncome } from './controller';
 
 const router = Router();
@@ -66,6 +67,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/ocf-to-net-income', getOcfToNetIncome);
+registerCompanyRoute(router, '/ocf-to-net-income', getOcfToNetIncome);
 
 export default router;

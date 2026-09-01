@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import { getCashFlowPerShare } from './controller';
 
 const router = Router();
@@ -70,6 +71,6 @@ const router = Router();
  *       400:
  *         description: 請求的參數格式錯誤。
  */
-router.get('/cash-flow-per-share', getCashFlowPerShare);
+registerCompanyRoute(router, '/cash-flow-per-share', getCashFlowPerShare);
 
 export default router;
