@@ -1,4 +1,5 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
+import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
 import type { ForeignHoldingChangeRow, ForeignHoldingRankingQuery, ForeignHoldingRankingResult } from './types';
 
 // 找最新的兩個「有資料」的交易日——不能假設連續兩個日曆日，週末/國定假日中間會跳過。
@@ -18,6 +19,9 @@ const getLatestTwoTradeDates = async (): Promise<[Date, Date] | null> => {
 // （張數會被增減資干擾，比例才是市場慣用的「外資加碼/減碼」定義，見 schema 註解）。
 // topPercent 是「排序後取前幾 %」，不是固定筆數——母數是「兩個交易日都有資料、可以比較」的
 // 公司數，不是全市場公司數（有些公司可能剛好某天缺資料）。
+//
+// 排除 ETF/衍生性商品（例如槓桿/反向 ETF）——這是主打上市公司證券的排行榜功能，見
+// getTwseCompanySymbolSet 的說明。
 export const calculateForeignHoldingRanking = async (query: ForeignHoldingRankingQuery): Promise<ForeignHoldingRankingResult> => {
   const { topPercent } = query;
   const warnings: string[] = [];
@@ -29,15 +33,17 @@ export const calculateForeignHoldingRanking = async (query: ForeignHoldingRankin
   }
   const [tradeDate, previousTradeDate] = dates;
 
-  const [todayRows, previousRows] = await Promise.all([
+  const [todayRows, previousRows, companySymbols] = await Promise.all([
     twsePrisma.foreignHolding.findMany({ where: { tradeDate }, select: { symbol: true, sharesHeld: true, sharesHeldPercent: true } }),
     twsePrisma.foreignHolding.findMany({ where: { tradeDate: previousTradeDate }, select: { symbol: true, sharesHeldPercent: true } }),
+    getTwseCompanySymbolSet(),
   ]);
 
   const previousBySymbol = new Map(previousRows.map((row) => [row.symbol, Number(row.sharesHeldPercent)]));
 
   const changes: ForeignHoldingChangeRow[] = [];
   for (const row of todayRows) {
+    if (!companySymbols.has(row.symbol)) continue; // ETF/衍生性商品，不是真正的上市公司，排除。
     const previousPercent = previousBySymbol.get(row.symbol);
     if (previousPercent === undefined) continue; // 前一個交易日沒有這家公司的資料，無法比較，跳過。
     const todayPercent = Number(row.sharesHeldPercent);
