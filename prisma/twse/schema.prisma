@@ -15,17 +15,33 @@
 // 2026-09-01 應使用者要求，再加上 foreign_holding（外資持股，只鏡像算「加碼/減碼排行」用得到
 // 的欄位）、margin_balance（融資融券餘額，只鏡像算「券資比排行」用得到的欄位），見
 // src/domains/market/ 底下兩個排行功能。
+//
+// 2026-09-01 twse-ts 另外開了 5 個新 dataset 到「export」schema（跟上面這些表不同 schema，
+// 走同一個 TWSE_DATABASE_URL 連線就查得到，不用另外開連線字串——跟 tpex-ts/sitca-ts 那種
+// export schema 需要獨立 dev/prod 連線字串的模式不一樣）：monthly_revenue（月營收）、
+// disposed_stock（處置股）、volume_top20（成交量前20）、price_limit_range（漲跌停幅度前後20）、
+// attention_history_note（注意股）。這些都是沒有唯一識別欄位的 view，比照 tpexExport 那邊
+// 的做法用 `view` + `@@ignore`，Prisma Client 不會產生存取子，查詢一律走 $queryRaw。見
+// src/domains/market/ 底下對應的排行/清單功能。
+//
+// ⚠️ twse-ts 說這批程式碼目前還在他們的 development branch，正式 prod 環境的這幾張表現在
+// 是空的（0 筆），要等他們部署後排程跑過才會有資料——但我們這裡查到的 TWSE_DATABASE_URL
+// 已經看得到資料，代表這條連線接的其實是 twse-ts 的 dev 環境，不是 prod（跟其他表格的資料
+// 是同一條連線，只是剛好 dev 已經手動跑過一次）。
+//
 // 其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../../generated/twse-client"
+  provider        = "prisma-client-js"
+  output          = "../../generated/twse-client"
+  previewFeatures = ["multiSchema", "views"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("TWSE_DATABASE_URL")
   directUrl = env("TWSE_DIRECT_URL")
+  schemas   = ["public", "export"]
 }
 
 // 每日股價——本服務目前完全沒有市場價格資料，valuation 分類（PER、PBR、市值等）卡的就是這個。
@@ -44,6 +60,7 @@ model DailyPrice {
 
   @@id([symbol, tradeDate])
   @@map("daily_price")
+  @@schema("public")
 }
 
 // 每日估值比率——oingg-twse 已經算好的 PER/PBR/殖利率，本服務直接採用，不自己重算。
@@ -59,6 +76,7 @@ model DailyValuation {
 
   @@id([symbol, tradeDate])
   @@map("daily_valuation")
+  @@schema("public")
 }
 
 // 每日大盤加權指數（不分股票，全市場一份）——Beta = Cov(個股報酬率, 這張表的報酬率) / Var(...)
@@ -73,6 +91,7 @@ model DailyTaiexIndex {
 
   @@id([tradeDate])
   @@map("daily_taiex_index")
+  @@schema("public")
 }
 
 // 公司基本資料——這裡只鏡像查公司名稱用得到的三個欄位（symbol/name/shortName），不是
@@ -84,6 +103,7 @@ model CompanyProfile {
 
   @@id([symbol])
   @@map("company_profile")
+  @@schema("public")
 }
 
 // 外資持股——只鏡像「加碼/減碼排行」用得到的欄位：sharesHeldPercent 是外資持股佔已發行股數的
@@ -97,6 +117,7 @@ model ForeignHolding {
 
   @@id([symbol, tradeDate])
   @@map("foreign_holding")
+  @@schema("public")
 }
 
 // 融資融券餘額——只鏡像「券資比排行」用得到的欄位：券資比 = 融券今日餘額 / 融資今日餘額，
@@ -109,4 +130,108 @@ model MarginBalance {
 
   @@id([symbol, tradeDate])
   @@map("margin_balance")
+  @@schema("public")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 月營收——公開發行公司範圍（不只上市櫃，dev 樣本看過 000xxx 開頭的代號），2026-09-01 新增。
+/// yearMonth 是月初日期（不是交易日），reportDate 是公告日期。見
+/// src/domains/market/revenueRanking/ 的說明。
+view MonthlyRevenue {
+  symbol                    String?
+  yearMonth                 DateTime? @map("year_month") @db.Date
+  reportDate                DateTime? @map("report_date") @db.Date
+  industry                  String?
+  currentMonthRevenue       BigInt?   @map("current_month_revenue")
+  prevMonthRevenue          BigInt?   @map("prev_month_revenue")
+  lastYearSameMonthRevenue  BigInt?   @map("last_year_same_month_revenue")
+  momChangePercent          Decimal?  @map("mom_change_percent") @db.Decimal(10, 4)
+  yoyChangePercent          Decimal?  @map("yoy_change_percent") @db.Decimal(10, 4)
+  cumulativeRevenue         BigInt?   @map("cumulative_revenue")
+  cumulativeLastYearRevenue BigInt?   @map("cumulative_last_year_revenue")
+  cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(10, 4)
+  note                      String?
+
+  @@map("monthly_revenue")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 集中市場成交量前 20 名——twse-ts 官方算好的排序跟漲跌，不是自己拿 daily_price 兩天資料
+/// 相減算的。⚠️ 沒有預先濾掉 ETF/衍生性商品（跟 price_limit_range/attention_history_note
+/// 不一樣），2026-09-01 應使用者要求維持不濾，直接回傳原始排名。見
+/// src/domains/market/volumeTop20/ 的說明。
+view VolumeTop20 {
+  symbol           String?
+  tradeDate        DateTime? @map("trade_date") @db.Date
+  rank             Int?
+  volume           BigInt?
+  transaction      BigInt?
+  open             Decimal?  @db.Decimal(10, 4)
+  high             Decimal?  @db.Decimal(10, 4)
+  low              Decimal?  @db.Decimal(10, 4)
+  close            Decimal?  @db.Decimal(10, 4)
+  dir              String? // '+' 漲 / '-' 跌 / '' 平盤，原始欄位直接透傳
+  change            Decimal?  @db.Decimal(10, 4)
+  lastBestBidPrice Decimal?  @map("last_best_bid_price") @db.Decimal(10, 4)
+  lastBestAskPrice Decimal?  @map("last_best_ask_price") @db.Decimal(10, 4)
+
+  @@map("volume_top20")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 集中市場處置股票（announcement/punish）——twse-ts 已濾掉權證只留真正上市公司。稀疏資料，
+/// 多數日子是 0 筆，沒處置股票的日子不會有 export.ingestion_runs 紀錄，不能拿「有沒有
+/// ingestion_runs」當作抓取成功與否的判斷依據。見 src/domains/market/disposedStocks/ 的說明。
+view DisposedStock {
+  symbol              String?
+  announceDate        DateTime? @map("announce_date") @db.Date
+  announcementCount   Int?      @map("announcement_count")
+  reason              String?
+  dispositionPeriod   String?   @map("disposition_period")
+  dispositionMeasures String?   @map("disposition_measures")
+  detail              String?
+  linkInformation     String?   @map("link_information")
+
+  @@map("disposed_stock")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 注意股票累計次數異常（announcement/notetrans）——twse-ts 已濾掉權證只留真正上市公司，
+/// criteria 是一句話說明（例如「115年8月28日至115年8月31日連續二次」）。見
+/// src/domains/market/attentionStocks/ 的說明。
+view AttentionHistoryNote {
+  symbol    String?
+  tradeDate DateTime? @map("trade_date") @db.Date
+  criteria  String?
+
+  @@map("attention_history_note")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 上市個股漲跌停幅度最大/最小各 20 檔（TWT84U）——twse-ts 已先濾掉權證只留真正上市公司，
+/// 再取幅度最大前 20（rankGroup='top'）+ 最小後 20（rankGroup='bottom'），每天最多 40 筆。見
+/// src/domains/market/priceLimitRange/ 的說明。
+view PriceLimitRange {
+  symbol            String?
+  tradeDate         DateTime? @map("trade_date") @db.Date
+  rankGroup         String?   @map("rank_group") // 'top'（幅度最大）/ 'bottom'（幅度最小）
+  rank              Int?
+  limitUp           Decimal?  @map("limit_up") @db.Decimal(10, 4)
+  limitDown         Decimal?  @map("limit_down") @db.Decimal(10, 4)
+  limitRange        Decimal?  @map("limit_range") @db.Decimal(10, 4)
+  openingRefPrice   Decimal?  @map("opening_ref_price") @db.Decimal(10, 4)
+  previousDayPrice  Decimal?  @map("previous_day_price") @db.Decimal(10, 4)
+  allowOddLotTrade  String?   @map("allow_odd_lot_trade")
+
+  @@map("price_limit_range")
+  @@ignore
+  @@schema("export")
 }

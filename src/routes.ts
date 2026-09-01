@@ -7,6 +7,11 @@ import stocksRouter from './domains/stocks/route';
 import screenerRouter from './domains/screener/route';
 import foreignHoldingRankingRouter from './domains/market/foreignHoldingRanking/route';
 import marginShortRatioRankingRouter from './domains/market/marginShortRatioRanking/route';
+import revenueRankingRouter from './domains/market/revenueRanking/route';
+import volumeTop20Router from './domains/market/volumeTop20/route';
+import disposedStocksRouter from './domains/market/disposedStocks/route';
+import attentionStocksRouter from './domains/market/attentionStocks/route';
+import priceLimitRangeRouter from './domains/market/priceLimitRange/route';
 import roeRouter from './domains/metrics/profitability/roe/route';
 import roaRouter from './domains/metrics/profitability/roa/route';
 import bvpsRouter from './domains/metrics/profitability/bvps/route';
@@ -65,6 +70,11 @@ router.use(stocksRouter);
 router.use(screenerRouter);
 router.use(foreignHoldingRankingRouter);
 router.use(marginShortRatioRankingRouter);
+router.use(revenueRankingRouter);
+router.use(volumeTop20Router);
+router.use(disposedStocksRouter);
+router.use(attentionStocksRouter);
+router.use(priceLimitRangeRouter);
 
 // --- API Routes ---
 // URL 路徑跟 src/domains 底下的分類資料夾一一對應，方便維護時直接照路徑找到程式碼位置。
