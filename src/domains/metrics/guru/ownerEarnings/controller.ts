@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateOwnerEarnings } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -27,7 +28,7 @@ export const getOwnerEarnings = async (req: Request, res: Response, next: NextFu
     }
 
     const result = await calculateOwnerEarnings(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('Owner earnings calculation failed:', error);
     next(error);

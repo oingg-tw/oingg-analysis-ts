@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateAccrualsRatio } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -27,7 +28,7 @@ export const getAccrualsRatio = async (req: Request, res: Response, next: NextFu
     }
 
     const result = await calculateAccrualsRatio(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('Accruals ratio calculation failed:', error);
     next(error);

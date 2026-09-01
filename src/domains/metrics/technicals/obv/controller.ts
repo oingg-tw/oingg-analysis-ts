@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateObv } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z.object({
   companyId: z.string({ required_error: 'companyId is required.' }).min(1),
@@ -18,7 +19,7 @@ export const getObv = async (req: Request, res: Response, next: NextFunction) =>
     }
 
     const result = await calculateObv(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('OBV calculation failed:', error);
     next(error);

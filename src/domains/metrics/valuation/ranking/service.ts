@@ -1,6 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getTwseCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { Prisma } from '../../../../../generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
@@ -127,7 +127,8 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
     warnings.push(`${tradeDate.toISOString().slice(0, 10)} 查無符合條件的資料，無法計算排行。`);
   }
 
-  const rankings: RankingRow[] = limited.map((row, index) => ({ rank: index + 1, symbol: row.symbol, value: row.value }));
+  const companyNames = await getCompanyNamesForSymbols(limited.map((row) => row.symbol));
+  const rankings: RankingRow[] = limited.map((row, index) => ({ rank: index + 1, symbol: row.symbol, companyName: companyNames.get(row.symbol) ?? null, value: row.value }));
 
   return {
     metric,

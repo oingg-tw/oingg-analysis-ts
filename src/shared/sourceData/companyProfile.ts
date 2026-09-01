@@ -6,7 +6,7 @@ interface RawTpexCompanyProfileRow {
   short_name: string | null;
 }
 
-// 只查公司簡稱，給 src/shared/companyNameMiddleware.ts 用——company_profile 目前只鏡像了
+// 只查公司簡稱，給 src/shared/sendWithCompanyName.ts（單一公司端點）用——company_profile 目前只鏡像了
 // symbol/name/shortName 幾個欄位（見 prisma/twse/schema.prisma、prisma/tpexExport/schema.prisma
 // 開頭說明）。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料才回傳 null，不拋錯——
 // 呼叫端要把這個當作「查不到名稱」的正常情境。
@@ -50,15 +50,34 @@ export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
   return new Set(rows.map((row) => row.symbol));
 };
 
+// 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
+// 實際出現的 symbol，不是全市場，跟 GET /companies 的「一次拿全部自己快取」是不同情境：這裡
+// 是結果已經算好了、對這幾十~兩百檔補顯示名稱，不需要排序全部資料，跟 sortField 排公司名稱
+// 那個會撞到跨資料庫排序限制的情境不一樣。查無資料的 symbol 對應 null，不是整批失敗。
+export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<string, string | null>> => {
+  if (symbols.length === 0) return new Map();
+
+  const [twseRows, tpexRows] = await Promise.all([
+    twsePrisma.companyProfile.findMany({ where: { symbol: { in: symbols } }, select: { symbol: true, shortName: true } }),
+    tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ANY(${symbols})`,
+  ]);
+
+  const result = new Map<string, string | null>();
+  for (const row of twseRows) result.set(row.symbol, row.shortName);
+  for (const row of tpexRows) {
+    if (!result.has(row.symbol)) result.set(row.symbol, row.short_name);
+  }
+  return result;
+};
+
 export interface CompanyNameEntry {
   companyId: string;
   companyName: string | null;
 }
 
 // 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
-// 自己快取，之後不管是 screener/ranking 這種多公司陣列結果、還是任何其他形狀的回應，都能自己
-// 對照補上公司名稱，不需要 analysis-ts 針對每一種回應形狀各自設計注入邏輯（跟 companyNameMiddleware.ts
-// 只處理「回應最上層有單一 companyId」這種形狀是互補的兩條路，不是重複）。涵蓋上市（TWSE）+
+// 自己快取。現在 screener/ranking 這類多公司陣列結果已經直接帶 companyName（見
+// getCompanyNamesForSymbols），這支端點是備用管道，不是唯一的補名稱方式。涵蓋上市（TWSE）+
 // 上櫃（TPEx），見兩邊 company_profile 的覆蓋範圍。
 //
 // 兩邊資料庫各自查全量、在應用層合併後才切頁——不是不能做到跨資料庫的 offset/limit 精確查詢，

@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculatePFcf } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -27,7 +28,7 @@ export const getPFcf = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const result = await calculatePFcf(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('P_FCF calculation failed:', error);
     next(error);

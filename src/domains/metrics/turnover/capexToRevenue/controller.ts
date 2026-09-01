@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateCapexToRevenue } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -27,7 +28,7 @@ export const getCapexToRevenue = async (req: Request, res: Response, next: NextF
     }
 
     const result = await calculateCapexToRevenue(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('CapEx to revenue calculation failed:', error);
     next(error);

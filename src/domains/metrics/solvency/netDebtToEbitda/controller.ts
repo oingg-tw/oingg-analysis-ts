@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateNetDebtToEbitda } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z
   .object({
@@ -27,7 +28,7 @@ export const getNetDebtToEbitda = async (req: Request, res: Response, next: Next
     }
 
     const result = await calculateNetDebtToEbitda(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('Net debt to EBITDA calculation failed:', error);
     next(error);

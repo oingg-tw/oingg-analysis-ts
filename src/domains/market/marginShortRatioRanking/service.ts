@@ -1,5 +1,5 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
-import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getTwseCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { MarginShortRatioRankingQuery, MarginShortRatioRankingResult, MarginShortRatioRow } from './types';
 
 // 券資比排行——2026-09-01 應使用者要求新增。券資比 = 融券今日餘額 / 融資今日餘額，是籌碼面
@@ -43,9 +43,11 @@ export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRa
     warnings.push(`${tradeDate.toISOString().slice(0, 10)} 查無融資餘額大於 0 且有融券餘額的公司，無法計算排行。`);
   }
 
+  const companyNames = await getCompanyNamesForSymbols(ratios.map((row) => row.symbol));
   const rankings: MarginShortRatioRow[] = ratios.map((row, index) => ({
     rank: index + 1,
     symbol: row.symbol,
+    companyName: companyNames.get(row.symbol) ?? null,
     shortToMarginRatioPct: Math.round(row.ratio * 100) / 100,
     marginTodayBalance: row.marginTodayBalance.toString(),
     shortTodayBalance: row.shortTodayBalance.toString(),

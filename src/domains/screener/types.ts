@@ -20,8 +20,10 @@ export interface ScreenerRequest {
   page?: number;
   pageSize?: number;
   /** "symbol" 或已經列在 columns 裡的 "metricKey.fieldKey"——2026-09-01 應 bff-ts 要求新增。
-   *  沒給就照舊用 symbol 由小到大排序（保證分頁穩定，不是「沒有排序」）。目前不支援排公司名稱
-   *  （company_profile 在 twse/tpex，不是本服務的 DB，screener 引擎沒有跨資料庫 JOIN 的機制）。 */
+   *  沒給就照舊用 symbol 由小到大排序（保證分頁穩定，不是「沒有排序」）。不支援排「公司名稱」
+   *  ——company_profile 在 twse/tpex，不是本服務的 DB，要排序全部資料再分頁會撞到跨資料庫排序
+   *  的限制；但每筆結果本身有沒有名稱是另一回事，見 ScreenerRow.companyName（只是附加顯示用，
+   *  不影響排序/分頁，所以不受這個限制）。 */
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -33,6 +35,7 @@ export interface ScreenerValue {
 
 export interface ScreenerRow {
   symbol: string;
+  companyName: string | null;
   values: Record<string, ScreenerValue>;
 }
 

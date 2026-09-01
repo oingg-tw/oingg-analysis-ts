@@ -4,6 +4,7 @@ export interface ForeignHoldingRankingQuery {
 
 export interface ForeignHoldingChangeRow {
   symbol: string;
+  companyName: string | null;
   sharesHeldPercent: number; // 今天的外資持股比例（%）
   previousSharesHeldPercent: number; // 上一個交易日的外資持股比例（%）
   changePercentagePoints: number; // 今天 - 上一個交易日，正值代表加碼、負值代表減碼

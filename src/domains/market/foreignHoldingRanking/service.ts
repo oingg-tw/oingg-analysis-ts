@@ -1,5 +1,5 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
-import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getTwseCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { ForeignHoldingChangeRow, ForeignHoldingRankingQuery, ForeignHoldingRankingResult } from './types';
 
 // 找最新的兩個「有資料」的交易日——不能假設連續兩個日曆日，週末/國定假日中間會跳過。
@@ -49,6 +49,7 @@ export const calculateForeignHoldingRanking = async (query: ForeignHoldingRankin
     const todayPercent = Number(row.sharesHeldPercent);
     changes.push({
       symbol: row.symbol,
+      companyName: null, // 先留空，只對最後真的會回傳的 increases/decreases 補名稱，不用查全部 changes。
       sharesHeldPercent: todayPercent,
       previousSharesHeldPercent: previousPercent,
       changePercentagePoints: Math.round((todayPercent - previousPercent) * 100) / 100,
@@ -63,6 +64,11 @@ export const calculateForeignHoldingRanking = async (query: ForeignHoldingRankin
   const take = Math.max(1, Math.ceil((changes.length * topPercent) / 100));
   const increases = [...changes].sort((a, b) => b.changePercentagePoints - a.changePercentagePoints).slice(0, take);
   const decreases = [...changes].sort((a, b) => a.changePercentagePoints - b.changePercentagePoints).slice(0, take);
+
+  const companyNames = await getCompanyNamesForSymbols([...new Set([...increases, ...decreases].map((row) => row.symbol))]);
+  for (const row of [...increases, ...decreases]) {
+    row.companyName = companyNames.get(row.symbol) ?? null;
+  }
 
   return {
     tradeDate: tradeDate.toISOString().slice(0, 10),

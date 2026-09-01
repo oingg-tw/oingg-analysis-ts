@@ -9,10 +9,12 @@ const router = Router();
  *   get:
  *     summary: 列出公司代號/名稱對照表（分頁）
  *     description: >
- *       給 bff-ts 自己快取用，不管是 `valuation/ranking` 這種多公司陣列結果、還是任何其他形狀的
- *       回應，都能自己對照補上公司名稱——跟 `companyId` 為單一公司的一般指標 API 會自動注入
- *       `companyName`（見 [`src/shared/companyNameMiddleware.ts`](../../shared/companyNameMiddleware.ts)）
- *       是互補的兩條路，不是重複：那個只處理「回應最上層剛好只有一個 companyId」的形狀。
+ *       給 bff-ts 自己快取用——2026-09-01 起，本服務多公司陣列結果（`screener`、
+ *       `valuation/ranking`、`market/*-ranking` 這類）已經直接在回應裡帶 `companyName`/
+ *       `name`，單一公司的一般指標 API 也會明確補上 `companyName`（見
+ *       [`src/shared/sendWithCompanyName.ts`](../../shared/sendWithCompanyName.ts)，取代原本
+ *       悄悄猜回應形狀的全域 middleware）。這支端點還留著，是給還沒被涵蓋到的情境、或 bff-ts
+ *       想自己維護本地快取時用，不是唯一的補名稱管道。
  *
  *       涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 `companyName` 會是 `null`。這是低頻
  *       異動的參考資料，建議 bff-ts 自己快取、不用每次都打。

@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateMarketRatios } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z.object({
   companyId: z.string({ required_error: 'companyId is required.' }).min(1),
@@ -23,7 +24,7 @@ export const getMarketRatios = async (req: Request, res: Response, next: NextFun
     }
 
     const result = await calculateMarketRatios(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('Market ratios calculation failed:', error);
     next(error);

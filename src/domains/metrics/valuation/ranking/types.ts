@@ -12,6 +12,7 @@ export interface RankingQuery {
 export interface RankingRow {
   rank: number;
   symbol: string;
+  companyName: string | null;
   value: number;
 }
 

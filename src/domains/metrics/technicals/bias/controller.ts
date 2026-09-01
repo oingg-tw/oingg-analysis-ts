@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateBiasIndicator } from './service';
+import { sendWithCompanyName } from '@/shared/sendWithCompanyName';
 
 const querySchema = z.object({
   companyId: z.string({ required_error: 'companyId is required.' }).min(1),
@@ -18,7 +19,7 @@ export const getBias = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const result = await calculateBiasIndicator(validationResult.data);
-    res.status(200).json(result);
+    await sendWithCompanyName(res, result);
   } catch (error) {
     console.error('BIAS calculation failed:', error);
     next(error);
