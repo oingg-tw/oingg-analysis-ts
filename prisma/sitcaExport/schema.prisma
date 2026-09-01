@@ -10,10 +10,12 @@
 // config.isProduction 動態決定（見該檔案說明），跟 mops/gov export 那種「單一連線、不分
 // dev/prod」的模式不同。
 //
-// 這份 schema 目前沒有任何本服務的指標會消費（analysis-ts 還沒有基金相關指標），只是先把
-// export 管道接通、驗證過，之後真的要做基金分析時直接複用，見 src/shared/sync/ 的說明。
+// 2026-09-02 sitca-ts 又開了三個 ETF dataset（etf_basic_info/etf_monthly_statement/
+// etf_performance），本服務用來做 GET /market/etf-ranking（見
+// src/domains/market/etfRanking/）——規模/受益人數/淨申購贖回/定期定額/報酬率/總費用率
+// 六種 metric 的排行。目前只有 202607 一個月的快照資料，之後累積更多月份才能做趨勢類指標。
 //
-// 兩個 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走
+// 這幾張 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走
 // $queryRaw。異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/sitcaExport/schema.prisma`
 // 內省，這個 schema 由 sitca-ts 擁有，本服務永遠不對它跑 migrate。
 
@@ -86,5 +88,64 @@ view FundLifecycleEvent {
 
   @@ignore
   @@map("fund_lifecycle_event")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// ETF 基本資料——security_code + year_month 是概念上的鍵，established_date 是計算「總費用率
+/// 排行要不要納入這檔」的依據（見 etfRanking 的說明）。
+view EtfBasicInfo {
+  securityCode           String?   @map("security_code")
+  yearMonth              String?   @map("year_month")
+  memberCode             String?   @map("member_code")
+  companyName            String?   @map("company_name")
+  securityShortName      String?   @map("security_short_name")
+  fundName               String?   @map("fund_name")
+  establishedDate        DateTime? @map("established_date") @db.Date
+  category               String?
+  trackingIndex          String?   @map("tracking_index")
+  distributionClassInfo  String?   @map("distribution_class_info")
+  fetchedAt              DateTime? @map("fetched_at")
+
+  @@ignore
+  @@map("etf_basic_info")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// ETF 規模/淨值/受益人數/申贖——fundTaxId 可以 join 回 FundExpenseRatioAnnual.fundId
+/// 抓總費用率。這裡只鏡像規模/籌碼面排行用得到的欄位，不是全部欄位都留（*_original 那些
+/// 外幣原始金額欄位、currency 都跳過，本服務目前只用得到台幣計價的數字）。
+view EtfMonthlyStatement {
+  securityCode           String?  @map("security_code")
+  yearMonth              String?  @map("year_month")
+  fundTaxId              String?  @map("fund_tax_id")
+  aumTwd                 BigInt?  @map("aum_twd")
+  totalHolders           BigInt?  @map("total_holders")
+  subscriptionAmountTwd  BigInt?  @map("subscription_amount_twd")
+  redemptionAmountTwd    BigInt?  @map("redemption_amount_twd")
+  dcaAmountTwd           BigInt?  @map("dca_amount_twd")
+
+  @@ignore
+  @@map("etf_monthly_statement")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// ETF 各天期報酬率（百分比，累積報酬不是年化）。
+view EtfPerformance {
+  securityCode String?  @map("security_code")
+  yearMonth    String?  @map("year_month")
+  return3m     Decimal? @map("return_3m") @db.Decimal(10, 4)
+  return6m     Decimal? @map("return_6m") @db.Decimal(10, 4)
+  return1y     Decimal? @map("return_1y") @db.Decimal(10, 4)
+  return2y     Decimal? @map("return_2y") @db.Decimal(10, 4)
+  return3y     Decimal? @map("return_3y") @db.Decimal(10, 4)
+  return5y     Decimal? @map("return_5y") @db.Decimal(10, 4)
+  returnYtd    Decimal? @map("return_ytd") @db.Decimal(10, 4)
+  return10y    Decimal? @map("return_10y") @db.Decimal(10, 4)
+
+  @@ignore
+  @@map("etf_performance")
   @@schema("export")
 }
