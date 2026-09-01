@@ -1,0 +1,64 @@
+// 本 schema 只用來讀 oingg-tpex-ts 的 export schema——2026-09-01 接上，dev/prod 連線用
+// .env 的 TPEX_EXPORT_DATABASE_URL_DEV / TPEX_EXPORT_DATABASE_URL_PROD。
+//
+// 跟 sitca-ts 同一種模式：tpex-ts 給的是 dev/prod 兩個獨立 Neon 專案，不是同一個專案的
+// pooler/direct 兩種連線方式——這裡的 datasource url 固定指到 _DEV，只給 `prisma db pull`/
+// `generate` 這類 CLI 操作使用；實際 runtime 要連 dev 還是 prod，由
+// src/adapters/prisma/tpexExportClient.ts 依照 config.isProduction 動態決定。
+//
+// export.daily_valuation 目前沒有任何本服務的指標會消費——本服務現有的 TPEx 估值資料是走
+// prisma/tpex/schema.prisma 直連 public schema 唯讀鏡像（見該檔案開頭說明），這份 export
+// 管道先接通、驗證過，之後要不要把 marketRatios/ranking 這類指標切過來用這條 ACL 正式管道，
+// 是之後的事，不在這次範圍內。
+//
+// IngestionRun 的顆粒度是「一個 dataset、一天」（@@unique([dataset, dataDate])），是整批同步
+// （全市場一天一個 run），跟 gov monthly_gov_bond_yield_10y/company_industry_classification
+// 同一種模式，不是逐公司的 mops 模式。
+//
+// 沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走 $queryRaw。
+// 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/tpexExport/schema.prisma`
+// 內省，這個 schema 由 tpex-ts 擁有，本服務永遠不對它跑 migrate——內省後记得把 view 名稱/欄位
+// 手動改回 PascalCase model 名稱 + camelCase 欄位（`prisma db pull` 對 view 預設用原始
+// snake_case 名稱，跟本專案風格不一致，得手動調整）。
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../generated/tpex-export-client"
+  previewFeatures = ["multiSchema", "views"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("TPEX_EXPORT_DATABASE_URL_DEV")
+  directUrl = env("TPEX_EXPORT_DATABASE_URL_DEV")
+  schemas   = ["export"]
+}
+
+// 握手表——見契約第二部分。顆粒度是「一個 dataset、一天」，全市場整批同步，不是逐公司。
+model IngestionRun {
+  runId       BigInt   @id @default(autoincrement()) @map("run_id")
+  dataset     String
+  dataDate    DateTime @map("data_date") @db.Date
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  rowCount    Int      @map("row_count")
+  status      String // 'success' | 'partial' | 'failed'
+
+  @@unique([dataset, dataDate])
+  @@index([dataset, status])
+  @@map("ingestion_runs")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 跟 oingg-twse 的 DailyValuation 是同一種資料（上櫃版本），欄位定義完全一致。
+view DailyValuation {
+  symbol        String?
+  tradeDate     DateTime? @map("trade_date") @db.Date
+  peRatio       Decimal?  @map("pe_ratio") @db.Decimal(10, 2)
+  pbRatio       Decimal?  @map("pb_ratio") @db.Decimal(10, 2)
+  dividendYield Decimal?  @map("dividend_yield") @db.Decimal(10, 2)
+
+  @@map("daily_valuation")
+  @@ignore
+  @@schema("export")
+}
