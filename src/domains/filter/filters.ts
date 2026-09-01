@@ -18,8 +18,9 @@ const router = Router();
  *       `columnPresets`（[`columnPresets.ts`](../../domains/filter/columnPresets.ts)）是產品內建的
  *       幾組策展過的欄位組合（例如「存股領息」「價值投資」），給使用者一鍵套用用——跟使用者自己
  *       客製化要看哪些欄位是不同的兩件事，那種個人 UI 偏好狀態不需要 analysis-ts 參與，應該由
- *       前端或 bff-ts 處理。`fieldKeys` 對應 `categories` 底下各 field 的 `key`，前端自己去
- *       `categories` 裡找出對應的欄位定義。
+ *       前端或 bff-ts 處理。`fieldKeys` 格式是 `"metricKey.fieldKey"`（不能只用裸的 field key——
+ *       部分 field key 同時存在於兩個不同 metric 底下，裸 key 會有歧義），前端自己去
+ *       `categories` 對應的 metric 底下找出這個 field 的完整定義。
  *     tags:
  *       - System
  *     responses:
