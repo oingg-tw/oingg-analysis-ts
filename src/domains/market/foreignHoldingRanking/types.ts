@@ -1,5 +1,5 @@
 export interface ForeignHoldingRankingQuery {
-  topPercent: number; // 1~50，預設 10——取變動幅度排序後的前幾 % 家公司，不是固定筆數
+  limit: number; // 1~20，預設 10——取變動幅度排序後的前幾筆，固定筆數不是百分比
 }
 
 export interface ForeignHoldingChangeRow {
@@ -14,9 +14,9 @@ export interface ForeignHoldingChangeRow {
 export interface ForeignHoldingRankingResult {
   tradeDate: string; // 最新一個有資料的交易日
   previousTradeDate: string; // 用來比對的前一個交易日
-  topPercent: number;
-  eligibleCompanyCount: number; // 兩個交易日都有資料、可以比較的公司數，前 topPercent% 是從這個母數算的
-  increases: ForeignHoldingChangeRow[]; // 加碼幅度前 topPercent%，由大到小
-  decreases: ForeignHoldingChangeRow[]; // 減碼幅度前 topPercent%，由小到大（減碼最多的排最前面）
+  limit: number;
+  eligibleCompanyCount: number; // 兩個交易日都有資料、可以比較的公司數
+  increases: ForeignHoldingChangeRow[]; // 加碼幅度前 limit 筆，由大到小
+  decreases: ForeignHoldingChangeRow[]; // 減碼幅度前 limit 筆，由小到大（減碼最多的排最前面）
   warnings: string[];
 }

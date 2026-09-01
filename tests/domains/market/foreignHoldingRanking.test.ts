@@ -10,17 +10,17 @@ test('calculateForeignHoldingRanking: 資料不足兩個交易日時優雅降級
   const distinctDates = await twsePrisma.foreignHolding.findMany({ distinct: ['tradeDate'], select: { tradeDate: true } });
   if (distinctDates.length >= 2) return; // 已經有兩天以上資料，這個「資料不足」案例驗證不到，跳過。
 
-  const result = await calculateForeignHoldingRanking({ topPercent: 10 });
+  const result = await calculateForeignHoldingRanking({ limit: 10 });
   assert.deepEqual(result.increases, []);
   assert.deepEqual(result.decreases, []);
   assert.ok(result.warnings.length > 0);
 });
 
-test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼排行應該符合排序跟百分比邏輯', async () => {
+test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼排行應該符合排序跟固定筆數邏輯', async () => {
   const distinctDates = await twsePrisma.foreignHolding.findMany({ distinct: ['tradeDate'], select: { tradeDate: true } });
   if (distinctDates.length < 2) return; // 資料還不足兩天，這個案例驗證不到，跳過（見上一個測試）。
 
-  const result = await calculateForeignHoldingRanking({ topPercent: 10 });
+  const result = await calculateForeignHoldingRanking({ limit: 10 });
   assert.ok(result.tradeDate !== '');
   assert.ok(result.eligibleCompanyCount > 0);
 
@@ -35,8 +35,7 @@ test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼�
     assert.equal(row.changePercentagePoints, expected, 'changePercentagePoints 應該等於今天減昨天');
   }
 
-  const expectedTake = Math.max(1, Math.ceil((result.eligibleCompanyCount * 10) / 100));
-  assert.equal(result.increases.length, Math.min(expectedTake, result.eligibleCompanyCount));
+  assert.equal(result.increases.length, Math.min(10, result.eligibleCompanyCount));
 });
 
 after(async () => {
