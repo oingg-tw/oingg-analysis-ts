@@ -12,6 +12,9 @@
 // 來源，見 src/domains/metrics/portfolio/beta/）、company_profile（2026-09-01 只鏡像 symbol/
 // name/shortName 三個欄位，只為了查公司名稱，見 src/shared/companyNameMiddleware.ts——不是把
 // company_profile 全部欄位都搬進來，那是之後 securityInfo/ 領域真的要做時才需要的範圍）。
+// 2026-09-01 應使用者要求，再加上 foreign_holding（外資持股，只鏡像算「加碼/減碼排行」用得到
+// 的欄位）、margin_balance（融資融券餘額，只鏡像算「券資比排行」用得到的欄位），見
+// src/domains/market/ 底下兩個排行功能。
 // 其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
@@ -81,4 +84,29 @@ model CompanyProfile {
 
   @@id([symbol])
   @@map("company_profile")
+}
+
+// 外資持股——只鏡像「加碼/減碼排行」用得到的欄位：sharesHeldPercent 是外資持股佔已發行股數的
+// 比例（%），排行看的是這個比例逐日變動的百分點，不是持股張數本身的變動幅度（張數變動會被
+// 增減資干擾，比例才是市場慣用的「外資加碼/減碼」定義）。這張表的欄位是 snake_case，需要 @map。
+model ForeignHolding {
+  symbol            String
+  tradeDate         DateTime @map("trade_date") @db.Date
+  sharesHeld        BigInt   @map("shares_held")
+  sharesHeldPercent Decimal  @map("shares_held_percent") @db.Decimal(10, 2)
+
+  @@id([symbol, tradeDate])
+  @@map("foreign_holding")
+}
+
+// 融資融券餘額——只鏡像「券資比排行」用得到的欄位：券資比 = 融券今日餘額 / 融資今日餘額，
+// 是籌碼面「軋空/放空熱度」的常用指標。這張表的欄位是 snake_case，需要 @map。
+model MarginBalance {
+  symbol             String
+  tradeDate          DateTime @map("trade_date") @db.Date
+  marginTodayBalance BigInt?  @map("margin_today_balance")
+  shortTodayBalance  BigInt?  @map("short_today_balance")
+
+  @@id([symbol, tradeDate])
+  @@map("margin_balance")
 }
