@@ -9,7 +9,10 @@
 // twse_raw 等表，目前鏡像了 daily_price（股價）、daily_valuation（已經算好的 PER/PBR/殖利率，
 // 2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，見
 // src/domains/metrics/valuation/marketRatios/）、daily_taiex_index（大盤加權指數，Beta 計算的市場報酬率
-// 來源，見 src/domains/metrics/portfolio/beta/）。其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
+// 來源，見 src/domains/metrics/portfolio/beta/）、company_profile（2026-09-01 只鏡像 symbol/
+// name/shortName 三個欄位，只為了查公司名稱，見 src/shared/companyNameMiddleware.ts——不是把
+// company_profile 全部欄位都搬進來，那是之後 securityInfo/ 領域真的要做時才需要的範圍）。
+// 其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
   provider = "prisma-client-js"
@@ -67,4 +70,15 @@ model DailyTaiexIndex {
 
   @@id([tradeDate])
   @@map("daily_taiex_index")
+}
+
+// 公司基本資料——這裡只鏡像查公司名稱用得到的三個欄位（symbol/name/shortName），不是
+// company_profile 的全部欄位，見上方檔案開頭說明。這張表的欄位是 snake_case，需要 @map。
+model CompanyProfile {
+  symbol    String
+  name      String? // 公司全名，例如「台灣積體電路製造股份有限公司」
+  shortName String? @map("short_name") // 常用簡稱，例如「台積電」，給使用者看用這個
+
+  @@id([symbol])
+  @@map("company_profile")
 }

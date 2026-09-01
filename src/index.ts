@@ -18,6 +18,7 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
+import injectCompanyName from './shared/companyNameMiddleware';
 import { checkFilterCatalogConsistency } from './domains/filter/filterCatalogCheck';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 
@@ -38,6 +39,7 @@ if (!config.isProduction) {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
+app.use(injectCompanyName);
 app.use(routes);
 
 // --- Error Handler ---
