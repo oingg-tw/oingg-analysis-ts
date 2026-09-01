@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { calculateRanking } from '@/domains/metrics/valuation/ranking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { getTwseCompanySymbolSet, getTpexCompanySymbolSet } from '@/shared/sourceData/companyProfile';
 
 // daily_valuation 每天更新，不釘死確切公司/數值，只驗證排序正確、排除邏輯有效——
 // 跟本服務其他吃即時市場資料的測試同一種風格。
@@ -59,6 +60,18 @@ test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟�
   const hasTpex = result.rankings.some((r) => !twseSymbols.has(r.symbol));
   assert.ok(hasTwse, '合併結果裡應該有上市公司');
   assert.ok(hasTpex, '合併結果裡應該有上櫃公司（沒有代表還是只查了 TWSE）');
+});
+
+// 2026-09-01 應使用者要求排除 ETF/衍生性商品（例如槓桿/反向 ETF）——只留真正的上市櫃公司。
+test('ranking: 排行裡不應該出現 ETF/衍生性商品', async () => {
+  const [result, twseCompanySymbols, tpexCompanySymbols] = await Promise.all([
+    calculateRanking({ metric: 'dividendYield', order: 'desc', limit: 200 }),
+    getTwseCompanySymbolSet(),
+    getTpexCompanySymbolSet(),
+  ]);
+  for (const row of result.rankings) {
+    assert.ok(twseCompanySymbols.has(row.symbol) || tpexCompanySymbols.has(row.symbol), `${row.symbol} 不在任一市場的 company_profile 裡，應該已經被排除`);
+  }
 });
 
 after(async () => {

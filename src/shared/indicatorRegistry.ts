@@ -7,6 +7,7 @@
 import prisma from '@/adapters/prisma/index';
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { getTwseCompanySymbolSet, getTpexCompanySymbolSet } from '@/shared/sourceData/companyProfile';
 import { calculateEps } from '@/domains/metrics/profitability/eps/service';
 import { calculateBvps } from '@/domains/metrics/profitability/bvps/service';
 import { calculateRevenuePerShare } from '@/domains/metrics/profitability/revenuePerShare/service';
@@ -71,11 +72,20 @@ export interface IndicatorJob {
 const mopsIdsPromise = prisma.quarterlyIncomeStatement.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
 const twsePriceIdsPromise = twsePrisma.dailyPrice.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
 // TPEx 這邊 2026-09-01 改走 export.daily_valuation（$queryRaw，這張 view 沒有 model 存取子，
-// 取代讀 tpex-ts dev 環境的舊帳號）。
+// 取代讀 tpex-ts dev 環境的舊帳號）。同一次順便排除 ETF/衍生性商品——marketRatios 存進
+// valuation_market_ratios（screener 的 per/pbr/dividendYield 就是查這張表），本益比/淨值比
+// 對 ETF 這種基金型商品本來就沒有意義（沒有自己的盈餘/淨值），跟公司股票混在一起排也不是
+// 使用者要的東西，見 src/shared/sourceData/companyProfile.ts 的說明。
 const marketRatiosIdsPromise = Promise.all([
   twsePrisma.dailyValuation.findMany({ distinct: ['symbol'], select: { symbol: true } }),
   tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_valuation"`,
-]).then(([twseRows, tpexRows]) => [...new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)])]);
+  getTwseCompanySymbolSet(),
+  getTpexCompanySymbolSet(),
+]).then(([twseRows, tpexRows, twseCompanySymbols, tpexCompanySymbols]) => {
+  const allValuationSymbols = new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]);
+  const allCompanySymbols = new Set([...twseCompanySymbols, ...tpexCompanySymbols]);
+  return [...allValuationSymbols].filter((symbol) => allCompanySymbols.has(symbol));
+});
 
 const mopsQuery = (companyId: string) => ({ companyId, dataType: '2' as const, subsidiaryCompanyId: '' });
 

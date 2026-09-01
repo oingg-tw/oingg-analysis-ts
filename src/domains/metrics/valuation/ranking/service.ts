@@ -1,5 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
 import { Prisma } from '../../../../../generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
@@ -23,8 +24,20 @@ interface MarketQueryResult {
 // ~670-890 檔）。先抓 limit 筆再合併重排，不是抓完全部再排序——TWSE/TPEx 個別的前 limit 名
 // 已經足夠湊出合併後真正的前 limit 名（標準的「合併 k 個已排序列表取前 N 名」作法，見
 // calculateRanking 合併邏輯）。
-const queryTwseMarket = async (tradeDate: Date, metric: RankingMetric, order: 'asc' | 'desc', limit: number, excludeNonPositive: boolean): Promise<MarketQueryResult> => {
-  const where = excludeNonPositive ? { tradeDate, [metric]: { gt: 0 } } : { tradeDate, [metric]: { not: null } };
+//
+// 2026-09-01 應使用者要求排除 ETF/衍生性商品：symbol 過濾要放進查詢本身（WHERE symbol IN
+// (...)），不能等查完再篩掉——不然 take: limit 抓到的前 limit 筆可能一半是 ETF，篩完剩不到
+// limit 筆，讓合併後的排行漏掉本來排得進來的真公司。
+const queryTwseMarket = async (
+  tradeDate: Date,
+  metric: RankingMetric,
+  order: 'asc' | 'desc',
+  limit: number,
+  excludeNonPositive: boolean,
+  companySymbols: Set<string>
+): Promise<MarketQueryResult> => {
+  const symbolFilter = { in: [...companySymbols] };
+  const where = excludeNonPositive ? { tradeDate, symbol: symbolFilter, [metric]: { gt: 0 } } : { tradeDate, symbol: symbolFilter, [metric]: { not: null } };
 
   const [rows, excludedNonPositiveCount] = await Promise.all([
     twsePrisma.dailyValuation.findMany({
@@ -33,7 +46,7 @@ const queryTwseMarket = async (tradeDate: Date, metric: RankingMetric, order: 'a
       take: limit,
       select: { symbol: true, peRatio: true, pbRatio: true, dividendYield: true },
     }),
-    excludeNonPositive ? twsePrisma.dailyValuation.count({ where: { tradeDate, [metric]: { lte: 0 } } }) : Promise.resolve(0),
+    excludeNonPositive ? twsePrisma.dailyValuation.count({ where: { tradeDate, symbol: symbolFilter, [metric]: { lte: 0 } } }) : Promise.resolve(0),
   ]);
 
   return {
@@ -52,6 +65,10 @@ const METRIC_COLUMNS: Record<RankingMetric, string> = {
   dividendYield: 'dividend_yield',
 };
 
+// 排除 ETF/衍生性商品——daily_valuation 跟 company_profile 同一個資料庫（export schema），
+// 直接用子查詢過濾，不用像 TWSE 那邊先把整份 symbol 清單抓進 JS 再塞進 IN(...) 參數。
+const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."company_profile")`;
+
 const queryTpexMarket = async (tradeDate: Date, metric: RankingMetric, order: 'asc' | 'desc', limit: number, excludeNonPositive: boolean): Promise<MarketQueryResult> => {
   const column = Prisma.raw(`"${METRIC_COLUMNS[metric]}"`);
   const directionSql = order === 'asc' ? Prisma.raw('ASC') : Prisma.raw('DESC');
@@ -59,10 +76,12 @@ const queryTpexMarket = async (tradeDate: Date, metric: RankingMetric, order: 'a
 
   const [rows, excludedCountRows] = await Promise.all([
     tpexExportPrisma.$queryRaw<{ symbol: string; value: unknown }[]>(
-      Prisma.sql`SELECT symbol, ${column} AS value FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${filterSql} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
+      Prisma.sql`SELECT symbol, ${column} AS value FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${filterSql} AND ${COMPANY_SYMBOL_SUBQUERY} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
     ),
     excludeNonPositive
-      ? tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>(Prisma.sql`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${column} <= 0`)
+      ? tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>(
+          Prisma.sql`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${column} <= 0 AND ${COMPANY_SYMBOL_SUBQUERY}`
+        )
       : Promise.resolve([{ cnt: 0n }]),
   ]);
 
@@ -95,8 +114,9 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   }
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
+  const twseCompanySymbols = await getTwseCompanySymbolSet();
   const [twseResult, tpexResult] = await Promise.all([
-    queryTwseMarket(tradeDate, metric, order, limit, excludeNonPositive),
+    queryTwseMarket(tradeDate, metric, order, limit, excludeNonPositive, twseCompanySymbols),
     queryTpexMarket(tradeDate, metric, order, limit, excludeNonPositive),
   ]);
 

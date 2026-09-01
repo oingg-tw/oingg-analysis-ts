@@ -33,14 +33,20 @@ export const companyExists = async (companyId: string): Promise<boolean> => {
   return twseHit !== null || tpexRows.length > 0;
 };
 
-// 給「排除 ETF/衍生性商品，只留真正的上市公司」用（2026-09-01 應使用者要求新增——排行榜這類
+// 給「排除 ETF/衍生性商品，只留真正的上市櫃公司」用（2026-09-01 應使用者要求新增——排行榜這類
 // 主打/推薦性質的功能，不該把 00852L 這種槓桿/反向 ETF 跟真正的公司股票混在一起排）。
 // company_profile 只會有真正登記的公司（symbol/name/tax_id 等公司基本資料），ETF/權證/
 // 衍生商品不會出現在裡面——用這個當「是不是真正的公司」的判斷依據，比自己猜代號規則
-// （00 開頭、L/R 結尾）可靠，那些規則可能有例外。只給 TWSE（上市）用，這幾個排行功能
-// （foreign_holding、margin_balance）本身也只有上市資料，不含上櫃。
+// （00 開頭、L/R 結尾）可靠，那些規則可能有例外。上市（TWSE）、上櫃（TPEx）分開查，因為
+// 呼叫端通常各自查各自市場的表（例如 ranking 的 queryTwseMarket/queryTpexMarket），不需要
+// 合併成一個跨市場集合。
 export const getTwseCompanySymbolSet = async (): Promise<Set<string>> => {
   const rows = await twsePrisma.companyProfile.findMany({ select: { symbol: true } });
+  return new Set(rows.map((row) => row.symbol));
+};
+
+export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
+  const rows = await tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`;
   return new Set(rows.map((row) => row.symbol));
 };
 
