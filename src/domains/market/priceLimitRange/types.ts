@@ -2,12 +2,13 @@ export interface PriceLimitRangeRow {
   rank: number;
   symbol: string;
   companyName: string | null;
+  market: 'TWSE' | 'TPEx';
   limitUp: number | null;
   limitDown: number | null;
   limitRange: number | null;
-  openingRefPrice: number | null;
-  previousDayPrice: number | null;
-  allowOddLotTrade: string | null;
+  openingRefPrice: number | null; // TPEx 版本沒有這個欄位，null
+  previousDayPrice: number | null; // TPEx 版本沒有這個欄位，null
+  allowOddLotTrade: string | null; // TPEx 版本沒有這個欄位，null
 }
 
 export interface PriceLimitRangeResult {

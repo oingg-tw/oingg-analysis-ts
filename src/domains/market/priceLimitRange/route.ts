@@ -7,11 +7,12 @@ const router = Router();
  * @swagger
  * /market/price-limit-range:
  *   get:
- *     summary: 漲跌停幅度最大/最小各 20 檔
+ *     summary: 漲跌停幅度最大/最小各 20 檔（上市+上櫃合併）
  *     description: >
- *       最新一個交易日，上市個股漲跌停幅度（limitRange = limitUp - limitDown）最大前 20
- *       （`widest`）、最小前 20（`narrowest`）。twse-ts 已經先過濾成只留真正上市公司（原始
- *       回應含權證共 3.3 萬多筆），這裡不用再濾一次。
+ *       最新一個交易日，合併 twse-ts（上市）/tpex-ts（上櫃）漲跌停幅度（limitRange = limitUp
+ *       - limitDown）最大前 20（`widest`）、最小前 20（`narrowest`），`market` 欄位標示來源。
+ *       兩邊都已經先過濾成只留真正公司，這裡不用再濾一次。TPEx 版本欄位比 TWSE 精簡（沒有
+ *       openingRefPrice/previousDayPrice/allowOddLotTrade），沒有的欄位回傳 null。
  *     tags:
  *       - Market
  *     responses:

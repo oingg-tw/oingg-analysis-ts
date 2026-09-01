@@ -5,6 +5,7 @@ export interface AttentionStocksQuery {
 export interface AttentionStockRow {
   symbol: string;
   companyName: string | null;
+  market: 'TWSE' | 'TPEx';
   tradeDate: string;
   criteria: string | null;
 }

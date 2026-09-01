@@ -10,6 +10,7 @@ export interface RevenueRankingRow {
   rank: number;
   symbol: string;
   companyName: string | null;
+  market: 'TWSE' | 'TPEx';
   currentMonthRevenue: string | null; // BigInt 用字串傳遞
   momChangePercent: number | null;
   yoyChangePercent: number | null;

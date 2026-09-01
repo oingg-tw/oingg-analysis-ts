@@ -25,6 +25,14 @@
 // $queryRaw。異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/tpexExport/schema.prisma`
 // 內省，這個 schema 由 tpex-ts 擁有，本服務永遠不對它跑 migrate——內省後记得把 view 名稱/欄位
 // 手動改回 PascalCase model 名稱 + camelCase 欄位。
+//
+// 2026-09-01 tpex-ts 比照 twse-ts 那批新 dataset，也開了上櫃版本的 5 個（monthly_revenue、
+// disposed_stock、volume_top20、price_limit_range、attention_history_note）——欄位比 TWSE
+// 版本精簡（例如 disposed_stock 少了 announcement_count/disposition_measures/
+// link_information，volume_top20/price_limit_range 只有最核心的幾欄），這裡只鏡像 TPEx
+// 實際有的欄位，不是照抄 TWSE 那份補空欄位。刻意沒開 foreign_holding（上櫃掛牌以 KY 股居多，
+// 這個排行參考價值有限）。見 src/domains/market/ 底下對應功能改成 TWSE+TPEx 合併排行/清單的
+// 部分。dev 已經有一天份資料，prod 目前是空的，還在等 tpex-ts 排程/回補歷史資料。
 
 generator client {
   provider        = "prisma-client-js"
@@ -98,6 +106,86 @@ view CompanyProfile {
   market    String?
 
   @@map("company_profile")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 月營收（上櫃版本）——欄位跟 oingg-twse 那份完全一致。
+view MonthlyRevenue {
+  symbol                    String?
+  yearMonth                 DateTime? @map("year_month") @db.Date
+  reportDate                DateTime? @map("report_date") @db.Date
+  industry                  String?
+  currentMonthRevenue       BigInt?   @map("current_month_revenue")
+  prevMonthRevenue          BigInt?   @map("prev_month_revenue")
+  lastYearSameMonthRevenue  BigInt?   @map("last_year_same_month_revenue")
+  momChangePercent          Decimal?  @map("mom_change_percent") @db.Decimal(10, 4)
+  yoyChangePercent          Decimal?  @map("yoy_change_percent") @db.Decimal(10, 4)
+  cumulativeRevenue         BigInt?   @map("cumulative_revenue")
+  cumulativeLastYearRevenue BigInt?   @map("cumulative_last_year_revenue")
+  cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(10, 4)
+  note                      String?
+
+  @@map("monthly_revenue")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 處置股票（上櫃版本）——欄位比 TWSE 精簡，沒有 announcement_count/disposition_measures/
+/// link_information。
+view DisposedStock {
+  symbol            String?
+  announceDate      DateTime? @map("announce_date") @db.Date
+  reason            String?
+  dispositionPeriod String?   @map("disposition_period")
+  detail            String?
+
+  @@map("disposed_stock")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 上櫃成交量前 20 名——欄位比 TWSE 精簡許多，只有 symbol/trade_date/rank/volume，沒有
+/// transaction/open/high/low/close/dir/change。
+view VolumeTop20 {
+  symbol    String?
+  tradeDate DateTime? @map("trade_date") @db.Date
+  rank      Int?
+  volume    BigInt?
+
+  @@map("volume_top20")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 上櫃個股漲跌停幅度最大/最小各 20 檔——欄位比 TWSE 精簡，沒有 opening_ref_price/
+/// previous_day_price/allow_odd_lot_trade。
+view PriceLimitRange {
+  symbol      String?
+  tradeDate   DateTime? @map("trade_date") @db.Date
+  rankGroup   String?   @map("rank_group") // 'top'（幅度最大）/ 'bottom'（幅度最小）
+  rank        Int?
+  limitUp     Decimal?  @map("limit_up") @db.Decimal(10, 4)
+  limitDown   Decimal?  @map("limit_down") @db.Decimal(10, 4)
+  limitRange  Decimal?  @map("limit_range") @db.Decimal(10, 4)
+
+  @@map("price_limit_range")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 注意股票累計次數異常（上櫃版本）——欄位跟 oingg-twse 那份完全一致。
+view AttentionHistoryNote {
+  symbol    String?
+  tradeDate DateTime? @map("trade_date") @db.Date
+  criteria  String?
+
+  @@map("attention_history_note")
   @@ignore
   @@schema("export")
 }
