@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { filterCatalog, type FilterCategory } from './filterCatalog';
+import { parseAnalysisSchemaModels } from './schemaIntrospection';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,28 +38,14 @@ const deriveMetricKey = (modelName: string): string => {
 
 const parseAnalysisSchemaFilterableFields = (schemaText: string): Map<string, { modelName: string; fields: Set<string> }> => {
   const byMetricKey = new Map<string, { modelName: string; fields: Set<string> }>();
-  const modelRegex = /model\s+(\w+)\s*\{([^}]*)\}/g;
-  const fieldLineRegex = /^(\w+)\s+(\w+)(\[\])?\??/;
-
-  let modelMatch: RegExpExecArray | null;
-  while ((modelMatch = modelRegex.exec(schemaText)) !== null) {
-    // modelName/body 兩個 capture group 在 modelRegex 裡都是必填（沒有 `?`），match 成功就一定有值。
-    const modelName = modelMatch[1]!;
-    const body = modelMatch[2]!;
+  for (const model of parseAnalysisSchemaModels(schemaText).values()) {
     const fields = new Set<string>();
-    for (const rawLine of body.split('\n')) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith('//') || line.startsWith('@@')) continue;
-      const fieldMatch = line.match(fieldLineRegex);
-      if (!fieldMatch) continue;
-      // fieldName/fieldType 同理，是必填 capture group。
-      const fieldName = fieldMatch[1]!;
-      const fieldType = fieldMatch[2]!;
-      if (fieldType === 'Decimal' && !fieldName.endsWith('Value')) {
+    for (const [fieldName, { type }] of model.fields) {
+      if (type === 'Decimal' && !fieldName.endsWith('Value')) {
         fields.add(fieldName);
       }
     }
-    byMetricKey.set(deriveMetricKey(modelName), { modelName, fields });
+    byMetricKey.set(deriveMetricKey(model.modelName), { modelName: model.modelName, fields });
   }
   return byMetricKey;
 };

@@ -20,6 +20,7 @@ import routes from './routes';
 import errorHandler from './shared/errorHandler';
 import injectCompanyName from './shared/companyNameMiddleware';
 import { checkFilterCatalogConsistency } from './domains/filter/filterCatalogCheck';
+import { validateMetricTableRegistry } from './domains/filter/metricTableRegistry';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 
 const app = express();
@@ -50,6 +51,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     checkFilterCatalogConsistency(config.isProduction);
+    validateMetricTableRegistry(config.isProduction);
     await connectDb();
     await connectAnalysisDb();
     await connectTwseDb();

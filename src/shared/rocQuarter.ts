@@ -20,3 +20,11 @@ export const getPastNQuarters = (latest: { rocYear: number; season: Season }, n:
   }
   return quarters.reverse().map((q) => ({ year: String(q.rocYear), season: q.season }));
 };
+
+// 民國年轉西元年後兩碼 + 季度，例如 rocYear=115, season=2 -> 西元 2026 -> "26Q2"（screener 的
+// asOfDate 格式，2026-09-01 應 bff-ts 要求新增——他們踩過直接把民國年當西元年用的 bug，
+// 所以要求季報類欄位一律用這個格式，直接從 year/season 組，不要從 reportDate 反推）。
+export const formatRocYearSeasonAsOfDate = (rocYear: number, season: number): string => {
+  const gregorianYear = rocYear + 1911;
+  return `${String(gregorianYear).slice(-2)}Q${season}`;
+};
