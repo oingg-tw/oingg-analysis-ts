@@ -80,6 +80,49 @@ describe('runScreener', () => {
     assert.notDeepEqual(page1.results.map((r) => r.symbol), page2.results.map((r) => r.symbol), '第二頁不應該跟第一頁重複');
   });
 
+  test('sortField="symbol" 應該依 symbol 排序', async () => {
+    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.roeQuarterlyPct', min: 0, max: null }], sortField: 'symbol', sortOrder: 'desc', pageSize: 5 });
+    for (let i = 1; i < result.results.length; i++) {
+      assert.ok(result.results[i - 1]!.symbol >= result.results[i]!.symbol, '應該由大到小排序');
+    }
+  });
+
+  test('sortField 是 columns 裡的 metric 欄位時，應該依該欄位排序', async () => {
+    const result = await runScreener({
+      ...baseRequest,
+      filters: [{ field: 'roe.roeQuarterlyPct', min: 0, max: null }],
+      columns: [{ field: 'roe.roeQuarterlyPct' }],
+      sortField: 'roe.roeQuarterlyPct',
+      sortOrder: 'asc',
+      pageSize: 200,
+    });
+    for (let i = 1; i < result.results.length; i++) {
+      const prev = result.results[i - 1]!.values['roe.roeQuarterlyPct']!.value!;
+      const curr = result.results[i]!.values['roe.roeQuarterlyPct']!.value!;
+      assert.ok(prev <= curr, '應該由小到大排序');
+    }
+  });
+
+  test('sortField 沒有先出現在 columns 裡應該拋 ScreenerValidationError', async () => {
+    await assert.rejects(
+      () =>
+        runScreener({
+          ...baseRequest,
+          filters: [{ field: 'roe.roeQuarterlyPct', min: 0, max: null }],
+          sortField: 'debtRatio.debtRatioPct',
+          sortOrder: 'asc',
+        }),
+      ScreenerValidationError,
+    );
+  });
+
+  test('只給 sortField 不給 sortOrder 應該拋 ScreenerValidationError', async () => {
+    await assert.rejects(
+      () => runScreener({ ...baseRequest, filters: [{ field: 'roe.roeQuarterlyPct', min: 0, max: null }], sortField: 'symbol' }),
+      ScreenerValidationError,
+    );
+  });
+
   test('查不到的 field 應該拋 ScreenerValidationError', async () => {
     await assert.rejects(
       () => runScreener({ ...baseRequest, filters: [{ field: 'notARealMetric.x', min: 1, max: 2 }] }),

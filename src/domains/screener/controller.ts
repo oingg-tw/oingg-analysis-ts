@@ -16,6 +16,8 @@ const bodySchema = z.object({
   columns: z.array(columnSchema).default([]),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(200).default(50),
+  sortField: z.string().min(1).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
 export const postScreener = async (req: Request, res: Response, next: NextFunction) => {

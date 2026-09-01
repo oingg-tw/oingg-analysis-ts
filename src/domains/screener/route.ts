@@ -22,6 +22,12 @@ const router = Router();
  *       每張被引用到的表都是「該公司最新一筆」（季報類表格取合併報表、非子公司那一列，
  *       依 year/season 由新到舊排序；每日類表格依各自的日期欄位排序），資料新鮮度是「最近一次
  *       批次算好的快照」，不是即時查詢。
+ *
+ *       `sortField`/`sortOrder`（2026-09-01 新增）：`sortField` 是 `"symbol"` 或已經列在
+ *       `columns` 裡的欄位，兩者要嘛都給要嘛都不給。沒給時預設用 symbol 由小到大排序（保證
+ *       分頁穩定，不是「沒有排序」）。**不支援排公司名稱**——`company_profile`
+ *       跟本服務的分析用資料庫是完全獨立的另一個 Postgres 專案，screener 沒有跨資料庫 JOIN
+ *       的機制，這個排序要在呼叫端（拿到結果、對照公司名稱之後）自己做。
  *     tags:
  *       - Screener
  *     responses:

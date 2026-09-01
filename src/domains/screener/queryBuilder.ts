@@ -135,7 +135,13 @@ const buildFilterCondition = (condition: FilterCondition, tableRefs: Map<string,
   return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
 };
 
-export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[], page: number, pageSize: number): Prisma.Sql => {
+export interface SortSpec {
+  /** "symbol" 或 columns 裡其中一個 field 字串——service.ts 已經驗證過存在，這裡直接信任。 */
+  field: string;
+  order: 'asc' | 'desc';
+}
+
+export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: SortSpec | null): Prisma.Sql => {
   const filterTableRefs = dedupTables(filters.map((f) => f.resolved));
   const columnTableRefs = dedupTables(columns.map((c) => c.resolved));
   const columnOnlyTableRefs = [...columnTableRefs.values()].filter((t) => !filterTableRefs.has(t.tableName));
@@ -154,12 +160,30 @@ export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[]
 
   const offset = (page - 1) * pageSize;
 
+  // 排序目標只有兩種：symbol（輸出別名本身），或 columns 裡某個 field 對應的 v{index} 別名——
+  // service.ts 已經驗證過 sort.field 是 "symbol" 或存在於 columns 裡，這裡找不到就是內部邏輯
+  // 出錯，不是使用者輸入的問題，直接 throw 而不是悄悄退回預設排序。
+  const orderByColumn =
+    !sort || sort.field === 'symbol'
+      ? Prisma.raw('symbol')
+      : (() => {
+          const index = indexedColumns.find((c) => c.field === sort.field)?.index;
+          if (index === undefined) {
+            throw new Error(`buildScreenerSql: sortField "${sort.field}" 不在 columns 裡，service.ts 應該在呼叫前就驗證過這件事。`);
+          }
+          return Prisma.raw(`v${index}`);
+        })();
+  const orderDirection = sort?.order === 'desc' ? Prisma.raw('DESC') : Prisma.raw('ASC');
+  // symbol 當第二排序鍵，排序目標本身有重複值時（例如很多公司 ROE 剛好一樣）分頁才不會因為
+  // Postgres 排序不保證穩定而錯位——排序目標就是 symbol 本身時不用重複加。
+  const orderBySql = sort && sort.field !== 'symbol' ? Prisma.sql`${orderByColumn} ${orderDirection}, symbol ASC` : Prisma.sql`${orderByColumn} ${orderDirection}`;
+
   return Prisma.sql`
     WITH ${Prisma.join(allCtes, ', ')}
     SELECT ${Prisma.join(selectList, ', ')}
     ${fromSql}
     WHERE ${whereSql}
-    ORDER BY symbol
+    ORDER BY ${orderBySql}
     LIMIT ${pageSize} OFFSET ${offset}
   `;
 };

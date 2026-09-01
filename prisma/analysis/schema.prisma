@@ -1501,3 +1501,28 @@ model CuratedGovMonthlyGovBondYield10y {
   @@id([year, month])
   @@map("curated_gov_monthly_gov_bond_yield_10y")
 }
+
+// gov company_industry_classification 的 curated 副本——第三個 dataset，2026-09-01 接上，
+// 財政部稅籍登記的官方逐公司行業分類（不是 MOEA 營業項目代碼反推的，那條路已確認不通，見
+// src/domains/filter/README 或對話紀錄）。gov-ts 那邊是整批同步（一次 999 家公司一個 run，
+// 不是逐公司），所以跟 curated_gov_monthly_gov_bond_yield_10y 同一種同步模式，不是逐公司的
+// mops 模式。`stockCode` 當 PK——一家上市櫃公司只會有一筆主要行業分類。
+model CuratedGovCompanyIndustryClassification {
+  stockCode            String @id @map("stock_code")
+  taxId                String @map("tax_id")
+  industryCode         String @map("industry_code")
+  sourceIndustryName   String @map("source_industry_name")
+  sectionCode          String @map("section_code")
+  divisionCode         String @map("division_code")
+  groupCode            String @map("group_code")
+  classCode            String @map("class_code")
+  subclassCode         String @map("subclass_code")
+  classificationNameZh String @map("classification_name_zh")
+
+  // 契約要求的同步元資料，見 curated_mops_quarterly_income_statement 的說明。
+  sourceRunId String   @map("source_run_id")
+  completedAt DateTime @map("completed_at")
+  ingestedAt  DateTime @default(now()) @map("ingested_at")
+
+  @@map("curated_gov_company_industry_classification")
+}

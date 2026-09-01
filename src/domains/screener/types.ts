@@ -19,6 +19,11 @@ export interface ScreenerRequest {
   columns: ScreenerColumnInput[];
   page?: number;
   pageSize?: number;
+  /** "symbol" 或已經列在 columns 裡的 "metricKey.fieldKey"——2026-09-01 應 bff-ts 要求新增。
+   *  沒給就照舊用 symbol 由小到大排序（保證分頁穩定，不是「沒有排序」）。目前不支援排公司名稱
+   *  （company_profile 在 twse/tpex，不是本服務的 DB，screener 引擎沒有跨資料庫 JOIN 的機制）。 */
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface ScreenerValue {
