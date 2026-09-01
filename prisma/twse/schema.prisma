@@ -29,6 +29,10 @@
 // 已經看得到資料，代表這條連線接的其實是 twse-ts 的 dev 環境，不是 prod（跟其他表格的資料
 // 是同一條連線，只是剛好 dev 已經手動跑過一次）。
 //
+// 2026-09-01 又加開 material_announcement（上市公司每日重大訊息）到 export schema——跟上面
+// 那 5 個不一樣，這個 dataset 已經有正常運作一段時間的 Cloud Scheduler job，prod 現在就有
+// 真實資料可以直接拉，不用等部署，見 src/domains/market/materialAnnouncements/ 的說明。
+//
 // 其餘表用途跟資料來源都還不清楚，先不鏡像進來，需要時再補。
 
 generator client {
@@ -232,6 +236,25 @@ view PriceLimitRange {
   allowOddLotTrade  String?   @map("allow_odd_lot_trade")
 
   @@map("price_limit_range")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 上市公司每日重大訊息——2026-09-01 新增，欄位原樣透傳。announcementTime 是原始字串格式
+/// （例如 "70003"），不是標準 HH:MM:SS，不嘗試解析/重新格式化。見
+/// src/domains/market/materialAnnouncements/ 的說明。
+view MaterialAnnouncement {
+  symbol            String?
+  announcementDate  DateTime? @map("announcement_date") @db.Date
+  announcementTime  String?   @map("announcement_time")
+  reportDate        DateTime? @map("report_date") @db.Date
+  subject           String?
+  clause            String?
+  factDate          DateTime? @map("fact_date") @db.Date
+  description       String?
+
+  @@map("material_announcement")
   @@ignore
   @@schema("export")
 }
