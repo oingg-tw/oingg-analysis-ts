@@ -13,20 +13,24 @@ import prisma from '../src/adapters/prisma/index';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { govExportPrisma } from '../src/adapters/prisma/govExportClient';
+import type { SyncResult } from '../src/shared/sync/types';
 
-const jobs = [
-  { backend: 'mops', dataset: 'quarterly_income_statement', connector: mopsQuarterlyIncomeStatementConnector, target: mopsQuarterlyIncomeStatementTarget },
-  { backend: 'gov', dataset: 'monthly_gov_bond_yield_10y', connector: govMonthlyGovBondYield10yConnector, target: govMonthlyGovBondYield10yTarget },
-  { backend: 'gov', dataset: 'company_industry_classification', connector: govCompanyIndustryClassificationConnector, target: govCompanyIndustryClassificationTarget },
+// 用 thunk（不是資料物件陣列）包每個 job——不同 dataset 的 connector/target Row 型別不一樣，
+// 放進同一個陣列會讓 TypeScript 沒辦法各自對應 syncDataset<Row> 的泛型參數，包成各自捕捉好
+// 型別的函式就沒有這個問題。
+const jobs: { label: string; run: () => Promise<SyncResult> }[] = [
+  { label: 'mops/quarterly_income_statement', run: () => syncDataset('mops', 'quarterly_income_statement', mopsQuarterlyIncomeStatementConnector, mopsQuarterlyIncomeStatementTarget, prismaWatermarkStore) },
+  { label: 'gov/monthly_gov_bond_yield_10y', run: () => syncDataset('gov', 'monthly_gov_bond_yield_10y', govMonthlyGovBondYield10yConnector, govMonthlyGovBondYield10yTarget, prismaWatermarkStore) },
+  { label: 'gov/company_industry_classification', run: () => syncDataset('gov', 'company_industry_classification', govCompanyIndustryClassificationConnector, govCompanyIndustryClassificationTarget, prismaWatermarkStore) },
 ];
 
 const main = async () => {
   for (const job of jobs) {
-    console.log(`[${job.backend}/${job.dataset}] 開始同步`);
-    const result = await syncDataset(job.backend, job.dataset, job.connector, job.target, prismaWatermarkStore);
+    console.log(`[${job.label}] 開始同步`);
+    const result = await job.run();
     const synced = result.outcomes.filter((o) => o.status === 'synced').length;
     const failed = result.outcomes.filter((o) => o.status !== 'synced');
-    console.log(`[${job.backend}/${job.dataset}] 完成：${result.outcomes.length} 個批次，成功 ${synced}，失敗/不符 ${failed.length}${failed.length > 0 ? `（${failed.map((f) => f.message).join('; ')}）` : ''}`);
+    console.log(`[${result.backend}/${result.dataset}] 完成：${result.outcomes.length} 個批次，成功 ${synced}，失敗/不符 ${failed.length}${failed.length > 0 ? `（${failed.map((f) => f.message).join('; ')}）` : ''}`);
   }
 
   await prisma.$disconnect();

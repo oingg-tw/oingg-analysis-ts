@@ -1,26 +1,36 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+
+interface RawTpexCompanyProfileRow {
+  symbol: string;
+  short_name: string | null;
+}
 
 // 只查公司簡稱，給 src/shared/companyNameMiddleware.ts 用——company_profile 目前只鏡像了
-// symbol/name/shortName 三個欄位（見 prisma/twse/schema.prisma、prisma/tpex/schema.prisma
+// symbol/name/shortName 幾個欄位（見 prisma/twse/schema.prisma、prisma/tpexExport/schema.prisma
 // 開頭說明）。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料才回傳 null，不拋錯——
 // 呼叫端要把這個當作「查不到名稱」的正常情境。
+//
+// TPEx 這邊 2026-09-01 改走 export.company_profile（tpexExportPrisma，$queryRaw——這張 view
+// 沒有唯一識別欄位，Prisma Client 不會產生 model 存取子），取代原本讀 tpex-ts dev 環境的舊帳號。
 export const getCompanyName = async (companyId: string): Promise<string | null> => {
   const twseProfile = await twsePrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { shortName: true } });
   if (twseProfile) return twseProfile.shortName;
 
-  const tpexProfile = await tpexPrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { shortName: true } });
-  return tpexProfile?.shortName ?? null;
+  const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`
+    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+  `;
+  return tpexRows[0]?.short_name ?? null;
 };
 
 // GET /stocks/:symbol/quote 用——判斷這家公司到底存不存在（上市或上櫃任一邊有登記），
 // 不存在才回 404；存在但查無股價/估值資料是另一回事（回 200，欄位是 null）。
 export const companyExists = async (companyId: string): Promise<boolean> => {
-  const [twseHit, tpexHit] = await Promise.all([
+  const [twseHit, tpexRows] = await Promise.all([
     twsePrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { symbol: true } }),
-    tpexPrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { symbol: true } }),
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1`,
   ]);
-  return twseHit !== null || tpexHit !== null;
+  return twseHit !== null || tpexRows.length > 0;
 };
 
 export interface CompanyNameEntry {
@@ -53,16 +63,16 @@ const dedupeBySymbol = (rows: { symbol: string; shortName: string | null }[]): C
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } }),
-    tpexPrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } }),
+    tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile"`,
   ]);
-  const all = dedupeBySymbol([...twseRows, ...tpexRows]); // twseRows 排在前面，去重時優先保留
+  const all = dedupeBySymbol([...twseRows, ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name }))]); // twseRows 排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };
 
 export const countAllCompanyNames = async (): Promise<number> => {
-  const [twseSymbols, tpexSymbols] = await Promise.all([
+  const [twseSymbols, tpexRows] = await Promise.all([
     twsePrisma.companyProfile.findMany({ select: { symbol: true } }),
-    tpexPrisma.companyProfile.findMany({ select: { symbol: true } }),
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
-  return new Set([...twseSymbols, ...tpexSymbols].map((r) => r.symbol)).size;
+  return new Set([...twseSymbols.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
 };

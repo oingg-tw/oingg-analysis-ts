@@ -6,20 +6,25 @@
 // `generate` 這類 CLI 操作使用；實際 runtime 要連 dev 還是 prod，由
 // src/adapters/prisma/tpexExportClient.ts 依照 config.isProduction 動態決定。
 //
-// export.daily_valuation 目前沒有任何本服務的指標會消費——本服務現有的 TPEx 估值資料是走
-// prisma/tpex/schema.prisma 直連 public schema 唯讀鏡像（見該檔案開頭說明），這份 export
-// 管道先接通、驗證過，之後要不要把 marketRatios/ranking 這類指標切過來用這條 ACL 正式管道，
-// 是之後的事，不在這次範圍內。
+// 2026-09-01 這次擴大：發現本服務主程式原本讀 tpex 的 prisma/tpex/schema.prisma（public
+// schema 唯讀鏡像）指向的其實是 tpex-ts 的 **dev** 環境（另一組帳號，不是 etl_reader），資料
+// 停在 2024-08-20，遠比 prod 舊（prod 的 daily_valuation 新到 2026-08-31）——問過 tpex-ts 後，
+// 他們選擇把 export schema 擴大成含 daily_price、company_profile（比照 daily_valuation
+// 同樣走 etl_reader 唯讀、dev/prod 分流），讓本服務整個切過來，退休原本那組舊帳號
+// （TPEX_DATABASE_URL/TPEX_DIRECT_URL、prisma/tpex/schema.prisma 之後會移除）。
 //
-// IngestionRun 的顆粒度是「一個 dataset、一天」（@@unique([dataset, dataDate])），是整批同步
-// （全市場一天一個 run），跟 gov monthly_gov_bond_yield_10y/company_industry_classification
-// 同一種模式，不是逐公司的 mops 模式。
+// company_profile 只鏡像查公司名稱用得到的欄位（symbol/name/shortName/market），不是全部
+// 欄位都留——市場別 market 是新欄位（上櫃/興櫃），tpex-ts 說明用這個欄位分辨，但本服務目前
+// 沒有需要分辨市場別的地方，先留著備用。
 //
-// 沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走 $queryRaw。
-// 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/tpexExport/schema.prisma`
+// export.daily_price/daily_valuation 都是逐日整批同步（IngestionRun 顆粒度是「一個 dataset、
+// 一天」），company_profile 是快照表，沒有對應的 ingestion_runs 紀錄（tpex-ts 說明：快照表
+// 沒有 data_date 概念）。
+//
+// 這幾張 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走
+// $queryRaw。異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/tpexExport/schema.prisma`
 // 內省，這個 schema 由 tpex-ts 擁有，本服務永遠不對它跑 migrate——內省後记得把 view 名稱/欄位
-// 手動改回 PascalCase model 名稱 + camelCase 欄位（`prisma db pull` 對 view 預設用原始
-// snake_case 名稱，跟本專案風格不一致，得手動調整）。
+// 手動改回 PascalCase model 名稱 + camelCase 欄位。
 
 generator client {
   provider        = "prisma-client-js"
@@ -34,7 +39,8 @@ datasource db {
   schemas   = ["export"]
 }
 
-// 握手表——見契約第二部分。顆粒度是「一個 dataset、一天」，全市場整批同步，不是逐公司。
+// 握手表——見契約第二部分。daily_price/daily_valuation 顆粒度是「一個 dataset、一天」，全市場
+// 整批同步，不是逐公司；company_profile 快照表沒有對應紀錄。
 model IngestionRun {
   runId       BigInt   @id @default(autoincrement()) @map("run_id")
   dataset     String
@@ -59,6 +65,39 @@ view DailyValuation {
   dividendYield Decimal?  @map("dividend_yield") @db.Decimal(10, 2)
 
   @@map("daily_valuation")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 跟 oingg-twse 的 DailyPrice 幾乎同一種資料（上櫃版本），沒有 monthlyAvg 欄位，跟
+/// prisma/tpex/schema.prisma（即將退休）的 DailyPrice 定義一致。
+view DailyPrice {
+  symbol      String?
+  tradeDate   DateTime? @map("trade_date") @db.Date
+  open        Decimal?  @db.Decimal(10, 4)
+  high        Decimal?  @db.Decimal(10, 4)
+  low         Decimal?  @db.Decimal(10, 4)
+  close       Decimal?  @db.Decimal(10, 4)
+  volume      BigInt?
+  turnover    BigInt?
+  transaction BigInt?
+
+  @@map("daily_price")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 只鏡像查公司名稱用得到的欄位，不是全部欄位都留，跟 prisma/tpex/schema.prisma（即將退休）
+/// 的 CompanyProfile 做法一致，多了 market（上櫃/興櫃）備用。
+view CompanyProfile {
+  symbol    String?
+  name      String?
+  shortName String? @map("short_name")
+  market    String?
+
+  @@map("company_profile")
   @@ignore
   @@schema("export")
 }

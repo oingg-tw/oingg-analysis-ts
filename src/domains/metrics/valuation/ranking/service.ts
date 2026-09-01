@@ -1,5 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { Prisma } from '../../../../../generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
 // peRatio/pbRatio <= 0 代表虧損（EPS 為負）或淨值為負，不是「便宜」，是財務體質出問題，
@@ -17,29 +18,22 @@ interface MarketQueryResult {
   excludedNonPositiveCount: number;
 }
 
-// 上市（TWSE）、上櫃（TPEx）各自查詢——兩邊 daily_valuation 欄位定義完全一樣（symbol/tradeDate/
-// peRatio/pbRatio/dividendYield），2026-08-30 接上 TPEx 之前，這支端點雖然文件上寫「全市場」，
-// 實際上只查了 TWSE，漏掉整個上櫃市場（bff-ts 實測 TWSE ~870-1080 檔、TPEx ~670-890 檔）。
-// 各自先抓 limit 筆再合併重排，不是抓完全部再排序——兩邊個別的前 limit 名已經足夠湊出合併後
-// 真正的前 limit 名（標準的「合併 k 個已排序列表取前 N 名」作法，見 calculateRanking 合併邏輯）。
-const queryMarket = async (
-  client: typeof twsePrisma | typeof tpexPrisma,
-  tradeDate: Date,
-  metric: RankingMetric,
-  order: 'asc' | 'desc',
-  limit: number,
-  excludeNonPositive: boolean
-): Promise<MarketQueryResult> => {
+// 上市（TWSE）用型別安全的 Prisma API 查——2026-08-30 接上 TPEx 之前，這支端點雖然文件上寫
+// 「全市場」，實際上只查了 TWSE，漏掉整個上櫃市場（bff-ts 實測 TWSE ~870-1080 檔、TPEx
+// ~670-890 檔）。先抓 limit 筆再合併重排，不是抓完全部再排序——TWSE/TPEx 個別的前 limit 名
+// 已經足夠湊出合併後真正的前 limit 名（標準的「合併 k 個已排序列表取前 N 名」作法，見
+// calculateRanking 合併邏輯）。
+const queryTwseMarket = async (tradeDate: Date, metric: RankingMetric, order: 'asc' | 'desc', limit: number, excludeNonPositive: boolean): Promise<MarketQueryResult> => {
   const where = excludeNonPositive ? { tradeDate, [metric]: { gt: 0 } } : { tradeDate, [metric]: { not: null } };
 
   const [rows, excludedNonPositiveCount] = await Promise.all([
-    client.dailyValuation.findMany({
+    twsePrisma.dailyValuation.findMany({
       where,
       orderBy: { [metric]: order },
       take: limit,
       select: { symbol: true, peRatio: true, pbRatio: true, dividendYield: true },
     }),
-    excludeNonPositive ? client.dailyValuation.count({ where: { tradeDate, [metric]: { lte: 0 } } }) : Promise.resolve(0),
+    excludeNonPositive ? twsePrisma.dailyValuation.count({ where: { tradeDate, [metric]: { lte: 0 } } }) : Promise.resolve(0),
   ]);
 
   return {
@@ -48,12 +42,42 @@ const queryMarket = async (
   };
 };
 
-const getLatestValuationDate = async (): Promise<Date | null> => {
-  const [twseLatest, tpexLatest] = await Promise.all([
-    twsePrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } }),
-    tpexPrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } }),
+// 上櫃（TPEx）2026-09-01 改走 export.daily_valuation（tpexExportPrisma，取代讀 tpex-ts dev
+// 環境的舊帳號）——這張 view 沒有唯一識別欄位，Prisma Client 不會產生 model 存取子，用
+// $queryRaw，跟 TWSE 那邊查詢邏輯對等（欄位定義完全一樣，只是換一種查詢方式）。metric 是
+// 動態欄位名稱，只會是 METRIC_COLUMNS 白名單裡的三個值，不會有使用者輸入直接拼進 SQL。
+const METRIC_COLUMNS: Record<RankingMetric, string> = {
+  peRatio: 'pe_ratio',
+  pbRatio: 'pb_ratio',
+  dividendYield: 'dividend_yield',
+};
+
+const queryTpexMarket = async (tradeDate: Date, metric: RankingMetric, order: 'asc' | 'desc', limit: number, excludeNonPositive: boolean): Promise<MarketQueryResult> => {
+  const column = Prisma.raw(`"${METRIC_COLUMNS[metric]}"`);
+  const directionSql = order === 'asc' ? Prisma.raw('ASC') : Prisma.raw('DESC');
+  const filterSql = excludeNonPositive ? Prisma.sql`${column} > 0` : Prisma.sql`${column} IS NOT NULL`;
+
+  const [rows, excludedCountRows] = await Promise.all([
+    tpexExportPrisma.$queryRaw<{ symbol: string; value: unknown }[]>(
+      Prisma.sql`SELECT symbol, ${column} AS value FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${filterSql} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
+    ),
+    excludeNonPositive
+      ? tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>(Prisma.sql`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation" WHERE trade_date = ${tradeDate} AND ${column} <= 0`)
+      : Promise.resolve([{ cnt: 0n }]),
   ]);
-  const dates = [twseLatest?.tradeDate, tpexLatest?.tradeDate].filter((d): d is Date => d !== undefined);
+
+  return {
+    rows: rows.map((row) => ({ symbol: row.symbol, value: Number(row.value) })),
+    excludedNonPositiveCount: Number(excludedCountRows[0]?.cnt ?? 0),
+  };
+};
+
+const getLatestValuationDate = async (): Promise<Date | null> => {
+  const [twseLatest, tpexLatestRows] = await Promise.all([
+    twsePrisma.dailyValuation.findFirst({ orderBy: { tradeDate: 'desc' }, select: { tradeDate: true } }),
+    tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."daily_valuation" ORDER BY trade_date DESC LIMIT 1`,
+  ]);
+  const dates = [twseLatest?.tradeDate, tpexLatestRows[0]?.trade_date].filter((d): d is Date => d !== undefined);
   if (dates.length === 0) return null;
   return dates.reduce((latest, d) => (d > latest ? d : latest));
 };
@@ -72,8 +96,8 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
   const [twseResult, tpexResult] = await Promise.all([
-    queryMarket(twsePrisma, tradeDate, metric, order, limit, excludeNonPositive),
-    queryMarket(tpexPrisma, tradeDate, metric, order, limit, excludeNonPositive),
+    queryTwseMarket(tradeDate, metric, order, limit, excludeNonPositive),
+    queryTpexMarket(tradeDate, metric, order, limit, excludeNonPositive),
   ]);
 
   const merged = [...twseResult.rows, ...tpexResult.rows].sort((a, b) => (order === 'asc' ? a.value - b.value : b.value - a.value));

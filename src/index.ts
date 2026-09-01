@@ -10,7 +10,6 @@ import { connectDb } from './adapters/prisma/index';
 import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { connectTwseDb } from './adapters/prisma/twseClient';
 import { connectGovDb } from './adapters/prisma/govClient';
-import { connectTpexDb } from './adapters/prisma/tpexClient';
 import { connectMopsExportDb } from './adapters/prisma/mopsExportClient';
 import { connectGovExportDb } from './adapters/prisma/govExportClient';
 import { connectTpexExportDb } from './adapters/prisma/tpexExportClient';
@@ -57,7 +56,6 @@ const startServer = async () => {
     await connectAnalysisDb();
     await connectTwseDb();
     await connectGovDb();
-    await connectTpexDb();
     await connectMopsExportDb();
     await connectGovExportDb();
     await connectTpexExportDb();

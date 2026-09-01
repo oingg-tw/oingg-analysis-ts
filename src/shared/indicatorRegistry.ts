@@ -6,7 +6,7 @@
 
 import prisma from '@/adapters/prisma/index';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { calculateEps } from '@/domains/metrics/profitability/eps/service';
 import { calculateBvps } from '@/domains/metrics/profitability/bvps/service';
 import { calculateRevenuePerShare } from '@/domains/metrics/profitability/revenuePerShare/service';
@@ -70,9 +70,11 @@ export interface IndicatorJob {
 // 三個公司清單來源，各自只查一次、被多個 job 共用。
 const mopsIdsPromise = prisma.quarterlyIncomeStatement.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
 const twsePriceIdsPromise = twsePrisma.dailyPrice.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
+// TPEx 這邊 2026-09-01 改走 export.daily_valuation（$queryRaw，這張 view 沒有 model 存取子，
+// 取代讀 tpex-ts dev 環境的舊帳號）。
 const marketRatiosIdsPromise = Promise.all([
   twsePrisma.dailyValuation.findMany({ distinct: ['symbol'], select: { symbol: true } }),
-  tpexPrisma.dailyValuation.findMany({ distinct: ['symbol'], select: { symbol: true } }),
+  tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_valuation"`,
 ]).then(([twseRows, tpexRows]) => [...new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)])]);
 
 const mopsQuery = (companyId: string) => ({ companyId, dataType: '2' as const, subsidiaryCompanyId: '' });

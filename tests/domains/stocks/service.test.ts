@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { getStockQuote, getStockPrices } from '@/domains/stocks/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
 // 2330（台積電）長期都有股價/估值資料，跟本服務其他測試（capitalStock 等）同一個慣例選這檔。
 test('getStockQuote: 已知的上市公司（2330）應該同時有 price 跟 valuation', async () => {
@@ -24,7 +24,8 @@ test('getStockQuote: 查無此代號的公司應該回傳 null', async () => {
 // 不釘死 price 一定是 null（daily_price 曾經是空表，但那是暫時的資料現況，不是永久保證，
 // tpex-ts 回補之後這裡不該跟著壞掉）。
 test('getStockQuote: 上櫃公司查得到公司資料時，不該被誤判成不存在（不是 404）', async () => {
-  const tpexCompany = await tpexPrisma.companyProfile.findFirst({ select: { symbol: true } });
+  const tpexCompanies = await tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" LIMIT 1`;
+  const tpexCompany = tpexCompanies[0];
   if (!tpexCompany) return; // TPEx company_profile 目前沒資料時無從驗證，跳過。
 
   const result = await getStockQuote(tpexCompany.symbol);
@@ -47,5 +48,5 @@ test('getStockPrices: 空陣列應該回傳空物件，不拋錯', async () => {
 
 after(async () => {
   await twsePrisma.$disconnect();
-  await tpexPrisma.$disconnect();
+  await tpexExportPrisma.$disconnect();
 });

@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateRanking } from '@/domains/metrics/valuation/ranking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
 // daily_valuation 每天更新，不釘死確切公司/數值，只驗證排序正確、排除邏輯有效——
 // 跟本服務其他吃即時市場資料的測試同一種風格。
@@ -45,10 +45,11 @@ test('ranking: 指定查無資料的日期，應該優雅降級回傳空陣列�
 // 用市場整體覆蓋率反推期望值（現查 twse/tpex 各自今天有沒有資料），不寫死是哪幾檔股票，
 // 覆蓋率之後會持續變。
 test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟上櫃公司', async () => {
-  const [twseCount, tpexCount] = await Promise.all([
+  const [twseCount, tpexCountRows] = await Promise.all([
     twsePrisma.dailyValuation.count(),
-    tpexPrisma.dailyValuation.count(),
+    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
   ]);
+  const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
   if (twseCount === 0 || tpexCount === 0) return; // 其中一邊完全沒資料時無從驗證跨市場合併，跳過。
 
   const result = await calculateRanking({ metric: 'dividendYield', order: 'desc', limit: 500 });
@@ -62,5 +63,5 @@ test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟�
 
 after(async () => {
   await twsePrisma.$disconnect();
-  await tpexPrisma.$disconnect();
+  await tpexExportPrisma.$disconnect();
 });

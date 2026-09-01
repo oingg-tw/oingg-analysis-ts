@@ -16,7 +16,7 @@
 
 import prisma from '../src/adapters/prisma/index';
 import twsePrisma from '../src/adapters/prisma/twseClient';
-import tpexPrisma from '../src/adapters/prisma/tpexClient';
+import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { indicatorJobs } from '../src/shared/indicatorRegistry';
 
@@ -55,7 +55,7 @@ const main = async () => {
 
   await prisma.$disconnect();
   await twsePrisma.$disconnect();
-  await tpexPrisma.$disconnect();
+  await tpexExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 };
 

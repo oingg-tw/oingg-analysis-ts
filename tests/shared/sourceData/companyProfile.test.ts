@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { listAllCompanyNames, countAllCompanyNames } from '@/shared/sourceData/companyProfile';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import tpexPrisma from '@/adapters/prisma/tpexClient';
+import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
 // 2026-09-01 bff-ts 實測抓到 GET /companies 回應裡 7914/7932 這兩檔公司各自出現兩次（TWSE、
 // TPEx 的 company_profile 剛好都有登記，資料內容一樣），害他們那邊 upsert 撞到「ON CONFLICT
@@ -18,11 +18,12 @@ test('listAllCompanyNames: 兩邊資料庫都有登記的公司代號，去重�
 });
 
 test('listAllCompanyNames: count 反映去重後的總筆數，不是 twse+tpex 筆數直接相加', async () => {
-  const [twseCount, tpexCount, { count }] = await Promise.all([
+  const [twseCount, tpexCountRows, { count }] = await Promise.all([
     twsePrisma.companyProfile.count(),
-    tpexPrisma.companyProfile.count(),
+    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."company_profile"`,
     listAllCompanyNames(1, 0),
   ]);
+  const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
   assert.ok(count <= twseCount + tpexCount, '去重後的總筆數不該超過兩邊直接相加');
 });
 
@@ -43,5 +44,5 @@ test('countAllCompanyNames 應該跟 listAllCompanyNames 回傳的 count 一致'
 
 after(async () => {
   await twsePrisma.$disconnect();
-  await tpexPrisma.$disconnect();
+  await tpexExportPrisma.$disconnect();
 });
