@@ -18,9 +18,21 @@ export interface ColumnPreset {
   name: string;
   description: string;
   fieldKeys: string[]; // 格式："metricKey.fieldKey"
+  // 選填，只有一組會是 true——使用者選擇之前，前端應該顯示的初始欄位組合。2026-09-01 使用者
+  // 定調：不要直接拿六組策略性預設（存股/價值/成長/技術面…）其中一組硬當預設，因為那些各自
+  // 偏向特定投資風格，隨便選一組當所有使用者的起始畫面會有偏向性；改用下面新增的中性
+  // `overview`，只放大多數人都會想先看的通用欄位，不偏向任何一種策略。
+  isDefault?: boolean;
 }
 
 export const columnPresets: ColumnPreset[] = [
+  {
+    key: 'overview',
+    name: '總覽',
+    description: '本益比、股價淨值比、殖利率、ROE、負債比——不偏向任何一種投資風格，先看一眼公司大概什麼樣子',
+    fieldKeys: ['per.peRatio', 'pbr.pbRatio', 'dividendYield.dividendYieldPct', 'roe.roeTtmPct', 'debtRatio.debtRatioPct'],
+    isDefault: true,
+  },
   {
     key: 'dividendIncome',
     name: '存股領息',

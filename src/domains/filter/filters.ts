@@ -20,7 +20,8 @@ const router = Router();
  *       客製化要看哪些欄位是不同的兩件事，那種個人 UI 偏好狀態不需要 analysis-ts 參與，應該由
  *       前端或 bff-ts 處理。`fieldKeys` 格式是 `"metricKey.fieldKey"`（不能只用裸的 field key——
  *       部分 field key 同時存在於兩個不同 metric 底下，裸 key 會有歧義），前端自己去
- *       `categories` 對應的 metric 底下找出這個 field 的完整定義。
+ *       `categories` 對應的 metric 底下找出這個 field 的完整定義。剛好一組（`overview`）會有
+ *       `isDefault: true`，是使用者選擇之前該顯示的中性初始畫面，不偏向任何一種投資風格。
  *     tags:
  *       - System
  *     responses:
