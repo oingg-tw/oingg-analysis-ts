@@ -1,7 +1,10 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import type { DisposedStocksQuery, DisposedStocksResult, DisposedStockRow } from './types';
+
+const SIX_DAY_CHANGE_TRADING_DAYS = 6;
 
 interface RawTwseDisposedStockRow {
   symbol: string;
@@ -42,6 +45,9 @@ interface PoolRow {
 //
 // TPEx 版本欄位比 TWSE 精簡（沒有 announcement_count/disposition_measures/
 // link_information），沒有的欄位回傳 null，不是查詢失敗。
+//
+// sixDayChangePercent：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
+// priceChange.ts）——2026-09-02 應使用者要求新增，給「為什麼被列為處置」補價格脈絡。
 export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<DisposedStocksResult> => {
   const { limit } = query;
   const warnings: string[] = [];
@@ -84,7 +90,13 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
     warnings.push('查無處置股票資料。');
   }
 
-  const companyNames = await getCompanyNamesForSymbols(sorted.map((row) => row.symbol));
+  const [companyNames, sixDayChanges] = await Promise.all([
+    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    getCumulativeChangePercent(
+      sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: row.announce_date })),
+      SIX_DAY_CHANGE_TRADING_DAYS
+    ),
+  ]);
   const items: DisposedStockRow[] = sorted.map((row) => ({
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
@@ -96,6 +108,7 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
     dispositionMeasures: row.disposition_measures,
     detail: row.detail,
     linkInformation: row.link_information,
+    sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.announce_date)) ?? null,
   }));
 
   return { limit, items, warnings };

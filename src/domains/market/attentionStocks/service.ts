@@ -1,8 +1,11 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
+
+const SIX_DAY_CHANGE_TRADING_DAYS = 6;
 
 interface RawAttentionHistoryNoteRow {
   symbol: string;
@@ -48,7 +51,13 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
     warnings.push('查無注意股票資料。');
   }
 
-  const companyNames = await getCompanyNamesForSymbols(sorted.map((row) => row.symbol));
+  const [companyNames, sixDayChanges] = await Promise.all([
+    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    getCumulativeChangePercent(
+      sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: row.trade_date })),
+      SIX_DAY_CHANGE_TRADING_DAYS
+    ),
+  ]);
   const items: AttentionStockRow[] = sorted.map((row) => ({
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
@@ -56,6 +65,7 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
     tradeDate: row.trade_date.toISOString().slice(0, 10),
     criteria: row.criteria,
     criteriaDetails: parseAttentionCriteria(row.criteria),
+    sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.trade_date)) ?? null,
   }));
 
   return { limit, items, warnings };
