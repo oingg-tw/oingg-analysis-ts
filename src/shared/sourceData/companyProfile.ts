@@ -10,3 +10,18 @@ export const getCompanyName = async (companyId: string): Promise<string | null> 
   });
   return profile?.shortName ?? null;
 };
+
+export interface CompanyNameEntry {
+  companyId: string;
+  companyName: string | null;
+}
+
+// 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以一次拿全部公司代號/名稱對照表
+// 自己快取，之後不管是 screener/ranking 這種多公司陣列結果、還是任何其他形狀的回應，都能自己
+// 對照補上公司名稱，不需要 analysis-ts 針對每一種回應形狀各自設計注入邏輯（跟 companyNameMiddleware.ts
+// 只處理「回應最上層有單一 companyId」這種形狀是互補的兩條路，不是重複）。只回傳 TWSE 上市
+// 公司（company_profile 的覆蓋範圍），見該檔案開頭說明。
+export const listAllCompanyNames = async (): Promise<CompanyNameEntry[]> => {
+  const rows = await twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } });
+  return rows.map((row) => ({ companyId: row.symbol, companyName: row.shortName }));
+};
