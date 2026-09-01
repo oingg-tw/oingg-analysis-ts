@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { resolveField } from '@/domains/filter/metricTableRegistry';
 import { formatRocYearSeasonAsOfDate } from '@/shared/rocQuarter';
-import { buildScreenerSql, buildRankingSql, type FieldRef, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
+import { buildScreenerSql, buildRankingSql, buildValuesSql, type FieldRef, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
 import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue } from './types';
 
 export class ScreenerValidationError extends Error {}
@@ -94,4 +94,21 @@ export const runScreenerRanking = async (request: { field: string; direction: 'a
 
   const combinedFields: IndexedField[] = [rankedField, ...columns].map((c, index) => ({ ...c, index }));
   return { results: parseRows(rows, combinedFields) };
+};
+
+// 給「已經在畫面上的這幾檔股票，補一個新欄位」用，不是篩選查詢——每個要求的 symbol 都保證
+// 出現在 results 裡，查不到資料的欄位是 null，不會因為沒資料整個 symbol 被拿掉（跟 GET
+// /stocks/prices 對查無資料的 symbol 是「直接不出現」不一樣，這裡的呼叫端已經知道這些 symbol
+// 存在，缺資料要看得到，不是被靜默排除）。
+export const runScreenerValues = async (request: { symbols: string[]; columns: ScreenerColumnInput[] }): Promise<{ results: ScreenerRow[] }> => {
+  const symbols = [...new Set(request.symbols)];
+  const columns = request.columns.map((c) => resolveFieldOrThrow(c.field));
+
+  if (symbols.length === 0) return { results: [] };
+
+  const sql = buildValuesSql(symbols, columns);
+  const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
+
+  const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
+  return { results: parseRows(rows, indexedColumns) };
 };

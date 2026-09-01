@@ -220,4 +220,32 @@ export const buildRankingSql = (rankedField: FieldRef, direction: 'asc' | 'desc'
   `;
 };
 
+// GET 一批明確列出的 symbol 各自的欄位值——2026-09-01 應 bff-ts 要求新增，給「已經在畫面上的
+// 這幾檔股票，補一個新欄位」這種情境用，不是篩選查詢。基準是呼叫端直接給的 symbol 清單本身
+// （unnest 出一列一個），不是任何一張表的內容——這樣每個要求的 symbol 都保證會出現在結果裡，
+// 即使所有欄位都沒有資料（跟 POST /screener 的「symbol 由 filters/columns 表決定」不同，
+// 那邊沒資料的 symbol 本來就不會出現，這裡就算沒資料也要出現）。
+export const buildValuesSql = (symbols: string[], columns: FieldRef[]): Prisma.Sql => {
+  const tableRefs = dedupTables(columns.map((c) => c.resolved));
+  const ctes = [...tableRefs.values()].map(buildCte);
+
+  const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
+  const selectCols = buildSelectColumnsSql(indexedColumns, tableRefs);
+  const selectList = [Prisma.sql`req.symbol AS symbol`, ...selectCols];
+
+  const joinParts: Prisma.Sql[] = [Prisma.sql`FROM unnest(${symbols}::text[]) AS req(symbol)`];
+  for (const t of tableRefs.values()) {
+    const alias = Prisma.raw(t.alias);
+    joinParts.push(Prisma.sql`LEFT JOIN ${alias} ON ${alias}.${q('symbol')} = req.symbol`);
+  }
+
+  const withClause = ctes.length > 0 ? Prisma.sql`WITH ${Prisma.join(ctes, ', ')}` : Prisma.empty;
+
+  return Prisma.sql`
+    ${withClause}
+    SELECT ${Prisma.join(selectList, ', ')}
+    ${Prisma.join(joinParts, ' ')}
+  `;
+};
+
 export { type IndexedField };

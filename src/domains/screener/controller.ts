@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { runScreener, runScreenerRanking, ScreenerValidationError } from './service';
+import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from './service';
 
 const filterSchema = z.object({
   field: z.string().min(1),
@@ -60,6 +60,32 @@ export const getScreenerRanking = async (req: Request, res: Response, next: Next
       return res.status(400).json({ message: error.message });
     }
     console.error('Screener ranking query failed:', error);
+    next(error);
+  }
+};
+
+// bff-ts 說他們一次最多送一頁的量（≤200），這裡跟其他「明確列出清單」端點（GET /stocks/prices）
+// 同一種上限慣例：超過直接 400，不會默默只處理前 200 筆。
+const MAX_SYMBOLS = 200;
+
+const valuesBodySchema = z.object({
+  symbols: z.array(z.string().min(1)).min(1, 'symbols 至少要有一個公司代號。').max(MAX_SYMBOLS, `symbols 一次最多 ${MAX_SYMBOLS} 檔，請分批查詢。`),
+  columns: z.array(columnSchema).min(1, 'columns 至少要有一個欄位。'),
+});
+
+export const postScreenerValues = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = valuesBodySchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid request body.', errors: validationResult.error.format() });
+    }
+    const result = await runScreenerValues(validationResult.data);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof ScreenerValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Screener values lookup failed:', error);
     next(error);
   }
 };

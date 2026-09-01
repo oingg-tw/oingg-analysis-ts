@@ -1,6 +1,6 @@
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { runScreener, runScreenerRanking, ScreenerValidationError } from '@/domains/screener/service';
+import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/domains/screener/service';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 const baseRequest = { filters: [] as { field: string; min: number | null; max: number | null; exclude?: boolean }[], columns: [] as { field: string }[], page: 1, pageSize: 50 };
@@ -162,6 +162,32 @@ describe('runScreenerRanking', () => {
   test('D 型欄位的 asOfDate 是 YYYY-MM-DD 格式', async () => {
     const result = await runScreenerRanking({ field: 'per.peRatio', direction: 'desc', limit: 1, columns: [] });
     assert.match(result.results[0]!.values['per.peRatio']!.asOfDate!, /^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('runScreenerValues', () => {
+  test('每個要求的 symbol 都會出現在結果裡，查無資料的 symbol 不會被拿掉', async () => {
+    const result = await runScreenerValues({ symbols: ['2330', '0000'], columns: [{ field: 'roe.roeQuarterlyPct' }] });
+    assert.equal(result.results.length, 2);
+    const missing = result.results.find((r) => r.symbol === '0000');
+    const found = result.results.find((r) => r.symbol === '2330');
+    assert.ok(missing, '查無資料的 symbol 也應該出現在結果裡');
+    assert.deepEqual(missing!.values['roe.roeQuarterlyPct'], { value: null, asOfDate: null });
+    assert.ok(found!.values['roe.roeQuarterlyPct']!.value !== null, '2330 應該查得到 ROE');
+  });
+
+  test('重複的 symbol 應該去重，不會出現兩筆一樣的結果', async () => {
+    const result = await runScreenerValues({ symbols: ['2330', '2330'], columns: [{ field: 'roe.roeQuarterlyPct' }] });
+    assert.equal(result.results.length, 1);
+  });
+
+  test('symbols 是空陣列應該回傳空結果，不拋錯', async () => {
+    const result = await runScreenerValues({ symbols: [], columns: [{ field: 'roe.roeQuarterlyPct' }] });
+    assert.deepEqual(result.results, []);
+  });
+
+  test('查不到的 field 應該拋 ScreenerValidationError', async () => {
+    await assert.rejects(() => runScreenerValues({ symbols: ['2330'], columns: [{ field: 'notARealMetric.x' }] }), ScreenerValidationError);
   });
 });
 

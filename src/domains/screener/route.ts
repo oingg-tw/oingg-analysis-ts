@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { postScreener, getScreenerRanking } from './controller';
+import { postScreener, getScreenerRanking, postScreenerValues } from './controller';
 
 const router = Router();
 
@@ -81,5 +81,29 @@ router.post('/screener', postScreener);
  *         description: 請求格式錯誤，或 field/columns 查不到對應的欄位。
  */
 router.get('/screener/ranking', getScreenerRanking);
+
+/**
+ * @swagger
+ * /screener/values:
+ *   post:
+ *     summary: 查詢明確列出的幾檔股票各自的欄位值
+ *     description: >
+ *       給「畫面上已經有這幾檔股票，補一個新欄位」這種情境用，不是篩選查詢——`symbols` 是明確
+ *       列出的清單（不是條件），跟 `GET /stocks/prices` 同一種「這確切幾檔」的定位，一次最多
+ *       200 檔。
+ *
+ *       **跟 `POST /screener` 的關鍵差異**：這裡每個要求的 symbol 都保證出現在 `results`
+ *       裡，即使全部欄位都查無資料（`values` 會是空物件）——不會因為沒資料被拿掉，畢竟呼叫端
+ *       是先看到這些 symbol 才發出這個請求的，不該被靜默排除。`values` 裡個別欄位缺資料一樣是
+ *       null，跟 `POST /screener` 的 `columns` 同一種語意。
+ *     tags:
+ *       - Screener
+ *     responses:
+ *       200:
+ *         description: 每個要求的 symbol 各一筆結果，不分頁、沒有 count。
+ *       400:
+ *         description: 請求格式錯誤，symbols/columns 為空，或 columns 裡的 field 查不到對應的欄位。
+ */
+router.post('/screener/values', postScreenerValues);
 
 export default router;
