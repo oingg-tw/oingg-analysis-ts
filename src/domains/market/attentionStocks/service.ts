@@ -1,6 +1,7 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
 
 interface RawAttentionHistoryNoteRow {
@@ -54,6 +55,7 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
     market: row.market,
     tradeDate: row.trade_date.toISOString().slice(0, 10),
     criteria: row.criteria,
+    criteriaDetails: parseAttentionCriteria(row.criteria),
   }));
 
   return { limit, items, warnings };
