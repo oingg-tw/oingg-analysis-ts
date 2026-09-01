@@ -34,9 +34,10 @@ export interface DailyPriceAsOf {
 }
 
 // 單一公司查最新股價（GET /stocks/:symbol/quote 用）——一樣先查 TWSE 再查 TPEx。
-// 已知現況（2026-09-01）：oingg-tpex 的 daily_price 目前是空表（company_profile/daily_valuation
-// 都有資料，只有 daily_price 是 0 筆），所以現在每一檔上櫃公司查出來的 close 一定是 null，
-// 不是這裡的邏輯有問題——等 tpex-ts 回補 daily_price 之後會自動改善，不用改這支函式。
+// 已知現況（2026-09-01）：oingg-tpex 的 daily_price 原本是空表，tpex-ts 回補中，目前有
+// 118,675 筆、978 檔公司，但資料只回補到 2024-08-20（TWSE 同期資料已經到 2026-08-28）——
+// 也就是說上櫃公司查到的「最新股價」現階段可能是兩年前的舊資料，不是 null 但也不是真的最新，
+// 這是資料新鮮度落差，不是這支函式的邏輯問題，等 tpex-ts 追上進度會自動改善。
 export const getLatestDailyPrice = async (symbol: string): Promise<DailyPriceAsOf | null> => {
   const orderBy = { tradeDate: 'desc' as const };
   const record =

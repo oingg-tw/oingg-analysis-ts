@@ -28,15 +28,41 @@ export interface CompanyNameEntry {
   companyName: string | null;
 }
 
-// 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以一次拿全部公司代號/名稱對照表
+// 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
 // 自己快取，之後不管是 screener/ranking 這種多公司陣列結果、還是任何其他形狀的回應，都能自己
 // 對照補上公司名稱，不需要 analysis-ts 針對每一種回應形狀各自設計注入邏輯（跟 companyNameMiddleware.ts
 // 只處理「回應最上層有單一 companyId」這種形狀是互補的兩條路，不是重複）。涵蓋上市（TWSE）+
 // 上櫃（TPEx），見兩邊 company_profile 的覆蓋範圍。
-export const listAllCompanyNames = async (): Promise<CompanyNameEntry[]> => {
+//
+// 兩邊資料庫各自查全量、在應用層合併後才切頁——不是不能做到跨資料庫的 offset/limit 精確查詢，
+// 是這個資料量級（總共 ~2,500 筆，每筆只有兩個字串欄位）做這件事的複雜度完全不划算，真正要
+// 避免的浪費是「回應酬載」不是「資料庫查詢量」。
+//
+// 少數股票代號兩邊資料庫都有登記（bff-ts 2026-09-01 實測抓到 7914/7932 這兩檔），資料內容
+// 一樣、只是新舊資料尚未收斂——依 symbol 去重，兩邊都有時保留 TWSE 那筆（跟 getCompanyName/
+// companyExists 一律先查 TWSE 再查 TPEx 同一個優先順序），不能讓同一個 companyId 出現兩次，
+// 之前沒去重害 bff-ts 那邊 upsert 撞到「ON CONFLICT DO UPDATE 同一列被影響兩次」的錯誤。
+const dedupeBySymbol = (rows: { symbol: string; shortName: string | null }[]): CompanyNameEntry[] => {
+  const bySymbol = new Map<string, string | null>();
+  for (const row of rows) {
+    if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, row.shortName);
+  }
+  return [...bySymbol].map(([companyId, companyName]) => ({ companyId, companyName }));
+};
+
+export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } }),
     tpexPrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } }),
   ]);
-  return [...twseRows, ...tpexRows].map((row) => ({ companyId: row.symbol, companyName: row.shortName }));
+  const all = dedupeBySymbol([...twseRows, ...tpexRows]); // twseRows 排在前面，去重時優先保留
+  return { count: all.length, entries: all.slice(offset, offset + limit) };
+};
+
+export const countAllCompanyNames = async (): Promise<number> => {
+  const [twseSymbols, tpexSymbols] = await Promise.all([
+    twsePrisma.companyProfile.findMany({ select: { symbol: true } }),
+    tpexPrisma.companyProfile.findMany({ select: { symbol: true } }),
+  ]);
+  return new Set([...twseSymbols, ...tpexSymbols].map((r) => r.symbol)).size;
 };
