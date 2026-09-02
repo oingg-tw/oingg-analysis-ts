@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { getCompanies, getCompanySymbols } from './controller';
+import { getCompanies, getCompanySymbols, getCompanyProfile } from './controller';
 
 const router = Router();
 
@@ -75,5 +75,43 @@ router.get('/companies', getCompanies);
  *         description: "`{ count, symbols }`"
  */
 router.get('/companies/symbols', getCompanySymbols);
+
+/**
+ * @swagger
+ * /companies/profile:
+ *   get:
+ *     summary: 單一公司基本資料（董事長/總經理/發言人/設立上市日期/資本額等）
+ *     description: >
+ *       2026-09-02 應 bff-ts 要求新增，給個股詳情頁的公司基本資料卡片用。company_profile
+ *       這張表本來就有完整欄位（本服務之前只選了 symbol/name/shortName 三個），這支端點是
+ *       把已經在資料庫裡的資料選出來對外提供，不是新的資料源整合。
+ *
+ *       上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。TWSE/TPEx 兩邊欄位範圍
+ *       不完全一樣（TPEx 沒有 englishAddress），沒有的欄位回傳 null。指名查詢單一公司時不篩
+ *       ETF/KY/興櫃/`source`or`market`（那是排行榜/清單類端點的政策，見
+ *       [`GET /companies/symbols`](../../shared/sourceData/companyProfile.ts)），只要
+ *       company_profile 裡查得到就照實回傳。
+ *
+ *       `paidInCapital`/`issuedShares`/`privatePlacementShares`/`preferredStockShares`
+ *       是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。
+ *     tags:
+ *       - System
+ *     parameters:
+ *       - in: query
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 公司代號
+ *         example: "2330"
+ *     responses:
+ *       200:
+ *         description: 公司基本資料。
+ *       400:
+ *         description: 缺少 companyId。
+ *       404:
+ *         description: 查無此公司代號（上市、上櫃都查不到）。
+ */
+router.get('/companies/profile', getCompanyProfile);
 
 export default router;

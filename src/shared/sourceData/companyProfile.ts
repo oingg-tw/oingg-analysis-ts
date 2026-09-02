@@ -1,5 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import type { CompanyProfileDetail } from '@/domains/companies/types';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;
@@ -70,6 +71,138 @@ export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
 export const getAllRealCompanySymbols = async (): Promise<string[]> => {
   const [twseSymbols, tpexSymbols] = await Promise.all([getTwseCompanySymbolSet(), getTpexCompanySymbolSet()]);
   return [...new Set([...twseSymbols, ...tpexSymbols])].sort();
+};
+
+interface RawTpexCompanyProfileDetailRow {
+  symbol: string;
+  report_date: Date | null;
+  name: string | null;
+  short_name: string | null;
+  foreign_registration_country: string | null;
+  industry: string | null;
+  address: string | null;
+  tax_id: string | null;
+  chairman: string | null;
+  general_manager: string | null;
+  spokesperson: string | null;
+  spokesperson_title: string | null;
+  deputy_spokesperson: string | null;
+  phone: string | null;
+  established_date: Date | null;
+  listed_date: Date | null;
+  par_value: string | null;
+  paid_in_capital: bigint | null;
+  private_placement_shares: bigint | null;
+  preferred_stock_shares: bigint | null;
+  financial_report_type: string | null;
+  stock_transfer_agency: string | null;
+  transfer_agency_phone: string | null;
+  transfer_agency_address: string | null;
+  auditing_firm: string | null;
+  auditor1: string | null;
+  auditor2: string | null;
+  english_short_name: string | null;
+  fax_number: string | null;
+  email: string | null;
+  website: string | null;
+  issued_shares: bigint | null;
+}
+
+// 給 GET /companies/profile 用（2026-09-02 應 bff-ts 要求新增，個股詳情頁的公司基本資料卡片）。
+// 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
+// 欄位範圍不完全一樣（TPEx 沒有 english_address/industry_name），沒有的欄位一律回 null，不是
+// 查詢失敗。這裡刻意不篩 source/market——單一公司查詢是使用者/下游服務指名要看這家公司的資料，
+// 不是「排除幽靈代號」那種清單情境（見 getTwseCompanySymbolSet 的說明），就算是
+// COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
+export const getCompanyProfileDetail = async (companyId: string): Promise<CompanyProfileDetail | null> => {
+  const twseRow = await twsePrisma.companyProfile.findUnique({ where: { symbol: companyId } });
+  if (twseRow) {
+    return {
+      symbol: twseRow.symbol,
+      market: 'TWSE',
+      reportDate: twseRow.reportDate.toISOString().slice(0, 10),
+      name: twseRow.name,
+      shortName: twseRow.shortName,
+      foreignRegistrationCountry: twseRow.foreignRegistrationCountry,
+      industry: twseRow.industry,
+      address: twseRow.address,
+      taxId: twseRow.taxId,
+      chairman: twseRow.chairman,
+      generalManager: twseRow.generalManager,
+      spokesperson: twseRow.spokesperson,
+      spokespersonTitle: twseRow.spokespersonTitle,
+      deputySpokesperson: twseRow.deputySpokesperson,
+      phone: twseRow.phone,
+      establishedDate: twseRow.establishedDate?.toISOString().slice(0, 10) ?? null,
+      listedDate: twseRow.listedDate?.toISOString().slice(0, 10) ?? null,
+      parValue: twseRow.parValue ? Number(twseRow.parValue) : null,
+      paidInCapital: twseRow.paidInCapital?.toString() ?? null,
+      privatePlacementShares: twseRow.privatePlacementShares?.toString() ?? null,
+      preferredStockShares: twseRow.preferredStockShares?.toString() ?? null,
+      financialReportType: twseRow.financialReportType,
+      stockTransferAgency: twseRow.stockTransferAgency,
+      transferAgencyPhone: twseRow.transferAgencyPhone,
+      transferAgencyAddress: twseRow.transferAgencyAddress,
+      auditingFirm: twseRow.auditingFirm,
+      auditor1: twseRow.auditor1,
+      auditor2: twseRow.auditor2,
+      englishShortName: twseRow.englishShortName,
+      englishAddress: twseRow.englishAddress,
+      faxNumber: twseRow.faxNumber,
+      email: twseRow.email,
+      website: twseRow.website,
+      issuedShares: twseRow.issuedShares?.toString() ?? null,
+    };
+  }
+
+  const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileDetailRow[]>`
+    SELECT symbol, report_date, name, short_name, foreign_registration_country, industry, address, tax_id,
+      chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson, phone,
+      established_date, listed_date, par_value, paid_in_capital, private_placement_shares,
+      preferred_stock_shares, financial_report_type, stock_transfer_agency, transfer_agency_phone,
+      transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
+      email, website, issued_shares
+    FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+  `;
+  const tpexRow = tpexRows[0];
+  if (!tpexRow) return null;
+
+  return {
+    symbol: tpexRow.symbol,
+    market: 'TPEx',
+    reportDate: tpexRow.report_date?.toISOString().slice(0, 10) ?? null,
+    name: tpexRow.name,
+    shortName: tpexRow.short_name,
+    foreignRegistrationCountry: tpexRow.foreign_registration_country,
+    industry: tpexRow.industry,
+    address: tpexRow.address,
+    taxId: tpexRow.tax_id,
+    chairman: tpexRow.chairman,
+    generalManager: tpexRow.general_manager,
+    spokesperson: tpexRow.spokesperson,
+    spokespersonTitle: tpexRow.spokesperson_title,
+    deputySpokesperson: tpexRow.deputy_spokesperson,
+    phone: tpexRow.phone,
+    establishedDate: tpexRow.established_date?.toISOString().slice(0, 10) ?? null,
+    listedDate: tpexRow.listed_date?.toISOString().slice(0, 10) ?? null,
+    parValue: tpexRow.par_value ? Number(tpexRow.par_value) : null,
+    paidInCapital: tpexRow.paid_in_capital?.toString() ?? null,
+    privatePlacementShares: tpexRow.private_placement_shares?.toString() ?? null,
+    preferredStockShares: tpexRow.preferred_stock_shares?.toString() ?? null,
+    financialReportType: tpexRow.financial_report_type,
+    stockTransferAgency: tpexRow.stock_transfer_agency,
+    transferAgencyPhone: tpexRow.transfer_agency_phone,
+    transferAgencyAddress: tpexRow.transfer_agency_address,
+    auditingFirm: tpexRow.auditing_firm,
+    auditor1: tpexRow.auditor1,
+    auditor2: tpexRow.auditor2,
+    englishShortName: tpexRow.english_short_name,
+    englishAddress: null,
+    faxNumber: tpexRow.fax_number,
+    email: tpexRow.email,
+    website: tpexRow.website,
+    issuedShares: tpexRow.issued_shares?.toString() ?? null,
+  };
 };
 
 // 排除 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾，例如「英利-KY」）——2026-09-02 應

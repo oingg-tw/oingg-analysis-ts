@@ -9,9 +9,9 @@
 // twse_raw 等表，目前鏡像了 daily_price（股價）、daily_valuation（已經算好的 PER/PBR/殖利率，
 // 2026-08-19 拍板直接採用這張表現成的數字，不自己用 EPS/BVPS 重算，見
 // src/domains/metrics/valuation/marketRatios/）、daily_taiex_index（大盤加權指數，Beta 計算的市場報酬率
-// 來源，見 src/domains/metrics/portfolio/beta/）、company_profile（2026-09-01 只鏡像 symbol/
-// name/shortName 三個欄位，只為了查公司名稱，見 src/shared/companyNameMiddleware.ts——不是把
-// company_profile 全部欄位都搬進來，那是之後 securityInfo/ 領域真的要做時才需要的範圍）。
+// 來源，見 src/domains/metrics/portfolio/beta/）、company_profile（2026-09-01 起先只鏡像
+// symbol/name/shortName，只為了查公司名稱；2026-09-02 應 bff-ts 要求擴充成完整 35 個欄位，
+// 給 GET /companies/profile 用，見 src/domains/companies/）。
 // 2026-09-01 應使用者要求，再加上 foreign_holding（外資持股，只鏡像算「加碼/減碼排行」用得到
 // 的欄位）、margin_balance（融資融券餘額，只鏡像算「券資比排行」用得到的欄位），見
 // src/domains/market/ 底下兩個排行功能。
@@ -98,16 +98,49 @@ model DailyTaiexIndex {
   @@schema("public")
 }
 
-// 公司基本資料——這裡只鏡像查公司名稱用得到的三個欄位（symbol/name/shortName），不是
-// company_profile 的全部欄位，見上方檔案開頭說明。這張表的欄位是 snake_case，需要 @map。
+// 公司基本資料。這張表的欄位是 snake_case，需要 @map。2026-09-02 應 bff-ts 要求（個股詳情頁
+// 公司基本資料卡片），把原本只鏡像 3 個欄位（symbol/name/shortName）擴充成完整 35 個欄位——
+// 這張表本來就是 company_profile 原始資料的鏡像，不是我們自己算出來的衍生表，擴充欄位只是
+// 把已經在資料庫裡的資料選出來，不需要新的資料源整合。
 model CompanyProfile {
-  symbol    String
-  name      String? // 公司全名，例如「台灣積體電路製造股份有限公司」
-  shortName String? @map("short_name") // 常用簡稱，例如「台積電」，給使用者看用這個
+  symbol                     String
+  reportDate                 DateTime  @map("report_date") @db.Date
+  name                       String? // 公司全名，例如「台灣積體電路製造股份有限公司」
+  shortName                  String?   @map("short_name") // 常用簡稱，例如「台積電」，給使用者看用這個
+  foreignRegistrationCountry String?   @map("foreign_registration_country") // 境外註冊地，KY 股（例如「英利-KY」）會有值
+  industry                   String? // 產業代碼
+  industryName               String?   @map("industry_name") // 產業名稱，例如「半導體業」——TPEx 沒有對應欄位
+  address                    String?
+  taxId                      String?   @map("tax_id")
+  chairman                   String?
+  generalManager             String?   @map("general_manager")
+  spokesperson               String?
+  spokespersonTitle          String?   @map("spokesperson_title")
+  deputySpokesperson         String?   @map("deputy_spokesperson")
+  phone                      String?
+  establishedDate            DateTime? @map("established_date") @db.Date
+  listedDate                 DateTime? @map("listed_date") @db.Date
+  parValue                   Decimal?  @map("par_value") @db.Decimal
+  paidInCapital              BigInt?   @map("paid_in_capital")
+  privatePlacementShares     BigInt?   @map("private_placement_shares")
+  preferredStockShares       BigInt?   @map("preferred_stock_shares")
+  financialReportType        String?   @map("financial_report_type")
+  stockTransferAgency        String?   @map("stock_transfer_agency")
+  transferAgencyPhone        String?   @map("transfer_agency_phone")
+  transferAgencyAddress      String?   @map("transfer_agency_address")
+  auditingFirm               String?   @map("auditing_firm")
+  auditor1                   String?
+  auditor2                   String?
+  englishShortName           String?   @map("english_short_name")
+  englishAddress             String?   @map("english_address")
+  faxNumber                  String?   @map("fax_number")
+  email                      String?
+  website                    String?
+  issuedShares               BigInt?   @map("issued_shares")
   // 'COMPANY_PROFILE'（真正上市、有股價）vs 'COMPANY_PROFILE_PUBLIC'（更廣的「公開發行公司」，
   // 混入證券商登記資料等非交易性質的代號，2026-09-02 實測 299 筆裡只有 5 筆有股價）——
   // getTwseCompanySymbolSet 用這個欄位篩掉後者，見 src/shared/sourceData/companyProfile.ts。
-  source String? @map("source")
+  source                     String?
 
   @@id([symbol])
   @@map("company_profile")
@@ -181,7 +214,7 @@ view VolumeTop20 {
   low              Decimal?  @db.Decimal(10, 4)
   close            Decimal?  @db.Decimal(10, 4)
   dir              String? // '+' 漲 / '-' 跌 / '' 平盤，原始欄位直接透傳
-  change            Decimal?  @db.Decimal(10, 4)
+  change           Decimal?  @db.Decimal(10, 4)
   lastBestBidPrice Decimal?  @map("last_best_bid_price") @db.Decimal(10, 4)
   lastBestAskPrice Decimal?  @map("last_best_ask_price") @db.Decimal(10, 4)
 
@@ -228,16 +261,16 @@ view AttentionHistoryNote {
 /// 再取幅度最大前 20（rankGroup='top'）+ 最小後 20（rankGroup='bottom'），每天最多 40 筆。見
 /// src/domains/market/priceLimitRange/ 的說明。
 view PriceLimitRange {
-  symbol            String?
-  tradeDate         DateTime? @map("trade_date") @db.Date
-  rankGroup         String?   @map("rank_group") // 'top'（幅度最大）/ 'bottom'（幅度最小）
-  rank              Int?
-  limitUp           Decimal?  @map("limit_up") @db.Decimal(10, 4)
-  limitDown         Decimal?  @map("limit_down") @db.Decimal(10, 4)
-  limitRange        Decimal?  @map("limit_range") @db.Decimal(10, 4)
-  openingRefPrice   Decimal?  @map("opening_ref_price") @db.Decimal(10, 4)
-  previousDayPrice  Decimal?  @map("previous_day_price") @db.Decimal(10, 4)
-  allowOddLotTrade  String?   @map("allow_odd_lot_trade")
+  symbol           String?
+  tradeDate        DateTime? @map("trade_date") @db.Date
+  rankGroup        String?   @map("rank_group") // 'top'（幅度最大）/ 'bottom'（幅度最小）
+  rank             Int?
+  limitUp          Decimal?  @map("limit_up") @db.Decimal(10, 4)
+  limitDown        Decimal?  @map("limit_down") @db.Decimal(10, 4)
+  limitRange       Decimal?  @map("limit_range") @db.Decimal(10, 4)
+  openingRefPrice  Decimal?  @map("opening_ref_price") @db.Decimal(10, 4)
+  previousDayPrice Decimal?  @map("previous_day_price") @db.Decimal(10, 4)
+  allowOddLotTrade String?   @map("allow_odd_lot_trade")
 
   @@map("price_limit_range")
   @@ignore
@@ -249,14 +282,14 @@ view PriceLimitRange {
 /// （例如 "70003"），不是標準 HH:MM:SS，不嘗試解析/重新格式化。見
 /// src/domains/market/materialAnnouncements/ 的說明。
 view MaterialAnnouncement {
-  symbol            String?
-  announcementDate  DateTime? @map("announcement_date") @db.Date
-  announcementTime  String?   @map("announcement_time")
-  reportDate        DateTime? @map("report_date") @db.Date
-  subject           String?
-  clause            String?
-  factDate          DateTime? @map("fact_date") @db.Date
-  description       String?
+  symbol           String?
+  announcementDate DateTime? @map("announcement_date") @db.Date
+  announcementTime String?   @map("announcement_time")
+  reportDate       DateTime? @map("report_date") @db.Date
+  subject          String?
+  clause           String?
+  factDate         DateTime? @map("fact_date") @db.Date
+  description      String?
 
   @@map("material_announcement")
   @@ignore
