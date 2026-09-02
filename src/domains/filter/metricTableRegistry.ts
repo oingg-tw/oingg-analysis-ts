@@ -1,12 +1,11 @@
 import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { filterCatalog, type FilterMetric } from './filterCatalog';
 import { parseAnalysisSchemaModels, type ModelIntrospection } from './schemaIntrospection';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const analysisSchemaPath = join(__dirname, '../../../prisma/analysis/schema.prisma');
+// 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts 同一段說明
+// （import.meta 在正式環境 CommonJS build 底下是編譯期錯誤）。
+const analysisSchemaPath = join(process.cwd(), 'prisma/analysis/schema.prisma');
 
 // Q 型（季報）model 固定五個 PK 欄位；D 型（每日/技術指標，含 beta）固定是 symbol + 一個日期欄位。
 // 2026-09-01 應 bff-ts 的 screener 需求新增——見 metric.modelKey 本來就有的「這個顯示分組對應

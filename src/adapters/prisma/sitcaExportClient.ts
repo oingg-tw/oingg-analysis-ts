@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../generated/sitca-export-client';
+import { PrismaClient } from '#generated/sitca-export-client';
 import { config } from '@/shared/config';
 
 // sitca-ts 的 export schema——跟 mops/gov export 不同，sitca-ts 給的是 dev/prod 兩個獨立 Neon

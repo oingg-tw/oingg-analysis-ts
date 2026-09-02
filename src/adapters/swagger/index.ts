@@ -1,16 +1,16 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { config } from '@/shared/config';
 
-// Since this is an ES Module, __dirname is not available.
-// We can recreate it using import.meta.url.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// glob (used internally by swagger-jsdoc) treats `\` as an escape character, so
-// Windows-style paths from `join()` silently match zero files there. Normalize to `/`.
+// swagger-jsdoc 在執行期直接讀 .ts 原始檔的文字（parse JSDoc 註解），不是讀編譯後的 .js——
+// 所以這裡固定指向 src/domains、src/shared 的原始碼路徑，不管正式環境是用 tsx 直接跑 .ts
+// 還是用 tsc build 出 dist/ 的 .js 都一樣（build 出來的 .js 不會保留 JSDoc 註解，指過去也沒用）。
+// 用 process.cwd() 而不是 __dirname，理由見 filterCatalogCheck.ts 的說明（import.meta 在
+// CommonJS build 底下是編譯期錯誤）。
+//
+// glob（swagger-jsdoc 內部用的）把 `\` 當跳脫字元，Windows 路徑用 join() 組出來會悄悄比對不到
+// 任何檔案，這裡統一換成 `/`。
 const toGlobPath = (...segments: string[]) => join(...segments).split('\\').join('/');
 
 const options: swaggerJSDoc.Options = {
@@ -43,8 +43,8 @@ const options: swaggerJSDoc.Options = {
   },
   // Path to the API docs. It's crucial to use absolute paths created with `join`.
   apis: [
-    toGlobPath(__dirname, '../../domains/**/*.ts'),
-    toGlobPath(__dirname, '../../shared/**/*.ts'),
+    toGlobPath(process.cwd(), 'src/domains/**/*.ts'),
+    toGlobPath(process.cwd(), 'src/shared/**/*.ts'),
   ],
 };
 

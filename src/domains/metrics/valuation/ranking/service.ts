@@ -1,7 +1,7 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getTwseNonKyCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import { Prisma } from '../../../../../generated/tpex-export-client';
+import { Prisma } from '#generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
 // peRatio/pbRatio <= 0 代表虧損（EPS 為負）或淨值為負，不是「便宜」，是財務體質出問題，

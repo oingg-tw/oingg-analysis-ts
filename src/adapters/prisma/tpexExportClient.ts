@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../generated/tpex-export-client';
+import { PrismaClient } from '#generated/tpex-export-client';
 import { config } from '@/shared/config';
 
 // tpex-ts 的 export schema——跟 sitca 同一種模式（dev/prod 兩個獨立 Neon 專案，不是同一個

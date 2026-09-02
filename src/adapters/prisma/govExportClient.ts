@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../generated/gov-export-client';
+import { PrismaClient } from '#generated/gov-export-client';
 import { config } from '@/shared/config';
 
 // gov-ts 的 export schema——數據中台同步用的唯讀連線，只看得到 export schema（etl_reader

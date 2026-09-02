@@ -23,7 +23,17 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      // Prisma 各個 client 的相對路徑深度（原本是 ../../../generated/xxx）跟「這個檔案編譯後
+      // 最終落在 dist 的哪一層」綁死——src/ 單獨 build（rootDir=src）跟 src/+scripts/ 一起 build
+      // （tsconfig.build.json 的 rootDir="."）算出來的深度不一樣，寫死相對路徑只能滿足其中一種。
+      // 這裡用 Node.js 原生的 package.json `imports` subpath（見根目錄 package.json 的
+      // "#generated/*"），不是給 tsc-alias 改寫的路徑別名——tsc-alias 只會改寫「編譯後在輸出樹
+      // 內找得到對應檔案」的別名，generated/ 在 TS 編譯範圍之外，它改寫不了，會原封不動留在輸出
+      // 的 .js 裡；而 `#` 開頭的 subpath import 是 Node 執行期自己解析（一律以最近的 package.json
+      // 為錨點，不管呼叫的檔案實際深度是多少），tsx（dev）、CommonJS build 都能正確解析到同一個
+      // 位置。這裡的 paths 純粹是給型別檢查用，不影響執行期解析。
+      "#generated/*": ["generated/*"]
     },
 
     /* Build options */

@@ -1,12 +1,13 @@
 import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { filterCatalog, type FilterCategory } from './filterCatalog';
 import { parseAnalysisSchemaModels } from './schemaIntrospection';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const analysisSchemaPath = join(__dirname, '../../../prisma/analysis/schema.prisma');
+// 用 process.cwd() 而不是 import.meta.url + __dirname——後者在 tsx（ESM）底下能動，但正式環境
+// build 出來的是 CommonJS（tsc-alias 那條 build pipeline，見 tsconfig.build.json），import.meta
+// 在 CommonJS 底下是編譯期錯誤。process.cwd() 兩邊都能動，前提是進場點永遠從專案根目錄啟動
+// （npm run dev / npm run build 產物 / Docker WORKDIR 都符合這個假設）。
+const analysisSchemaPath = join(process.cwd(), 'prisma/analysis/schema.prisma');
 
 // 判斷規則跟 prisma/analysis/schema.prisma 開頭的表名命名規則註解對應：
 // - model 名稱去掉 `Result` 字尾、字首小寫，就是 filterCatalog.ts 裡的 metric key

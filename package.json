@@ -5,13 +5,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && tsc-alias",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "test": "tsx --test tests/**/*.test.ts",
     "test:types": "tsc --noEmit -p tests/tsconfig.json",
     "batch:compute": "tsx scripts/batchComputeIndicators.ts",
     "sync:curated": "tsx scripts/syncCuratedDatasets.ts",
     "batch:types": "tsc --noEmit -p scripts/tsconfig.json",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/gov/schema.prisma && prisma generate --schema=prisma/mopsExport/schema.prisma && prisma generate --schema=prisma/govExport/schema.prisma && prisma generate --schema=prisma/tpexExport/schema.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma && prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/twse/schema.prisma && prisma generate --schema=prisma/gov/schema.prisma && prisma generate --schema=prisma/mopsExport/schema.prisma && prisma generate --schema=prisma/govExport/schema.prisma && prisma generate --schema=prisma/tpexExport/schema.prisma && prisma generate --schema=prisma/sitcaExport/schema.prisma",
     "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",
     "prisma:twse:pull": "prisma db pull --schema=prisma/twse/schema.prisma",
@@ -28,6 +28,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "packageManager": "pnpm@11.24.0",
+  "imports": {
+    "#generated/*": "./generated/*/index.js"
+  },
   "prisma": {
     "schema": "prisma/schema.prisma"
   },

@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../generated/gov-client';
+import { PrismaClient } from '#generated/gov-client';
 import { config } from '@/shared/config';
 
 // GOV DB：跟 mops/twse 一樣是唯讀鏡像，本服務不擁有這裡的表格 schema/migration。2026-08-30 從

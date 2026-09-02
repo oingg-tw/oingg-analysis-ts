@@ -1,0 +1,18 @@
+{
+  // 正式環境的 build 設定——跟根目錄 tsconfig.json（給 tsx/dev 用，ESM + Bundler 模組解析）分開。
+  // tsx 直接用 esbuild 執行原始 TS，路徑別名/模組解析都是執行期動態處理，不會有這裡要解決的問題；
+  // 但 `tsc` 純編譯只是逐檔轉譯語法，不會改寫模組解析方式——編譯成 ESM 語法的話，Node 原生執行
+  // 編譯後的 .js 時，相對路徑 import 沒帶副檔名會直接找不到模組（2026-09-02 實測 `node dist/index.js`
+  // 就是死在這裡）。改成 CommonJS 輸出可以繞開這個問題（require() 解析不需要副檔名），
+  // 代價是原始碼不能用 import.meta（已經把僅有的 3 處用法換成 process.cwd()，見
+  // src/domains/filter/filterCatalogCheck.ts 等檔案的說明）。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

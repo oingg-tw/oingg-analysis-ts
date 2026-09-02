@@ -1,4 +1,4 @@
-import { Prisma } from '../../../generated/analysis-client';
+import { Prisma } from '#generated/analysis-client';
 import type { ResolvedField } from '@/domains/filter/metricTableRegistry';
 
 // 核心查詢組裝邏輯——表名/欄名只會來自 metricTableRegistry.resolveField 解析出來的白名單

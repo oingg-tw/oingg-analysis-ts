@@ -1,0 +1,9 @@
+node_modules
+generated
+dist
+.env
+.env.*
+tests
+docs
+.git
+*.md

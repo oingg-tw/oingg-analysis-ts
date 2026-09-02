@@ -1,4 +1,4 @@
-import { Prisma } from '../../../../generated/sitca-export-client';
+import { Prisma } from '#generated/sitca-export-client';
 import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
