@@ -9,6 +9,11 @@ export interface CompanyProfileDetail {
   shortName: string | null;
   foreignRegistrationCountry: string | null;
   industry: string | null;
+  // 2026-09-02 應 bff-ts/web-nuxt 要求新增——industry 是裸代碼（例如 "24"），前端顯示沒意義。
+  // TWSE company_profile 本身就有這個欄位（例如 "半導體業"），直接透傳；TPEx 的 export view
+  // 沒有對應欄位，這邊先回 null，已經去信請 tpex-ts 評估補上（見對話紀錄），避免自己猜代碼
+  // 對照表猜錯——bff-ts 明確要求「有官方對照表才給，不要亂猜」。
+  industryName: string | null;
   address: string | null;
   taxId: string | null;
   chairman: string | null;

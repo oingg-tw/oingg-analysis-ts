@@ -87,7 +87,9 @@ router.get('/companies/symbols', getCompanySymbols);
  *       把已經在資料庫裡的資料選出來對外提供，不是新的資料源整合。
  *
  *       上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。TWSE/TPEx 兩邊欄位範圍
- *       不完全一樣（TPEx 沒有 englishAddress），沒有的欄位回傳 null。指名查詢單一公司時不篩
+ *       不完全一樣（TPEx 沒有 englishAddress/industryName），沒有的欄位回傳 null——
+ *       industryName（2026-09-02 應 web-nuxt 要求新增）TWSE 有直接透傳，TPEx 目前沒有對應
+ *       欄位，故意回 null，不猜代碼對照表。指名查詢單一公司時不篩
  *       ETF/KY/興櫃/`source`or`market`（那是排行榜/清單類端點的政策，見
  *       [`GET /companies/symbols`](../../shared/sourceData/companyProfile.ts)），只要
  *       company_profile 裡查得到就照實回傳。

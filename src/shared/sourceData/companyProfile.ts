@@ -125,6 +125,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
       shortName: twseRow.shortName,
       foreignRegistrationCountry: twseRow.foreignRegistrationCountry,
       industry: twseRow.industry,
+      industryName: twseRow.industryName,
       address: twseRow.address,
       taxId: twseRow.taxId,
       chairman: twseRow.chairman,
@@ -175,6 +176,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
     shortName: tpexRow.short_name,
     foreignRegistrationCountry: tpexRow.foreign_registration_country,
     industry: tpexRow.industry,
+    industryName: null, // TPEx 的 export.company_profile 沒有這個欄位，見上面 CompanyProfileDetail 的說明。
     address: tpexRow.address,
     taxId: tpexRow.tax_id,
     chairman: tpexRow.chairman,
