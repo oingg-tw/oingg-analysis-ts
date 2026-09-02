@@ -1,0 +1,120 @@
+# Cloud Run「服務」——常駐 HTTP API，對應 Dockerfile 預設的 CMD（node dist/src/index.js）。
+# 部署：gcloud run services replace deploy/service.yaml --region=REGION --project=PROJECT_ID
+#
+# 套用前要填的地方（搜尋 TODO）：
+#   - PROJECT_ID / REGION：你的 GCP 專案代號跟部署地區
+#   - image 那行的完整映像檔路徑（Artifact Registry）
+#   - 每個 secretKeyRef 的 name：對應 Secret Manager 裡實際建立的密鑰名稱，這裡先用
+#     跟 .env 變數名稱一致的命名（DATABASE-URL 等，Secret Manager 名稱不能用底線，
+#     改用連字號），你們自己命名規則不同的話直接改
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: oingg-analysis-ts
+  labels:
+    cloud.googleapis.com/location: REGION # TODO
+spec:
+  template:
+    metadata:
+      annotations:
+        # 冷啟動時要連 8 個資料庫（見 src/index.ts 的 connectDb 系列呼叫），本機實測開發模式
+        # 啟動要 3~5 秒，正式環境保守抓大一點，避免健康檢查太早判定失敗。
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 30
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/oingg/oingg-analysis-ts:latest # TODO
+          ports:
+            - containerPort: 8080
+          # 健康檢查固定打 GET /（src/domains/system/root.ts），不要用 /healthz——
+          # 那是 Cloud Run 保留路徑，見 src/index.ts、Dockerfile 的說明。
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            failureThreshold: 10
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: DATABASE-URL # TODO：Secret Manager 密鑰名稱
+                  key: latest
+            - name: DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: DIRECT-URL
+                  key: latest
+            - name: ANALYSIS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ANALYSIS-DATABASE-URL
+                  key: latest
+            - name: ANALYSIS_DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ANALYSIS-DIRECT-URL
+                  key: latest
+            - name: TWSE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: TWSE-DATABASE-URL
+                  key: latest
+            - name: TWSE_DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: TWSE-DIRECT-URL
+                  key: latest
+            - name: GOV_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: GOV-DATABASE-URL
+                  key: latest
+            - name: GOV_DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: GOV-DIRECT-URL
+                  key: latest
+            - name: MOPS_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: MOPS-EXPORT-DATABASE-URL
+                  key: latest
+            - name: MOPS_EXPORT_DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: MOPS-EXPORT-DIRECT-URL
+                  key: latest
+            - name: GOV_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: GOV-EXPORT-DATABASE-URL
+                  key: latest
+            - name: GOV_EXPORT_DIRECT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: GOV-EXPORT-DIRECT-URL
+                  key: latest
+            # tpex-ts/sitca-ts 的 export 連線是 dev/prod 分開兩個變數（見 .env），Cloud Run
+            # 上只會用到 _PROD 那組，_DEV 那組不用設。
+            - name: TPEX_EXPORT_DATABASE_URL_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: TPEX-EXPORT-DATABASE-URL-PROD
+                  key: latest
+            - name: SITCA_EXPORT_DATABASE_URL_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: SITCA-EXPORT-DATABASE-URL-PROD
+                  key: latest
+            # TASK_SECRET/TPEX_TASK_SECRET 只有 loadIndustryCodes()（dev-only，見
+            # src/shared/sourceData/industryCodes.ts 的 `if (config.isProduction) return`）
+            # 會用到，正式環境不需要設。
