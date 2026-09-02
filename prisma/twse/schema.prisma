@@ -41,11 +41,11 @@ generator client {
   previewFeatures = ["views"]
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/twseClient.ts、prisma.config.ts 的說明。
 datasource db {
-  provider  = "postgresql"
-  url       = env("TWSE_DATABASE_URL")
-  directUrl = env("TWSE_DIRECT_URL")
-  schemas   = ["public", "export"]
+  provider = "postgresql"
+  schemas  = ["public", "export"]
 }
 
 // 每日股價——本服務目前完全沒有市場價格資料，valuation 分類（PER、PBR、市值等）卡的就是這個。

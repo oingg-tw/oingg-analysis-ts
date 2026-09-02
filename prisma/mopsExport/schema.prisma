@@ -20,11 +20,11 @@ generator client {
   previewFeatures = ["views"]
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/mopsExportClient.ts、prisma.config.ts 的說明。
 datasource db {
-  provider  = "postgresql"
-  url       = env("MOPS_EXPORT_DATABASE_URL")
-  directUrl = env("MOPS_EXPORT_DIRECT_URL")
-  schemas   = ["export"]
+  provider = "postgresql"
+  schemas  = ["export"]
 }
 
 // 握手表——見契約第二部分。每一列對應「一個 dataset、一家公司、一季」的 ingestion 結果

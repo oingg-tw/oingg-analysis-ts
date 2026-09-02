@@ -3,10 +3,10 @@ generator client {
   output   = "../../generated/gov-client"
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/govClient.ts、prisma.config.ts 的說明。
 datasource db {
-  provider  = "postgresql"
-  url       = env("GOV_DATABASE_URL")
-  directUrl = env("GOV_DIRECT_URL")
+  provider = "postgresql"
 }
 
 // 10年期政府公債次級市場殖利率（月資料）——來源是央行統計資料庫 EG43M01en（資本市場利率）

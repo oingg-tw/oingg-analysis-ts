@@ -2,10 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，runtime 由
+// src/adapters/prisma/index.ts 的 PrismaPg({ connectionString }) 決定；CLI（migrate/db pull）
+// 走 prisma.config.ts 的 DIRECT_URL。
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model QuarterlyIncomeStatement {

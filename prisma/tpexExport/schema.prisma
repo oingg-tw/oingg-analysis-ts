@@ -40,11 +40,12 @@ generator client {
   previewFeatures = ["views"]
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/tpexExportClient.ts、prisma.config.ts 的說明。dev/prod 切換邏輯也是
+// 應用程式碼決定，不是 schema 層級的事。
 datasource db {
-  provider  = "postgresql"
-  url       = env("TPEX_EXPORT_DATABASE_URL_DEV")
-  directUrl = env("TPEX_EXPORT_DATABASE_URL_DEV")
-  schemas   = ["export"]
+  provider = "postgresql"
+  schemas  = ["export"]
 }
 
 // 握手表——見契約第二部分。daily_price/daily_valuation 顆粒度是「一個 dataset、一天」，全市場

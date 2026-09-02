@@ -22,11 +22,11 @@ generator client {
   previewFeatures = ["views"]
 }
 
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/govExportClient.ts、prisma.config.ts 的說明。
 datasource db {
-  provider  = "postgresql"
-  url       = env("GOV_EXPORT_DATABASE_URL")
-  directUrl = env("GOV_EXPORT_DIRECT_URL")
-  schemas   = ["export"]
+  provider = "postgresql"
+  schemas  = ["export"]
 }
 
 // 握手表——見契約第二部分。gov-ts 這邊沒有公司代號維度（全市場單一時間序列/整批同步），顆粒度
