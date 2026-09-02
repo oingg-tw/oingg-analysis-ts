@@ -62,7 +62,10 @@ const startServer = async () => {
     // dev 環境背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
     // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();
-    const host = config.isProduction ? '0.0.0.0' : 'localhost';
+    // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
+    // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
+    // connection refused。改成明確的 IPv4 位址，不讓 Node 自己決定要 bind 哪個位址族。
+    const host = config.isProduction ? '0.0.0.0' : '127.0.0.1';
     const port = Number(config.port);
     app.listen(port, host, () => {
       const endTime = process.hrtime(startTime);
