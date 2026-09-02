@@ -29,6 +29,12 @@ export interface CompanyProfileDetail {
   privatePlacementShares: string | null;
   preferredStockShares: string | null;
   financialReportType: string | null;
+  // 2026-09-02 應 bff-ts/web-nuxt 要求新增——financialReportType 是裸代碼（"1"/"2"），前端顯示
+  // 沒意義。MOPS 沒有公開的欄位字典，這個對照是跟 mops-ts 確認過的（他們專案內部從三表 domain
+  // 開始就用同一套慣例：dataType '1'=個體/個別財報、'2'=合併財報，且用另一個 MOPS 端點
+  // t164sb01 的 REPORT_ID 參數 'A'（個別）/'C'（合併）交叉印證過，信心度高但不是白紙黑字的
+  // 官方文件），跟 industryName 一樣是本服務自己解出來的可讀名稱，不是 company_profile 原始欄位。
+  financialReportTypeName: string | null;
   stockTransferAgency: string | null;
   transferAgencyPhone: string | null;
   transferAgencyAddress: string | null;

@@ -14,6 +14,15 @@ test('getCompanyProfileDetail: TWSE 公司（2330）應該回傳完整基本資�
   assert.ok(result!.chairman);
   assert.ok(result!.paidInCapital && typeof result!.paidInCapital === 'string', 'paidInCapital 應該序列化成字串');
   assert.ok(result!.establishedDate?.match(/^\d{4}-\d{2}-\d{2}$/), 'establishedDate 應該是 YYYY-MM-DD 格式');
+  assert.ok(
+    result!.financialReportType === '1' || result!.financialReportType === '2',
+    'financialReportType 目前只會有 1 或 2 兩種值',
+  );
+  assert.equal(
+    result!.financialReportTypeName,
+    result!.financialReportType === '1' ? '個別財報' : '合併財報',
+    'financialReportTypeName 應該對得上代碼（跟 mops-ts 確認過：1=個別、2=合併）',
+  );
 });
 
 test('getCompanyProfileDetail: TPEx 興櫃公司（2071）也查得到，不因為興櫃被排除', async () => {

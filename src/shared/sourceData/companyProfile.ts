@@ -118,6 +118,14 @@ const NON_INDUSTRY_CODES = new Set(['07', '91', '98', 'XX']);
 const resolveIndustryName = (industry: string | null, industryName: string | null): string | null =>
   industry !== null && NON_INDUSTRY_CODES.has(industry) ? null : industryName;
 
+// MOPS 沒有公開的欄位字典，2026-09-02 跟 mops-ts 確認過：'1'=個別財報、'2'=合併財報——他們
+// 專案內部從三表 domain 開始就用同一套 dataType 慣例（見 profitability/roe 等 controller 的
+// 「1 = 個體, 2 = 合併」註解），另外用 MOPS t164sb01 端點的 REPORT_ID 參數 'A'（個別）/
+// 'C'（合併）交叉印證過，信心度高但不是官方白紙黑字文件，未知代碼一律回 null，不亂猜。
+const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '個別財報', '2': '合併財報' };
+const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
+  financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
+
 // 給 GET /companies/profile 用（2026-09-02 應 bff-ts 要求新增，個股詳情頁的公司基本資料卡片）。
 // 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
 // 欄位範圍不完全一樣（TPEx 沒有 english_address/industry_name），沒有的欄位一律回 null，不是
@@ -151,6 +159,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
       privatePlacementShares: twseRow.privatePlacementShares?.toString() ?? null,
       preferredStockShares: twseRow.preferredStockShares?.toString() ?? null,
       financialReportType: twseRow.financialReportType,
+      financialReportTypeName: resolveFinancialReportTypeName(twseRow.financialReportType),
       stockTransferAgency: twseRow.stockTransferAgency,
       transferAgencyPhone: twseRow.transferAgencyPhone,
       transferAgencyAddress: twseRow.transferAgencyAddress,
@@ -202,6 +211,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
     privatePlacementShares: tpexRow.private_placement_shares?.toString() ?? null,
     preferredStockShares: tpexRow.preferred_stock_shares?.toString() ?? null,
     financialReportType: tpexRow.financial_report_type,
+    financialReportTypeName: resolveFinancialReportTypeName(tpexRow.financial_report_type),
     stockTransferAgency: tpexRow.stock_transfer_agency,
     transferAgencyPhone: tpexRow.transfer_agency_phone,
     transferAgencyAddress: tpexRow.transfer_agency_address,

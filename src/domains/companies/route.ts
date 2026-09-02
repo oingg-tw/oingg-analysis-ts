@@ -96,6 +96,10 @@ router.get('/companies/symbols', getCompanySymbols);
  *
  *       `paidInCapital`/`issuedShares`/`privatePlacementShares`/`preferredStockShares`
  *       是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。
+ *
+ *       `financialReportTypeName`（2026-09-02 應 web-nuxt 要求新增）是 `financialReportType`
+ *       裸代碼（"1"/"2"）解出來的可讀名稱（個別財報／合併財報）——MOPS 沒有公開欄位字典，
+ *       這個對照是跟 mops-ts 確認過的（信心度高但非官方白紙黑字文件），未知代碼回 null。
  *     tags:
  *       - System
  *     parameters:
