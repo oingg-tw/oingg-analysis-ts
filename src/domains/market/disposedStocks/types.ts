@@ -9,6 +9,7 @@ export interface DisposedStockRow {
   announceDate: string;
   announcementCount: number | null; // TPEx 版本沒有這個欄位，null
   reason: string | null;
+  reasonTimes: number | null; // 從 reason 解析出的次數/連續營業日數，解析不出來（例如可轉債標的證券那種無次數概念的原因）時是 null
   dispositionPeriod: string | null;
   dispositionMeasures: string | null; // TPEx 版本沒有這個欄位，null
   detail: string | null;

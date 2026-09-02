@@ -1,25 +1,11 @@
+import { parseChineseOrArabicNumber } from '@/shared/parseChineseOrArabicNumber';
+
 export interface AttentionCriteriaDetail {
   startDate: string; // YYYY-MM-DD（西元）
   endDate: string;
   observationDays: number | null; // 「等N個營業日已有M次」的N，「連續M次」沒有這個概念時是 null
   times: number;
 }
-
-const CHINESE_DIGIT: Record<string, number> = { 零: 0, 一: 1, 二: 2, 兩: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
-
-// 支援 0~99：個位數（例如「二」→2）跟含「十」的十位數（例如「十」→10、「十一」→11、
-// 「二十三」→23）。這個欄位的次數/營業日數量級不會超過這個範圍。
-const parseChineseNumber = (text: string): number => {
-  if (!text.includes('十')) {
-    let result = 0;
-    for (const ch of text) result = result * 10 + (CHINESE_DIGIT[ch] ?? 0);
-    return result;
-  }
-  const [tensPart, onesPart] = text.split('十');
-  const tens = tensPart === '' ? 1 : (CHINESE_DIGIT[tensPart!] ?? 1);
-  const ones = onesPart === '' ? 0 : (CHINESE_DIGIT[onesPart!] ?? 0);
-  return tens * 10 + ones;
-};
 
 const formatRocDate = (rocYear: string, month: string, day: string): string => {
   const year = Number(rocYear) + 1911;
@@ -46,8 +32,8 @@ export const parseAttentionCriteria = (criteria: string | null): AttentionCriter
     details.push({
       startDate: formatRocDate(startYear!, startMonth!, startDay!),
       endDate: formatRocDate(endYear!, endMonth!, endDay!),
-      observationDays: observationDaysText ? parseChineseNumber(observationDaysText) : null,
-      times: parseChineseNumber(timesText!),
+      observationDays: observationDaysText ? parseChineseOrArabicNumber(observationDaysText) : null,
+      times: parseChineseOrArabicNumber(timesText!),
     });
   }
   return details;

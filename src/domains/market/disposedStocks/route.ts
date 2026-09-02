@@ -15,6 +15,8 @@ const router = Router();
  *       dispositionMeasures/linkInformation），沒有的欄位回傳 null。`sixDayChangePercent` 是
  *       以 `announceDate` 為基準日的近6個交易日累積漲跌幅，點對點比較（基準日收盤 vs 往前數6
  *       個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。
+ *       `reasonTimes` 是從 `reason` 解析出的次數（例如「連續五次」→5、「最近10個營業日內有6
+ *       個營業日」→6），部分處置原因（例如可轉債標的證券）本身沒有次數概念，這時是 null。
  *     tags:
  *       - Market
  *     parameters:
