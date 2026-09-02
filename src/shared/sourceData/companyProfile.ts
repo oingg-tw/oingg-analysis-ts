@@ -40,8 +40,21 @@ export const companyExists = async (companyId: string): Promise<boolean> => {
 // （00 開頭、L/R 結尾）可靠，那些規則可能有例外。上市（TWSE）、上櫃（TPEx）分開查，因為
 // 呼叫端通常各自查各自市場的表（例如 ranking 的 queryTwseMarket/queryTpexMarket），不需要
 // 合併成一個跨市場集合。
+//
+// 2026-09-02 發現 company_profile 其實混了兩種來源：TWSE 用 source 欄位區分
+// 'COMPANY_PROFILE'（真正上市、1,095 筆全部有股價）vs 'COMPANY_PROFILE_PUBLIC'（更廣的
+// 「公開發行公司」，299 筆裡只有 5 筆有股價，混入證券商登記等非交易性質的代號，例如
+// 000104=臺銀證券——這些不是「公司股票」，要排除）。這裡加上 source 篩選，之前沒篩會讓
+// revenueRanking 這類吃 monthly_revenue（公開發行公司範疇比股價範疇廣）的功能把這些幽靈
+// 代號當成真公司排進去。
+//
+// TPEx 這邊的 market 欄位只有兩種值：'COMPANY_PROFILE'（一般上櫃）跟
+// 'COMPANY_PROFILE_EMERGING'（興櫃）——興櫃公司雖然沒有一般交易的股價資料（改用議價/
+// 逐筆撮合，不進 daily_price 鏡像），但本身是合法登記、有公開揭露義務的公司，不是像 TWSE
+// 那種非公司性質的登記資料，使用者 2026-09-02 明確要求兩種都算「真正公司」，所以這裡
+// 不篩 market，維持原樣（兩種值都留）。
 export const getTwseCompanySymbolSet = async (): Promise<Set<string>> => {
-  const rows = await twsePrisma.companyProfile.findMany({ select: { symbol: true } });
+  const rows = await twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true } });
   return new Set(rows.map((row) => row.symbol));
 };
 
@@ -50,12 +63,25 @@ export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
   return new Set(rows.map((row) => row.symbol));
 };
 
+// 給 GET /companies/symbols 用（2026-09-02 應使用者要求新增）——mops-ts 之前請我們手動貼一份
+// 「真正公司代號清單」給他們做 capital_stock_history 全市場回補，貼靜態清單容易過時/貼錯
+// （已經發生過一次：第一版漏算興櫃），改成端點讓他們自己即時打，跟這裡的篩選定義（見上面
+// getTwseCompanySymbolSet/getTpexCompanySymbolSet 的說明）永遠同步，不用兩邊各自維護一份。
+export const getAllRealCompanySymbols = async (): Promise<string[]> => {
+  const [twseSymbols, tpexSymbols] = await Promise.all([getTwseCompanySymbolSet(), getTpexCompanySymbolSet()]);
+  return [...new Set([...twseSymbols, ...tpexSymbols])].sort();
+};
+
 // 排除 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾，例如「英利-KY」）——2026-09-02 應
 // 使用者要求，只有 /valuation/ranking 在用，不是像上面 getTwseCompanySymbolSet 那樣給多個
 // 排行/screener 共用的「排除 ETF」政策。KY 股本身是合法的上市公司、不是衍生性商品，這裡
-// 排除純粹是估值排行這個情境下的使用者選擇，不代表其他功能也該跟著排除。
+// 排除純粹是估值排行這個情境下的使用者選擇，不代表其他功能也該跟著排除。跟
+// getTwseCompanySymbolSet 一樣要篩 source，理由同上。
 export const getTwseNonKyCompanySymbolSet = async (): Promise<Set<string>> => {
-  const rows = await twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } });
+  const rows = await twsePrisma.companyProfile.findMany({
+    where: { source: 'COMPANY_PROFILE' },
+    select: { symbol: true, shortName: true },
+  });
   return new Set(rows.filter((row) => !row.shortName?.includes('-KY')).map((row) => row.symbol));
 };
 

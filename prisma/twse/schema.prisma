@@ -104,6 +104,10 @@ model CompanyProfile {
   symbol    String
   name      String? // 公司全名，例如「台灣積體電路製造股份有限公司」
   shortName String? @map("short_name") // 常用簡稱，例如「台積電」，給使用者看用這個
+  // 'COMPANY_PROFILE'（真正上市、有股價）vs 'COMPANY_PROFILE_PUBLIC'（更廣的「公開發行公司」，
+  // 混入證券商登記資料等非交易性質的代號，2026-09-02 實測 299 筆裡只有 5 筆有股價）——
+  // getTwseCompanySymbolSet 用這個欄位篩掉後者，見 src/shared/sourceData/companyProfile.ts。
+  source String? @map("source")
 
   @@id([symbol])
   @@map("company_profile")

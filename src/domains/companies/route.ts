@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { getCompanies } from './controller';
+import { getCompanies, getCompanySymbols } from './controller';
 
 const router = Router();
 
@@ -51,5 +51,29 @@ const router = Router();
  *         description: 請求的參數格式錯誤，或 limit 超過上限。
  */
 router.get('/companies', getCompanies);
+
+/**
+ * @swagger
+ * /companies/symbols:
+ *   get:
+ *     summary: 「真正上市/上櫃公司」代號清單（排除 ETF/衍生商品、TWSE 非交易性質登記資料）
+ *     description: >
+ *       2026-09-02 應 mops-ts 要求新增——他們原本要一份手動貼上去的靜態清單做全市場資料回補，
+ *       靜態清單會過時、容易貼錯（已經發生過一次版本誤差），改用這支端點讓他們自己即時打，
+ *       跟排行榜/screener 內部用的「排除 ETF」篩選定義（見
+ *       [`src/shared/sourceData/companyProfile.ts`](../../shared/sourceData/companyProfile.ts)
+ *       的 `getTwseCompanySymbolSet`/`getTpexCompanySymbolSet`）永遠同步。
+ *
+ *       涵蓋：TWSE 上市（`source = 'COMPANY_PROFILE'`，排除證券商登記等非交易性質的
+ *       `COMPANY_PROFILE_PUBLIC`）+ TPEx 上櫃（一般上櫃跟興櫃都算，興櫃雖然沒有一般股價
+ *       資料，但仍是合法登記、有公開揭露義務的公司）。回應是排序過、去重的字串陣列，
+ *       不分頁（目前量級約 2,300 檔，payload 很小）。
+ *     tags:
+ *       - System
+ *     responses:
+ *       200:
+ *         description: "`{ count, symbols }`"
+ */
+router.get('/companies/symbols', getCompanySymbols);
 
 export default router;

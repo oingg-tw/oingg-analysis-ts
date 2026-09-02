@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { listAllCompanyNames, countAllCompanyNames } from '@/shared/sourceData/companyProfile';
+import { listAllCompanyNames, countAllCompanyNames, getAllRealCompanySymbols } from '@/shared/sourceData/companyProfile';
 
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
 // 本服務不代為決定；limit 的「上限」（最多允許幾筆）由本服務依自己扛不扛得住決定，所有請求
@@ -34,6 +34,15 @@ export const getCompanies = async (req: Request, res: Response, next: NextFuncti
 
     const { count, entries } = await listAllCompanyNames(limit, offset);
     res.status(200).json({ count, limit, offset, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCompanySymbols = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const symbols = await getAllRealCompanySymbols();
+    res.status(200).json({ count: symbols.length, symbols });
   } catch (error) {
     next(error);
   }
