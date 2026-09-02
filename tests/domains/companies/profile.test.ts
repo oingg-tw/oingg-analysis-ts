@@ -28,6 +28,23 @@ test('getCompanyProfileDetail: 查無此公司代號應該回傳 null，不拋�
   assert.equal(result, null);
 });
 
+test('getCompanyProfileDetail: industry 是「非產業」代碼（證券商/期貨商登記等）時，industryName 應該回 null 而不是內部附註文字', async () => {
+  // 000104=臺銀證券（industry='XX'），industry_name 原始值帶著「（證券商）」這類 twse-ts
+  // 自己加的工程附註，不是給終端使用者看的，2026-09-02 跟 twse-ts 確認過（見
+  // src/shared/sourceData/companyProfile.ts 的 NON_INDUSTRY_CODES 說明）。
+  const result = await getCompanyProfileDetail('000104');
+  assert.ok(result);
+  assert.equal(result!.industry, 'XX');
+  assert.equal(result!.industryName, null);
+});
+
+test('getCompanyProfileDetail: industry="13"（電子工業舊分類）是真正的產業名稱，應該照樣透傳', async () => {
+  const result = await getCompanyProfileDetail('3525');
+  assert.ok(result);
+  assert.equal(result!.industry, '13');
+  assert.equal(result!.industryName, '電子工業（舊分類）');
+});
+
 after(async () => {
   await twsePrisma.$disconnect();
   await tpexExportPrisma.$disconnect();

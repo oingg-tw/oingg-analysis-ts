@@ -108,6 +108,16 @@ interface RawTpexCompanyProfileDetailRow {
   issued_shares: bigint | null;
 }
 
+// 這 5 個 industry 代碼的 industry_name 不是真正的產業分類，是 twse-ts 自己為了說明「這代碼
+// 其實是別的訊號」加的附註文字（2026-09-02 跟 twse-ts 確認過，src/shared/industryCodes.ts
+// 的檔頭註解——XX=證券商、98=期貨商、91=第一上市外國公司身份別、07=舊產業代碼殘留，都是
+// 給工程師看的說明，不是給終端使用者看的），對外端點不透傳這幾個，回 null。13（電子工業，
+// 2007 分類改制前的舊類別）雖然也帶「（舊分類）」附註，但核心名稱本身是真正的產業名稱，
+// 不在這個清單裡，照樣透傳。
+const NON_INDUSTRY_CODES = new Set(['07', '91', '98', 'XX']);
+const resolveIndustryName = (industry: string | null, industryName: string | null): string | null =>
+  industry !== null && NON_INDUSTRY_CODES.has(industry) ? null : industryName;
+
 // 給 GET /companies/profile 用（2026-09-02 應 bff-ts 要求新增，個股詳情頁的公司基本資料卡片）。
 // 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
 // 欄位範圍不完全一樣（TPEx 沒有 english_address/industry_name），沒有的欄位一律回 null，不是
@@ -125,7 +135,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
       shortName: twseRow.shortName,
       foreignRegistrationCountry: twseRow.foreignRegistrationCountry,
       industry: twseRow.industry,
-      industryName: twseRow.industryName,
+      industryName: resolveIndustryName(twseRow.industry, twseRow.industryName),
       address: twseRow.address,
       taxId: twseRow.taxId,
       chairman: twseRow.chairman,
