@@ -2,7 +2,7 @@ import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
-import { parseDispositionTimes } from './parseReasonTimes';
+import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from './parseReason';
 import type { DisposedStocksQuery, DisposedStocksResult, DisposedStockRow } from './types';
 
 const SIX_DAY_CHANGE_TRADING_DAYS = 6;
@@ -54,10 +54,16 @@ interface PoolRow {
 // sixDayChangePercent：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
 // priceChange.ts）——2026-09-02 應使用者要求新增，給「為什麼被列為處置」補價格脈絡。
 //
-// reasonTimes：從 reason 解析出的次數（見 parseReasonTimes.ts）——比照 attentionStocks 的
+// reasonTimes：從 reason 解析出的次數（見 parseReason.ts）——比照 attentionStocks 的
 // criteriaDetails，但 reason 的句型比 criteria 雜很多（法條引用、無次數概念的處置原因等），
-// 應使用者要求只抽次數這個數字，不解析 dispositionPeriod 的日期（那個格式已經夠單純，
-// 前端自己拆就好，不像 criteria 需要處理多子句串接）。
+// 應使用者要求只抽次數這個數字。
+//
+// reasonShort：2026-09-02 應使用者要求，把 reason 裡引用的法條款次簡化成中文短標籤（例如
+// 「本中心作業要點第四條第一項第一款」→「漲跌異常」），對照表見 parseReason.ts 的說明。
+//
+// dispositionStartDate/dispositionEndDate：2026-09-02 應使用者要求，把 dispositionPeriod
+// 拆成兩個西元日期欄位（見 parseReason.ts 的 parseDispositionPeriod），dispositionPeriod
+// 原始字串仍然保留。
 export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<DisposedStocksResult> => {
   const { limit } = query;
   const warnings: string[] = [];
@@ -109,20 +115,26 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
       SIX_DAY_CHANGE_TRADING_DAYS
     ),
   ]);
-  const items: DisposedStockRow[] = sorted.map((row) => ({
-    symbol: row.symbol,
-    companyName: companyNames.get(row.symbol) ?? null,
-    market: row.market,
-    announceDate: row.announce_date.toISOString().slice(0, 10),
-    announcementCount: row.announcement_count,
-    reason: row.reason,
-    reasonTimes: parseDispositionTimes(row.reason),
-    dispositionPeriod: row.disposition_period,
-    dispositionMeasures: row.disposition_measures,
-    detail: row.detail,
-    linkInformation: row.link_information,
-    sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.announce_date)) ?? null,
-  }));
+  const items: DisposedStockRow[] = sorted.map((row) => {
+    const period = parseDispositionPeriod(row.disposition_period);
+    return {
+      symbol: row.symbol,
+      companyName: companyNames.get(row.symbol) ?? null,
+      market: row.market,
+      announceDate: row.announce_date.toISOString().slice(0, 10),
+      announcementCount: row.announcement_count,
+      reason: row.reason,
+      reasonTimes: parseDispositionTimes(row.reason),
+      reasonShort: parseReasonShortLabel(row.reason),
+      dispositionPeriod: row.disposition_period,
+      dispositionStartDate: period?.startDate ?? null,
+      dispositionEndDate: period?.endDate ?? null,
+      dispositionMeasures: row.disposition_measures,
+      detail: row.detail,
+      linkInformation: row.link_information,
+      sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.announce_date)) ?? null,
+    };
+  });
 
   return { limit, items, warnings };
 };

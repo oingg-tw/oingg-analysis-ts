@@ -18,6 +18,10 @@ const router = Router();
  *       個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。
  *       `reasonTimes` 是從 `reason` 解析出的次數（例如「連續五次」→5、「最近10個營業日內有6
  *       個營業日」→6），部分處置原因（例如可轉債標的證券）本身沒有次數概念，這時是 null。
+ *       `reasonShort` 是從 `reason` 解析出的中文短標籤（例如引用「第一款」→「漲跌異常」、
+ *       可轉換公司債標的證券→「轉(交)換公司債」），解析不出來時是 null。`dispositionStartDate`/
+ *       `dispositionEndDate` 是從 `dispositionPeriod` 拆出的西元起訖日期，`dispositionPeriod`
+ *       原始字串仍然保留，解析不出來時兩個新欄位都是 null。
  *     tags:
  *       - Market
  *     parameters:
