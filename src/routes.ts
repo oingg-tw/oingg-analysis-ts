@@ -15,6 +15,7 @@ import priceLimitRangeRouter from './domains/market/priceLimitRange/route';
 import materialAnnouncementsRouter from './domains/market/materialAnnouncements/route';
 import priceChangeRankingRouter from './domains/market/priceChangeRanking/route';
 import etfRankingRouter from './domains/market/etfRanking/route';
+import etfScreenerRouter from './domains/market/etfScreener/route';
 import roeRouter from './domains/metrics/profitability/roe/route';
 import roaRouter from './domains/metrics/profitability/roa/route';
 import bvpsRouter from './domains/metrics/profitability/bvps/route';
@@ -81,6 +82,7 @@ router.use(priceLimitRangeRouter);
 router.use(materialAnnouncementsRouter);
 router.use(priceChangeRankingRouter);
 router.use(etfRankingRouter);
+router.use(etfScreenerRouter);
 
 // --- API Routes ---
 // URL 路徑跟 src/domains 底下的分類資料夾一一對應，方便維護時直接照路徑找到程式碼位置。
