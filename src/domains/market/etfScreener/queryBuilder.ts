@@ -11,7 +11,17 @@ import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type C
 // 不是另外 sync 一張表）——2026-09-02 應使用者要求，這樣類別欄位才能像數字欄位一樣走真正的
 // SQL WHERE，不是抓回來後在 JS 篩選。判斷依據：category 有沒有「ETF_...ETF」這個成分類型
 // 後綴，見 etfRanking/parseCategory.ts 已經驗證過的同一套邏輯（36 檔主動式 ETF 完全對應
-// category 沒有後綴的情況）。
+// category 沒有後綴的情況）。distribution_frequency 同樣是從 distribution_class_info
+// 現場拆出來的（月配/季配/半年配/年配/一年兩次配息/其他/不分配），見
+// etfRanking/parseDistribution.ts 對應的 JS 版本——這個欄位是應 web-nuxt 需求新增，讓退休/
+// 存股儀表板能篩選配息頻率（單筆配息滿 2 萬會扣二代健保補充保費，月配息較容易避開單筆超標），
+// 純客觀顯示/篩選欄位，不是投資建議。
+//
+// ⚠️ distribution_frequency 的正則字串裡故意寫兩個反斜線 \\( \\)：這段 SQL 是包在 JS 樣板
+// 字面值裡，單一個 \( 的反斜線不是 JS 認得的合法轉義序列，送進 Postgres 前就會被 JS 吃掉，
+// Postgres 收到的正則會變成純分組符號、不是「跳脫括號比對字面值」，第一版漏了這個，選項值
+// 因此多包了一層括號（例如「(月配)」而不是「月配」）——同一套查詢邏輯在 service.ts 的
+// CATEGORICAL_DISTINCT_VALUES.distributionFrequency 也要一起改，兩處都是同一個陷阱。
 const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
   base AS (
     SELECT
@@ -24,6 +34,7 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       CASE WHEN b.category LIKE '上市%' THEN 'TWSE' WHEN b.category LIKE '上櫃%' THEN 'TPEx' ELSE NULL END AS market,
       substring(b.category from 'ETF_(.+)ETF') AS asset_class,
       (b.category !~ '^(上市|上櫃)ETF_.+ETF$') AS is_active,
+      CASE WHEN b.distribution_class_info LIKE '%不分配%' THEN '不分配' ELSE substring(b.distribution_class_info from '分配\\((.+)\\)') END AS distribution_frequency,
       m.fund_tax_id,
       m.aum_twd AS aum,
       m.total_holders AS holders,

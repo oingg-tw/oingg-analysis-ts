@@ -36,6 +36,26 @@ test('runEtfScreener: isActive 類別 filter 應該正確轉換布林值', async
   }
 });
 
+// 2026-09-02 修過一次 bug：SQL 樣板字面值裡 \( \) 只打一個反斜線，JS 會在送進 Postgres 前
+// 吃掉反斜線，導致正則變成純分組、選項值多包一層括號（例如「(月配)」而不是「月配」）。這裡
+// 鎖住「不能有括號」這件事，避免以後又不小心改回單反斜線。
+test('runEtfScreener: distributionFrequency 的值不應該還帶著括號（正則跳脫要用雙反斜線）', async () => {
+  const result = await runEtfScreener({ filters: [{ field: 'distributionFrequency', values: ['月配'] }], columns: [{ field: 'distributionFrequency' }], page: 1, pageSize: 50 });
+  assert.ok(result.results.length > 0, '應該至少有幾檔月配息 ETF');
+  for (const row of result.results) {
+    assert.equal(row.values.distributionFrequency, '月配');
+  }
+});
+
+test('getEtfFilterCatalog: distributionFrequency 的 values 不應該帶括號', async () => {
+  const catalog = await getEtfFilterCatalog();
+  const field = catalog.fields.find((f) => f.field === 'distributionFrequency');
+  assert.ok(field);
+  for (const value of field!.values ?? []) {
+    assert.ok(!value.includes('('), `"${value}" 不應該包含括號`);
+  }
+});
+
 test('runEtfScreener: 數字欄位給 values 應該拋 EtfScreenerValidationError', async () => {
   await assert.rejects(
     runEtfScreener({ filters: [{ field: 'aum', values: ['1'] } as never], columns: [], page: 1, pageSize: 50 }),

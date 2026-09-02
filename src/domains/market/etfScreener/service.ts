@@ -113,9 +113,36 @@ export const runEtfScreener = async (request: {
   return { count, page, pageSize, totalPages: count === 0 ? 0 : Math.ceil(count / pageSize), results };
 };
 
+// 每個沒有 staticValues 的類別欄位都要在這裡登記自己的 distinct 值查詢——不能共用同一段
+// 查詢邏輯（assetClass 跟 distributionFrequency 從不同欄位、不同表達式拆出來），
+// getEtfFilterCatalog 找不到登記會直接 throw，不會悄悄回傳錯的選項清單。
+const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
+  assetClass: async () => {
+    const rows = await sitcaExportPrisma.$queryRaw<{ value: string | null }[]>`
+      SELECT DISTINCT substring(category from 'ETF_(.+)ETF') as value
+      FROM "export"."etf_basic_info"
+      WHERE category ~ 'ETF_.+ETF$'
+      ORDER BY 1
+    `;
+    return rows.map((r) => r.value).filter((v): v is string => v !== null);
+  },
+  distributionFrequency: async () => {
+    const rows = await sitcaExportPrisma.$queryRaw<{ value: string | null }[]>`
+      SELECT DISTINCT CASE
+        WHEN distribution_class_info LIKE '%不分配%' THEN '不分配'
+        ELSE substring(distribution_class_info from '分配\\((.+)\\)')
+      END as value
+      FROM "export"."etf_basic_info"
+      ORDER BY 1
+    `;
+    return rows.map((r) => r.value).filter((v): v is string => v !== null);
+  },
+};
+
 // 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /filters（股票那邊）同一種
-// 精神。數字欄位沒有 values；類別欄位裡 market/isActive 選項固定已知，assetClass 現查
-// distinct 值（不寫死，之後 sitca-ts 分類異動會直接反映，不用改程式碼）。
+// 精神。數字欄位沒有 values；類別欄位裡 market/isActive 選項固定已知，assetClass/
+// distributionFrequency 現查 distinct 值（不寫死，之後 sitca-ts 分類異動會直接反映，不用
+// 改程式碼）。
 export const getEtfFilterCatalog = async (): Promise<EtfFilterCatalogResponse> => {
   const fields: EtfFilterFieldCatalogEntry[] = Object.values(NUMERIC_FIELDS).map((def) => ({ field: def.field, label: def.label, kind: 'numeric' as const }));
 
@@ -124,13 +151,11 @@ export const getEtfFilterCatalog = async (): Promise<EtfFilterCatalogResponse> =
       fields.push({ field: def.field, label: def.label, kind: 'categorical', values: def.staticValues });
       continue;
     }
-    const rows = await sitcaExportPrisma.$queryRaw<{ asset_class: string | null }[]>`
-      SELECT DISTINCT substring(category from 'ETF_(.+)ETF') as asset_class
-      FROM "export"."etf_basic_info"
-      WHERE category ~ 'ETF_.+ETF$'
-      ORDER BY 1
-    `;
-    fields.push({ field: def.field, label: def.label, kind: 'categorical', values: rows.map((r) => r.asset_class).filter((v): v is string => v !== null) });
+    const getValues = CATEGORICAL_DISTINCT_VALUES[def.field];
+    if (!getValues) {
+      throw new Error(`getEtfFilterCatalog: 類別欄位 "${def.field}" 沒有 staticValues 也沒有登記 distinct 值查詢方式，忘記在 CATEGORICAL_DISTINCT_VALUES 補上了。`);
+    }
+    fields.push({ field: def.field, label: def.label, kind: 'categorical', values: await getValues() });
   }
 
   return { fields };

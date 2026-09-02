@@ -29,6 +29,7 @@ export interface EtfRankingRow {
   market: 'TWSE' | 'TPEx' | null; // 從 category 拆出，解析不出來時是 null
   assetClass: string | null; // 從 category 拆出的成分類型，主動式 ETF 沒有這個概念時是 null
   isActive: boolean | null; // 從 category 拆出，是否為主動式 ETF，解析不出來時是 null
+  distributionFrequency: string | null; // 從 distribution_class_info 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/不分配），解析不出來時是 null
   value: number;
   asOf: string; // 大部分 metric 是 "YYYY-MM"（月快照）；expenseRatio 是 "YYYY"（完整年度）
 }

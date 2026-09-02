@@ -30,7 +30,9 @@ const router = Router();
  *       `category`（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成三個獨立欄位：
  *       `market`（TWSE/TPEx）、`assetClass`（國內成分證券/國外成分證券/債券成分/槓桿型/
  *       反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）、`isActive`（是否為主動式
- *       ETF，不追蹤特定指數、經理人自訂策略操作）。
+ *       ETF，不追蹤特定指數、經理人自訂策略操作）。`distributionFrequency` 是從
+ *       `distribution_class_info` 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/
+ *       不分配），純客觀顯示欄位，不是投資建議。
  *     tags:
  *       - Market
  *     parameters:

@@ -1,5 +1,6 @@
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
 import { parseEtfCategory } from './parseCategory';
+import { parseDistributionFrequency } from './parseDistribution';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';
 
 interface RawBasicInfoRow {
@@ -8,6 +9,7 @@ interface RawBasicInfoRow {
   security_short_name: string | null;
   company_name: string | null;
   category: string | null;
+  distribution_class_info: string | null;
 }
 
 interface RawBasicInfoWithEstablishedRow extends RawBasicInfoRow {
@@ -42,6 +44,7 @@ interface ResolvedRow {
   shortName: string | null;
   companyName: string | null;
   category: string | null;
+  distributionClassInfo: string | null;
   value: number;
   asOf: string;
 }
@@ -73,7 +76,7 @@ const getLatestYearMonth = async (): Promise<string | null> => {
 const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string): Promise<ResolvedRow[]> => {
   const [basicRows, statementRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category
+      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
@@ -118,6 +121,7 @@ const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string
       shortName: basic.security_short_name,
       companyName: basic.company_name,
       category: basic.category,
+      distributionClassInfo: basic.distribution_class_info,
       value,
       asOf: formatYearMonth(yearMonth),
     });
@@ -133,7 +137,7 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
 
   const [basicRows, performanceRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category
+      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
@@ -157,6 +161,7 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
       shortName: basic.security_short_name,
       companyName: basic.company_name,
       category: basic.category,
+      distributionClassInfo: basic.distribution_class_info,
       value: Number(rawValue),
       asOf: formatYearMonth(yearMonth),
     });
@@ -173,7 +178,7 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
 
   const [basicRows, statementRows, expenseRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoWithEstablishedRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category, established_date
+      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info, established_date
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
@@ -208,6 +213,7 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
       shortName: basic.security_short_name,
       companyName: basic.company_name,
       category: basic.category,
+      distributionClassInfo: basic.distribution_class_info,
       value: Number(totalRate),
       asOf: String(latestCompleteYear),
     });
@@ -247,6 +253,7 @@ export const calculateEtfRanking = async (query: EtfRankingQuery): Promise<EtfRa
       market: categoryDetail?.market ?? null,
       assetClass: categoryDetail?.assetClass ?? null,
       isActive: categoryDetail?.isActive ?? null,
+      distributionFrequency: parseDistributionFrequency(row.distributionClassInfo),
       value: row.value,
       asOf: row.asOf,
     };

@@ -53,6 +53,10 @@ export const CATEGORICAL_FIELDS: Record<string, CategoricalFieldDefinition> = {
   // GET /etf-screener/filters，不用改程式碼，見 service.ts 的 getFilterCatalog。
   assetClass: { kind: 'categorical', field: 'assetClass', label: '資產類型', sqlColumn: 'asset_class' },
   isActive: { kind: 'categorical', field: 'isActive', label: '主動式ETF', sqlColumn: 'is_active', staticValues: ['true', 'false'] },
+  // distributionFrequency：2026-09-02 web-nuxt 轉達的需求（退休/存股儀表板要篩配息頻率，
+  // 單筆配息滿 2 萬會扣二代健保補充保費，月配息較容易避開單筆超標），選項也不寫死，見
+  // queryBuilder.ts 的 distribution_frequency 表達式。
+  distributionFrequency: { kind: 'categorical', field: 'distributionFrequency', label: '配息頻率', sqlColumn: 'distribution_frequency' },
 };
 
 export const ALL_FIELDS: Record<string, EtfFieldDefinition> = { ...NUMERIC_FIELDS, ...CATEGORICAL_FIELDS };
