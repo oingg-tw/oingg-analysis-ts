@@ -1,7 +1,10 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import type { VolumeTop20Result, VolumeTop20Row } from './types';
+
+const ONE_DAY_CHANGE_TRADING_DAYS = 1;
 
 interface RawTwseVolumeTop20Row {
   symbol: string;
@@ -44,6 +47,10 @@ interface PoolRow {
 //
 // ⚠️ 沒有排除 ETF/衍生性商品（跟本服務其他主打「上市公司證券」的排行榜不一樣，2026-09-01
 // 應使用者要求維持原樣，直接回傳兩邊官方排名合併後的結果）。
+//
+// changePercent：2026-09-02 應使用者要求新增，不是用 TWSE 原生的 dir/change（那個只有 TWSE
+// 有、TPEx 沒有，兩邊算法不一定一致），統一改用 daily_price 自己算的單日漲跌幅（點對點，
+// tradingDaysBack=1，見 priceChange.ts），確保兩個市場算法一致；資料不足時是 null。
 export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   const warnings: string[] = [];
 
@@ -78,7 +85,13 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
 
   const sorted = [...pool].sort((a, b) => (b.volume > a.volume ? 1 : b.volume < a.volume ? -1 : 0)).slice(0, 20);
 
-  const companyNames = await getCompanyNamesForSymbols(sorted.map((row) => row.symbol));
+  const [companyNames, changePercents] = await Promise.all([
+    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    getCumulativeChangePercent(
+      sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: tradeDate })),
+      ONE_DAY_CHANGE_TRADING_DAYS
+    ),
+  ]);
   // open/high/low/close/change 是 DB 的 Decimal 欄位，$queryRaw 撈出來是 Decimal 物件不是
   // 原生 number，直接塞進 JSON.stringify 會變成字串，要用 Number() 轉。
   const toNumber = (value: number | null) => (value === null ? null : Number(value));
@@ -95,6 +108,7 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
     close: toNumber(row.close),
     dir: row.dir,
     change: toNumber(row.change),
+    changePercent: changePercents.get(cumulativeChangePercentKey(row.market, row.symbol, tradeDate)) ?? null,
   }));
 
   return { tradeDate: tradeDate.toISOString().slice(0, 10), rankings, warnings };

@@ -10,7 +10,8 @@ const router = Router();
  *     summary: 注意股票清單（上市+上櫃合併）
  *     description: >
  *       合併 twse-ts（上市）/tpex-ts（上櫃）注意股票累計次數異常公告，`market` 欄位標示來源，
- *       兩邊都已經濾掉權證只留真正公司。取最近公告的前 limit 筆（依交易日由新到舊），不是
+ *       只保留真正的上市/上櫃公司（比對 company_profile）。取最近公告的前 limit 筆（依交易日
+ *       由新到舊），不是
  *       固定某一天的資料。`criteria` 是原始中文說明（例如「115年8月28日至115年8月31日連續
  *       二次」），`criteriaDetails` 是解析出的結構化資料（開始/結束日期、次數）——`criteria`
  *       可能包含多個原因子句直接串接在一起，所以 `criteriaDetails` 是陣列；解析失敗（上游文字

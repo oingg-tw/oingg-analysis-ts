@@ -18,9 +18,12 @@ interface PoolRow extends RawAttentionHistoryNoteRow {
 }
 
 // 注意股票累計次數異常清單——2026-09-01 應使用者要求新增，之後又應要求合併上市（twse-ts）+
-// 上櫃（tpex-ts），兩邊欄位定義完全一致。都已經濾掉權證只留真正公司，這裡不用再濾一次。
-// 各自先取前 limit 筆（已經依交易日排序好），合併候選池後再重排取前 limit 筆，邏輯跟
-// disposedStocks 一樣。
+// 上櫃（tpex-ts），兩邊欄位定義完全一致。各自先取前 limit 筆（已經依交易日排序好），合併
+// 候選池後再重排取前 limit 筆，邏輯跟 disposedStocks 一樣。
+//
+// 2026-09-02 應使用者要求，只保留真正的上市/上櫃公司——用 company_profile 是否登記為判斷
+// 依據，比對子查詢直接寫進 SQL 的 WHERE（不是抓回來再用 JS 篩），避免 LIMIT 先切掉、篩選
+// 後剩不到 limit 筆的問題，見 valuation/ranking 的 COMPANY_SYMBOL_SUBQUERY 同樣的考量。
 export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<AttentionStocksResult> => {
   const { limit } = query;
   const warnings: string[] = [];
@@ -29,12 +32,14 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
     twsePrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
       SELECT symbol, trade_date, criteria
       FROM "export"."attention_history_note"
+      WHERE symbol IN (SELECT symbol FROM "public"."company_profile")
       ORDER BY trade_date DESC
       LIMIT ${limit}
     `,
     tpexExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
       SELECT symbol, trade_date, criteria
       FROM "export"."attention_history_note"
+      WHERE symbol IN (SELECT symbol FROM "export"."company_profile")
       ORDER BY trade_date DESC
       LIMIT ${limit}
     `,

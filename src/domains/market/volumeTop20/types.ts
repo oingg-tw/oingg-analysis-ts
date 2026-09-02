@@ -11,6 +11,7 @@ export interface VolumeTop20Row {
   close: number | null; // TPEx 版本沒有這個欄位，null
   dir: string | null; // '+' 漲 / '-' 跌 / '' 平盤，TPEx 版本沒有這個欄位，null
   change: number | null; // TPEx 版本沒有這個欄位，null
+  changePercent: number | null; // 單日漲跌幅（自己用 daily_price 算的點對點百分比，不是來源的 dir/change），資料不足時是 null
 }
 
 export interface VolumeTop20Result {

@@ -47,6 +47,10 @@ interface PoolRow {
 // TPEx 版本欄位比 TWSE 精簡（沒有 announcement_count/disposition_measures/
 // link_information），沒有的欄位回傳 null，不是查詢失敗。
 //
+// 2026-09-02 應使用者要求，只保留真正的上市/上櫃公司——用 company_profile 是否登記為判斷
+// 依據，比對子查詢直接寫進 SQL 的 WHERE（不是抓回來再用 JS 篩），避免 LIMIT 先切掉、篩選
+// 後剩不到 limit 筆的問題，見 valuation/ranking 的 COMPANY_SYMBOL_SUBQUERY 同樣的考量。
+//
 // sixDayChangePercent：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
 // priceChange.ts）——2026-09-02 應使用者要求新增，給「為什麼被列為處置」補價格脈絡。
 //
@@ -62,12 +66,14 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
     twsePrisma.$queryRaw<RawTwseDisposedStockRow[]>`
       SELECT symbol, announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
       FROM "export"."disposed_stock"
+      WHERE symbol IN (SELECT symbol FROM "public"."company_profile")
       ORDER BY announce_date DESC
       LIMIT ${limit}
     `,
     tpexExportPrisma.$queryRaw<RawTpexDisposedStockRow[]>`
       SELECT symbol, announce_date, reason, disposition_period, detail
       FROM "export"."disposed_stock"
+      WHERE symbol IN (SELECT symbol FROM "export"."company_profile")
       ORDER BY announce_date DESC
       LIMIT ${limit}
     `,
