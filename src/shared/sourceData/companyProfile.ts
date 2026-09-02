@@ -67,15 +67,32 @@ interface RawSecurityRow {
 // 已知限制：isin_securities 目前只有 TWSE（market_type 只有「上市」「上市臺灣創新板」，
 // 2026-09-02 實測 1,384 筆裡沒有任何上櫃資料），TPEx 特別股目前查不到，`market=TPEx` +
 // `preferredStock=only` 這個組合現在一定回空陣列，不是 bug。
-const getAllSecurityRows = async (): Promise<RawSecurityRow[]> => {
+//
+// 2026-09-02 這幾個查詢改成依 filter 決定要不要打——這支函式現在被 revenueRanking/
+// priceChangeRanking/valuation-ranking 等 6 支排行/指標透過 getSecuritySymbolSet 呼叫，
+// 每支都傳 preferredStock: 'exclude'（維持它們原本的行為，不需要特別股資料），如果每次都
+// 無條件查 isin_securities 再篩掉，等於每次排行請求都多打一次 twse-ts 那張手動同步、沒掛
+// Cloud Scheduler 的表（twse-ts 原話：記憶體考量才手動同步），白白增加負擔卻用不到結果。
+// 同理 market 篩單一市場時，不用查另一邊的 company_profile。
+const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSecurityRow[]> => {
+  const needsTwse = filter.market !== 'TPEx';
+  const needsTpex = filter.market !== 'TWSE';
+  const needsPreferred = filter.preferredStock !== 'exclude' && filter.market !== 'TPEx'; // isin_securities 目前只有 TWSE。
+
   const [twseRows, tpexRows, twsePreferredRows] = await Promise.all([
-    twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true, shortName: true } }),
-    tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
-      SELECT symbol, short_name, market FROM "export"."company_profile"
-    `,
-    twsePrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
-      SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
-    `,
+    needsTwse
+      ? twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true, shortName: true } })
+      : Promise.resolve([]),
+    needsTpex
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
+          SELECT symbol, short_name, market FROM "export"."company_profile"
+        `
+      : Promise.resolve([]),
+    needsPreferred
+      ? twsePrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
+          SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
+        `
+      : Promise.resolve([]),
   ]);
   return [
     ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.shortName, isEmerging: false, isPreferredStock: false })),
@@ -97,7 +114,7 @@ const getAllSecurityRows = async (): Promise<RawSecurityRow[]> => {
 // 不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會誤以為能用），等資料
 // 到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
 export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise<string[]> => {
-  const rows = await getAllSecurityRows();
+  const rows = await getAllSecurityRows(filter);
   const filtered = rows.filter((row) => {
     if (filter.market && row.market !== filter.market) return false;
     if (filter.includeEmerging === false && row.isEmerging) return false;
