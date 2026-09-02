@@ -1,4 +1,5 @@
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
+import { parseEtfCategory } from './parseCategory';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';
 
 interface RawBasicInfoRow {
@@ -214,6 +215,8 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
   return rows;
 };
 
+// market/assetClass/isActive：2026-09-02 應使用者要求，把 category（例如「上市ETF_國外
+// 成分證券ETF」）拆成獨立欄位，見 parseCategory.ts 的說明。
 export const calculateEtfRanking = async (query: EtfRankingQuery): Promise<EtfRankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [];
@@ -232,16 +235,22 @@ export const calculateEtfRanking = async (query: EtfRankingQuery): Promise<EtfRa
 
   const sorted = [...resolved].sort((a, b) => (order === 'asc' ? a.value - b.value : b.value - a.value)).slice(0, limit);
 
-  const rankings: EtfRankingRow[] = sorted.map((row, index) => ({
-    rank: index + 1,
-    symbol: row.symbol,
-    fundName: row.fundName,
-    shortName: row.shortName,
-    companyName: row.companyName,
-    category: row.category,
-    value: row.value,
-    asOf: row.asOf,
-  }));
+  const rankings: EtfRankingRow[] = sorted.map((row, index) => {
+    const categoryDetail = parseEtfCategory(row.category);
+    return {
+      rank: index + 1,
+      symbol: row.symbol,
+      fundName: row.fundName,
+      shortName: row.shortName,
+      companyName: row.companyName,
+      category: row.category,
+      market: categoryDetail?.market ?? null,
+      assetClass: categoryDetail?.assetClass ?? null,
+      isActive: categoryDetail?.isActive ?? null,
+      value: row.value,
+      asOf: row.asOf,
+    };
+  });
 
   return { metric, order, limit, rankings, warnings };
 };

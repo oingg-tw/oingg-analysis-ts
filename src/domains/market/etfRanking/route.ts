@@ -26,6 +26,11 @@ const router = Router();
  *       目前 sitca-ts 只有單一個月的快照資料，還沒有累積多月，暫時無法做月增/年增這類趨勢型
  *       指標。`asOf` 標示這筆資料實際採用的月份（`YYYY-MM`）或年度（`expenseRatio` 是
  *       `YYYY`）。
+ *
+ *       `category`（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成三個獨立欄位：
+ *       `market`（TWSE/TPEx）、`assetClass`（國內成分證券/國外成分證券/債券成分/槓桿型/
+ *       反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）、`isActive`（是否為主動式
+ *       ETF，不追蹤特定指數、經理人自訂策略操作）。
  *     tags:
  *       - Market
  *     parameters:
