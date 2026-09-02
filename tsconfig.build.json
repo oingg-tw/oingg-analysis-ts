@@ -9,7 +9,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "CommonJS",
-    "moduleResolution": "Node10",
+    // TS 7 移除了 moduleResolution=node10（TS5108），不再顯式指定，讓 TS 依 module=CommonJS
+    // 自動選對應的預設解析策略。
     "rootDir": ".",
     "outDir": "dist"
   },

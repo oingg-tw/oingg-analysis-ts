@@ -18,12 +18,11 @@
     "moduleResolution": "Bundler",
 
     /* Path aliases */
-    // baseUrl 在 TS 7.0 會停用（新版編譯器的模組解析重寫），但 paths 目前仍然需要它才能運作
-    // （沒有原生替代方案）——先用 ignoreDeprecations 消掉警告，之後 TS 團隊提供替代寫法再遷移。
-    "ignoreDeprecations": "5.0",
-    "baseUrl": ".",
+    // TS 7.0 把 baseUrl 整個移除（不是棄用，是直接編譯期報錯 TS5102），paths 現在一律相對於
+    // tsconfig.json 本身的位置解析，不再需要 baseUrl 當基準——這裡的路徑值本來就是相對於
+    // 專案根目錄（baseUrl 之前也是設 "."，等於同一個基準），只需要補上 "./" 前綴。
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
       // Prisma 各個 client 的相對路徑深度（原本是 ../../../generated/xxx）跟「這個檔案編譯後
       // 最終落在 dist 的哪一層」綁死——src/ 單獨 build（rootDir=src）跟 src/+scripts/ 一起 build
       // （tsconfig.build.json 的 rootDir="."）算出來的深度不一樣，寫死相對路徑只能滿足其中一種。
@@ -33,7 +32,7 @@
       // 的 .js 裡；而 `#` 開頭的 subpath import 是 Node 執行期自己解析（一律以最近的 package.json
       // 為錨點，不管呼叫的檔案實際深度是多少），tsx（dev）、CommonJS build 都能正確解析到同一個
       // 位置。這裡的 paths 純粹是給型別檢查用，不影響執行期解析。
-      "#generated/*": ["generated/*"]
+      "#generated/*": ["./generated/*"]
     },
 
     /* Build options */
