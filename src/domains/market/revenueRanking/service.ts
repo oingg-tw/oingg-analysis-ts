@@ -1,6 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseCompanySymbolSet, getTpexCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { RevenueRankingMetric, RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
 
 interface RawMonthlyRevenueRow {
@@ -21,8 +21,8 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // 偏向大型權值股，沒有「成長」的意涵）。三種都做，不猜哪個是使用者真正想要的。
 //
 // monthly_revenue 的範圍是「公開發行公司」，不是只有上市櫃（dev 樣本看過 000xxx 開頭的代號），
-// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 getTwseCompanySymbolSet/
-// getTpexCompanySymbolSet 的說明。
+// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 src/shared/sourceData/companyProfile.ts
+// 的 getAllSecurityRows 說明。preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-01 tpex-ts 也開了自己的 monthly_revenue（欄位跟 TWSE 那份一致）——上市/上櫃各自
 // 查詢、依 symbol 去重（同一家公司理論上不會兩邊都有，去重只是防呆，優先保留 TWSE 那筆），
@@ -78,8 +78,8 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
       FROM "export"."monthly_revenue"
       WHERE year_month = ${yearMonth}
     `,
-    getTwseCompanySymbolSet(),
-    getTpexCompanySymbolSet(),
+    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+    getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
 
   const bySymbol = new Map<string, EligibleRow>();

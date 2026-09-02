@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculatePriceChangeRanking } from '@/domains/market/priceChangeRanking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import { getTwseCompanySymbolSet, getTpexCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
 test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排序，且不超過 limit 筆', async () => {
   const result = await calculatePriceChangeRanking({ limit: 20 });
@@ -26,8 +26,8 @@ test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排
 test('calculatePriceChangeRanking: 排行裡不應該出現 ETF/衍生性商品', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([
     calculatePriceChangeRanking({ limit: 50 }),
-    getTwseCompanySymbolSet(),
-    getTpexCompanySymbolSet(),
+    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+    getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   for (const row of [...result.gainers, ...result.losers]) {
     const companySymbols = row.market === 'TWSE' ? twseSymbols : tpexSymbols;

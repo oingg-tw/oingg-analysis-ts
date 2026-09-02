@@ -2,7 +2,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateMarginShortRatioRanking } from '@/domains/market/marginShortRatioRanking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import { getTwseCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
 test('calculateMarginShortRatioRanking: 應該依券資比由高到低排序，且不含融資餘額 <= 0 的公司', async () => {
   const result = await calculateMarginShortRatioRanking({ limit: 20 });
@@ -28,7 +28,10 @@ test('calculateMarginShortRatioRanking: limit 應該限制回傳筆數', async (
 
 // 2026-09-01 應使用者要求排除 ETF/衍生性商品（例如槓桿/反向 ETF）——只留真正的上市公司。
 test('calculateMarginShortRatioRanking: 排行裡不應該出現 ETF/衍生性商品', async () => {
-  const [result, companySymbols] = await Promise.all([calculateMarginShortRatioRanking({ limit: 100 }), getTwseCompanySymbolSet()]);
+  const [result, companySymbols] = await Promise.all([
+    calculateMarginShortRatioRanking({ limit: 100 }),
+    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+  ]);
   for (const row of result.rankings) {
     assert.ok(companySymbols.has(row.symbol), `${row.symbol} 不在 company_profile 裡，應該已經被排除`);
   }

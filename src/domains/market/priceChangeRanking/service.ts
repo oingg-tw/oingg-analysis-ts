@@ -1,6 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseCompanySymbolSet, getTpexCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
 
 interface RawChangeRow {
@@ -24,7 +24,9 @@ interface RawChangeRow {
 // 意義，如果強迫上櫃用上市的最新日期、剛好上市那天還沒有資料，會讓上市整個排行榜消失，不是
 // 只是「少幾筆」。所以這裡每一列都帶自己的 tradeDate/previousTradeDate，兩個市場可能不同。
 //
-// 排除 ETF/衍生性商品——這是主打上市公司證券的排行榜功能，見 getTwseCompanySymbolSet 的說明。
+// 排除 ETF/衍生性商品——這是主打上市公司證券的排行榜功能，見
+// src/shared/sourceData/companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
+// 維持這支排行原本的行為。
 //
 // 交易日改查 daily_taiex_index（一天一筆、tradeDate 是 PK），不對 daily_price 查 DISTINCT
 // tradeDate——2026-09-02 實測發現 daily_price 150萬筆只有 (symbol, tradeDate) 複合 PK，沒有
@@ -90,7 +92,7 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
     const [todayRows, prevRows, companySymbols] = await Promise.all([
       twsePrisma.dailyPrice.findMany({ where: { tradeDate }, select: { symbol: true, close: true } }),
       twsePrisma.dailyPrice.findMany({ where: { tradeDate: previousTradeDate }, select: { symbol: true, close: true } }),
-      getTwseCompanySymbolSet(),
+      getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     ]);
     pool.push(
       ...computeChanges(
@@ -109,7 +111,7 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
     const [todayRows, prevRows, companySymbols] = await Promise.all([
       tpexExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`,
       tpexExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${previousTradeDate}`,
-      getTpexCompanySymbolSet(),
+      getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
     ]);
     pool.push(
       ...computeChanges(

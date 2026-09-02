@@ -2,13 +2,13 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateRevenueRanking } from '@/domains/market/revenueRanking/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
-import { getTwseCompanySymbolSet, getTpexCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
 test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上市或上櫃公司', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([
     calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 20 }),
-    getTwseCompanySymbolSet(),
-    getTpexCompanySymbolSet(),
+    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+    getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   assert.ok(result.yearMonth !== '', '應該找得到最新一個有資料的月份');
 

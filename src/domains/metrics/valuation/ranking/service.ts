@@ -1,6 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseNonKyCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { Prisma } from '#generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
@@ -28,7 +28,9 @@ interface MarketQueryResult {
 // 2026-09-01 應使用者要求排除 ETF/衍生性商品；2026-09-02 再加上排除 KY 股（境外註冊掛牌
 // 公司）：symbol 過濾要放進查詢本身（WHERE symbol IN (...)），不能等查完再篩掉——不然
 // take: limit 抓到的前 limit 筆可能一半是 ETF/KY 股，篩完剩不到 limit 筆，讓合併後的排行
-// 漏掉本來排得進來的真公司，見 getTwseNonKyCompanySymbolSet 的說明。
+// 漏掉本來排得進來的真公司，見 src/shared/sourceData/companyProfile.ts 的 getAllSecurityRows
+// 說明。excludeKy: true 是這支端點特有的政策（KY 股本身合法，只是估值排行這個情境下的使用者
+// 選擇），preferredStock: 'exclude' 維持這支排行原本的行為。
 const queryTwseMarket = async (
   tradeDate: Date,
   metric: RankingMetric,
@@ -118,7 +120,7 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   }
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
-  const twseCompanySymbols = await getTwseNonKyCompanySymbolSet();
+  const twseCompanySymbols = await getSecuritySymbolSet({ market: 'TWSE', excludeKy: true, preferredStock: 'exclude' });
   const [twseResult, tpexResult] = await Promise.all([
     queryTwseMarket(tradeDate, metric, order, limit, excludeNonPositive, twseCompanySymbols),
     queryTpexMarket(tradeDate, metric, order, limit, excludeNonPositive),

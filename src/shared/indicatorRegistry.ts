@@ -7,7 +7,7 @@
 import prisma from '@/adapters/prisma/index';
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseCompanySymbolSet, getTpexCompanySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { calculateEps } from '@/domains/metrics/profitability/eps/service';
 import { calculateBvps } from '@/domains/metrics/profitability/bvps/service';
 import { calculateRevenuePerShare } from '@/domains/metrics/profitability/revenuePerShare/service';
@@ -79,11 +79,9 @@ const twsePriceIdsPromise = twsePrisma.dailyPrice.findMany({ distinct: ['symbol'
 const marketRatiosIdsPromise = Promise.all([
   twsePrisma.dailyValuation.findMany({ distinct: ['symbol'], select: { symbol: true } }),
   tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_valuation"`,
-  getTwseCompanySymbolSet(),
-  getTpexCompanySymbolSet(),
-]).then(([twseRows, tpexRows, twseCompanySymbols, tpexCompanySymbols]) => {
+  getSecuritySymbolSet({ preferredStock: 'exclude' }), // 不給 market，兩個市場一起查，維持原本合併成單一集合的行為。
+]).then(([twseRows, tpexRows, allCompanySymbols]) => {
   const allValuationSymbols = new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]);
-  const allCompanySymbols = new Set([...twseCompanySymbols, ...tpexCompanySymbols]);
   return [...allValuationSymbols].filter((symbol) => allCompanySymbols.has(symbol));
 });
 

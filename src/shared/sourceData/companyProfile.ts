@@ -34,39 +34,9 @@ export const companyExists = async (companyId: string): Promise<boolean> => {
   return twseHit !== null || tpexRows.length > 0;
 };
 
-// 給「排除 ETF/衍生性商品，只留真正的上市櫃公司」用（2026-09-01 應使用者要求新增——排行榜這類
-// 主打/推薦性質的功能，不該把 00852L 這種槓桿/反向 ETF 跟真正的公司股票混在一起排）。
-// company_profile 只會有真正登記的公司（symbol/name/tax_id 等公司基本資料），ETF/權證/
-// 衍生商品不會出現在裡面——用這個當「是不是真正的公司」的判斷依據，比自己猜代號規則
-// （00 開頭、L/R 結尾）可靠，那些規則可能有例外。上市（TWSE）、上櫃（TPEx）分開查，因為
-// 呼叫端通常各自查各自市場的表（例如 ranking 的 queryTwseMarket/queryTpexMarket），不需要
-// 合併成一個跨市場集合。
-//
-// 2026-09-02 發現 company_profile 其實混了兩種來源：TWSE 用 source 欄位區分
-// 'COMPANY_PROFILE'（真正上市、1,095 筆全部有股價）vs 'COMPANY_PROFILE_PUBLIC'（更廣的
-// 「公開發行公司」，299 筆裡只有 5 筆有股價，混入證券商登記等非交易性質的代號，例如
-// 000104=臺銀證券——這些不是「公司股票」，要排除）。這裡加上 source 篩選，之前沒篩會讓
-// revenueRanking 這類吃 monthly_revenue（公開發行公司範疇比股價範疇廣）的功能把這些幽靈
-// 代號當成真公司排進去。
-//
-// TPEx 這邊的 market 欄位只有兩種值：'COMPANY_PROFILE'（一般上櫃）跟
-// 'COMPANY_PROFILE_EMERGING'（興櫃）——興櫃公司雖然沒有一般交易的股價資料（改用議價/
-// 逐筆撮合，不進 daily_price 鏡像），但本身是合法登記、有公開揭露義務的公司，不是像 TWSE
-// 那種非公司性質的登記資料，使用者 2026-09-02 明確要求兩種都算「真正公司」，所以這裡
-// 不篩 market，維持原樣（兩種值都留）。
-export const getTwseCompanySymbolSet = async (): Promise<Set<string>> => {
-  const rows = await twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true } });
-  return new Set(rows.map((row) => row.symbol));
-};
-
-export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
-  const rows = await tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`;
-  return new Set(rows.map((row) => row.symbol));
-};
-
 export interface SecuritySymbolsFilter {
   market?: 'TWSE' | 'TPEx'; // 不給就兩個市場都要
-  includeEmerging?: boolean; // 預設 true——興櫃算真正公司，見 getTwseCompanySymbolSet 的說明
+  includeEmerging?: boolean; // 預設 true——興櫃算真正公司，見 getAllSecurityRows 的說明
   excludeKy?: boolean; // 預設 false——KY 股是合法上市公司，不是衍生商品，預設不排除
   preferredStock?: 'only' | 'exclude'; // 不給就兩種都要（股票+特別股混在一起）
 }
@@ -139,6 +109,15 @@ export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise
   return [...new Set(filtered.map((row) => row.symbol))].sort();
 };
 
+// 2026-09-02 應使用者要求整併——之前 getTwseCompanySymbolSet/getTpexCompanySymbolSet/
+// getTwseNonKyCompanySymbolSet 是跟 getSecuritySymbols 平行的另一套「誰算真正證券」邏輯，
+// 只回傳單一市場、不支援篩選參數，給 revenueRanking/priceChangeRanking/foreignHoldingRanking/
+// marginShortRatioRanking/valuation-ranking/indicatorRegistry 這幾支排行/指標用。改成這個
+// 薄包裝，讓那些呼叫端也走 getSecuritySymbols 同一套邏輯，不用維護兩份幾乎一樣的查詢。
+export const getSecuritySymbolSet = async (filter: SecuritySymbolsFilter): Promise<Set<string>> => {
+  return new Set(await getSecuritySymbols(filter));
+};
+
 interface RawTpexCompanyProfileDetailRow {
   symbol: string;
   report_date: Date | null;
@@ -196,7 +175,7 @@ const resolveFinancialReportTypeName = (financialReportType: string | null): str
 // 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
 // 欄位範圍不完全一樣（TPEx 沒有 english_address/industry_name），沒有的欄位一律回 null，不是
 // 查詢失敗。這裡刻意不篩 source/market——單一公司查詢是使用者/下游服務指名要看這家公司的資料，
-// 不是「排除幽靈代號」那種清單情境（見 getTwseCompanySymbolSet 的說明），就算是
+// 不是「排除幽靈代號」那種清單情境（見 getAllSecurityRows 的說明），就算是
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
 export const getCompanyProfileDetail = async (companyId: string): Promise<CompanyProfileDetail | null> => {
   const twseRow = await twsePrisma.companyProfile.findUnique({ where: { symbol: companyId } });
@@ -291,19 +270,6 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
     website: tpexRow.website,
     issuedShares: tpexRow.issued_shares?.toString() ?? null,
   };
-};
-
-// 排除 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾，例如「英利-KY」）——2026-09-02 應
-// 使用者要求，只有 /valuation/ranking 在用，不是像上面 getTwseCompanySymbolSet 那樣給多個
-// 排行/screener 共用的「排除 ETF」政策。KY 股本身是合法的上市公司、不是衍生性商品，這裡
-// 排除純粹是估值排行這個情境下的使用者選擇，不代表其他功能也該跟著排除。跟
-// getTwseCompanySymbolSet 一樣要篩 source，理由同上。
-export const getTwseNonKyCompanySymbolSet = async (): Promise<Set<string>> => {
-  const rows = await twsePrisma.companyProfile.findMany({
-    where: { source: 'COMPANY_PROFILE' },
-    select: { symbol: true, shortName: true },
-  });
-  return new Set(rows.filter((row) => !row.shortName?.includes('-KY')).map((row) => row.symbol));
 };
 
 // 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
