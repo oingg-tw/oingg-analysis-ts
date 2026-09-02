@@ -38,7 +38,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/twse-client"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {

@@ -37,7 +37,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/tpex-export-client"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {

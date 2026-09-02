@@ -19,7 +19,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/gov-export-client"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {

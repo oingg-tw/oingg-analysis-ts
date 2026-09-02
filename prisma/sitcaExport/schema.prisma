@@ -22,7 +22,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/sitca-export-client"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {

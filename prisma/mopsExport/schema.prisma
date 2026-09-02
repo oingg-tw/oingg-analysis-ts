@@ -17,7 +17,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/mops-export-client"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {
