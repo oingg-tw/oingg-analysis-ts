@@ -33,6 +33,20 @@ const METRIC_COLUMN: Record<RevenueRankingMetric, keyof RawMonthlyRevenueRow> = 
   revenue: 'current_month_revenue',
 };
 
+// yoy_change_percent 超過 300% 直接排除——2026-09-02 應使用者要求，這是「基期趨近於零」造成
+// 的統計失真，不是真實的營運成長：分母（去年同月營收）趨近於零時，(今年-去年)/去年 會趨近
+// 正無限大，例如聯上(4113) 去年同月營收只有 5.3 萬元、今年 5.8 億元，年增率算出 1,096,390%，
+// 原始資料的 note 欄位甚至直接寫「不動產於過戶時點認列營收，故波動較大」，證實是認列時點
+// 集中的產業特性，不是資料錯誤。這個扭曲只會發生在正的那一側（分母趨近零時比值趨近正無限
+// 大；反過來分子趨近零時比值只會趨近 -100%，本身有界，不需要對稱處理負值）。
+//
+// 300% 這個門檻來自使用者提供的分析文件（見 docs/Revenue YoY Distortion Analysis.md）：
+// 0~50% 高/極高參考價值、50~100% 中等（警訊）、100~300% 低（高度統計失真）、>300% 完全無
+// 參考價值（偽指標）。文件建議更嚴謹的作法是比較「前期分母 vs 過去5年歷史中位數」，但
+// monthly_revenue 目前只有單一個月的鏡像資料，還沒有多年歷史可以算，300% 固定門檻是第一版
+// 簡化規則。只套用在 metric=yoy（這個問題是年增率基期特有的），不影響 mom/revenue 排行。
+const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
+
 const getLatestYearMonth = async (): Promise<Date | null> => {
   const [twseRows, tpexRows] = await Promise.all([
     twsePrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
@@ -74,7 +88,10 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
 
   const column = METRIC_COLUMN[metric];
   const eligible = [...bySymbol.values()].filter(
-    (row) => (twseSymbols.has(row.symbol) || tpexSymbols.has(row.symbol)) && row[column] !== null
+    (row) =>
+      (twseSymbols.has(row.symbol) || tpexSymbols.has(row.symbol)) &&
+      row[column] !== null &&
+      !(metric === 'yoy' && row.yoy_change_percent !== null && row.yoy_change_percent > YOY_DISTORTION_THRESHOLD_PERCENT)
   );
 
   const sorted = [...eligible]
