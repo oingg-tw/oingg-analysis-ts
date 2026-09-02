@@ -64,13 +64,59 @@ export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
   return new Set(rows.map((row) => row.symbol));
 };
 
-// 給 GET /companies/symbols 用（2026-09-02 應使用者要求新增）——mops-ts 之前請我們手動貼一份
-// 「真正公司代號清單」給他們做 capital_stock_history 全市場回補，貼靜態清單容易過時/貼錯
-// （已經發生過一次：第一版漏算興櫃），改成端點讓他們自己即時打，跟這裡的篩選定義（見上面
-// getTwseCompanySymbolSet/getTpexCompanySymbolSet 的說明）永遠同步，不用兩邊各自維護一份。
-export const getAllRealCompanySymbols = async (): Promise<string[]> => {
-  const [twseSymbols, tpexSymbols] = await Promise.all([getTwseCompanySymbolSet(), getTpexCompanySymbolSet()]);
-  return [...new Set([...twseSymbols, ...tpexSymbols])].sort();
+export interface SecuritySymbolsFilter {
+  market?: 'TWSE' | 'TPEx'; // 不給就兩個市場都要
+  includeEmerging?: boolean; // 預設 true——興櫃算真正公司，見 getTwseCompanySymbolSet 的說明
+  excludeKy?: boolean; // 預設 false——KY 股是合法上市公司，不是衍生商品，預設不排除
+}
+
+interface RawSecurityRow {
+  symbol: string;
+  market: 'TWSE' | 'TPEx';
+  shortName: string | null;
+  isEmerging: boolean;
+}
+
+// 給 GET /securities/symbols 用（2026-09-02 應使用者要求，原本是 GET /companies/symbols，
+// 搬過來是因為「能不能交易」本質上是證券層級的判斷，不是公司層級的——「公司」（company_profile
+// 的完整登記範疇，含臺銀證券這種非交易性質登記）跟「證券」（真正能交易的上市櫃標的）是兩個
+// 不同概念，不該共用同一支端點）。
+//
+// mops-ts 之前請我們手動貼一份「真正公司代號清單」給他們做 capital_stock_history 全市場回補，
+// 貼靜態清單容易過時/貼錯（已經發生過一次：第一版漏算興櫃），改成端點讓他們自己即時打。
+const getAllSecurityRows = async (): Promise<RawSecurityRow[]> => {
+  const [twseRows, tpexRows] = await Promise.all([
+    twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true, shortName: true } }),
+    tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
+      SELECT symbol, short_name, market FROM "export"."company_profile"
+    `,
+  ]);
+  return [
+    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.shortName, isEmerging: false })),
+    ...tpexRows.map((row) => ({
+      symbol: row.symbol,
+      market: 'TPEx' as const,
+      shortName: row.short_name,
+      isEmerging: row.market === 'COMPANY_PROFILE_EMERGING',
+    })),
+  ];
+};
+
+// 全額交割（等 mops-ts/tpex-ts 的資料集，2026-09-02 還在等回覆）、特別股（company_profile
+// 完全沒有特別股的獨立登記，2026-09-02 實測 symbol 沒有任何筆符合台灣特別股代號慣例——母公司
+// 代號+英文字母。同一天問過 twse-ts，他們有 isin_securities 表的 securityType 欄位可以判斷
+// 特別股，但還沒開放到 export schema，已經請他們開，還沒收到完成通知）這兩個篩選維度目前
+// 技術上做不到，故意不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會
+// 誤以為能用），等資料到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
+export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise<string[]> => {
+  const rows = await getAllSecurityRows();
+  const filtered = rows.filter((row) => {
+    if (filter.market && row.market !== filter.market) return false;
+    if (filter.includeEmerging === false && row.isEmerging) return false;
+    if (filter.excludeKy && row.shortName?.includes('-KY')) return false;
+    return true;
+  });
+  return [...new Set(filtered.map((row) => row.symbol))].sort();
 };
 
 interface RawTpexCompanyProfileDetailRow {

@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { getCompanies, getCompanySymbols, getCompanyProfile } from './controller';
+import { getCompanies, getCompanyProfile } from './controller';
 
 const router = Router();
 
@@ -54,30 +54,6 @@ router.get('/companies', getCompanies);
 
 /**
  * @swagger
- * /companies/symbols:
- *   get:
- *     summary: 「真正上市/上櫃公司」代號清單（排除 ETF/衍生商品、TWSE 非交易性質登記資料）
- *     description: >
- *       2026-09-02 應 mops-ts 要求新增——他們原本要一份手動貼上去的靜態清單做全市場資料回補，
- *       靜態清單會過時、容易貼錯（已經發生過一次版本誤差），改用這支端點讓他們自己即時打，
- *       跟排行榜/screener 內部用的「排除 ETF」篩選定義（見
- *       [`src/shared/sourceData/companyProfile.ts`](../../shared/sourceData/companyProfile.ts)
- *       的 `getTwseCompanySymbolSet`/`getTpexCompanySymbolSet`）永遠同步。
- *
- *       涵蓋：TWSE 上市（`source = 'COMPANY_PROFILE'`，排除證券商登記等非交易性質的
- *       `COMPANY_PROFILE_PUBLIC`）+ TPEx 上櫃（一般上櫃跟興櫃都算，興櫃雖然沒有一般股價
- *       資料，但仍是合法登記、有公開揭露義務的公司）。回應是排序過、去重的字串陣列，
- *       不分頁（目前量級約 2,300 檔，payload 很小）。
- *     tags:
- *       - System
- *     responses:
- *       200:
- *         description: "`{ count, symbols }`"
- */
-router.get('/companies/symbols', getCompanySymbols);
-
-/**
- * @swagger
  * /companies/profile:
  *   get:
  *     summary: 單一公司基本資料（董事長/總經理/發言人/設立上市日期/資本額等）
@@ -91,7 +67,7 @@ router.get('/companies/symbols', getCompanySymbols);
  *       industryName（2026-09-02 應 web-nuxt 要求新增）TWSE 有直接透傳，TPEx 目前沒有對應
  *       欄位，故意回 null，不猜代碼對照表。指名查詢單一公司時不篩
  *       ETF/KY/興櫃/`source`or`market`（那是排行榜/清單類端點的政策，見
- *       [`GET /companies/symbols`](../../shared/sourceData/companyProfile.ts)），只要
+ *       [`GET /securities/symbols`](../securities/route.ts)），只要
  *       company_profile 裡查得到就照實回傳。
  *
  *       `paidInCapital`/`issuedShares`/`privatePlacementShares`/`preferredStockShares`
