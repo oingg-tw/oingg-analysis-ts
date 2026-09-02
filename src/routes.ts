@@ -54,6 +54,7 @@ import zmijewskiScoreRouter from './domains/metrics/guru/zmijewskiScore/route';
 import ohlsonOScoreRouter from './domains/metrics/guru/ohlsonOScore/route';
 import betaRouter from './domains/metrics/portfolio/beta/route';
 import equityRiskPremiumRouter from './domains/metrics/macro/equityRiskPremium/route';
+import govBondYield10yRouter from './domains/metrics/macro/govBondYield10y/route';
 import maRouter from './domains/metrics/technicals/ma/route';
 import rsiRouter from './domains/metrics/technicals/rsi/route';
 import kdRouter from './domains/metrics/technicals/kd/route';
@@ -118,7 +119,7 @@ apiRouter.use(
   ohlsonOScoreRouter
 );
 apiRouter.use('/portfolio', betaRouter);
-apiRouter.use('/macro', equityRiskPremiumRouter);
+apiRouter.use('/macro', equityRiskPremiumRouter, govBondYield10yRouter);
 apiRouter.use('/technicals', maRouter, rsiRouter, kdRouter, bollingerBandsRouter, atrRouter, biasRouter, macdRouter, obvRouter);
 
 router.use(apiRouter);
