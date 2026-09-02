@@ -8,9 +8,9 @@
 |---|---|---|---|
 | [`profitability/`](profitability/README.md) | 獲利能力與資本配置效率 | Security | 全數實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法——2026-08-27 新增，自行歸類非 guru；`CFROI` 2026-08-30 決定移除，見該分類 README） |
 | [`turnover/`](turnover/README.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
-| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/` |
+| [`solvency/`](solvency/README.md) | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru/`；2026-09-02 盤點存股需求，銀行業專屬指標（CAR/CET1/NPL/備抵呆帳覆蓋率）排入未來規劃，卡在需要新資料源，見該分類 README |
 | [`cashFlow/`](cashFlow/README.md) | 現金流品質與法證會計防雷 | Security | 全數實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率、FCF_Yield——2026-08-30 股價來源解禁後補上最後一個）；`Beneish_M_Score` 2026-08-25 改歸類到 `guru/` |
-| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield 直接採用 oingg-twse 現成數字；PSR、P_FCF、EV_EBITDA 2026-08-30 實作完成） |
+| [`valuation/`](valuation/README.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield 直接採用 oingg-twse 現成數字；PSR、P_FCF、EV_EBITDA 2026-08-30 實作完成）；2026-09-02 盤點存股需求，歷史平均殖利率、估值定價帶模型排入未來規劃，見該分類 README |
 | [`guru/`](guru/README.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本；`Altman_Z_Score`——2026-08-24 從 `solvency/` 移入，2026-08-27 實作；`Piotroski_F_Score`；`Beneish_M_Score`——2026-08-25 從 `cashFlow/` 移入，2026-08-27 實作；`Nissim_Penman_RNOA`——2026-08-25 新列入，2026-08-28 實作；Zmijewski Score、Ohlson O-Score——2026-08-30 新列入並實作，兩者都是財務危機預警模型，跟 `Altman_Z_Score` 同一種資料需求）；`Greenwald_EPV` 2026-08-25 曾列入，2026-08-28 因為資產重置成本無法忠於資料計算，決定移除 |
 | [`technicals/`](technicals/README.md) | 技術分析與價格量能指標 | Security | 全數實作（2026-08-30，`VWAP_OBV` 只做了 OBV，VWAP 結構性做不到）——6 家種子公司歷史夠深全部指標都算得出來，其他公司目前只有 3 天資料，見該分類 README |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26，見該分類 README「為什麼 Beta 是例外」）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
@@ -18,7 +18,7 @@
 | [`securityInfo/`](securityInfo/README.md) | 證券基本資訊 | Security | 未實作——見下方「第二套分類方案」 |
 | [`marketData/`](marketData/README.md) | 市場行情數據 | Security | 未實作——見下方「第二套分類方案」 |
 | [`financials/`](financials/README.md) | 財務報表 | Security | 未實作——見下方「第二套分類方案」 |
-| [`growth/`](growth/README.md) | 成長性指標 | Security | 未實作——見下方「第二套分類方案」 |
+| [`growth/`](growth/README.md) | 成長性指標 | Security | 未實作——見下方「第二套分類方案」；2026-09-02 盤點存股需求，EPS CAGR、連續配發股利年數、ROE 歷史一致性檢驗排入未來規劃，見該分類 README |
 
 ## 跨分類的時間轉換算子（temporal_transformation_operators）
 

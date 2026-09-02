@@ -55,6 +55,13 @@
 | `EV_EBITDA` | 企業價值倍數 | `Enterprise Value / EBITDA` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`evEbitda/`](evEbitda/)，`GET /valuation/ev-ebitda`。淨負債、EBITDA 引用 [`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 已算好的數字，EV = 市值 + 淨負債 |
 | `Dividend_Yield` | 股息殖利率 | `Annual Dividend Per Share / Stock Price` | TTM, Forward, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.dividendYield` |
 
+## 2026-09-02 存股篩選需求盤點：2 個排入未來規劃的項目
+
+使用者對照一份存股篩選指標研究文件（`docs/定存篩選指標.md`）盤點現有指標覆蓋率，以下 2 項確認目前完全沒有：
+
+- **歷史平均現金殖利率**（例如近 5 年平均殖利率，不是單日快照）：現有 `Dividend_Yield` 是 `daily_valuation.dividendYield` 的**當天快照**，不是歷史平均——oingg-twse 那邊這個數字回溯得到多少天目前沒查過，需要先確認 `daily_valuation` 的歷史深度（不一定跟 `quarterly_income_statement` 卡在同一個「民國 110~115 年」限制，兩個是不同資料源）。如果 oingg-twse 那邊歷史不夠長，退回用 [`../profitability/README.md`](../profitability/README.md) 的 `dividendsPaid`（現金流量表股利發放）+ 股本自算年度殖利率，一樣卡在財報 6 個年度的深度限制。
+- **估值定價帶模型**（殖利率反推法／歷史本益比法的便宜價/合理價/昂貴價）：這不是查得到的現成欄位，是「用歷史平均殖利率或歷史本益比區間 + 公式」算出來的衍生輸出（例如 `便宜價 = 近 5 年平均股利 / 目標殖利率上緣`）——前提是先有上面那項「歷史平均殖利率」，或是歷史 PER 的統計區間（`daily_valuation.peRatio` 的歷史深度，同樣還沒查過）。屬於複合指標，性質上比較接近 [`../guru/README.md`](../guru/README.md) 那種「引用其他已算好指標再組合」的做法，但目前依賴的底層歷史資料都還沒確認深度，卡在跟 `CAPE` 相同的「先查資料夠不夠深」這一步。
+
 ## 為什麼不做 NAV_Discount_Premium（2026-08-30 決定移除）
 
 `NAV_Discount_Premium`（淨值折溢價率）衡量的是「市價相對淨資產價值的折溢價」，適用對象是封閉式基金、ETF、REITs 這類「持有一籃子資產、有明確可計算 NAV」的證券——這一類的 NAV 是逐日公告的官方數字，折溢價才有意義。本服務的 `scope` 是個股（Security），沒有這種標的，套用到一般上市櫃公司沒有對應的官方 NAV 可以拿來比較（用 BVPS 冒充 NAV 是兩個不同概念，公司股價偏離帳面淨值有非常多合理原因，跟基金折溢價的意義不一樣），不是資料源缺口，是這個指標本身跟本服務的適用範疇不合，直接移除，不用不對的資料硬做。
