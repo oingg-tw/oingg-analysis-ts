@@ -25,8 +25,13 @@ interface RawChangeRow {
 // 只是「少幾筆」。所以這裡每一列都帶自己的 tradeDate/previousTradeDate，兩個市場可能不同。
 //
 // 排除 ETF/衍生性商品——這是主打上市公司證券的排行榜功能，見 getTwseCompanySymbolSet 的說明。
+//
+// 交易日改查 daily_taiex_index（一天一筆、tradeDate 是 PK），不對 daily_price 查 DISTINCT
+// tradeDate——2026-09-02 實測發現 daily_price 150萬筆只有 (symbol, tradeDate) 複合 PK，沒有
+// 單獨對 tradeDate 的索引，這種不帶 symbol 條件的查詢近乎全表掃描，單次 3~7 秒，是這支端點
+// 回應緩慢（4~4.6秒）的根因，見 src/shared/sourceData/priceChange.ts 同樣的修法。
 const getLatestTwoTradeDatesTwse = async (): Promise<[Date, Date] | null> => {
-  const rows = await twsePrisma.dailyPrice.findMany({ distinct: ['tradeDate'], orderBy: { tradeDate: 'desc' }, take: 2, select: { tradeDate: true } });
+  const rows = await twsePrisma.dailyTaiexIndex.findMany({ orderBy: { tradeDate: 'desc' }, take: 2, select: { tradeDate: true } });
   if (rows.length < 2) return null;
   return [rows[0]!.tradeDate, rows[1]!.tradeDate];
 };

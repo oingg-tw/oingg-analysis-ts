@@ -34,13 +34,24 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
     }
   }
 
-  for (const group of groups.values()) {
+  // 每個 (market, asOfDate) 分組平行處理，不是逐一 await——disposed-stocks 這種清單型端點常常
+  // 同時有好幾個不同的 announce_date（每檔股票公告日期不一樣），逐一處理會讓好幾組「查日期+
+  // 查收盤價」的網路往返疊加起來，2026-09-02 實測發現這是修完 daily_taiex_index 索引問題後
+  // disposed-stocks 依然要 6 秒的主因（改平行後才會真的吃到「每組各自獨立、互不阻塞」的效果）。
+  await Promise.all(
+    [...groups.values()].map(async (group) => {
     const symbols = [...group.symbols];
+    // TWSE 這邊改查 daily_taiex_index（大盤指數，一天一筆、tradeDate 本身就是 PK）取交易日
+    // 曆，不直接對 daily_price 查 DISTINCT tradeDate——2026-09-02 實測發現 daily_price 150萬筆
+    // 只有 (symbol, tradeDate) 複合 PK，沒有單獨對 tradeDate 的索引，「取全市場最新幾個交易日」
+    // 這種不帶 symbol 條件的查詢會是近乎全表掃描，單次 3~7 秒，是 disposed-stocks/
+    // attention-stocks/price-change-ranking 回應緩慢（4~12秒）的根因。台股所有個股都跟大盤
+    // 同一套開休市日曆，daily_taiex_index 只有 6852 筆、當交易日曆用又快又準；實際收盤價還是
+    // 從 daily_price 查（那個查詢有 symbol 條件，走得到 PK 索引，本來就快）。
     const dates =
       group.market === 'TWSE'
         ? (
-            await twsePrisma.dailyPrice.findMany({
-              distinct: ['tradeDate'],
+            await twsePrisma.dailyTaiexIndex.findMany({
               where: { tradeDate: { lte: group.asOfDate } },
               orderBy: { tradeDate: 'desc' },
               take: tradingDaysBack + 1,
@@ -55,7 +66,7 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
 
     if (dates.length < tradingDaysBack + 1) {
       for (const symbol of symbols) result.set(buildKey(group.market, symbol, group.asOfDate), null);
-      continue;
+      return;
     }
 
     const latestDate = dates[0]!;
@@ -89,7 +100,8 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
       const value = latestClose === undefined || baseClose === undefined || baseClose <= 0 ? null : Math.round(((latestClose - baseClose) / baseClose) * 100 * 100) / 100;
       result.set(buildKey(group.market, symbol, group.asOfDate), value);
     }
-  }
+    })
+  );
 
   return result;
 };
