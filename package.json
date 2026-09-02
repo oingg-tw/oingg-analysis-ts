@@ -42,7 +42,7 @@
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "helmet": "^8.3.0",
-    "morgan": "^1.10.0",
+    "morgan": "^1.12.0",
     "pg": "^8.23.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
@@ -58,8 +58,8 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^7.10.0",
-    "tsc-alias": "^1.9.2",
-    "tsx": "^4.23.1",
+    "tsc-alias": "^1.9.3",
+    "tsx": "^4.23.13",
     "typescript": "^5.5.3"
   }
 }
