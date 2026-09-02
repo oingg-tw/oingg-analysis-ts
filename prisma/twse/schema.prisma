@@ -295,3 +295,23 @@ view MaterialAnnouncement {
   @@ignore
   @@schema("export")
 }
+
+// 全部有價證券的權威分類清單（股票/特別股/ETF/ETN/TDR/REITs/創新板，已排除權證），2026-09-02
+// 應使用者要求開放——給 GET /securities/symbols 的 excludePreferredStock 篩選用，見
+// src/shared/sourceData/companyProfile.ts。手動同步（不掛 Cloud Scheduler，twse-ts 記憶體
+// 考量），不是即時資料，但產業分類這種低頻異動的資料本來就不需要即時。
+view IsinSecurities {
+  symbol       String?
+  name         String?
+  isinCode     String?   @map("isin_code")
+  listedDate   DateTime? @map("listed_date") @db.Date
+  marketType   String?   @map("market_type")
+  industry     String?
+  cfiCode      String?   @map("cfi_code")
+  securityType String?   @map("security_type")
+  note         String?
+
+  @@map("isin_securities")
+  @@ignore
+  @@schema("export")
+}

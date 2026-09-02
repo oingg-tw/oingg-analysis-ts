@@ -19,9 +19,11 @@ const router = Router();
  *       TPEx 上櫃（含興櫃，除非用 `includeEmerging=false` 排除）。回應是排序過、去重的字串
  *       陣列，不分頁（目前量級約 2,300 檔，payload 很小）。
  *
- *       `excludeFullDelivery`/`excludePreferredStock` 這兩個參數目前**沒有資料源支援**，
- *       傳了不會 400、也不會靜默忽略——請求會照樣執行（不套用這兩個篩選），`warnings`
- *       會說明原因。等資料到位再補篩選邏輯，介面形狀不會變。
+ *       `excludeFullDelivery`/`excludePreferredStock` 這兩個參數傳了不會 400、也不會靜默
+ *       忽略——請求會照樣執行，`warnings` 會說明原因：`excludeFullDelivery` 是還沒有資料源
+ *       支援（等 mops-ts/tpex-ts）；`excludePreferredStock` 則是沒有實際效果——這份清單的
+ *       底層資料（company_profile）本來就不含特別股（特別股跟母公司共用同一個法人，沒有
+ *       獨立登記），不是缺篩選邏輯。
  *     tags:
  *       - System
  *     parameters:
@@ -54,7 +56,7 @@ const router = Router();
  *         schema:
  *           type: boolean
  *           default: false
- *         description: 是否排除特別股——目前沒有資料源支援，傳 true 只會在 warnings 說明，不會實際生效。
+ *         description: 是否排除特別股——沒有實際效果，這份清單的資料來源本來就不含特別股，傳 true 只會在 warnings 說明。
  *     responses:
  *       200:
  *         description: "`{ count, symbols, warnings }`"

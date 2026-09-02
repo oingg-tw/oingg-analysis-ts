@@ -5,10 +5,12 @@ export interface SecuritySymbolsQuery {
   market?: 'TWSE' | 'TPEx';
   includeEmerging: boolean;
   excludeKy: boolean;
-  // 全額交割、特別股目前技術上做不到（見 src/shared/sourceData/companyProfile.ts 的說明），
-  // 但先讓查詢介面接受這兩個參數——呼叫端如果傳了 true，回應的 warnings 會說明目前無效，
-  // 不會靜默忽略，也不會因為傳了不支援的參數就整個請求 400。之後資料到位，直接補篩選邏輯，
-  // 呼叫端不用改介面。
+  // 查詢介面接受這兩個參數，但呼叫端如果傳了 true，回應的 warnings 會說明目前無效，不會
+  // 靜默忽略，也不會因為傳了不支援的參數就整個請求 400。兩個的原因不一樣（見
+  // src/shared/sourceData/companyProfile.ts 的說明）：excludeFullDelivery 是真的缺資料源
+  // （等 mops-ts/tpex-ts），之後資料到位可以直接補篩選邏輯；excludePreferredStock 則是這份
+  // 清單的底層資料本來就不含特別股，加篩選邏輯也不會改變結果，保留這個參數只是讓呼叫端不用
+  // 猜「要不要自己排除特別股」。
   excludeFullDelivery: boolean;
   excludePreferredStock: boolean;
 }

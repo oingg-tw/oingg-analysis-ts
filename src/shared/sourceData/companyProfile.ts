@@ -102,12 +102,16 @@ const getAllSecurityRows = async (): Promise<RawSecurityRow[]> => {
   ];
 };
 
-// 全額交割（等 mops-ts/tpex-ts 的資料集，2026-09-02 還在等回覆）、特別股（company_profile
-// 完全沒有特別股的獨立登記，2026-09-02 實測 symbol 沒有任何筆符合台灣特別股代號慣例——母公司
-// 代號+英文字母。同一天問過 twse-ts，他們有 isin_securities 表的 securityType 欄位可以判斷
-// 特別股，但還沒開放到 export schema，已經請他們開，還沒收到完成通知）這兩個篩選維度目前
-// 技術上做不到，故意不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會
-// 誤以為能用），等資料到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
+// 全額交割排除目前技術上做不到（等 mops-ts/tpex-ts 的資料集，2026-09-02 還在等回覆），故意
+// 不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會誤以為能用），等資料
+// 到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
+//
+// 特別股排除則是另一種情況——不是資料源不夠，是這份清單的底層資料（company_profile，公司
+// 登記表）結構上本來就不含特別股（特別股跟母公司共用同一個法人，沒有自己獨立的登記，
+// 2026-09-02 實測 symbol 沒有任何筆符合台灣特別股代號慣例）。twse-ts 後來開放了
+// isin_securities（能查到特別股清單），但那解決的是「查特別股」這個不同的問題，不是「從這份
+// 已經不含特別股的清單裡再排除一次」，所以這裡刻意不加 excludePreferredStock 篩選邏輯——加了
+// 也不會改變任何結果，見 src/domains/securities/service.ts 的 warnings 說明。
 export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise<string[]> => {
   const rows = await getAllSecurityRows();
   const filtered = rows.filter((row) => {
