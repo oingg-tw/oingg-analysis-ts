@@ -1,6 +1,6 @@
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getTwseCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getTwseNonKyCompanySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { Prisma } from '../../../../../generated/tpex-export-client';
 import type { RankingMetric, RankingQuery, RankingResult, RankingRow } from './types';
 
@@ -25,9 +25,10 @@ interface MarketQueryResult {
 // 已經足夠湊出合併後真正的前 limit 名（標準的「合併 k 個已排序列表取前 N 名」作法，見
 // calculateRanking 合併邏輯）。
 //
-// 2026-09-01 應使用者要求排除 ETF/衍生性商品：symbol 過濾要放進查詢本身（WHERE symbol IN
-// (...)），不能等查完再篩掉——不然 take: limit 抓到的前 limit 筆可能一半是 ETF，篩完剩不到
-// limit 筆，讓合併後的排行漏掉本來排得進來的真公司。
+// 2026-09-01 應使用者要求排除 ETF/衍生性商品；2026-09-02 再加上排除 KY 股（境外註冊掛牌
+// 公司）：symbol 過濾要放進查詢本身（WHERE symbol IN (...)），不能等查完再篩掉——不然
+// take: limit 抓到的前 limit 筆可能一半是 ETF/KY 股，篩完剩不到 limit 筆，讓合併後的排行
+// 漏掉本來排得進來的真公司，見 getTwseNonKyCompanySymbolSet 的說明。
 const queryTwseMarket = async (
   tradeDate: Date,
   metric: RankingMetric,
@@ -65,9 +66,12 @@ const METRIC_COLUMNS: Record<RankingMetric, string> = {
   dividendYield: 'dividend_yield',
 };
 
-// 排除 ETF/衍生性商品——daily_valuation 跟 company_profile 同一個資料庫（export schema），
-// 直接用子查詢過濾，不用像 TWSE 那邊先把整份 symbol 清單抓進 JS 再塞進 IN(...) 參數。
-const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."company_profile")`;
+// 排除 ETF/衍生性商品，以及 KY 股（境外註冊掛牌公司，short_name 以「-KY」結尾，2026-09-02
+// 應使用者要求）——daily_valuation 跟 company_profile 同一個資料庫（export schema），直接用
+// 子查詢過濾，不用像 TWSE 那邊先把整份 symbol 清單抓進 JS 再塞進 IN(...) 參數。short_name
+// IS NULL 那個分支是防呆：SQL 的 NOT LIKE 對 NULL 值一律回傳 NULL（不是 TRUE），沒有這個
+// 分支會誤刪 short_name 剛好是 NULL 的公司。
+const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."company_profile" WHERE short_name IS NULL OR short_name NOT LIKE '%-KY%')`;
 
 const queryTpexMarket = async (tradeDate: Date, metric: RankingMetric, order: 'asc' | 'desc', limit: number, excludeNonPositive: boolean): Promise<MarketQueryResult> => {
   const column = Prisma.raw(`"${METRIC_COLUMNS[metric]}"`);
@@ -114,7 +118,7 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   }
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
-  const twseCompanySymbols = await getTwseCompanySymbolSet();
+  const twseCompanySymbols = await getTwseNonKyCompanySymbolSet();
   const [twseResult, tpexResult] = await Promise.all([
     queryTwseMarket(tradeDate, metric, order, limit, excludeNonPositive, twseCompanySymbols),
     queryTpexMarket(tradeDate, metric, order, limit, excludeNonPositive),

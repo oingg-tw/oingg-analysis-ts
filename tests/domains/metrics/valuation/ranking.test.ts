@@ -74,6 +74,17 @@ test('ranking: 排行裡不應該出現 ETF/衍生性商品', async () => {
   }
 });
 
+// 2026-09-02 應使用者要求排除 KY 股（境外註冊掛牌公司，short_name 以「-KY」結尾）——只用
+// pbRatio asc 測，因為修這個之前實測過低淨值比排行前幾名剛好被好幾檔 KY 股佔滿（例如
+// 8429 金麗-KY、8437 大地-KY、2239 英利-KY），是這個排除邏輯最容易看得出效果的案例。
+test('ranking: 排行裡不應該出現 KY 股', async () => {
+  const result = await calculateRanking({ metric: 'pbRatio', order: 'asc', limit: 50 });
+  assert.ok(result.rankings.length > 0);
+  for (const row of result.rankings) {
+    assert.ok(!row.companyName?.includes('-KY'), `${row.symbol}（${row.companyName}）是 KY 股，應該已經被排除`);
+  }
+});
+
 after(async () => {
   await twsePrisma.$disconnect();
   await tpexExportPrisma.$disconnect();

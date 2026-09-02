@@ -24,6 +24,8 @@ const router = Router();
  *         是財務體質出問題，混進「最低本益比」排行榜會誤導——回應的 `excludedNonPositiveCount`
  *         記錄排除了幾家。`dividendYield` 沒有這個排除（沒配息是 0，不是負的）。
  *       - `date` 選填，不給就抓 `daily_valuation` 目前最新一個交易日。
+ *       - 已排除 ETF/衍生性商品，以及 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾）——
+ *         2026-09-02 應使用者要求，只有這支排行有排除 KY 股，不是全服務性質的政策。
  *     tags:
  *       - Valuation
  *     parameters:

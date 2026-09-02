@@ -50,6 +50,15 @@ export const getTpexCompanySymbolSet = async (): Promise<Set<string>> => {
   return new Set(rows.map((row) => row.symbol));
 };
 
+// 排除 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾，例如「英利-KY」）——2026-09-02 應
+// 使用者要求，只有 /valuation/ranking 在用，不是像上面 getTwseCompanySymbolSet 那樣給多個
+// 排行/screener 共用的「排除 ETF」政策。KY 股本身是合法的上市公司、不是衍生性商品，這裡
+// 排除純粹是估值排行這個情境下的使用者選擇，不代表其他功能也該跟著排除。
+export const getTwseNonKyCompanySymbolSet = async (): Promise<Set<string>> => {
+  const rows = await twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } });
+  return new Set(rows.filter((row) => !row.shortName?.includes('-KY')).map((row) => row.symbol));
+};
+
 // 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
 // 實際出現的 symbol，不是全市場，跟 GET /companies 的「一次拿全部自己快取」是不同情境：這裡
 // 是結果已經算好了、對這幾十~兩百檔補顯示名稱，不需要排序全部資料，跟 sortField 排公司名稱
