@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { calculateRevenueRanking } from './service';
 
 const querySchema = z.object({
-  metric: z.enum(['yoy', 'mom', 'revenue'], { required_error: 'metric is required.' }),
-  order: z.enum(['asc', 'desc'], { required_error: 'order is required.' }),
+  metric: z.enum(['yoy', 'mom', 'revenue'], { error: 'metric is required.' }),
+  order: z.enum(['asc', 'desc'], { error: 'order is required.' }),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

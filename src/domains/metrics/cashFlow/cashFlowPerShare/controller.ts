@@ -4,7 +4,7 @@ import { calculateCashFlowPerShare } from './service';
 
 const querySchema = z
   .object({
-    companyId: z.string({ required_error: 'companyId is required.' }).min(1),
+    companyId: z.string({ error: 'companyId is required.' }).min(1),
     // year/season 選填但要成對——不給就自動抓最新一季，只給其中一個視為無效請求（見下方 refine）。
     year: z.string().min(1).optional(), // 民國年，例如 "115"
     season: z.enum(['1', '2', '3', '4']).optional(),

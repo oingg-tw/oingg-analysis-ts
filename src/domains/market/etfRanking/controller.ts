@@ -5,9 +5,9 @@ import { calculateEtfRanking } from './service';
 const querySchema = z.object({
   metric: z.enum(
     ['aum', 'holders', 'netFlow', 'dcaAmount', 'return3m', 'return6m', 'return1y', 'return2y', 'return3y', 'return5y', 'returnYtd', 'return10y', 'expenseRatio'],
-    { required_error: 'metric is required.' }
+    { error: 'metric is required.' }
   ),
-  order: z.enum(['asc', 'desc'], { required_error: 'order is required.' }),
+  order: z.enum(['asc', 'desc'], { error: 'order is required.' }),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

@@ -40,7 +40,7 @@ export const getCompanies = async (req: Request, res: Response, next: NextFuncti
 };
 
 const profileQuerySchema = z.object({
-  companyId: z.string({ required_error: 'companyId is required.' }).min(1),
+  companyId: z.string({ error: 'companyId is required.' }).min(1),
 });
 
 export const getCompanyProfile = async (req: Request, res: Response, next: NextFunction) => {

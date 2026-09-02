@@ -30,7 +30,7 @@ const MAX_SYMBOLS = 100;
 
 const querySchema = z.object({
   symbols: z
-    .string({ required_error: 'symbols is required.' })
+    .string({ error: 'symbols is required.' })
     .min(1)
     .transform((value) => value.split(',').map((s) => s.trim()).filter((s) => s.length > 0))
     .refine((symbols) => symbols.length > 0, { message: 'symbols 至少要有一個公司代號。' })

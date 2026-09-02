@@ -38,8 +38,8 @@ export const postScreener = async (req: Request, res: Response, next: NextFuncti
 };
 
 const rankingQuerySchema = z.object({
-  field: z.string({ required_error: 'field is required.' }).min(1),
-  direction: z.enum(['asc', 'desc'], { required_error: 'direction is required.' }),
+  field: z.string({ error: 'field is required.' }).min(1),
+  direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }),
   limit: z.coerce.number().int().min(1).max(50).default(10),
   columns: z
     .string()
