@@ -4,7 +4,7 @@ import { listSecuritySymbols } from '@/domains/securities/service';
 import twsePrisma from '@/adapters/prisma/twseClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
-const baseQuery = { includeEmerging: true, excludeKy: false, excludeFullDelivery: false, excludePreferredStock: false };
+const baseQuery = { includeEmerging: true, excludeKy: false, excludeFullDelivery: false };
 
 test('listSecuritySymbols: 沒有傳未支援的篩選時，warnings 應該是空的', async () => {
   const result = await listSecuritySymbols(baseQuery);
@@ -17,13 +17,17 @@ test('listSecuritySymbols: excludeFullDelivery=true 應該回警告說明卡在�
   assert.match(result.warnings[0]!, /資料源/);
 });
 
-test('listSecuritySymbols: excludePreferredStock=true 應該回警告說明沒有實際效果（不是缺資料源）', async () => {
-  const result = await listSecuritySymbols({ ...baseQuery, excludePreferredStock: true });
+test('listSecuritySymbols: preferredStock=only 應該回傳特別股，不需要警告', async () => {
+  const result = await listSecuritySymbols({ ...baseQuery, preferredStock: 'only' });
+  assert.deepEqual(result.warnings, []);
+  assert.ok(result.symbols.includes('1101B'), '1101B（台泥乙特）應該在清單裡');
+});
+
+test('listSecuritySymbols: market=TPEx + preferredStock=only 應該回空清單並附警告說明資料源限制', async () => {
+  const result = await listSecuritySymbols({ ...baseQuery, market: 'TPEx', preferredStock: 'only' });
+  assert.deepEqual(result.symbols, []);
   assert.equal(result.warnings.length, 1);
-  assert.match(result.warnings[0]!, /沒有實際效果/);
-  // 特別股本來就不在清單裡，這個參數不該影響清單內容本身。
-  const baseline = await listSecuritySymbols(baseQuery);
-  assert.deepEqual(result.symbols, baseline.symbols);
+  assert.match(result.warnings[0]!, /只有 TWSE/);
 });
 
 after(async () => {

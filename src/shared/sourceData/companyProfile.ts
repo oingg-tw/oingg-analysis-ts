@@ -68,6 +68,7 @@ export interface SecuritySymbolsFilter {
   market?: 'TWSE' | 'TPEx'; // 不給就兩個市場都要
   includeEmerging?: boolean; // 預設 true——興櫃算真正公司，見 getTwseCompanySymbolSet 的說明
   excludeKy?: boolean; // 預設 false——KY 股是合法上市公司，不是衍生商品，預設不排除
+  preferredStock?: 'only' | 'exclude'; // 不給就兩種都要（股票+特別股混在一起）
 }
 
 interface RawSecurityRow {
@@ -75,6 +76,7 @@ interface RawSecurityRow {
   market: 'TWSE' | 'TPEx';
   shortName: string | null;
   isEmerging: boolean;
+  isPreferredStock: boolean;
 }
 
 // 給 GET /securities/symbols 用（2026-09-02 應使用者要求，原本是 GET /companies/symbols，
@@ -84,40 +86,54 @@ interface RawSecurityRow {
 //
 // mops-ts 之前請我們手動貼一份「真正公司代號清單」給他們做 capital_stock_history 全市場回補，
 // 貼靜態清單容易過時/貼錯（已經發生過一次：第一版漏算興櫃），改成端點讓他們自己即時打。
+//
+// 2026-09-02 使用者要求把這支端點做成「通用證券代號查詢」（不是只服務 mops-ts 那個特定情境），
+// 需要真的能選「只要特別股」或「排除特別股」，不是原本以為的「company_profile 本來就不含
+// 特別股，這個參數沒有意義」——company_profile 確實不含特別股，但這不代表這支端點的資料源
+// 只能是 company_profile。改成額外 UNION 進 twse-ts 的 export.isin_securities
+// （security_type='特別股'）取得特別股清單，company_profile 負責一般股票（+KY/興櫃判斷），
+// isin_securities 負責特別股這個子集——兩者是互補關係，不是取代關係。
+//
+// 已知限制：isin_securities 目前只有 TWSE（market_type 只有「上市」「上市臺灣創新板」，
+// 2026-09-02 實測 1,384 筆裡沒有任何上櫃資料），TPEx 特別股目前查不到，`market=TPEx` +
+// `preferredStock=only` 這個組合現在一定回空陣列，不是 bug。
 const getAllSecurityRows = async (): Promise<RawSecurityRow[]> => {
-  const [twseRows, tpexRows] = await Promise.all([
+  const [twseRows, tpexRows, twsePreferredRows] = await Promise.all([
     twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true, shortName: true } }),
     tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
       SELECT symbol, short_name, market FROM "export"."company_profile"
     `,
+    twsePrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
+      SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
+    `,
   ]);
   return [
-    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.shortName, isEmerging: false })),
+    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.shortName, isEmerging: false, isPreferredStock: false })),
     ...tpexRows.map((row) => ({
       symbol: row.symbol,
       market: 'TPEx' as const,
       shortName: row.short_name,
       isEmerging: row.market === 'COMPANY_PROFILE_EMERGING',
+      isPreferredStock: false,
     })),
+    // isin_securities 沒有 shortName/KY 判斷用得到的欄位，用 name 頂替——特別股的名稱是跟著
+    // 母公司走的（例如「台泥乙特」），如果母公司是 KY 股，名稱理論上也會帶 -KY，沒有實測過
+    // 反例，先用同一套判斷邏輯，之後發現不準再調整。
+    ...twsePreferredRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.name, isEmerging: false, isPreferredStock: true })),
   ];
 };
 
 // 全額交割排除目前技術上做不到（等 mops-ts/tpex-ts 的資料集，2026-09-02 還在等回覆），故意
 // 不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會誤以為能用），等資料
 // 到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
-//
-// 特別股排除則是另一種情況——不是資料源不夠，是這份清單的底層資料（company_profile，公司
-// 登記表）結構上本來就不含特別股（特別股跟母公司共用同一個法人，沒有自己獨立的登記，
-// 2026-09-02 實測 symbol 沒有任何筆符合台灣特別股代號慣例）。twse-ts 後來開放了
-// isin_securities（能查到特別股清單），但那解決的是「查特別股」這個不同的問題，不是「從這份
-// 已經不含特別股的清單裡再排除一次」，所以這裡刻意不加 excludePreferredStock 篩選邏輯——加了
-// 也不會改變任何結果，見 src/domains/securities/service.ts 的 warnings 說明。
 export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise<string[]> => {
   const rows = await getAllSecurityRows();
   const filtered = rows.filter((row) => {
     if (filter.market && row.market !== filter.market) return false;
     if (filter.includeEmerging === false && row.isEmerging) return false;
     if (filter.excludeKy && row.shortName?.includes('-KY')) return false;
+    if (filter.preferredStock === 'only' && !row.isPreferredStock) return false;
+    if (filter.preferredStock === 'exclude' && row.isPreferredStock) return false;
     return true;
   });
   return [...new Set(filtered.map((row) => row.symbol))].sort();

@@ -15,8 +15,8 @@ const querySchema = z.object({
   market: z.enum(['TWSE', 'TPEx']).optional(),
   includeEmerging: booleanQueryParam(true),
   excludeKy: booleanQueryParam(false),
+  preferredStock: z.enum(['only', 'exclude']).optional(),
   excludeFullDelivery: booleanQueryParam(false),
-  excludePreferredStock: booleanQueryParam(false),
 });
 
 export const getSecuritySymbolsHandler = async (req: Request, res: Response, next: NextFunction) => {

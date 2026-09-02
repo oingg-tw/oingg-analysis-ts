@@ -5,14 +5,14 @@ export interface SecuritySymbolsQuery {
   market?: 'TWSE' | 'TPEx';
   includeEmerging: boolean;
   excludeKy: boolean;
-  // 查詢介面接受這兩個參數，但呼叫端如果傳了 true，回應的 warnings 會說明目前無效，不會
-  // 靜默忽略，也不會因為傳了不支援的參數就整個請求 400。兩個的原因不一樣（見
-  // src/shared/sourceData/companyProfile.ts 的說明）：excludeFullDelivery 是真的缺資料源
-  // （等 mops-ts/tpex-ts），之後資料到位可以直接補篩選邏輯；excludePreferredStock 則是這份
-  // 清單的底層資料本來就不含特別股，加篩選邏輯也不會改變結果，保留這個參數只是讓呼叫端不用
-  // 猜「要不要自己排除特別股」。
+  // 不給就股票+特別股都要；'only' 只要特別股，'exclude' 排除特別股。特別股資料源是 twse-ts
+  // 的 export.isin_securities，目前只有 TWSE（見 companyProfile.ts 的說明），
+  // market=TPEx + preferredStock=only 這個組合現在一定回空陣列。
+  preferredStock?: 'only' | 'exclude';
+  // 全額交割排除目前技術上做不到（等 mops-ts/tpex-ts 的資料集），查詢介面先接受這個參數，
+  // 傳了不會 400、也不會靜默忽略——回應的 warnings 會說明目前無效，之後資料到位直接補
+  // 篩選邏輯，呼叫端不用改介面。
   excludeFullDelivery: boolean;
-  excludePreferredStock: boolean;
 }
 
 export interface SecuritySymbolsResult {

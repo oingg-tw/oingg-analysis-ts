@@ -16,14 +16,17 @@ const router = Router();
  *       capital_stock_history 全市場回補。
  *
  *       基礎範圍固定是：TWSE 上市（排除證券商登記等非交易性質的 `COMPANY_PROFILE_PUBLIC`）+
- *       TPEx 上櫃（含興櫃，除非用 `includeEmerging=false` 排除）。回應是排序過、去重的字串
+ *       TPEx 上櫃（含興櫃，除非用 `includeEmerging=false` 排除）。股票（company_profile）跟
+ *       特別股（twse-ts 的 `export.isin_securities`，`securityType='特別股'`）是兩個互補的
+ *       資料源，`preferredStock` 這個參數控制怎麼混這兩份資料。回應是排序過、去重的字串
  *       陣列，不分頁（目前量級約 2,300 檔，payload 很小）。
  *
- *       `excludeFullDelivery`/`excludePreferredStock` 這兩個參數傳了不會 400、也不會靜默
- *       忽略——請求會照樣執行，`warnings` 會說明原因：`excludeFullDelivery` 是還沒有資料源
- *       支援（等 mops-ts/tpex-ts）；`excludePreferredStock` 則是沒有實際效果——這份清單的
- *       底層資料（company_profile）本來就不含特別股（特別股跟母公司共用同一個法人，沒有
- *       獨立登記），不是缺篩選邏輯。
+ *       已知限制：特別股資料源目前只有 TWSE（2026-09-02 實測 `isin_securities` 沒有任何上櫃
+ *       資料），`market=TPEx` + `preferredStock=only` 這個組合一定回空清單，`warnings`
+ *       會說明原因，不是查詢失敗。
+ *
+ *       `excludeFullDelivery` 傳了不會 400、也不會靜默忽略——請求會照樣執行，`warnings`
+ *       會說明目前還沒有資料源支援（等 mops-ts/tpex-ts）。
  *     tags:
  *       - System
  *     parameters:
@@ -46,17 +49,17 @@ const router = Router();
  *           default: false
  *         description: 是否排除 KY 股（境外註冊掛牌公司，簡稱以「-KY」結尾）。
  *       - in: query
+ *         name: preferredStock
+ *         schema:
+ *           type: string
+ *           enum: [only, exclude]
+ *         description: 不給就股票+特別股都要；only 只要特別股，exclude 排除特別股。特別股資料源目前只有 TWSE。
+ *       - in: query
  *         name: excludeFullDelivery
  *         schema:
  *           type: boolean
  *           default: false
  *         description: 是否排除全額交割股——目前沒有資料源支援，傳 true 只會在 warnings 說明，不會實際生效。
- *       - in: query
- *         name: excludePreferredStock
- *         schema:
- *           type: boolean
- *           default: false
- *         description: 是否排除特別股——沒有實際效果，這份清單的資料來源本來就不含特別股，傳 true 只會在 warnings 說明。
  *     responses:
  *       200:
  *         description: "`{ count, symbols, warnings }`"
