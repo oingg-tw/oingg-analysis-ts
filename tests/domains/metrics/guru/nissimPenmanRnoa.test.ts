@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateNissimPenmanRnoa } from '@/domainApi/metrics/guru/nissimPenmanRnoa/service';
+import { calculateNissimPenmanRnoa } from '@/domainBatch/metrics/guru/nissimPenmanRnoa/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

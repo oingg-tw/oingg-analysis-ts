@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateCashFlowPerShare } from './service';
+import { calculateCashFlowPerShare } from '@/domainBatch/metrics/cashFlow/cashFlowPerShare/service';
 
 const querySchema = z
   .object({

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateCashFlowPerShare } from '@/domainApi/metrics/cashFlow/cashFlowPerShare/service';
+import { calculateCashFlowPerShare } from '@/domainBatch/metrics/cashFlow/cashFlowPerShare/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

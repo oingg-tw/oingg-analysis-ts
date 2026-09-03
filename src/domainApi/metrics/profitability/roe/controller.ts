@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateRoe } from './service';
+import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
 
 const querySchema = z
   .object({

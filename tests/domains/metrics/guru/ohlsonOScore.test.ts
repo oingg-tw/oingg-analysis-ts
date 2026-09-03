@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOhlsonOScore } from '@/domainApi/metrics/guru/ohlsonOScore/service';
+import { calculateOhlsonOScore } from '@/domainBatch/metrics/guru/ohlsonOScore/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

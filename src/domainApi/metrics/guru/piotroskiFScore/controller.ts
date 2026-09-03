@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculatePiotroskiFScore } from './service';
+import { calculatePiotroskiFScore } from '@/domainBatch/metrics/guru/piotroskiFScore/service';
 
 const querySchema = z
   .object({

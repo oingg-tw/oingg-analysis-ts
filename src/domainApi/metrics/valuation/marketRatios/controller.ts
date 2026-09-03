@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateMarketRatios } from './service';
+import { calculateMarketRatios } from '@/domainBatch/metrics/valuation/marketRatios/service';
 
 const querySchema = z.object({
   companyId: z.string({ error: 'companyId is required.' }).min(1),

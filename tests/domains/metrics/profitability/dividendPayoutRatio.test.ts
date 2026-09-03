@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDividendPayoutRatio } from '@/domainApi/metrics/profitability/dividendPayoutRatio/service';
+import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitability/dividendPayoutRatio/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

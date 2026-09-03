@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateDeRatio } from './service';
+import { calculateDeRatio } from '@/domainBatch/metrics/solvency/deRatio/service';
 
 const querySchema = z
   .object({

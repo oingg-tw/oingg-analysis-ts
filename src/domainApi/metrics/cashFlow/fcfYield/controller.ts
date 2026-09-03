@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateFcfYield } from './service';
+import { calculateFcfYield } from '@/domainBatch/metrics/cashFlow/fcfYield/service';
 
 const querySchema = z
   .object({

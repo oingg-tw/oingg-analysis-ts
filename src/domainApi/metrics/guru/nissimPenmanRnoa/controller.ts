@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateNissimPenmanRnoa } from './service';
+import { calculateNissimPenmanRnoa } from '@/domainBatch/metrics/guru/nissimPenmanRnoa/service';
 
 const querySchema = z
   .object({

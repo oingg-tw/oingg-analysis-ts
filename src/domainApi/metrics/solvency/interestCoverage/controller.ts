@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateInterestCoverage } from './service';
+import { calculateInterestCoverage } from '@/domainBatch/metrics/solvency/interestCoverage/service';
 
 const querySchema = z
   .object({

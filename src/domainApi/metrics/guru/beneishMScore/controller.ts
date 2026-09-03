@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateBeneishMScore } from './service';
+import { calculateBeneishMScore } from '@/domainBatch/metrics/guru/beneishMScore/service';
 
 const querySchema = z
   .object({

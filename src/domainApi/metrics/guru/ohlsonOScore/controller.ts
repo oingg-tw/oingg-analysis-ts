@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateOhlsonOScore } from './service';
+import { calculateOhlsonOScore } from '@/domainBatch/metrics/guru/ohlsonOScore/service';
 
 const querySchema = z
   .object({

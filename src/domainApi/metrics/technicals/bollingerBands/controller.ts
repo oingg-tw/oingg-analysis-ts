@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateBollingerBands } from './service';
+import { calculateBollingerBands } from '@/domainBatch/metrics/technicals/bollingerBands/service';
 
 const querySchema = z.object({
   companyId: z.string({ error: 'companyId is required.' }).min(1),

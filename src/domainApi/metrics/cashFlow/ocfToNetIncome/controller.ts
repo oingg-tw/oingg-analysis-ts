@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateOcfToNetIncome } from './service';
+import { calculateOcfToNetIncome } from '@/domainBatch/metrics/cashFlow/ocfToNetIncome/service';
 
 const querySchema = z
   .object({

@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { calculateRanking } from './service';
+import { calculateRanking } from '@/domainBatch/metrics/valuation/ranking/service';
 
 const querySchema = z.object({
   metric: z.enum(['peRatio', 'pbRatio', 'dividendYield'], { error: 'metric is required.' }),

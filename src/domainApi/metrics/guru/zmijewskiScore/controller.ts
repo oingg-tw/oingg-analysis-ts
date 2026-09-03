@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateZmijewskiScore } from './service';
+import { calculateZmijewskiScore } from '@/domainBatch/metrics/guru/zmijewskiScore/service';
 
 const querySchema = z
   .object({

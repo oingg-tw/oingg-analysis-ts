@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateTurnoverRatio } from '@/domainApi/metrics/turnover/turnoverRatio/service';
+import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverRatio/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

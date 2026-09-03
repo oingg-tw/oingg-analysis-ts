@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateCapexToRevenue } from './service';
+import { calculateCapexToRevenue } from '@/domainBatch/metrics/turnover/capexToRevenue/service';
 
 const querySchema = z
   .object({

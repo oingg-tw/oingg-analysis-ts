@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateDebtRatio } from './service';
+import { calculateDebtRatio } from '@/domainBatch/metrics/solvency/debtRatio/service';
 
 const querySchema = z
   .object({

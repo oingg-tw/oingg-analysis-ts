@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateAccrualsRatio } from './service';
+import { calculateAccrualsRatio } from '@/domainBatch/metrics/cashFlow/accrualsRatio/service';
 
 const querySchema = z
   .object({

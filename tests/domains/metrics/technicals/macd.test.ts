@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateMacd } from '@/domainApi/metrics/technicals/macd/service';
+import { calculateMacd } from '@/domainBatch/metrics/technicals/macd/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

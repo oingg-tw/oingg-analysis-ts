@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateMargins } from './service';
+import { calculateMargins } from '@/domainBatch/metrics/profitability/margins/service';
 
 const querySchema = z
   .object({

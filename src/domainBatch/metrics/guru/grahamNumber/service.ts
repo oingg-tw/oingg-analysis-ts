@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateEps } from '@/domainApi/metrics/profitability/eps/service';
-import { calculateBvps } from '@/domainApi/metrics/profitability/bvps/service';
+import { calculateEps } from '@/domainBatch/metrics/profitability/eps/service';
+import { calculateBvps } from '@/domainBatch/metrics/profitability/bvps/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { GrahamNumberQuery, GrahamNumberResult } from './types';
 

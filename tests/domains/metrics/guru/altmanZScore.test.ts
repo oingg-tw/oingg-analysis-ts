@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAltmanZScore } from '@/domainApi/metrics/guru/altmanZScore/service';
+import { calculateAltmanZScore } from '@/domainBatch/metrics/guru/altmanZScore/service';
 import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateNcav } from './service';
+import { calculateNcav } from '@/domainBatch/metrics/guru/ncav/service';
 
 const querySchema = z
   .object({

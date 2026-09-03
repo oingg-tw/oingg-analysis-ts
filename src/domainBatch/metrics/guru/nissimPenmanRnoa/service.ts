@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateRoe } from '@/domainApi/metrics/profitability/roe/service';
+import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';

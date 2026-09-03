@@ -3,55 +3,60 @@
 // 共用同一份清單，不要兩邊各維護一份容易漂移。`macro/equityRiskPremium`（全市場單一值，沒有
 // companyId）跟 `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，
 // 不列進來，見 scripts/batchComputeIndicators.ts 開頭的說明。
+//
+// 2026-09-04：計算邏輯本體（`./metrics/**/service.ts`，含 upsert 進 analysis 結果表的動作）
+// 從 `domainApi/metrics/**` 搬進這裡——這份邏輯只有 domainBatch 會呼叫（domainApi 之後會走
+// 「先讀結果表、查不到才委派給這裡補算」的模式，不會再直接呼叫 calculate*），不是兩個入口
+// 共用的中立層，所以不放 shared/，直接歸 domainBatch 所有。
 
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getAllIncomeStatementSymbols } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { calculateEps } from '@/domainApi/metrics/profitability/eps/service';
-import { calculateBvps } from '@/domainApi/metrics/profitability/bvps/service';
-import { calculateRevenuePerShare } from '@/domainApi/metrics/profitability/revenuePerShare/service';
-import { calculateMargins } from '@/domainApi/metrics/profitability/margins/service';
-import { calculateRoe } from '@/domainApi/metrics/profitability/roe/service';
-import { calculateRoa } from '@/domainApi/metrics/profitability/roa/service';
-import { calculateRoic } from '@/domainApi/metrics/profitability/roic/service';
-import { calculateRoce } from '@/domainApi/metrics/profitability/roce/service';
-import { calculateDupont } from '@/domainApi/metrics/profitability/dupont/service';
-import { calculateDividendPayoutRatio } from '@/domainApi/metrics/profitability/dividendPayoutRatio/service';
-import { calculateSgr } from '@/domainApi/metrics/profitability/sgr/service';
-import { calculateCashFlowPerShare } from '@/domainApi/metrics/cashFlow/cashFlowPerShare/service';
-import { calculateOcfToNetIncome } from '@/domainApi/metrics/cashFlow/ocfToNetIncome/service';
-import { calculateAccrualsRatio } from '@/domainApi/metrics/cashFlow/accrualsRatio/service';
-import { calculateFcfYield } from '@/domainApi/metrics/cashFlow/fcfYield/service';
-import { calculateDebtRatio } from '@/domainApi/metrics/solvency/debtRatio/service';
-import { calculateLiquidityRatio } from '@/domainApi/metrics/solvency/liquidityRatio/service';
-import { calculateDeRatio } from '@/domainApi/metrics/solvency/deRatio/service';
-import { calculateInterestCoverage } from '@/domainApi/metrics/solvency/interestCoverage/service';
-import { calculateNetDebtToEbitda } from '@/domainApi/metrics/solvency/netDebtToEbitda/service';
-import { calculateTurnoverRatio } from '@/domainApi/metrics/turnover/turnoverRatio/service';
-import { calculateCapexToRevenue } from '@/domainApi/metrics/turnover/capexToRevenue/service';
-import { calculateGrahamNumber } from '@/domainApi/metrics/guru/grahamNumber/service';
-import { calculateNcav } from '@/domainApi/metrics/guru/ncav/service';
-import { calculateOwnerEarnings } from '@/domainApi/metrics/guru/ownerEarnings/service';
-import { calculateAltmanZScore } from '@/domainApi/metrics/guru/altmanZScore/service';
-import { calculatePiotroskiFScore } from '@/domainApi/metrics/guru/piotroskiFScore/service';
-import { calculateBeneishMScore } from '@/domainApi/metrics/guru/beneishMScore/service';
-import { calculateNissimPenmanRnoa } from '@/domainApi/metrics/guru/nissimPenmanRnoa/service';
-import { calculateZmijewskiScore } from '@/domainApi/metrics/guru/zmijewskiScore/service';
-import { calculateOhlsonOScore } from '@/domainApi/metrics/guru/ohlsonOScore/service';
-import { calculatePsr } from '@/domainApi/metrics/valuation/psr/service';
-import { calculatePFcf } from '@/domainApi/metrics/valuation/pFcf/service';
-import { calculateEvEbitda } from '@/domainApi/metrics/valuation/evEbitda/service';
-import { calculateMarketRatios } from '@/domainApi/metrics/valuation/marketRatios/service';
-import { calculateBeta } from '@/domainApi/metrics/portfolio/beta/service';
-import { calculateMa } from '@/domainApi/metrics/technicals/ma/service';
-import { calculateRsi } from '@/domainApi/metrics/technicals/rsi/service';
-import { calculateKd } from '@/domainApi/metrics/technicals/kd/service';
-import { calculateBollingerBands } from '@/domainApi/metrics/technicals/bollingerBands/service';
-import { calculateAtr } from '@/domainApi/metrics/technicals/atr/service';
-import { calculateBiasIndicator } from '@/domainApi/metrics/technicals/bias/service';
-import { calculateMacd } from '@/domainApi/metrics/technicals/macd/service';
-import { calculateObv } from '@/domainApi/metrics/technicals/obv/service';
+import { calculateEps } from './metrics/profitability/eps/service';
+import { calculateBvps } from './metrics/profitability/bvps/service';
+import { calculateRevenuePerShare } from './metrics/profitability/revenuePerShare/service';
+import { calculateMargins } from './metrics/profitability/margins/service';
+import { calculateRoe } from './metrics/profitability/roe/service';
+import { calculateRoa } from './metrics/profitability/roa/service';
+import { calculateRoic } from './metrics/profitability/roic/service';
+import { calculateRoce } from './metrics/profitability/roce/service';
+import { calculateDupont } from './metrics/profitability/dupont/service';
+import { calculateDividendPayoutRatio } from './metrics/profitability/dividendPayoutRatio/service';
+import { calculateSgr } from './metrics/profitability/sgr/service';
+import { calculateCashFlowPerShare } from './metrics/cashFlow/cashFlowPerShare/service';
+import { calculateOcfToNetIncome } from './metrics/cashFlow/ocfToNetIncome/service';
+import { calculateAccrualsRatio } from './metrics/cashFlow/accrualsRatio/service';
+import { calculateFcfYield } from './metrics/cashFlow/fcfYield/service';
+import { calculateDebtRatio } from './metrics/solvency/debtRatio/service';
+import { calculateLiquidityRatio } from './metrics/solvency/liquidityRatio/service';
+import { calculateDeRatio } from './metrics/solvency/deRatio/service';
+import { calculateInterestCoverage } from './metrics/solvency/interestCoverage/service';
+import { calculateNetDebtToEbitda } from './metrics/solvency/netDebtToEbitda/service';
+import { calculateTurnoverRatio } from './metrics/turnover/turnoverRatio/service';
+import { calculateCapexToRevenue } from './metrics/turnover/capexToRevenue/service';
+import { calculateGrahamNumber } from './metrics/guru/grahamNumber/service';
+import { calculateNcav } from './metrics/guru/ncav/service';
+import { calculateOwnerEarnings } from './metrics/guru/ownerEarnings/service';
+import { calculateAltmanZScore } from './metrics/guru/altmanZScore/service';
+import { calculatePiotroskiFScore } from './metrics/guru/piotroskiFScore/service';
+import { calculateBeneishMScore } from './metrics/guru/beneishMScore/service';
+import { calculateNissimPenmanRnoa } from './metrics/guru/nissimPenmanRnoa/service';
+import { calculateZmijewskiScore } from './metrics/guru/zmijewskiScore/service';
+import { calculateOhlsonOScore } from './metrics/guru/ohlsonOScore/service';
+import { calculatePsr } from './metrics/valuation/psr/service';
+import { calculatePFcf } from './metrics/valuation/pFcf/service';
+import { calculateEvEbitda } from './metrics/valuation/evEbitda/service';
+import { calculateMarketRatios } from './metrics/valuation/marketRatios/service';
+import { calculateBeta } from './metrics/portfolio/beta/service';
+import { calculateMa } from './metrics/technicals/ma/service';
+import { calculateRsi } from './metrics/technicals/rsi/service';
+import { calculateKd } from './metrics/technicals/kd/service';
+import { calculateBollingerBands } from './metrics/technicals/bollingerBands/service';
+import { calculateAtr } from './metrics/technicals/atr/service';
+import { calculateBiasIndicator } from './metrics/technicals/bias/service';
+import { calculateMacd } from './metrics/technicals/macd/service';
+import { calculateObv } from './metrics/technicals/obv/service';
 
 // 每個 result 都保證有的欄位——用來判斷這次呼叫「有沒有算出東西」，不用逐一解析每支指標
 // 各自不同的 fieldStatuses/null 欄位規則（見 src/shared/metricStatus.ts 開頭說明：這個結構化

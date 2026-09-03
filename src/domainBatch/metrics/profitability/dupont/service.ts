@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateMargins } from '@/domainApi/metrics/profitability/margins/service';
-import { calculateTurnoverRatio } from '@/domainApi/metrics/turnover/turnoverRatio/service';
-import { calculateRoe } from '@/domainApi/metrics/profitability/roe/service';
+import { calculateMargins } from '@/domainBatch/metrics/profitability/margins/service';
+import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverRatio/service';
+import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { DupontQuery, DupontResult } from './types';

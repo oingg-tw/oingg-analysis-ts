@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBeneishMScore } from '@/domainApi/metrics/guru/beneishMScore/service';
+import { calculateBeneishMScore } from '@/domainBatch/metrics/guru/beneishMScore/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

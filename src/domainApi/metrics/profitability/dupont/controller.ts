@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateDupont } from './service';
+import { calculateDupont } from '@/domainBatch/metrics/profitability/dupont/service';
 
 const querySchema = z
   .object({

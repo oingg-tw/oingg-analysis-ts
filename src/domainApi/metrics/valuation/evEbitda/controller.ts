@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateEvEbitda } from './service';
+import { calculateEvEbitda } from '@/domainBatch/metrics/valuation/evEbitda/service';
 
 const querySchema = z
   .object({

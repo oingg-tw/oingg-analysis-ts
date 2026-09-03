@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateSgr } from './service';
+import { calculateSgr } from '@/domainBatch/metrics/profitability/sgr/service';
 
 const querySchema = z
   .object({

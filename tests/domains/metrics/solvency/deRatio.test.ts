@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDeRatio } from '@/domainApi/metrics/solvency/deRatio/service';
+import { calculateDeRatio } from '@/domainBatch/metrics/solvency/deRatio/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

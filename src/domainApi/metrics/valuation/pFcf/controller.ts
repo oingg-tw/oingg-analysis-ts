@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculatePFcf } from './service';
+import { calculatePFcf } from '@/domainBatch/metrics/valuation/pFcf/service';
 
 const querySchema = z
   .object({

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateGrahamNumber } from './service';
+import { calculateGrahamNumber } from '@/domainBatch/metrics/guru/grahamNumber/service';
 
 const querySchema = z
   .object({

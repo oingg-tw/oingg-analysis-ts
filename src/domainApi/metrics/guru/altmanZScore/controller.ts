@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateAltmanZScore } from './service';
+import { calculateAltmanZScore } from '@/domainBatch/metrics/guru/altmanZScore/service';
 
 const querySchema = z
   .object({

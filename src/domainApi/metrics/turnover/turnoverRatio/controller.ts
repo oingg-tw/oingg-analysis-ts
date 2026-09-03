@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateTurnoverRatio } from './service';
+import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverRatio/service';
 
 const querySchema = z
   .object({

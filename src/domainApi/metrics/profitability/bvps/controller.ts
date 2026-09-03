@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateBvps } from './service';
+import { calculateBvps } from '@/domainBatch/metrics/profitability/bvps/service';
 
 const querySchema = z
   .object({

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
-import { calculateDividendPayoutRatio } from './service';
+import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitability/dividendPayoutRatio/service';
 
 const querySchema = z
   .object({
