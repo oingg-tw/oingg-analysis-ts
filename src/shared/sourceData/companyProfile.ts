@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import type { CompanyProfileDetail } from '@/domains/companies/types';
+import type { CompanyProfileDetail } from '@/domainApi/companies/types';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;

@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { getTableForMetric, resolveField, validateMetricTableRegistry } from '@/domains/filter/metricTableRegistry';
+import { getTableForMetric, resolveField, validateMetricTableRegistry } from '@/domainApi/filter/metricTableRegistry';
 
 describe('metricTableRegistry', () => {
   test('真正的 filterCatalog.ts 裡每個 metric 都應該能解析出對應的 table（不拋錯）', () => {

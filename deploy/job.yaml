@@ -1,32 +1,41 @@
 # Cloud Run「工作」——排程觸發、跑一次就結束，對應 Dockerfile 的
-# node dist/scripts/syncCuratedDatasets.js（見 package.json 的 sync:curated）。
+# node dist/scripts/batchComputeIndicators.js（見 package.json 的 batch:compute）。
 # 跟 service.yaml 用同一個映像檔，只是 command/args 不同、不需要對外開 port。
+#
+# 2026-09-04 這份 YAML 原本是給已經退場的 syncCuratedDatasets.ts 用的（curated 中台層決定
+# 現階段太早、已整個回退，見對話紀錄），改成給批次入口（src/domainBatch/runner.ts，
+# scripts/batchComputeIndicators.ts 是薄殼觸發器）用——實際邏輯是幫全市場公司預先跑一輪 44 支
+# 指標、結果 upsert 進 analysis 表，是 API 讀取結果表的預先填充，不是即時計算本身（API 本身不
+# 依賴這個 Job 有沒有跑過，只是沒跑過/跑得不夠新鮮時，各指標自己即時算，見各 service.ts）。
 #
 # 部署：gcloud run jobs replace deploy/job.yaml --region=REGION --project=PROJECT_ID
 # 排程：這份 YAML 本身不會自動跑，要另外用 Cloud Scheduler 觸發（Cloud Run Job 沒有內建
 # cron，這點跟 Service 不一樣），部署完 Job 之後執行一次（把 REGION/PROJECT_ID/JOB 換成
 # 實際值，SCHEDULE 用 cron 表達式，例如 "0 20 * * *" 是每天台北時間凌晨 4 點——
-# Cloud Scheduler 預設用 UTC，記得換算或用 --time-zone 指定）：
+# Cloud Scheduler 預設用 UTC，記得換算或用 --time-zone 指定；批次算的是「目前最新一季/一天」
+# 的資料，建議排在 mops-ts/twse-ts/tpex-ts 當天資料 ingest 完之後再跑，避免抓到還沒更新的舊值）：
 #
-#   gcloud scheduler jobs create http oingg-analysis-ts-sync \
+#   gcloud scheduler jobs create http oingg-analysis-ts-batch-compute \
 #     --location=REGION \
 #     --schedule="SCHEDULE" \
 #     --time-zone="Asia/Taipei" \
-#     --uri="https://REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/PROJECT_ID/jobs/oingg-analysis-ts-sync:run" \
+#     --uri="https://REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/PROJECT_ID/jobs/oingg-analysis-ts-batch-compute:run" \
 #     --http-method=POST \
 #     --oauth-service-account-email=SCHEDULER_SERVICE_ACCOUNT@PROJECT_ID.iam.gserviceaccount.com
 #
 # SCHEDULER_SERVICE_ACCOUNT 這個服務帳號要有 roles/run.invoker 權限才能觸發這個 Job，
 # 這權限要另外在 GCP IAM 設定，不在這份 YAML 裡。
 #
-# 這個 Job 只需要 syncCuratedDatasets.ts 實際會連的 4 條連線（見該檔案的 import：
-# prisma 根 schema、analysisPrisma、mopsExportPrisma、govExportPrisma）——不是
-# service.yaml 那份完整清單，TWSE/GOV（非 export）/TPEX_EXPORT/SITCA_EXPORT 這次用不到，
-# 故意不給，縮小這個元件實際碰得到的密鑰範圍。
+# 這個 Job 只需要 src/domainBatch/runner.ts 實際會連的 4 條連線（mopsExportPrisma、
+# twseExportPrisma、tpexExportPrisma、analysisPrisma）——不是 service.yaml 那份完整清單，
+# govExportPrisma/sitcaExportPrisma 這次用不到（indicatorRegistry.ts 裡 macro/equityRiskPremium、
+# macro/govBondYield10y 是全市場單一值，不適用「單一公司」批次模式，沒有列進 indicatorJobs），
+# 故意不給，縮小這個元件實際碰得到的密鑰範圍。TPEX_EXPORT/沒有列 _DEV 版本，Cloud Run 上只會
+# 用到 _PROD 那組。
 apiVersion: run.googleapis.com/v1
 kind: Job
 metadata:
-  name: oingg-analysis-ts-sync
+  name: oingg-analysis-ts-batch-compute
   labels:
     cloud.googleapis.com/location: REGION # TODO
 spec:
@@ -34,15 +43,15 @@ spec:
     spec:
       template:
         spec:
-          # 跑一次就結束，失敗不要一直重試——sync 是 watermark-based（見
-          # scripts/syncCuratedDatasets.ts 的說明），下次排程觸發會自動從上次沒同步完的
-          # 地方接著做，不需要 Cloud Run Job 自己重試同一次執行。
+          # 跑一次就結束，失敗不要一直重試——單一公司/單一指標失敗會被 runWithConcurrency
+          # 接住（記錄失敗清單、繼續跑下一家），不會讓整個 Job 中斷；Job 本身失敗（例如連線
+          # 建立不起來）通常是設定問題，重跑也不會自己好，交給下次排程自然重試就好。
           maxRetries: 0
-          timeoutSeconds: 600
+          timeoutSeconds: 1800
           containers:
             - image: REGION-docker.pkg.dev/PROJECT_ID/oingg/oingg-analysis-ts:latest # TODO
               command: ['node']
-              args: ['dist/scripts/syncCuratedDatasets.js']
+              args: ['dist/scripts/batchComputeIndicators.js']
               resources:
                 limits:
                   cpu: '1'
@@ -50,20 +59,10 @@ spec:
               env:
                 - name: NODE_ENV
                   value: production
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: DATABASE-URL # TODO：Secret Manager 密鑰名稱，跟 service.yaml 共用同一份
-                      key: latest
-                - name: DIRECT_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: DIRECT-URL
-                      key: latest
                 - name: ANALYSIS_DATABASE_URL
                   valueFrom:
                     secretKeyRef:
-                      name: ANALYSIS-DATABASE-URL
+                      name: ANALYSIS-DATABASE-URL # TODO：Secret Manager 密鑰名稱，跟 service.yaml 共用同一份
                       key: latest
                 - name: ANALYSIS_DIRECT_URL
                   valueFrom:
@@ -80,13 +79,13 @@ spec:
                     secretKeyRef:
                       name: MOPS-EXPORT-DIRECT-URL
                       key: latest
-                - name: GOV_EXPORT_DATABASE_URL
+                - name: TWSE_EXPORT_DATABASE_URL
                   valueFrom:
                     secretKeyRef:
-                      name: GOV-EXPORT-DATABASE-URL
+                      name: TWSE-EXPORT-DATABASE-URL
                       key: latest
-                - name: GOV_EXPORT_DIRECT_URL
+                - name: TPEX_EXPORT_DATABASE_URL_PROD
                   valueFrom:
                     secretKeyRef:
-                      name: GOV-EXPORT-DIRECT-URL
+                      name: TPEX-EXPORT-DATABASE-URL-PROD
                       key: latest

@@ -28,7 +28,7 @@ const options: swaggerJSDoc.Options = {
       },
     ],
     // 順序對應 src/domains 底下分類的實作順序，決定 Swagger UI 分組顯示的先後——
-    // 每個 tag 對應一個分類資料夾（見 src/domains/metrics/README.md 的分類索引），
+    // 每個 tag 對應一個分類資料夾（見 src/domainApi/metrics/README.md 的分類索引），
     // 不要再用單一的 "Ratios" tag 把所有 API 混在一起。
     tags: [
       { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單' },
@@ -43,7 +43,7 @@ const options: swaggerJSDoc.Options = {
   },
   // Path to the API docs. It's crucial to use absolute paths created with `join`.
   apis: [
-    toGlobPath(process.cwd(), 'src/domains/**/*.ts'),
+    toGlobPath(process.cwd(), 'src/domainApi/**/*.ts'),
     toGlobPath(process.cwd(), 'src/shared/**/*.ts'),
   ],
 };

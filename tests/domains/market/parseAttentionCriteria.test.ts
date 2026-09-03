@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAttentionCriteria } from '@/domains/market/attentionStocks/parseCriteria';
+import { parseAttentionCriteria } from '@/domainApi/market/attentionStocks/parseCriteria';
 
 test('parseAttentionCriteria: null 回傳空陣列', () => {
   assert.deepEqual(parseAttentionCriteria(null), []);

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculatePsr } from '@/domains/metrics/valuation/psr/service';
+import { calculatePsr } from '@/domainApi/metrics/valuation/psr/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAnalysisSchemaModels } from '@/domains/filter/schemaIntrospection';
+import { parseAnalysisSchemaModels } from '@/domainApi/filter/schemaIntrospection';
 
 describe('parseAnalysisSchemaModels', () => {
   test('抽出 @@map 表名、@@id 主鍵欄位、每個欄位的 @map 資料庫欄名', () => {

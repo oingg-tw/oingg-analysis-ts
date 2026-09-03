@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateEvEbitda } from '@/domains/metrics/valuation/evEbitda/service';
+import { calculateEvEbitda } from '@/domainApi/metrics/valuation/evEbitda/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

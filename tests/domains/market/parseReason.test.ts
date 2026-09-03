@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from '@/domains/market/disposedStocks/parseReason';
+import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from '@/domainApi/market/disposedStocks/parseReason';
 
 test('parseDispositionTimes: null 回傳 null', () => {
   assert.equal(parseDispositionTimes(null), null);

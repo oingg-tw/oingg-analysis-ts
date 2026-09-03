@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBeneishMScore } from '@/domains/metrics/guru/beneishMScore/service';
+import { calculateBeneishMScore } from '@/domainApi/metrics/guru/beneishMScore/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
@@ -24,7 +24,7 @@ test('beneishMScore: 2330 115Q2 vs 114Q2，8 個變量全部能計算', async ()
   assert.equal(result.mScore, -1.4827);
   // 台積電這一季 YoY 營收成長高達 36%（SGI=1.36），Beneish M-Score 對高成長公司有已知的偽陽性
   // 傾向（模型沒辦法區分「真的在造假」跟「正常的高速成長」），flagged=true 是預期中的模型限制，
-  // 不代表台積電真的有財報異常，見 src/domains/metrics/guru/README.md 的說明。
+  // 不代表台積電真的有財報異常，見 src/domainApi/metrics/guru/README.md 的說明。
   assert.equal(result.flagged, true);
 
   assert.deepEqual(result.fieldStatuses, {});

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBeta, resample, type OverlapPoint } from '@/domains/metrics/portfolio/beta/service';
+import { calculateBeta, resample, type OverlapPoint } from '@/domainApi/metrics/portfolio/beta/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

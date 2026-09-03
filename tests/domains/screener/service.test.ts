@@ -1,6 +1,6 @@
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/domains/screener/service';
+import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/domainApi/screener/service';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 const baseRequest = { filters: [] as { field: string; min: number | null; max: number | null; exclude?: boolean }[], columns: [] as { field: string }[], page: 1, pageSize: 50 };

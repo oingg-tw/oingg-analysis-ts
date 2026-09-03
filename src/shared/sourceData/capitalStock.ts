@@ -19,7 +19,7 @@ interface RawCapitalStockRow {
 //
 // 注意單位：這裡回傳的 paidInShares 是實際股數（不是千股），但三張季度財報表的金額欄位
 // （netIncome、equityValue…）單位是「千元」。算每股數字時分子要先 x1000 換算成元，
-// 見 src/domains/bvps/service.ts 的 toPerShare——BVPS 曾因為漏了這個換算算出差 1000 倍的錯誤值。
+// 見 src/domainApi/bvps/service.ts 的 toPerShare——BVPS 曾因為漏了這個換算算出差 1000 倍的錯誤值。
 export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promise<PaidInSharesAsOf | null> => {
   const asOfYear = asOfDate.getUTCFullYear();
   const asOfMonth = asOfDate.getUTCMonth() + 1;

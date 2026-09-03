@@ -20,10 +20,10 @@ analysis-ts 是 oingg 生態系裡的**數據中台**：不擁有任何原始資
 
 | Context | 位置 | 擁有的資料模型 | 對外介面 | 明確不做的事 |
 |---|---|---|---|---|
-| **metrics** | `src/domains/metrics/` | `prisma/analysis/schema.prisma` 裡「算完的指標結果」那組表（RoeResult、PsrResult…） | `GET /<分類>/<指標>` | 不處理特別股/REITs/ETF 這類非「公司季度財報」骨架的證券；不知道 filter/sync 這兩個 context 內部怎麼運作 |
-| **filter** | `src/domains/filter/` | 無自己的資料表——`filterCatalog.ts` 是靜態登錄檔，`filterCatalogCheck.ts` 對照 `prisma/analysis/schema.prisma` 做一致性檢查 | `GET /filters` | 不計算任何指標，純粹是 metrics context 產出的 metadata 目錄 |
-| **preferredStock** | `src/domains/preferredStock/` | 未實作，規劃中 | 未實作 | 不共用 metrics context「公司+季度財報」的資料模型假設——特別股是獨立證券，不是公司的一個欄位 |
-| **system** | `src/domains/system/` | 無 | `GET /`（root，健康檢查用途） | 純基礎設施，不含任何業務邏輯 |
+| **metrics** | `src/domainApi/metrics/` | `prisma/analysis/schema.prisma` 裡「算完的指標結果」那組表（RoeResult、PsrResult…） | `GET /<分類>/<指標>` | 不處理特別股/REITs/ETF 這類非「公司季度財報」骨架的證券；不知道 filter/sync 這兩個 context 內部怎麼運作 |
+| **filter** | `src/domainApi/filter/` | 無自己的資料表——`filterCatalog.ts` 是靜態登錄檔，`filterCatalogCheck.ts` 對照 `prisma/analysis/schema.prisma` 做一致性檢查 | `GET /filters` | 不計算任何指標，純粹是 metrics context 產出的 metadata 目錄 |
+| **preferredStock** | `src/domainApi/preferredStock/` | 未實作，規劃中 | 未實作 | 不共用 metrics context「公司+季度財報」的資料模型假設——特別股是獨立證券，不是公司的一個欄位 |
+| **system** | `src/domainApi/system/` | 無 | `GET /`（root，健康檢查用途） | 純基礎設施，不含任何業務邏輯 |
 | **sync engine** | `src/shared/sync/` | `prisma/analysis/schema.prisma` 裡 `sync_state` + `curated_<backend>_<dataset>` 那組表 | 無 HTTP 對外介面（2026-08-31 `POST /system/sync/:backend/:dataset` 被使用者要求移除，目前用臨時腳本手動觸發） | 不計算任何指標，只負責把後台 `export` schema 的資料同步進 curated 層；不知道 curated 層之後會被哪個 context 消費 |
 
 ## 資料層的 Context 對應（每個 Prisma schema = 一個實體邊界）

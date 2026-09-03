@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateMargins } from '@/domains/metrics/profitability/margins/service';
+import { calculateMargins } from '@/domainApi/metrics/profitability/margins/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

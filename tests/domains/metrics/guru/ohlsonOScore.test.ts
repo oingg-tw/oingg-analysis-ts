@@ -1,11 +1,11 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOhlsonOScore } from '@/domains/metrics/guru/ohlsonOScore/service';
+import { calculateOhlsonOScore } from '@/domainApi/metrics/guru/ohlsonOScore/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domains/metrics/guru/README.md「Ohlson O-Score 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainApi/metrics/guru/README.md「Ohlson O-Score 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 test('ohlsonOScore: 2330 115Q2 合併報表，指定季度', async () => {
   const result = await calculateOhlsonOScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 

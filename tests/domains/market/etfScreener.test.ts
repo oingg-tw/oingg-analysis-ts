@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from '@/domains/market/etfScreener/service';
+import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from '@/domainApi/market/etfScreener/service';
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
 
 test('runEtfScreener: 數字 filter 應該只保留落在範圍內的值，null 排除', async () => {

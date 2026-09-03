@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateRoa } from '@/domains/metrics/profitability/roa/service';
+import { calculateRoa } from '@/domainApi/metrics/profitability/roa/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

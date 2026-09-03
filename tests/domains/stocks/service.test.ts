@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { getStockQuote, getStockPrices } from '@/domains/stocks/service';
+import { getStockQuote, getStockPrices } from '@/domainApi/stocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 

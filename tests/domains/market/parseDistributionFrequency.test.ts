@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDistributionFrequency } from '@/domains/market/etfRanking/parseDistribution';
+import { parseDistributionFrequency } from '@/domainApi/market/etfRanking/parseDistribution';
 
 test('parseDistributionFrequency: null 回傳 null', () => {
   assert.equal(parseDistributionFrequency(null), null);

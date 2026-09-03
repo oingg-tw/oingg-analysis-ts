@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateForeignHoldingRanking } from '@/domains/market/foreignHoldingRanking/service';
+import { calculateForeignHoldingRanking } from '@/domainApi/market/foreignHoldingRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 interface DistinctTradeDateRow {

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateBollingerBands } from '@/domains/metrics/technicals/bollingerBands/service';
+import { calculateBollingerBands } from '@/domainApi/metrics/technicals/bollingerBands/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateNetDebtToEbitda } from '@/domains/metrics/solvency/netDebtToEbitda/service';
+import { calculateNetDebtToEbitda } from '@/domainApi/metrics/solvency/netDebtToEbitda/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateGrahamNumber } from '@/domains/metrics/guru/grahamNumber/service';
+import { calculateGrahamNumber } from '@/domainApi/metrics/guru/grahamNumber/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

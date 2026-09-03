@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOcfToNetIncome } from '@/domains/metrics/cashFlow/ocfToNetIncome/service';
+import { calculateOcfToNetIncome } from '@/domainApi/metrics/cashFlow/ocfToNetIncome/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

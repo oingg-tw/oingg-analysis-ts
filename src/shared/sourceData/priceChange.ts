@@ -14,7 +14,7 @@ const buildKey = (market: 'TWSE' | 'TPEx', symbol: string, asOfDate: Date): stri
 // 這個公式已經隱含複利效應（連續上漲時，累積漲幅會比逐日simple加總更高），不需要另外處理。
 // 2026-09-02 應使用者要求新增，給 attention-stocks/disposed-stocks 補「這檔為什麼被列為
 // 注意/處置」的價格脈絡用——TWSE 官方注意股票標準本來就包含「近6日累積漲跌幅逾25%~32%」
-// 這類門檻，見 src/domains/market/attentionStocks/、disposedStocks/ 的說明。
+// 這類門檻，見 src/domainApi/market/attentionStocks/、disposedStocks/ 的說明。
 //
 // 同一個 (market, asOfDate) 分組查一次「往前數 tradingDaysBack+1 個交易日」的日期清單，
 // 只需要清單裡最新跟最舊兩個日期的收盤價（點對點），不需要中間那幾天的資料。日期不足

@@ -17,8 +17,8 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
-import { checkFilterCatalogConsistency } from './domains/filter/filterCatalogCheck';
-import { validateMetricTableRegistry } from './domains/filter/metricTableRegistry';
+import { checkFilterCatalogConsistency } from './domainApi/filter/filterCatalogCheck';
+import { validateMetricTableRegistry } from './domainApi/filter/metricTableRegistry';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 
 const app = express();

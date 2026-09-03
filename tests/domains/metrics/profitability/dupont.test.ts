@@ -1,10 +1,10 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDupont } from '@/domains/metrics/profitability/dupont/service';
+import { calculateDupont } from '@/domainApi/metrics/profitability/dupont/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domains/metrics/profitability/README.md「杜邦分析法計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainApi/metrics/profitability/README.md「杜邦分析法計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 複合指標，直接引用 margins/、turnoverRatio/、roe/ 的數值，這裡順便驗證組裝邏輯本身沒錯
 // （decomposedRoe = netProfitMargin x assetTurnover x equityMultiplier）。
 // decomposedRoeQuarterlyPct/TtmPct 跟 actualRoeQuarterlyPct/TtmPct 理論上應該接近但不必完全相等——

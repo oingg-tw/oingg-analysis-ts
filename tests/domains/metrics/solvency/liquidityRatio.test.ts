@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateLiquidityRatio } from '@/domains/metrics/solvency/liquidityRatio/service';
+import { calculateLiquidityRatio } from '@/domainApi/metrics/solvency/liquidityRatio/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
