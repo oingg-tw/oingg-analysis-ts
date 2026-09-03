@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { NetDebtToEbitdaQuery, NetDebtToEbitdaResult } from './types';
 
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
@@ -47,14 +47,12 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
+  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const [balanceSheet, currentIncomeStatement, currentCashFlow] = await Promise.all([
-    prisma.quarterlyBalanceSheet.findUnique({ where }),
-    prisma.quarterlyIncomeStatement.findUnique({ where }),
-    prisma.quarterlyCashFlowStatement.findUnique({ where }),
+    getQuarterlyBalanceSheet(key),
+    getQuarterlyIncomeStatement(key),
+    getQuarterlyCashFlowStatement(key),
   ]);
 
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
@@ -91,31 +89,23 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmIncomeRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );
   const ttmCashFlowRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyCashFlowStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyCashFlowStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

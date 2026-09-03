@@ -1,13 +1,19 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateForeignHoldingRanking } from '@/domains/market/foreignHoldingRanking/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+
+interface DistinctTradeDateRow {
+  trade_date: Date;
+}
 
 // foreign_holding 每天都在回補，目前(2026-09-01)只有一天資料，兩天才能比較變動——這裡不寫死
 // 假設一定有兩天資料，跟本服務其他吃即時市場資料的測試同一種風格（現查、不夠就跳過驗證細節，
 // 但至少驗證「資料不足時要優雅降級，不是拋錯」這件事本身）。
 test('calculateForeignHoldingRanking: 資料不足兩個交易日時優雅降級，不拋錯', async () => {
-  const distinctDates = await twsePrisma.foreignHolding.findMany({ distinct: ['tradeDate'], select: { tradeDate: true } });
+  const distinctDates = await twseExportPrisma.$queryRaw<DistinctTradeDateRow[]>`
+    SELECT DISTINCT trade_date FROM "export"."foreign_holding"
+  `;
   if (distinctDates.length >= 2) return; // 已經有兩天以上資料，這個「資料不足」案例驗證不到，跳過。
 
   const result = await calculateForeignHoldingRanking({ limit: 10 });
@@ -17,7 +23,9 @@ test('calculateForeignHoldingRanking: 資料不足兩個交易日時優雅降級
 });
 
 test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼排行應該符合排序跟固定筆數邏輯', async () => {
-  const distinctDates = await twsePrisma.foreignHolding.findMany({ distinct: ['tradeDate'], select: { tradeDate: true } });
+  const distinctDates = await twseExportPrisma.$queryRaw<DistinctTradeDateRow[]>`
+    SELECT DISTINCT trade_date FROM "export"."foreign_holding"
+  `;
   if (distinctDates.length < 2) return; // 資料還不足兩天，這個案例驗證不到，跳過（見上一個測試）。
 
   const result = await calculateForeignHoldingRanking({ limit: 10 });
@@ -39,5 +47,5 @@ test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼�
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
 });

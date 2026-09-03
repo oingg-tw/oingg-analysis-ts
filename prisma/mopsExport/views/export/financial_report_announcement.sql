@@ -1,0 +1,12 @@
+SELECT
+  symbol,
+  fiscal_year,
+  fiscal_quarter,
+  data_type,
+  announcement_date,
+  announcement_time,
+  raw_title,
+  created_at,
+  updated_at
+FROM
+  financial_report_announcement;

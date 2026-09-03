@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BeneishMScoreQuery, BeneishMScoreResult } from './types';
 
@@ -37,20 +37,18 @@ const fetchQuarterData = async (
   dataType: string,
   subsidiaryCompanyId: string
 ): Promise<QuarterData> => {
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: {
-      symbol: companyId,
-      year: Number(year),
-      quarter: Number(season),
-      dataType,
-      subsidiaryCompanyId,
-    },
+  const key = {
+    symbol: companyId,
+    year: Number(year),
+    quarter: Number(season),
+    dataType,
+    subsidiaryCompanyId,
   };
 
   const [balanceSheet, incomeStatement, cashFlow] = await Promise.all([
-    prisma.quarterlyBalanceSheet.findUnique({ where }),
-    prisma.quarterlyIncomeStatement.findUnique({ where }),
-    prisma.quarterlyCashFlowStatement.findUnique({ where }),
+    getQuarterlyBalanceSheet(key),
+    getQuarterlyIncomeStatement(key),
+    getQuarterlyCashFlowStatement(key),
   ]);
 
   return {

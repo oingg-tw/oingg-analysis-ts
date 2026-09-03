@@ -1,7 +1,17 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BetaQuery, BetaResult, BetaSamplingFrequency, BetaWindow } from './types';
+
+interface RawDailyPriceCloseRow {
+  trade_date: Date;
+  close: unknown;
+}
+
+interface RawDateRangeRow {
+  min_date: Date | null;
+  max_date: Date | null;
+}
 
 const MIN_OBSERVATIONS = 20; // 降頻後至少要有 20 個取樣點（19 個報酬率樣本）才計算，樣本太少的 Beta 沒有統計意義；三個窗口共用同一個門檻，不分頻率調整
 
@@ -118,34 +128,49 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
 
   // 兩張表資料量都不大（單一 symbol 最多幾千筆、指數表幾百筆），5 年份直接整段抓進來，
   // 不用逐窗口各查一次——1Y/2Y/5Y 共用同一份重疊交易日序列，分窗口時用日期範圍過濾即可。
+  // 2026-09-03 使用者決定 curated 中台層現階段太早，改回直接查 twseExportPrisma（export
+  // schema 沒有唯一識別欄位，走 $queryRaw）。
   const fiveYearsBack = subtractYears(requestedAsOf ?? new Date(), 5);
-  const upperBoundClause = requestedAsOf ? { lte: requestedAsOf } : undefined;
 
-  const [stockRows, indexRows, stockRange, indexRange] = await Promise.all([
-    twsePrisma.dailyPrice.findMany({
-      where: { symbol: companyId, tradeDate: { gte: fiveYearsBack, ...upperBoundClause } },
-      orderBy: { tradeDate: 'asc' },
-      select: { tradeDate: true, close: true },
-    }),
-    twsePrisma.dailyTaiexIndex.findMany({
-      where: { tradeDate: { gte: fiveYearsBack, ...upperBoundClause } },
-      orderBy: { tradeDate: 'asc' },
-      select: { tradeDate: true, close: true },
-    }),
-    twsePrisma.dailyPrice.aggregate({ where: { symbol: companyId }, _min: { tradeDate: true }, _max: { tradeDate: true } }),
-    twsePrisma.dailyTaiexIndex.aggregate({ _min: { tradeDate: true }, _max: { tradeDate: true } }),
+  const [stockRows, indexRows, stockRangeRows, indexRangeRows] = await Promise.all([
+    requestedAsOf
+      ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
+          SELECT trade_date, close FROM "export"."daily_price"
+          WHERE symbol = ${companyId} AND trade_date >= ${fiveYearsBack} AND trade_date <= ${requestedAsOf}
+          ORDER BY trade_date ASC
+        `
+      : twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
+          SELECT trade_date, close FROM "export"."daily_price"
+          WHERE symbol = ${companyId} AND trade_date >= ${fiveYearsBack}
+          ORDER BY trade_date ASC
+        `,
+    requestedAsOf
+      ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
+          SELECT trade_date, close FROM "export"."daily_taiex_index"
+          WHERE trade_date >= ${fiveYearsBack} AND trade_date <= ${requestedAsOf}
+          ORDER BY trade_date ASC
+        `
+      : twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
+          SELECT trade_date, close FROM "export"."daily_taiex_index"
+          WHERE trade_date >= ${fiveYearsBack}
+          ORDER BY trade_date ASC
+        `,
+    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_price" WHERE symbol = ${companyId}`,
+    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_taiex_index"`,
   ]);
+  const stockRange = stockRangeRows[0]!;
+  const indexRange = indexRangeRows[0]!;
 
   // 股價、大盤指數都改用 oingg-twse（daily_price / daily_taiex_index），不再用 mops 已消失的
   // daily_stock_price / daily_market_index——見 shared/sourceData/marketCap.ts 開頭的說明。
   const dataCoverage = {
     stockPriceDateRange: {
-      min: stockRange._min.tradeDate ? toDateString(stockRange._min.tradeDate) : null,
-      max: stockRange._max.tradeDate ? toDateString(stockRange._max.tradeDate) : null,
+      min: stockRange.min_date ? toDateString(stockRange.min_date) : null,
+      max: stockRange.max_date ? toDateString(stockRange.max_date) : null,
     },
     marketIndexDateRange: {
-      min: indexRange._min.tradeDate ? toDateString(indexRange._min.tradeDate) : null,
-      max: indexRange._max.tradeDate ? toDateString(indexRange._max.tradeDate) : null,
+      min: indexRange.min_date ? toDateString(indexRange.min_date) : null,
+      max: indexRange.max_date ? toDateString(indexRange.max_date) : null,
     },
   };
 
@@ -162,7 +187,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // 「查無資料待補」，因為這不是時間到了就會自己有的資料缺口，是覆蓋率本身的限制，見
   // portfolio/README.md 說明。這裡本來就是現查 stockRange（不是寫死公司代號判斷），只有訊息
   // 文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
-  if (stockRange._min.tradeDate === null) {
+  if (stockRange.min_date === null) {
     warnings.push(`daily_price 目前沒有 ${companyId} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
     const notApplicable: MetricStatus = {
       status: 'not_applicable',
@@ -187,12 +212,12 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // 建立「股價跟指數都有資料」的重疊交易日序列（依日期字串比對，兩張表都已經是 YYYY-MM-DD 顆粒度）。
   const indexByDate = new Map<string, number>();
   for (const row of indexRows) {
-    if (row.close !== null) indexByDate.set(toDateString(row.tradeDate), Number(row.close));
+    if (row.close !== null) indexByDate.set(toDateString(row.trade_date), Number(row.close));
   }
   const overlap: OverlapPoint[] = [];
   for (const row of stockRows) {
     if (row.close === null) continue;
-    const dateStr = toDateString(row.tradeDate);
+    const dateStr = toDateString(row.trade_date);
     const indexClose = indexByDate.get(dateStr);
     if (indexClose !== undefined) {
       overlap.push({ tradeDate: dateStr, stockClose: Number(row.close), indexClose });

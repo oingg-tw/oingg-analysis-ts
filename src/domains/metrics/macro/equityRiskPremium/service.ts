@@ -1,8 +1,19 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
-import govPrisma from '@/adapters/prisma/govClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { govExportPrisma } from '@/adapters/prisma/govExportClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
+
+interface RawGovBondYieldRow {
+  year: number;
+  month: number;
+  yield_rate: unknown;
+}
+
+interface RawTaiexRow {
+  trade_date: Date;
+  close: unknown;
+}
 
 // 至少要有 2 個月才能算出 1 筆報酬率——低於這個數字連「算得出但不可靠」都談不上，直接回傳
 // calculation_error（跟 beta 的 MIN_OBSERVATIONS 門檻同一種「樣本太少不計算」的處理方式）。
@@ -20,24 +31,25 @@ const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 const mean = (xs: number[]): number => xs.reduce((sum, x) => sum + x, 0) / xs.length;
 
 const getTaiexMonthEndCloses = async (): Promise<Record<string, number>> => {
-  const rows = await twsePrisma.dailyTaiexIndex.findMany({
-    orderBy: { tradeDate: 'asc' },
-    select: { tradeDate: true, close: true },
-  });
+  const rows = await twseExportPrisma.$queryRaw<RawTaiexRow[]>`
+    SELECT trade_date, close FROM "export"."daily_taiex_index" ORDER BY trade_date ASC
+  `;
   const monthEnd: Record<string, number> = {};
   for (const row of rows) {
     if (row.close === null) continue;
-    const key = toKey(row.tradeDate.getUTCFullYear(), row.tradeDate.getUTCMonth() + 1);
+    const key = toKey(row.trade_date.getUTCFullYear(), row.trade_date.getUTCMonth() + 1);
     monthEnd[key] = Number(row.close); // 依日期升冪走訪，同一個月份會被後面較晚的交易日覆寫，最後留下的就是該月最後一個收盤價
   }
   return monthEnd;
 };
 
 const getRiskFreeRateByMonth = async (): Promise<Record<string, number>> => {
-  const rows = await govPrisma.monthlyGovBondYield10y.findMany({ orderBy: [{ year: 'asc' }, { month: 'asc' }] });
+  const rows = await govExportPrisma.$queryRaw<RawGovBondYieldRow[]>`
+    SELECT year, month, yield_rate FROM "export"."monthly_gov_bond_yield_10y" ORDER BY year ASC, month ASC
+  `;
   const byMonth: Record<string, number> = {};
   for (const row of rows) {
-    byMonth[toKey(row.year, row.month)] = Number(row.yieldRate);
+    byMonth[toKey(row.year, row.month)] = Number(row.yield_rate);
   }
   return byMonth;
 };

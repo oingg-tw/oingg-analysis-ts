@@ -1,0 +1,13 @@
+SELECT
+  symbol,
+  trade_date,
+  rank_group,
+  rank,
+  limit_up,
+  limit_down,
+  limit_range,
+  opening_ref_price,
+  previous_day_price,
+  allow_odd_lot_trade
+FROM
+  price_limit_range;

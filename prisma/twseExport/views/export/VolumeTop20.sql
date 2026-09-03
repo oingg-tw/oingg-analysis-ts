@@ -1,0 +1,16 @@
+SELECT
+  symbol,
+  trade_date,
+  rank,
+  volume,
+  transaction,
+  OPEN,
+  high,
+  low,
+  close,
+  dir,
+  CHANGE,
+  last_best_bid_price,
+  last_best_ask_price
+FROM
+  volume_top20;

@@ -1,0 +1,12 @@
+SELECT
+  symbol,
+  trade_date,
+  rank,
+  issued_shares,
+  available_shares,
+  shares_held,
+  available_invest_percent,
+  shares_held_percent,
+  upper_limit_percent
+FROM
+  foreign_holding;

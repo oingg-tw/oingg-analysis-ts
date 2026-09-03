@@ -1,4 +1,4 @@
-import prisma from '@/adapters/prisma/index';
+import { getLatestQuarterWithBalanceSheet, getLatestQuarterWithIncomeStatement, getLatestQuarterWithCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { Season } from '@/shared/rocQuarter';
 
 // 不同公司財報申報進度不同步（不是理論上的擔心，是實測驗證過的：2887 資產負債表/現金流量表已經到
@@ -13,16 +13,13 @@ const findLatestQuarterFor = async (
   dataType: string,
   subsidiaryCompanyId: string
 ): Promise<{ year: number; quarter: number } | null> => {
-  const where = { symbol: companyId, dataType, subsidiaryCompanyId };
-  const orderBy = [{ year: 'desc' as const }, { quarter: 'desc' as const }];
-
   if (source === 'balanceSheet') {
-    return prisma.quarterlyBalanceSheet.findFirst({ where, orderBy, select: { year: true, quarter: true } });
+    return getLatestQuarterWithBalanceSheet(companyId, dataType, subsidiaryCompanyId);
   }
   if (source === 'incomeStatement') {
-    return prisma.quarterlyIncomeStatement.findFirst({ where, orderBy, select: { year: true, quarter: true } });
+    return getLatestQuarterWithIncomeStatement(companyId, dataType, subsidiaryCompanyId);
   }
-  return prisma.quarterlyCashFlowStatement.findFirst({ where, orderBy, select: { year: true, quarter: true } });
+  return getLatestQuarterWithCashFlowStatement(companyId, dataType, subsidiaryCompanyId);
 };
 
 // 指標不給 year/season 時，用這支自動解析「這家公司、這幾張表都有資料的最新一季」。

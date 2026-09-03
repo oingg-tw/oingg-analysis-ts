@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { PriceLimitRangeResult, PriceLimitRangeRow } from './types';
@@ -46,7 +46,7 @@ export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
   const warnings: string[] = [];
 
   const [twseDateRows, tpexDateRows] = await Promise.all([
-    twsePrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`,
+    twseExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`,
     tpexExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`,
   ]);
   const candidates = [twseDateRows[0]?.trade_date, tpexDateRows[0]?.trade_date].filter((d): d is Date => d != null);
@@ -57,7 +57,7 @@ export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.$queryRaw<RawTwsePriceLimitRangeRow[]>`
+    twseExportPrisma.$queryRaw<RawTwsePriceLimitRangeRow[]>`
       SELECT symbol, rank_group, limit_up, limit_down, limit_range, opening_ref_price, previous_day_price, allow_odd_lot_trade
       FROM "export"."price_limit_range"
       WHERE trade_date = ${tradeDate}

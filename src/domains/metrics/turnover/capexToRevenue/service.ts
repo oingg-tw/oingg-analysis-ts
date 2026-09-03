@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { CapexToRevenueQuery, CapexToRevenueResult } from './types';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -43,13 +43,11 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
+  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const [currentIncomeStatement, currentCashFlow] = await Promise.all([
-    prisma.quarterlyIncomeStatement.findUnique({ where }),
-    prisma.quarterlyCashFlowStatement.findUnique({ where }),
+    getQuarterlyIncomeStatement(key),
+    getQuarterlyCashFlowStatement(key),
   ]);
 
   if (!currentIncomeStatement) warnings.push('查無該季損益表資料。');
@@ -65,31 +63,23 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
   const [ttmIncomeRecords, ttmCashFlowRecords] = await Promise.all([
     Promise.all(
       ttmQuarters.map((q) =>
-        prisma.quarterlyIncomeStatement.findUnique({
-          where: {
-            symbol_year_quarter_dataType_subsidiaryCompanyId: {
-              symbol: companyId,
-              year: Number(q.year),
-              quarter: Number(q.season),
-              dataType,
-              subsidiaryCompanyId,
-            },
-          },
+        getQuarterlyIncomeStatement({
+          symbol: companyId,
+          year: Number(q.year),
+          quarter: Number(q.season),
+          dataType,
+          subsidiaryCompanyId,
         })
       )
     ),
     Promise.all(
       ttmQuarters.map((q) =>
-        prisma.quarterlyCashFlowStatement.findUnique({
-          where: {
-            symbol_year_quarter_dataType_subsidiaryCompanyId: {
-              symbol: companyId,
-              year: Number(q.year),
-              quarter: Number(q.season),
-              dataType,
-              subsidiaryCompanyId,
-            },
-          },
+        getQuarterlyCashFlowStatement({
+          symbol: companyId,
+          year: Number(q.year),
+          quarter: Number(q.season),
+          dataType,
+          subsidiaryCompanyId,
         })
       )
     ),

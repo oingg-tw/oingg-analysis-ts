@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateRanking } from '@/domains/metrics/valuation/ranking/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
@@ -46,15 +46,19 @@ test('ranking: 指定查無資料的日期，應該優雅降級回傳空陣列�
 // 用市場整體覆蓋率反推期望值（現查 twse/tpex 各自今天有沒有資料），不寫死是哪幾檔股票，
 // 覆蓋率之後會持續變。
 test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟上櫃公司', async () => {
-  const [twseCount, tpexCountRows] = await Promise.all([
-    twsePrisma.dailyValuation.count(),
+  const [twseCountRows, tpexCountRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
     tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
   ]);
+  const twseCount = Number(twseCountRows[0]?.cnt ?? 0);
   const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
   if (twseCount === 0 || tpexCount === 0) return; // 其中一邊完全沒資料時無從驗證跨市場合併，跳過。
 
   const result = await calculateRanking({ metric: 'dividendYield', order: 'desc', limit: 500 });
-  const twseSymbols = new Set((await twsePrisma.dailyValuation.findMany({ where: { tradeDate: new Date(`${result.tradeDate}T00:00:00.000Z`) }, select: { symbol: true } })).map((r) => r.symbol));
+  const twseSymbolRows = await twseExportPrisma.$queryRaw<{ symbol: string }[]>`
+    SELECT symbol FROM "export"."daily_valuation" WHERE trade_date = ${new Date(`${result.tradeDate}T00:00:00.000Z`)}
+  `;
+  const twseSymbols = new Set(twseSymbolRows.map((r) => r.symbol));
 
   const hasTwse = result.rankings.some((r) => twseSymbols.has(r.symbol));
   const hasTpex = result.rankings.some((r) => !twseSymbols.has(r.symbol));
@@ -86,6 +90,6 @@ test('ranking: 排行裡不應該出現 KY 股', async () => {
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

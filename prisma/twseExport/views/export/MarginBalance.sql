@@ -1,0 +1,19 @@
+SELECT
+  symbol,
+  trade_date,
+  margin_buy,
+  margin_sell,
+  margin_cash_redemption,
+  margin_prev_balance,
+  margin_today_balance,
+  margin_limit,
+  short_buy,
+  short_sell,
+  short_cash_redemption,
+  short_prev_balance,
+  short_today_balance,
+  short_limit,
+  offsetting,
+  note
+FROM
+  margin_balance;

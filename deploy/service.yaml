@@ -17,7 +17,8 @@ spec:
   template:
     metadata:
       annotations:
-        # 冷啟動時要連 8 個資料庫（見 src/index.ts 的 connectDb 系列呼叫），本機實測開發模式
+        # 冷啟動時要連 6 個資料庫（見 src/index.ts 的 connectXxxDb 系列呼叫；MOPS/TWSE/GOV 的
+        # owner 帳號已於 2026-09-03 退場，全部改走 etl_reader export schema），本機實測開發模式
         # 啟動要 3~5 秒，正式環境保守抓大一點，避免健康檢查太早判定失敗。
         run.googleapis.com/startup-cpu-boost: 'true'
     spec:
@@ -43,16 +44,6 @@ spec:
           env:
             - name: NODE_ENV
               value: production
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: DATABASE-URL # TODO：Secret Manager 密鑰名稱
-                  key: latest
-            - name: DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: DIRECT-URL
-                  key: latest
             - name: ANALYSIS_DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -62,26 +53,6 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: ANALYSIS-DIRECT-URL
-                  key: latest
-            - name: TWSE_DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: TWSE-DATABASE-URL
-                  key: latest
-            - name: TWSE_DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: TWSE-DIRECT-URL
-                  key: latest
-            - name: GOV_DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: GOV-DATABASE-URL
-                  key: latest
-            - name: GOV_DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: GOV-DIRECT-URL
                   key: latest
             - name: MOPS_EXPORT_DATABASE_URL
               valueFrom:
@@ -114,6 +85,14 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: SITCA-EXPORT-DATABASE-URL-PROD
+                  key: latest
+            # 2026-09-03 新增：twse-ts 開的獨立 export schema 專案（實體隔離，不是同專案換角色，
+            # 見 prisma/twseExport/schema.prisma 的說明）——TODO：這組 Secret Manager 密鑰還沒建，
+            # 部署前要先用 gcloud secrets create 建好，不然 Cloud Run 啟動會因為讀不到密鑰失敗。
+            - name: TWSE_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: TWSE-EXPORT-DATABASE-URL
                   key: latest
             # TASK_SECRET/TPEX_TASK_SECRET 只有 loadIndustryCodes()（dev-only，見
             # src/shared/sourceData/industryCodes.ts 的 `if (config.isProduction) return`）

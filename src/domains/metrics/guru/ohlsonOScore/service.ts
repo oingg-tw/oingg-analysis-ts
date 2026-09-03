@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { OhlsonOScoreQuery, OhlsonOScoreResult } from './types';
 
@@ -86,9 +86,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheetWhere = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
+  const balanceSheetKey = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // INTWO/CHIN 需要「今年 TTM 淨利」跟「去年同季 TTM 淨利」——去年同季是用 getPastNQuarters 往前推
   // 5 季（含本季）取最舊那一筆，跟 Piotroski/Beneish 定位「去年同季」同一個 helper、同一種用法。
@@ -97,32 +95,24 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   const priorYearTtmQuarters = getPastNQuarters({ rocYear: Number(priorYearAnchor.year), season: priorYearAnchor.season }, 4);
 
   const fetchIncomeStatement = (q: { year: string; season: Season }) =>
-    prisma.quarterlyIncomeStatement.findUnique({
-      where: {
-        symbol_year_quarter_dataType_subsidiaryCompanyId: {
-          symbol: companyId,
-          year: Number(q.year),
-          quarter: Number(q.season),
-          dataType,
-          subsidiaryCompanyId,
-        },
-      },
+    getQuarterlyIncomeStatement({
+      symbol: companyId,
+      year: Number(q.year),
+      quarter: Number(q.season),
+      dataType,
+      subsidiaryCompanyId,
     });
   const fetchCashFlow = (q: { year: string; season: Season }) =>
-    prisma.quarterlyCashFlowStatement.findUnique({
-      where: {
-        symbol_year_quarter_dataType_subsidiaryCompanyId: {
-          symbol: companyId,
-          year: Number(q.year),
-          quarter: Number(q.season),
-          dataType,
-          subsidiaryCompanyId,
-        },
-      },
+    getQuarterlyCashFlowStatement({
+      symbol: companyId,
+      year: Number(q.year),
+      quarter: Number(q.season),
+      dataType,
+      subsidiaryCompanyId,
     });
 
   const [balanceSheet, thisYearIncomeRecords, priorYearIncomeRecords, thisYearCashFlowRecords] = await Promise.all([
-    prisma.quarterlyBalanceSheet.findUnique({ where: balanceSheetWhere }),
+    getQuarterlyBalanceSheet(balanceSheetKey),
     Promise.all(thisYearTtmQuarters.map(fetchIncomeStatement)),
     Promise.all(priorYearTtmQuarters.map(fetchIncomeStatement)),
     Promise.all(thisYearTtmQuarters.map(fetchCashFlow)),

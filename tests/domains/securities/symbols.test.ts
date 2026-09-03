@@ -1,8 +1,12 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { getSecuritySymbols } from '@/shared/sourceData/companyProfile';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+
+interface CompanyProfileSymbolRow {
+  symbol: string;
+}
 
 test('getSecuritySymbols: 預設值（含興櫃、不排 KY、股票+特別股都要）應該包含 KY 股/興櫃公司/特別股，排除 TWSE 非交易性質的登記資料', async () => {
   const symbols = await getSecuritySymbols({ includeEmerging: true, excludeKy: false });
@@ -12,7 +16,14 @@ test('getSecuritySymbols: 預設值（含興櫃、不排 KY、股票+特別股�
   assert.ok(!symbols.includes('000104'), '000104（臺銀證券，TWSE 非交易性質的證券商登記資料）不應該在清單裡');
   assert.ok(symbols.includes('1101B'), '1101B（台泥乙特，特別股）不給 preferredStock 篩選時應該在清單裡');
 
-  const kyRow = await twsePrisma.companyProfile.findFirst({ where: { shortName: { contains: '-KY' } }, select: { symbol: true } });
+  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/shared/sourceData/companyProfile.ts 的
+  // getAllSecurityRows——company_profile 還有 COMPANY_PROFILE_PUBLIC 這種非交易性質的登記資料，
+  // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
+  // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。
+  const kyRows = await twseExportPrisma.$queryRaw<CompanyProfileSymbolRow[]>`
+    SELECT symbol FROM "export"."company_profile" WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
+  `;
+  const kyRow = kyRows[0];
   if (kyRow) assert.ok(symbols.includes(kyRow.symbol), `${kyRow.symbol}（KY 股）預設不排除，應該在清單裡`);
 });
 
@@ -41,7 +52,14 @@ test('getSecuritySymbols: includeEmerging=false 應該排除興櫃公司', async
 });
 
 test('getSecuritySymbols: excludeKy=true 應該排除 KY 股', async () => {
-  const kyRow = await twsePrisma.companyProfile.findFirst({ where: { shortName: { contains: '-KY' } }, select: { symbol: true } });
+  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/shared/sourceData/companyProfile.ts 的
+  // getAllSecurityRows——company_profile 還有 COMPANY_PROFILE_PUBLIC 這種非交易性質的登記資料，
+  // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
+  // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。
+  const kyRows = await twseExportPrisma.$queryRaw<CompanyProfileSymbolRow[]>`
+    SELECT symbol FROM "export"."company_profile" WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
+  `;
+  const kyRow = kyRows[0];
   if (!kyRow) return; // 開發資料庫這次剛好沒有 KY 股，跳過（不是測試失敗）。
 
   const symbols = await getSecuritySymbols({ includeEmerging: true, excludeKy: true });
@@ -62,6 +80,6 @@ test('getSecuritySymbols: 排序過、沒有重複', async () => {
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { InterestCoverageQuery, InterestCoverageResult } from './types';
 
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
@@ -41,11 +41,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
-
-  const currentIncomeStatement = await prisma.quarterlyIncomeStatement.findUnique({ where });
+  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentIncomeStatement) warnings.push('查無該季損益表資料。');
 
   const interestExpense = currentIncomeStatement?.financeCosts ?? null;
@@ -64,16 +60,12 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

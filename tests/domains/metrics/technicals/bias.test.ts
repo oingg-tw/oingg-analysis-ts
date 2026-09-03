@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateBiasIndicator } from '@/domains/metrics/technicals/bias/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('bias: 2330 歷史夠深，三個窗口都算得出合理範圍內的值', async () => {
@@ -35,6 +35,6 @@ test('bias: 9999（查無資料的公司）回傳 not_applicable', async () => {
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

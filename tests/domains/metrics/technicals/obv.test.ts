@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateObv } from '@/domains/metrics/technicals/obv/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('obv: 2330 歷史夠深，算得出一個累積值（可能正可能負，不釘死方向）', async () => {
@@ -27,6 +27,6 @@ test('obv: 9999（查無資料的公司）回傳 not_applicable', async () => {
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

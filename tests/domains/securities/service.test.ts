@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { listSecuritySymbols } from '@/domains/securities/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
 const baseQuery = { includeEmerging: true, excludeKy: false, excludeFullDelivery: false };
@@ -31,6 +31,6 @@ test('listSecuritySymbols: market=TPEx + preferredStock=only 應該回空清單�
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

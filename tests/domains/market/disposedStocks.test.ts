@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { listDisposedStocks } from '@/domains/market/disposedStocks/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
 test('listDisposedStocks: 應該依公告日期由新到舊排序，且不超過 limit 筆', async () => {
@@ -30,5 +30,5 @@ test('listDisposedStocks: 清單裡不應該出現非上市/上櫃公司', async
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
 });

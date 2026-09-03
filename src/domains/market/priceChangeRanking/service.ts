@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
@@ -33,9 +33,11 @@ interface RawChangeRow {
 // 單獨對 tradeDate 的索引，這種不帶 symbol 條件的查詢近乎全表掃描，單次 3~7 秒，是這支端點
 // 回應緩慢（4~4.6秒）的根因，見 src/shared/sourceData/priceChange.ts 同樣的修法。
 const getLatestTwoTradeDatesTwse = async (): Promise<[Date, Date] | null> => {
-  const rows = await twsePrisma.dailyTaiexIndex.findMany({ orderBy: { tradeDate: 'desc' }, take: 2, select: { tradeDate: true } });
+  const rows = await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
+    SELECT trade_date FROM "export"."daily_taiex_index" ORDER BY trade_date DESC LIMIT 2
+  `;
   if (rows.length < 2) return null;
-  return [rows[0]!.tradeDate, rows[1]!.tradeDate];
+  return [rows[0]!.trade_date, rows[1]!.trade_date];
 };
 
 const getLatestTwoTradeDatesTpex = async (): Promise<[Date, Date] | null> => {
@@ -90,8 +92,8 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   if (twseDates) {
     const [tradeDate, previousTradeDate] = twseDates;
     const [todayRows, prevRows, companySymbols] = await Promise.all([
-      twsePrisma.dailyPrice.findMany({ where: { tradeDate }, select: { symbol: true, close: true } }),
-      twsePrisma.dailyPrice.findMany({ where: { tradeDate: previousTradeDate }, select: { symbol: true, close: true } }),
+      twseExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`,
+      twseExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${previousTradeDate}`,
       getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     ]);
     pool.push(

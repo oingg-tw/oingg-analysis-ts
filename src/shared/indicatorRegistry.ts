@@ -4,10 +4,10 @@
 // companyId）跟 `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，
 // 不列進來，見 scripts/batchComputeIndicators.ts 開頭的說明。
 
-import prisma from '@/adapters/prisma/index';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getAllIncomeStatementSymbols } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { calculateEps } from '@/domains/metrics/profitability/eps/service';
 import { calculateBvps } from '@/domains/metrics/profitability/bvps/service';
 import { calculateRevenuePerShare } from '@/domains/metrics/profitability/revenuePerShare/service';
@@ -69,15 +69,16 @@ export interface IndicatorJob {
 }
 
 // 三個公司清單來源，各自只查一次、被多個 job 共用。
-const mopsIdsPromise = prisma.quarterlyIncomeStatement.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
-const twsePriceIdsPromise = twsePrisma.dailyPrice.findMany({ distinct: ['symbol'], select: { symbol: true } }).then((rows) => rows.map((r) => r.symbol));
-// TPEx 這邊 2026-09-01 改走 export.daily_valuation（$queryRaw，這張 view 沒有 model 存取子，
-// 取代讀 tpex-ts dev 環境的舊帳號）。同一次順便排除 ETF/衍生性商品——marketRatios 存進
-// valuation_market_ratios（screener 的 per/pbr/dividendYield 就是查這張表），本益比/淨值比
-// 對 ETF 這種基金型商品本來就沒有意義（沒有自己的盈餘/淨值），跟公司股票混在一起排也不是
-// 使用者要的東西，見 src/shared/sourceData/companyProfile.ts 的說明。
+const mopsIdsPromise = getAllIncomeStatementSymbols();
+const twsePriceIdsPromise = twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_price"`.then((rows) => rows.map((r) => r.symbol));
+// 2026-09-01 起 TPEx 走 export.daily_valuation（$queryRaw，這張 view 沒有 model 存取子）；
+// 2026-09-03 TWSE 也改成同一種模式（使用者決定 curated 中台層現階段太早，改回直接查
+// export schema）。同一次順便排除 ETF/衍生性商品——marketRatios 存進 valuation_market_ratios
+// （screener 的 per/pbr/dividendYield 就是查這張表），本益比/淨值比對 ETF 這種基金型商品本來
+// 就沒有意義（沒有自己的盈餘/淨值），跟公司股票混在一起排也不是使用者要的東西，見
+// src/shared/sourceData/companyProfile.ts 的說明。
 const marketRatiosIdsPromise = Promise.all([
-  twsePrisma.dailyValuation.findMany({ distinct: ['symbol'], select: { symbol: true } }),
+  twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_valuation"`,
   tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_valuation"`,
   getSecuritySymbolSet({ preferredStock: 'exclude' }), // 不給 market，兩個市場一起查，維持原本合併成單一集合的行為。
 ]).then(([twseRows, tpexRows, allCompanySymbols]) => {

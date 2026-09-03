@@ -34,6 +34,17 @@ SELECT
   eps,
   eps_diluted,
   created_at,
-  updated_at
+  updated_at,
+  discontinued_operations_profit_loss,
+  interest_expense,
+  net_interest_income,
+  net_fee_income,
+  non_interest_net_income,
+  loan_loss_provision
 FROM
-  quarterly_income_statement;
+  quarterly_income_statement
+WHERE
+  (
+    (data_type = '2' :: text)
+    AND (subsidiary_company_id = '' :: text)
+  );

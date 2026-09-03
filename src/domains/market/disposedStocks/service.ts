@@ -1,6 +1,6 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from './parseReason';
 import type { DisposedStocksQuery, DisposedStocksResult, DisposedStockRow } from './types';
@@ -72,11 +72,17 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
   const { limit } = query;
   const warnings: string[] = [];
 
+  // twseExportPrisma 是實體隔離的獨立 Neon 專案（只看得到 export schema），不能再像以前那樣
+  // 用同一條 SQL 跨 schema 查 public.company_profile 篩「真正上市公司」——改成先查
+  // getSecuritySymbolSet 拿到符合的 symbol 清單，再用 ANY(${symbols}) 帶進查詢，篩選邏輯
+  // （source = 'COMPANY_PROFILE'，KY/興櫃都算真正公司）維持跟原本完全一樣，只是換了取得方式。
+  const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
+
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.$queryRaw<RawTwseDisposedStockRow[]>`
+    twseExportPrisma.$queryRaw<RawTwseDisposedStockRow[]>`
       SELECT symbol, announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
       FROM "export"."disposed_stock"
-      WHERE symbol IN (SELECT symbol FROM "public"."company_profile" WHERE source = 'COMPANY_PROFILE')
+      WHERE symbol = ANY(${twseEligibleSymbols})
       ORDER BY announce_date DESC
       LIMIT ${limit}
     `,

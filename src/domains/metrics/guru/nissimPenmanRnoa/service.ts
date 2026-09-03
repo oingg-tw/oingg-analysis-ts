@@ -1,8 +1,8 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRoe } from '@/domains/metrics/profitability/roe/service';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { NissimPenmanRnoaQuery, NissimPenmanRnoaResult } from './types';
 
@@ -117,15 +117,13 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   const seasonNum = Number(season);
   const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
+  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // roeResult 只拿來對照重組出來的 ROE 準不準（actualRoeQuarterlyPct/actualRoeTtmPct），不是本指標
   // 自己需要查詢的欄位——跟 dupont 引用 roe/ 同一種模式，副作用是 roe/ 也會照常 upsert 自己的表。
   const [balanceSheet, currentIncomeStatement, roeResult] = await Promise.all([
-    prisma.quarterlyBalanceSheet.findUnique({ where }),
-    prisma.quarterlyIncomeStatement.findUnique({ where }),
+    getQuarterlyBalanceSheet(key),
+    getQuarterlyIncomeStatement(key),
     calculateRoe(resolvedQuery),
   ]);
 
@@ -175,16 +173,12 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmIncomeRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

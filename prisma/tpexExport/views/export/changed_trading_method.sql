@@ -1,0 +1,11 @@
+SELECT
+  symbol,
+  trade_date,
+  altered_trading,
+  periodic_trading,
+  managed_stock,
+  matching_frequency,
+  suspension_of_trading,
+  financial_announcements
+FROM
+  changed_trading_method;

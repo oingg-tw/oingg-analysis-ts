@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateBeta, resample, type OverlapPoint } from '@/domains/metrics/portfolio/beta/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 const point = (tradeDate: string): OverlapPoint => ({ tradeDate, stockClose: 100, indexClose: 100 });
@@ -104,6 +104,6 @@ test('beta: asOfDate 指定成非重疊交易日時，會自動退回最近的�
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

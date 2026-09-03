@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateMa } from '@/domains/metrics/technicals/ma/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 股價資料每天在更新，不釘死確切數值，只驗證合理性跟結構——跟 beta/altmanZScore 同一種測試風格。
@@ -42,6 +42,6 @@ test('ma: 9999（查無資料的公司）回傳 not_applicable，不是拋錯或
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

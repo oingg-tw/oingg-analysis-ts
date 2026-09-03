@@ -1,0 +1,16 @@
+SELECT
+  symbol,
+  YEAR_MONTH,
+  report_date,
+  industry,
+  current_month_revenue,
+  prev_month_revenue,
+  last_year_same_month_revenue,
+  mom_change_percent,
+  yoy_change_percent,
+  cumulative_revenue,
+  cumulative_last_year_revenue,
+  cumulative_change_percent,
+  note
+FROM
+  monthly_revenue;

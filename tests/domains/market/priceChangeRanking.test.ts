@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculatePriceChangeRanking } from '@/domains/market/priceChangeRanking/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
 test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排序，且不超過 limit 筆', async () => {
@@ -42,5 +42,5 @@ test('calculatePriceChangeRanking: limit 應該限制回傳筆數', async () => 
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
 });

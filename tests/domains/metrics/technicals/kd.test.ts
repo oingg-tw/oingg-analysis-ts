@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateKd } from '@/domains/metrics/technicals/kd/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('kd: 2330 歷史夠深，K/D 都算得出 0~100 之間的值', async () => {
@@ -35,6 +35,6 @@ test('kd: 9999（查無資料的公司）回傳 not_applicable', async () => {
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

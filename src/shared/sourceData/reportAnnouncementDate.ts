@@ -1,10 +1,14 @@
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export type PriceAnchorSource = 'announcement' | 'report_date_fallback';
 
 export interface PriceAnchorDate {
   date: Date;
   source: PriceAnchorSource;
+}
+
+interface RawAnnouncementRow {
+  announcement_date: Date;
 }
 
 // 用來當「股價/市值基準日」的日期——優先用財報實際公告日（financial_report_announcement，
@@ -22,10 +26,13 @@ export const getPriceAnchorDate = async (
   fiscalQuarter: number,
   reportDate: Date | null
 ): Promise<PriceAnchorDate | null> => {
-  const announcement = await prisma.financialReportAnnouncement.findFirst({
-    where: { symbol, fiscalYear, fiscalQuarter },
-  });
-  if (announcement) return { date: announcement.announcementDate, source: 'announcement' };
+  const rows = await mopsExportPrisma.$queryRaw<RawAnnouncementRow[]>`
+    SELECT announcement_date FROM "export"."financial_report_announcement"
+    WHERE symbol = ${symbol} AND fiscal_year = ${fiscalYear} AND fiscal_quarter = ${fiscalQuarter}
+    LIMIT 1
+  `;
+  const announcement = rows[0];
+  if (announcement) return { date: announcement.announcement_date, source: 'announcement' };
   if (reportDate) return { date: reportDate, source: 'report_date_fallback' };
   return null;
 };

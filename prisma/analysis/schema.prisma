@@ -5,15 +5,13 @@
 //
 // 這裡存的主要是「算完的投資指標結果」，每個指標各自一張表（ROE、PER、PBR…）。
 //
-// 2026-08-31 加入「curated 層」（`curated_<backend>_<dataset>` 命名，例如
-// `curated_mops_quarterly_income_statement`）跟 `sync_state`——這是數據中台架構下，
-// 從各後台（mops/twse/gov/tpex/sitca）同步過來的資料備份，不是即時查詢對方 DB，是中台自己的
-// 資料副本，寫入方式是後台 export schema 的 ingestion_runs 握手 + watermark 同步（見
-// src/shared/sync/），不是本服務自己算出來的指標結果。目前只有 mops 的 quarterly_income_statement
-// 一個 pilot dataset，其餘 `../schema.prisma`／`../twse/schema.prisma`／`../gov/schema.prisma`／
-// `../tpex/schema.prisma` 這幾組唯讀鏡像暫時還是原有指標的資料來源，還沒切過來——後台的
-// export schema／ingestion_runs／etl_reader role 都還沒做，curated 層要等對面準備好才能真的
-// 同步，這次只先把中台自己這一側的骨架做出來。
+// 2026-08-31~09-03 曾經試過「curated 層」（`curated_<backend>_<dataset>` 命名 + `sync_state`，
+// 把各後台 export schema 的資料同步一份副本進來，指標服務只讀這份副本，不即時查對方 DB）。
+// 使用者評估後認為現階段做數據中台的 curated 層太早，2026-09-03 全部退場——指標服務改回
+// 直接查各後台的 export schema（`mopsExportPrisma`／`govExportPrisma`／`twseExportPrisma`／
+// `tpexExportPrisma`／`sitcaExportPrisma`，見 src/adapters/prisma/），不在本服務內部落地副本。
+// 如果之後要重啟這個方向，可以參考這次的設計（sync 協定見已刪除的 src/shared/sync/，git
+// 歷史裡找得到）。
 //
 // 異動這裡的 model 後，用 `pnpm prisma:analysis:migrate` 產生/套用 migration（不要對
 // ../schema.prisma 那份跑 migrate，那份永遠只用 db pull 內省）。
@@ -1413,116 +1411,4 @@ model EquityRiskPremiumResult {
 
   @@id([windowStart, windowEnd])
   @@map("macro_equity_risk_premium")
-}
-
-// ============================================================================
-// curated 層 + sync_state——數據中台架構，見檔案開頭 2026-08-31 的說明跟 src/shared/sync/。
-// ============================================================================
-
-// watermark 記錄表：一個 (backend, dataset) 一列，記錄同步進度。只有整批同步成功才推進，
-// 任何一步失敗（列數校驗不符、寫入失敗）都不動，下次自然從同一個 watermark 重試——
-// 見 src/shared/sync/syncDataset.ts 的說明。
-model SyncState {
-  backend String // 'mops' | 'twse' | 'gov' | 'tpex' | 'sitca'
-  dataset String // 對應後台 export schema 的 view 名稱
-
-  lastRunId       String?   @map("last_run_id") // 後台 ingestion_runs.run_id
-  lastCompletedAt DateTime? @map("last_completed_at") // 後台 ingestion_runs.completed_at
-
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@id([backend, dataset])
-  @@map("sync_state")
-}
-
-// mops quarterly_income_statement 的 curated 副本——第一個 pilot dataset。業務欄位比照
-// prisma/schema.prisma 的 QuarterlyIncomeStatement（唯讀鏡像現有形狀），等 mops-ts 那邊把
-// export.quarterly_income_statement view 定案後再對齊欄位名稱/型別，目前只是雛形，還沒有
-// 真的資料同步進來（後台的 export schema 還不存在）。
-model CuratedMopsQuarterlyIncomeStatement {
-  symbol               String
-  year                 Int
-  quarter              Int
-  dataType             String  @map("data_type")
-  subsidiaryCompanyId  String  @default("") @map("subsidiary_company_id")
-  reportDate           DateTime @map("report_date") @db.Date
-
-  operatingRevenue                        BigInt?  @map("operating_revenue")
-  grossProfit                             BigInt?  @map("gross_profit")
-  operatingIncome                         BigInt?  @map("operating_income")
-  profitBeforeTax                         BigInt?  @map("profit_before_tax")
-  netIncome                               BigInt?  @map("net_income")
-  eps                                     Decimal? @map("eps") @db.Decimal(10, 2)
-  adminExpenses                           BigInt?  @map("admin_expenses")
-  comprehensiveIncomeAttributableToNci    BigInt?  @map("comprehensive_income_attributable_to_nci")
-  comprehensiveIncomeAttributableToParent BigInt?  @map("comprehensive_income_attributable_to_parent")
-  epsDiluted                              Decimal? @map("eps_diluted") @db.Decimal(10, 2)
-  financeCosts                            BigInt?  @map("finance_costs")
-  grossProfitBeforeAdjustment             BigInt?  @map("gross_profit_before_adjustment")
-  incomeTaxExpense                        BigInt?  @map("income_tax_expense")
-  interestIncome                          BigInt?  @map("interest_income")
-  netIncomeAttributableToNci              BigInt?  @map("net_income_attributable_to_nci")
-  netIncomeAttributableToParent           BigInt?  @map("net_income_attributable_to_parent")
-  netIncomeFromContinuingOps              BigInt?  @map("net_income_from_continuing_ops")
-  nonOperatingIncomeExpenses              BigInt?  @map("non_operating_income_expenses")
-  operatingCost                           BigInt?  @map("operating_cost")
-  operatingExpenses                       BigInt?  @map("operating_expenses")
-  otherComprehensiveIncome                BigInt?  @map("other_comprehensive_income")
-  otherIncome                             BigInt?  @map("other_income")
-  otherNonOperatingGainsLosses            BigInt?  @map("other_non_operating_gains_losses")
-  otherOperatingGainsLosses               BigInt?  @map("other_operating_gains_losses")
-  rdExpenses                              BigInt?  @map("rd_expenses")
-  sellingExpenses                         BigInt?  @map("selling_expenses")
-  shareOfAssociatesJvProfit               BigInt?  @map("share_of_associates_jv_profit")
-  totalComprehensiveIncome                BigInt?  @map("total_comprehensive_income")
-
-  // 契約要求的同步元資料——不是業務欄位，記錄「這筆資料怎麼進來的」，point-in-time 查詢要靠
-  // completedAt（後台資料何時可得），不是 ingestedAt（中台何時拿到，可能因為排程延遲晚很多）。
-  sourceRunId String   @map("source_run_id") // 對應後台 ingestion_runs.run_id
-  completedAt DateTime @map("completed_at")
-  ingestedAt  DateTime @default(now()) @map("ingested_at")
-
-  @@id([symbol, year, quarter, dataType, subsidiaryCompanyId])
-  @@map("curated_mops_quarterly_income_statement")
-}
-
-// gov monthly_gov_bond_yield_10y 的 curated 副本——第二個 dataset，2026-08-31 gov-ts 完成
-// export schema 建置後接上。業務欄位比照 prisma/gov/schema.prisma 的 MonthlyGovBondYield10y。
-model CuratedGovMonthlyGovBondYield10y {
-  year      Int
-  month     Int
-  yieldRate Decimal @map("yield_rate") @db.Decimal(8, 4)
-
-  // 契約要求的同步元資料，見 curated_mops_quarterly_income_statement 的說明。
-  sourceRunId String   @map("source_run_id")
-  completedAt DateTime @map("completed_at")
-  ingestedAt  DateTime @default(now()) @map("ingested_at")
-
-  @@id([year, month])
-  @@map("curated_gov_monthly_gov_bond_yield_10y")
-}
-
-// gov company_industry_classification 的 curated 副本——第三個 dataset，2026-09-01 接上，
-// 財政部稅籍登記的官方逐公司行業分類（不是 MOEA 營業項目代碼反推的，那條路已確認不通，見
-// src/domains/filter/README 或對話紀錄）。gov-ts 那邊是整批同步（一次 999 家公司一個 run，
-// 不是逐公司），所以跟 curated_gov_monthly_gov_bond_yield_10y 同一種同步模式，不是逐公司的
-// mops 模式。`stockCode` 當 PK——一家上市櫃公司只會有一筆主要行業分類。
-model CuratedGovCompanyIndustryClassification {
-  stockCode            String @id @map("stock_code")
-  taxId                String @map("tax_id")
-  industryCode         String @map("industry_code")
-  sourceIndustryName   String @map("source_industry_name")
-  sectionCode          String @map("section_code")
-  divisionCode         String @map("division_code")
-  groupCode            String @map("group_code")
-  classCode            String @map("class_code")
-  subclassCode         String @map("subclass_code")
-  classificationNameZh String @map("classification_name_zh")
-
-  // 契約要求的同步元資料，見 curated_mops_quarterly_income_statement 的說明。
-  sourceRunId String   @map("source_run_id")
-  completedAt DateTime @map("completed_at")
-  ingestedAt  DateTime @default(now()) @map("ingested_at")
-
-  @@map("curated_gov_company_industry_classification")
 }

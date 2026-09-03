@@ -1,6 +1,6 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { LiquidityRatioQuery, LiquidityRatioResult } from './types';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -40,11 +40,7 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheet = await prisma.quarterlyBalanceSheet.findUnique({
-    where: {
-      symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-    },
-  });
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
 

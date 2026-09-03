@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { MaterialAnnouncementsQuery, MaterialAnnouncementsResult, MaterialAnnouncementRow } from './types';
 
@@ -20,7 +20,7 @@ export const listMaterialAnnouncements = async (query: MaterialAnnouncementsQuer
   const { limit } = query;
   const warnings: string[] = [];
 
-  const rows = await twsePrisma.$queryRaw<RawMaterialAnnouncementRow[]>`
+  const rows = await twseExportPrisma.$queryRaw<RawMaterialAnnouncementRow[]>`
     SELECT symbol, announcement_date, announcement_time, report_date, subject, clause, fact_date, description
     FROM "export"."material_announcement"
     ORDER BY announcement_date DESC, announcement_time DESC

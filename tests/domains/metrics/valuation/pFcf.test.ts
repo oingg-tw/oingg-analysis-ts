@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculatePFcf } from '@/domains/metrics/valuation/pFcf/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // P_FCF 用到逐日更新的股價資料，數值每天在變，不釘死確切數字，只驗證合理性——
@@ -46,6 +46,6 @@ test('pFcf: 9999（查無資料的公司）自動抓最新一季應該回傳 yea
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 export interface PricePoint {
   tradeDate: string; // YYYY-MM-DD
@@ -9,19 +9,29 @@ export interface PricePoint {
   volume: bigint | null; // 成交股數
 }
 
+interface RawDailyPriceRow {
+  trade_date: Date;
+  open: unknown;
+  high: unknown;
+  low: unknown;
+  close: unknown;
+  volume: bigint | null;
+}
+
 // 技術分析指標共用的日線序列查詢——抓 asOfDate（含）以前的全部歷史（依日期升冪排序），不像
 // Beta 那樣先限定「N 年份」再篩選，因為技術指標的窗口長度差異很大（MA5D 到 MA200D），與其每個
 // 指標各自決定要抓多少年份，不如讓呼叫端自己從回傳的陣列尾端取需要的長度。個股資料量目前最多
-// 也就 5 年約 1200 筆（見種子公司），一次抓全部不是效能問題。
+// 也就 5 年約 1200 筆（見種子公司），一次抓全部不是效能問題。2026-09-03 使用者決定 curated
+// 中台層現階段太早，改回直接查 twseExportPrisma（export schema 沒有唯一識別欄位，走 $queryRaw）。
 export const getPriceSeriesAsOf = async (symbol: string, asOfDate: Date): Promise<PricePoint[]> => {
-  const rows = await twsePrisma.dailyPrice.findMany({
-    where: { symbol, tradeDate: { lte: asOfDate } },
-    orderBy: { tradeDate: 'asc' },
-    select: { tradeDate: true, open: true, high: true, low: true, close: true, volume: true },
-  });
+  const rows = await twseExportPrisma.$queryRaw<RawDailyPriceRow[]>`
+    SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
+    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
+    ORDER BY trade_date ASC
+  `;
 
   return rows.map((row) => ({
-    tradeDate: row.tradeDate.toISOString().slice(0, 10),
+    tradeDate: row.trade_date.toISOString().slice(0, 10),
     open: row.open !== null ? Number(row.open) : null,
     high: row.high !== null ? Number(row.high) : null,
     low: row.low !== null ? Number(row.low) : null,

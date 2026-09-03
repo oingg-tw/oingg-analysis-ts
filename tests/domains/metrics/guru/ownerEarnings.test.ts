@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateOwnerEarnings } from '@/domains/metrics/guru/ownerEarnings/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/metrics/guru/README.md「Buffett_Owner_Earnings（股東盈餘）計算口徑」——
@@ -42,6 +42,6 @@ test('ownerEarnings: 9999（查無資料的公司）自動抓最新一季應該�
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import type { CompanyProfileDetail } from '@/domains/companies/types';
 
@@ -7,16 +7,23 @@ interface RawTpexCompanyProfileRow {
   short_name: string | null;
 }
 
+interface RawTwseCompanyProfileRow {
+  symbol: string;
+  short_name: string | null;
+}
+
 // 只查公司簡稱，給 src/shared/registerCompanyRoute.ts（單一公司端點）用——company_profile 目前只鏡像了
-// symbol/name/shortName 幾個欄位（見 prisma/twse/schema.prisma、prisma/tpexExport/schema.prisma
+// symbol/name/shortName 幾個欄位（見 prisma/twseExport/schema.prisma、prisma/tpexExport/schema.prisma
 // 開頭說明）。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料才回傳 null，不拋錯——
 // 呼叫端要把這個當作「查不到名稱」的正常情境。
 //
-// TPEx 這邊 2026-09-01 改走 export.company_profile（tpexExportPrisma，$queryRaw——這張 view
-// 沒有唯一識別欄位，Prisma Client 不會產生 model 存取子），取代原本讀 tpex-ts dev 環境的舊帳號。
+// 2026-09-03 使用者決定 curated 中台層現階段太早，TWSE 這邊改回直接查 twseExportPrisma——跟
+// TPEx 同一種模式（export schema 沒有唯一識別欄位，走 $queryRaw）。
 export const getCompanyName = async (companyId: string): Promise<string | null> => {
-  const twseProfile = await twsePrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { shortName: true } });
-  if (twseProfile) return twseProfile.shortName;
+  const twseRows = await twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`
+    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+  `;
+  if (twseRows[0]) return twseRows[0].short_name;
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`
     SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
@@ -27,11 +34,11 @@ export const getCompanyName = async (companyId: string): Promise<string | null> 
 // GET /stocks/:symbol/quote 用——判斷這家公司到底存不存在（上市或上櫃任一邊有登記），
 // 不存在才回 404；存在但查無股價/估值資料是另一回事（回 200，欄位是 null）。
 export const companyExists = async (companyId: string): Promise<boolean> => {
-  const [twseHit, tpexRows] = await Promise.all([
-    twsePrisma.companyProfile.findUnique({ where: { symbol: companyId }, select: { symbol: true } }),
+  const [twseRows, tpexRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1`,
   ]);
-  return twseHit !== null || tpexRows.length > 0;
+  return twseRows.length > 0 || tpexRows.length > 0;
 };
 
 export interface SecuritySymbolsFilter {
@@ -81,7 +88,9 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
 
   const [twseRows, tpexRows, twsePreferredRows] = await Promise.all([
     needsTwse
-      ? twsePrisma.companyProfile.findMany({ where: { source: 'COMPANY_PROFILE' }, select: { symbol: true, shortName: true } })
+      ? twseExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
+          SELECT symbol, short_name FROM "export"."company_profile" WHERE source = 'COMPANY_PROFILE'
+        `
       : Promise.resolve([]),
     needsTpex
       ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
@@ -89,13 +98,13 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
         `
       : Promise.resolve([]),
     needsPreferred
-      ? twsePrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
+      ? twseExportPrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
           SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
         `
       : Promise.resolve([]),
   ]);
   return [
-    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.shortName, isEmerging: false, isPreferredStock: false })),
+    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.short_name, isEmerging: false, isPreferredStock: false })),
     ...tpexRows.map((row) => ({
       symbol: row.symbol,
       market: 'TPEx' as const,
@@ -170,6 +179,49 @@ interface RawTpexCompanyProfileDetailRow {
   issued_shares: bigint | null;
 }
 
+interface RawTwseCompanyProfileDetailRow {
+  symbol: string;
+  report_date: Date;
+  name: string | null;
+  short_name: string | null;
+  foreign_registration_country: string | null;
+  industry: string | null;
+  industry_name: string | null;
+  address: string | null;
+  tax_id: string | null;
+  chairman: string | null;
+  general_manager: string | null;
+  spokesperson: string | null;
+  spokesperson_title: string | null;
+  deputy_spokesperson: string | null;
+  phone: string | null;
+  established_date: Date | null;
+  listed_date: Date | null;
+  par_value: string | null;
+  paid_in_capital: bigint | null;
+  private_placement_shares: bigint | null;
+  preferred_stock_shares: bigint | null;
+  financial_report_type: string | null;
+  stock_transfer_agency: string | null;
+  transfer_agency_phone: string | null;
+  transfer_agency_address: string | null;
+  auditing_firm: string | null;
+  auditor1: string | null;
+  auditor2: string | null;
+  english_short_name: string | null;
+  english_address: string | null;
+  fax_number: string | null;
+  email: string | null;
+  website: string | null;
+  issued_shares: bigint | null;
+}
+
+const TWSE_COMPANY_PROFILE_DETAIL_COLUMNS = `symbol, report_date, name, short_name, foreign_registration_country, industry,
+  industry_name, address, tax_id, chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson,
+  phone, established_date, listed_date, par_value, paid_in_capital, private_placement_shares, preferred_stock_shares,
+  financial_report_type, stock_transfer_agency, transfer_agency_phone, transfer_agency_address, auditing_firm,
+  auditor1, auditor2, english_short_name, english_address, fax_number, email, website, issued_shares`;
+
 // 這 5 個 industry 代碼的 industry_name 不是真正的產業分類，是 twse-ts 自己為了說明「這代碼
 // 其實是別的訊號」加的附註文字（2026-09-02 跟 twse-ts 確認過，src/shared/industryCodes.ts
 // 的檔頭註解——XX=證券商、98=期貨商、91=第一上市外國公司身份別、07=舊產業代碼殘留，都是
@@ -195,45 +247,49 @@ const resolveFinancialReportTypeName = (financialReportType: string | null): str
 // 不是「排除幽靈代號」那種清單情境（見 getAllSecurityRows 的說明），就算是
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
 export const getCompanyProfileDetail = async (companyId: string): Promise<CompanyProfileDetail | null> => {
-  const twseRow = await twsePrisma.companyProfile.findUnique({ where: { symbol: companyId } });
+  const twseRows = await twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
+    `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
+    companyId
+  );
+  const twseRow = twseRows[0];
   if (twseRow) {
     return {
       symbol: twseRow.symbol,
       market: 'TWSE',
-      reportDate: twseRow.reportDate.toISOString().slice(0, 10),
+      reportDate: twseRow.report_date.toISOString().slice(0, 10),
       name: twseRow.name,
-      shortName: twseRow.shortName,
-      foreignRegistrationCountry: twseRow.foreignRegistrationCountry,
+      shortName: twseRow.short_name,
+      foreignRegistrationCountry: twseRow.foreign_registration_country,
       industry: twseRow.industry,
-      industryName: resolveIndustryName(twseRow.industry, twseRow.industryName),
+      industryName: resolveIndustryName(twseRow.industry, twseRow.industry_name),
       address: twseRow.address,
-      taxId: twseRow.taxId,
+      taxId: twseRow.tax_id,
       chairman: twseRow.chairman,
-      generalManager: twseRow.generalManager,
+      generalManager: twseRow.general_manager,
       spokesperson: twseRow.spokesperson,
-      spokespersonTitle: twseRow.spokespersonTitle,
-      deputySpokesperson: twseRow.deputySpokesperson,
+      spokespersonTitle: twseRow.spokesperson_title,
+      deputySpokesperson: twseRow.deputy_spokesperson,
       phone: twseRow.phone,
-      establishedDate: twseRow.establishedDate?.toISOString().slice(0, 10) ?? null,
-      listedDate: twseRow.listedDate?.toISOString().slice(0, 10) ?? null,
-      parValue: twseRow.parValue ? Number(twseRow.parValue) : null,
-      paidInCapital: twseRow.paidInCapital?.toString() ?? null,
-      privatePlacementShares: twseRow.privatePlacementShares?.toString() ?? null,
-      preferredStockShares: twseRow.preferredStockShares?.toString() ?? null,
-      financialReportType: twseRow.financialReportType,
-      financialReportTypeName: resolveFinancialReportTypeName(twseRow.financialReportType),
-      stockTransferAgency: twseRow.stockTransferAgency,
-      transferAgencyPhone: twseRow.transferAgencyPhone,
-      transferAgencyAddress: twseRow.transferAgencyAddress,
-      auditingFirm: twseRow.auditingFirm,
+      establishedDate: twseRow.established_date?.toISOString().slice(0, 10) ?? null,
+      listedDate: twseRow.listed_date?.toISOString().slice(0, 10) ?? null,
+      parValue: twseRow.par_value ? Number(twseRow.par_value) : null,
+      paidInCapital: twseRow.paid_in_capital?.toString() ?? null,
+      privatePlacementShares: twseRow.private_placement_shares?.toString() ?? null,
+      preferredStockShares: twseRow.preferred_stock_shares?.toString() ?? null,
+      financialReportType: twseRow.financial_report_type,
+      financialReportTypeName: resolveFinancialReportTypeName(twseRow.financial_report_type),
+      stockTransferAgency: twseRow.stock_transfer_agency,
+      transferAgencyPhone: twseRow.transfer_agency_phone,
+      transferAgencyAddress: twseRow.transfer_agency_address,
+      auditingFirm: twseRow.auditing_firm,
       auditor1: twseRow.auditor1,
       auditor2: twseRow.auditor2,
-      englishShortName: twseRow.englishShortName,
-      englishAddress: twseRow.englishAddress,
-      faxNumber: twseRow.faxNumber,
+      englishShortName: twseRow.english_short_name,
+      englishAddress: twseRow.english_address,
+      faxNumber: twseRow.fax_number,
       email: twseRow.email,
       website: twseRow.website,
-      issuedShares: twseRow.issuedShares?.toString() ?? null,
+      issuedShares: twseRow.issued_shares?.toString() ?? null,
     };
   }
 
@@ -297,12 +353,12 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
   if (symbols.length === 0) return new Map();
 
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.companyProfile.findMany({ where: { symbol: { in: symbols } }, select: { symbol: true, shortName: true } }),
+    twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ANY(${symbols})`,
     tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ANY(${symbols})`,
   ]);
 
   const result = new Map<string, string | null>();
-  for (const row of twseRows) result.set(row.symbol, row.shortName);
+  for (const row of twseRows) result.set(row.symbol, row.short_name);
   for (const row of tpexRows) {
     if (!result.has(row.symbol)) result.set(row.symbol, row.short_name);
   }
@@ -337,17 +393,20 @@ const dedupeBySymbol = (rows: { symbol: string; shortName: string | null }[]): C
 
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.companyProfile.findMany({ select: { symbol: true, shortName: true } }),
+    twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile"`,
     tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile"`,
   ]);
-  const all = dedupeBySymbol([...twseRows, ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name }))]); // twseRows 排在前面，去重時優先保留
+  const all = dedupeBySymbol([
+    ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name })),
+    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name })),
+  ]); // twseRows 排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };
 
 export const countAllCompanyNames = async (): Promise<number> => {
-  const [twseSymbols, tpexRows] = await Promise.all([
-    twsePrisma.companyProfile.findMany({ select: { symbol: true } }),
+  const [twseRows, tpexRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
-  return new Set([...twseSymbols.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
+  return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
 };

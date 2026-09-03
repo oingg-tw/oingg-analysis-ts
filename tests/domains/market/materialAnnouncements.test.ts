@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { listMaterialAnnouncements } from '@/domains/market/materialAnnouncements/service';
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 test('listMaterialAnnouncements: 應該依公告日期由新到舊排序，且不超過 limit 筆', async () => {
   const result = await listMaterialAnnouncements({ limit: 20 });
@@ -17,5 +17,5 @@ test('listMaterialAnnouncements: limit 應該限制回傳筆數', async () => {
 });
 
 after(async () => {
-  await twsePrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
 });

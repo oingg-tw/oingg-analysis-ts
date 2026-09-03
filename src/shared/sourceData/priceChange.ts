@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
 export interface ChangeLookupKey {
@@ -51,13 +51,10 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
     const dates =
       group.market === 'TWSE'
         ? (
-            await twsePrisma.dailyTaiexIndex.findMany({
-              where: { tradeDate: { lte: group.asOfDate } },
-              orderBy: { tradeDate: 'desc' },
-              take: tradingDaysBack + 1,
-              select: { tradeDate: true },
-            })
-          ).map((row) => row.tradeDate)
+            await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
+              SELECT trade_date FROM "export"."daily_taiex_index" WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
+            `
+          ).map((row) => row.trade_date)
         : (
             await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`
               SELECT DISTINCT trade_date FROM "export"."daily_price" WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
@@ -74,12 +71,9 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
 
     const closesByDate =
       group.market === 'TWSE'
-        ? await twsePrisma.dailyPrice
-            .findMany({
-              where: { tradeDate: { in: [latestDate, baseDate] }, symbol: { in: symbols } },
-              select: { symbol: true, tradeDate: true, close: true },
-            })
-            .then((rows) => rows.map((row) => ({ symbol: row.symbol, tradeDate: row.tradeDate, close: row.close === null ? null : Number(row.close) })))
+        ? await twseExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
+            SELECT symbol, trade_date, close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
+          `.then((rows) => rows.map((row) => ({ symbol: row.symbol, tradeDate: row.trade_date, close: row.close === null ? null : Number(row.close) })))
         : (
             await tpexExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
               SELECT symbol, trade_date, close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})

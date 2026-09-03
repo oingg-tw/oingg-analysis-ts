@@ -1,6 +1,6 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { DeRatioQuery, DeRatioResult } from './types';
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -46,11 +46,7 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheet = await prisma.quarterlyBalanceSheet.findUnique({
-    where: {
-      symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-    },
-  });
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
 

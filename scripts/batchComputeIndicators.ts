@@ -14,8 +14,8 @@
 // 觸發方式：手動跑 `pnpm batch:compute`，比照使用者要求移除 `/system/sync/:backend/:dataset`
 // 端點的決定，這次同樣不開 HTTP 觸發——排程要怎麼接、多久跑一次，是這支腳本驗證過之後的下一步。
 
-import prisma from '../src/adapters/prisma/index';
-import twsePrisma from '../src/adapters/prisma/twseClient';
+import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { indicatorJobs } from '../src/shared/indicatorRegistry';
@@ -53,8 +53,8 @@ const main = async () => {
     console.log(`[${job.name}] 完成：成功 ${success}，失敗 ${failed.length}${failed.length > 0 ? `（${failed.join(', ')}）` : ''}`);
   }
 
-  await prisma.$disconnect();
-  await twsePrisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
+  await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 };

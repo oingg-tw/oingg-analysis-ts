@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { RoeQuery, RoeResult } from './types';
 
 // 淨利/權益欄位選擇邏輯：優先採用「歸屬於母公司」口徑（分子分母範圍一致），
@@ -60,13 +60,11 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
+  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const [incomeStatement, balanceSheet] = await Promise.all([
-    prisma.quarterlyIncomeStatement.findUnique({ where }),
-    prisma.quarterlyBalanceSheet.findUnique({ where }),
+    getQuarterlyIncomeStatement(key),
+    getQuarterlyBalanceSheet(key),
   ]);
 
   const netIncome = pickNetIncome(incomeStatement);
@@ -89,16 +87,12 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

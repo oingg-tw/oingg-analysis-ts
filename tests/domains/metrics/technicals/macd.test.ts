@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateMacd } from '@/domains/metrics/technicals/macd/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('macd: 2330 歷史夠深，DIF/DEM/OSC 都算得出來且已收斂', async () => {
@@ -34,6 +34,6 @@ test('macd: 9999（查無資料的公司）回傳 not_applicable', async () => {
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

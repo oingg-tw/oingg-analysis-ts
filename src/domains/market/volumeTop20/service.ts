@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
@@ -55,7 +55,7 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   const warnings: string[] = [];
 
   const [twseDateRows, tpexDateRows] = await Promise.all([
-    twsePrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`,
+    twseExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`,
     tpexExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`,
   ]);
   const candidates = [twseDateRows[0]?.trade_date, tpexDateRows[0]?.trade_date].filter((d): d is Date => d != null);
@@ -66,7 +66,7 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.$queryRaw<RawTwseVolumeTop20Row[]>`
+    twseExportPrisma.$queryRaw<RawTwseVolumeTop20Row[]>`
       SELECT symbol, volume, transaction, open, high, low, close, dir, change
       FROM "export"."volume_top20"
       WHERE trade_date = ${tradeDate}

@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { NcavQuery, NcavResult } from './types';
 
 // 財報金額欄位單位是「千元」，但流通股數是實際股數，不是千股，兩者單位不同，
@@ -42,11 +42,7 @@ export const calculateNcav = async (query: NcavQuery): Promise<NcavResult> => {
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheet = await prisma.quarterlyBalanceSheet.findUnique({
-    where: {
-      symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-    },
-  });
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
 
   const currentAssets = balanceSheet?.currentAssets ?? null;

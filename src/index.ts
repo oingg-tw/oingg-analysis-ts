@@ -6,14 +6,12 @@ import express from 'ultimate-express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
-import { connectDb } from './adapters/prisma/index';
 import { connectAnalysisDb } from './adapters/prisma/analysisClient';
-import { connectTwseDb } from './adapters/prisma/twseClient';
-import { connectGovDb } from './adapters/prisma/govClient';
 import { connectMopsExportDb } from './adapters/prisma/mopsExportClient';
 import { connectGovExportDb } from './adapters/prisma/govExportClient';
 import { connectTpexExportDb } from './adapters/prisma/tpexExportClient';
 import { connectSitcaExportDb } from './adapters/prisma/sitcaExportClient';
+import { connectTwseExportDb } from './adapters/prisma/twseExportClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
@@ -51,14 +49,12 @@ const startServer = async () => {
   try {
     checkFilterCatalogConsistency(config.isProduction);
     validateMetricTableRegistry(config.isProduction);
-    await connectDb();
     await connectAnalysisDb();
-    await connectTwseDb();
-    await connectGovDb();
     await connectMopsExportDb();
     await connectGovExportDb();
     await connectTpexExportDb();
     await connectSitcaExportDb();
+    await connectTwseExportDb();
     // dev 環境背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
     // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();

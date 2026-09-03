@@ -1,6 +1,6 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
@@ -32,11 +32,15 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
   const { limit } = query;
   const warnings: string[] = [];
 
+  // 理由同 disposedStocks/service.ts——twseExportPrisma 是實體隔離的獨立 Neon 專案，不能再跨
+  // schema 查 public.company_profile，改成先取 getSecuritySymbolSet 再用 ANY(${symbols})。
+  const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
+
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
+    twseExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
       SELECT symbol, trade_date, criteria
       FROM "export"."attention_history_note"
-      WHERE symbol IN (SELECT symbol FROM "public"."company_profile" WHERE source = 'COMPANY_PROFILE')
+      WHERE symbol = ANY(${twseEligibleSymbols})
       ORDER BY trade_date DESC
       LIMIT ${limit}
     `,

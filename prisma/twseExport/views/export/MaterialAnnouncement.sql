@@ -1,0 +1,11 @@
+SELECT
+  symbol,
+  announcement_date,
+  announcement_time,
+  report_date,
+  subject,
+  clause,
+  fact_date,
+  description
+FROM
+  material_announcement;

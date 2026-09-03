@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { RevenueRankingMetric, RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
@@ -49,7 +49,7 @@ const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
 
 const getLatestYearMonth = async (): Promise<Date | null> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twsePrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
+    twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
     tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
   ]);
   const candidates = [twseRows[0]?.year_month, tpexRows[0]?.year_month].filter((d): d is Date => d != null);
@@ -68,7 +68,7 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
   }
 
   const [twseRows, tpexRows, twseSymbols, tpexSymbols] = await Promise.all([
-    twsePrisma.$queryRaw<RawMonthlyRevenueRow[]>`
+    twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
       SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
       FROM "export"."monthly_revenue"
       WHERE year_month = ${yearMonth}

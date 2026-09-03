@@ -2,8 +2,12 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateAltmanZScore } from '@/domains/metrics/guru/altmanZScore/service';
 import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+
+interface FinancialReportAnnouncementRow {
+  announcement_date: Date;
+}
 
 // 對照 src/domains/metrics/guru/README.md「Altman_Z_Score 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
 // X4（市值/總負債）用 daily_stock_price 的收盤價，價格每天在變，X4/zScore 不釘死確切數字，
@@ -14,7 +18,12 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // 'report_date_fallback'，改成直接查 financial_report_announcement 現查現算期望值，
 // 這樣不管覆蓋率漲到哪裡這個測試都不會因為資料變好而變紅，見 tests/README.md 的說明。
 test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
-  const announcement = await prisma.financialReportAnnouncement.findFirst({ where: { symbol: '2330', fiscalYear: 115, fiscalQuarter: 2 } });
+  const announcementRows = await mopsExportPrisma.$queryRaw<FinancialReportAnnouncementRow[]>`
+    SELECT announcement_date FROM "export"."financial_report_announcement"
+    WHERE symbol = '2330' AND fiscal_year = 115 AND fiscal_quarter = 2
+    LIMIT 1
+  `;
+  const announcement = announcementRows[0];
   const result = await calculateAltmanZScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, '115');
@@ -35,7 +44,7 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
 
   if (announcement) {
     assert.equal(result.marketCap.priceAnchorSource, 'announcement');
-    assert.equal(result.marketCap.tradeDate, announcement.announcementDate.toISOString().slice(0, 10));
+    assert.equal(result.marketCap.tradeDate, announcement.announcement_date.toISOString().slice(0, 10));
     assert.equal(result.warnings.length, 1, '有公告日資料時不應該出現 fallback 警告，只剩固定的產業適用性警告');
   } else {
     assert.equal(result.marketCap.priceAnchorSource, 'report_date_fallback');
@@ -72,20 +81,23 @@ test('altmanZScore: 不指定 year/season 時自動抓最新一季，結果應�
   assert.equal(auto.x2, explicit.x2);
 });
 
-// 2026-08-30 改用 oingg-twse daily_price 當市值資料源後，覆蓋率大幅擴大（1380+ 檔股票都有
-// 近幾個月的資料），1101 現在很可能也在覆蓋範圍內了——不寫死「1101 一定沒有股價資料」，改成
-// 現查 hasStockPriceCoverage 決定期望的 fieldStatus，避免又像 financial_report_announcement/
-// 2887 那次一樣，因為資料自己變好而測試變紅。
-test('altmanZScore: 1101 在這個開發資料庫裡查無財報資料，X1/X2/X3/X5 應該是 no_data；X4 依實際股價覆蓋率決定是 no_data 還是 not_applicable', async () => {
-  const covered = await hasStockPriceCoverage('1101');
-  const result = await calculateAltmanZScore({ companyId: '1101', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+// 2026-09-04 改用保證不存在的假代號，不再挑真實公司（原本用 1101）——2026-08-30 改用
+// oingg-twse daily_price 當市值資料源後覆蓋率大幅擴大，加上 mops-ts 的財報資料持續 ingest，
+// 2026-09-04 實測發現 1101 現在已經有完整財報（115Q2 資產負債表/損益表都查得到）跟股價覆蓋率，
+// X4 直接算出 0.626，這個測試案例的前提已經不成立。用假代號保證永遠查無任何資料，不會再因為
+// 開發資料庫持續 ingest 真實資料而失敗——見 tests/shared/priceChange.test.ts 同樣用
+// __NOT_A_REAL_SYMBOL__ 的作法。
+test('altmanZScore: 不存在的公司代號，X1/X2/X3/X5 應該是 no_data，X4 應該是 not_applicable', async () => {
+  const covered = await hasStockPriceCoverage('__NOT_A_REAL_SYMBOL__');
+  const result = await calculateAltmanZScore({ companyId: '__NOT_A_REAL_SYMBOL__', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
+  assert.equal(covered, false, '假代號不應該有任何股價覆蓋率');
   assert.equal(result.x4, null);
-  assert.equal(result.fieldStatuses.x4?.status, covered ? 'no_data' : 'not_applicable');
+  assert.equal(result.fieldStatuses.x4?.status, 'not_applicable');
   assert.equal(result.zScore, null);
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

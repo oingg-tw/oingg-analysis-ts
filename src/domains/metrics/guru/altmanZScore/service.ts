@@ -1,8 +1,8 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { calculateInterestCoverage } from '@/domains/metrics/solvency/interestCoverage/service';
 import { calculateTurnoverRatio } from '@/domains/metrics/turnover/turnoverRatio/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
@@ -81,11 +81,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   // 不重複實作 TTM 查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這兩支服務
   // 也會各自照常把自己的結果 upsert 進 solvency_interest_coverage/turnover_ratio，是預期行為。
   const [balanceSheet, interestCoverageResult, turnoverRatioResult] = await Promise.all([
-    prisma.quarterlyBalanceSheet.findUnique({
-      where: {
-        symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-      },
-    }),
+    getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId }),
     calculateInterestCoverage(composedQuery),
     calculateTurnoverRatio(composedQuery),
   ]);

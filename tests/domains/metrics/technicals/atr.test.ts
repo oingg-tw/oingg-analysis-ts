@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateAtr } from '@/domains/metrics/technicals/atr/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('atr: 2330 歷史夠深，兩個窗口都算得出非負值', async () => {
@@ -34,6 +34,6 @@ test('atr: 9999（查無資料的公司）回傳 not_applicable', async () => {
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

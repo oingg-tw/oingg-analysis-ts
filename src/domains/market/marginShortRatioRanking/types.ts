@@ -6,6 +6,7 @@ export interface MarginShortRatioRow {
   rank: number;
   symbol: string;
   companyName: string | null;
+  market: 'TWSE' | 'TPEx';
   shortToMarginRatioPct: number; // 融券今日餘額 / 融資今日餘額 x 100
   marginTodayBalance: string; // BigInt 用字串傳遞
   shortTodayBalance: string;

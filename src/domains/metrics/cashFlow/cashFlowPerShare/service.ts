@@ -1,8 +1,8 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { CashFlowPerShareQuery, CashFlowPerShareResult } from './types';
 
 // 財報金額欄位單位是「千元」，但流通股數是實際股數，不是千股，兩者單位不同，
@@ -49,11 +49,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
-
-  const currentCashFlow = await prisma.quarterlyCashFlowStatement.findUnique({ where });
+  const currentCashFlow = await getQuarterlyCashFlowStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentCashFlow) warnings.push('查無該季現金流量表資料。');
   if (subsidiaryCompanyId) {
     warnings.push(
@@ -73,16 +69,12 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyCashFlowStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyCashFlowStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

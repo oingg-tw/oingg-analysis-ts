@@ -1,0 +1,328 @@
+// 本 schema 只用來讀 oingg-twse 的 export schema（不是 public schema，那個在 ../twse/schema.prisma）
+// ——2026-09-03 twse-ts 擴大 export schema 涵蓋 daily_price/daily_valuation/daily_taiex_index/
+// company_profile/foreign_holding/margin_balance 這 6 張（跟原本就有的 monthly_revenue/
+// volume_top20/disposed_stock/attention_history_note/price_limit_range/material_announcement/
+// isin_securities 7 張放在一起），並且發了一組全新 Neon 專案上的 etl_reader role（實體隔離，
+// 不是同專案換角色，host 是 ep-summer-surf，跟舊的 owner 帳號 ep-damp-butterfly 不同），
+// 只能 SELECT export schema，已實測驗證過連 public schema 都會被拒絕（permission denied）。
+// 連線用 .env 的 TWSE_EXPORT_DATABASE_URL / TWSE_EXPORT_DIRECT_URL。
+//
+// 這是收斂舊 owner 帳號（TWSE_DATABASE_URL，見 ../twse/schema.prisma 開頭的說明）的目標連線——
+// 跟 mops/gov 一樣，view 沒有資料庫層級的唯一鍵，一律 @@ignore、查詢走 $queryRaw，即使欄位
+// 形狀上看起來有自然鍵（例如 daily_price 的 symbol+trade_date）也不例外，跟
+// prisma/mopsExport/schema.prisma 的 QuarterlyIncomeStatement 同一個先例。
+//
+// 2026-09-03 db pull 內省實測跟原本手動猜的形狀有幾處落差，以內省結果為準：
+// - foreign_holding/margin_balance 實際欄位比 ../twse/schema.prisma 鏡像的還多（原始表本來就有
+//   rank/available_shares/margin_buy/margin_sell 等欄位，只是 public schema 那邊當初刻意只鏡像
+//   排行用得到的欄位）——這裡列出全部欄位，之後要用再挑。
+// - daily_valuation 多一個 updated_at。
+// - changed_trading_method 的旗標欄位其實叫 periodic_call_auction_trading（分盤集合競價），
+//   不是先前談話紀錄假設的 altered_trading——全額交割股排除邏輯要接的時候要用這個真正欄位名。
+//
+// 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/twseExport/schema.prisma`
+// 內省，這個 schema 由 twse-ts 擁有，本服務永遠不對它跑 migrate。
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../generated/twse-export-client"
+  previewFeatures = ["views"]
+}
+
+// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
+// src/adapters/prisma/twseExportClient.ts、prisma.config.ts 的說明。
+datasource db {
+  provider = "postgresql"
+  schemas  = ["export"]
+}
+
+// 握手表——見契約第二部分。跟 twse-ts 的日批次顆粒度一致（不是逐公司 run）。
+model IngestionRun {
+  runId       BigInt   @id @default(autoincrement()) @map("run_id")
+  dataset     String
+  dataDate    DateTime @map("data_date") @db.Date
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  rowCount    Int      @map("row_count")
+  status      String // 'success' | 'partial' | 'failed'
+
+  @@index([dataset, dataDate])
+  @@map("ingestion_runs")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 DailyPrice（原本是 public schema 的 model）。
+view DailyPrice {
+  symbol      String?
+  tradeDate   DateTime? @map("trade_date") @db.Date
+  open        Decimal?  @db.Decimal(10, 4)
+  high        Decimal?  @db.Decimal(10, 4)
+  low         Decimal?  @db.Decimal(10, 4)
+  close       Decimal?  @db.Decimal(10, 4)
+  volume      BigInt?
+  turnover    BigInt?
+  transaction BigInt?
+  monthlyAvg  Decimal?  @map("monthly_avg") @db.Decimal(10, 4)
+
+  @@map("daily_price")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 DailyValuation。
+view DailyValuation {
+  symbol        String?
+  tradeDate     DateTime? @map("trade_date") @db.Date
+  peRatio       Decimal?  @map("pe_ratio") @db.Decimal(10, 2)
+  pbRatio       Decimal?  @map("pb_ratio") @db.Decimal(10, 2)
+  dividendYield Decimal?  @map("dividend_yield") @db.Decimal(10, 2)
+  updatedAt     DateTime? @map("updated_at")
+
+  @@map("daily_valuation")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 DailyTaiexIndex。
+view DailyTaiexIndex {
+  tradeDate DateTime? @map("trade_date") @db.Date
+  open      Decimal?  @db.Decimal(10, 4)
+  high      Decimal?  @db.Decimal(10, 4)
+  low       Decimal?  @db.Decimal(10, 4)
+  close     Decimal?  @db.Decimal(10, 4)
+
+  @@map("daily_taiex_index")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 CompanyProfile——2026-09-03 twse-ts 剛補上的 view。
+view CompanyProfile {
+  symbol                     String?
+  reportDate                 DateTime? @map("report_date") @db.Date
+  name                       String?
+  shortName                  String?   @map("short_name")
+  foreignRegistrationCountry String?   @map("foreign_registration_country")
+  industry                   String?
+  industryName               String?   @map("industry_name")
+  address                    String?
+  taxId                      String?   @map("tax_id")
+  chairman                   String?
+  generalManager             String?   @map("general_manager")
+  spokesperson               String?
+  spokespersonTitle          String?   @map("spokesperson_title")
+  deputySpokesperson         String?   @map("deputy_spokesperson")
+  phone                      String?
+  establishedDate            DateTime? @map("established_date") @db.Date
+  listedDate                 DateTime? @map("listed_date") @db.Date
+  parValue                   Decimal?  @map("par_value") @db.Decimal(14, 4)
+  paidInCapital              BigInt?   @map("paid_in_capital")
+  privatePlacementShares     BigInt?   @map("private_placement_shares")
+  preferredStockShares       BigInt?   @map("preferred_stock_shares")
+  financialReportType        String?   @map("financial_report_type")
+  stockTransferAgency        String?   @map("stock_transfer_agency")
+  transferAgencyPhone        String?   @map("transfer_agency_phone")
+  transferAgencyAddress      String?   @map("transfer_agency_address")
+  auditingFirm               String?   @map("auditing_firm")
+  auditor1                   String?
+  auditor2                   String?
+  englishShortName           String?   @map("english_short_name")
+  englishAddress             String?   @map("english_address")
+  faxNumber                  String?   @map("fax_number")
+  email                      String?
+  website                    String?
+  issuedShares               BigInt?   @map("issued_shares")
+  source                     String?
+
+  @@map("company_profile")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 ForeignHolding。
+view ForeignHolding {
+  symbol                  String?
+  tradeDate               DateTime? @map("trade_date") @db.Date
+  rank                    Int?
+  issuedShares            BigInt?   @map("issued_shares")
+  availableShares         BigInt?   @map("available_shares")
+  sharesHeld              BigInt?   @map("shares_held")
+  availableInvestPercent  Decimal?  @map("available_invest_percent") @db.Decimal(5, 2)
+  sharesHeldPercent       Decimal?  @map("shares_held_percent") @db.Decimal(5, 2)
+  upperLimitPercent       Decimal?  @map("upper_limit_percent") @db.Decimal(5, 2)
+
+  @@map("foreign_holding")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 MarginBalance。
+view MarginBalance {
+  symbol               String?
+  tradeDate            DateTime? @map("trade_date") @db.Date
+  marginBuy            BigInt?   @map("margin_buy")
+  marginSell           BigInt?   @map("margin_sell")
+  marginCashRedemption BigInt?   @map("margin_cash_redemption")
+  marginPrevBalance    BigInt?   @map("margin_prev_balance")
+  marginTodayBalance   BigInt?   @map("margin_today_balance")
+  marginLimit          BigInt?   @map("margin_limit")
+  shortBuy             BigInt?   @map("short_buy")
+  shortSell            BigInt?   @map("short_sell")
+  shortCashRedemption  BigInt?   @map("short_cash_redemption")
+  shortPrevBalance     BigInt?   @map("short_prev_balance")
+  shortTodayBalance    BigInt?   @map("short_today_balance")
+  shortLimit           BigInt?   @map("short_limit")
+  offsetting           BigInt?
+  note                 String?
+
+  @@map("margin_balance")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 月營收——欄位形狀比照 ../twse/schema.prisma 的 MonthlyRevenue。
+view MonthlyRevenue {
+  symbol                    String?
+  yearMonth                 DateTime? @map("year_month") @db.Date
+  reportDate                DateTime? @map("report_date") @db.Date
+  industry                  String?
+  currentMonthRevenue       BigInt?   @map("current_month_revenue")
+  prevMonthRevenue          BigInt?   @map("prev_month_revenue")
+  lastYearSameMonthRevenue  BigInt?   @map("last_year_same_month_revenue")
+  momChangePercent          Decimal?  @map("mom_change_percent") @db.Decimal(14, 4)
+  yoyChangePercent          Decimal?  @map("yoy_change_percent") @db.Decimal(14, 4)
+  cumulativeRevenue         BigInt?   @map("cumulative_revenue")
+  cumulativeLastYearRevenue BigInt?   @map("cumulative_last_year_revenue")
+  cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(14, 4)
+  note                      String?
+
+  @@map("monthly_revenue")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 VolumeTop20。
+view VolumeTop20 {
+  symbol           String?
+  tradeDate        DateTime? @map("trade_date") @db.Date
+  rank             Int?
+  volume           BigInt?
+  transaction      BigInt?
+  open             Decimal?  @db.Decimal(10, 4)
+  high             Decimal?  @db.Decimal(10, 4)
+  low              Decimal?  @db.Decimal(10, 4)
+  close            Decimal?  @db.Decimal(10, 4)
+  dir              String?
+  change           Decimal?  @db.Decimal(10, 4)
+  lastBestBidPrice Decimal?  @map("last_best_bid_price") @db.Decimal(10, 4)
+  lastBestAskPrice Decimal?  @map("last_best_ask_price") @db.Decimal(10, 4)
+
+  @@map("volume_top20")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 DisposedStock。
+view DisposedStock {
+  symbol              String?
+  announceDate        DateTime? @map("announce_date") @db.Date
+  announcementCount   Int?      @map("announcement_count")
+  reason              String?
+  dispositionPeriod   String?   @map("disposition_period")
+  dispositionMeasures String?   @map("disposition_measures")
+  detail              String?
+  linkInformation     String?   @map("link_information")
+
+  @@map("disposed_stock")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 AttentionHistoryNote。
+view AttentionHistoryNote {
+  symbol    String?
+  tradeDate DateTime? @map("trade_date") @db.Date
+  criteria  String?
+
+  @@map("attention_history_note")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 PriceLimitRange。
+view PriceLimitRange {
+  symbol           String?
+  tradeDate        DateTime? @map("trade_date") @db.Date
+  rankGroup        String?   @map("rank_group")
+  rank             Int?
+  limitUp          Decimal?  @map("limit_up") @db.Decimal(10, 4)
+  limitDown        Decimal?  @map("limit_down") @db.Decimal(10, 4)
+  limitRange       Decimal?  @map("limit_range") @db.Decimal(10, 4)
+  openingRefPrice  Decimal?  @map("opening_ref_price") @db.Decimal(10, 4)
+  previousDayPrice Decimal?  @map("previous_day_price") @db.Decimal(10, 4)
+  allowOddLotTrade String?   @map("allow_odd_lot_trade")
+
+  @@map("price_limit_range")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 MaterialAnnouncement。
+view MaterialAnnouncement {
+  symbol           String?
+  announcementDate DateTime? @map("announcement_date") @db.Date
+  announcementTime String?   @map("announcement_time")
+  reportDate       DateTime? @map("report_date") @db.Date
+  subject          String?
+  clause           String?
+  factDate         DateTime? @map("fact_date") @db.Date
+  description      String?
+
+  @@map("material_announcement")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 欄位形狀比照 ../twse/schema.prisma 的 IsinSecurities。
+view IsinSecurities {
+  symbol       String?
+  name         String?
+  isinCode     String?   @map("isin_code")
+  listedDate   DateTime? @map("listed_date") @db.Date
+  marketType   String?   @map("market_type")
+  industry     String?
+  cfiCode      String?   @map("cfi_code")
+  securityType String?   @map("security_type")
+  note         String?
+
+  @@map("isin_securities")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 2026-09-03 twse-ts 順便開的額外 view（不是我們請求的範圍），先只登記形狀，不接進任何消費
+/// 程式碼——全額交割股排除是已知待辦，之前對話紀錄假設的欄位名 altered_trading 是錯的，真正
+/// 欄位是 periodicCallAuctionTrading（分盤集合競價，是「改為人工管理」的其中一種措施，
+/// 不是全額交割股本身的旗標），要接的時候先跟 twse-ts 確認這欄位的實際語意再用。
+view ChangedTradingMethod {
+  symbol                       String?
+  tradeDate                    DateTime? @map("trade_date") @db.Date
+  periodicCallAuctionTrading   Boolean?  @map("periodic_call_auction_trading")
+
+  @@map("changed_trading_method")
+  @@ignore
+  @@schema("export")
+}

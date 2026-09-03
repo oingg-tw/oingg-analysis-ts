@@ -22,22 +22,23 @@ const schemaArg = (() => {
 // 偶爾手動跑 db pull/studio 會用到，退回用 DEV 的 pooled 連線頂著，這是延續升級前就有的既有
 // 限制，不是這次升級造成的新問題。
 const DIRECT_URL_BY_SCHEMA: Record<string, string | undefined> = {
-  'prisma/schema.prisma': env('DIRECT_URL'),
   'prisma/analysis/schema.prisma': env('ANALYSIS_DIRECT_URL'),
-  'prisma/twse/schema.prisma': env('TWSE_DIRECT_URL'),
-  'prisma/gov/schema.prisma': env('GOV_DIRECT_URL'),
   'prisma/mopsExport/schema.prisma': env('MOPS_EXPORT_DIRECT_URL'),
   'prisma/govExport/schema.prisma': env('GOV_EXPORT_DIRECT_URL'),
+  'prisma/twseExport/schema.prisma': env('TWSE_EXPORT_DIRECT_URL'),
   'prisma/tpexExport/schema.prisma': env('TPEX_EXPORT_DATABASE_URL_DEV'),
   'prisma/sitcaExport/schema.prisma': env('SITCA_EXPORT_DATABASE_URL_DEV'),
 };
 
-const resolvedSchema = schemaArg ?? 'prisma/schema.prisma';
+// 舊的 MOPS/TWSE/GOV owner 帳號直連 schema（prisma/schema.prisma、prisma/twse/schema.prisma、
+// prisma/gov/schema.prisma）2026-09-03 已全部退場，預設 fallback 改成本服務自己擁有的
+// analysis schema。
+const resolvedSchema = schemaArg ?? 'prisma/analysis/schema.prisma';
 
 export default defineConfig({
   schema: resolvedSchema,
   migrations: { path: 'prisma/analysis/migrations' }, // 只有 analysis schema 真的有 migrations 目錄，本服務自己擁有的唯一一個。
   datasource: {
-    url: DIRECT_URL_BY_SCHEMA[resolvedSchema] ?? env('DIRECT_URL'),
+    url: DIRECT_URL_BY_SCHEMA[resolvedSchema] ?? env('ANALYSIS_DIRECT_URL'),
   },
 });

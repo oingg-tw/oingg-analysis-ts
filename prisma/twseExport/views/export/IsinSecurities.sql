@@ -1,0 +1,12 @@
+SELECT
+  symbol,
+  name,
+  isin_code,
+  listed_date,
+  market_type,
+  industry,
+  cfi_code,
+  security_type,
+  note
+FROM
+  isin_securities;

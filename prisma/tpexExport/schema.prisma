@@ -1,62 +1,21 @@
-// 本 schema 只用來讀 oingg-tpex-ts 的 export schema——2026-09-01 接上，dev/prod 連線用
-// .env 的 TPEX_EXPORT_DATABASE_URL_DEV / TPEX_EXPORT_DATABASE_URL_PROD。
-//
-// 跟 sitca-ts 同一種模式：tpex-ts 給的是 dev/prod 兩個獨立 Neon 專案，不是同一個專案的
-// pooler/direct 兩種連線方式——這裡的 datasource url 固定指到 _DEV，只給 `prisma db pull`/
-// `generate` 這類 CLI 操作使用；實際 runtime 要連 dev 還是 prod，由
-// src/adapters/prisma/tpexExportClient.ts 依照 config.isProduction 動態決定。
-//
-// 2026-09-01 這次擴大：發現本服務主程式原本讀 tpex 的 prisma/tpex/schema.prisma（public
-// schema 唯讀鏡像）指向的其實是 tpex-ts 的 **dev** 環境（另一組帳號，不是 etl_reader），資料
-// 停在 2024-08-20，遠比 prod 舊（prod 的 daily_valuation 新到 2026-08-31）——問過 tpex-ts 後，
-// 他們選擇把 export schema 擴大成含 daily_price、company_profile（比照 daily_valuation
-// 同樣走 etl_reader 唯讀、dev/prod 分流），讓本服務整個切過來，退休原本那組舊帳號
-// （TPEX_DATABASE_URL/TPEX_DIRECT_URL、prisma/tpex/schema.prisma 之後會移除）。
-//
-// company_profile 只鏡像查公司名稱用得到的欄位（symbol/name/shortName/market），不是全部
-// 欄位都留——市場別 market 是新欄位（上櫃/興櫃），tpex-ts 說明用這個欄位分辨，但本服務目前
-// 沒有需要分辨市場別的地方，先留著備用。
-//
-// export.daily_price/daily_valuation 都是逐日整批同步（IngestionRun 顆粒度是「一個 dataset、
-// 一天」），company_profile 是快照表，沒有對應的 ingestion_runs 紀錄（tpex-ts 說明：快照表
-// 沒有 data_date 概念）。
-//
-// 這幾張 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢一律走
-// $queryRaw。異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/tpexExport/schema.prisma`
-// 內省，這個 schema 由 tpex-ts 擁有，本服務永遠不對它跑 migrate——內省後记得把 view 名稱/欄位
-// 手動改回 PascalCase model 名稱 + camelCase 欄位。
-//
-// 2026-09-01 tpex-ts 比照 twse-ts 那批新 dataset，也開了上櫃版本的 5 個（monthly_revenue、
-// disposed_stock、volume_top20、price_limit_range、attention_history_note）——欄位比 TWSE
-// 版本精簡（例如 disposed_stock 少了 announcement_count/disposition_measures/
-// link_information，volume_top20/price_limit_range 只有最核心的幾欄），這裡只鏡像 TPEx
-// 實際有的欄位，不是照抄 TWSE 那份補空欄位。刻意沒開 foreign_holding（上櫃掛牌以 KY 股居多，
-// 這個排行參考價值有限）。見 src/domains/market/ 底下對應功能改成 TWSE+TPEx 合併排行/清單的
-// 部分。dev 已經有一天份資料，prod 目前是空的，還在等 tpex-ts 排程/回補歷史資料。
-
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/tpex-export-client"
   previewFeatures = ["views"]
 }
 
-// Prisma 7：driver adapter 架構下 datasource 不再放連線字串，見
-// src/adapters/prisma/tpexExportClient.ts、prisma.config.ts 的說明。dev/prod 切換邏輯也是
-// 應用程式碼決定，不是 schema 層級的事。
 datasource db {
   provider = "postgresql"
   schemas  = ["export"]
 }
 
-// 握手表——見契約第二部分。daily_price/daily_valuation 顆粒度是「一個 dataset、一天」，全市場
-// 整批同步，不是逐公司；company_profile 快照表沒有對應紀錄。
 model IngestionRun {
   runId       BigInt   @id @default(autoincrement()) @map("run_id")
   dataset     String
   dataDate    DateTime @map("data_date") @db.Date
   completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
   rowCount    Int      @map("row_count")
-  status      String // 'success' | 'partial' | 'failed'
+  status      String
 
   @@unique([dataset, dataDate])
   @@index([dataset, status])
@@ -101,10 +60,41 @@ view DailyPrice {
 /// 只鏡像查公司名稱用得到的欄位，不是全部欄位都留，跟 prisma/tpex/schema.prisma（即將退休）
 /// 的 CompanyProfile 做法一致，多了 market（上櫃/興櫃）備用。
 view CompanyProfile {
-  symbol    String?
-  name      String?
-  shortName String? @map("short_name")
-  market    String?
+  symbol                       String?
+  market                       String?
+  report_date                  DateTime? @db.Date
+  name                         String?
+  shortName                    String?   @map("short_name")
+  foreign_registration_country String?
+  industry                     String?
+  address                      String?
+  tax_id                       String?
+  chairman                     String?
+  general_manager              String?
+  spokesperson                 String?
+  spokesperson_title           String?
+  deputy_spokesperson          String?
+  phone                        String?
+  established_date             DateTime? @db.Date
+  listed_date                  DateTime? @db.Date
+  par_value                    Decimal?  @db.Decimal(14, 4)
+  paid_in_capital              BigInt?
+  private_placement_shares     BigInt?
+  preferred_stock_shares       BigInt?
+  financial_report_type        String?
+  stock_transfer_agency        String?
+  transfer_agency_phone        String?
+  transfer_agency_address      String?
+  auditing_firm                String?
+  auditor1                     String?
+  auditor2                     String?
+  english_short_name           String?
+  fax_number                   String?
+  email                        String?
+  website                      String?
+  issued_shares                BigInt?
+  created_at                   DateTime?
+  updated_at                   DateTime?
 
   @@map("company_profile")
   @@ignore
@@ -121,11 +111,11 @@ view MonthlyRevenue {
   currentMonthRevenue       BigInt?   @map("current_month_revenue")
   prevMonthRevenue          BigInt?   @map("prev_month_revenue")
   lastYearSameMonthRevenue  BigInt?   @map("last_year_same_month_revenue")
-  momChangePercent          Decimal?  @map("mom_change_percent") @db.Decimal(10, 4)
-  yoyChangePercent          Decimal?  @map("yoy_change_percent") @db.Decimal(10, 4)
+  momChangePercent          Decimal?  @map("mom_change_percent") @db.Decimal(14, 4)
+  yoyChangePercent          Decimal?  @map("yoy_change_percent") @db.Decimal(14, 4)
   cumulativeRevenue         BigInt?   @map("cumulative_revenue")
   cumulativeLastYearRevenue BigInt?   @map("cumulative_last_year_revenue")
-  cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(10, 4)
+  cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(14, 4)
   note                      String?
 
   @@map("monthly_revenue")
@@ -166,13 +156,13 @@ view VolumeTop20 {
 /// 上櫃個股漲跌停幅度最大/最小各 20 檔——欄位比 TWSE 精簡，沒有 opening_ref_price/
 /// previous_day_price/allow_odd_lot_trade。
 view PriceLimitRange {
-  symbol      String?
-  tradeDate   DateTime? @map("trade_date") @db.Date
-  rankGroup   String?   @map("rank_group") // 'top'（幅度最大）/ 'bottom'（幅度最小）
-  rank        Int?
-  limitUp     Decimal?  @map("limit_up") @db.Decimal(10, 4)
-  limitDown   Decimal?  @map("limit_down") @db.Decimal(10, 4)
-  limitRange  Decimal?  @map("limit_range") @db.Decimal(10, 4)
+  symbol     String?
+  tradeDate  DateTime? @map("trade_date") @db.Date
+  rankGroup  String?   @map("rank_group")
+  rank       Int?
+  limitUp    Decimal?  @map("limit_up") @db.Decimal(10, 4)
+  limitDown  Decimal?  @map("limit_down") @db.Decimal(10, 4)
+  limitRange Decimal?  @map("limit_range") @db.Decimal(10, 4)
 
   @@map("price_limit_range")
   @@ignore
@@ -187,6 +177,53 @@ view AttentionHistoryNote {
   criteria  String?
 
   @@map("attention_history_note")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 融資融券餘額（source 是 tpex-ts 內部的 tpex_mainboard_margin_balance）——2026-09-04
+/// 應要求開放，給券資比排行補上櫃市場。命名沿用 tpex-ts 內部習慣，沒有刻意對齊 twse-ts 的
+/// margin_balance（後者欄位少很多，只有 margin_today_balance/short_today_balance）。
+view MarginBalance {
+  symbol               String?
+  tradeDate            DateTime? @map("trade_date") @db.Date
+  marginBuy            BigInt?   @map("margin_buy")
+  marginSell           BigInt?   @map("margin_sell")
+  marginCashRedemption BigInt?   @map("margin_cash_redemption")
+  marginPrevBalance    BigInt?   @map("margin_prev_balance")
+  marginTodayBalance   BigInt?   @map("margin_today_balance")
+  marginLimit          BigInt?   @map("margin_limit")
+  shortBuy             BigInt?   @map("short_buy")
+  shortSell            BigInt?   @map("short_sell")
+  shortCashRedemption  BigInt?   @map("short_cash_redemption")
+  shortPrevBalance     BigInt?   @map("short_prev_balance")
+  shortTodayBalance    BigInt?   @map("short_today_balance")
+  shortLimit           BigInt?   @map("short_limit")
+  offsetting           BigInt?
+  note                 String?
+
+  @@map("margin_balance")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 2026-09-04 db pull 時順便內省到的既有 view（不是這次請求的範圍，還沒接進任何消費程式碼）
+/// ——注意 TPEx 這邊 altered_trading（全額交割）跟 periodic_trading（分盤集合競價）是兩個
+/// 分開的欄位，證實這兩者是不同概念；TWSE 的 export.changed_trading_method 目前只看得到
+/// periodic_call_auction_trading，正在跟 twse-ts 確認全額交割股在他們那邊要看哪個欄位。
+view ChangedTradingMethod {
+  symbol                 String?
+  tradeDate              DateTime? @map("trade_date") @db.Date
+  alteredTrading         Boolean?  @map("altered_trading")
+  periodicTrading        Boolean?  @map("periodic_trading")
+  managedStock           Boolean?  @map("managed_stock")
+  matchingFrequency      String?   @map("matching_frequency")
+  suspensionOfTrading    Boolean?  @map("suspension_of_trading")
+  financialAnnouncements Boolean?  @map("financial_announcements")
+
+  @@map("changed_trading_method")
   @@ignore
   @@schema("export")
 }

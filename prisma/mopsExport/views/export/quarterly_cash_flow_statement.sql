@@ -1,0 +1,42 @@
+SELECT
+  symbol,
+  year,
+  quarter,
+  data_type,
+  subsidiary_company_id,
+  report_date,
+  profit_before_tax,
+  continuing_ops_profit_before_tax,
+  depreciation,
+  amortization,
+  adjustments_total,
+  cash_generated_from_operations,
+  income_tax_paid,
+  net_cash_from_operating_activities,
+  capital_expenditures,
+  proceeds_from_disposal_of_ppe,
+  acquisition_of_intangible_assets,
+  interest_received,
+  dividends_received,
+  net_cash_from_investing_activities,
+  proceeds_from_bonds_issued,
+  repayment_of_bonds,
+  proceeds_from_long_term_borrowings,
+  repayment_of_long_term_borrowings,
+  dividends_paid,
+  interest_paid,
+  net_cash_from_financing_activities,
+  exchange_rate_effect,
+  net_increase_in_cash,
+  cash_beginning_balance,
+  cash_ending_balance,
+  cash_per_balance_sheet,
+  created_at,
+  updated_at
+FROM
+  quarterly_cash_flow_statement
+WHERE
+  (
+    (data_type = '2' :: text)
+    AND (subsidiary_company_id = '' :: text)
+  );

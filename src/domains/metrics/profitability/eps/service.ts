@@ -1,8 +1,8 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { EpsQuery, EpsResult } from './types';
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -55,11 +55,7 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const where = {
-    symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-  };
-
-  const currentIncomeStatement = await prisma.quarterlyIncomeStatement.findUnique({ where });
+  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentIncomeStatement) warnings.push('查無該季損益表資料。');
   if (subsidiaryCompanyId) {
     warnings.push(
@@ -74,16 +70,12 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

@@ -1,7 +1,7 @@
-import prisma from '@/adapters/prisma/index';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { ZmijewskiScoreQuery, ZmijewskiScoreResult } from './types';
 
@@ -62,11 +62,7 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheet = await prisma.quarterlyBalanceSheet.findUnique({
-    where: {
-      symbol_year_quarter_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId },
-    },
-  });
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
@@ -84,16 +80,12 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
   const ttmQuarters = getPastNQuarters({ rocYear: yearNum, season }, 4);
   const ttmIncomeRecords = await Promise.all(
     ttmQuarters.map((q) =>
-      prisma.quarterlyIncomeStatement.findUnique({
-        where: {
-          symbol_year_quarter_dataType_subsidiaryCompanyId: {
-            symbol: companyId,
-            year: Number(q.year),
-            quarter: Number(q.season),
-            dataType,
-            subsidiaryCompanyId,
-          },
-        },
+      getQuarterlyIncomeStatement({
+        symbol: companyId,
+        year: Number(q.year),
+        quarter: Number(q.season),
+        dataType,
+        subsidiaryCompanyId,
       })
     )
   );

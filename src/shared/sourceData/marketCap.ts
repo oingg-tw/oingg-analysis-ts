@@ -1,4 +1,4 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getPaidInSharesAsOf } from './capitalStock';
 
 export interface MarketCapAsOf {
@@ -13,15 +13,25 @@ export interface StockPriceAsOf {
   tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
 }
 
+interface RawPriceRow {
+  trade_date: Date;
+  close: unknown;
+}
+
 // 只查股價，不查股本——FCF_Yield 這類「每股數字 / 股價」的指標不需要流通股數（分子已經是
 // 每股金額，不用重建總額），用 getMarketCapAsOf 會多一次不必要的 capital_stock_history 查詢，
 // 也會因為股本查無資料而白白讓整個結果變 null。跟 getMarketCapAsOf 共用同一段股價查詢邏輯。
-const getPriceRowAsOf = (symbol: string, asOfDate: Date) =>
-  twsePrisma.dailyPrice.findFirst({
-    where: { symbol, tradeDate: { lte: asOfDate } },
-    orderBy: { tradeDate: 'desc' },
-    select: { tradeDate: true, close: true },
-  });
+// 2026-09-03 使用者決定 curated 中台層現階段太早，改回直接查 twseExportPrisma（export schema
+// 沒有唯一識別欄位，走 $queryRaw）。
+const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeDate: Date; close: unknown } | null> => {
+  const rows = await twseExportPrisma.$queryRaw<RawPriceRow[]>`
+    SELECT trade_date, close FROM "export"."daily_price"
+    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
+    ORDER BY trade_date DESC LIMIT 1
+  `;
+  const row = rows[0];
+  return row ? { tradeDate: row.trade_date, close: row.close } : null;
+};
 
 export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise<StockPriceAsOf | null> => {
   const priceRow = await getPriceRowAsOf(symbol, asOfDate);
@@ -62,6 +72,6 @@ export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<
 // 不在覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端
 // 寫死特定公司代號判斷，覆蓋率會持續成長（見上方 getMarketCapAsOf 的說明）。
 export const hasStockPriceCoverage = async (symbol: string): Promise<boolean> => {
-  const row = await twsePrisma.dailyPrice.findFirst({ where: { symbol }, select: { symbol: true } });
-  return row !== null;
+  const rows = await twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."daily_price" WHERE symbol = ${symbol} LIMIT 1`;
+  return rows.length > 0;
 };

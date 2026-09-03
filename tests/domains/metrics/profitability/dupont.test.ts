@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateDupont } from '@/domains/metrics/profitability/dupont/service';
-import prisma from '@/adapters/prisma/index';
+import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 src/domains/metrics/profitability/README.md「杜邦分析法計算口徑」——2330（台積電）115Q2 合併報表實測值。
@@ -70,6 +70,6 @@ test('dupont: 9999（查無資料的公司）自動抓最新一季應該回傳 y
 });
 
 after(async () => {
-  await prisma.$disconnect();
+  await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

@@ -1,17 +1,20 @@
-import twsePrisma from '@/adapters/prisma/twseClient';
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type { ForeignHoldingChangeRow, ForeignHoldingRankingQuery, ForeignHoldingRankingResult } from './types';
 
+interface RawForeignHoldingRow {
+  symbol: string;
+  shares_held: bigint;
+  shares_held_percent: unknown;
+}
+
 // 找最新的兩個「有資料」的交易日——不能假設連續兩個日曆日，週末/國定假日中間會跳過。
 const getLatestTwoTradeDates = async (): Promise<[Date, Date] | null> => {
-  const rows = await twsePrisma.foreignHolding.findMany({
-    distinct: ['tradeDate'],
-    orderBy: { tradeDate: 'desc' },
-    take: 2,
-    select: { tradeDate: true },
-  });
+  const rows = await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
+    SELECT DISTINCT trade_date FROM "export"."foreign_holding" ORDER BY trade_date DESC LIMIT 2
+  `;
   if (rows.length < 2) return null;
-  return [rows[0]!.tradeDate, rows[1]!.tradeDate];
+  return [rows[0]!.trade_date, rows[1]!.trade_date];
 };
 
 // 外資持股「加碼/減碼排行」——2026-09-01 應使用者要求新增。比較最近兩個交易日的
@@ -37,26 +40,26 @@ export const calculateForeignHoldingRanking = async (query: ForeignHoldingRankin
   const [tradeDate, previousTradeDate] = dates;
 
   const [todayRows, previousRows, companySymbols] = await Promise.all([
-    twsePrisma.foreignHolding.findMany({ where: { tradeDate }, select: { symbol: true, sharesHeld: true, sharesHeldPercent: true } }),
-    twsePrisma.foreignHolding.findMany({ where: { tradeDate: previousTradeDate }, select: { symbol: true, sharesHeldPercent: true } }),
+    twseExportPrisma.$queryRaw<RawForeignHoldingRow[]>`SELECT symbol, shares_held, shares_held_percent FROM "export"."foreign_holding" WHERE trade_date = ${tradeDate}`,
+    twseExportPrisma.$queryRaw<RawForeignHoldingRow[]>`SELECT symbol, shares_held, shares_held_percent FROM "export"."foreign_holding" WHERE trade_date = ${previousTradeDate}`,
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
   ]);
 
-  const previousBySymbol = new Map(previousRows.map((row) => [row.symbol, Number(row.sharesHeldPercent)]));
+  const previousBySymbol = new Map(previousRows.map((row) => [row.symbol, Number(row.shares_held_percent)]));
 
   const changes: ForeignHoldingChangeRow[] = [];
   for (const row of todayRows) {
     if (!companySymbols.has(row.symbol)) continue; // ETF/衍生性商品，不是真正的上市公司，排除。
     const previousPercent = previousBySymbol.get(row.symbol);
     if (previousPercent === undefined) continue; // 前一個交易日沒有這家公司的資料，無法比較，跳過。
-    const todayPercent = Number(row.sharesHeldPercent);
+    const todayPercent = Number(row.shares_held_percent);
     changes.push({
       symbol: row.symbol,
       companyName: null, // 先留空，只對最後真的會回傳的 increases/decreases 補名稱，不用查全部 changes。
       sharesHeldPercent: todayPercent,
       previousSharesHeldPercent: previousPercent,
       changePercentagePoints: Math.round((todayPercent - previousPercent) * 100) / 100,
-      sharesHeld: row.sharesHeld.toString(),
+      sharesHeld: row.shares_held.toString(),
     });
   }
 

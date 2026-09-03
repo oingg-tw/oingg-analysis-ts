@@ -1,0 +1,11 @@
+SELECT
+  symbol,
+  announce_date,
+  announcement_count,
+  reason,
+  disposition_period,
+  disposition_measures,
+  detail,
+  link_information
+FROM
+  disposed_stock;
