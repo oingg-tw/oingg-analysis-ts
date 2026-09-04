@@ -33,3 +33,67 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   if (!record || record.paid_in_shares === null) return null;
   return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
 };
+
+export interface CapitalStockChangeSource {
+  // 五種結構化的股本變動原因，bigint 序列化成字串——2026-09-04 應 web-nuxt 要求新增，實測過
+  // capital_stock_history 沒有庫藏股/可轉債轉換的獨立欄位，這兩種變動反而是寫在 remarks
+  // 自由格式文字裡（例如「註銷庫藏股3,249,000股」），不是結構化數字欄位，見 remarks 說明。
+  cashIncrease: string | null;
+  capitalReserveTransfer: string | null;
+  retainedEarningsTransfer: string | null;
+  mergerIncrease: string | null;
+  capitalReduction: string | null;
+  other: string | null; // 自由格式文字，例如「發行限制員工權利新股2,353,000股」，不是這五種結構化原因之一時才會有值
+}
+
+export interface CapitalStockHistoryEntry {
+  effectiveDate: string; // "YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆
+  paidInShares: string; // 實際流通股數（不是千股），bigint 序列化成字串
+  paidInCapital: string | null; // 實收資本額（元）
+  changeSource: CapitalStockChangeSource;
+  remarks: string | null; // 自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位
+}
+
+interface RawCapitalStockHistoryRow {
+  effective_year: number;
+  effective_month: number;
+  paid_in_shares: bigint | null;
+  paid_in_capital: bigint | null;
+  source_cash_increase: bigint | null;
+  source_capital_reserve_transfer: bigint | null;
+  source_retained_earnings_transfer: bigint | null;
+  source_merger_increase: bigint | null;
+  source_capital_reduction: bigint | null;
+  source_other: string | null;
+  remarks: string | null;
+}
+
+// 給個股頁面「股本變化」卡片用——2026-09-04 應 web-nuxt 要求新增，用途是讓使用者對照流通
+// 股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。回傳全部歷史事件，由新到舊
+// 排序，查無資料（mops 這批資料目前不是每家公司都有覆蓋）回傳空陣列，不拋錯、不是 404——
+// 呼叫端要把「查不到歷史」當成正常情境處理。
+export const getCapitalStockHistory = async (symbol: string): Promise<CapitalStockHistoryEntry[]> => {
+  const rows = await mopsExportPrisma.$queryRaw<RawCapitalStockHistoryRow[]>`
+    SELECT effective_year, effective_month, paid_in_shares, paid_in_capital, source_cash_increase,
+      source_capital_reserve_transfer, source_retained_earnings_transfer, source_merger_increase,
+      source_capital_reduction, source_other, remarks
+    FROM "export"."capital_stock_history"
+    WHERE symbol = ${symbol} AND paid_in_shares IS NOT NULL
+    ORDER BY effective_year DESC, effective_month DESC
+  `;
+
+  return rows.map((row) => ({
+    effectiveDate: `${row.effective_year}-${String(row.effective_month).padStart(2, '0')}`,
+    paidInShares: row.paid_in_shares!.toString(),
+    paidInCapital: row.paid_in_capital?.toString() ?? null,
+    changeSource: {
+      cashIncrease: row.source_cash_increase?.toString() ?? null,
+      capitalReserveTransfer: row.source_capital_reserve_transfer?.toString() ?? null,
+      retainedEarningsTransfer: row.source_retained_earnings_transfer?.toString() ?? null,
+      mergerIncrease: row.source_merger_increase?.toString() ?? null,
+      capitalReduction: row.source_capital_reduction?.toString() ?? null,
+      other: row.source_other,
+    },
+    remarks: row.remarks,
+  }));
+};

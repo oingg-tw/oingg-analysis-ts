@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
 
 // 沒有唯一識別欄位，Prisma Client 不會產生存取子，一律走 $queryRaw（見
 // prisma/mopsExport/schema.prisma、src/shared/sourceData/capitalStock.ts 的說明）。
@@ -73,6 +73,27 @@ test('getPaidInSharesAsOf: 查特定日期會找到「當時生效」的那一�
     const effectiveAsDate = new Date(Date.UTC(asOf.effectiveYear, asOf.effectiveMonth - 1, 1));
     assert.ok(effectiveAsDate <= new Date('2026-06-30T00:00:00.000Z'));
   }
+});
+
+// 2026-09-04 應 web-nuxt 要求新增，給個股頁面「股本變化」卡片用。
+test('getCapitalStockHistory: 2330 應該回傳多筆歷史，由新到舊排序', async () => {
+  const entries = await getCapitalStockHistory('2330');
+  assert.ok(entries.length > 1, `2330 只查到 ${entries.length} 筆，應該要有多筆股本變動歷史`);
+
+  for (let i = 1; i < entries.length; i++) {
+    assert.ok(entries[i - 1]!.effectiveDate >= entries[i]!.effectiveDate, '應該由新到舊排序（effectiveDate 字串比較，YYYY-MM 格式可以直接比大小）');
+  }
+
+  for (const entry of entries) {
+    assert.match(entry.effectiveDate, /^\d{4}-\d{2}$/, 'effectiveDate 應該是 YYYY-MM 格式');
+    assert.equal(typeof entry.paidInShares, 'string', 'paidInShares 應該序列化成字串，不是 bigint');
+    assert.ok(BigInt(entry.paidInShares) > 0n, 'paidInShares 應該是正數');
+  }
+});
+
+test('getCapitalStockHistory: 查無資料的代號應該回傳空陣列，不拋錯', async () => {
+  const entries = await getCapitalStockHistory('__NOT_A_REAL_SYMBOL__');
+  assert.deepEqual(entries, []);
 });
 
 after(async () => {

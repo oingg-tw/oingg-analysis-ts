@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { getCompanies, getCompanyProfile } from './controller';
+import { getCompanies, getCompanyProfile, getCompanyCapitalStockHistory } from './controller';
 
 const router = Router();
 
@@ -95,5 +95,48 @@ router.get('/companies', getCompanies);
  *         description: 查無此公司代號（上市、上櫃都查不到）。
  */
 router.get('/companies/profile', getCompanyProfile);
+
+/**
+ * @swagger
+ * /companies/capital-stock-history:
+ *   get:
+ *     summary: 單一公司股本異動歷史（現金增資/盈餘轉增資/合併增資/減資等）
+ *     description: >
+ *       2026-09-04 應 web-nuxt 要求新增，給個股頁面「股本變化」卡片用——讓使用者對照流通
+ *       股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。
+ *
+ *       資料來源是 mops-ts 的 `export.capital_stock_history`，**是「異動事件序列」不是
+ *       固定季度/年度快照**——同一年可能有 0 筆或多筆，取決於這家公司這年有沒有真的變動
+ *       股本，`entries` 依 `effectiveDate` 由新到舊排序。
+ *
+ *       `changeSource` 是結構化的變動原因細分（現金增資/資本公積轉增資/盈餘轉增資/合併
+ *       增資/減資五種，`other` 是不屬於這五種時的自由格式文字，例如「發行限制員工權利新股
+ *       2,353,000股」）。**實測過這張表沒有庫藏股/可轉債轉換的獨立結構化欄位**，這兩種
+ *       異動反而是寫在 `remarks` 自由格式文字裡（例如「註銷庫藏股3,249,000股」），前端
+ *       如果要呈現這兩種異動只能顯示 `remarks` 原文，無法用數字欄位精確拆解金額。
+ *
+ *       查無資料（mops 這批資料目前不是每家公司都有覆蓋）回傳 `entries: []`，是 200 不是
+ *       404——404 只代表「這家公司在 company_profile 查不到」（見 `/companies/profile`），
+ *       跟「查不到股本異動歷史」是兩件事，這支端點不做公司存不存在的判斷。
+ *
+ *       `paidInShares`/`paidInCapital`/`changeSource` 底下的數字欄位都是資料庫的 bigint，
+ *       序列化成字串，避免 JS 數字精度問題。
+ *     tags:
+ *       - System
+ *     parameters:
+ *       - in: query
+ *         name: symbol
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 公司代號
+ *         example: "2330"
+ *     responses:
+ *       200:
+ *         description: 股本異動歷史（由新到舊排序），查無資料時 `entries` 是空陣列。
+ *       400:
+ *         description: 缺少 symbol。
+ */
+router.get('/companies/capital-stock-history', getCompanyCapitalStockHistory);
 
 export default router;
