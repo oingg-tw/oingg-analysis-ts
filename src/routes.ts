@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import batchRouter from './domainBatch/route';
 import rootRouter from './domainApi/system/root';
 import filtersRouter from './domainApi/filter/filters';
 import dataCompletenessRouter from './domainApi/dataCompleteness/route';
@@ -125,5 +126,8 @@ apiRouter.use('/macro', equityRiskPremiumRouter, govBondYield10yRouter);
 apiRouter.use('/technicals', maRouter, rsiRouter, kdRouter, bollingerBandsRouter, atrRouter, biasRouter, macdRouter, obvRouter);
 
 router.use(apiRouter);
+
+// --- Batch Routes（給 GCP Cloud Scheduler 用，不是 BFF）---
+router.use(batchRouter);
 
 export default router;
