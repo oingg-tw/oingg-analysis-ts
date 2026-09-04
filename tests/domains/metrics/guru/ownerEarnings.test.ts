@@ -1,10 +1,10 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateOwnerEarnings } from '@/domainBatch/metrics/guru/ownerEarnings/service';
+import { calculateOwnerEarnings } from '@/domainMetrics/guru/ownerEarnings/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainBatch/metrics/guru/README.md「Buffett_Owner_Earnings（股東盈餘）計算口徑」——
+// 對照 src/domainMetrics/guru/README.md「Buffett_Owner_Earnings（股東盈餘）計算口徑」——
 // 2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：見 ocfToNetIncome.test.ts 開頭註解，mops 現金流量表修正後折舊/攤銷/資本支出
 // 本季數字都變了（paidInShares 來自 capital_stock_history，不受這次修正影響，數字不變）。

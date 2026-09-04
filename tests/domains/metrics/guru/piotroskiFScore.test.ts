@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculatePiotroskiFScore } from '@/domainBatch/metrics/guru/piotroskiFScore/service';
+import { calculatePiotroskiFScore } from '@/domainMetrics/guru/piotroskiFScore/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

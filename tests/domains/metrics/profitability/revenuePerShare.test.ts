@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateRevenuePerShare } from '@/domainBatch/metrics/profitability/revenuePerShare/service';
+import { calculateRevenuePerShare } from '@/domainMetrics/profitability/revenuePerShare/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

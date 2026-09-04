@@ -1,11 +1,11 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateNissimPenmanRnoa } from '@/domainBatch/metrics/guru/nissimPenmanRnoa/service';
+import { calculateNissimPenmanRnoa } from '@/domainMetrics/guru/nissimPenmanRnoa/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainBatch/metrics/guru/README.md「Nissim_Penman_RNOA 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainMetrics/guru/README.md「Nissim_Penman_RNOA 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
 // reconstructedRoeTtmPct 應該接近（不必完全等於）actualRoeTtmPct——差異來自模型本身只把「營業 vs
 // 融資」兩分，沒有拆出權益法投資收益等其他非營業項目，是刻意簡化，不是計算錯誤。
 test('nissimPenmanRnoa: 2330 115Q2 合併報表，指定季度', async () => {

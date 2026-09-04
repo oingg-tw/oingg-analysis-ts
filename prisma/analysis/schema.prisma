@@ -817,7 +817,7 @@ model OwnerEarningsResult {
 
 // Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+trade_date（基準日），
 // 跟 MarketRatiosResult 同一種模式，不是 symbol+year+season+dataType+subsidiaryCompanyId。
-// 欄位對應 src/domainBatch/metrics/portfolio/beta/types.ts 的 BetaResult。
+// 欄位對應 src/domainMetrics/portfolio/beta/types.ts 的 BetaResult。
 // 2026-09-04：DB 欄位從 as_of_date 改名 tradeDate/trade_date，跟其他 7 支 technicals +
 // MarketRatiosResult 這些日資料型結果表統一（原本只有這張表叫 as_of_date，是同一服務內
 // 唯一的命名例外，見 docs/ubiquitous-language-glossary.md）。對外 HTTP query 參數仍然叫

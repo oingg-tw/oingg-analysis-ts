@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateAtr } from '@/domainBatch/metrics/technicals/atr/service';
+import { calculateAtr } from '@/domainMetrics/technicals/atr/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

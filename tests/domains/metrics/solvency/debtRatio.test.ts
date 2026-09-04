@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateDebtRatio } from '@/domainBatch/metrics/solvency/debtRatio/service';
+import { calculateDebtRatio } from '@/domainMetrics/solvency/debtRatio/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

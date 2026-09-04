@@ -14,7 +14,7 @@ export interface MarketRatiosResult {
 
   // 以下三個數值直接來自 oingg-twse 的 daily_valuation 表，本服務沒有自己重算，
   // 也不知道對方 EPS 用的是單季、TTM 還是年度口徑——是外部黑盒數字，
-  // 跟本服務自己算的 EPS（src/domainBatch/metrics/profitability/eps/）、BVPS 口徑不保證一致，
+  // 跟本服務自己算的 EPS（src/domainMetrics/profitability/eps/）、BVPS 口徑不保證一致，
   // 兩者不要直接拿來互相驗證或混用。
   peRatio: number | null;
   pbRatio: number | null;

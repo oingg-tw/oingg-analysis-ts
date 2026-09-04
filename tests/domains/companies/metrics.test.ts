@@ -38,7 +38,7 @@ describe('runCompanyMetrics', () => {
 
   test('查無任何資料的公司，重算後仍是 null 時應該回傳 source=unavailable', async () => {
     // 9999 沒有股價資料，calculateBeta 查無重疊交易日時直接回傳、完全不 upsert（見
-    // domainBatch/metrics/portfolio/beta/service.ts），是「重算後仍然沒有任何一列」的
+    // domainMetrics/portfolio/beta/service.ts），是「重算後仍然沒有任何一列」的
     // 真實案例，不是刻意刪出來的——跟 roe 這種即使沒資料也可能因為 getLatestAvailableQuarter
     // 退回預設值而寫出一列的情況不同。
     const result = await runCompanyMetrics('9999', ['beta.beta1Y']);

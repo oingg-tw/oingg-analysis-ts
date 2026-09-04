@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateGrahamNumber } from '@/domainBatch/metrics/guru/grahamNumber/service';
+import { calculateGrahamNumber } from '@/domainMetrics/guru/grahamNumber/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

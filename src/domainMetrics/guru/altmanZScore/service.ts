@@ -3,8 +3,8 @@ import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/mar
 import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { calculateInterestCoverage } from '@/domainBatch/metrics/solvency/interestCoverage/service';
-import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverRatio/service';
+import { calculateInterestCoverage } from '@/domainMetrics/solvency/interestCoverage/service';
+import { calculateTurnoverRatio } from '@/domainMetrics/turnover/turnoverRatio/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';

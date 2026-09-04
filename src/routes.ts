@@ -55,7 +55,7 @@ router.use(etfScreenerRouter);
 // --- API Routes ---
 // 2026-09-04：原本 44 支「單一公司單一指標」的舊端點（BFF 沒有呼叫過）已刪除，取代方式是
 // GET /companies/metrics（見 src/domainApi/companies/route.ts）這支 consolidated 讀取優先
-// 端點；底層計算邏輯（src/domainBatch/metrics/**/service.ts）沒有刪，domainBatch 批次跟
+// 端點；底層計算邏輯（src/domainMetrics/**/service.ts）沒有刪，domainBatch 批次跟
 // companies/metrics 的 compute-on-miss 還是要用。ranking/equityRiskPremium/govBondYield10y
 // 這三支語意不是「單一公司查詢」（見各自 route.ts 的說明），繼續保留獨立端點。
 // /securities/symbols、/data-completeness 也一併刪除（前者使用者確認即使 mops-ts 有用也一併

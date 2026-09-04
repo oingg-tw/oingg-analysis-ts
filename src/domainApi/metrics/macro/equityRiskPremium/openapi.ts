@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getEquityRiskPremiumQuerySchema } from './controller';
-import { equityRiskPremiumResultSchema } from '@/domainBatch/metrics/macro/equityRiskPremium/types';
+import { equityRiskPremiumResultSchema } from '@/domainMetrics/macro/equityRiskPremium/types';
 
 export const registerEquityRiskPremiumOpenApi = (): void => {
   registry.registerPath({

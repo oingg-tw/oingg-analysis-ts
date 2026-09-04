@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateFcfYield } from '@/domainBatch/metrics/cashFlow/fcfYield/service';
+import { calculateFcfYield } from '@/domainMetrics/cashFlow/fcfYield/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

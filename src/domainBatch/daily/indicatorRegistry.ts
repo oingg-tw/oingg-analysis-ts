@@ -7,18 +7,18 @@ import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import type { IndicatorJob } from '../indicatorJob';
-import { calculateMarketRatios } from '../metrics/valuation/marketRatios/service';
-import { calculateBeta } from '../metrics/portfolio/beta/service';
+import { calculateMarketRatios } from '@/domainMetrics/valuation/marketRatios/service';
+import { calculateBeta } from '@/domainMetrics/portfolio/beta/service';
 // 2026-09-05 使用者要求 technicals 全部先停用（見下方 dailyIndicatorJobs），對應的
 // import 也一併註解掉，不然 oxlint 的 no-unused-vars 會擋 commit。
-// import { calculateMa } from '../metrics/technicals/ma/service';
-// import { calculateRsi } from '../metrics/technicals/rsi/service';
-// import { calculateKd } from '../metrics/technicals/kd/service';
-// import { calculateBollingerBands } from '../metrics/technicals/bollingerBands/service';
-// import { calculateAtr } from '../metrics/technicals/atr/service';
-// import { calculateBiasIndicator } from '../metrics/technicals/bias/service';
-// import { calculateMacd } from '../metrics/technicals/macd/service';
-// import { calculateObv } from '../metrics/technicals/obv/service';
+// import { calculateMa } from '@/domainMetrics/technicals/ma/service';
+// import { calculateRsi } from '@/domainMetrics/technicals/rsi/service';
+// import { calculateKd } from '@/domainMetrics/technicals/kd/service';
+// import { calculateBollingerBands } from '@/domainMetrics/technicals/bollingerBands/service';
+// import { calculateAtr } from '@/domainMetrics/technicals/atr/service';
+// import { calculateBiasIndicator } from '@/domainMetrics/technicals/bias/service';
+// import { calculateMacd } from '@/domainMetrics/technicals/macd/service';
+// import { calculateObv } from '@/domainMetrics/technicals/obv/service';
 
 const twsePriceIdsPromise = twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_price"`.then((rows) => rows.map((r) => r.symbol));
 

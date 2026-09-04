@@ -12,7 +12,7 @@ const analysisSchemaPath = join(process.cwd(), 'prisma/analysis/schema.prisma');
 
 // 判斷規則跟 prisma/analysis/schema.prisma 開頭的表名命名規則註解對應：
 // - model 名稱去掉 `Result` 字尾、字首小寫，就是 filterCatalog.ts 裡的 metric key
-//   （例如 model RoeResult -> metric key "roe"，跟資料夾 src/domainBatch/metrics/profitability/roe/ 對應）。
+//   （例如 model RoeResult -> metric key "roe"，跟資料夾 src/domainMetrics/profitability/roe/ 對應）。
 // - 「可以拿來 filter 的計算結果欄位」= 型別是 Decimal、欄位名稱不是以 Value 結尾的欄位。
 //   `*Value`（例如 netIncomeValue）、`*FieldUsed`、`*EffectiveYear`/`*EffectiveMonth` 這些是
 //   原始輸入/中繼欄位，不是計算出來的指標本身，即使型別剛好也是 Decimal（例如

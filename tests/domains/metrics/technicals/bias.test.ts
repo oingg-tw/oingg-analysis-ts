@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateBiasIndicator } from '@/domainBatch/metrics/technicals/bias/service';
+import { calculateBiasIndicator } from '@/domainMetrics/technicals/bias/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

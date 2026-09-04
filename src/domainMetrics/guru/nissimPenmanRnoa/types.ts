@@ -20,7 +20,7 @@ export interface NissimPenmanRnoaResult {
   subsidiaryCompanyId: string;
   reportDate: string | null;
 
-  // ROE = RNOA + (FLEV x SPREAD)——見 src/domainBatch/metrics/guru/README.md「Nissim_Penman_RNOA 卡在哪裡」。
+  // ROE = RNOA + (FLEV x SPREAD)——見 src/domainMetrics/guru/README.md「Nissim_Penman_RNOA 卡在哪裡」。
   // RNOA（本業報酬率） = NOPAT / NOA，跟 ROE/ROIC 同一種單季/年化/TTM 三數值結構。
   rnoaQuarterlyPct: number | null;
   rnoaQuarterlyAnnualizedPct: number | null;

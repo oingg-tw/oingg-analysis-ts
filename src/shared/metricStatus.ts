@@ -7,7 +7,7 @@ import { z } from 'zod';
 // 「查無資料」可能該顯示 loading/待補，「不適用」該直接隱藏這個指標不要顯示，「運算錯誤」可能是
 // 真的要通報的異常）。
 //
-// 2026-09-04：一次性遷移完成，`domainBatch/metrics/**` 底下全部 44 支「單一公司」指標
+// 2026-09-04：一次性遷移完成，`domainMetrics/**` 底下全部 44 支「單一公司」指標
 // 都已經套用這份規範（每支的 types.ts 有 `fieldStatuses: Record<string, MetricStatus>`，
 // service.ts 有對應的 `buildFieldStatuses` 呼叫）。唯一沒套用的是 `valuation/ranking`——
 // 它回傳的是跨公司排行陣列（`RankingRow[]`），不是「單一實體、固定欄位」的形狀，這份規範

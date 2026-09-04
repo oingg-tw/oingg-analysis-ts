@@ -26,7 +26,7 @@ export interface BetaResult {
   // 三個窗口獨立計算（各自取 asOfDate 往前 N 年的重疊交易日再降頻），不是用短窗口的資料去湊長窗口。
   // 2026-08-26 起改成三個窗口不同取樣頻率（1Y 日、2Y 週、5Y 月），對齊 Bloomberg（2Y 用週）、
   // Yahoo Finance（5Y 用月）常見做法——長窗口用日資料會把雜訊/非同步交易的短期波動也算進長期
-  // 結構性風險，不是業界慣例，見 src/domainBatch/metrics/portfolio/README.md「Beta 計算口徑」的說明。
+  // 結構性風險，不是業界慣例，見 src/domainMetrics/portfolio/README.md「Beta 計算口徑」的說明。
   beta1Y: BetaWindow;
   beta2Y: BetaWindow;
   beta5Y: BetaWindow;

@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
-import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitability/dividendPayoutRatio/service';
+import { calculateRoe } from '@/domainMetrics/profitability/roe/service';
+import { calculateDividendPayoutRatio } from '@/domainMetrics/profitability/dividendPayoutRatio/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { SgrQuery, SgrResult } from './types';
