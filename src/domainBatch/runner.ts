@@ -16,9 +16,12 @@
 // src/domainBatch/indicatorRegistry.ts。
 //
 // 兩種公司清單來源，動態查詢、不寫死清單或數量（見 2026-08-31 的盤點）：
-// - mops 季度財報（quarterly_income_statement）目前只 ingest 過 27 家公司，`profitability`/
-//   `cashFlow`/`solvency`/`turnover`/`guru`/`valuation` 的 psr/pFcf/evEbitda 這批指標受限於此，
-//   不是這支腳本能解決的，mops-ts ingest 更多公司財報後這裡會自動涵蓋，不用改程式碼。
+// - mops 季度財報（quarterly_income_statement）2026-09-05 跟 mops-ts 對過：實際覆蓋 249 家公司
+//   （回溯至 110Q3、23 季歷史），不是早期文件裡誤傳的「27 家」——那個 27 其實是「44 支指標裡有
+//   27 支依賴三表 export view」這個指標依賴數，跟公司覆蓋數是兩件事，之前被混在一起講。
+//   `profitability`/`cashFlow`/`solvency`/`turnover`/`guru`/`valuation` 的 psr/pFcf/evEbitda
+//   這批指標受限於三表目前實際涵蓋的公司範圍，不是這支腳本能解決的，mops-ts ingest 更多公司
+//   財報後這裡會自動涵蓋，不用改程式碼。
 // - twse `daily_price`／twse+tpex `daily_valuation` 涵蓋 1,000+ 家，`portfolio/beta`、
 //   `technicals` 8 個指標、`valuation/marketRatios` 走這條路線。
 
