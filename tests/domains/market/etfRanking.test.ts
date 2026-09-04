@@ -12,12 +12,18 @@ test('calculateEtfRanking: aum desc 應該由大到小排序', async () => {
   result.rankings.forEach((row, index) => assert.equal(row.rank, index + 1));
 });
 
+// 2026-09-04 修過一次 bug：這裡原本沒有篩 year_month，剛好在 etf_monthly_statement 還只有
+// 單一個月快照時測試碰巧成立——sitca-ts 累積超過一個月資料後，同一個 symbol 在這張表裡會有
+// 多筆歷史快照，WHERE symbol = ANY(...) 篩到的月份不保證跟 calculateEtfRanking 內部用
+// getLatestYearMonth() 決定的「最新月份」是同一筆，導致比對到不同月份的數字。改成明確篩
+// 「跟 etf_basic_info 同一個最新 year_month」，跟正式程式碼用的判斷依據一致。
 test('calculateEtfRanking: netFlow 應該等於申購金額減贖回金額', async () => {
   const result = await calculateEtfRanking({ metric: 'netFlow', order: 'desc', limit: 5 });
   assert.ok(result.rankings.length > 0);
 
   const rows = await sitcaExportPrisma.$queryRawUnsafe<{ symbol: string; subscription_amount_twd: bigint; redemption_amount_twd: bigint }[]>(
-    `SELECT symbol, subscription_amount_twd, redemption_amount_twd FROM "export"."etf_monthly_statement" WHERE symbol = ANY($1)`,
+    `SELECT symbol, subscription_amount_twd, redemption_amount_twd FROM "export"."etf_monthly_statement"
+     WHERE symbol = ANY($1) AND year_month = (SELECT MAX(year_month) FROM "export"."etf_basic_info")`,
     result.rankings.map((r) => r.symbol)
   );
   const bySymbol = new Map(rows.map((r) => [r.symbol, r]));
