@@ -51,13 +51,13 @@ change，已通知 bff-ts 同步更新。`dataCompleteness` 也一併改了（�
 |---|---|
 | twse-ts／tpex-ts export schema（`daily_price`/`daily_valuation` 等，幾乎全部 view） | `trade_date` |
 | analysis-ts 的 44 支「日資料型」結果表（8 支 technicals + `marketRatios`） | `tradeDate` |
-| analysis-ts 的 `BetaResult` | `asOfDate`（**同一個服務內部唯一的例外**，其他日資料型指標都叫 `tradeDate`） |
 | sitca-ts（ETF）export schema | `year_month`（月快照，不是逐日） |
 
-`BetaResult` 叫 `asOfDate` 而不是跟其他技術指標一樣叫 `tradeDate`，目前沒有查到明確理由
-（可能是 beta 這支指標最早實作、命名時還沒定下 `tradeDate` 的慣例）。這是唯一一個「同一
-服務內部叫法不一致、且找不到刻意理由」的案例，之後如果剛好要動 `BetaResult` 的 schema，
-可以考慮順手改成 `tradeDate` 保持一致；不值得單獨為了這個開一次 migration。
+**✅ 2026-09-04 已統一**：`BetaResult` 原本叫 `asOfDate`，是同一服務內部唯一的例外
+（其他日資料型指標都叫 `tradeDate`，也查不到刻意理由，可能是 beta 這支指標最早實作、
+命名時還沒定下 `tradeDate` 的慣例）——已經手動改成 `RENAME COLUMN`（不是 drop+add，保留
+既有 1439 筆資料）統一成 `tradeDate`/`trade_date`。對外 HTTP query 參數仍然叫 `asOfDate`，
+沒有受影響，這純粹是 DB 內部欄位改名。
 
 ## 產業分類代碼——兩套完全不同的分類系統，容易搞混
 
@@ -70,6 +70,34 @@ change，已通知 bff-ts 同步更新。`dataCompleteness` 也一併改了（�
 
 這兩套分類**不是同一套代碼系統**，不能互相對照（先前已經確認過 MOEA 營業項目對不上 DGBAS
 分類）——看到「產業代碼」時要先確認是哪個來源的，不要假設兩邊代碼可以互換。
+
+## 財務科目命名的權威參考來源：mops-ts 的 XBRL 欄位
+
+2026-09-04 mops-ts 開放了 `financialReportXbrl` 這個實驗性 domain（29 張 `export.*_xbrl`
+view，inline XBRL 解析，跟既有三表 pilot 是獨立來源）。這批欄位是直接從 XBRL 科目代碼
+機械轉換來的（camelCase 化、去命名空間前綴，部分因為撞名還帶隨機 hash 消歧，例如
+`fair_value_of_investments_in_equity_instruments__9c69ab`），不是人工挑過的業務語言，
+但正因為源頭是國際會計準則（IFRS）的標準科目代碼，這些名字本身反而是最穩定、最不會變的
+「權威詞彙」，值得當作以後新增財務類指標時的命名參考，不用自己重新發明一套。
+
+**識別碼命名先確認一致**：全部 29 張 XBRL view 的 `symbol`/`year`/`quarter`/`data_type`/
+`subsidiary_company_id`/`report_date` 跟既有三表 pilot、跟這次剛統一完的 analysis-ts 對外
+API 完全一致，沒有新的落差。
+
+幾個對照到 analysis-ts 現有指標命名、可以驗證「原本取名取對了」的例子：
+- `profit_loss_attributable_to_owners_of_parent`（`quarterly_income_statement_xbrl`）
+  對應 `RoeResult`/`RoaResult` 用的 `netIncomeAttributableToParent`——概念一致，用詞不同
+  是因為我們選了英文財務慣用語（net income）而不是 IFRS 科目原文（profit or loss），
+  這是刻意的翻譯，不是需要統一的落差。
+- `equity_attributable_to_owners_of_parent`（`quarterly_balance_sheet_xbrl`）對應
+  `equityAttributableToParent`——同上。
+- `basic_earnings_loss_per_share`/`diluted_earnings_loss_per_share` 對應 EPS 相關指標
+  ——確認 EPS 這個縮寫用法跟 IFRS 標準科目的全名概念一致，只是我們用業界慣用縮寫。
+
+**順便確認一件事**：`equity_change_xbrl` 真的有 `retrospective_restatement_effect`
+這個欄位（`bigint`），跟先前 mops-ts 回覆「查整個 schema 唯一命中 restat 相關的欄位」
+一致——這是一個會計科目金額（IFRS 17 轉換調整金額），不是版本追蹤用的旗標，再次確認
+point-in-time/重編歷史追蹤這件事目前沒有可用的訊號，不是查漏了。
 
 ## dataType / subsidiaryCompanyId——一致，僅供確認
 

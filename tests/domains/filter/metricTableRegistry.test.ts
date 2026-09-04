@@ -28,11 +28,14 @@ describe('metricTableRegistry', () => {
     assert.equal(info!.dateColumn, 'trade_date');
   });
 
-  test('beta 雖然分類在 portfolio 底下，日期欄位是 as_of_date，不是 trade_date', () => {
+  // 2026-09-04 之前 beta 的 DB 欄位叫 as_of_date，是同一服務內唯一的日資料型命名例外
+  // （其他全部叫 trade_date），已經跟其他日資料型結果表統一改成 trade_date（見
+  // docs/ubiquitous-language-glossary.md），這裡不再是特例。
+  test('beta 分類在 portfolio 底下，日期欄位跟其他日資料型指標一樣是 trade_date', () => {
     const info = getTableForMetric('beta');
     assert.ok(info);
     assert.equal(info!.shape, 'daily');
-    assert.equal(info!.dateColumn, 'as_of_date');
+    assert.equal(info!.dateColumn, 'trade_date');
   });
 
   test('per/pbr/dividendYield 三個 metricKey 都指向同一張 valuation_market_ratios（modelKey: marketRatios）', () => {

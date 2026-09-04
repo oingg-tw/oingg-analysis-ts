@@ -265,14 +265,16 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     beta5Y.value === null ? ['beta5Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta5Y) }] : null,
   ];
 
-  // 存進 oingg-analysis DB 的 portfolio_beta，PK 用 symbol+asOfDate（逐日基準日，不是財務季度），
-  // 跟 marketRatios/ 同一種「跟季度脫鉤」的存檔模式。存檔失敗不應該讓已經算好的結果回傳失敗。
+  // 存進 oingg-analysis DB 的 portfolio_beta，PK 用 symbol+tradeDate（逐日基準日，不是財務
+  // 季度，DB 欄位 2026-09-04 從 asOfDate 改名跟其他日資料型結果表統一，對外 API 參數仍叫
+  // asOfDate 不受影響），跟 marketRatios/ 同一種「跟季度脫鉤」的存檔模式。存檔失敗不應該讓
+  // 已經算好的結果回傳失敗。
   try {
     await analysisPrisma.betaResult.upsert({
-      where: { symbol_asOfDate: { symbol: symbol, asOfDate: effectiveAsOfDate } },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: effectiveAsOfDate } },
       create: {
         symbol: symbol,
-        asOfDate: effectiveAsOfDate,
+        tradeDate: effectiveAsOfDate,
         beta1Y: beta1Y.value,
         beta2Y: beta2Y.value,
         beta5Y: beta5Y.value,

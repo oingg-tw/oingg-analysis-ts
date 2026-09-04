@@ -815,12 +815,17 @@ model OwnerEarningsResult {
   @@map("guru_owner_earnings")
 }
 
-// Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+as_of_date（基準日），
+// Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+trade_date（基準日），
 // 跟 MarketRatiosResult 同一種模式，不是 symbol+year+season+dataType+subsidiaryCompanyId。
 // 欄位對應 src/domainBatch/metrics/portfolio/beta/types.ts 的 BetaResult。
+// 2026-09-04：DB 欄位從 as_of_date 改名 tradeDate/trade_date，跟其他 7 支 technicals +
+// MarketRatiosResult 這些日資料型結果表統一（原本只有這張表叫 as_of_date，是同一服務內
+// 唯一的命名例外，見 docs/ubiquitous-language-glossary.md）。對外 HTTP query 參數仍然叫
+// asOfDate，不受這次改動影響——這純粹是 DB 內部欄位改名，migration 用手動改成 RENAME
+// COLUMN，不是 drop+add，保留既有 1439 筆資料。
 model BetaResult {
-  symbol   String
-  asOfDate DateTime @map("as_of_date") @db.Date
+  symbol    String
+  tradeDate DateTime @map("trade_date") @db.Date
 
   beta1Y Decimal? @map("beta_1y") @db.Decimal(10, 4)
   beta2Y Decimal? @map("beta_2y") @db.Decimal(10, 4)
@@ -836,7 +841,7 @@ model BetaResult {
   computedAt DateTime @default(now()) @map("computed_at")
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@id([symbol, asOfDate])
+  @@id([symbol, tradeDate])
   @@map("portfolio_beta")
 }
 
