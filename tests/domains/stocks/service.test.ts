@@ -63,6 +63,13 @@ test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，�
   for (const entry of entries) {
     assert.ok(entry.exDate >= new Date().toISOString().slice(0, 10), '只應該回傳今天以後的事件');
     assert.ok(['息', '權', '權息'].includes(entry.exType));
+    // numeric 欄位鎖死要是真正的 JS number，不是 Postgres 驅動預設回傳的字串——這裡曾經
+    // 漏做 Number() 轉換，型別宣告寫 number 但實際回傳字串，bff-ts 那邊照型別寫驗證邏輯
+    // 會兜不起來，鎖這個測試避免回歸。
+    for (const field of ['stockDividendRatio', 'subscriptionRatio', 'subscriptionPricePerShare', 'cashDividend', 'sharesOffered', 'sharesEmpOwner', 'sharesholderOwner', 'stockHoldingRatio'] as const) {
+      const value = entry[field];
+      if (value !== null) assert.equal(typeof value, 'number', `${field} 應該是 number，不是字串`);
+    }
   }
 });
 

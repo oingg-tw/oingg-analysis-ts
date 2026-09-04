@@ -21,18 +21,21 @@ export interface ExDividendNoticeEntry {
   stockHoldingRatio: number | null;
 }
 
+// Postgres 的 numeric 欄位透過 $queryRaw 回來是字串（node-postgres 預設不轉成 JS number，
+// 避免大數字精度問題），不是 number——之前 evEbitda/marketRatios 這些既有指標都是這樣處理，
+// 這裡宣告成 string 才符合實際跑起來的型別，下面組 entry 時要手動 Number() 轉換。
 interface RawExDividendNoticeRow {
   symbol: string;
   ex_date: Date;
   ex_type: string;
-  stock_dividend_ratio: number | null;
-  subscription_ratio: number | null;
-  subscription_price_per_share: number | null;
-  cash_dividend: number | null;
-  shares_offered: number | null;
-  shares_emp_owner: number | null;
-  sharesholder_owner: number | null;
-  stock_holding_ratio: number | null;
+  stock_dividend_ratio: string | null;
+  subscription_ratio: string | null;
+  subscription_price_per_share: string | null;
+  cash_dividend: string | null;
+  shares_offered: string | null;
+  shares_emp_owner: string | null;
+  sharesholder_owner: string | null;
+  stock_holding_ratio: string | null;
 }
 
 // 給個股頁面「下次除權息」提示、跟觀察清單「近期除權息」卡片用。只回傳「今天（含）以後」
@@ -48,19 +51,21 @@ export const getUpcomingExDividendNotices = async (symbols: string[]): Promise<R
     ORDER BY ex_date ASC
   `;
 
+  const toNumber = (value: string | null): number | null => (value === null ? null : Number(value));
+
   const result: Record<string, ExDividendNoticeEntry[]> = {};
   for (const row of rows) {
     const entry: ExDividendNoticeEntry = {
       exDate: row.ex_date.toISOString().slice(0, 10),
       exType: row.ex_type as ExDividendNoticeEntry['exType'],
-      stockDividendRatio: row.stock_dividend_ratio,
-      subscriptionRatio: row.subscription_ratio,
-      subscriptionPricePerShare: row.subscription_price_per_share,
-      cashDividend: row.cash_dividend,
-      sharesOffered: row.shares_offered,
-      sharesEmpOwner: row.shares_emp_owner,
-      sharesholderOwner: row.sharesholder_owner,
-      stockHoldingRatio: row.stock_holding_ratio,
+      stockDividendRatio: toNumber(row.stock_dividend_ratio),
+      subscriptionRatio: toNumber(row.subscription_ratio),
+      subscriptionPricePerShare: toNumber(row.subscription_price_per_share),
+      cashDividend: toNumber(row.cash_dividend),
+      sharesOffered: toNumber(row.shares_offered),
+      sharesEmpOwner: toNumber(row.shares_emp_owner),
+      sharesholderOwner: toNumber(row.sharesholder_owner),
+      stockHoldingRatio: toNumber(row.stock_holding_ratio),
     };
     (result[row.symbol] ??= []).push(entry);
   }
