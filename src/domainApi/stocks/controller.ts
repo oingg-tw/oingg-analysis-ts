@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getStockQuote, getStockPrices } from './service';
+import { getStockQuote, getStockPrices, getExDividendNotices } from './service';
 
 const paramsSchema = z.object({
   symbol: z.string().min(1),
@@ -48,6 +48,21 @@ export const getPrices = async (req: Request, res: Response, next: NextFunction)
     res.status(200).json(result);
   } catch (error) {
     console.error('Stock prices lookup failed:', error);
+    next(error);
+  }
+};
+
+export const getExDividendNoticesHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = querySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const result = await getExDividendNotices(validationResult.data.symbols);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Ex-dividend notices lookup failed:', error);
     next(error);
   }
 };

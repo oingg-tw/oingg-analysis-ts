@@ -1,3 +1,5 @@
+import type { ExDividendNoticeEntry } from '@/shared/sourceData/exDividendNotice';
+
 export interface StockQuotePrice {
   tradeDate: string;
   close: number | null;
@@ -18,4 +20,8 @@ export interface StockQuoteResult {
 
 export interface StockPricesResult {
   prices: Record<string, { close: number | null; tradeDate: string }>;
+}
+
+export interface ExDividendNoticesResult {
+  notices: Record<string, ExDividendNoticeEntry[]>;
 }

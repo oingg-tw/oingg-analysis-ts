@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { getStockQuote, getStockPrices } from '@/domainApi/stocks/service';
+import { getStockQuote, getStockPrices, getExDividendNotices } from '@/domainApi/stocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
@@ -44,6 +44,31 @@ test('getStockPrices: 查得到的 symbol 才會出現在 prices 裡，查不到
 test('getStockPrices: 空陣列應該回傳空物件，不拋錯', async () => {
   const result = await getStockPrices([]);
   assert.deepEqual(result.prices, {});
+});
+
+// 2026-09-04 應 web-nuxt 要求新增——先動態查一檔真的有除權息預告的 symbol（表裡資料量小、
+// 內容每天變動，不能像 2330 那樣寫死一個「長期都有資料」的代號）。
+test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，內容跟真實資料一致', async () => {
+  const sample = await twseExportPrisma.$queryRaw<{ symbol: string; ex_date: Date; ex_type: string }[]>`
+    SELECT symbol, ex_date, ex_type FROM "export"."ex_dividend_notice" WHERE ex_date >= CURRENT_DATE ORDER BY ex_date ASC LIMIT 1
+  `;
+  if (!sample[0]) return; // 表裡目前沒有未來事件時無從驗證，跳過（資料量小、每天變動）。
+
+  const result = await getExDividendNotices([sample[0].symbol, '__NOT_A_REAL_SYMBOL__']);
+  assert.ok(sample[0].symbol in result.notices, `${sample[0].symbol} 應該查得到除權息預告`);
+  assert.ok(!('__NOT_A_REAL_SYMBOL__' in result.notices), '查無資料的 symbol 不應該出現在 notices 物件裡');
+
+  const entries = result.notices[sample[0].symbol]!;
+  assert.ok(entries.some((e) => e.exDate === sample[0]!.ex_date.toISOString().slice(0, 10) && e.exType === sample[0]!.ex_type));
+  for (const entry of entries) {
+    assert.ok(entry.exDate >= new Date().toISOString().slice(0, 10), '只應該回傳今天以後的事件');
+    assert.ok(['息', '權', '權息'].includes(entry.exType));
+  }
+});
+
+test('getExDividendNotices: 空陣列應該回傳空物件，不拋錯', async () => {
+  const result = await getExDividendNotices([]);
+  assert.deepEqual(result.notices, {});
 });
 
 after(async () => {
