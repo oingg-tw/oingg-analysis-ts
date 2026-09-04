@@ -9,14 +9,16 @@ import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import type { IndicatorJob } from '../indicatorJob';
 import { calculateMarketRatios } from '../metrics/valuation/marketRatios/service';
 import { calculateBeta } from '../metrics/portfolio/beta/service';
-import { calculateMa } from '../metrics/technicals/ma/service';
-import { calculateRsi } from '../metrics/technicals/rsi/service';
-import { calculateKd } from '../metrics/technicals/kd/service';
-import { calculateBollingerBands } from '../metrics/technicals/bollingerBands/service';
-import { calculateAtr } from '../metrics/technicals/atr/service';
-import { calculateBiasIndicator } from '../metrics/technicals/bias/service';
-import { calculateMacd } from '../metrics/technicals/macd/service';
-import { calculateObv } from '../metrics/technicals/obv/service';
+// 2026-09-05 使用者要求 technicals 全部先停用（見下方 dailyIndicatorJobs），對應的
+// import 也一併註解掉，不然 oxlint 的 no-unused-vars 會擋 commit。
+// import { calculateMa } from '../metrics/technicals/ma/service';
+// import { calculateRsi } from '../metrics/technicals/rsi/service';
+// import { calculateKd } from '../metrics/technicals/kd/service';
+// import { calculateBollingerBands } from '../metrics/technicals/bollingerBands/service';
+// import { calculateAtr } from '../metrics/technicals/atr/service';
+// import { calculateBiasIndicator } from '../metrics/technicals/bias/service';
+// import { calculateMacd } from '../metrics/technicals/macd/service';
+// import { calculateObv } from '../metrics/technicals/obv/service';
 
 const twsePriceIdsPromise = twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_price"`.then((rows) => rows.map((r) => r.symbol));
 
@@ -37,13 +39,14 @@ const marketRatiosIdsPromise = Promise.all([
 
 export const dailyIndicatorJobs: IndicatorJob[] = [
   { name: 'marketRatios', category: 'valuation', getCompanyIds: () => marketRatiosIdsPromise, run: (id) => calculateMarketRatios({ symbol: id }) },
-  { name: 'beta', category: 'portfolio', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBeta({ symbol: id }) },
-  { name: 'ma', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMa({ symbol: id }) },
-  { name: 'rsi', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateRsi({ symbol: id }) },
-  { name: 'kd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateKd({ symbol: id }) },
-  { name: 'bollingerBands', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBollingerBands({ symbol: id }) },
-  { name: 'atr', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateAtr({ symbol: id }) },
-  { name: 'bias', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBiasIndicator({ symbol: id }) },
-  { name: 'macd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMacd({ symbol: id }) },
-  { name: 'obv', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateObv({ symbol: id }) },
+  { name: 'beta', category: 'valuation', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBeta({ symbol: id }) },
+  // 2026-09-05 使用者要求 technicals 全部先停用，不在 daily 批次裡跑：
+  // { name: 'ma', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMa({ symbol: id }) },
+  // { name: 'rsi', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateRsi({ symbol: id }) },
+  // { name: 'kd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateKd({ symbol: id }) },
+  // { name: 'bollingerBands', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBollingerBands({ symbol: id }) },
+  // { name: 'atr', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateAtr({ symbol: id }) },
+  // { name: 'bias', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBiasIndicator({ symbol: id }) },
+  // { name: 'macd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMacd({ symbol: id }) },
+  // { name: 'obv', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateObv({ symbol: id }) },
 ];
