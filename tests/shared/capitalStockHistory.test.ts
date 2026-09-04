@@ -96,6 +96,22 @@ test('getCapitalStockHistory: 查無資料的代號應該回傳空陣列，不�
   assert.deepEqual(entries, []);
 });
 
+// 2026-09-04 應使用者要求新增——跟時間序列上更早的前一筆相比的流通股數變動百分比。
+test('getCapitalStockHistory: sharesChangePercent 應該正確反映跟前一筆（時間序列上更早）的變動百分比，最舊一筆是 null', async () => {
+  const entries = await getCapitalStockHistory('2330');
+  assert.ok(entries.length > 1);
+
+  // entries 是新到舊排序，index+1 才是時間序列上更早的前一筆。
+  for (let i = 0; i < entries.length - 1; i++) {
+    const current = BigInt(entries[i]!.paidInShares);
+    const previous = BigInt(entries[i + 1]!.paidInShares);
+    const expected = Math.round((Number(current - previous) / Number(previous)) * 100 * 100) / 100;
+    assert.equal(entries[i]!.sharesChangePercent, expected, `第 ${i} 筆（${entries[i]!.effectiveDate}）的 sharesChangePercent 應該是 ${expected}`);
+  }
+
+  assert.equal(entries[entries.length - 1]!.sharesChangePercent, null, '最舊一筆沒有更早的可以比較，應該是 null');
+});
+
 after(async () => {
   await mopsExportPrisma.$disconnect();
 });

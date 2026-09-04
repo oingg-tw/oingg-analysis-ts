@@ -50,6 +50,9 @@ export interface CapitalStockHistoryEntry {
   effectiveDate: string; // "YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆
   paidInShares: string; // 實際流通股數（不是千股），bigint 序列化成字串
   paidInCapital: string | null; // 實收資本額（元）
+  // 跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）
+  // 相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。
+  sharesChangePercent: number | null;
   changeSource: CapitalStockChangeSource;
   remarks: string | null; // 自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位
 }
@@ -82,18 +85,28 @@ export const getCapitalStockHistory = async (symbol: string): Promise<CapitalSto
     ORDER BY effective_year DESC, effective_month DESC
   `;
 
-  return rows.map((row) => ({
-    effectiveDate: `${row.effective_year}-${String(row.effective_month).padStart(2, '0')}`,
-    paidInShares: row.paid_in_shares!.toString(),
-    paidInCapital: row.paid_in_capital?.toString() ?? null,
-    changeSource: {
-      cashIncrease: row.source_cash_increase?.toString() ?? null,
-      capitalReserveTransfer: row.source_capital_reserve_transfer?.toString() ?? null,
-      retainedEarningsTransfer: row.source_retained_earnings_transfer?.toString() ?? null,
-      mergerIncrease: row.source_merger_increase?.toString() ?? null,
-      capitalReduction: row.source_capital_reduction?.toString() ?? null,
-      other: row.source_other,
-    },
-    remarks: row.remarks,
-  }));
+  // rows 是新到舊排序，index+1 才是時間序列上「更早的前一筆」，用來算變動百分比。
+  return rows.map((row, index) => {
+    const previous = rows[index + 1];
+    const sharesChangePercent =
+      previous?.paid_in_shares != null && previous.paid_in_shares !== 0n
+        ? Math.round((Number(row.paid_in_shares! - previous.paid_in_shares) / Number(previous.paid_in_shares)) * 100 * 100) / 100
+        : null;
+
+    return {
+      effectiveDate: `${row.effective_year}-${String(row.effective_month).padStart(2, '0')}`,
+      paidInShares: row.paid_in_shares!.toString(),
+      paidInCapital: row.paid_in_capital?.toString() ?? null,
+      sharesChangePercent,
+      changeSource: {
+        cashIncrease: row.source_cash_increase?.toString() ?? null,
+        capitalReserveTransfer: row.source_capital_reserve_transfer?.toString() ?? null,
+        retainedEarningsTransfer: row.source_retained_earnings_transfer?.toString() ?? null,
+        mergerIncrease: row.source_merger_increase?.toString() ?? null,
+        capitalReduction: row.source_capital_reduction?.toString() ?? null,
+        other: row.source_other,
+      },
+      remarks: row.remarks,
+    };
+  });
 };
