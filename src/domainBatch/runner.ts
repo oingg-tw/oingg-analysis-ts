@@ -25,7 +25,7 @@
 // - twse `daily_price`／twse+tpex `daily_valuation` 涵蓋 1,000+ 家，`portfolio/beta`、
 //   `technicals` 8 個指標、`valuation/marketRatios` 走這條路線。
 
-import { indicatorJobs } from './indicatorRegistry';
+import type { IndicatorJob } from './indicatorRegistry';
 import { logger } from '@/shared/logger';
 
 // 小併發，對齊現有 Prisma client 的 connection_limit=5 池大小設定，不要一次打爆連線池。
@@ -58,8 +58,12 @@ const runWithConcurrency = async (companyIds: string[], run: (id: string) => Pro
 // domainBatch/route.ts 也會在跟 domainApi 共用的同一個長駐伺服器行程裡呼叫這支函式，
 // 斷線會把其他端點也在用的共用連線一起斷掉。「跑完要不要斷線」交給呼叫端自己決定
 // （CLI 腳本結尾斷、HTTP route 結尾不斷），不是這支函式該管的事。
-export const runBatchCompute = async (): Promise<void> => {
-  for (const job of indicatorJobs) {
+// 2026-09-05 起接受 jobs 參數，不再寫死跑 indicatorRegistry.ts 的全部 indicatorJobs——
+// 拆成 daily/quarterly 兩組批次頻率之後（見 route.ts），呼叫端決定要跑哪一組；
+// scripts/batchComputeIndicators.ts（CLI 手動觸發）維持「一次跑全部」，自己把
+// indicatorJobs（合併後的完整清單）傳進來。
+export const runBatchCompute = async (jobs: IndicatorJob[]): Promise<void> => {
+  for (const job of jobs) {
     const companyIds = await job.getCompanyIds();
     logger.info(`[${job.name}] 開始，共 ${companyIds.length} 家公司`);
     const { success, failed } = await runWithConcurrency(companyIds, job.run);

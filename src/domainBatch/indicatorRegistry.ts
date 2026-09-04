@@ -96,7 +96,13 @@ const marketRatiosIdsPromise = Promise.all([
 
 const mopsQuery = (symbol: string) => ({ symbol, dataType: '2' as const, subsidiaryCompanyId: '' });
 
-export const indicatorJobs: IndicatorJob[] = [
+// 2026-09-05 起拆成 daily/quarterly 兩組，給 POST /batch/compute/{daily,quarterly}
+// 分開觸發用（見 route.ts）——分組依據是各自 getCompanyIds 查的公司清單來源，不是憑感覺分：
+// mopsIdsPromise（季度財報）理論上一家公司一季頂多變一次，daily 觸發只是白工；
+// twsePriceIdsPromise/marketRatiosIdsPromise（每日股價/市場行情）則反過來，沒有每天重算就會
+// 跟股價脫節。`indicatorJobs`（下方，兩組合併）保留給 companies/metricsService.ts 的
+// compute-on-miss 用——那個情境要查任何一支指標，不分頻率。
+export const quarterlyIndicatorJobs: IndicatorJob[] = [
   // profitability
   { name: 'eps', category: 'profitability', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateEps(mopsQuery(id)) },
   { name: 'bvps', category: 'profitability', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateBvps(mopsQuery(id)) },
@@ -133,12 +139,14 @@ export const indicatorJobs: IndicatorJob[] = [
   { name: 'nissimPenmanRnoa', category: 'guru', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateNissimPenmanRnoa(mopsQuery(id)) },
   { name: 'zmijewskiScore', category: 'guru', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateZmijewskiScore(mopsQuery(id)) },
   { name: 'ohlsonOScore', category: 'guru', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateOhlsonOScore(mopsQuery(id)) },
-  // valuation（psr/pFcf/evEbitda 需要 mops 財報，marketRatios 純市場資料）
+  // valuation（psr/pFcf/evEbitda 需要 mops 財報，marketRatios 是 daily 那組）
   { name: 'psr', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculatePsr(mopsQuery(id)) },
   { name: 'pFcf', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculatePFcf(mopsQuery(id)) },
   { name: 'evEbitda', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateEvEbitda(mopsQuery(id)) },
+];
+
+export const dailyIndicatorJobs: IndicatorJob[] = [
   { name: 'marketRatios', category: 'valuation', getCompanyIds: () => marketRatiosIdsPromise, run: (id) => calculateMarketRatios({ symbol: id }) },
-  // portfolio + technicals（純市場資料）
   { name: 'beta', category: 'portfolio', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBeta({ symbol: id }) },
   { name: 'ma', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMa({ symbol: id }) },
   { name: 'rsi', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateRsi({ symbol: id }) },
@@ -149,3 +157,6 @@ export const indicatorJobs: IndicatorJob[] = [
   { name: 'macd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMacd({ symbol: id }) },
   { name: 'obv', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateObv({ symbol: id }) },
 ];
+
+// 給 companies/metricsService.ts 的 compute-on-miss 用——查任何一支指標都要找得到，不分頻率。
+export const indicatorJobs: IndicatorJob[] = [...dailyIndicatorJobs, ...quarterlyIndicatorJobs];
