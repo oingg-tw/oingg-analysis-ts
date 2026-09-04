@@ -105,6 +105,62 @@ API 完全一致，沒有新的落差。
 一致——這是一個會計科目金額（IFRS 17 轉換調整金額），不是版本追蹤用的旗標，再次確認
 point-in-time/重編歷史追蹤這件事目前沒有可用的訊號，不是查漏了。
 
+## KY 股判斷方式——tpex-ts 建議的欄位其實涵蓋更廣，不是 1:1 替代
+
+現有邏輯（`src/shared/sourceData/companyProfile.ts`）用 `short_name LIKE '%-KY%'` 判斷
+KY 股。tpex-ts 建議改用 `foreign_registration_country IS NOT NULL`（TPEx company_profile
+有這個欄位）。2026-09-04 實測交叉驗證兩邊資料：
+
+- **TPEx**：兩種判斷法完全一致（各 36 檔，零差異）。
+- **TWSE**：`-KY` 判斷法抓到 95 檔，`foreign_registration_country IS NOT NULL` 抓到
+  105 檔，多出來的 10 檔全部是 `-DR`（存託憑證）股票，不是 KY 股判斷漏掉的案例——這 10 檔
+  註冊地涵蓋開曼、百慕達、泰國、新加坡，是「境外公司來台發行 TDR」，跟「境內公司改註冊到
+  海外再直接上市」（KY 股）是概念上不同的兩種東西，只是都會讓 `foreign_registration_country`
+  非空。
+
+**結論**：`foreign_registration_country IS NOT NULL` 是「有海外註冊地」的廣義判斷，
+`-KY`/`-DR` 是這個廣義概念底下的兩個子類別，不能直接拿來當「KY 股」的替代判斷式，除非
+之後決定要把 DR 股也一併排除——但那是另一個需要另外討論的政策決定，不是命名/判斷方式的
+technical debt。已回報這個發現給 tpex-ts。
+
+## market/source 欄位——同一套值域、不同欄位名，而且各自涵蓋的分類不完全一樣
+
+TWSE 跟 TPEx 的 `company_profile` 都有一個標示「這筆公司登記資料屬於哪種類別」的欄位，
+值域前綴都是 `COMPANY_PROFILE*`，但：
+
+| 來源 | 欄位名 | 實際出現的值 |
+|---|---|---|
+| twse-ts export schema | `source` | `COMPANY_PROFILE`（1094）／`COMPANY_PROFILE_PUBLIC`（300） |
+| tpex-ts export schema | `market`（**欄位名容易誤會成市場別 TWSE/TPEx，但值不是**） | `COMPANY_PROFILE`（890）／`COMPANY_PROFILE_EMERGING`（364） |
+
+兩邊的值域不是子集關係——TWSE 有 `_PUBLIC`（公開發行未上市）沒有 `_EMERGING`；TPEx 有
+`_EMERGING`（興櫃）沒有 `_PUBLIC`，反映的可能是兩個市場實際登記類別本來就不同，不一定是
+需要對齊的落差，但**欄位名不一致**（`source` vs `market`）值得跟兩邊反映，`market` 這個
+名字尤其容易讓人誤以為裡面存的是 TWSE/TPEx 這種市場別。已回報給 tpex-ts。
+
+## `/filters` metric/field key 命名規則——縮寫 vs 全名
+
+2026-09-04 跟 web-nuxt 對過（透過 conductor 轉達的問題）：`/filters` 回的 232 個 key
+（`filterCatalog.ts`）縮寫跟全名混用看似隨意，實際上把全部 key 分類歸納後，發現已經有
+一條隱性但完全一致的規則在被遵守：
+
+**照搬財務/學術圈實際在用的說法——圈內慣用縮寫就用縮寫，沒有公認縮寫就用完整描述性
+camelCase 名稱，不自己發明新縮寫。**
+
+例如 `roe`/`eps`/`per`/`pbr`/`rsi`/`macd`（圈內真的這樣講）vs `accrualsRatio`/
+`grahamNumber`/`bollingerBands`/`interestCoverage`（沒有公認縮寫，講全名）；
+Beneish/Ohlson 模型的 `dsri`/`gmi`/`x1`~`x5` 這類看起來很像亂碼的 key，也是照搬那兩篇
+原始論文的學術標準變數名，不是隨便縮的。
+
+這條規則已經跟 232 個現有 key 全部吻合，是把已經在做的事寫下來，**不需要重新命名任何
+現有欄位**，之後新增指標時用同一條規則判斷即可。web-nuxt 也確認：對前端來說 key 本身
+使用者看不到（畫面渲染的是 `name`），這條規則的價值是「雙方討論新命名時的共同語言」，
+不是直接影響可讀性；真正影響可讀性的是每個 field 的 `description` 覆蓋率——已經抽查過
+`x1`~`x5`、`dsri`/`gmi`/`sgai`/`lvgi`/`tata` 這些容易讓人誤會「沒有說明」的學術變數名
+key，全部都有 `description`，web-nuxt 當時舉的 X1 例子其實已經有說明了。真正缺
+`description` 的是像 `epsQuarterly`/`roeQuarterlyPct` 這類「一看名字就懂」的既有指標
+變體，這類缺口優先度低，雙方都同意不急著補。
+
 ## dataType / subsidiaryCompanyId——一致，僅供確認
 
 mops-ts export schema 跟 analysis-ts 全部一致使用 `dataType`（`'1'`=個別/母公司、
