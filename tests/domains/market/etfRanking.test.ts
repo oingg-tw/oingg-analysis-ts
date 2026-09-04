@@ -47,6 +47,29 @@ test('calculateEtfRanking: limit 應該限制回傳筆數', async () => {
   assert.ok(result.rankings.length <= 2);
 });
 
+// 2026-09-04 sitca-ts 新增 is_actively_managed/aum_below_statutory_threshold 兩個欄位——
+// 直接查真實資料交叉比對，確認這邊回傳的值就是來源表當下的值，不是搬過程中拿錯欄位或漏轉。
+test('calculateEtfRanking: isActive/belowStatutoryThreshold 應該等於來源表當下的值', async () => {
+  const result = await calculateEtfRanking({ metric: 'aum', order: 'desc', limit: 20 });
+  assert.ok(result.rankings.length > 0);
+
+  const basicRows = await sitcaExportPrisma.$queryRawUnsafe<{ security_code: string; is_actively_managed: boolean | null }[]>(
+    `SELECT security_code, is_actively_managed FROM "export"."etf_basic_info" WHERE security_code = ANY($1) AND year_month = (SELECT MAX(year_month) FROM "export"."etf_basic_info")`,
+    result.rankings.map((r) => r.symbol)
+  );
+  const statementRows = await sitcaExportPrisma.$queryRawUnsafe<{ security_code: string; aum_below_statutory_threshold: boolean | null }[]>(
+    `SELECT security_code, aum_below_statutory_threshold FROM "export"."etf_monthly_statement" WHERE security_code = ANY($1) AND year_month = (SELECT MAX(year_month) FROM "export"."etf_basic_info")`,
+    result.rankings.map((r) => r.symbol)
+  );
+  const isActiveBySymbol = new Map(basicRows.map((r) => [r.security_code, r.is_actively_managed]));
+  const belowThresholdBySymbol = new Map(statementRows.map((r) => [r.security_code, r.aum_below_statutory_threshold]));
+
+  for (const row of result.rankings) {
+    assert.equal(row.isActive, isActiveBySymbol.get(row.symbol) ?? null, `${row.symbol} 的 isActive 應該跟來源表一致`);
+    assert.equal(row.belowStatutoryThreshold, belowThresholdBySymbol.get(row.symbol) ?? null, `${row.symbol} 的 belowStatutoryThreshold 應該跟來源表一致`);
+  }
+});
+
 after(async () => {
   await sitcaExportPrisma.$disconnect();
 });

@@ -28,7 +28,8 @@ export interface EtfRankingRow {
   category: string | null; // 原始分類字串，例如「上市ETF_國外成分證券ETF」
   market: 'TWSE' | 'TPEx' | null; // 從 category 拆出，解析不出來時是 null
   assetClass: string | null; // 從 category 拆出的成分類型，主動式 ETF 沒有這個概念時是 null
-  isActive: boolean | null; // 從 category 拆出，是否為主動式 ETF，解析不出來時是 null
+  isActive: boolean | null; // 是否為主動式 ETF——2026-09-04 起直接讀 sitca-ts 的 is_actively_managed 權威欄位，不是猜的
+  belowStatutoryThreshold: boolean | null; // 規模是否低於法定下市門檻（下市風險近似警示），sitca-ts 2026-09-04 新增的欄位
   distributionFrequency: string | null; // 從 distribution_class_info 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/不分配），解析不出來時是 null
   value: number;
   asOf: string; // 大部分 metric 是 "YYYY-MM"（月快照）；expenseRatio 是 "YYYY"（完整年度）

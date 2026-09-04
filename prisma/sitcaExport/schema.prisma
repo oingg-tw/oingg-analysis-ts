@@ -107,6 +107,10 @@ view EtfBasicInfo {
   trackingIndex          String?   @map("tracking_index")
   distributionClassInfo  String?   @map("distribution_class_info")
   fetchedAt              DateTime? @map("fetched_at")
+  /// 2026-09-04 sitca-ts 新增：主動/被動 ETF 標記（derived，不是 SITCA 原始欄位）——取代原本
+  /// 這邊用 category 字串 regex 猜測 isActive 的做法，見 etfRanking/parseCategory.ts、
+  /// etfScreener/queryBuilder.ts 的說明。
+  isActivelyManaged      Boolean?  @map("is_actively_managed")
 
   @@ignore
   @@map("etf_basic_info")
@@ -118,14 +122,17 @@ view EtfBasicInfo {
 /// 抓總費用率。這裡只鏡像規模/籌碼面排行用得到的欄位，不是全部欄位都留（*_original 那些
 /// 外幣原始金額欄位、currency 都跳過，本服務目前只用得到台幣計價的數字）。
 view EtfMonthlyStatement {
-  securityCode           String?  @map("security_code")
-  yearMonth              String?  @map("year_month")
-  fundTaxId              String?  @map("fund_tax_id")
-  aumTwd                 BigInt?  @map("aum_twd")
-  totalHolders           BigInt?  @map("total_holders")
-  subscriptionAmountTwd  BigInt?  @map("subscription_amount_twd")
-  redemptionAmountTwd    BigInt?  @map("redemption_amount_twd")
-  dcaAmountTwd           BigInt?  @map("dca_amount_twd")
+  securityCode              String?  @map("security_code")
+  yearMonth                 String?  @map("year_month")
+  fundTaxId                 String?  @map("fund_tax_id")
+  aumTwd                    BigInt?  @map("aum_twd")
+  totalHolders              BigInt?  @map("total_holders")
+  subscriptionAmountTwd     BigInt?  @map("subscription_amount_twd")
+  redemptionAmountTwd       BigInt?  @map("redemption_amount_twd")
+  dcaAmountTwd              BigInt?  @map("dca_amount_twd")
+  /// 2026-09-04 sitca-ts 新增：法定下市規模門檻（新台幣）跟是否低於門檻的下市風險近似警示。
+  statutoryAumThresholdTwd  BigInt?  @map("statutory_aum_threshold_twd")
+  aumBelowStatutoryThreshold Boolean? @map("aum_below_statutory_threshold")
 
   @@ignore
   @@map("etf_monthly_statement")

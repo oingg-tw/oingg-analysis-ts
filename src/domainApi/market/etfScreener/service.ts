@@ -30,10 +30,10 @@ const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
   if (!('values' in input) || !Array.isArray(input.values)) {
     throw new EtfScreenerValidationError(`"${input.field}" 是類別欄位，filter 要給 values 陣列，不是 min/max。`);
   }
-  if (definition.field === 'isActive') {
+  if (definition.isBoolean) {
     const invalid = input.values.filter((v) => v !== 'true' && v !== 'false');
     if (invalid.length > 0) {
-      throw new EtfScreenerValidationError(`isActive 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
+      throw new EtfScreenerValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
     }
   }
   return { kind: 'categorical', definition, values: input.values };
@@ -64,7 +64,7 @@ const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | 
 const parseValue = (raw: unknown, definition: NumericFieldDefinition | CategoricalFieldDefinition): number | string | boolean | null => {
   if (raw === null || raw === undefined) return null;
   if (definition.kind === 'numeric') return Number(raw);
-  if (definition.field === 'isActive') return Boolean(raw);
+  if (definition.isBoolean) return Boolean(raw);
   return String(raw);
 };
 

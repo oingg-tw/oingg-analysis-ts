@@ -27,12 +27,13 @@ const router = Router();
  *       指標。`asOf` 標示這筆資料實際採用的月份（`YYYY-MM`）或年度（`expenseRatio` 是
  *       `YYYY`）。
  *
- *       `category`（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成三個獨立欄位：
+ *       `category`（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成兩個獨立欄位：
  *       `market`（TWSE/TPEx）、`assetClass`（國內成分證券/國外成分證券/債券成分/槓桿型/
- *       反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）、`isActive`（是否為主動式
- *       ETF，不追蹤特定指數、經理人自訂策略操作）。`distributionFrequency` 是從
- *       `distribution_class_info` 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/
- *       不分配），純客觀顯示欄位，不是投資建議。
+ *       反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）。`isActive`（是否為主動式
+ *       ETF，不追蹤特定指數、經理人自訂策略操作）是 sitca-ts 提供的權威欄位，不是從 category
+ *       猜的。`belowStatutoryThreshold`：規模是否低於法定下市門檻（下市風險近似警示，
+ *       sitca-ts 提供）。`distributionFrequency` 是從 `distribution_class_info` 拆出的配息
+ *       頻率（月配/季配/半年配/年配/一年兩次配息/其他/不分配），純客觀顯示欄位，不是投資建議。
  *     tags:
  *       - Market
  *     parameters:

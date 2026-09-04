@@ -107,6 +107,27 @@ test('getEtfFilterCatalog: assetClass 的 values 應該是現查的 distinct 值
   assert.ok(assetClass!.values && assetClass!.values.length > 0);
 });
 
+// 2026-09-04 sitca-ts 新增欄位——法定下市規模門檻/是否低於門檻，跟 isActive 同一種
+// boolean 類別欄位的處理方式（見 fieldRegistry.ts 的 isBoolean 標記），這裡驗證新欄位也
+// 走同一套轉換邏輯，不會因為是新加的就漏掉 boolean 轉換。
+test('runEtfScreener: belowStatutoryThreshold 類別 filter 應該正確轉換布林值', async () => {
+  const result = await runEtfScreener({ filters: [{ field: 'belowStatutoryThreshold', values: ['false'] }], columns: [{ field: 'belowStatutoryThreshold' }], page: 1, pageSize: 200 });
+  assert.ok(result.results.length > 0, '應該至少有幾檔規模沒有低於法定門檻的 ETF');
+  for (const row of result.results) {
+    assert.equal(row.values.belowStatutoryThreshold, false);
+  }
+});
+
+test('runEtfScreener: statutoryAumThreshold 數字欄位應該是可以查詢的數字', async () => {
+  const result = await runEtfScreener({ filters: [], columns: [{ field: 'statutoryAumThreshold' }], page: 1, pageSize: 50 });
+  assert.ok(result.results.length > 0);
+  const withValue = result.results.filter((r) => r.values.statutoryAumThreshold !== null);
+  assert.ok(withValue.length > 0, '應該至少有幾檔 ETF 有法定下市規模門檻的值');
+  for (const row of withValue) {
+    assert.equal(typeof row.values.statutoryAumThreshold, 'number');
+  }
+});
+
 test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
   return getEtfFilterCatalog().then((catalog) => {
     for (const field of catalog.fields) {

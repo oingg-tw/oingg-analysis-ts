@@ -7,11 +7,12 @@ import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type C
 // 都是對 base（或加上 expense）的欄位下條件，不需要股票那套「每個 field 各自找表、動態
 // JOIN」的通用機制。
 //
-// market/asset_class/is_active 是用 SQL 表達式現場從 category 字串拆出來的（不是獨立欄位、
-// 不是另外 sync 一張表）——2026-09-02 應使用者要求，這樣類別欄位才能像數字欄位一樣走真正的
-// SQL WHERE，不是抓回來後在 JS 篩選。判斷依據：category 有沒有「ETF_...ETF」這個成分類型
-// 後綴，見 etfRanking/parseCategory.ts 已經驗證過的同一套邏輯（36 檔主動式 ETF 完全對應
-// category 沒有後綴的情況）。distribution_frequency 同樣是從 distribution_class_info
+// market/asset_class 是用 SQL 表達式現場從 category 字串拆出來的（不是獨立欄位、不是另外
+// sync 一張表）——2026-09-02 應使用者要求，這樣類別欄位才能像數字欄位一樣走真正的 SQL
+// WHERE，不是抓回來後在 JS 篩選。is_active 原本也是這樣用「category 有沒有『ETF_...ETF』
+// 成分類型後綴」猜的（見 etfRanking/parseCategory.ts 已經驗證過的同一套邏輯，36 檔主動式
+// ETF 完全對應 category 沒有後綴的情況），2026-09-04 起 sitca-ts 直接開了權威欄位
+// is_actively_managed，不用再猜，直接讀那個欄位。distribution_frequency 同樣是從 distribution_class_info
 // 現場拆出來的（月配/季配/半年配/年配/一年兩次配息/其他/不分配），見
 // etfRanking/parseDistribution.ts 對應的 JS 版本——這個欄位是應 web-nuxt 需求新增，讓退休/
 // 存股儀表板能篩選配息頻率（單筆配息滿 2 萬會扣二代健保補充保費，月配息較容易避開單筆超標），
@@ -33,7 +34,7 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       b.established_date,
       CASE WHEN b.category LIKE '上市%' THEN 'TWSE' WHEN b.category LIKE '上櫃%' THEN 'TPEx' ELSE NULL END AS market,
       substring(b.category from 'ETF_(.+)ETF') AS asset_class,
-      (b.category !~ '^(上市|上櫃)ETF_.+ETF$') AS is_active,
+      b.is_actively_managed AS is_active,
       CASE WHEN b.distribution_class_info LIKE '%不分配%' THEN '不分配' ELSE substring(b.distribution_class_info from '分配\\((.+)\\)') END AS distribution_frequency,
       m.fund_tax_id,
       m.aum_twd AS aum,
@@ -42,6 +43,8 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       m.dca_amount_twd AS dca_amount,
       m.market_share_rate,
       m.nav_twd AS nav,
+      m.statutory_aum_threshold_twd AS statutory_aum_threshold,
+      m.aum_below_statutory_threshold AS below_statutory_threshold,
       p.return_3m,
       p.return_6m,
       p.return_1y,
@@ -116,13 +119,14 @@ const buildNumericCondition = (condition: NumericFilterCondition): Prisma.Sql =>
   return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
 };
 
-// 類別欄位：values 是「屬於這幾個值之一」（IN 語意），不是範圍。isActive 是 boolean 欄位，
-// 'true'/'false' 字串要轉成實際布林值才能比對，市場別/資產類型是文字欄位直接比對字串。
+// 類別欄位：values 是「屬於這幾個值之一」（IN 語意），不是範圍。isActive/belowStatutoryThreshold
+// 是 boolean 欄位（見 fieldRegistry.ts 的 isBoolean 標記），'true'/'false' 字串要轉成實際
+// 布林值才能比對，市場別/資產類型是文字欄位直接比對字串。
 const buildCategoricalCondition = (condition: CategoricalFilterCondition): Prisma.Sql => {
   const col = Prisma.sql`base.${q(condition.definition.sqlColumn)}`;
   if (condition.values.length === 0) return Prisma.sql`FALSE`;
 
-  if (condition.definition.field === 'isActive') {
+  if (condition.definition.isBoolean) {
     const bools = condition.values.map((v) => v === 'true');
     return Prisma.sql`${col} IN (${Prisma.join(bools)})`;
   }
