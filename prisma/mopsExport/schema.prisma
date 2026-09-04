@@ -3,10 +3,13 @@
 // export.ingestion_runs 握手表、etl_reader role（只能 SELECT export schema，讀不到 public，
 // 已實測驗證過隔離），連線用 .env 的 MOPS_EXPORT_DATABASE_URL / MOPS_EXPORT_DIRECT_URL。
 //
-// 這是「業務中台與後台資料邊界架構」契約下的正式來源，取代之前直連 public schema 唯讀鏡像的
-// 舊模式——mops 的季度財報三張表短期內還是繼續用 ../schema.prisma（現有 30+ 支指標都還沒切過來，
-// 見 prisma/analysis/schema.prisma 開頭的說明），這份 schema 目前只服務 src/shared/sync/ 的
-// curated 層同步流程，不要拿來給一般指標查詢用。
+// 這是「業務中台與後台資料邊界架構」契約下的正式來源，取代之前直連 public schema owner 帳號
+// 唯讀鏡像的舊模式——2026-09-03 起，mops 季度財報三張表（quarterly_income_statement/
+// quarterly_balance_sheet/quarterly_cash_flow_statement）已經全部改成透過這個 client 即時
+// 查詢（見 src/shared/sourceData/mopsQuarterlyStatements.ts），原本 owner 角色的
+// DATABASE_URL/DIRECT_URL 直連鏡像（../schema.prisma、src/adapters/prisma/index.ts）已經
+// 退役刪除，不是兩條路線並存。這份 schema 現在同時服務單一公司指標查詢（27 支）跟
+// src/shared/sync/ 的 curated 層同步流程。
 //
 // quarterly_income_statement 是 view，沒有唯一識別欄位，Prisma Client 不會產生 model 存取子
 // （@@ignore），查詢一律走 $queryRaw，見 src/shared/sync/mopsQuarterlyIncomeStatementSync.ts。
