@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { calculateEquityRiskPremium } from '@/domainMetrics/macro/equityRiskPremium/service';
+import { calculateEquityRiskPremium } from '@/domainMacro/equityRiskPremium/service';
 import { logger } from '@/shared/logger';
 
 export const getEquityRiskPremiumQuerySchema = z.object({

@@ -194,4 +194,4 @@ O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG
 - **嚴謹版**（Greenwald 原始定義：存貨用重置成本、PP&E 用通膨調整後重置成本、歷年 SG&A/研發費用資本化估帳外無形資產）需要產業別重置成本指數、資產鑑價資料、至少 10~20 年的歷史費用序列——這些不是「查得到查不到」的問題，是本服務資料來源架構完全不涵蓋的維度，接再多資料庫也不會解決。
 - **簡化版**（`Asset Value ≈ 總資產 − 總負債`，即帳面權益）雖然算得出來，但本質上是拿 BVPS 冒充資產重置成本，跟真正的 Greenwald 護城河判斷邏輯已經不是同一件事，容易誤導使用者。
 
-2026-08-28 討論後決定：**不用不忠於原始定義的簡化版硬做，整個指標移除**，`guru` 分類只保留能用可靠資料完整算出來的指標。GOV 的無風險利率資料源（`MonthlyGovBondYield10y`，見 [`../../../shared/sourceData/riskFreeRate.ts`](../../../shared/sourceData/riskFreeRate.ts)）不隨這個決定移除——它是通用的資料維度，`macro` 分類的 `YTM` 未來仍然用得到，見 [`../macro/README.md`](../macro/README.md)。
+2026-08-28 討論後決定：**不用不忠於原始定義的簡化版硬做，整個指標移除**，`guru` 分類只保留能用可靠資料完整算出來的指標。GOV 的無風險利率資料源（`MonthlyGovBondYield10y`，見 [`../../../shared/sourceData/riskFreeRate.ts`](../../../shared/sourceData/riskFreeRate.ts)）不隨這個決定移除——它是通用的資料維度，`macro` 分類的 `YTM` 未來仍然用得到，見 [`../../domainMacro/README.md`](../../domainMacro/README.md)（2026-09-05 macro 分類從 domainMetrics/ 拉出來成獨立的 domainMacro/，見該文件開頭說明）。

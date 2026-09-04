@@ -92,7 +92,7 @@ pnpm prisma:twse:studio   # Prisma Studio 開這個 DB
 
 ## `prisma/gov/schema.prisma` 是第四個資料庫（唯讀鏡像，同一種模式）
 
-2026-08-28 原本為了 `guru/Greenwald_EPV` 的 CAPM 無風險利率接上，連到獨立的 Neon 專案（`.env` 的 `GOV_DATABASE_URL` / `GOV_DIRECT_URL`，2026-08-30 從 CBC 改名，資料源沒變），本服務只讀，不擁有這裡的表格 schema/migration，資料由另一支負責 ingest 央行統計資料庫 API 的服務（oingg-gov-ts，原 oingg-cbc-ts）寫入。`Greenwald_EPV` 後來因為「資產重置成本」無法用忠於資料的方式算，2026-08-28 決定移除（見 [`src/domainMetrics/guru/README.md`](src/domainMetrics/guru/README.md) 的「為什麼不做 Greenwald_EPV」），但這個資料源本身是通用的無風險利率資料，沒有一併移除，[`src/domainMetrics/macro/`](src/domainMetrics/macro/README.md) 的 `Equity_Risk_Premium`/`YTM` 用得到。
+2026-08-28 原本為了 `guru/Greenwald_EPV` 的 CAPM 無風險利率接上，連到獨立的 Neon 專案（`.env` 的 `GOV_DATABASE_URL` / `GOV_DIRECT_URL`，2026-08-30 從 CBC 改名，資料源沒變），本服務只讀，不擁有這裡的表格 schema/migration，資料由另一支負責 ingest 央行統計資料庫 API 的服務（oingg-gov-ts，原 oingg-cbc-ts）寫入。`Greenwald_EPV` 後來因為「資產重置成本」無法用忠於資料的方式算，2026-08-28 決定移除（見 [`src/domainMetrics/guru/README.md`](src/domainMetrics/guru/README.md) 的「為什麼不做 Greenwald_EPV」），但這個資料源本身是通用的無風險利率資料，沒有一併移除，[`src/domainMacro/`](src/domainMacro/README.md) 的 `Equity_Risk_Premium`/`YTM` 用得到。
 
 目前只有一張表：
 
@@ -138,7 +138,7 @@ pnpm prisma:tpex:studio   # Prisma Studio 開這個 DB
 
 以下「Query 參數，兩種介面」跟「year/season 選填」兩段描述的是**已刪除端點當時的參數形狀**，保留是因為同一套參數形狀現在換了個位置繼續活著——`domainMetrics/**/service.ts` 的 `calculate*()` 函式簽名完全沒變，`GET /companies/metrics` 的 compute-on-miss 跟批次預算都是直接呼叫這些函式，下面的設計理由（尤其是「最新一季怎麼決定」）現在仍然成立，只是不會再有人直接對著這些函式名稱打 HTTP 請求。
 
-Query 參數，兩種介面：(1) `market-ratios`、`beta`、`technicals`（8 個技術指標）只有 `symbol`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta`/`technicals` 是 `asOfDate`），因為都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」、[`src/domainMetrics/portfolio/README.md`](src/domainMetrics/portfolio/README.md)、[`src/domainMetrics/technicals/README.md`](src/domainMetrics/technicals/README.md) 的說明。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`resilience`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `dividendPayoutRatio`、`sgr`）共用同一組：`symbol`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
+Query 參數，兩種介面：(1) `market-ratios`、`beta`、`technicals`（8 個技術指標）只有 `symbol`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta`/`technicals` 是 `asOfDate`），因為都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」、[`src/domainMetrics/portfolio/README.md`](src/domainMetrics/portfolio/README.md) 的說明（`technicals` 分類 2026-09-05 已刪除）。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`resilience`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `dividendPayoutRatio`、`sgr`）共用同一組：`symbol`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
 
 ### year/season 選填、自動抓最新一季的設計（2026-08-28）
 
