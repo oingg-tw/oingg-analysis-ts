@@ -1,6 +1,6 @@
 import { test, describe, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { runCompanyMetrics, CompanyMetricsValidationError } from '@/domainApi/companies/metricsService';
+import { runCompanyMetrics, CompanyMetricsValidationError } from '@/api/bff/companies/metricsService';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
@@ -16,7 +16,7 @@ describe('runCompanyMetrics', () => {
     assert.ok(value.asOfDate !== null);
   });
 
-  test('cache miss 會委派 domainBatch 現算+upsert，回傳 source=computed，且 DB 真的多一列', async () => {
+  test('cache miss 會委派 api/batch 現算+upsert，回傳 source=computed，且 DB 真的多一列', async () => {
     // 刻意刪掉 2330 的 NissimPenmanRnoaResult，製造真正的 cache miss——刪掉之後這個測試自己會
     // 觸發重算把資料寫回去，不是破壞性操作（跟批次本來就會定期重算覆蓋是同一件事）。
     await analysisPrisma.nissimPenmanRnoaResult.deleteMany({ where: { symbol: '2330' } });

@@ -3,7 +3,7 @@
 # 跟 service.yaml 用同一個映像檔，只是 command/args 不同、不需要對外開 port。
 #
 # 2026-09-04 這份 YAML 原本是給已經退場的 syncCuratedDatasets.ts 用的（curated 中台層決定
-# 現階段太早、已整個回退，見對話紀錄），改成給批次入口（src/domainBatch/runner.ts，
+# 現階段太早、已整個回退，見對話紀錄），改成給批次入口（src/api/batch/runner.ts，
 # scripts/batchComputeIndicators.ts 是薄殼觸發器）用——實際邏輯是幫全市場公司預先跑一輪 44 支
 # 指標、結果 upsert 進 analysis 表，是 API 讀取結果表的預先填充，不是即時計算本身（API 本身不
 # 依賴這個 Job 有沒有跑過，只是沒跑過/跑得不夠新鮮時，各指標自己即時算，見各 service.ts）。
@@ -26,7 +26,7 @@
 # SCHEDULER_SERVICE_ACCOUNT 這個服務帳號要有 roles/run.invoker 權限才能觸發這個 Job，
 # 這權限要另外在 GCP IAM 設定，不在這份 YAML 裡。
 #
-# 這個 Job 只需要 src/domainBatch/runner.ts 實際會連的 4 條連線（mopsExportPrisma、
+# 這個 Job 只需要 src/api/batch/runner.ts 實際會連的 4 條連線（mopsExportPrisma、
 # twseExportPrisma、tpexExportPrisma、analysisPrisma）——不是 service.yaml 那份完整清單，
 # govExportPrisma/sitcaExportPrisma 這次用不到（indicatorRegistry.ts 裡 macro/equityRiskPremium、
 # macro/govBondYield10y 是全市場單一值，不適用「單一公司」批次模式，沒有列進 indicatorJobs），

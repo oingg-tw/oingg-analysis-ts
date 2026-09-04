@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { findFilterCatalogProblems } from '@/domainApi/filter/filterCatalogCheck';
-import { filterCatalog, type FilterCategory } from '@/domainApi/filter/filterCatalog';
+import { findFilterCatalogProblems } from '@/api/bff/filter/filterCatalogCheck';
+import { filterCatalog, type FilterCategory } from '@/api/bff/filter/filterCatalog';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const schemaPath = join(__dirname, '../../../prisma/analysis/schema.prisma');

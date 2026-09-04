@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getVolumeTop20 } from '@/domainApi/market/volumeTop20/service';
+import { getVolumeTop20 } from '@/api/bff/market/volumeTop20/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 // 這支端點刻意不排除 ETF/衍生性商品（跟本服務其他排行不一樣，2026-09-01 應使用者要求維持

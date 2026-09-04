@@ -1,6 +1,6 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { getTableForMetric, resolveField, validateMetricTableRegistry } from '@/domainApi/filter/metricTableRegistry';
+import { getTableForMetric, resolveField, validateMetricTableRegistry } from '@/api/bff/filter/metricTableRegistry';
 
 describe('metricTableRegistry', () => {
   test('真正的 filterCatalog.ts 裡每個 metric 都應該能解析出對應的 table（不拋錯）', () => {
@@ -21,8 +21,10 @@ describe('metricTableRegistry', () => {
     });
   });
 
+  // 2026-09-05 原本用 'ma' 當每日型範例，technicals 分類（含 ma）已經整個刪除
+  // （使用者決定），改用 'per'（valuation_market_ratios，同樣是逐日市場資料，不是季度財報）。
   test('每日型（daily）metric 解析出正確的日期欄位——tradeDate/trade_date', () => {
-    const info = getTableForMetric('ma');
+    const info = getTableForMetric('per');
     assert.ok(info);
     assert.equal(info!.shape, 'daily');
     assert.equal(info!.dateColumn, 'trade_date');

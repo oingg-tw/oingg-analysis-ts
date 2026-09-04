@@ -6,7 +6,7 @@
 
 ## 分類範圍：不是只有 taxonomy 明列的 code
 
-`guru` 這一類收的是「以特定投資人/學者命名、帶有該流派主觀判斷的複合公式」，不是嚴格照 investment_metrics_taxonomy v3.0 的分類走——`Altman_Z_Score` 2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來、`Beneish_M_Score` 2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來都是這個原因：公式本身是財務比率加權組合，跟原分類其他「直接算一個比率」的指標性質不同，但更接近「以學者命名的複合模型」，跟葛拉漢數、NCAV、股東盈餘放在一起比較合理。判斷標準大致是「公式夠複雜（多變量加權組合，不是單一比率）+ 掛名特定研究者/投資人」，之後如果有新的大師公式（無論 taxonomy 有沒有明列），都照這個標準判斷該不該放進來，不是只看 taxonomy 有沒有這個 code——單純的單一比率（例如 Novy-Marx 的 GP/A = 毛利/總資產，本質上是換分子的 ROA）即使有掛名，也不算，該進哪一類還沒決定。
+`guru` 這一類收的是「以特定投資人/學者命名、帶有該流派主觀判斷的複合公式」，不是嚴格照 investment_metrics_taxonomy v3.0 的分類走——`Altman_Z_Score` 2026-08-24 從 [`../resilience/`](../resilience/README.md) 移過來、`Beneish_M_Score` 2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來都是這個原因：公式本身是財務比率加權組合，跟原分類其他「直接算一個比率」的指標性質不同，但更接近「以學者命名的複合模型」，跟葛拉漢數、NCAV、股東盈餘放在一起比較合理。判斷標準大致是「公式夠複雜（多變量加權組合，不是單一比率）+ 掛名特定研究者/投資人」，之後如果有新的大師公式（無論 taxonomy 有沒有明列），都照這個標準判斷該不該放進來，不是只看 taxonomy 有沒有這個 code——單純的單一比率（例如 Novy-Marx 的 GP/A = 毛利/總資產，本質上是換分子的 ROA）即使有掛名，也不算，該進哪一類還沒決定。
 
 **2026-08-30 追加一條篩選條件：公式裡的係數是不是用特定歷史年代/國家資料迴歸校準出來的，如果是，implement 之前要先跟使用者確認，不是做完才補免責聲明。** `Zmijewski_Score`/`Ohlson_O_Score` 都是這種模型（1970~80 年代美國公司資料校準），套用到台股時絕對數值（尤其是機率）已經失去校準基礎，只能當同一家公司的相對趨勢參考——這件事雖然在實作完後有補上「已知限制」免責聲明，但使用者事後回饋這類模型應該在提案階段就先篩掉，不要等做完才講。之後如果還有類似的候選（例如 Fulmer H-Score、Springate、Taffler Z-Score 這種其他破產預警迴歸模型），要先跟使用者確認要不要做，不要直接動工。跟這條規則無關、可以正常做的：純粹是會計恆等式或比率組合的模型（`dupont`、`Nissim_Penman_RNOA`）、沒有校準權重的二元訊號加總（`Piotroski_F_Score`、`Mohanram_G_Score`）、跨公司排名比較（`Greenblatt_Magic_Formula`）——這些都沒有「校準會隨時間/地域失效」的問題。
 
@@ -32,7 +32,7 @@
 | `Piotroski_F_Score` | 皮爾托斯基分數 | 9 項基本面二元會計訊號加總（0~9） | TTM, FY | ✅ 已實作，2026-08-27 — [`piotroskiFScore/`](piotroskiFScore/)，`GET /guru/piotroski-f-score`。9 項全部是跟自己去年同季比較，計算口徑見下方 |
 | `Mohanram_G_Score` | 莫罕拉姆 G 分數 | 8 項基本面成長/研發效率訊號加總（0~8） | TTM, FY | ⬜ 未實作。針對高估值與高成長標的設計的基本面評分，彌補 F-Score 偏重價值股的限制；跟 `Piotroski_F_Score` 看起來像同一類但架構不同，見下方說明——需要跨公司產業中位數，不是跨期比較 |
 | `Potential_Payback_Period` | 潛在回本期模型 | `ln(1 + (Stock Price * ln(1 + g)) / EPS_0) / ln(1 + g)` | Forward_3Y, Forward_5Y | ⬜ 未實作。考量獲利複合成長率下，動態推算收回購股成本所需的真實年數；需要「預期成長率」前瞻假設，跟 `Lynch_PEG_Fair_Value` 卡在同一個問題 |
-| `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ✅ 已實作（原始版），2026-08-27 — [`altmanZScore/`](altmanZScore/)，`GET /guru/altman-z-score`。2026-08-24 從 [`../solvency/`](../solvency/README.md) 移過來（見上方「分類範圍」說明），計算口徑見下方 |
+| `Altman_Z_Score` | 奧特曼 Z 分數 | `1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5` | MRQ, FY | ✅ 已實作（原始版），2026-08-27 — [`altmanZScore/`](altmanZScore/)，`GET /guru/altman-z-score`。2026-08-24 從 [`../resilience/`](../resilience/README.md) 移過來（見上方「分類範圍」說明），計算口徑見下方 |
 | `Beneish_M_Score` | 貝尼許 M 分數 | `-4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI` | FY, TTM | ✅ 已實作，2026-08-27 — [`beneishMScore/`](beneishMScore/)，`GET /guru/beneish-m-score`。2026-08-25 從 [`../cashFlow/`](../cashFlow/README.md) 移過來（見上方「分類範圍」說明），8 個變量除了 TATA 都跟去年同期比較，計算口徑見下方 |
 
 ## 本服務自行歸類的指標（不在 taxonomy 明列的 code 裡）
@@ -64,7 +64,7 @@ taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡
 - 用「總資本支出」代替 taxonomy 定義的「維護性資本支出」（Maintenance CapEx）——財報沒有拆分維護性/成長性資本支出，這是跟 FCF 一樣的簡化，算出來的數值會比嚴格定義的股東盈餘保守（偏低）。
 - 跟 [`../cashFlow/cashFlowPerShare/`](../cashFlow/cashFlowPerShare/) 同一種單季/年化/TTM 三數值結構。
 
-## Altman_Z_Score 計算口徑（2026-08-24 從 solvency 移過來，2026-08-27 實作）
+## Altman_Z_Score 計算口徑（2026-08-24 從 resilience 移過來，2026-08-27 實作）
 
 taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 
@@ -72,7 +72,7 @@ taxonomy 列的是原始版（係數 1.2/1.4/3.3/0.6/0.999），五個變數：
 |---|---|---|
 | X1 | (流動資產 − 流動負債) / 總資產 | 資產負債表，純時點快照 |
 | X2 | 保留盈餘（`retainedEarnings`） / 總資產 | 資產負債表 |
-| X3 | EBIT（TTM） / 總資產 | 直接引用 [`../solvency/interestCoverage/`](../solvency/interestCoverage/) 已經算好的 `ebitTtm`，不重複查詢 |
+| X3 | EBIT（TTM） / 總資產 | 直接引用 [`../resilience/interestCoverage/`](../resilience/interestCoverage/) 已經算好的 `ebitTtm`，不重複查詢 |
 | X4 | **股權市值** / 總負債帳面值 | 見下方「市值資料源」 |
 | X5 | 營收（TTM） / 總資產 | 直接引用 [`../turnover/turnoverRatio/`](../turnover/turnoverRatio/) 已經算好的 `assetTurnoverTtm`（本來就是「營收 TTM/總資產」，公式完全一樣） |
 

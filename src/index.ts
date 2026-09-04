@@ -18,8 +18,8 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
-import { checkFilterCatalogConsistency } from './domainApi/filter/filterCatalogCheck';
-import { validateMetricTableRegistry } from './domainApi/filter/metricTableRegistry';
+import { checkFilterCatalogConsistency } from './api/bff/filter/filterCatalogCheck';
+import { validateMetricTableRegistry } from './api/bff/filter/metricTableRegistry';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 
 const app = express();
@@ -60,7 +60,7 @@ const startServer = async () => {
     // （bffAuth.ts 本身在沒設這個環境變數時會直接放行，那個行為是為了本機開發方便，正式環境
     // 不該依賴同一個寬容度）。
     if (config.isProduction && !config.bffApiKey) {
-      throw new Error('BFF_API_KEY 未設定——正式環境的 domainApi 一定要有共用密鑰才能啟動，見 src/shared/bffAuth.ts。');
+      throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/shared/bffAuth.ts。');
     }
     checkFilterCatalogConsistency(config.isProduction);
     validateMetricTableRegistry(config.isProduction);

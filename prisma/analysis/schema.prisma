@@ -229,7 +229,12 @@ model RoaResult {
 }
 
 // 負債比率計算結果——純資產負債表的時點快照，沒有單季/年化/TTM 的區別（不像 RoeResult/RoaResult）。
-// 欄位對應 src/domains/metrics/solvency/debtRatio/types.ts 的 DebtRatioResult。
+// 欄位對應 src/domainMetrics/resilience/debtRatio/types.ts 的 DebtRatioResult。
+//
+// 2026-09-05：這張表跟底下這一組（DebtRatioResult/LiquidityRatioResult/DeRatioResult/
+// InterestCoverageResult/NetDebtToEbitdaResult）對應的資料夾從 solvency/ 改名成
+// resilience/，但 @@map 的實際表名還是 solvency_*——改表名要跑 migration（破壞性操作，
+// 不在這次範圍內），刻意先留著，folder 名稱跟表名暫時不一致是已知、故意的落差，不是漏改。
 model DebtRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -255,7 +260,7 @@ model DebtRatioResult {
 
 // 流動比率／速動比率計算結果——兩個指標共用同一張表（跟 CashFlowPerShareResult 的 OCF/FCF 一樣的理由：
 // 速動比率一定要先有流動資產/流動負債，拆兩支 API 只會重複查同一張資產負債表）。純時點快照，
-// 沒有單季/年化/TTM 的區別。欄位對應 src/domains/metrics/solvency/liquidityRatio/types.ts 的 LiquidityRatioResult。
+// 沒有單季/年化/TTM 的區別。欄位對應 src/domainMetrics/resilience/liquidityRatio/types.ts 的 LiquidityRatioResult。
 model LiquidityRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -420,7 +425,7 @@ model MarginsResult {
 }
 
 // 負債權益比計算結果——純資產負債表時點快照，沒有單季/年化/TTM 的區別（跟 DebtRatioResult 同一種結構）。
-// 欄位對應 src/domains/metrics/solvency/deRatio/types.ts 的 DeRatioResult。
+// 欄位對應 src/domainMetrics/resilience/deRatio/types.ts 的 DeRatioResult。
 model DeRatioResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -447,7 +452,7 @@ model DeRatioResult {
 }
 
 // 利息保障倍數計算結果——「流量/流量」比率，只有單季/TTM 兩種口徑，沒有年化（跟 MarginsResult 同一種結構）。
-// 欄位對應 src/domains/metrics/solvency/interestCoverage/types.ts 的 InterestCoverageResult。
+// 欄位對應 src/domainMetrics/resilience/interestCoverage/types.ts 的 InterestCoverageResult。
 model InterestCoverageResult {
   symbol              String
   year                Int    @map("year") // 民國年
@@ -478,7 +483,7 @@ model InterestCoverageResult {
 // 淨負債對 EBITDA 比計算結果——第一個同時需要查三張財報表的指標（資產負債表算淨負債、
 // 損益表+現金流量表算 EBITDA）。淨負債是存量對 EBITDA 流量的比率，taxonomy 只支援 TTM/FY，
 // 沒有原始單季版本，只有簡單年化跟 TTM 兩種口徑。
-// 欄位對應 src/domains/metrics/solvency/netDebtToEbitda/types.ts 的 NetDebtToEbitdaResult。
+// 欄位對應 src/domainMetrics/resilience/netDebtToEbitda/types.ts 的 NetDebtToEbitdaResult。
 model NetDebtToEbitdaResult {
   symbol              String
   year                Int    @map("year") // 民國年

@@ -41,10 +41,10 @@
 
 ## ROIC/ROCE 計算口徑
 
-- **EBIT** 算法跟 [`../solvency/interestCoverage/`](../solvency/interestCoverage/)/[`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 完全一致：稅前淨利（`profitBeforeTax`） + 利息費用（`financeCosts`），財報沒有現成 EBIT 欄位，用這個方式反推。
+- **EBIT** 算法跟 [`../resilience/interestCoverage/`](../resilience/interestCoverage/)/[`../resilience/netDebtToEbitda/`](../resilience/netDebtToEbitda/) 完全一致：稅前淨利（`profitBeforeTax`） + 利息費用（`financeCosts`），財報沒有現成 EBIT 欄位，用這個方式反推。
 - **ROCE** 分母（使用資本 Capital Employed） = 總資產 - 流動負債，期末餘額，跟 ROE 用期末權益同一種刻意簡化。
 - **ROIC** 分子是 NOPAT（稅後淨營業利潤） = EBIT x (1 - 有效稅率)，有效稅率 = 所得稅費用 / 稅前淨利——**稅前淨利為零或負數時無法計算**（有效稅率沒有意義），該季 ROIC 會是 `null`。
-- **ROIC** 分母（投入資本 Invested Capital） = 有息負債（短期借款+應付公司債+長期借款，口徑跟 [`../solvency/deRatio/`](../solvency/deRatio/) 一致） + 權益 - 現金及約當現金，扣現金是常見做法，排除非用於營運的超額現金部位。
+- **ROIC** 分母（投入資本 Invested Capital） = 有息負債（短期借款+應付公司債+長期借款，口徑跟 [`../resilience/deRatio/`](../resilience/deRatio/) 一致） + 權益 - 現金及約當現金，扣現金是常見做法，排除非用於營運的超額現金部位。
 - 兩者都跟 ROE/ROA 同一種單季/年化/TTM 三數值結構（單季簡單 x4 年化；TTM 是近四季分子加總 / 本季期末分母）。
 
 ## 配息率／SGR 計算口徑

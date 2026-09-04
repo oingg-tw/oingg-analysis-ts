@@ -19,7 +19,7 @@ pnpm test:types    # 只型別檢查 tests/（不影響 pnpm build 用的主 tsc
 
 ## 慣例
 
-- 檔案路徑對應計算邏輯所在的結構：`tests/domains/metrics/<category>/<metric>.test.ts` 測的是 `src/domainMetrics/<category>/<metric>/service.ts` 的 `calculate*()` 函式（2026-09-04 起單一指標的 HTTP 端點都走 `GET /companies/metrics` 這支 consolidated API，不再各自對應一個 `domainApi/metrics/<category>/<metric>/`，但底層計算邏輯跟測試的對應關係沒變）。
+- 檔案路徑對應計算邏輯所在的結構：`tests/domains/metrics/<category>/<metric>.test.ts` 測的是 `src/domainMetrics/<category>/<metric>/service.ts` 的 `calculate*()` 函式（2026-09-04 起單一指標的 HTTP 端點都走 `GET /companies/metrics` 這支 consolidated API，不再各自對應一個 `api/bff/metrics/<category>/<metric>/`，但底層計算邏輯跟測試的對應關係沒變）。
 - 每個測試檔案結束前用 `after()` 呼叫用到的 Prisma client 的 `$disconnect()`，不然 process 不會自然結束。
 - 斷言的數字如果來自實測，註解註明是哪家公司、哪一季，方便之後對照 README 或重新驗證。
 - **不要拿「目前哪家公司財報進度落後」這種會隨資料庫累積而改變的狀態寫死成斷言**（2026-08-28 踩過一次：測試「公司 2887 資產負債表到 115Q1、損益表卡在 114Q2」這個交集案例時，把 `114`/`2` 寫死進斷言，結果 mops 隔天把 2887 損益表補到 115Q1，8 個測試檔案一起變紅）。正確做法：用 [`src/shared/sourceData/latestQuarter.ts`](../src/shared/sourceData/latestQuarter.ts) 的 `getLatestAvailableQuarter` 對同一組 `sources` 現查現算出期望值，斷言服務回傳的季度等於這個現查的結果，而不是寫死某一天觀察到的數字——見 `tests/domains/metrics/profitability/roe.test.ts`「自動抓最新一季應該取資產負債表/損益表都有資料的交集」那個測試的寫法。

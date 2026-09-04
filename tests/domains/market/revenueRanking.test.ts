@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateRevenueRanking } from '@/domainApi/market/revenueRanking/service';
+import { calculateRevenueRanking } from '@/api/bff/market/revenueRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 

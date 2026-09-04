@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateEtfRanking } from '@/domainApi/market/etfRanking/service';
+import { calculateEtfRanking } from '@/api/bff/market/etfRanking/service';
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
 
 test('calculateEtfRanking: aum desc 應該由大到小排序', async () => {

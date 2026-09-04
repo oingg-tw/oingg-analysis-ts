@@ -37,7 +37,7 @@
 
 ## PSR / P_FCF / EV_EBITDA 市值資料源與計算慣例
 
-2026-08-30 實作。三個都是「市值（存量）/ 某個財務指標（流量）」的結構，跟 [`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 同一種道理——拿市值除以「一季」的營收/FCF/EBITDA 沒有標準意義，所以都只提供 `QuarterlyAnnualized`（本季簡單 x4）跟 `TTM`（近四季實際加總）兩種口徑，沒有純單季版本。三個都不重複查原始財報表，而是直接引用已經算好的服務：`PSR` 引用 `revenuePerShare`、`P_FCF` 引用 `cashFlowPerShare`、`EV_EBITDA` 引用 `netDebtToEbitda`。
+2026-08-30 實作。三個都是「市值（存量）/ 某個財務指標（流量）」的結構，跟 [`../resilience/netDebtToEbitda/`](../resilience/netDebtToEbitda/) 同一種道理——拿市值除以「一季」的營收/FCF/EBITDA 沒有標準意義，所以都只提供 `QuarterlyAnnualized`（本季簡單 x4）跟 `TTM`（近四季實際加總）兩種口徑，沒有純單季版本。三個都不重複查原始財報表，而是直接引用已經算好的服務：`PSR` 引用 `revenuePerShare`、`P_FCF` 引用 `cashFlowPerShare`、`EV_EBITDA` 引用 `netDebtToEbitda`。
 
 市值算法完全比照 [`../guru/README.md`](../guru/README.md) 的 Altman_Z_Score X4：股價 = oingg-twse `daily_price` 收盤價（**財報公告日**或之前最近一個交易日，優先用 `financial_report_announcement.announcementDate` 避免 look-ahead bias，查無公告日才退回財報期末日並在 `warnings` 註明），流通股數 = mops `capital_stock_history`（該基準日當下生效的股本）。**覆蓋率會持續成長**（6 家種子公司 2330/2881/2867/2801/2207/2855 回填了約 5 年歷史，其他公司多半只有近幾個月），不在覆蓋範圍內的公司會是 `null`，`fieldStatuses` 標成 `not_applicable`；有覆蓋但這次查詢缺其他東西（例如財報資料本身缺漏）則標成 `no_data`，判斷邏輯見 `hasStockPriceCoverage`。
 
@@ -52,7 +52,7 @@
 | `PBR` | 股價淨值比 | `Stock Price / Book Value Per Share` | MRQ, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.pbRatio` |
 | `PSR` | 股價營收比 | `Market Cap / Annual Revenue` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`psr/`](psr/)，`GET /valuation/psr`。營收引用 [`../profitability/revenuePerShare/`](../profitability/revenuePerShare/) 已算好的數字，市值見下方「PSR / P_FCF / EV_EBITDA 市值資料源」 |
 | `P_FCF` | 股價自由現金流比 | `Market Cap / Free Cash Flow` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`pFcf/`](pFcf/)，`GET /valuation/p-fcf`。FCF 引用 [`../cashFlow/cashFlowPerShare/`](../cashFlow/cashFlowPerShare/) 已算好的營業現金流+資本支出 |
-| `EV_EBITDA` | 企業價值倍數 | `Enterprise Value / EBITDA` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`evEbitda/`](evEbitda/)，`GET /valuation/ev-ebitda`。淨負債、EBITDA 引用 [`../solvency/netDebtToEbitda/`](../solvency/netDebtToEbitda/) 已算好的數字，EV = 市值 + 淨負債 |
+| `EV_EBITDA` | 企業價值倍數 | `Enterprise Value / EBITDA` | QuarterlyAnnualized, TTM | ✅ 已實作 — [`evEbitda/`](evEbitda/)，`GET /valuation/ev-ebitda`。淨負債、EBITDA 引用 [`../resilience/netDebtToEbitda/`](../resilience/netDebtToEbitda/) 已算好的數字，EV = 市值 + 淨負債 |
 | `Dividend_Yield` | 股息殖利率 | `Annual Dividend Per Share / Stock Price` | TTM, Forward, FY | ✅ 已實作 — [`marketRatios/`](marketRatios/)，`GET /valuation/market-ratios`。直接來自 `daily_valuation.dividendYield` |
 
 ## 2026-09-02 存股篩選需求盤點：2 個排入未來規劃的項目

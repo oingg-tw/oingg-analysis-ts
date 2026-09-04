@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getStockQuote, getStockPrices, getExDividendNotices } from '@/domainApi/stocks/service';
+import { getStockQuote, getStockPrices, getExDividendNotices } from '@/api/bff/stocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 

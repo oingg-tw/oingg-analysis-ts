@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateNetDebtToEbitda } from '@/domainMetrics/solvency/netDebtToEbitda/service';
+import { calculateNetDebtToEbitda } from '@/domainMetrics/resilience/netDebtToEbitda/service';
 import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -67,7 +67,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
 
   // 淨負債、EBITDA（單季、TTM）直接引用 netDebtToEbitda 已經算好的數字，不重複實作三張表查詢/
   // TTM 加總邏輯——跟 psr/、pFcf/ 同一種模式。副作用是 netDebtToEbitda 也會照常把自己的結果
-  // upsert 進 solvency_net_debt_to_ebitda，是預期行為。
+  // upsert 進 resilience_net_debt_to_ebitda，是預期行為。
   const netDebtResult = await calculateNetDebtToEbitda(composedQuery);
   const netDebt = netDebtResult.netDebt.value !== null ? BigInt(netDebtResult.netDebt.value) : null;
   const ebitdaQuarterly = netDebtResult.ebitdaQuarterly.value !== null ? BigInt(netDebtResult.ebitdaQuarterly.value) : null;

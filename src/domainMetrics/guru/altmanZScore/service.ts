@@ -3,14 +3,14 @@ import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/mar
 import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { calculateInterestCoverage } from '@/domainMetrics/solvency/interestCoverage/service';
+import { calculateInterestCoverage } from '@/domainMetrics/resilience/interestCoverage/service';
 import { calculateTurnoverRatio } from '@/domainMetrics/turnover/turnoverRatio/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';
 import { logger } from '@/shared/logger';
 
-// 2026-08-24 從 solvency 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本
+// 2026-08-24 從 resilience 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本
 // 校準的，X5（營收/總資產）對產業結構特別敏感，套用到非製造業時分數僅供參考。這個警告固定出現
 // 在每一次回應裡，不是條件式的（跟其他 warnings 只在真的缺資料/算不出來時才出現不一樣）。
 const INDUSTRY_APPLICABILITY_WARNING =
@@ -80,7 +80,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
 
   // X3（EBIT TTM）、X5（營收 TTM/總資產）直接引用已經做好的 interestCoverage/turnoverRatio 服務，
   // 不重複實作 TTM 查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這兩支服務
-  // 也會各自照常把自己的結果 upsert 進 solvency_interest_coverage/turnover_ratio，是預期行為。
+  // 也會各自照常把自己的結果 upsert 進 resilience_interest_coverage/turnover_ratio，是預期行為。
   const [balanceSheet, interestCoverageResult, turnoverRatioResult] = await Promise.all([
     getQuarterlyBalanceSheet({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId }),
     calculateInterestCoverage(composedQuery),

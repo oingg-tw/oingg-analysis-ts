@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { listAttentionStocks } from '@/domainApi/market/attentionStocks/service';
+import { listAttentionStocks } from '@/api/bff/market/attentionStocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 
