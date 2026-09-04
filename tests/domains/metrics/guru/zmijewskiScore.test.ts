@@ -5,7 +5,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainApi/metrics/guru/README.md「Zmijewski Score 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainBatch/metrics/guru/README.md「Zmijewski Score 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // X = -4.3 - 4.5*(NI_TTM/TA) + 5.7*(TL/TA) - 0.004*(CA/CL)。
 test('zmijewskiScore: 2330 115Q2 合併報表，指定季度', async () => {
   const result = await calculateZmijewskiScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });

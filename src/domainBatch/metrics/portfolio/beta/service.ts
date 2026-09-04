@@ -251,7 +251,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   }
 
   // 1Y 用日資料、2Y 用週資料（對齊 Bloomberg）、5Y 用月資料（對齊 Yahoo Finance）——
-  // 見 src/domainApi/metrics/portfolio/README.md「Beta 計算口徑」的說明。
+  // 見 src/domainBatch/metrics/portfolio/README.md「Beta 計算口徑」的說明。
   const beta1Y = computeWindow(overlap, effectiveAsOfDate, 1, 'daily');
   const beta2Y = computeWindow(overlap, effectiveAsOfDate, 2, 'weekly');
   const beta5Y = computeWindow(overlap, effectiveAsOfDate, 5, 'monthly');

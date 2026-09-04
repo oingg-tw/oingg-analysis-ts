@@ -1,13 +1,16 @@
 // 全部 44 支「單一公司、有 calculate* 函式」指標的登錄檔——2026-09-01 從
-// scripts/batchComputeIndicators.ts 抽出來，讓批次預算腳本跟 src/domainApi/dataCompleteness/
-// 共用同一份清單，不要兩邊各維護一份容易漂移。`macro/equityRiskPremium`（全市場單一值，沒有
-// symbol）跟 `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，
-// 不列進來，見 scripts/batchComputeIndicators.ts 開頭的說明。
+// scripts/batchComputeIndicators.ts 抽出來，讓批次預算腳本跟其他呼叫端共用同一份清單，不要
+// 各自維護一份容易漂移。`macro/equityRiskPremium`（全市場單一值，沒有 symbol）跟
+// `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，不列進來，見
+// scripts/batchComputeIndicators.ts 開頭的說明。
 //
 // 2026-09-04：計算邏輯本體（`./metrics/**/service.ts`，含 upsert 進 analysis 結果表的動作）
-// 從 `domainApi/metrics/**` 搬進這裡——這份邏輯只有 domainBatch 會呼叫（domainApi 之後會走
-// 「先讀結果表、查不到才委派給這裡補算」的模式，不會再直接呼叫 calculate*），不是兩個入口
-// 共用的中立層，所以不放 shared/，直接歸 domainBatch 所有。
+// 從 `domainApi/metrics/**` 搬進這裡——這份邏輯只有 domainBatch 會呼叫，不是兩個入口共用的
+// 中立層，所以不放 shared/，直接歸 domainBatch 所有。domainApi 這邊改走「先讀結果表、查不到
+// 才委派給這裡補算」的模式（見 `GET /companies/metrics`，
+// `src/domainApi/companies/metricsService.ts`），不會再直接呼叫 calculate*——原本共用這份
+// 清單的 `domainApi/dataCompleteness/`（單一公司完整度診斷工具）跟 44 支單一指標舊端點
+// 已經一併刪除。
 
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
@@ -61,7 +64,7 @@ import { calculateObv } from './metrics/technicals/obv/service';
 // 每個 result 都保證有的欄位——用來判斷這次呼叫「有沒有算出東西」，不用逐一解析每支指標
 // 各自不同的 fieldStatuses/null 欄位規則（見 src/shared/metricStatus.ts 開頭說明：這個結構化
 // 規範目前只套用在約一半的指標，另一半還是「null + warnings 純文字」，兩者唯一共同的欄位
-// 就是 warnings，見 src/domainApi/dataCompleteness/service.ts 怎麼用這個欄位判斷完整度）。
+// 就是 warnings）。
 export interface IndicatorResult {
   warnings: string[];
 }

@@ -939,7 +939,7 @@ export const filterCatalog: FilterCategory[] = [
         name: 'Ohlson O-Score',
         path: '/guru/ohlson-o-score',
         // 九個子變數（SIZE/TLTA/WCTA/CLCA/OENEG/NITA/FUTL/INTWO/CHIN）的公式見
-        // src/domainApi/metrics/guru/README.md，公式細節屬於文件該講的事，不放進 name。
+        // src/domainBatch/metrics/guru/README.md，公式細節屬於文件該講的事，不放進 name。
         description: '財務危機統計預警模型，係數同樣是美國歷史資料校準，解讀限制跟 Zmijewski Score 相同',
         source: 'MOPS 季報財務比率',
         unit: 'ratio',

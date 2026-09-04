@@ -13,8 +13,7 @@
 // 全市場批次預算——直接呼叫現有的 calculate* 函式（不透過 HTTP），逐一幫「目前實際查得到的
 // 每一家公司」把指標算過一輪、upsert 進對應的 analysis 表。這是快取的預先填充，不是新的計算
 // 邏輯——每支指標的公式/優雅降級規則完全沿用各自 service.ts 既有的實作，job 清單本身在
-// src/domainBatch/indicatorRegistry.ts（跟 src/domainApi/dataCompleteness/ 共用同一份，不要
-// 兩邊各維護一份容易漂移）。
+// src/domainBatch/indicatorRegistry.ts。
 //
 // 兩種公司清單來源，動態查詢、不寫死清單或數量（見 2026-08-31 的盤點）：
 // - mops 季度財報（quarterly_income_statement）目前只 ingest 過 27 家公司，`profitability`/

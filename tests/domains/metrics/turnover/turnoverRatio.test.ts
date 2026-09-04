@@ -4,7 +4,7 @@ import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverR
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainApi/metrics/turnover/README.md「DIO/DSO/DPO/CCC 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainBatch/metrics/turnover/README.md「DIO/DSO/DPO/CCC 計算口徑」——2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：oingg-mops-ts 把 quarterly_income_statement 的 Q4（原本存的是全年累計數，
 // 不是單季數）修正成真的單季數，TTM 系列數字（跨到 114Q4 的窗口）全部改變，本季（單季）數字不受影響。
 test('turnoverRatio: 2330 115Q2 合併報表——五個周轉率、DIO/DSO/DPO/CCC', async () => {

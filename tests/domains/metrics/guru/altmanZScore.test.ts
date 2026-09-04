@@ -9,7 +9,7 @@ interface FinancialReportAnnouncementRow {
   announcement_date: Date;
 }
 
-// 對照 src/domainApi/metrics/guru/README.md「Altman_Z_Score 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
+// 對照 src/domainBatch/metrics/guru/README.md「Altman_Z_Score 卡在哪裡」——2330（台積電）115Q2 合併報表實測值。
 // X4（市值/總負債）用 daily_stock_price 的收盤價，價格每天在變，X4/zScore 不釘死確切數字，
 // 只驗證合理性；X1/X2/X3/X5（純財報衍生）不受股價影響，可以釘死。
 // 2026-08-28 更新：X4 股價基準日改成優先用 financial_report_announcement 的公告日，查無公告日

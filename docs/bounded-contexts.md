@@ -20,7 +20,7 @@ analysis-ts 是 oingg 生態系裡的**數據中台**：不擁有任何原始資
 
 | Context | 位置 | 擁有的資料模型 | 對外介面 | 明確不做的事 |
 |---|---|---|---|---|
-| **metrics** | `src/domainApi/metrics/` | `prisma/analysis/schema.prisma` 裡「算完的指標結果」那組表（RoeResult、PsrResult…） | `GET /<分類>/<指標>` | 不處理特別股/REITs/ETF 這類非「公司季度財報」骨架的證券；不知道 filter/sync 這兩個 context 內部怎麼運作 |
+| **metrics** | 計算邏輯在 `src/domainBatch/metrics/`；`src/domainApi/metrics/` 現在只剩 3 支不是「單一公司查詢」語意的例外（`valuation/ranking`、`macro/equityRiskPremium`、`macro/govBondYield10y`） | `prisma/analysis/schema.prisma` 裡「算完的指標結果」那組表（RoeResult、PsrResult…） | `GET /companies/metrics`（2026-09-04 起單一公司多指標 consolidated 查詢，取代原本 44 支各自的 `GET /<分類>/<指標>`）+ 上述 3 支例外各自的 `GET /<分類>/<指標>` | 不處理特別股/REITs/ETF 這類非「公司季度財報」骨架的證券；不知道 filter/sync 這兩個 context 內部怎麼運作 |
 | **filter** | `src/domainApi/filter/` | 無自己的資料表——`filterCatalog.ts` 是靜態登錄檔，`filterCatalogCheck.ts` 對照 `prisma/analysis/schema.prisma` 做一致性檢查 | `GET /filters` | 不計算任何指標，純粹是 metrics context 產出的 metadata 目錄 |
 | **preferredStock** | `src/domainApi/preferredStock/` | 未實作，規劃中 | 未實作 | 不共用 metrics context「公司+季度財報」的資料模型假設——特別股是獨立證券，不是公司的一個欄位 |
 | **system** | `src/domainApi/system/` | 無 | `GET /`（root，健康檢查用途） | 純基礎設施，不含任何業務邏輯 |
