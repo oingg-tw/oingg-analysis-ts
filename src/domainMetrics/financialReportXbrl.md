@@ -38,11 +38,12 @@ sunset、以這個 domain 取代。
   39 個 XBRL model + `quarterly_balance_sheet`/`quarterly_income_statement` 共 40 張表），
   2026-09-05 用一支腳本解析出來（腳本本身沒有留存，是暫時性工具，不是 analysis-ts 的一部分）。
 - **這份 CSV 反映的是 Prisma model 欄位，不是 export view 實際 SELECT 出來的欄位**——
-  mops-ts 說 view 是 model 欄位的子集/整理版（分散在三個 migration SQL 檔案裡：
-  `20260904012501_add_export_views_financial_report_xbrl`、
+  mops-ts 確認 view 目前是「model 欄位的整理/子集」，不保證每個 model 欄位都 1:1 曝露到
+  view（部分內部用的 raw context 欄位、或還沒判斷有沒有下游需求的欄位可能故意沒放進去），
+  分散在三個 migration SQL 檔案裡：`20260904012501_add_export_views_financial_report_xbrl`、
   `20260904065814_add_export_views_insurance_securities_ratio_restriction`、
-  `20260904134727_add_export_views_general_industry_notes`）。這次沒有逐欄位跟三份
-  migration SQL 交叉核對，之後真的要接的時候，要先確認這裡列出的欄位在對應的 view 裡
-  真的查得到，不能直接假設 model 有的欄位 view 一定有曝露。
+  `20260904134727_add_export_views_general_industry_notes`。**已跟 mops-ts 確認過的
+  流程**：之後真的要接的時候不用自己去比對兩份 SQL，直接告訴 mops-ts 實際會用到哪些欄位，
+  他們照著補 view 上的缺口即可。
 - 40 張表名清單、相容性（PK 結構跟三大表一樣）、不相容之處（欄位命名對齊 XBRL 代碼、
   40 張表之間沒有互相勾稽、商譽抽不到）見 `reference_mops_xbrl_datasets` 記憶的完整說明。
