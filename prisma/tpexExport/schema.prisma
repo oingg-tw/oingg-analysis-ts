@@ -212,10 +212,10 @@ view MarginBalance {
 }
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 2026-09-04 db pull 時順便內省到的既有 view（不是這次請求的範圍，還沒接進任何消費程式碼）
-/// ——注意 TPEx 這邊 altered_trading（全額交割）跟 periodic_trading（分盤集合競價）是兩個
-/// 分開的欄位，證實這兩者是不同概念；TWSE 的 export.changed_trading_method 目前只看得到
-/// periodic_call_auction_trading，正在跟 twse-ts 確認全額交割股在他們那邊要看哪個欄位。
+/// 2026-09-04 接進 securities/excludeFullDelivery 了——altered_trading 直接代表全額交割，
+/// 跟 periodic_trading（分盤集合競價）是兩個分開的欄位，不會混淆。TWSE 那邊沒有對應的
+/// 布林欄位，改用「symbol 有沒有出現在最新一個 trade_date」判斷，見
+/// src/shared/sourceData/companyProfile.ts 的 getFullDeliverySymbolSets。
 view ChangedTradingMethod {
   symbol                 String?
   tradeDate              DateTime? @map("trade_date") @db.Date

@@ -25,8 +25,10 @@ const router = Router();
  *       資料），`market=TPEx` + `preferredStock=only` 這個組合一定回空清單，`warnings`
  *       會說明原因，不是查詢失敗。
  *
- *       `excludeFullDelivery` 傳了不會 400、也不會靜默忽略——請求會照樣執行，`warnings`
- *       會說明目前還沒有資料源支援（等 mops-ts/tpex-ts）。
+ *       `excludeFullDelivery`：TWSE 用 `export.changed_trading_method`「symbol 有沒有
+ *       出現在最新一個 trade_date」判斷，TPEx 用同一張表的 `altered_trading` 布林欄位
+ *       （兩邊語意不同，已分別跟 twse-ts/tpex-ts 確認過）。全額交割狀態會隨時間變動，一律
+ *       用「當下最新」判斷，不是查詢當時固定的名單。
  *     tags:
  *       - System
  *     parameters:

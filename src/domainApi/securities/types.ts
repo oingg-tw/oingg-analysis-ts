@@ -9,9 +9,9 @@ export interface SecuritySymbolsQuery {
   // 的 export.isin_securities，目前只有 TWSE（見 companyProfile.ts 的說明），
   // market=TPEx + preferredStock=only 這個組合現在一定回空陣列。
   preferredStock?: 'only' | 'exclude';
-  // 全額交割排除目前技術上做不到（等 mops-ts/tpex-ts 的資料集），查詢介面先接受這個參數，
-  // 傳了不會 400、也不會靜默忽略——回應的 warnings 會說明目前無效，之後資料到位直接補
-  // 篩選邏輯，呼叫端不用改介面。
+  // 2026-09-04 接上——TWSE 用 export.changed_trading_method 的「symbol 有沒有出現在最新
+  // trade_date」判斷，TPEx 用同一張表的 altered_trading 布林欄位，見
+  // src/shared/sourceData/companyProfile.ts 的 getFullDeliverySymbolSets 說明。
   excludeFullDelivery: boolean;
 }
 

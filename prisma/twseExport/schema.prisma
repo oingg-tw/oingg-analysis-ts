@@ -313,10 +313,10 @@ view IsinSecurities {
 }
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 2026-09-03 twse-ts 順便開的額外 view（不是我們請求的範圍），先只登記形狀，不接進任何消費
-/// 程式碼——全額交割股排除是已知待辦，之前對話紀錄假設的欄位名 altered_trading 是錯的，真正
-/// 欄位是 periodicCallAuctionTrading（分盤集合競價，是「改為人工管理」的其中一種措施，
-/// 不是全額交割股本身的旗標），要接的時候先跟 twse-ts 確認這欄位的實際語意再用。
+/// 2026-09-04 接進 securities/excludeFullDelivery 了——判斷依據是「symbol 有沒有出現在
+/// 最新一個 trade_date」，不是 periodicCallAuctionTrading 這個欄位值（那是分盤集合競價，
+/// 「改為人工管理」的其中一種措施，不是全額交割股本身的旗標），見
+/// src/shared/sourceData/companyProfile.ts 的 getFullDeliverySymbolSets。
 view ChangedTradingMethod {
   symbol                       String?
   tradeDate                    DateTime? @map("trade_date") @db.Date

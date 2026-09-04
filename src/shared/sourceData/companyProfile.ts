@@ -46,6 +46,9 @@ export interface SecuritySymbolsFilter {
   includeEmerging?: boolean; // 預設 true——興櫃算真正公司，見 getAllSecurityRows 的說明
   excludeKy?: boolean; // 預設 false——KY 股是合法上市公司，不是衍生商品，預設不排除
   preferredStock?: 'only' | 'exclude'; // 不給就兩種都要（股票+特別股混在一起）
+  // 2026-09-04 資料到位後接上——TWSE/TPEx 的「全額交割股」判斷方式不一樣（見
+  // getFullDeliverySymbolSets 的說明），這裡統一成單一參數，呼叫端不用管兩邊實作細節。
+  excludeFullDelivery?: boolean;
 }
 
 interface RawSecurityRow {
@@ -54,6 +57,7 @@ interface RawSecurityRow {
   shortName: string | null;
   isEmerging: boolean;
   isPreferredStock: boolean;
+  isFullDelivery: boolean;
 }
 
 // 給 GET /securities/symbols 用（2026-09-02 應使用者要求，原本是 GET /companies/symbols，
@@ -81,12 +85,35 @@ interface RawSecurityRow {
 // 無條件查 isin_securities 再篩掉，等於每次排行請求都多打一次 twse-ts 那張手動同步、沒掛
 // Cloud Scheduler 的表（twse-ts 原話：記憶體考量才手動同步），白白增加負擔卻用不到結果。
 // 同理 market 篩單一市場時，不用查另一邊的 company_profile。
+// 全額交割股——TWSE/TPEx 兩邊的判斷方式不一樣，2026-09-04 分別跟 twse-ts/tpex-ts 確認過：
+// - TWSE：export.changed_trading_method 裡「這檔股票有沒有出現在最新一個 trade_date」才是
+//   判斷依據，不是看 periodic_call_auction_trading 這個欄位值（那是「分盤集合競價」，另一種
+//   措施，這張表本來就同時記錄好幾種變更交易方法，不是只有全額交割）。
+// - TPEx：changed_trading_method 有獨立的 altered_trading 布林欄位，直接代表全額交割，跟
+//   periodic_trading（分盤集合競價）是兩個分開的欄位，不會混淆。
+// 兩邊都用「當下最新 trade_date」判斷，因為全額交割狀態會隨時間變動（公司恢復正常交易就會
+// 移出這張表/欄位變 false），不是一次判斷永久有效。
+const getFullDeliverySymbolSets = async (): Promise<{ twse: Set<string>; tpex: Set<string> }> => {
+  const [twseRows, tpexRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`
+      SELECT DISTINCT symbol FROM "export"."changed_trading_method"
+      WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."changed_trading_method")
+    `,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`
+      SELECT DISTINCT symbol FROM "export"."changed_trading_method"
+      WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."changed_trading_method") AND altered_trading = true
+    `,
+  ]);
+  return { twse: new Set(twseRows.map((r) => r.symbol)), tpex: new Set(tpexRows.map((r) => r.symbol)) };
+};
+
 const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSecurityRow[]> => {
   const needsTwse = filter.market !== 'TPEx';
   const needsTpex = filter.market !== 'TWSE';
   const needsPreferred = filter.preferredStock !== 'exclude' && filter.market !== 'TPEx'; // isin_securities 目前只有 TWSE。
+  const needsFullDelivery = filter.excludeFullDelivery === true;
 
-  const [twseRows, tpexRows, twsePreferredRows] = await Promise.all([
+  const [twseRows, tpexRows, twsePreferredRows, fullDeliverySets] = await Promise.all([
     needsTwse
       ? twseExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
           SELECT symbol, short_name FROM "export"."company_profile" WHERE source = 'COMPANY_PROFILE'
@@ -102,26 +129,26 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
           SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
         `
       : Promise.resolve([]),
+    needsFullDelivery ? getFullDeliverySymbolSets() : Promise.resolve({ twse: new Set<string>(), tpex: new Set<string>() }),
   ]);
   return [
-    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.short_name, isEmerging: false, isPreferredStock: false })),
+    ...twseRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.short_name, isEmerging: false, isPreferredStock: false, isFullDelivery: fullDeliverySets.twse.has(row.symbol) })),
     ...tpexRows.map((row) => ({
       symbol: row.symbol,
       market: 'TPEx' as const,
       shortName: row.short_name,
       isEmerging: row.source === 'COMPANY_PROFILE_EMERGING',
       isPreferredStock: false,
+      isFullDelivery: fullDeliverySets.tpex.has(row.symbol),
     })),
     // isin_securities 沒有 shortName/KY 判斷用得到的欄位，用 name 頂替——特別股的名稱是跟著
     // 母公司走的（例如「台泥乙特」），如果母公司是 KY 股，名稱理論上也會帶 -KY，沒有實測過
-    // 反例，先用同一套判斷邏輯，之後發現不準再調整。
-    ...twsePreferredRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.name, isEmerging: false, isPreferredStock: true })),
+    // 反例，先用同一套判斷邏輯，之後發現不準再調整。全額交割同理，特別股不在
+    // changed_trading_method 裡出現過，固定當作不是全額交割，沒有實測過反例。
+    ...twsePreferredRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.name, isEmerging: false, isPreferredStock: true, isFullDelivery: false })),
   ];
 };
 
-// 全額交割排除目前技術上做不到（等 mops-ts/tpex-ts 的資料集，2026-09-02 還在等回覆），故意
-// 不放進 SecuritySymbolsFilter 的型別裡（型別上不存在的選項，呼叫端不會誤以為能用），等資料
-// 到位再擴充這個型別跟下面的篩選邏輯，不需要改動呼叫端的介面形狀。
 export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise<string[]> => {
   const rows = await getAllSecurityRows(filter);
   const filtered = rows.filter((row) => {
@@ -130,6 +157,7 @@ export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise
     if (filter.excludeKy && row.shortName?.includes('-KY')) return false;
     if (filter.preferredStock === 'only' && !row.isPreferredStock) return false;
     if (filter.preferredStock === 'exclude' && row.isPreferredStock) return false;
+    if (filter.excludeFullDelivery && row.isFullDelivery) return false;
     return true;
   });
   return [...new Set(filtered.map((row) => row.symbol))].sort();
