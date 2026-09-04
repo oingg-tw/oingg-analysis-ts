@@ -1,40 +1,30 @@
+import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { config } from '../config';
 
 // 產業代碼對照表——之後做 Mohanram_G_Score/Greenblatt_Magic_Formula 這類需要「跟同產業其他公司比較」
-// 的指標時會用到，目前只負責在 dev 環境啟動時抓下來放記憶體，還沒有任何指標真的在用。
+// 的指標時會用到，目前只負責在伺服器啟動時抓下來放記憶體，還沒有任何指標真的在用。
 //
-// 實際回應格式（2026-08-30 實測確認，不是原本假設的陣列）：
-// { ok: true, count: 40, codes: { "24": "半導體業", "17": "金融保險業", ... } }
-// key 是兩碼產業代碼字串，value 是中文產業名稱。
+// 2026-09-04 改用 twse-ts 的 export.industry_code view（兩碼產業代碼 -> 中文產業名稱，
+// 40 筆，已實測確認 dev/prod 都有資料）取代原本 localhost:8081 + TASK_SECRET 的 dev-only
+// HTTP 機制——原本那個機制不穩定（dev server 常常抓失敗），而且正式環境本來就打不到
+// localhost，現在改成跟其他資料源一樣走 twseExportPrisma，dev/prod 都能跑，不用再分流。
 export type IndustryCodeMap = Record<string, string>;
 
-interface IndustryCodesResponse {
-  ok: boolean;
-  count: number;
-  codes: IndustryCodeMap;
+interface RawIndustryCodeRow {
+  code: string;
+  name: string;
 }
 
-const INDUSTRY_CODES_URL = 'http://localhost:8081/api/reference/industry-codes';
 const MAX_ATTEMPTS = 2; // 抓失敗最多重試一次（總共嘗試 2 次），不是無限重試。
 
 let industryCodes: IndustryCodeMap | null = null;
 
-// 對方本機開發環境的驗證只有一層：X-Task-Secret 要跟對方 .env 裡的 TASK_SECRET 一致（對方用
-// crypto.timingSafeEqual 比對，那是伺服器端的事，我們身為呼叫端只需要把值送對）。這裡讀的是
-// 「我們自己」.env 裡的 TASK_SECRET——這個值本身是雙方約定好的共用密鑰，要跟對方環境變數裡的
-// TASK_SECRET 完全一樣，不是我們自己隨便生一個。沒有設定的話直接跳過整次抓取（送一個錯的值
-// 只會拿到 401，沒有意義），並提醒使用者去 .env 補上這個值——正式環境（Cloud Run）那層 GCP IAM
-// 驗證不在這裡處理，因為 loadIndustryCodes 本來就只在 dev 環境執行，不會打正式環境的網址。
 const fetchIndustryCodesOnce = async (): Promise<IndustryCodeMap> => {
-  const taskSecret = process.env.TASK_SECRET;
-  if (!taskSecret) {
-    throw new Error('環境變數 TASK_SECRET 未設定——請在 .env 加上跟對方服務約定好的共用密鑰，否則一定會拿到 401。');
-  }
-  const response = await fetch(INDUSTRY_CODES_URL, { headers: { 'X-Task-Secret': taskSecret } });
-  if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-  const body: IndustryCodesResponse = await response.json();
-  return body.codes;
+  const rows = await twseExportPrisma.$queryRaw<RawIndustryCodeRow[]>`
+    SELECT code, name FROM "export"."industry_code"
+  `;
+  if (rows.length === 0) throw new Error('export.industry_code 查回來是空的。');
+  return Object.fromEntries(rows.map((row) => [row.code, row.name]));
 };
 
 // 抓成功後存進 oingg-analysis DB 的 reference_industry_code，供之後「抓不到的時候頂著用」。
@@ -56,29 +46,26 @@ const persistIndustryCodes = async (codes: IndustryCodeMap): Promise<void> => {
   }
 };
 
-// 從 reference_industry_code 讀上次成功抓到、存下來的對照表，當作 localhost:8081 這次連不上/
-// 驗證失敗時的備援——不保證是最新的（產業分類本來就很少變動，舊一點的對照表通常還是堪用），
-// 有總比完全沒有好。
+// 從 reference_industry_code 讀上次成功抓到、存下來的對照表，當作 twse-ts export DB 這次連不上時
+// 的備援——不保證是最新的（產業分類本來就很少變動，舊一點的對照表通常還是堪用），有總比完全沒有好。
 const loadIndustryCodesFromDb = async (): Promise<IndustryCodeMap | null> => {
   const rows = await analysisPrisma.industryCode.findMany();
   if (rows.length === 0) return null;
   return Object.fromEntries(rows.map((row) => [row.code, row.name]));
 };
 
-// dev 環境啟動時嘗試抓一次產業代碼對照表——這是輔助性質的參考資料，不是啟動必要條件，
-// 跟 connectDb/connectAnalysisDb 那種「連不上就直接讓伺服器啟動失敗」不一樣：這裡失敗最多
-// 重試一次就放棄，不拋例外、不擋伺服器啟動、也不會無限重試。只在 dev 環境嘗試，因為
-// localhost:8081 是本機開發服務，正式環境不會有（也不應該讓正式環境去打一個本機網址）。
+// 伺服器啟動時嘗試抓一次產業代碼對照表——這是輔助性質的參考資料，不是啟動必要條件，跟
+// connectDb/connectAnalysisDb 那種「連不上就直接讓伺服器啟動失敗」不一樣：這裡失敗最多重試
+// 一次就放棄，不拋例外、不擋伺服器啟動、也不會無限重試。改用 twseExportPrisma 之後 dev/prod
+// 都會跑，不用再限制只在 dev 環境嘗試。
 //
 // 抓到就存進 DB（見 persistIndustryCodes）；重試後還是抓不到，改讀 DB 裡上次存的那份頂著用
 // （見 loadIndustryCodesFromDb）——兩份資料都沒有才真的放棄。
 export const loadIndustryCodes = async (): Promise<void> => {
-  if (config.isProduction) return;
-
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       industryCodes = await fetchIndustryCodesOnce();
-      console.log(`[industry-codes]: 已從 ${INDUSTRY_CODES_URL} 抓到產業代碼對照表（共 ${Object.keys(industryCodes).length} 筆，第 ${attempt} 次嘗試成功）。`);
+      console.log(`[industry-codes]: 已從 export.industry_code 抓到產業代碼對照表（共 ${Object.keys(industryCodes).length} 筆，第 ${attempt} 次嘗試成功）。`);
       void persistIndustryCodes(industryCodes);
       return;
     } catch (error) {

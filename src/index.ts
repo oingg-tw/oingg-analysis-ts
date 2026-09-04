@@ -55,8 +55,8 @@ const startServer = async () => {
     await connectTpexExportDb();
     await connectSitcaExportDb();
     await connectTwseExportDb();
-    // dev 環境背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
-    // localhost:8081 沒開就拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
+    // 背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
+    // export DB 連線問題拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
