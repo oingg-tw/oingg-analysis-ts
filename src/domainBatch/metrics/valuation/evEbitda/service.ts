@@ -6,6 +6,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { EvEbitdaQuery, EvEbitdaResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 企業價值（元）是「市值 + 淨負債 x1000」算出來的真實新台幣金額，但 EBITDA 欄位單位是千元——
 // 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍，這是 BVPS/Altman X4/PSR/P_FCF 都踩過的同一個坑。
@@ -162,7 +163,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
       },
     });
   } catch (error) {
-    console.error('[ev-ebitda]: 寫入 valuation_ev_ebitda 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[ev-ebitda]: 寫入 valuation_ev_ebitda 失敗，不影響本次回傳結果。');
   }
 
   return {

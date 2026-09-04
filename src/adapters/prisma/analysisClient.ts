@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { PrismaClient } from '#generated/analysis-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/shared/config';
+import { logger } from '@/shared/logger';
 
 // oingg-analysis DB：本服務自己擁有 schema/migration，跟唯讀鏡像的 mops DB（見 ./index.ts）
 // 是完全獨立的連線，不要混用。
@@ -18,9 +19,9 @@ export const analysisPrisma = new PrismaClient({
 export const connectAnalysisDb = async () => {
   try {
     await analysisPrisma.$connect();
-    console.log('[analysis-db]: Connected to database.');
+    logger.info('[analysis-db]: Connected to database.');
   } catch (error) {
-    console.error('[analysis-db]: Could not connect to the database.', error);
+    logger.error({ err: error }, '[analysis-db]: Could not connect to the database.');
     throw error;
   }
 };

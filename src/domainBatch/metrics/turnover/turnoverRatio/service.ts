@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { TurnoverRatioQuery, TurnoverRatioResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 周轉率用期末餘額（存貨、應收帳款、應付帳款、總資產），不是期初期末平均——跟 ROE 用期末權益一樣的刻意簡化。
 const toTurnover = (numerator: bigint, denominator: bigint): number | null => {
@@ -338,7 +339,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
       },
     });
   } catch (error) {
-    console.error('[turnover-ratio]: 寫入 turnover_ratio 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[turnover-ratio]: 寫入 turnover_ratio 失敗，不影響本次回傳結果。');
   }
 
   return {

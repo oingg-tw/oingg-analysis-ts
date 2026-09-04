@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { filterCatalog, type FilterCategory } from './filterCatalog';
 import { parseAnalysisSchemaModels } from './schemaIntrospection';
+import { logger } from '@/shared/logger';
 
 // 用 process.cwd() 而不是 import.meta.url + __dirname——後者在 tsx（ESM）底下能動，但正式環境
 // build 出來的是 CommonJS（tsc-alias 那條 build pipeline，見 tsconfig.build.json），import.meta
@@ -139,13 +140,13 @@ export const checkFilterCatalogConsistency = (isProduction: boolean): void => {
   const problems = findFilterCatalogProblems(filterCatalog, schemaText);
 
   if (problems.length === 0) {
-    console.log('[filter-catalog-check]: filterCatalog.ts 跟 prisma/analysis/schema.prisma 一致。');
+    logger.info('[filter-catalog-check]: filterCatalog.ts 跟 prisma/analysis/schema.prisma 一致。');
     return;
   }
 
-  console.error(`[filter-catalog-check]: filterCatalog.ts 跟 prisma/analysis/schema.prisma 不一致，共 ${problems.length} 個問題：`);
+  logger.error(`[filter-catalog-check]: filterCatalog.ts 跟 prisma/analysis/schema.prisma 不一致，共 ${problems.length} 個問題：`);
   for (const problem of problems) {
-    console.error(`  - ${problem}`);
+    logger.error(`  - ${problem}`);
   }
 
   if (!isProduction) {

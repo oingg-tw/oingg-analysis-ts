@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { PrismaClient } from '#generated/gov-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/shared/config';
+import { logger } from '@/shared/logger';
 
 // gov-ts 的 export schema——數據中台同步用的唯讀連線，只看得到 export schema（etl_reader
 // role 限制，gov-ts 實測驗證過連 INSERT/CREATE TABLE 都會被拒絕），跟主要的 gov 唯讀鏡像
@@ -20,9 +21,9 @@ export const govExportPrisma = new PrismaClient({
 export const connectGovExportDb = async () => {
   try {
     await govExportPrisma.$connect();
-    console.log('[gov-export-db]: Connected to database.');
+    logger.info('[gov-export-db]: Connected to database.');
   } catch (error) {
-    console.error('[gov-export-db]: Could not connect to the database.', error);
+    logger.error({ err: error }, '[gov-export-db]: Could not connect to the database.');
     throw error;
   }
 };

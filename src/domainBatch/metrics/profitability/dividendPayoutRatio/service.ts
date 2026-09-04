@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { DividendPayoutRatioQuery, DividendPayoutRatioResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -173,7 +174,7 @@ export const calculateDividendPayoutRatio = async (query: DividendPayoutRatioQue
       },
     });
   } catch (error) {
-    console.error('[dividend-payout-ratio]: 寫入 profitability_dividend_payout_ratio 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[dividend-payout-ratio]: 寫入 profitability_dividend_payout_ratio 失敗，不影響本次回傳結果。');
   }
 
   return {

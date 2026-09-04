@@ -3,6 +3,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
+import { logger } from '@/shared/logger';
 
 interface RawGovBondYieldRow {
   year: number;
@@ -195,7 +196,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery):
       },
     });
   } catch (error) {
-    console.error('[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。');
   }
 
   return {

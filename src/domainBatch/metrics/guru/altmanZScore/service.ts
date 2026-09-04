@@ -8,6 +8,7 @@ import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverR
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { AltmanZScoreQuery, AltmanZScoreResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 2026-08-24 從 solvency 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本
 // 校準的，X5（營收/總資產）對產業結構特別敏感，套用到非製造業時分數僅供參考。這個警告固定出現
@@ -233,7 +234,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
       },
     });
   } catch (error) {
-    console.error('[altman-z-score]: 寫入 guru_altman_z_score 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[altman-z-score]: 寫入 guru_altman_z_score 失敗，不影響本次回傳結果。');
   }
 
   return {

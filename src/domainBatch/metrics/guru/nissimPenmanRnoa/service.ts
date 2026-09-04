@@ -6,6 +6,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { NissimPenmanRnoaQuery, NissimPenmanRnoaResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -286,7 +287,7 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
       },
     });
   } catch (error) {
-    console.error('[nissim-penman-rnoa]: 寫入 guru_nissim_penman_rnoa 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[nissim-penman-rnoa]: 寫入 guru_nissim_penman_rnoa 失敗，不影響本次回傳結果。');
   }
 
   return {

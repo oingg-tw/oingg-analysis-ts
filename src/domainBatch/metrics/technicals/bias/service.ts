@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { simpleMovingAverage, bias as calculateBias } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BiasQuery, BiasResult, BiasWindowValue } from './types';
+import { logger } from '@/shared/logger';
 
 const WINDOWS = [5, 20, 60] as const;
 type WindowKey = 'bias5d' | 'bias20d' | 'bias60d';
@@ -60,7 +61,7 @@ export const calculateBiasIndicator = async (query: BiasQuery): Promise<BiasResu
       update: { bias5d: values.bias5d, bias20d: values.bias20d, bias60d: values.bias60d, warnings },
     });
   } catch (error) {
-    console.error('[bias]: 寫入 technicals_bias 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[bias]: 寫入 technicals_bias 失敗，不影響本次回傳結果。');
   }
 
   return {

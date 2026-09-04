@@ -4,6 +4,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BeneishMScoreQuery, BeneishMScoreResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -276,7 +277,7 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
       },
     });
   } catch (error) {
-    console.error('[beneish-m-score]: 寫入 guru_beneish_m_score 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[beneish-m-score]: 寫入 guru_beneish_m_score 失敗，不影響本次回傳結果。');
   }
 
   return {

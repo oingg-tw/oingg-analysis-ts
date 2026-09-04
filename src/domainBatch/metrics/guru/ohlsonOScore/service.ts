@@ -4,6 +4,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { OhlsonOScoreQuery, OhlsonOScoreResult } from './types';
+import { logger } from '@/shared/logger';
 
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
@@ -250,7 +251,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
       },
     });
   } catch (error) {
-    console.error('[ohlson-o-score]: 寫入 guru_ohlson_o_score 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[ohlson-o-score]: 寫入 guru_ohlson_o_score 失敗，不影響本次回傳結果。');
   }
 
   return {

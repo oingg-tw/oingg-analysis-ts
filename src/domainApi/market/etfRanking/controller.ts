@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateEtfRanking } from './service';
+import { logger } from '@/shared/logger';
 
 export const getEtfRankingQuerySchema = z.object({
   metric: z.enum(
@@ -21,7 +22,7 @@ export const getEtfRanking = async (req: Request, res: Response, next: NextFunct
     const result = await calculateEtfRanking(validationResult.data);
     res.status(200).json(result);
   } catch (error) {
-    console.error('ETF ranking calculation failed:', error);
+    logger.error({ err: error }, 'ETF ranking calculation failed:');
     next(error);
   }
 };

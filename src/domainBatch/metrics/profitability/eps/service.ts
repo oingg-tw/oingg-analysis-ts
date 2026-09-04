@@ -5,6 +5,7 @@ import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { EpsQuery, EpsResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -174,7 +175,7 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
       },
     });
   } catch (error) {
-    console.error('[eps]: 寫入 profitability_eps 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[eps]: 寫入 profitability_eps 失敗，不影響本次回傳結果。');
   }
 
   return {

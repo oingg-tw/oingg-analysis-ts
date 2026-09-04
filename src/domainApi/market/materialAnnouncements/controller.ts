@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { listMaterialAnnouncements } from './service';
+import { logger } from '@/shared/logger';
 
 export const getMaterialAnnouncementsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20).meta({ description: '預設 20，上限 50。' }),
@@ -16,7 +17,7 @@ export const getMaterialAnnouncements = async (req: Request, res: Response, next
     const result = await listMaterialAnnouncements(validationResult.data);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Material announcements lookup failed:', error);
+    logger.error({ err: error }, 'Material announcements lookup failed:');
     next(error);
   }
 };

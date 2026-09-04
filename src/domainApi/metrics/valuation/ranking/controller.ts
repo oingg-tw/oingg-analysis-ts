@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateRanking } from '@/domainBatch/metrics/valuation/ranking/service';
+import { logger } from '@/shared/logger';
 
 export const getRankingQuerySchema = z.object({
   metric: z.enum(['peRatio', 'pbRatio', 'dividendYield'], { error: 'metric is required.' }).meta({ description: '要排行的欄位' }),
@@ -27,7 +28,7 @@ export const getRanking = async (req: Request, res: Response, next: NextFunction
     const result = await calculateRanking(validationResult.data);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Ranking calculation failed:', error);
+    logger.error({ err: error }, 'Ranking calculation failed:');
     next(error);
   }
 };

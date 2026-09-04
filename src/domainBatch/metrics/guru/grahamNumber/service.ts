@@ -4,6 +4,7 @@ import { calculateBvps } from '@/domainBatch/metrics/profitability/bvps/service'
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { GrahamNumberQuery, GrahamNumberResult } from './types';
+import { logger } from '@/shared/logger';
 
 const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): GrahamNumberResult => ({
   symbol,
@@ -96,7 +97,7 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
       },
     });
   } catch (error) {
-    console.error('[graham-number]: 寫入 guru_graham_number 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[graham-number]: 寫入 guru_graham_number 失敗，不影響本次回傳結果。');
   }
 
   return {

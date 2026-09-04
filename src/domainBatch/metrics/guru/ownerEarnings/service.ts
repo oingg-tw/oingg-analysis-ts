@@ -5,6 +5,7 @@ import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { OwnerEarningsQuery, OwnerEarningsResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -233,7 +234,7 @@ export const calculateOwnerEarnings = async (query: OwnerEarningsQuery): Promise
       },
     });
   } catch (error) {
-    console.error('[owner-earnings]: 寫入 guru_owner_earnings 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[owner-earnings]: 寫入 guru_owner_earnings 失敗，不影響本次回傳結果。');
   }
 
   return {

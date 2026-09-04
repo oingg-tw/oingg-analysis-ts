@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { NetDebtToEbitdaQuery, NetDebtToEbitdaResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -206,7 +207,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
       },
     });
   } catch (error) {
-    console.error('[net-debt-to-ebitda]: 寫入 solvency_net_debt_to_ebitda 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[net-debt-to-ebitda]: 寫入 solvency_net_debt_to_ebitda 失敗，不影響本次回傳結果。');
   }
 
   return {

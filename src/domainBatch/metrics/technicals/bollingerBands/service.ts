@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { bollingerBands } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BollingerBandsQuery, BollingerBandsResult, BandValue } from './types';
+import { logger } from '@/shared/logger';
 
 const WINDOW = 20;
 const MULTIPLIER = 2;
@@ -62,7 +63,7 @@ export const calculateBollingerBands = async (query: BollingerBandsQuery): Promi
       update: { middle: bands?.middle ?? null, upper: bands?.upper ?? null, lower: bands?.lower ?? null, warnings },
     });
   } catch (error) {
-    console.error('[bollinger-bands]: 寫入 technicals_bollinger_bands 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[bollinger-bands]: 寫入 technicals_bollinger_bands 失敗，不影響本次回傳結果。');
   }
 
   return {

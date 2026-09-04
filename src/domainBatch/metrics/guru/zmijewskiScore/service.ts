@@ -4,6 +4,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { ZmijewskiScoreQuery, ZmijewskiScoreResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 標準常態累積分布函數的 Abramowitz & Stegun 近似公式（26.2.17），誤差 <= 7.5e-8，
 // 不需要額外的統計函式庫。Zmijewski 原始模型是 Probit，這裡把原始分數 X 轉成機率給使用者看，
@@ -174,7 +175,7 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[zmijewski-score]: 寫入 guru_zmijewski_score 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[zmijewski-score]: 寫入 guru_zmijewski_score 失敗，不影響本次回傳結果。');
   }
 
   return {

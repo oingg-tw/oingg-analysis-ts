@@ -26,6 +26,7 @@
 //   `technicals` 8 個指標、`valuation/marketRatios` 走這條路線。
 
 import { indicatorJobs } from './indicatorRegistry';
+import { logger } from '@/shared/logger';
 
 // 小併發，對齊現有 Prisma client 的 connection_limit=5 池大小設定，不要一次打爆連線池。
 const CONCURRENCY = 5;
@@ -43,7 +44,7 @@ const runWithConcurrency = async (companyIds: string[], run: (id: string) => Pro
         success++;
       } catch (error) {
         failed.push(id);
-        console.error(`  ✖ ${id}:`, error instanceof Error ? error.message : error);
+        logger.error({ err: error }, `  ✖ ${id}:`);
       }
     }
   };
@@ -60,8 +61,8 @@ const runWithConcurrency = async (companyIds: string[], run: (id: string) => Pro
 export const runBatchCompute = async (): Promise<void> => {
   for (const job of indicatorJobs) {
     const companyIds = await job.getCompanyIds();
-    console.log(`[${job.name}] 開始，共 ${companyIds.length} 家公司`);
+    logger.info(`[${job.name}] 開始，共 ${companyIds.length} 家公司`);
     const { success, failed } = await runWithConcurrency(companyIds, job.run);
-    console.log(`[${job.name}] 完成：成功 ${success}，失敗 ${failed.length}${failed.length > 0 ? `（${failed.join(', ')}）` : ''}`);
+    logger.info(`[${job.name}] 完成：成功 ${success}，失敗 ${failed.length}${failed.length > 0 ? `（${failed.join(', ')}）` : ''}`);
   }
 };

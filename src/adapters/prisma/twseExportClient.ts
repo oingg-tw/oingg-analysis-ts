@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { PrismaClient } from '#generated/twse-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/shared/config';
+import { logger } from '@/shared/logger';
 
 // twse-ts 的 export schema——實體隔離的獨立 Neon 專案（跟主要的 twse 唯讀鏡像
 // ../prisma/twseClient.ts 連的是完全不同的專案/憑證），只看得到 export schema（etl_reader
@@ -19,9 +20,9 @@ export const twseExportPrisma = new PrismaClient({
 export const connectTwseExportDb = async () => {
   try {
     await twseExportPrisma.$connect();
-    console.log('[twse-export-db]: Connected to database.');
+    logger.info('[twse-export-db]: Connected to database.');
   } catch (error) {
-    console.error('[twse-export-db]: Could not connect to the database.', error);
+    logger.error({ err: error }, '[twse-export-db]: Could not connect to the database.');
     throw error;
   }
 };

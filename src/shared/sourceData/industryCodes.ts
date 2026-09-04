@@ -1,5 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { logger } from '@/shared/logger';
 
 // 產業代碼對照表——之後做 Mohanram_G_Score/Greenblatt_Magic_Formula 這類需要「跟同產業其他公司比較」
 // 的指標時會用到，目前只負責在伺服器啟動時抓下來放記憶體，還沒有任何指標真的在用。
@@ -42,7 +43,7 @@ const persistIndustryCodes = async (codes: IndustryCodeMap): Promise<void> => {
       )
     );
   } catch (error) {
-    console.error('[industry-codes]: 寫入 reference_industry_code 失敗，不影響本次抓到的結果。', error);
+    logger.error({ err: error }, '[industry-codes]: 寫入 reference_industry_code 失敗，不影響本次抓到的結果。');
   }
 };
 
@@ -65,11 +66,11 @@ export const loadIndustryCodes = async (): Promise<void> => {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       industryCodes = await fetchIndustryCodesOnce();
-      console.log(`[industry-codes]: 已從 export.industry_code 抓到產業代碼對照表（共 ${Object.keys(industryCodes).length} 筆，第 ${attempt} 次嘗試成功）。`);
+      logger.info(`[industry-codes]: 已從 export.industry_code 抓到產業代碼對照表（共 ${Object.keys(industryCodes).length} 筆，第 ${attempt} 次嘗試成功）。`);
       void persistIndustryCodes(industryCodes);
       return;
     } catch (error) {
-      console.warn(`[industry-codes]: 第 ${attempt}/${MAX_ATTEMPTS} 次抓取失敗——`, error instanceof Error ? error.message : error);
+      logger.warn({ err: error }, `[industry-codes]: 第 ${attempt}/${MAX_ATTEMPTS} 次抓取失敗——`);
     }
   }
 
@@ -77,13 +78,13 @@ export const loadIndustryCodes = async (): Promise<void> => {
     const fallback = await loadIndustryCodesFromDb();
     if (fallback) {
       industryCodes = fallback;
-      console.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，改用 reference_industry_code 裡上次存的對照表頂著用（共 ${Object.keys(fallback).length} 筆）。`);
+      logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，改用 reference_industry_code 裡上次存的對照表頂著用（共 ${Object.keys(fallback).length} 筆）。`);
       return;
     }
   } catch (error) {
-    console.error('[industry-codes]: 讀 reference_industry_code 備援資料也失敗。', error);
+    logger.error({ err: error }, '[industry-codes]: 讀 reference_industry_code 備援資料也失敗。');
   }
-  console.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，DB 裡也沒有上次存的備援資料，放棄抓取，不影響伺服器啟動（之後也不會自動再重試，除非重啟伺服器）。`);
+  logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，DB 裡也沒有上次存的備援資料，放棄抓取，不影響伺服器啟動（之後也不會自動再重試，除非重啟伺服器）。`);
 };
 
 // 目前沒有任何指標在讀這個——先把資料抓下來放著，等真的要做 Mohanram_G_Score 之類的指標時再接上。

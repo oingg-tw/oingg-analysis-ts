@@ -3,6 +3,7 @@ import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { LiquidityRatioQuery, LiquidityRatioResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -110,7 +111,7 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[liquidity-ratio]: 寫入 solvency_liquidity_ratio 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[liquidity-ratio]: 寫入 solvency_liquidity_ratio 失敗，不影響本次回傳結果。');
   }
 
   return {

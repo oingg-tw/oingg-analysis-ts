@@ -3,6 +3,7 @@ import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { DebtRatioQuery, DebtRatioResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -86,7 +87,7 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
       },
     });
   } catch (error) {
-    console.error('[debt-ratio]: 寫入 solvency_debt_ratio 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[debt-ratio]: 寫入 solvency_debt_ratio 失敗，不影響本次回傳結果。');
   }
 
   return {

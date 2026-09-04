@@ -2,6 +2,7 @@ import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { BetaQuery, BetaResult, BetaSamplingFrequency, BetaWindow } from './types';
+import { logger } from '@/shared/logger';
 
 interface RawDailyPriceCloseRow {
   trade_date: Date;
@@ -294,7 +295,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
       },
     });
   } catch (error) {
-    console.error('[beta]: 寫入 portfolio_beta 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[beta]: 寫入 portfolio_beta 失敗，不影響本次回傳結果。');
   }
 
   return {

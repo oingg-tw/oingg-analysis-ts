@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateEquityRiskPremium } from '@/domainBatch/metrics/macro/equityRiskPremium/service';
+import { logger } from '@/shared/logger';
 
 export const getEquityRiskPremiumQuerySchema = z.object({
   startYear: z.coerce.number().int().optional().meta({ description: '選填，窗口起始年（西元），要跟 startMonth 一起給', example: 1999 }),
@@ -30,7 +31,7 @@ export const getEquityRiskPremium = async (req: Request, res: Response, next: Ne
     const result = await calculateEquityRiskPremium(validationResult.data);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Equity risk premium calculation failed:', error);
+    logger.error({ err: error }, 'Equity risk premium calculation failed:');
     next(error);
   }
 };

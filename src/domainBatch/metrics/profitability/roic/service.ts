@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { RoicQuery, RoicResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -181,7 +182,7 @@ export const calculateRoic = async (query: RoicQuery): Promise<RoicResult> => {
       },
     });
   } catch (error) {
-    console.error('[roic]: 寫入 profitability_roic 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[roic]: 寫入 profitability_roic 失敗，不影響本次回傳結果。');
   }
 
   return {

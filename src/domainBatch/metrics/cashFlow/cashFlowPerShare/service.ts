@@ -5,6 +5,7 @@ import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { CashFlowPerShareQuery, CashFlowPerShareResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 財報金額欄位單位是「千元」，但流通股數是實際股數，不是千股，兩者單位不同，
 // 分子要先換算成元（x1000）才能除，否則會差 1000 倍（BVPS 曾踩過這個坑）。
@@ -201,7 +202,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
       },
     });
   } catch (error) {
-    console.error('[cash-flow-per-share]: 寫入 cash_flow_per_share 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[cash-flow-per-share]: 寫入 cash_flow_per_share 失敗，不影響本次回傳結果。');
   }
 
   return {

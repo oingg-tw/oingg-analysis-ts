@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from './service';
+import { logger } from '@/shared/logger';
 
 const filterSchema = z.object({
   field: z.string().min(1),
@@ -33,7 +34,7 @@ export const postScreener = async (req: Request, res: Response, next: NextFuncti
     if (error instanceof ScreenerValidationError) {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Screener query failed:', error);
+    logger.error({ err: error }, 'Screener query failed:');
     next(error);
   }
 };
@@ -61,7 +62,7 @@ export const getScreenerRanking = async (req: Request, res: Response, next: Next
     if (error instanceof ScreenerValidationError) {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Screener ranking query failed:', error);
+    logger.error({ err: error }, 'Screener ranking query failed:');
     next(error);
   }
 };
@@ -92,7 +93,7 @@ export const postScreenerValues = async (req: Request, res: Response, next: Next
     if (error instanceof ScreenerValidationError) {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Screener values lookup failed:', error);
+    logger.error({ err: error }, 'Screener values lookup failed:');
     next(error);
   }
 };

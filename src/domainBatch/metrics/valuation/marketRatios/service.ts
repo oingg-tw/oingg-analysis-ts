@@ -2,6 +2,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import type { MarketRatiosQuery, MarketRatiosResult } from './types';
+import { logger } from '@/shared/logger';
 
 export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<MarketRatiosResult> => {
   const { symbol, date } = query;
@@ -44,7 +45,7 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
         update: { peRatio, pbRatio, dividendYieldPct, warnings },
       });
     } catch (error) {
-      console.error('[market-ratios]: 寫入 valuation_market_ratios 失敗，不影響本次回傳結果。', error);
+      logger.error({ err: error }, '[market-ratios]: 寫入 valuation_market_ratios 失敗，不影響本次回傳結果。');
     }
   }
 

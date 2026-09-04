@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { PrismaClient } from '#generated/tpex-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/shared/config';
+import { logger } from '@/shared/logger';
 
 // tpex-ts 的 export schema——跟 sitca 同一種模式（dev/prod 兩個獨立 Neon 專案，不是同一個
 // 專案的 pooler/direct 兩種連線方式），本服務用 config.isProduction 動態選要連哪一個，不是
@@ -21,9 +22,9 @@ export const tpexExportPrisma = new PrismaClient({
 export const connectTpexExportDb = async () => {
   try {
     await tpexExportPrisma.$connect();
-    console.log(`[tpex-export-db]: Connected to database (${config.isProduction ? 'prod' : 'dev'}).`);
+    logger.info(`[tpex-export-db]: Connected to database (${config.isProduction ? 'prod' : 'dev'}).`);
   } catch (error) {
-    console.error('[tpex-export-db]: Could not connect to the database.', error);
+    logger.error({ err: error }, '[tpex-export-db]: Could not connect to the database.');
     throw error;
   }
 };

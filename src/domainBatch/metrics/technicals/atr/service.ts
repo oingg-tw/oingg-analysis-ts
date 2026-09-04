@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { averageTrueRange } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { AtrQuery, AtrResult, AtrWindowValue } from './types';
+import { logger } from '@/shared/logger';
 
 const WINDOWS = [14, 20] as const;
 type WindowKey = 'atr14d' | 'atr20d';
@@ -60,7 +61,7 @@ export const calculateAtr = async (query: AtrQuery): Promise<AtrResult> => {
       update: { atr14d: values.atr14d, atr20d: values.atr20d, warnings },
     });
   } catch (error) {
-    console.error('[atr]: 寫入 technicals_atr 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[atr]: 寫入 technicals_atr 失敗，不影響本次回傳結果。');
   }
 
   return {

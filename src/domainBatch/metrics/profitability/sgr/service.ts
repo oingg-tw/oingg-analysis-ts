@@ -4,6 +4,7 @@ import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitabilit
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { SgrQuery, SgrResult } from './types';
+import { logger } from '@/shared/logger';
 
 const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): SgrResult => ({
   symbol,
@@ -92,7 +93,7 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
       },
     });
   } catch (error) {
-    console.error('[sgr]: 寫入 profitability_sgr 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[sgr]: 寫入 profitability_sgr 失敗，不影響本次回傳結果。');
   }
 
   return {

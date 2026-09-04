@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from './service';
+import { logger } from '@/shared/logger';
 
 // 數字/類別兩種 filter 形狀用 z.union 分辨——數字要有 min/max（可以是 null），類別要有
 // values 陣列，兩者都缺或都給的畸形請求會被 union 擋在 zod 這層（400），不會進到 service.ts。
@@ -40,7 +41,7 @@ export const postEtfScreener = async (req: Request, res: Response, next: NextFun
     if (error instanceof EtfScreenerValidationError) {
       return res.status(400).json({ message: error.message });
     }
-    console.error('ETF screener query failed:', error);
+    logger.error({ err: error }, 'ETF screener query failed:');
     next(error);
   }
 };
@@ -50,7 +51,7 @@ export const getEtfScreenerFilters = async (_req: Request, res: Response, next: 
     const result = await getEtfFilterCatalog();
     res.status(200).json(result);
   } catch (error) {
-    console.error('ETF screener filter catalog lookup failed:', error);
+    logger.error({ err: error }, 'ETF screener filter catalog lookup failed:');
     next(error);
   }
 };

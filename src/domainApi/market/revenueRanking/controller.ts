@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateRevenueRanking } from './service';
+import { logger } from '@/shared/logger';
 
 export const getRevenueRankingQuerySchema = z.object({
   metric: z.enum(['yoy', 'mom', 'revenue'], { error: 'metric is required.' }),
@@ -18,7 +19,7 @@ export const getRevenueRanking = async (req: Request, res: Response, next: NextF
     const result = await calculateRevenueRanking(validationResult.data);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Revenue ranking calculation failed:', error);
+    logger.error({ err: error }, 'Revenue ranking calculation failed:');
     next(error);
   }
 };

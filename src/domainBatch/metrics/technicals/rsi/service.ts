@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { wilderRsi } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { RsiQuery, RsiResult, RsiWindowValue } from './types';
+import { logger } from '@/shared/logger';
 
 const WINDOWS = [6, 14, 24] as const;
 type WindowKey = 'rsi6d' | 'rsi14d' | 'rsi24d';
@@ -59,7 +60,7 @@ export const calculateRsi = async (query: RsiQuery): Promise<RsiResult> => {
       update: { rsi6d: values.rsi6d, rsi14d: values.rsi14d, rsi24d: values.rsi24d, warnings },
     });
   } catch (error) {
-    console.error('[rsi]: 寫入 technicals_rsi 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[rsi]: 寫入 technicals_rsi 失敗，不影響本次回傳結果。');
   }
 
   return {

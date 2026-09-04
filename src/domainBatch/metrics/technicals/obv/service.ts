@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { onBalanceVolume } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { ObvQuery, ObvResult } from './types';
+import { logger } from '@/shared/logger';
 
 export const calculateObv = async (query: ObvQuery): Promise<ObvResult> => {
   const { symbol, asOfDate } = query;
@@ -48,7 +49,7 @@ export const calculateObv = async (query: ObvQuery): Promise<ObvResult> => {
       update: { obv, warnings },
     });
   } catch (error) {
-    console.error('[obv]: 寫入 technicals_obv 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[obv]: 寫入 technicals_obv 失敗，不影響本次回傳結果。');
   }
 
   return {

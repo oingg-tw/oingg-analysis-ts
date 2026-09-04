@@ -4,6 +4,7 @@ import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { DeRatioQuery, DeRatioResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickEquity = (
@@ -104,7 +105,7 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
       },
     });
   } catch (error) {
-    console.error('[de-ratio]: 寫入 solvency_de_ratio 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[de-ratio]: 寫入 solvency_de_ratio 失敗，不影響本次回傳結果。');
   }
 
   return {

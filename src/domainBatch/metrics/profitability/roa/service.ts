@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { RoaQuery, RoaResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 // 注意：教科書上的 ROA 有時會用整體（含少數股權）淨利去對整體總資產，口徑比較「對稱」；
@@ -157,7 +158,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
       },
     });
   } catch (error) {
-    console.error('[roa]: 寫入 profitability_roa 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[roa]: 寫入 profitability_roa 失敗，不影響本次回傳結果。');
   }
 
   return {

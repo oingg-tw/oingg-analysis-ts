@@ -1,5 +1,6 @@
 import type { Router } from 'ultimate-express';
 import { getCompanyName } from './sourceData/companyProfile';
+import { logger } from '@/shared/logger';
 
 // 取代原本「每個 controller 自己呼叫 sendWithCompanyName」的做法（2026-09-01 使用者要求）——
 // 那個做法的問題是「以後新增單一公司端點時，忘記加這一行也不會有任何錯誤提示，會悄悄漏掉」，
@@ -31,12 +32,12 @@ export const registerCompanyRoute = <T extends { symbol: string }>(router: Route
       if (result === undefined) return; // handler 已經自己送出回應（例如驗證失敗的 400），不用再做事。
 
       const companyName = await getCompanyName(result.symbol).catch((error) => {
-        console.error(`[registerCompanyRoute ${path}]: 查詢公司名稱失敗，回傳原始結果不補公司名稱。`, error);
+        logger.error({ err: error }, `[registerCompanyRoute ${path}]: 查詢公司名稱失敗，回傳原始結果不補公司名稱。`);
         return null;
       });
       res.status(200).json({ ...result, companyName });
     } catch (error) {
-      console.error(`[registerCompanyRoute ${path}]: 計算失敗。`, error);
+      logger.error({ err: error }, `[registerCompanyRoute ${path}]: 計算失敗。`);
       next(error);
     }
   });

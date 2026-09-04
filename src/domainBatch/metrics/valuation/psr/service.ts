@@ -6,6 +6,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { PsrQuery, PsrResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 市值是「股價 x 實際股數」的真實新台幣金額，但營收欄位（operatingRevenue）單位是千元——
 // 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍，這是 BVPS/Altman X4 都踩過的同一個坑。
@@ -144,7 +145,7 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
       },
     });
   } catch (error) {
-    console.error('[psr]: 寫入 valuation_psr 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[psr]: 寫入 valuation_psr 失敗，不影響本次回傳結果。');
   }
 
   return {

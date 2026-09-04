@@ -4,6 +4,7 @@ import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { BvpsQuery, BvpsResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickEquity = (
@@ -123,7 +124,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
       },
     });
   } catch (error) {
-    console.error('[bvps]: 寫入 profitability_bvps 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[bvps]: 寫入 profitability_bvps 失敗，不影響本次回傳結果。');
   }
 
   return {

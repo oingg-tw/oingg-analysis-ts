@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { CapexToRevenueQuery, CapexToRevenueResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -160,7 +161,7 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[capex-to-revenue]: 寫入 turnover_capex_to_revenue 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[capex-to-revenue]: 寫入 turnover_capex_to_revenue 失敗，不影響本次回傳結果。');
   }
 
   return {

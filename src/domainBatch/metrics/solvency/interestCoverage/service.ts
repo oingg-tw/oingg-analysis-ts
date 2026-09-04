@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { InterestCoverageQuery, InterestCoverageResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -145,7 +146,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
       },
     });
   } catch (error) {
-    console.error('[interest-coverage]: 寫入 solvency_interest_coverage 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[interest-coverage]: 寫入 solvency_interest_coverage 失敗，不影響本次回傳結果。');
   }
 
   return {

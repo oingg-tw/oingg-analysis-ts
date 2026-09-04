@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { exponentialMovingAverageSeries } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { MacdQuery, MacdResult } from './types';
+import { logger } from '@/shared/logger';
 
 const SHORT_WINDOW = 12;
 const LONG_WINDOW = 26;
@@ -89,7 +90,7 @@ export const calculateMacd = async (query: MacdQuery): Promise<MacdResult> => {
       update: { dif, dem, osc, warnings },
     });
   } catch (error) {
-    console.error('[macd]: 寫入 technicals_macd 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[macd]: 寫入 technicals_macd 失敗，不影響本次回傳結果。');
   }
 
   return {

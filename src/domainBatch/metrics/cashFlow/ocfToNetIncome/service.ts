@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { OcfToNetIncomeQuery, OcfToNetIncomeResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -174,7 +175,7 @@ export const calculateOcfToNetIncome = async (query: OcfToNetIncomeQuery): Promi
       },
     });
   } catch (error) {
-    console.error('[ocf-to-net-income]: 寫入 cash_flow_ocf_to_net_income 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[ocf-to-net-income]: 寫入 cash_flow_ocf_to_net_income 失敗，不影響本次回傳結果。');
   }
 
   return {

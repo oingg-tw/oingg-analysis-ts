@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { filterCatalog, type FilterMetric } from './filterCatalog';
 import { parseAnalysisSchemaModels, type ModelIntrospection } from './schemaIntrospection';
+import { logger } from '@/shared/logger';
 
 // 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts 同一段說明
 // （import.meta 在正式環境 CommonJS build 底下是編譯期錯誤）。
@@ -116,9 +117,9 @@ const getState = (): RegistryState => {
 export const validateMetricTableRegistry = (isProduction: boolean): void => {
   try {
     cachedState = buildState();
-    console.log('[metric-table-registry]: filterCatalog.ts 的每個 metric 都能解析出對應的 table/欄位。');
+    logger.info('[metric-table-registry]: filterCatalog.ts 的每個 metric 都能解析出對應的 table/欄位。');
   } catch (error) {
-    console.error('[metric-table-registry]: 建表失敗。', error);
+    logger.error({ err: error }, '[metric-table-registry]: 建表失敗。');
     if (!isProduction) throw error;
   }
 };

@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { stochasticKD } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { KdQuery, KdResult, KdWindowValue } from './types';
+import { logger } from '@/shared/logger';
 
 export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
   const { symbol, asOfDate } = query;
@@ -77,7 +78,7 @@ export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
       update: { k9d: kd9?.k ?? null, d9d: kd9?.d ?? null, k14d: kd14?.k ?? null, d14d: kd14?.d ?? null, warnings },
     });
   } catch (error) {
-    console.error('[kd]: 寫入 technicals_kd 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[kd]: 寫入 technicals_kd 失敗，不影響本次回傳結果。');
   }
 
   return {

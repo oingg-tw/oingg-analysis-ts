@@ -4,6 +4,7 @@ import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { simpleMovingAverage } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { MaQuery, MaResult, MaWindowValue } from './types';
+import { logger } from '@/shared/logger';
 
 const WINDOWS = [5, 10, 20, 60, 120, 200] as const;
 type WindowKey = 'ma5d' | 'ma10d' | 'ma20d' | 'ma60d' | 'ma120d' | 'ma200d';
@@ -80,7 +81,7 @@ export const calculateMa = async (query: MaQuery): Promise<MaResult> => {
       },
     });
   } catch (error) {
-    console.error('[ma]: 寫入 technicals_ma 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[ma]: 寫入 technicals_ma 失敗，不影響本次回傳結果。');
   }
 
   return {

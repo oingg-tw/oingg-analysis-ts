@@ -5,6 +5,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { RoeQuery, RoeResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利/權益欄位選擇邏輯：優先採用「歸屬於母公司」口徑（分子分母範圍一致），
 // 缺漏時（例如部分產業因科目歧義而解析不到細項）退回用整體數字。
@@ -168,7 +169,7 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
       },
     });
   } catch (error) {
-    console.error('[roe]: 寫入 profitability_roe 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[roe]: 寫入 profitability_roe 失敗，不影響本次回傳結果。');
   }
 
   return {

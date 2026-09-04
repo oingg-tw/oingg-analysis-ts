@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getStockQuote, getStockPrices, getExDividendNotices } from './service';
+import { logger } from '@/shared/logger';
 
 export const getQuoteParamsSchema = z.object({
   symbol: z.string().min(1).meta({ description: '公司代號', example: '2330' }),
@@ -20,7 +21,7 @@ export const getQuote = async (req: Request, res: Response, next: NextFunction) 
     }
     res.status(200).json(result);
   } catch (error) {
-    console.error('Stock quote lookup failed:', error);
+    logger.error({ err: error }, 'Stock quote lookup failed:');
     next(error);
   }
 };
@@ -50,7 +51,7 @@ export const getPrices = async (req: Request, res: Response, next: NextFunction)
     const result = await getStockPrices(validationResult.data.symbols);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Stock prices lookup failed:', error);
+    logger.error({ err: error }, 'Stock prices lookup failed:');
     next(error);
   }
 };
@@ -65,7 +66,7 @@ export const getExDividendNoticesHandler = async (req: Request, res: Response, n
     const result = await getExDividendNotices(validationResult.data.symbols);
     res.status(200).json(result);
   } catch (error) {
-    console.error('Ex-dividend notices lookup failed:', error);
+    logger.error({ err: error }, 'Ex-dividend notices lookup failed:');
     next(error);
   }
 };

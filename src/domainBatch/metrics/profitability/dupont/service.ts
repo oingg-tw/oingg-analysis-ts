@@ -6,6 +6,7 @@ import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { DupontQuery, DupontResult } from './types';
+import { logger } from '@/shared/logger';
 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
@@ -171,7 +172,7 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
       },
     });
   } catch (error) {
-    console.error('[dupont]: 寫入 profitability_dupont 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[dupont]: 寫入 profitability_dupont 失敗，不影響本次回傳結果。');
   }
 
   return {

@@ -6,6 +6,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { FcfYieldQuery, FcfYieldResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 兩者都已經是「每股」金額（元），單位一致，不用像 PSR/P_FCF/EV_EBITDA 那樣處理千元/元的換算。
 const toPct = (fcfPerShare: number, stockPrice: number): number | null => {
@@ -143,7 +144,7 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
       },
     });
   } catch (error) {
-    console.error('[fcf-yield]: 寫入 cash_flow_fcf_yield 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[fcf-yield]: 寫入 cash_flow_fcf_yield 失敗，不影響本次回傳結果。');
   }
 
   return {

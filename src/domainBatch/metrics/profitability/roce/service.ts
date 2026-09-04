@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { RoceQuery, RoceResult } from './types';
+import { logger } from '@/shared/logger';
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -155,7 +156,7 @@ export const calculateRoce = async (query: RoceQuery): Promise<RoceResult> => {
       },
     });
   } catch (error) {
-    console.error('[roce]: 寫入 profitability_roce 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[roce]: 寫入 profitability_roce 失敗，不影響本次回傳結果。');
   }
 
   return {

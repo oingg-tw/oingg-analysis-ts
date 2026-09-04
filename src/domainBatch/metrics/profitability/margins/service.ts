@@ -4,6 +4,7 @@ import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { MarginsQuery, MarginsResult } from './types';
+import { logger } from '@/shared/logger';
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (
@@ -194,7 +195,7 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
       },
     });
   } catch (error) {
-    console.error('[margins]: 寫入 profitability_margins 失敗，不影響本次回傳結果。', error);
+    logger.error({ err: error }, '[margins]: 寫入 profitability_margins 失敗，不影響本次回傳結果。');
   }
 
   return {
