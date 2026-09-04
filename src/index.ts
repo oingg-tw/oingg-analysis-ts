@@ -33,7 +33,15 @@ app.use(express.urlencoded({ extended: true }));
 // Request logging——2026-09-05 從 morgan 換成 pino-http：原本 morgan 只在開發模式開（正式環境
 // 完全沒有任何請求記錄），改用 pino-http 之後正式環境也會記錄，輸出結構化 JSON 讓 Cloud Run
 // 部署後可以直接用 Cloud Logging 依欄位查詢（例如篩某個 route 的 5xx），不用整段文字裡面找。
-app.use(pinoHttp({ logger }));
+//
+// customSuccessMessage 是必要的、不是美化：pino-http 預設判斷「completed」還是「aborted」
+// 靠 Node 原生的 req.readableAborted / res.writableEnded 這兩個屬性，但 ultimate-express
+// 是包 uWebSockets.js 的自訂 Request/Response（見 node_modules 原始碼確認過），從來不會設定
+// 這兩個屬性——結果是預設訊息**每一個成功的請求都會被標成「request aborted」**，log 等級/
+// 錯誤判斷（res.statusCode >= 500 那條路徑）本身沒受影響，只有這個文字判斷是錯的，但錯到會
+// 讓人誤判系統一直在出錯，一定要覆蓋掉。走到這個 callback 代表 pino-http 自己已經判定不是
+// 5xx/沒有 err（那條路走 customErrorMessage），直接回「request completed」就對了。
+app.use(pinoHttp({ logger, customSuccessMessage: () => 'request completed' }));
 
 // --- API Docs ---
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
