@@ -64,9 +64,9 @@ test('averageTrueRange: 資料筆數不足回傳 null', () => {
 });
 
 test('averageTrueRange: 高低不動、收盤不動時 ATR 應該是 0', () => {
-  const highs = new Array(15).fill(10);
-  const lows = new Array(15).fill(10);
-  const closes = new Array(15).fill(10);
+  const highs = Array.from({ length: 15 }, () => 10);
+  const lows = Array.from({ length: 15 }, () => 10);
+  const closes = Array.from({ length: 15 }, () => 10);
   assert.equal(averageTrueRange(highs, lows, closes, 14), 0);
 });
 

@@ -5,8 +5,6 @@ import { stochasticKD } from '@/shared/technicalMath';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { KdQuery, KdResult, KdWindowValue } from './types';
 
-const WINDOWS = [9, 14] as const;
-
 export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
   const { symbol, asOfDate } = query;
   const warnings: string[] = [];

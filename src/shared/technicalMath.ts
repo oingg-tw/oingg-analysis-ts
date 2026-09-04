@@ -23,7 +23,7 @@ export const simpleMovingAverage = (values: number[], window: number): number | 
 // 但代表 EMA 的準確度會隨可用歷史筆數增加而收斂，資料筆數只比 window 多一點點時數值僅供參考，
 // 呼叫端（MACD service）會在這種情況加上警告文字，不是這裡的責任。
 export const exponentialMovingAverageSeries = (values: number[], window: number): (number | null)[] => {
-  const result: (number | null)[] = new Array(values.length).fill(null);
+  const result: (number | null)[] = Array.from({ length: values.length }, () => null);
   if (values.length < window) return result;
 
   const k = 2 / (window + 1);

@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise", "node"],
+  "categories": {
+    "correctness": "error"
+  },
+  // 2026-09-05：typescript-eslint 對 TS 7.0 是寫死拒絕啟動（追蹤中：
+  // typescript-eslint/typescript-eslint#10940），改用 oxlint + oxlint-tsgolint——後者直接
+  // 建構在 TypeScript 7 的原生編譯器（tsgo/Project Corsa）上，版本號 oxlint-tsgolint@7.0.2001
+  // 精確對應本專案的 typescript@7.0.2，不是勉強相容。typeAware 需要額外的
+  // `oxlint-tsgolint` 套件（已裝在 devDependencies）。
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    // 這個 codebase 大量手動 pick bigint/Decimal 欄位、TTM 陣列索引，non-null assertion（!）
+    // 是既有慣例（例如 `ttmRecords[i]!`），關掉這條規則不是縱容濫用，是配合既有風格。
+    "typescript/no-non-null-assertion": "off",
+    "typescript/no-explicit-any": "warn",
+    // 這個規則會誤判本服務大量存在的「安全轉換 unknown 型別的原始 SQL 欄位值」模式——
+    // 例如 shared/sourceData/mopsQuarterlyStatements.ts 的 toDecimalString()、
+    // screener/service.ts 的 date 欄位轉換，這些函式簽名故意收 `unknown`，因為呼叫端可能是
+    // Postgres Decimal 物件（有正確的 toString()）、Date、或字串，`String(value)` 是刻意的
+    // 通用轉換，不是忘記處理型別。已經人工核對過這次型別感知掃描抓到的 4 個案例都是這個模式，
+    // 不是真的 bug，關掉整條規則比在 4 個地方各自加 disable 註解更不會漂移。
+    "typescript/no-base-to-string": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**", "scripts/**"],
+      "rules": {
+        // 測試/腳本裡常故意用寬鬆型別組測試資料，不用套用跟 src/ 一樣嚴格的 any 規則。
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "generated/**", "coverage/**"],
+  "env": {
+    "builtin": true
+  }
+}

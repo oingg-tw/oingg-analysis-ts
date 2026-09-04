@@ -1,5 +1,5 @@
 import { Prisma } from '#generated/sitca-export-client';
-import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
+import type { NumericFieldDefinition, CategoricalFieldDefinition } from './fieldRegistry';
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
 // （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
