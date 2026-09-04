@@ -29,7 +29,8 @@ router.use(rootRouter);
 
 // --- Batch Routes（給 GCP Cloud Scheduler 用，不是 BFF）---
 // 刻意放在 bffAuth 之前掛載，不套用 BFF 的共用密鑰——這支之後要接的是 Cloud Run IAM
-// invoker（見 domainBatch/controller.ts 的說明），是完全不同的信任邊界，不能共用同一把密鑰。
+// invoker（見 domainBatch/daily/controller.ts、domainBatch/quarterly/controller.ts 的說明），
+// 是完全不同的信任邊界，不能共用同一把密鑰。
 router.use(batchRouter);
 
 // --- 以下都是只給 bff-ts 呼叫的 domainApi，2026-09-05 起套用共用密鑰驗證 ---
