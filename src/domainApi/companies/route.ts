@@ -1,5 +1,6 @@
 import { Router } from 'ultimate-express';
-import { getCompanies, getCompanyProfile, getCompanyCapitalStockHistory } from './controller';
+import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
+import { getCompanies, getCompanyProfile, getCompanyCapitalStockHistory, getCompanyMetrics } from './controller';
 
 const router = Router();
 
@@ -76,6 +77,11 @@ router.get('/companies', getCompanies);
  *       `financialReportTypeName`（2026-09-02 應 web-nuxt 要求新增）是 `financialReportType`
  *       裸代碼（"1"/"2"）解出來的可讀名稱（個別財報／合併財報）——MOPS 沒有公開欄位字典，
  *       這個對照是跟 mops-ts 確認過的（信心度高但非官方白紙黑字文件），未知代碼回 null。
+ *
+ *       `website`（2026-09-04 應 web-nuxt/conductor 要求正規化）已經清成乾淨的裸網域（例如
+ *       "acc.com.tw"）——原始資料至少有三種混雜格式（"www.acc.com.tw"、
+ *       "http://www.ancang.com/"、"www.tactc.com.tw/"），這裡統一去掉 scheme、尾斜線、
+ *       `www.` 前綴，呼叫端不用自己再清洗一次。
  *     tags:
  *       - System
  *     parameters:
@@ -142,5 +148,53 @@ router.get('/companies/profile', getCompanyProfile);
  *         description: 缺少 symbol。
  */
 router.get('/companies/capital-stock-history', getCompanyCapitalStockHistory);
+
+/**
+ * @swagger
+ * /companies/metrics:
+ *   get:
+ *     summary: 讀取優先的單一公司 consolidated 指標查詢（domainApi 讀取優先）
+ *     description: >
+ *       2026-09-04 新增，取代原本 `domainApi/metrics/**` 底下 44 支「每支指標各自一個端點、
+ *       每次都即時現算」的舊端點——那些端點即將刪除（BFF 已確認完全沒有呼叫）。
+ *
+ *       行為：先讀 `analysis` 結果表（跟 `POST /screener/values` 同一套查詢引擎），查得到就
+ *       直接回傳（`source: "cache"`）；查不到（這張表根本沒有這個 symbol 的任何一列）才
+ *       委派給 `domainBatch` 的現算+upsert 邏輯即時補算一次，算完寫回 `analysis` 表，
+ *       下次查詢就會是 cache hit（`source: "computed"`）。真的沒有資料可算則是
+ *       `source: "unavailable"`。
+ *
+ *       `fields` 逗號分隔，每個是 `"metricKey.fieldKey"` 格式（跟 `GET /filters` 的 catalog、
+ *       `POST /screener/values` 同一套定址方式，可以先打 `GET /filters` 知道有哪些
+ *       metricKey/fieldKey 可用）。**不支援** `equityRiskPremium`/`govBondYield10y`
+ *       （全市場單一值，不分公司，請改打 `GET /macro/equity-risk-premium`/
+ *       `GET /macro/gov-bond-yield-10y`）跟 `obv`（BigInt 型別，這次不處理，之後真的有
+ *       需求再補），帶這些 key 會回 400。
+ *     tags:
+ *       - System
+ *     parameters:
+ *       - in: query
+ *         name: symbol
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 公司代號
+ *         example: "2330"
+ *       - in: query
+ *         name: fields
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 逗號分隔的 "metricKey.fieldKey" 清單，1–50 個。
+ *         example: "roe.roeQuarterlyPct,margins.grossMarginPct"
+ *     responses:
+ *       200:
+ *         description: >
+ *           `{ symbol, companyName, values: { [field]: { value, asOfDate, source } } }`，
+ *           每個要求的 field 都保證出現在 `values` 裡。
+ *       400:
+ *         description: 缺少 symbol/fields、fields 格式錯誤、或帶了不支援單一公司查詢的 field。
+ */
+registerCompanyRoute(router, '/companies/metrics', getCompanyMetrics);
 
 export default router;

@@ -54,6 +54,19 @@ test('getCompanyProfileDetail: industry="13"（電子工業舊分類）是真正
   assert.equal(result!.industryName, '電子工業（舊分類）');
 });
 
+// company_profile 原始 website 欄位混雜至少三種格式（純網域/含 scheme+尾斜線/尾斜線無
+// scheme），2026-09-04 應 web-nuxt/conductor 要求統一在這裡清成裸網域，不讓下游各自清洗。
+test('getCompanyProfileDetail: website 應該正規化成裸網域，不含 scheme/尾斜線/www. 前綴', async () => {
+  const twse = await getCompanyProfileDetail('2330'); // 原始值帶 www. 前綴
+  assert.ok(twse?.website);
+  assert.doesNotMatch(twse!.website!, /^https?:\/\//);
+  assert.doesNotMatch(twse!.website!, /\/$/);
+  assert.doesNotMatch(twse!.website!, /^www\./);
+
+  const tpex = await getCompanyProfileDetail('5609'); // 原始值是 "http://www.dimerco.com"
+  assert.equal(tpex?.website, 'dimerco.com');
+});
+
 after(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();

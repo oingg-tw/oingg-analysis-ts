@@ -48,3 +48,17 @@ export interface CompanyProfileDetail {
   website: string | null;
   issuedShares: string | null;
 }
+
+// 2026-09-04 新增——domainApi「讀取優先」consolidated 查詢 API 的回應形狀。
+// source 區分「本來就有快取」跟「這次請求觸發現算補上」，方便驗證 compute-on-miss
+// 是否真的有作用，也對之後除錯有幫助。
+export interface CompanyMetricValue {
+  value: number | null;
+  asOfDate: string | null;
+  source: 'cache' | 'computed' | 'unavailable';
+}
+
+export interface CompanyMetricsResult {
+  symbol: string;
+  values: Record<string, CompanyMetricValue>;
+}

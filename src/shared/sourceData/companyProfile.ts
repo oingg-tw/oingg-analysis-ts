@@ -268,6 +268,22 @@ const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '個別財報
 const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
   financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
 
+// 2026-09-04 應 web-nuxt/conductor 要求新增——company_profile 的 website 欄位混雜至少三種
+// 格式（"www.acc.com.tw" 純網域、"http://www.ancang.com/" 含 scheme+尾斜線、
+// "www.tactc.com.tw/" 尾斜線但無 scheme），這是資料源頭本身的格式不一致，不該讓每個消費端
+// 各自防禦性清洗，統一在這裡（資料離開本服務之前）處理一次。清洗規則跟 web-nuxt 原本各自
+// 維護的 normalizeWebsiteDomain() 一致（他們之後會刪掉前端那份重複邏輯，只留 Brandfetch URL
+// 組裝——那段是供應商綁定的細節，仍然留在他們那層，不屬於資料正規化）。
+const normalizeWebsiteDomain = (website: string | null): string | null => {
+  if (website === null) return null;
+  const normalized = website
+    .trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/+$/, '')
+    .replace(/^www\./, '');
+  return normalized.length > 0 ? normalized : null;
+};
+
 // 給 GET /companies/profile 用（2026-09-02 應 bff-ts 要求新增，個股詳情頁的公司基本資料卡片）。
 // 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
 // 欄位範圍不完全一樣（TPEx 沒有 english_address/industry_name），沒有的欄位一律回 null，不是
@@ -316,7 +332,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyPr
       englishAddress: twseRow.english_address,
       faxNumber: twseRow.fax_number,
       email: twseRow.email,
-      website: twseRow.website,
+      website: normalizeWebsiteDomain(twseRow.website),
       issuedShares: twseRow.issued_shares?.toString() ?? null,
     };
   }
@@ -368,7 +384,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyPr
     englishAddress: null,
     faxNumber: tpexRow.fax_number,
     email: tpexRow.email,
-    website: tpexRow.website,
+    website: normalizeWebsiteDomain(tpexRow.website),
     issuedShares: tpexRow.issued_shares?.toString() ?? null,
   };
 };

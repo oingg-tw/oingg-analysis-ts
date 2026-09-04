@@ -2,6 +2,8 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail } from '@/shared/sourceData/companyProfile';
 import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
+import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
+import { runCompanyMetrics, CompanyMetricsValidationError } from './metricsService';
 
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
 // 本服務不代為決定；limit 的「上限」（最多允許幾筆）由本服務依自己扛不扛得住決定，所有請求
@@ -78,5 +80,42 @@ export const getCompanyCapitalStockHistory = async (req: Request, res: Response,
     res.status(200).json({ symbol, entries });
   } catch (error) {
     next(error);
+  }
+};
+
+const MAX_METRICS_FIELDS = 50;
+
+const metricsQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1),
+  fields: z
+    .string({ error: 'fields is required.' })
+    .min(1)
+    .transform((value) =>
+      value
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    )
+    .refine((arr) => arr.length >= 1 && arr.length <= MAX_METRICS_FIELDS, `fields 要有 1–${MAX_METRICS_FIELDS} 個，用逗號分隔。`),
+});
+
+// domainApi 讀取優先：consolidated 單一公司指標查詢，取代原本 44 支各自現算的舊端點
+// （見 src/domainApi/companies/metricsService.ts 的說明）。
+export const getCompanyMetrics = async (req: CompanyRouteRequest, res: CompanyRouteResponse) => {
+  const validationResult = metricsQuerySchema.safeParse(req.query);
+  if (!validationResult.success) {
+    res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    return undefined;
+  }
+
+  const { symbol, fields } = validationResult.data;
+  try {
+    return await runCompanyMetrics(symbol, fields);
+  } catch (error) {
+    if (error instanceof CompanyMetricsValidationError) {
+      res.status(400).json({ message: error.message });
+      return undefined;
+    }
+    throw error;
   }
 };
