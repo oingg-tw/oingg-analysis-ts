@@ -14,7 +14,7 @@ const router = Router();
  *       `name`，單一公司的一般指標 API 也會明確補上 `companyName`（見
  *       [`src/shared/registerCompanyRoute.ts`](../../shared/registerCompanyRoute.ts)，取代原本
  *       悄悄猜回應形狀的全域 middleware——現在是 route.ts 明確選擇要不要用這個函式掛路由，
- *       且 TypeScript 會在編譯期強制 handler 的回傳型別要有 companyId）。這支端點還留著，
+ *       且 TypeScript 會在編譯期強制 handler 的回傳型別要有 symbol）。這支端點還留著，
  *       是給還沒被涵蓋到的情境、或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。
  *
  *       涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 `companyName` 會是 `null`。這是低頻
@@ -80,7 +80,7 @@ router.get('/companies', getCompanies);
  *       - System
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string
@@ -90,7 +90,7 @@ router.get('/companies', getCompanies);
  *       200:
  *         description: 公司基本資料。
  *       400:
- *         description: 缺少 companyId。
+ *         description: 缺少 symbol。
  *       404:
  *         description: 查無此公司代號（上市、上櫃都查不到）。
  */

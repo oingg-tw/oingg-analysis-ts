@@ -9,17 +9,17 @@ export type StatementSource = 'balanceSheet' | 'incomeStatement' | 'cashFlowStat
 
 const findLatestQuarterFor = async (
   source: StatementSource,
-  companyId: string,
+  symbol: string,
   dataType: string,
   subsidiaryCompanyId: string
 ): Promise<{ year: number; quarter: number } | null> => {
   if (source === 'balanceSheet') {
-    return getLatestQuarterWithBalanceSheet(companyId, dataType, subsidiaryCompanyId);
+    return getLatestQuarterWithBalanceSheet(symbol, dataType, subsidiaryCompanyId);
   }
   if (source === 'incomeStatement') {
-    return getLatestQuarterWithIncomeStatement(companyId, dataType, subsidiaryCompanyId);
+    return getLatestQuarterWithIncomeStatement(symbol, dataType, subsidiaryCompanyId);
   }
-  return getLatestQuarterWithCashFlowStatement(companyId, dataType, subsidiaryCompanyId);
+  return getLatestQuarterWithCashFlowStatement(symbol, dataType, subsidiaryCompanyId);
 };
 
 // 指標不給 year/season 時，用這支自動解析「這家公司、這幾張表都有資料的最新一季」。
@@ -27,12 +27,12 @@ const findLatestQuarterFor = async (
 // cashFlowPerShare 需要 ['cashFlowStatement']）——取每張表各自最新一季裡最早的那個（交集下界），
 // 保證回傳的季度這幾張表都真的有資料，不是只有其中一張。任一張表完全查無資料就回傳 null。
 export const getLatestAvailableQuarter = async (
-  companyId: string,
+  symbol: string,
   dataType: string,
   subsidiaryCompanyId: string,
   sources: StatementSource[]
 ): Promise<{ year: string; season: Season } | null> => {
-  const latests = await Promise.all(sources.map((source) => findLatestQuarterFor(source, companyId, dataType, subsidiaryCompanyId)));
+  const latests = await Promise.all(sources.map((source) => findLatestQuarterFor(source, symbol, dataType, subsidiaryCompanyId)));
 
   if (latests.some((l) => l === null)) return null;
 

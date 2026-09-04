@@ -19,24 +19,24 @@ interface RawTwseCompanyProfileRow {
 //
 // 2026-09-03 使用者決定 curated 中台層現階段太早，TWSE 這邊改回直接查 twseExportPrisma——跟
 // TPEx 同一種模式（export schema 沒有唯一識別欄位，走 $queryRaw）。
-export const getCompanyName = async (companyId: string): Promise<string | null> => {
+export const getCompanyName = async (symbol: string): Promise<string | null> => {
   const twseRows = await twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`
-    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
   `;
   if (twseRows[0]) return twseRows[0].short_name;
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`
-    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
   `;
   return tpexRows[0]?.short_name ?? null;
 };
 
 // GET /stocks/:symbol/quote 用——判斷這家公司到底存不存在（上市或上櫃任一邊有登記），
 // 不存在才回 404；存在但查無股價/估值資料是另一回事（回 200，欄位是 null）。
-export const companyExists = async (companyId: string): Promise<boolean> => {
+export const companyExists = async (symbol: string): Promise<boolean> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
   ]);
   return twseRows.length > 0 || tpexRows.length > 0;
 };
@@ -246,10 +246,10 @@ const resolveFinancialReportTypeName = (financialReportType: string | null): str
 // 查詢失敗。這裡刻意不篩 source/market——單一公司查詢是使用者/下游服務指名要看這家公司的資料，
 // 不是「排除幽靈代號」那種清單情境（見 getAllSecurityRows 的說明），就算是
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
-export const getCompanyProfileDetail = async (companyId: string): Promise<CompanyProfileDetail | null> => {
+export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyProfileDetail | null> => {
   const twseRows = await twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
     `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
-    companyId
+    symbol
   );
   const twseRow = twseRows[0];
   if (twseRow) {
@@ -300,7 +300,7 @@ export const getCompanyProfileDetail = async (companyId: string): Promise<Compan
       preferred_stock_shares, financial_report_type, stock_transfer_agency, transfer_agency_phone,
       transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
       email, website, issued_shares
-    FROM "export"."company_profile" WHERE symbol = ${companyId} LIMIT 1
+    FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
   `;
   const tpexRow = tpexRows[0];
   if (!tpexRow) return null;
@@ -366,7 +366,7 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
 };
 
 export interface CompanyNameEntry {
-  companyId: string;
+  symbol: string;
   companyName: string | null;
 }
 
@@ -381,14 +381,14 @@ export interface CompanyNameEntry {
 //
 // 少數股票代號兩邊資料庫都有登記（bff-ts 2026-09-01 實測抓到 7914/7932 這兩檔），資料內容
 // 一樣、只是新舊資料尚未收斂——依 symbol 去重，兩邊都有時保留 TWSE 那筆（跟 getCompanyName/
-// companyExists 一律先查 TWSE 再查 TPEx 同一個優先順序），不能讓同一個 companyId 出現兩次，
+// companyExists 一律先查 TWSE 再查 TPEx 同一個優先順序），不能讓同一個 symbol 出現兩次，
 // 之前沒去重害 bff-ts 那邊 upsert 撞到「ON CONFLICT DO UPDATE 同一列被影響兩次」的錯誤。
 const dedupeBySymbol = (rows: { symbol: string; shortName: string | null }[]): CompanyNameEntry[] => {
   const bySymbol = new Map<string, string | null>();
   for (const row of rows) {
     if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, row.shortName);
   }
-  return [...bySymbol].map(([companyId, companyName]) => ({ companyId, companyName }));
+  return [...bySymbol].map(([symbol, companyName]) => ({ symbol, companyName }));
 };
 
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {

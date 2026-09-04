@@ -40,7 +40,7 @@ export const getCompanies = async (req: Request, res: Response, next: NextFuncti
 };
 
 const profileQuerySchema = z.object({
-  companyId: z.string({ error: 'companyId is required.' }).min(1),
+  symbol: z.string({ error: 'symbol is required.' }).min(1),
 });
 
 export const getCompanyProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -50,8 +50,8 @@ export const getCompanyProfile = async (req: Request, res: Response, next: NextF
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const profile = await getCompanyProfileDetail(validationResult.data.companyId);
-    if (!profile) return res.status(404).json({ message: `找不到公司代號 ${validationResult.data.companyId}。` });
+    const profile = await getCompanyProfileDetail(validationResult.data.symbol);
+    if (!profile) return res.status(404).json({ message: `找不到公司代號 ${validationResult.data.symbol}。` });
 
     res.status(200).json(profile);
   } catch (error) {

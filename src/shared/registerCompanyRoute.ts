@@ -6,7 +6,7 @@ import { getCompanyName } from './sourceData/companyProfile';
 // 跟原本被砍掉的全域 middleware 用「猜回應形狀」補名稱是不同種問題，但一樣不夠可靠。
 //
 // 這裡改成「明確註冊」：route.ts 要嘛用這個函式掛路由（一定會補公司名稱，而且 TypeScript
-// 會在編譯期強制 handler 的回傳型別要有 companyId，不是 handler 忘記回傳正確形狀也不會報錯），
+// 會在編譯期強制 handler 的回傳型別要有 symbol，不是 handler 忘記回傳正確形狀也不會報錯），
 // 要嘛用原本的 router.get() 掛（完全不補，例如 ranking/equityRiskPremium 這種不是「單一公司」
 // 的端點）——一看 route.ts 就知道哪些端點有這個行為，不是藏在 index.ts 對全部回應通殺猜形狀。
 //
@@ -21,7 +21,7 @@ export interface CompanyRouteResponse {
 }
 
 // handler 回傳 undefined 代表「已經自己送出回應了」（例如 zod 驗證失敗回 400），
-// registerCompanyRoute 就不會再動作；回傳實際結果（一定要有 companyId）才會補名稱送出。
+// registerCompanyRoute 就不會再動作；回傳實際結果（一定要有 symbol）才會補名稱送出。
 export type CompanyRouteHandler<T extends { symbol: string }> = (req: CompanyRouteRequest, res: CompanyRouteResponse) => Promise<T | undefined>;
 
 export const registerCompanyRoute = <T extends { symbol: string }>(router: Router, path: string, handler: CompanyRouteHandler<T>): void => {

@@ -29,10 +29,16 @@ context 裡都已經穩定使用一段時間，重新命名的成本（改 45 �
 `securities`/ETF）的 `symbol` 不一致——已經連對外 HTTP API 一起改成 `symbol`（query 參數
 `?companyId=` → `?symbol=`，回應欄位 `companyId` → `symbol`），這是刻意的 breaking
 change，已通知 bff-ts 同步更新。`dataCompleteness` 也一併改了（透過
-`indicatorRegistry.ts` 的 job 簽名跟這批指標綁在一起）。**明確排除、沒有動**：
-`src/domainApi/companies/`、`src/shared/sourceData/companyProfile.ts` 內部 helper 的
-`companyId` 參數命名——這些是呼叫端用位置引數傳值，跟參數名稱無關，且 `companies` 網域
-語意上「公司」跟「證券代號」保留一點模糊空間，不勉強統一。
+`indicatorRegistry.ts` 的 job 簽名跟這批指標綁在一起）。
+
+**2026-09-04 追加**：原本這裡寫「明確排除 `companies` 網域」，後來 bff-ts 主動回饋
+`GET /companies/profile` 的 query 參數叫 `companyId`，但同一支端點的回應本體早就用
+`symbol`（`CompanyProfileDetail.symbol`）——同一個端點自己內部就不一致，比單純的跨端點
+落差更糟。已經一併改掉：`/companies/profile`、`/companies`（`CompanyNameEntry.companyId`
+→ `symbol`）、`companyProfile.ts` 整份共用 helper、`registerCompanyRoute.ts`、
+`latestQuarter.ts`。至此 `companyId` 在 `src/`/`tests/` 裡已經完全清空（只留下語意不同的
+`getCompanyIds`/`companyIds`——這是「一批公司代號的陣列」這個概念的函式/變數命名，跟
+單一 `companyId` 是否該叫 `symbol`是不同問題，沒有一併處理）。
 
 ## 財報期別（年/季）
 
