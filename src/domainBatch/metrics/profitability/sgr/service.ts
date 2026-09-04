@@ -1,6 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
 import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitability/dividendPayoutRatio/service';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { SgrQuery, SgrResult } from './types';
 
@@ -14,6 +15,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   sgrTtm: null,
   roeTtm: { value: null },
   payoutRatioTtm: { value: null },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -59,6 +61,10 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
 
   const reportDate = roeResult.reportDate ?? payoutRatioResult.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    sgrTtm === null ? ['sgrTtm', { status: 'no_data', message: 'TTM ROE 或 TTM 配息率無法取得，詳見 roe/dividendPayoutRatio 服務的 warnings。' }] : null,
+  ];
+
   // 存進 oingg-analysis DB 的 profitability_sgr，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.sgrResult.upsert({
@@ -99,6 +105,7 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
     sgrTtm,
     roeTtm: { value: roeTtm },
     payoutRatioTtm: { value: payoutRatioTtm },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

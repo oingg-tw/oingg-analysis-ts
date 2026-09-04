@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface DividendPayoutRatioQuery {
   symbol: string;
@@ -43,5 +44,6 @@ export interface DividendPayoutRatioResult {
     quartersMissing: string[];
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

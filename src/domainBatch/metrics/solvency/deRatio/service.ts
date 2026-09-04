@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -29,6 +30,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   deRatioPct: null,
   totalDebt: { value: null },
   equity: { fieldUsed: null, value: null },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -68,6 +70,10 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
   }
 
   const reportDate = balanceSheet?.reportDate ?? null;
+
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    deRatioPct === null ? ['deRatioPct', { status: 'no_data', message: '本季期末有息負債或權益缺漏，無法計算負債權益比。' }] : null,
+  ];
 
   // 存進 oingg-analysis DB 的 solvency_de_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -111,6 +117,7 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
     deRatioPct,
     totalDebt: { value: totalDebt?.toString() ?? null },
     equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

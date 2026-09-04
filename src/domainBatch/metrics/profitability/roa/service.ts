@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -34,6 +35,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netIncome: { fieldUsed: null, value: null },
   totalAssets: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -117,6 +119,11 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    roaQuarterlyPct === null ? ['roaQuarterlyPct', { status: 'no_data', message: '本季淨利或期末總資產缺漏，無法計算 ROA。' }] : null,
+    roaTtmPct === null ? ['roaTtmPct', { status: 'no_data', message: '近四季淨利資料不齊，或本季期末總資產缺漏，無法計算 TTM ROA。' }] : null,
+  ];
+
   // 存進 oingg-analysis DB 的 profitability_roa，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.roaResult.upsert({
@@ -166,6 +173,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
     netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

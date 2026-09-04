@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface TurnoverRatioQuery {
   symbol: string;
@@ -93,5 +94,6 @@ export interface TurnoverRatioResult {
     quartersMissing: string[];
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

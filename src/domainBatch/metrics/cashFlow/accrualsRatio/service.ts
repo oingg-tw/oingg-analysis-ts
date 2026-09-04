@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -37,6 +38,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   investingCashFlowTtm: { value: null },
   totalAssets: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -153,6 +155,15 @@ export const calculateAccrualsRatio = async (query: AccrualsRatioQuery): Promise
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    accrualsRatioQuarterly === null
+      ? ['accrualsRatioQuarterly', { status: 'no_data', message: '淨利、營業/投資活動現金流量或期末總資產任一缺漏，無法計算應計項目比率。' }]
+      : null,
+    accrualsRatioTtm === null
+      ? ['accrualsRatioTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末總資產缺漏，無法計算 TTM 應計項目比率。' }]
+      : null,
+  ];
+
   // 存進 oingg-analysis DB 的 cash_flow_accruals_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.accrualsRatioResult.upsert({
@@ -217,6 +228,7 @@ export const calculateAccrualsRatio = async (query: AccrualsRatioQuery): Promise
     investingCashFlowTtm: { value: investingCashFlowTtmValue?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

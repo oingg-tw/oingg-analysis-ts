@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface BvpsQuery {
   symbol: string;
@@ -35,5 +36,6 @@ export interface BvpsResult {
     effectiveMonth: number | null;
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

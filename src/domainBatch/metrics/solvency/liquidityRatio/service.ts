@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { LiquidityRatioQuery, LiquidityRatioResult } from './types';
@@ -22,6 +23,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   currentLiabilities: { value: null },
   inventory: { value: null },
   cashAndEquivalents: { value: null },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -66,6 +68,12 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
   }
 
   const reportDate = balanceSheet?.reportDate ?? null;
+
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    currentRatioPct === null ? ['currentRatioPct', { status: 'no_data', message: '本季期末流動資產或流動負債缺漏，無法計算流動比率。' }] : null,
+    quickRatioPct === null ? ['quickRatioPct', { status: 'no_data', message: '本季期末流動資產、存貨或流動負債缺漏，無法計算速動比率。' }] : null,
+    cashRatioPct === null ? ['cashRatioPct', { status: 'no_data', message: '本季期末現金及約當現金或流動負債缺漏，無法計算現金比率。' }] : null,
+  ];
 
   // 存進 oingg-analysis DB 的 solvency_liquidity_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -119,6 +127,7 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
     currentLiabilities: { value: currentLiabilities?.toString() ?? null },
     inventory: { value: inventory?.toString() ?? null },
     cashAndEquivalents: { value: cashAndEquivalents?.toString() ?? null },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

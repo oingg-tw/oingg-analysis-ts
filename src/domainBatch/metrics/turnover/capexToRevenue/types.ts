@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface CapexToRevenueQuery {
   symbol: string;
@@ -45,5 +46,6 @@ export interface CapexToRevenueResult {
     quartersMissing: string[];
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

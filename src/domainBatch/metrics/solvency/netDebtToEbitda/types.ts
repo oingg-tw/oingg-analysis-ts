@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface NetDebtToEbitdaQuery {
   symbol: string;
@@ -49,5 +50,6 @@ export interface NetDebtToEbitdaResult {
     quartersMissing: string[];
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

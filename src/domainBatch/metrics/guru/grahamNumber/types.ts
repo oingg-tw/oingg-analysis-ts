@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface GrahamNumberQuery {
   symbol: string;
@@ -34,5 +35,6 @@ export interface GrahamNumberResult {
     value: number | null; // 引用自 GET /profitability/bvps 的 bvps
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -31,6 +32,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   bvps: null,
   equity: { fieldUsed: null, value: null },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -84,6 +86,10 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
     if (paidInShares <= 0n) warnings.push('流通股數為零或負數，BVPS 數值意義有限，請自行判斷是否採用。');
   }
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    bvps === null ? ['bvps', { status: 'no_data', message: '本季期末權益或流通股數缺漏，無法計算 BVPS。' }] : null,
+  ];
+
   // 存進 oingg-analysis DB 的 profitability_bvps，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.bvpsResult.upsert({
@@ -134,6 +140,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
       effectiveYear,
       effectiveMonth,
     },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

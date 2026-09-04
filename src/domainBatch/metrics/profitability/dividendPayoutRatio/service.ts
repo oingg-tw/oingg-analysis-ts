@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -32,6 +33,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netIncome: { fieldUsed: null, value: null },
   netIncomeTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -129,6 +131,14 @@ export const calculateDividendPayoutRatio = async (query: DividendPayoutRatioQue
 
   const reportDate = currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    payoutRatioTtm === null
+      ? netIncomeTtmValue === null || dividendsPaidTtmValue === null
+        ? ['payoutRatioTtm', { status: 'no_data', message: '近四季損益表資料不齊，無法計算 TTM 配息率。' }]
+        : ['payoutRatioTtm', { status: 'calculation_error', message: '近四季淨利加總為零或負數，配息率無法計算（分母須為正）。' }]
+      : null,
+  ];
+
   // 存進 oingg-analysis DB 的 profitability_dividend_payout_ratio，供之後查歷史紀錄用；也供 sgr/ 直接引用。
   // 存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -179,6 +189,7 @@ export const calculateDividendPayoutRatio = async (query: DividendPayoutRatioQue
     netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
     netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

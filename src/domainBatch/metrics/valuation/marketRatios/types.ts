@@ -1,3 +1,5 @@
+import type { MetricStatus } from '@/shared/metricStatus';
+
 export interface MarketRatiosQuery {
   symbol: string;
   // 選填，格式 YYYY-MM-DD；不給就抓最新一筆。這不是財務季度查詢——PER/PBR 是逐日市場資料，
@@ -18,5 +20,6 @@ export interface MarketRatiosResult {
   pbRatio: number | null;
   dividendYieldPct: number | null;
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

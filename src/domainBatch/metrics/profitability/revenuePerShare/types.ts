@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface RevenuePerShareQuery {
   symbol: string;
@@ -45,5 +46,6 @@ export interface RevenuePerShareResult {
     quartersMissing: string[];
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

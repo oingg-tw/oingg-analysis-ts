@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface NcavQuery {
   symbol: string;
@@ -44,5 +45,6 @@ export interface NcavResult {
     effectiveMonth: number | null;
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

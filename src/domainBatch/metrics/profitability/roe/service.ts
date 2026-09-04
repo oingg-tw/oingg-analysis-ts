@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -43,6 +44,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netIncome: { fieldUsed: null, value: null },
   equity: { fieldUsed: null, value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -125,6 +127,11 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    roeQuarterlyPct === null ? ['roeQuarterlyPct', { status: 'no_data', message: '本季淨利或期末權益缺漏，無法計算 ROE。' }] : null,
+    roeTtmPct === null ? ['roeTtmPct', { status: 'no_data', message: '近四季淨利資料不齊，或本季期末權益缺漏，無法計算 TTM ROE。' }] : null,
+  ];
+
   // 把算完的結果存進 oingg-analysis DB 的 profitability_roe，供之後查歷史紀錄用。
   // 這是額外的存檔動作，不是這支 API 的主要契約——存檔失敗不應該讓已經算好的 ROE 回傳失敗。
   try {
@@ -177,6 +184,7 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
     netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
     equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface SgrQuery {
   symbol: string;
@@ -32,5 +33,6 @@ export interface SgrResult {
     value: number | null; // 引用自 GET /profitability/dividend-payout-ratio 的 payoutRatioTtm
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

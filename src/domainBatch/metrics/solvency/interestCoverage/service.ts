@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -23,6 +24,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   interestExpense: { value: null },
   interestExpenseTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
+  fieldStatuses: {},
   warnings,
 });
 
@@ -97,6 +99,19 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
 
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
+  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
+    interestCoverageQuarterly === null
+      ? ebit === null || interestExpense === null
+        ? ['interestCoverageQuarterly', { status: 'no_data', message: '本季稅前淨利或利息費用缺漏，無法計算利息保障倍數。' }]
+        : ['interestCoverageQuarterly', { status: 'calculation_error', message: '本季利息費用為零，利息保障倍數無法計算（除以零）。' }]
+      : null,
+    interestCoverageTtm === null
+      ? ebitTtmValue === null || interestExpenseTtmValue === null
+        ? ['interestCoverageTtm', { status: 'no_data', message: '近四季資料不齊，無法計算 TTM 利息保障倍數。' }]
+        : ['interestCoverageTtm', { status: 'calculation_error', message: '近四季利息費用加總為零，TTM 利息保障倍數無法計算（除以零）。' }]
+      : null,
+  ];
+
   // 存進 oingg-analysis DB 的 solvency_interest_coverage，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.interestCoverageResult.upsert({
@@ -147,6 +162,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
     interestExpense: { value: interestExpense?.toString() ?? null },
     interestExpenseTtm: { value: interestExpenseTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
+    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

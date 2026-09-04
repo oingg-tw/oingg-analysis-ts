@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface LiquidityRatioQuery {
   symbol: string;
@@ -40,5 +41,6 @@ export interface LiquidityRatioResult {
     value: string | null; // BigInt as string
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }

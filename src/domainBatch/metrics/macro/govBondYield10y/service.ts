@@ -1,4 +1,5 @@
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { buildFieldStatuses } from '@/shared/metricStatus';
 import type { GovBondYield10yResult } from './types';
 
 interface RawGovBondYieldRow {
@@ -23,12 +24,18 @@ export const getLatestGovBondYield10y = async (): Promise<GovBondYield10yResult>
 
   if (!latest) {
     warnings.push('查無任何一個月的 10 年期公債殖利率資料。');
-    return { yieldPct: null, asOfMonth: null, warnings };
+    return {
+      yieldPct: null,
+      asOfMonth: null,
+      fieldStatuses: buildFieldStatuses([['yieldPct', { status: 'no_data', message: '查無任何一個月的 10 年期公債殖利率資料。' }]]),
+      warnings,
+    };
   }
 
   return {
     yieldPct: Number(latest.yield_rate),
     asOfMonth: `${latest.year}-${String(latest.month).padStart(2, '0')}`,
+    fieldStatuses: {},
     warnings,
   };
 };

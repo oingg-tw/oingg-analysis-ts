@@ -1,4 +1,5 @@
 import type { Season } from '@/shared/rocQuarter';
+import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface DeRatioQuery {
   symbol: string;
@@ -33,5 +34,6 @@ export interface DeRatioResult {
     value: string | null; // BigInt as string
   };
 
+  fieldStatuses: Record<string, MetricStatus>;
   warnings: string[];
 }
