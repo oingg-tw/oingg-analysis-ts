@@ -1,0 +1,3 @@
+code,nameEn,nameZh,operand1Code,operator,operand2Code
+BV,Book Value,淨值,asset,-,liability
+ROE,Return On Equity,股東權益報酬率,postTaxEarning,/,BV
