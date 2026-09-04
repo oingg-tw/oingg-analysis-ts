@@ -8,7 +8,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // 2026-08-27 更新：oingg-mops-ts 把 quarterly_income_statement 的 Q4（原本存的是全年累計數，
 // 不是單季數）修正成真的單季數，TTM 系列數字（跨到 114Q4 的窗口）全部改變，本季（單季）數字不受影響。
 test('turnoverRatio: 2330 115Q2 合併報表——五個周轉率、DIO/DSO/DPO/CCC', async () => {
-  const result = await calculateTurnoverRatio({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateTurnoverRatio({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.inventoryTurnoverQuarterly, 1.06);
   assert.equal(result.inventoryTurnoverQuarterlyAnnualized, 4.24);
@@ -45,8 +45,8 @@ test('turnoverRatio: 2330 115Q2 合併報表——五個周轉率、DIO/DSO/DPO/
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('turnoverRatio: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateTurnoverRatio({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateTurnoverRatio({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateTurnoverRatio({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateTurnoverRatio({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -55,7 +55,7 @@ test('turnoverRatio: 2330 不指定 year/season 時自動抓最新一季，結�
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('turnoverRatio: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateTurnoverRatio({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateTurnoverRatio({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

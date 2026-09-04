@@ -5,7 +5,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('macd: 2330 歷史夠深，DIF/DEM/OSC 都算得出來且已收斂', async () => {
-  const result = await calculateMacd({ companyId: '2330' });
+  const result = await calculateMacd({ symbol: '2330' });
 
   assert.ok(result.asOfDate !== null);
   assert.ok(result.dif !== null, '2330 資料量足夠，DIF 應該算得出來');
@@ -17,7 +17,7 @@ test('macd: 2330 歷史夠深，DIF/DEM/OSC 都算得出來且已收斂', async 
 });
 
 test('macd: 資料量不足時回傳 null 並標成 no_data，不是拋錯', async () => {
-  const result = await calculateMacd({ companyId: '1337' });
+  const result = await calculateMacd({ symbol: '1337' });
   if (result.dataCoverage.tradingDays < 26) {
     assert.equal(result.dif, null);
     assert.equal(result.dem, null);
@@ -27,7 +27,7 @@ test('macd: 資料量不足時回傳 null 並標成 no_data，不是拋錯', asy
 });
 
 test('macd: 9999（查無資料的公司）回傳 not_applicable', async () => {
-  const result = await calculateMacd({ companyId: '9999' });
+  const result = await calculateMacd({ symbol: '9999' });
   assert.equal(result.asOfDate, null);
   assert.equal(result.dif, null);
   assert.equal(result.fieldStatuses.dif?.status, 'not_applicable');

@@ -22,15 +22,15 @@ export interface CompanyRouteResponse {
 
 // handler 回傳 undefined 代表「已經自己送出回應了」（例如 zod 驗證失敗回 400），
 // registerCompanyRoute 就不會再動作；回傳實際結果（一定要有 companyId）才會補名稱送出。
-export type CompanyRouteHandler<T extends { companyId: string }> = (req: CompanyRouteRequest, res: CompanyRouteResponse) => Promise<T | undefined>;
+export type CompanyRouteHandler<T extends { symbol: string }> = (req: CompanyRouteRequest, res: CompanyRouteResponse) => Promise<T | undefined>;
 
-export const registerCompanyRoute = <T extends { companyId: string }>(router: Router, path: string, handler: CompanyRouteHandler<T>): void => {
+export const registerCompanyRoute = <T extends { symbol: string }>(router: Router, path: string, handler: CompanyRouteHandler<T>): void => {
   router.get(path, async (req, res, next) => {
     try {
       const result = await handler(req, res);
       if (result === undefined) return; // handler 已經自己送出回應（例如驗證失敗的 400），不用再做事。
 
-      const companyName = await getCompanyName(result.companyId).catch((error) => {
+      const companyName = await getCompanyName(result.symbol).catch((error) => {
         console.error(`[registerCompanyRoute ${path}]: 查詢公司名稱失敗，回傳原始結果不補公司名稱。`, error);
         return null;
       });

@@ -28,7 +28,7 @@ taxonomy 把 `VWAP_OBV` 列成一個指標，但這裡只做了 OBV：真正的 
 - **`BIAS` 直接複用 `MA` 的 `simpleMovingAverage` 函式**，同一個窗口長度會得到一樣的 MA 值，MA 算不出來乖離率也就算不出來，不重複實作。
 - **`Bollinger_Bands` 用母體標準差**（分母是 N，不是 N-1），業界慣例算法，不是統計課本的樣本標準差。
 - **`OBV` 是累積值，沒有跨公司比較意義**——從資料庫目前收錄的最早一筆開始累加，不同公司歷史起點不同，只有同一公司內看趨勢變化才有意義；`prisma/analysis/schema.prisma` 的 `ObvResult.obv` 刻意用 `BigInt` 不是 `Decimal`，`filterCatalogCheck.ts` 只認 `Decimal` 欄位為可 filter 的指標，`obv` 因此自動不會出現在 `filterCatalog.ts`，是刻意的設計，不是漏加。
-- **查詢介面是 `companyId` + 選填 `asOfDate`**，跟 `GET /portfolio/beta`、`GET /valuation/market-ratios` 同一種模式，不是 `year`/`season`——技術指標是逐日市場資料，跟財務季度是不同的時間刻度。指定的 `asOfDate` 不是交易日時，自動退回往前最近的交易日並在 `warnings` 註明。
+- **查詢介面是 `symbol` + 選填 `asOfDate`**，跟 `GET /portfolio/beta`、`GET /valuation/market-ratios` 同一種模式，不是 `year`/`season`——技術指標是逐日市場資料，跟財務季度是不同的時間刻度。指定的 `asOfDate` 不是交易日時，自動退回往前最近的交易日並在 `warnings` 註明。
 
 ## 指標清單
 

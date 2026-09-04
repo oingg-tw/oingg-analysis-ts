@@ -4,8 +4,8 @@ import { calculateDividendPayoutRatio } from '@/domainBatch/metrics/profitabilit
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { SgrQuery, SgrResult } from './types';
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): SgrResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): SgrResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -18,7 +18,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——取
@@ -27,9 +27,9 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, [
       '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 SGR。',
     ]);
   }
@@ -39,7 +39,7 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
 
   // 把解析出來的固定季度傳給 roe/dividendPayoutRatio，兩支底層服務都收到已經確定的 year/season，
   // 不會各自再重複解析一次（也不會各自解析出不同季度）。
-  const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+  const resolvedQuery = { symbol, year, season, dataType, subsidiaryCompanyId };
 
   // 直接引用已經做好的 roe/、dividendPayoutRatio/ 服務，不重複實作查詢邏輯——
   // 副作用是這兩支服務各自也會 upsert 自己的 profitability_roe/profitability_dividend_payout_ratio，
@@ -63,10 +63,10 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
   try {
     await analysisPrisma.sgrResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -90,7 +90,7 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

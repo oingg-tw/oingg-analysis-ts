@@ -69,8 +69,8 @@ const calculateAfterTaxNetInterestExpense = (record: IncomeStatementSlice | null
 const isQuarterComplete = (record: IncomeStatementSlice | null): boolean =>
   calculateNopat(record) !== null && calculateAfterTaxNetInterestExpense(record) !== null;
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): NissimPenmanRnoaResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): NissimPenmanRnoaResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -99,25 +99,25 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): Promise<NissimPenmanRnoaResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季，見 shared/sourceData/latestQuarter.ts。
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, [
       '查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算 Nissim & Penman RNOA。',
     ]);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+  const resolvedQuery = { symbol, year, season, dataType, subsidiaryCompanyId };
 
-  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const key = { symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // roeResult 只拿來對照重組出來的 ROE 準不準（actualRoeQuarterlyPct/actualRoeTtmPct），不是本指標
   // 自己需要查詢的欄位——跟 dupont 引用 roe/ 同一種模式，副作用是 roe/ 也會照常 upsert 自己的表。
@@ -174,7 +174,7 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   const ttmIncomeRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyIncomeStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -231,10 +231,10 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   try {
     await analysisPrisma.nissimPenmanRnoaResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -288,7 +288,7 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

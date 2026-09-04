@@ -5,7 +5,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('bias: 2330 歷史夠深，三個窗口都算得出合理範圍內的值', async () => {
-  const result = await calculateBiasIndicator({ companyId: '2330' });
+  const result = await calculateBiasIndicator({ symbol: '2330' });
 
   assert.ok(result.asOfDate !== null);
   for (const key of ['bias5d', 'bias20d', 'bias60d'] as const) {
@@ -18,7 +18,7 @@ test('bias: 2330 歷史夠深，三個窗口都算得出合理範圍內的值', 
 });
 
 test('bias: 資料量不足時回傳 null 並標成 no_data，不是拋錯', async () => {
-  const result = await calculateBiasIndicator({ companyId: '1337' });
+  const result = await calculateBiasIndicator({ symbol: '1337' });
   if (result.dataCoverage.tradingDays < 60) {
     assert.equal(result.bias60d.value, null);
     assert.equal(result.fieldStatuses.bias60d?.status, 'no_data');
@@ -26,7 +26,7 @@ test('bias: 資料量不足時回傳 null 並標成 no_data，不是拋錯', asy
 });
 
 test('bias: 9999（查無資料的公司）回傳 not_applicable', async () => {
-  const result = await calculateBiasIndicator({ companyId: '9999' });
+  const result = await calculateBiasIndicator({ symbol: '9999' });
   assert.equal(result.asOfDate, null);
   for (const key of ['bias5d', 'bias20d', 'bias60d'] as const) {
     assert.equal(result[key].value, null);

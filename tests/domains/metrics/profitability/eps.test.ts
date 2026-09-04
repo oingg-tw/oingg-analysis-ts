@@ -7,7 +7,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 2330 115Q2 合併報表實測值。
 test('eps: 2330 115Q2 合併報表，指定季度', async () => {
-  const result = await calculateEps({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateEps({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.epsQuarterly, 27.25);
   assert.equal(result.epsQuarterlyAnnualized, 109);
@@ -18,8 +18,8 @@ test('eps: 2330 115Q2 合併報表，指定季度', async () => {
 
 // year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('eps: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateEps({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateEps({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateEps({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateEps({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -31,7 +31,7 @@ test('eps: 2330 不指定 year/season 時自動抓最新一季，結果應該跟
 // 不會誤看資產負債表」這件事，不是凍結某天的快照。
 test('eps: 自動抓最新一季應該直接是損益表自己的最新一季，不受資產負債表影響', async () => {
   const expected = await getLatestAvailableQuarter('2887', '2', '', ['incomeStatement']);
-  const auto = await calculateEps({ companyId: '2887', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateEps({ symbol: '2887', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.ok(expected, '2887 應該至少有一季損益表資料');
   assert.equal(auto.year, expected!.year);
@@ -40,7 +40,7 @@ test('eps: 自動抓最新一季應該直接是損益表自己的最新一季，
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('eps: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateEps({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateEps({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

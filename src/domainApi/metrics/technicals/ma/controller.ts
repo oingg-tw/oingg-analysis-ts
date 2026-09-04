@@ -3,7 +3,7 @@ import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registe
 import { calculateMa } from '@/domainBatch/metrics/technicals/ma/service';
 
 const querySchema = z.object({
-  companyId: z.string({ error: 'companyId is required.' }).min(1),
+  symbol: z.string({ error: 'symbol is required.' }).min(1),
   asOfDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'asOfDate must be in YYYY-MM-DD format.').optional(),
 });
 

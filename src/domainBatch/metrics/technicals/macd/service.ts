@@ -14,22 +14,22 @@ const CONVERGED_THRESHOLD = LONG_WINDOW * 3;
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
 export const calculateMacd = async (query: MacdQuery): Promise<MacdResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算 MACD。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算 MACD。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算 MACD。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算 MACD。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       dif: null,
       dem: null,
@@ -84,8 +84,8 @@ export const calculateMacd = async (query: MacdQuery): Promise<MacdResult> => {
 
   try {
     await analysisPrisma.macdResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
-      create: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), dif, dem, osc, warnings },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      create: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), dif, dem, osc, warnings },
       update: { dif, dem, osc, warnings },
     });
   } catch (error) {
@@ -93,7 +93,7 @@ export const calculateMacd = async (query: MacdQuery): Promise<MacdResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     dif,
     dem,

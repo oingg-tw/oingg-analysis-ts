@@ -7,7 +7,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // EV_EBITDA 用到逐日更新的股價資料，數值每天在變，不釘死確切數字，只驗證合理性——
 // 跟 altmanZScore 的 X4/zScore 同一種測試風格，見 tests/README.md。
 test('evEbitda: 2330 115Q2 合併報表，指定季度', async () => {
-  const result = await calculateEvEbitda({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateEvEbitda({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, '115');
   assert.equal(result.season, '2');
@@ -26,8 +26,8 @@ test('evEbitda: 2330 115Q2 合併報表，指定季度', async () => {
 });
 
 test('evEbitda: 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateEvEbitda({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateEvEbitda({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateEvEbitda({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateEvEbitda({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -35,7 +35,7 @@ test('evEbitda: 不指定 year/season 時自動抓最新一季，結果應該跟
 });
 
 test('evEbitda: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateEvEbitda({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateEvEbitda({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

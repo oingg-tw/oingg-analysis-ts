@@ -24,7 +24,7 @@ const router = Router();
  *       - Technicals
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string

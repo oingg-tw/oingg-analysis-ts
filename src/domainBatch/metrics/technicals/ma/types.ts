@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface MaQuery {
-  companyId: string;
+  symbol: string;
   // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。逐日市場資料，
   // 跟其他指標的 year/season 是不同的查詢介面，跟 marketRatios/beta 同一種模式。
   asOfDate?: string;
@@ -13,7 +13,7 @@ export interface MaWindowValue {
 }
 
 export interface MaResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null; // 實際使用的基準日；完全查無資料則為 null
 
   // SMA（簡單移動平均），業界慣例這幾個天數窗口都是簡單平均，不是指數平均（EMA 只用在 MACD）。

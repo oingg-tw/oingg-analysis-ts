@@ -11,7 +11,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // 差異來自 assetTurnover 等中間值四捨五入到小數點後 2~4 位造成的正常誤差，尤其單季週轉率本身數值
 // 較小（0.14），四捨五入造成的相對誤差會被放大，屬預期現象。
 test('dupont: 2330 115Q2 合併報表', async () => {
-  const result = await calculateDupont({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateDupont({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.netProfitMarginQuarterly, 55.62);
   assert.equal(result.netProfitMarginTtm, 50.38);
@@ -36,7 +36,7 @@ test('dupont: 2330 115Q2 合併報表', async () => {
 // 杜邦分析在底層資料缺漏時能優雅降級：所有欄位回 null、fieldStatuses 標明 no_data、warnings
 // 有人類可讀說明。
 test('dupont: 9999 115Q2 合併報表（底層資料缺漏，優雅降級）', async () => {
-  const result = await calculateDupont({ companyId: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateDupont({ symbol: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.netProfitMarginQuarterly, null);
   assert.equal(result.assetTurnoverQuarterly, null);
@@ -51,8 +51,8 @@ test('dupont: 9999 115Q2 合併報表（底層資料缺漏，優雅降級）', a
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('dupont: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateDupont({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateDupont({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateDupont({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateDupont({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -61,7 +61,7 @@ test('dupont: 2330 不指定 year/season 時自動抓最新一季，結果應該
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('dupont: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateDupont({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateDupont({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

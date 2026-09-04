@@ -3,7 +3,7 @@ import type { MetricStatus } from '@/shared/metricStatus';
 import type { PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 
 export interface AltmanZScoreQuery {
-  companyId: string;
+  symbol: string;
   // year/season 選填，但要成對——只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
   // 不給就自動抓最新一季有資產負債表資料的季度，跟其他指標「必填」不一樣，因為這個指標同時
   // 需要「某季財報基本面」跟「市值（逐日）」，跟 valuation/marketRatios 討論過的介面設計一致。
@@ -14,7 +14,7 @@ export interface AltmanZScoreQuery {
 }
 
 export interface AltmanZScoreResult {
-  companyId: string;
+  symbol: string;
   // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
   year: string | null;
   season: Season | null;

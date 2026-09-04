@@ -1,12 +1,12 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface MacdQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
 export interface MacdResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // DIF = EMA(12) - EMA(26)；DEM（訊號線） = EMA(DIF, 9)；OSC = DIF - DEM。固定參數

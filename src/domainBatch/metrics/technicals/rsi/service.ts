@@ -10,24 +10,24 @@ type WindowKey = 'rsi6d' | 'rsi14d' | 'rsi24d';
 const WINDOW_KEYS: Record<(typeof WINDOWS)[number], WindowKey> = { 6: 'rsi6d', 14: 'rsi14d', 24: 'rsi24d' };
 
 export const calculateRsi = async (query: RsiQuery): Promise<RsiResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
   const emptyWindow = (window: number): RsiWindowValue => ({ value: null, window });
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算 RSI。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算 RSI。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算 RSI。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算 RSI。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       rsi6d: emptyWindow(6),
       rsi14d: emptyWindow(14),
@@ -54,8 +54,8 @@ export const calculateRsi = async (query: RsiQuery): Promise<RsiResult> => {
 
   try {
     await analysisPrisma.rsiResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
-      create: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), rsi6d: values.rsi6d, rsi14d: values.rsi14d, rsi24d: values.rsi24d, warnings },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      create: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), rsi6d: values.rsi6d, rsi14d: values.rsi14d, rsi24d: values.rsi24d, warnings },
       update: { rsi6d: values.rsi6d, rsi14d: values.rsi14d, rsi24d: values.rsi24d, warnings },
     });
   } catch (error) {
@@ -63,7 +63,7 @@ export const calculateRsi = async (query: RsiQuery): Promise<RsiResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     rsi6d: { value: values.rsi6d, window: 6 },
     rsi14d: { value: values.rsi14d, window: 14 },

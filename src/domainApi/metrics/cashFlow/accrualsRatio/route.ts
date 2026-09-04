@@ -30,7 +30,7 @@ const router = Router();
  *       - Cash Flow
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string

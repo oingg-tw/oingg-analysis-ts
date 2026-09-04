@@ -10,24 +10,24 @@ type WindowKey = 'ma5d' | 'ma10d' | 'ma20d' | 'ma60d' | 'ma120d' | 'ma200d';
 const WINDOW_KEYS: Record<(typeof WINDOWS)[number], WindowKey> = { 5: 'ma5d', 10: 'ma10d', 20: 'ma20d', 60: 'ma60d', 120: 'ma120d', 200: 'ma200d' };
 
 export const calculateMa = async (query: MaQuery): Promise<MaResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
   const emptyWindow = (window: number): MaWindowValue => ({ value: null, window });
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算移動平均線。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算移動平均線。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算移動平均線。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算移動平均線。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       ma5d: emptyWindow(5),
       ma10d: emptyWindow(10),
@@ -57,9 +57,9 @@ export const calculateMa = async (query: MaQuery): Promise<MaResult> => {
   // 存進 oingg-analysis DB 的 technicals_ma，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.maResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`),
         ma5d: values.ma5d,
         ma10d: values.ma10d,
@@ -84,7 +84,7 @@ export const calculateMa = async (query: MaQuery): Promise<MaResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     ma5d: { value: values.ma5d, window: 5 },
     ma10d: { value: values.ma10d, window: 10 },

@@ -3,7 +3,7 @@ import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registe
 import { calculateBeta } from '@/domainBatch/metrics/portfolio/beta/service';
 
 const querySchema = z.object({
-  companyId: z.string({ error: 'companyId is required.' }).min(1),
+  symbol: z.string({ error: 'symbol is required.' }).min(1),
   // 選填，格式 YYYY-MM-DD；不給就抓「股價跟指數都有資料的最新一個重疊交易日」。
   asOfDate: z
     .string()

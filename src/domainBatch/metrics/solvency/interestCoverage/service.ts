@@ -9,8 +9,8 @@ const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100; // 四捨五入到小數 2 位，單位是「次」
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): InterestCoverageResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): InterestCoverageResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -27,21 +27,21 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateInterestCoverage = async (query: InterestCoverageQuery): Promise<InterestCoverageResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司損益表有資料」的最新一季——不同公司財報
   // 申報進度不同步（實測驗證過：2887 損益表曾經卡在比資產負債表舊 3 季），見 shared/sourceData/latestQuarter.ts。
   const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined ? { year: query.year, season: query.season } : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement']);
+    query.year !== undefined && query.season !== undefined ? { year: query.year, season: query.season } : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算利息保障倍數。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算利息保障倍數。']);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentIncomeStatement) warnings.push('查無該季損益表資料。');
 
   const interestExpense = currentIncomeStatement?.financeCosts ?? null;
@@ -61,7 +61,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyIncomeStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -101,10 +101,10 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
   try {
     await analysisPrisma.interestCoverageResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -134,7 +134,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

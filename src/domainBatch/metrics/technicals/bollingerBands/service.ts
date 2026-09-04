@@ -9,24 +9,24 @@ const WINDOW = 20;
 const MULTIPLIER = 2;
 
 export const calculateBollingerBands = async (query: BollingerBandsQuery): Promise<BollingerBandsResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
   const emptyBand = (): BandValue => ({ value: null, window: WINDOW });
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算布林通道。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算布林通道。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算布林通道。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算布林通道。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       middle: emptyBand(),
       upper: emptyBand(),
@@ -57,8 +57,8 @@ export const calculateBollingerBands = async (query: BollingerBandsQuery): Promi
 
   try {
     await analysisPrisma.bollingerBandsResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
-      create: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), middle: bands?.middle ?? null, upper: bands?.upper ?? null, lower: bands?.lower ?? null, warnings },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      create: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), middle: bands?.middle ?? null, upper: bands?.upper ?? null, lower: bands?.lower ?? null, warnings },
       update: { middle: bands?.middle ?? null, upper: bands?.upper ?? null, lower: bands?.lower ?? null, warnings },
     });
   } catch (error) {
@@ -66,7 +66,7 @@ export const calculateBollingerBands = async (query: BollingerBandsQuery): Promi
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     middle: { value: bands?.middle ?? null, window: WINDOW },
     upper: { value: bands?.upper ?? null, window: WINDOW },

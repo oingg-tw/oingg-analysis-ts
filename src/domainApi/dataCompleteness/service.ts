@@ -8,9 +8,9 @@ import type { CategoryCompleteness, DataCompletenessQuery, DataCompletenessResul
 // 副作用：呼叫這支 API 會讓這 44 支指標各自把這家公司的結果 upsert 進自己的表，這是預期行為，
 // 不是意外——跟本服務其他複合指標「呼叫時底層服務也會照常存檔」是同一種慣例。
 export const calculateDataCompleteness = async (query: DataCompletenessQuery): Promise<DataCompletenessResult> => {
-  const { companyId } = query;
+  const { symbol } = query;
 
-  const settledResults = await Promise.allSettled(indicatorJobs.map((job) => job.run(companyId)));
+  const settledResults = await Promise.allSettled(indicatorJobs.map((job) => job.run(symbol)));
 
   const categories: Record<string, CategoryCompleteness> = {};
 
@@ -41,7 +41,7 @@ export const calculateDataCompleteness = async (query: DataCompletenessQuery): P
   const totalOk = Object.values(categories).reduce((sum, category) => sum + category.ok, 0);
 
   return {
-    companyId,
+    symbol,
     totalIndicators,
     overallCompletenessPct: Math.round((totalOk / totalIndicators) * 100 * 100) / 100,
     categories,

@@ -21,8 +21,8 @@ const toPerShare = (equityInThousands: bigint, shares: bigint): number | null =>
   return Math.round(((Number(equityInThousands) * 1000) / Number(shares)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): BvpsResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): BvpsResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -35,22 +35,22 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表有資料」的最新一季，見 shared/sourceData/latestQuarter.ts。
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表有資料的季度，無法決定要用哪一季計算 BVPS。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表有資料的季度，無法決定要用哪一季計算 BVPS。']);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
   if (!balanceSheet) warnings.push('查無該季資產負債表資料。');
   if (subsidiaryCompanyId) {
@@ -68,7 +68,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
   let effectiveYear: number | null = null;
   let effectiveMonth: number | null = null;
   if (reportDate) {
-    const shares = await getPaidInSharesAsOf(companyId, reportDate);
+    const shares = await getPaidInSharesAsOf(symbol, reportDate);
     if (shares) {
       paidInShares = shares.paidInShares;
       effectiveYear = shares.effectiveYear;
@@ -88,10 +88,10 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
   try {
     await analysisPrisma.bvpsResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -121,7 +121,7 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

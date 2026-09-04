@@ -9,8 +9,8 @@ const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): NetDebtToEbitdaResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): NetDebtToEbitdaResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -28,7 +28,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Promise<NetDebtToEbitdaResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——
@@ -37,9 +37,9 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, [
       '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算淨負債對 EBITDA 比。',
     ]);
   }
@@ -47,7 +47,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const key = { symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const [balanceSheet, currentIncomeStatement, currentCashFlow] = await Promise.all([
     getQuarterlyBalanceSheet(key),
@@ -90,7 +90,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const ttmIncomeRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyIncomeStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -101,7 +101,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   const ttmCashFlowRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyCashFlowStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -160,10 +160,10 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   try {
     await analysisPrisma.netDebtToEbitdaResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -195,7 +195,7 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

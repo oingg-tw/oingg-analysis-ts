@@ -7,7 +7,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 2330 115Q2 合併報表實測值。
 test('interestCoverage: 2330 115Q2 合併報表，指定季度', async () => {
-  const result = await calculateInterestCoverage({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateInterestCoverage({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.interestCoverageQuarterly, 280.55);
   assert.equal(result.interestCoverageTtm, 227.02);
@@ -17,8 +17,8 @@ test('interestCoverage: 2330 115Q2 合併報表，指定季度', async () => {
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('interestCoverage: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateInterestCoverage({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateInterestCoverage({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateInterestCoverage({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateInterestCoverage({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -30,7 +30,7 @@ test('interestCoverage: 2330 不指定 year/season 時自動抓最新一季，�
 // 現查現算的結果當期望值，驗證的是「interestCoverage 不會誤看資產負債表」這件事。
 test('interestCoverage: 自動抓最新一季應該直接是損益表自己的最新一季，不受資產負債表影響', async () => {
   const expected = await getLatestAvailableQuarter('2887', '2', '', ['incomeStatement']);
-  const auto = await calculateInterestCoverage({ companyId: '2887', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateInterestCoverage({ symbol: '2887', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.ok(expected, '2887 應該至少有一季損益表資料');
   assert.equal(auto.year, expected!.year);
@@ -39,7 +39,7 @@ test('interestCoverage: 自動抓最新一季應該直接是損益表自己的�
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('interestCoverage: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateInterestCoverage({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateInterestCoverage({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

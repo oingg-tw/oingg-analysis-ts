@@ -5,7 +5,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('bollingerBands: 2330 歷史夠深，上軌 >= 中軌 >= 下軌', async () => {
-  const result = await calculateBollingerBands({ companyId: '2330' });
+  const result = await calculateBollingerBands({ symbol: '2330' });
 
   assert.ok(result.asOfDate !== null);
   assert.ok(result.middle.value !== null && result.upper.value !== null && result.lower.value !== null);
@@ -15,7 +15,7 @@ test('bollingerBands: 2330 歷史夠深，上軌 >= 中軌 >= 下軌', async () 
 });
 
 test('bollingerBands: 資料量不足時三個欄位都回傳 null 並標成 no_data，不是拋錯', async () => {
-  const result = await calculateBollingerBands({ companyId: '1337' });
+  const result = await calculateBollingerBands({ symbol: '1337' });
   if (result.dataCoverage.tradingDays < 20) {
     assert.equal(result.middle.value, null);
     assert.equal(result.fieldStatuses.middle?.status, 'no_data');
@@ -23,7 +23,7 @@ test('bollingerBands: 資料量不足時三個欄位都回傳 null 並標成 no_
 });
 
 test('bollingerBands: 9999（查無資料的公司）回傳 not_applicable', async () => {
-  const result = await calculateBollingerBands({ companyId: '9999' });
+  const result = await calculateBollingerBands({ symbol: '9999' });
   assert.equal(result.asOfDate, null);
   for (const key of ['middle', 'upper', 'lower'] as const) {
     assert.equal(result[key].value, null);

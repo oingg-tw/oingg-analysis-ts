@@ -29,14 +29,14 @@ interface QuarterData {
 }
 
 const fetchQuarterData = async (
-  companyId: string,
+  symbol: string,
   year: string,
   season: Season,
   dataType: string,
   subsidiaryCompanyId: string
 ): Promise<QuarterData> => {
   const key = {
-    symbol: companyId,
+    symbol: symbol,
     year: Number(year),
     quarter: Number(season),
     dataType,
@@ -50,7 +50,7 @@ const fetchQuarterData = async (
   ]);
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlow?.reportDate ?? null;
-  const paidInShares = reportDate ? (await getPaidInSharesAsOf(companyId, reportDate))?.paidInShares ?? null : null;
+  const paidInShares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
 
   return {
     netIncome: pickNetIncome(incomeStatement),
@@ -72,8 +72,8 @@ const ratio = (numerator: bigint | null, denominator: bigint | null): number | n
   return Number(numerator) / Number(denominator);
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): PiotroskiFScoreResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): PiotroskiFScoreResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -90,7 +90,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Promise<PiotroskiFScoreResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季——
@@ -99,9 +99,9 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, [
       '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 Piotroski F-Score。',
     ]);
   }
@@ -113,8 +113,8 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
   const prior = fiveQuartersBack[0]!;
 
   const [curr, prev] = await Promise.all([
-    fetchQuarterData(companyId, year, season, dataType, subsidiaryCompanyId),
-    fetchQuarterData(companyId, prior.year, prior.season, dataType, subsidiaryCompanyId),
+    fetchQuarterData(symbol, year, season, dataType, subsidiaryCompanyId),
+    fetchQuarterData(symbol, prior.year, prior.season, dataType, subsidiaryCompanyId),
   ]);
 
   if (!curr.reportDate) warnings.push(`查無 ${year}Q${season} 的財報資料（資產負債表/損益表/現金流量表皆查無）。`);
@@ -204,7 +204,7 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
     await analysisPrisma.piotroskiFScoreResult.upsert({
       where: {
         symbol_year_season_dataType_subsidiaryCompanyId: {
-          symbol: companyId,
+          symbol: symbol,
           year: Number(year),
           season: Number(season),
           dataType,
@@ -212,7 +212,7 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
         },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: Number(year),
         season: Number(season),
         dataType,
@@ -256,7 +256,7 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

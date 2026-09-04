@@ -4,7 +4,7 @@ import { calculateOhlsonOScore } from '@/domainBatch/metrics/guru/ohlsonOScore/s
 
 const querySchema = z
   .object({
-    companyId: z.string({ error: 'companyId is required.' }).min(1),
+    symbol: z.string({ error: 'symbol is required.' }).min(1),
     // year/season 選填但要成對——不給就自動抓最新一季，只給其中一個視為無效請求（見下方 refine）。
     year: z.string().min(1).optional(),
     season: z.enum(['1', '2', '3', '4']).optional(),

@@ -21,8 +21,8 @@ const toPct = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100; // 四捨五入到小數 2 位
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RoaResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RoaResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -38,7 +38,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季——不同公司財報
@@ -46,15 +46,15 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算 ROA。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算 ROA。']);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const key = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const key = { symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const [incomeStatement, balanceSheet] = await Promise.all([
     getQuarterlyIncomeStatement(key),
@@ -82,7 +82,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyIncomeStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -121,10 +121,10 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
   try {
     await analysisPrisma.roaResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -154,7 +154,7 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

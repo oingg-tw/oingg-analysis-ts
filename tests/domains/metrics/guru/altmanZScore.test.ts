@@ -24,7 +24,7 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
     LIMIT 1
   `;
   const announcement = announcementRows[0];
-  const result = await calculateAltmanZScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateAltmanZScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, '115');
   assert.equal(result.season, '2');
@@ -60,7 +60,7 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
 // 114Q2 的 financial_report_announcement 有資料（2330 公告日 2025-08-12，比期末日 2025-06-30
 // 晚 43 天），驗證真的優先用了公告日，不是還在用期末日。
 test('altmanZScore: 2330 114Q2 合併報表——有公告日資料，X4 股價基準應該用公告日不是期末日', async () => {
-  const result = await calculateAltmanZScore({ companyId: '2330', year: '114', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateAltmanZScore({ symbol: '2330', year: '114', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.reportDate, '2025-06-30');
   assert.equal(result.marketCap.priceAnchorSource, 'announcement');
@@ -72,8 +72,8 @@ test('altmanZScore: 2330 114Q2 合併報表——有公告日資料，X4 股價�
 });
 
 test('altmanZScore: 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateAltmanZScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateAltmanZScore({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateAltmanZScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateAltmanZScore({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -89,7 +89,7 @@ test('altmanZScore: 不指定 year/season 時自動抓最新一季，結果應�
 // __NOT_A_REAL_SYMBOL__ 的作法。
 test('altmanZScore: 不存在的公司代號，X1/X2/X3/X5 應該是 no_data，X4 應該是 not_applicable', async () => {
   const covered = await hasStockPriceCoverage('__NOT_A_REAL_SYMBOL__');
-  const result = await calculateAltmanZScore({ companyId: '__NOT_A_REAL_SYMBOL__', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateAltmanZScore({ symbol: '__NOT_A_REAL_SYMBOL__', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(covered, false, '假代號不應該有任何股價覆蓋率');
   assert.equal(result.x4, null);

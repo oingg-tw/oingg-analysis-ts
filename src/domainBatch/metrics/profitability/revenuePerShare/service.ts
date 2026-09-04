@@ -12,8 +12,8 @@ const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RevenuePerShareResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): RevenuePerShareResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -30,22 +30,22 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Promise<RevenuePerShareResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司損益表有資料」的最新一季，見 shared/sourceData/latestQuarter.ts。
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['incomeStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算每股營收。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季損益表有資料的季度，無法決定要用哪一季計算每股營收。']);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const currentIncomeStatement = await getQuarterlyIncomeStatement({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentIncomeStatement) warnings.push('查無該季損益表資料。');
   if (subsidiaryCompanyId) {
     warnings.push(
@@ -61,7 +61,7 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyIncomeStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -93,7 +93,7 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
   let effectiveYear: number | null = null;
   let effectiveMonth: number | null = null;
   if (reportDate) {
-    const shares = await getPaidInSharesAsOf(companyId, reportDate);
+    const shares = await getPaidInSharesAsOf(symbol, reportDate);
     if (shares) {
       paidInShares = shares.paidInShares;
       effectiveYear = shares.effectiveYear;
@@ -121,10 +121,10 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
   try {
     await analysisPrisma.revenuePerShareResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -158,7 +158,7 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

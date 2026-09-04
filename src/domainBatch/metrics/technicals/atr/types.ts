@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface AtrQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
@@ -11,7 +11,7 @@ export interface AtrWindowValue {
 }
 
 export interface AtrResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // 真實波動幅度的 Wilder 平滑移動平均，跟 RSI 同一種「前 window 期簡單平均當種子、之後遞迴

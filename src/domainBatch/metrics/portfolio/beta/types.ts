@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface BetaQuery {
-  companyId: string;
+  symbol: string;
   // 選填，格式 YYYY-MM-DD；不給就抓「股價跟指數都有資料的最新一個重疊交易日」。
   // 逐日市場資料，跟其他指標的 year/season 是不同的查詢介面，跟 marketRatios/ 同一種模式。
   asOfDate?: string;
@@ -18,7 +18,7 @@ export interface BetaWindow {
 }
 
 export interface BetaResult {
-  companyId: string;
+  symbol: string;
   // 實際使用的基準日——股價跟指數都有資料的最新（或指定日期之前最近）一個重疊交易日。
   asOfDate: string | null;
 

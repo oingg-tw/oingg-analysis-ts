@@ -1,5 +1,5 @@
 export interface DataCompletenessQuery {
-  companyId: string;
+  symbol: string;
 }
 
 // ok：呼叫成功、沒有任何 warnings（資料齊全，算出來的每個欄位都有值）。
@@ -24,7 +24,7 @@ export interface CategoryCompleteness {
 }
 
 export interface DataCompletenessResult {
-  companyId: string;
+  symbol: string;
   totalIndicators: number;
   overallCompletenessPct: number; // 全部 44 支指標裡 ok 的比例
   categories: Record<string, CategoryCompleteness>; // key 對應 filterCatalog category key

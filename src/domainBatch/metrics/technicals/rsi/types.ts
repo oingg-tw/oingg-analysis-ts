@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface RsiQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
@@ -11,7 +11,7 @@ export interface RsiWindowValue {
 }
 
 export interface RsiResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // Wilder's RSI，業界最常見的版本（前 window 期漲跌幅簡單平均當種子，之後 Wilder 平滑遞迴），

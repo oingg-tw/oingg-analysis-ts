@@ -6,7 +6,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2330（台積電）115Q2 vs 114Q2（去年同季）合併報表實測值。
 test('piotroskiFScore: 2330 115Q2 vs 114Q2，9 項訊號全部能判斷，score=8', async () => {
-  const result = await calculatePiotroskiFScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculatePiotroskiFScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.priorYear, '114');
   assert.equal(result.priorSeason, '2');
@@ -31,7 +31,7 @@ test('piotroskiFScore: 2330 115Q2 vs 114Q2，9 項訊號全部能判斷，score=
 // 「不要拿會隨資料庫累積而改變的狀態寫死成斷言」的教訓（2026-08-31 用 1101 115Q2 踩過一次：
 // mops-ts 那陣子在做 reconciliation/backfill，補上了這一季的資料，斷言因此失敗）。
 test('piotroskiFScore: 查無資料的公司回傳 score=null，9 項訊號都是 no_data，不是拋錯', async () => {
-  const result = await calculatePiotroskiFScore({ companyId: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculatePiotroskiFScore({ symbol: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.score, null);
   assert.ok(result.signals.every((s) => s.passed === null));
@@ -44,8 +44,8 @@ test('piotroskiFScore: 查無資料的公司回傳 score=null，9 項訊號都�
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('piotroskiFScore: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculatePiotroskiFScore({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculatePiotroskiFScore({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculatePiotroskiFScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculatePiotroskiFScore({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -54,7 +54,7 @@ test('piotroskiFScore: 2330 不指定 year/season 時自動抓最新一季，結
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('piotroskiFScore: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculatePiotroskiFScore({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculatePiotroskiFScore({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

@@ -8,8 +8,8 @@ import type { DupontQuery, DupontResult } from './types';
 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): DupontResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): DupontResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -31,7 +31,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateDupont = async (query: DupontQuery): Promise<DupontResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表跟損益表都有資料」的最新一季——margins
@@ -40,15 +40,15 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算杜邦分析。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季資產負債表/損益表都有資料的季度，無法決定要用哪一季計算杜邦分析。']);
   }
   const { year, season } = resolvedQuarter;
 
   // 把解析出來的固定季度傳給 margins/turnoverRatio/roe，三支底層服務都收到已經確定的 year/season，
   // 不會各自再重複解析一次（也不會各自解析出不同季度）。
-  const resolvedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+  const resolvedQuery = { symbol, year, season, dataType, subsidiaryCompanyId };
 
   // 3 步杜邦分析的三個因子分別引用已經做好的 margins/、turnoverRatio/、roe/ 服務，不重複實作
   // 損益表/資產負債表查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這三支服務
@@ -118,7 +118,7 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
     await analysisPrisma.dupontResult.upsert({
       where: {
         symbol_year_season_dataType_subsidiaryCompanyId: {
-          symbol: companyId,
+          symbol: symbol,
           year: Number(year),
           season: Number(season),
           dataType,
@@ -126,7 +126,7 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
         },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: Number(year),
         season: Number(season),
         dataType,
@@ -168,7 +168,7 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

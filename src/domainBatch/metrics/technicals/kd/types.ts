@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface KdQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
@@ -11,7 +11,7 @@ export interface KdWindowValue {
 }
 
 export interface KdResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // K/D 初始值用業界慣例的 50，從序列最開頭能算出 RSV 的地方開始遞迴到 asOfDate，

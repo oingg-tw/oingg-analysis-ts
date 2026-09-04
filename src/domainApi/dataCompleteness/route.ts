@@ -21,13 +21,13 @@ const router = Router();
  *       **副作用**：呼叫這支 API 會讓這 44 支指標各自把這家公司的結果 upsert 進自己的表——
  *       這是預期行為，等同對這家公司單獨跑一次批次預算，不是意外。
  *
- *       `macro/equityRiskPremium`（全市場單一值，沒有 companyId）跟 `valuation/ranking`
+ *       `macro/equityRiskPremium`（全市場單一值，沒有 symbol）跟 `valuation/ranking`
  *       （本身是跨公司排行端點）不適用「單一公司」這個模式，不列在統計裡。
  *     tags:
  *       - System
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string

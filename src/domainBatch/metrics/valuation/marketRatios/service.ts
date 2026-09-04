@@ -3,12 +3,12 @@ import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import type { MarketRatiosQuery, MarketRatiosResult } from './types';
 
 export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<MarketRatiosResult> => {
-  const { companyId, date } = query;
+  const { symbol, date } = query;
   const warnings: string[] = [];
 
   const asOfDate = date ? new Date(`${date}T00:00:00.000Z`) : undefined;
 
-  const valuation = await getDailyValuationAsOf(companyId, asOfDate);
+  const valuation = await getDailyValuationAsOf(symbol, asOfDate);
 
   let peRatio: number | null = null;
   let pbRatio: number | null = null;
@@ -38,8 +38,8 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
   if (tradeDate) {
     try {
       await analysisPrisma.marketRatiosResult.upsert({
-        where: { symbol_tradeDate: { symbol: companyId, tradeDate } },
-        create: { symbol: companyId, tradeDate, peRatio, pbRatio, dividendYieldPct, warnings },
+        where: { symbol_tradeDate: { symbol: symbol, tradeDate } },
+        create: { symbol: symbol, tradeDate, peRatio, pbRatio, dividendYieldPct, warnings },
         update: { peRatio, pbRatio, dividendYieldPct, warnings },
       });
     } catch (error) {
@@ -48,7 +48,7 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
   }
 
   return {
-    companyId,
+    symbol,
     tradeDate: tradeDate?.toISOString().slice(0, 10) ?? null,
     peRatio,
     pbRatio,

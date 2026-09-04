@@ -1,7 +1,7 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface BollingerBandsQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
@@ -11,7 +11,7 @@ export interface BandValue {
 }
 
 export interface BollingerBandsResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // middle = SMA(20)，upper/lower = middle ± 2 個母體標準差（不是樣本標準差），

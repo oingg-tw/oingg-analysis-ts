@@ -10,24 +10,24 @@ type WindowKey = 'atr14d' | 'atr20d';
 const WINDOW_KEYS: Record<(typeof WINDOWS)[number], WindowKey> = { 14: 'atr14d', 20: 'atr20d' };
 
 export const calculateAtr = async (query: AtrQuery): Promise<AtrResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
   const emptyWindow = (window: number): AtrWindowValue => ({ value: null, window });
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算 ATR。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算 ATR。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算 ATR。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算 ATR。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       atr14d: emptyWindow(14),
       atr20d: emptyWindow(20),
@@ -55,8 +55,8 @@ export const calculateAtr = async (query: AtrQuery): Promise<AtrResult> => {
 
   try {
     await analysisPrisma.atrResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
-      create: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), atr14d: values.atr14d, atr20d: values.atr20d, warnings },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      create: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), atr14d: values.atr14d, atr20d: values.atr20d, warnings },
       update: { atr14d: values.atr14d, atr20d: values.atr20d, warnings },
     });
   } catch (error) {
@@ -64,7 +64,7 @@ export const calculateAtr = async (query: AtrQuery): Promise<AtrResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     atr14d: { value: values.atr14d, window: 14 },
     atr20d: { value: values.atr20d, window: 20 },

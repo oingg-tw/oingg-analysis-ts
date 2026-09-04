@@ -1,7 +1,7 @@
 // 全部 44 支「單一公司、有 calculate* 函式」指標的登錄檔——2026-09-01 從
 // scripts/batchComputeIndicators.ts 抽出來，讓批次預算腳本跟 src/domainApi/dataCompleteness/
 // 共用同一份清單，不要兩邊各維護一份容易漂移。`macro/equityRiskPremium`（全市場單一值，沒有
-// companyId）跟 `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，
+// symbol）跟 `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，
 // 不列進來，見 scripts/batchComputeIndicators.ts 開頭的說明。
 //
 // 2026-09-04：計算邏輯本體（`./metrics/**/service.ts`，含 upsert 進 analysis 結果表的動作）
@@ -70,7 +70,7 @@ export interface IndicatorJob {
   name: string; // 對應 filterCatalog metric key
   category: string; // 對應 filterCatalog category key，給完整度報告分組用
   getCompanyIds: () => Promise<string[]>;
-  run: (companyId: string) => Promise<IndicatorResult>;
+  run: (symbol: string) => Promise<IndicatorResult>;
 }
 
 // 三個公司清單來源，各自只查一次、被多個 job 共用。
@@ -91,7 +91,7 @@ const marketRatiosIdsPromise = Promise.all([
   return [...allValuationSymbols].filter((symbol) => allCompanySymbols.has(symbol));
 });
 
-const mopsQuery = (companyId: string) => ({ companyId, dataType: '2' as const, subsidiaryCompanyId: '' });
+const mopsQuery = (symbol: string) => ({ symbol, dataType: '2' as const, subsidiaryCompanyId: '' });
 
 export const indicatorJobs: IndicatorJob[] = [
   // profitability
@@ -134,15 +134,15 @@ export const indicatorJobs: IndicatorJob[] = [
   { name: 'psr', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculatePsr(mopsQuery(id)) },
   { name: 'pFcf', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculatePFcf(mopsQuery(id)) },
   { name: 'evEbitda', category: 'valuation', getCompanyIds: () => mopsIdsPromise, run: (id) => calculateEvEbitda(mopsQuery(id)) },
-  { name: 'marketRatios', category: 'valuation', getCompanyIds: () => marketRatiosIdsPromise, run: (id) => calculateMarketRatios({ companyId: id }) },
+  { name: 'marketRatios', category: 'valuation', getCompanyIds: () => marketRatiosIdsPromise, run: (id) => calculateMarketRatios({ symbol: id }) },
   // portfolio + technicals（純市場資料）
-  { name: 'beta', category: 'portfolio', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBeta({ companyId: id }) },
-  { name: 'ma', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMa({ companyId: id }) },
-  { name: 'rsi', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateRsi({ companyId: id }) },
-  { name: 'kd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateKd({ companyId: id }) },
-  { name: 'bollingerBands', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBollingerBands({ companyId: id }) },
-  { name: 'atr', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateAtr({ companyId: id }) },
-  { name: 'bias', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBiasIndicator({ companyId: id }) },
-  { name: 'macd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMacd({ companyId: id }) },
-  { name: 'obv', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateObv({ companyId: id }) },
+  { name: 'beta', category: 'portfolio', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBeta({ symbol: id }) },
+  { name: 'ma', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMa({ symbol: id }) },
+  { name: 'rsi', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateRsi({ symbol: id }) },
+  { name: 'kd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateKd({ symbol: id }) },
+  { name: 'bollingerBands', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBollingerBands({ symbol: id }) },
+  { name: 'atr', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateAtr({ symbol: id }) },
+  { name: 'bias', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateBiasIndicator({ symbol: id }) },
+  { name: 'macd', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateMacd({ symbol: id }) },
+  { name: 'obv', category: 'technicals', getCompanyIds: () => twsePriceIdsPromise, run: (id) => calculateObv({ symbol: id }) },
 ];

@@ -16,22 +16,22 @@ const toMultiple = (enterpriseValue: number, ebitdaInThousands: bigint): number 
 };
 
 const resolveQuarter = async (
-  companyId: string,
+  symbol: string,
   dataType: string,
   subsidiaryCompanyId: string,
   year: string | undefined,
   season: Season | undefined
 ): Promise<{ year: string; season: Season } | null> => {
   if (year !== undefined && season !== undefined) return { year, season };
-  return getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  return getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 };
 
 export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   const emptyResult = (year: string | null, season: Season | null, statuses: Array<[string, MetricStatus]>): EvEbitdaResult => ({
-    companyId,
+    symbol,
     year,
     season,
     dataType,
@@ -49,7 +49,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
     warnings,
   });
 
-  const resolvedQuarter = await resolveQuarter(companyId, dataType, subsidiaryCompanyId, query.year, query.season);
+  const resolvedQuarter = await resolveQuarter(symbol, dataType, subsidiaryCompanyId, query.year, query.season);
   if (!resolvedQuarter) {
     warnings.push('查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 EV_EBITDA。');
     const noData: MetricStatus = { status: 'no_data', message: '查無任何一季資產負債表/損益表/現金流量表都有資料的季度。' };
@@ -62,7 +62,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const composedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+  const composedQuery = { symbol, year, season, dataType, subsidiaryCompanyId };
 
   // 淨負債、EBITDA（單季、TTM）直接引用 netDebtToEbitda 已經算好的數字，不重複實作三張表查詢/
   // TTM 加總邏輯——跟 psr/、pFcf/ 同一種模式。副作用是 netDebtToEbitda 也會照常把自己的結果
@@ -79,7 +79,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
 
   // 股價基準要用「市場真正知道這季財報的那天」（財報公告日），不是財報期末日，避免 look-ahead
   // bias——見 shared/sourceData/reportAnnouncementDate.ts 的說明，跟 altmanZScore 的 X4 同一套邏輯。
-  const priceAnchor = await getPriceAnchorDate(companyId, yearNum, seasonNum, reportDate);
+  const priceAnchor = await getPriceAnchorDate(symbol, yearNum, seasonNum, reportDate);
   let marketCapValue: number | null = null;
   let marketCapTradeDate: string | null = null;
   if (priceAnchor) {
@@ -88,12 +88,12 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
         `查無 ${year}Q${season} 的財報公告日（financial_report_announcement 覆蓋率會持續成長），市值改用財報期末日（${priceAnchor.date.toISOString().slice(0, 10)}）估算，可能有 look-ahead bias——市場實際上要到公告日才知道這一季財報數字。`
       );
     }
-    const marketCap = await getMarketCapAsOf(companyId, priceAnchor.date);
+    const marketCap = await getMarketCapAsOf(symbol, priceAnchor.date);
     if (marketCap) {
       marketCapValue = marketCap.marketCap;
       marketCapTradeDate = marketCap.tradeDate;
     } else {
-      warnings.push(`查無 ${companyId} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，企業價值無法計算，見 fieldStatuses。`);
+      warnings.push(`查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，企業價值無法計算，見 fieldStatuses。`);
     }
   }
 
@@ -105,7 +105,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
   // 覆蓋率會持續成長（見 shared/sourceData/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
   // 在 oingg-twse daily_price 裡有沒有任何資料，用來區分是「這家公司結構性不在覆蓋範圍內」
   // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
-  const stockPriceCovered = marketCapValue === null ? await hasStockPriceCoverage(companyId) : true;
+  const stockPriceCovered = marketCapValue === null ? await hasStockPriceCoverage(symbol) : true;
   const marketCapMissingStatus: MetricStatus = stockPriceCovered
     ? { status: 'no_data', message: '市值缺漏（股價或股本資料查無），無法計算企業價值。' }
     : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
@@ -129,10 +129,10 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
   try {
     await analysisPrisma.evEbitdaResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -166,7 +166,7 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

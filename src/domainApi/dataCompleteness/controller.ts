@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { calculateDataCompleteness } from './service';
 
 const querySchema = z.object({
-  companyId: z.string({ error: 'companyId is required.' }).min(1),
+  symbol: z.string({ error: 'symbol is required.' }).min(1),
 });
 
 export const getDataCompleteness = async (req: Request, res: Response, next: NextFunction) => {

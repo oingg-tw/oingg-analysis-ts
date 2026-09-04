@@ -8,24 +8,24 @@ import type { KdQuery, KdResult, KdWindowValue } from './types';
 const WINDOWS = [9, 14] as const;
 
 export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
   const emptyWindow = (window: number): KdWindowValue => ({ value: null, window });
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算 KD。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算 KD。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算 KD。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算 KD。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       k9d: emptyWindow(9),
       d9d: emptyWindow(9),
@@ -66,9 +66,9 @@ export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
 
   try {
     await analysisPrisma.kdResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`),
         k9d: kd9?.k ?? null,
         d9d: kd9?.d ?? null,
@@ -83,7 +83,7 @@ export const calculateKd = async (query: KdQuery): Promise<KdResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     k9d: { value: kd9?.k ?? null, window: 9 },
     d9d: { value: kd9?.d ?? null, window: 9 },

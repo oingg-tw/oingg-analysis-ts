@@ -1,7 +1,7 @@
 import type { Season } from '@/shared/rocQuarter';
 
 export interface GrahamNumberQuery {
-  companyId: string;
+  symbol: string;
   // year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
   // （eps/bvps 兩個組成指標各自需要的表的聯集，見 shared/sourceData/latestQuarter.ts），只給其中一個視為
   // 無效請求（在 controller 用 zod refine 擋掉）。解析出來的具體季度會原樣往下傳給 eps/bvps，
@@ -13,7 +13,7 @@ export interface GrahamNumberQuery {
 }
 
 export interface GrahamNumberResult {
-  companyId: string;
+  symbol: string;
   // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
   year: string | null;
   season: Season | null;

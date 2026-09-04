@@ -1,12 +1,12 @@
 import type { MetricStatus } from '@/shared/metricStatus';
 
 export interface ObvQuery {
-  companyId: string;
+  symbol: string;
   asOfDate?: string; // 選填，格式 YYYY-MM-DD；不給就抓「這家公司目前最新一筆股價」。
 }
 
 export interface ObvResult {
-  companyId: string;
+  symbol: string;
   asOfDate: string | null;
 
   // OBV（能量潮）：從 daily_price 目前收錄的最早一筆開始累加，收盤價比前一天高就加成交量、

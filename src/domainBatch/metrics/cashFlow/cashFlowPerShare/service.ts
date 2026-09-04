@@ -12,8 +12,8 @@ const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100; // 四捨五入到小數 2 位
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): CashFlowPerShareResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): CashFlowPerShareResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -35,21 +35,21 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): Promise<CashFlowPerShareResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司現金流量表有資料」的最新一季——不同公司財報申報進度不同步，
   // 見 shared/sourceData/latestQuarter.ts。
   const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined ? { year: query.year, season: query.season } : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+    query.year !== undefined && query.season !== undefined ? { year: query.year, season: query.season } : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, ['查無任何一季現金流量表有資料的季度，無法決定要用哪一季計算每股現金流。']);
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, ['查無任何一季現金流量表有資料的季度，無法決定要用哪一季計算每股現金流。']);
   }
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const currentCashFlow = await getQuarterlyCashFlowStatement({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const currentCashFlow = await getQuarterlyCashFlowStatement({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId });
   if (!currentCashFlow) warnings.push('查無該季現金流量表資料。');
   if (subsidiaryCompanyId) {
     warnings.push(
@@ -70,7 +70,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   const ttmRecords = await Promise.all(
     ttmQuarters.map((q) =>
       getQuarterlyCashFlowStatement({
-        symbol: companyId,
+        symbol: symbol,
         year: Number(q.year),
         quarter: Number(q.season),
         dataType,
@@ -104,7 +104,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   let effectiveYear: number | null = null;
   let effectiveMonth: number | null = null;
   if (reportDate) {
-    const shares = await getPaidInSharesAsOf(companyId, reportDate);
+    const shares = await getPaidInSharesAsOf(symbol, reportDate);
     if (shares) {
       paidInShares = shares.paidInShares;
       effectiveYear = shares.effectiveYear;
@@ -145,10 +145,10 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   try {
     await analysisPrisma.cashFlowPerShareResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -192,7 +192,7 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

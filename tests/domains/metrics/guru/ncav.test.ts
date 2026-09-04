@@ -6,7 +6,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 對照 2330 115Q2 合併報表實測值。
 test('ncav: 2330 115Q2 合併報表，指定季度', async () => {
-  const result = await calculateNcav({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateNcav({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.ncav, 64.19);
   assert.equal(result.marginOfSafetyPrice, 42.79);
@@ -18,8 +18,8 @@ test('ncav: 2330 115Q2 合併報表，指定季度', async () => {
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。
 test('ncav: 2330 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
-  const explicit = await calculateNcav({ companyId: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
-  const auto = await calculateNcav({ companyId: '2330', dataType: '2', subsidiaryCompanyId: '' });
+  const explicit = await calculateNcav({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateNcav({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
@@ -31,7 +31,7 @@ test('ncav: 2330 不指定 year/season 時自動抓最新一季，結果應該�
 // 實測驗證過的），不需要（也不會）因為損益表卡在 114Q2 而被拖慢，這是跟 roe.test.ts 的 2887
 // 案例互補的對照組：sources 只有一張表時，交集就是那張表自己的最新一季。
 test('ncav: 2887 自動抓最新一季應該直接等於資產負債表自己的最新一季（115Q1），不需要跟損益表交集', async () => {
-  const auto = await calculateNcav({ companyId: '2887', dataType: '2', subsidiaryCompanyId: '' });
+  const auto = await calculateNcav({ symbol: '2887', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(auto.year, '115');
   assert.equal(auto.season, '1');
@@ -44,7 +44,7 @@ test('ncav: 2887 自動抓最新一季應該直接等於資產負債表自己的
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。
 test('ncav: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {
-  const result = await calculateNcav({ companyId: '9999', dataType: '2', subsidiaryCompanyId: '' });
+  const result = await calculateNcav({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.year, null);
   assert.equal(result.season, null);

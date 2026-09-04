@@ -5,7 +5,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 test('kd: 2330 歷史夠深，K/D 都算得出 0~100 之間的值', async () => {
-  const result = await calculateKd({ companyId: '2330' });
+  const result = await calculateKd({ symbol: '2330' });
 
   assert.ok(result.asOfDate !== null);
   for (const key of ['k9d', 'd9d', 'k14d', 'd14d'] as const) {
@@ -17,7 +17,7 @@ test('kd: 2330 歷史夠深，K/D 都算得出 0~100 之間的值', async () => 
 });
 
 test('kd: 資料量不足時回傳 null 並標成 no_data，不是拋錯', async () => {
-  const result = await calculateKd({ companyId: '1337' });
+  const result = await calculateKd({ symbol: '1337' });
   if (result.dataCoverage.tradingDays < 14) {
     assert.equal(result.k14d.value, null);
     assert.equal(result.d14d.value, null);
@@ -26,7 +26,7 @@ test('kd: 資料量不足時回傳 null 並標成 no_data，不是拋錯', async
 });
 
 test('kd: 9999（查無資料的公司）回傳 not_applicable', async () => {
-  const result = await calculateKd({ companyId: '9999' });
+  const result = await calculateKd({ symbol: '9999' });
   assert.equal(result.asOfDate, null);
   for (const key of ['k9d', 'd9d', 'k14d', 'd14d'] as const) {
     assert.equal(result[key].value, null);

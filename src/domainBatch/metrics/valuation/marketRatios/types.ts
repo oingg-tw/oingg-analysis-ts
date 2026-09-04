@@ -1,12 +1,12 @@
 export interface MarketRatiosQuery {
-  companyId: string;
+  symbol: string;
   // 選填，格式 YYYY-MM-DD；不給就抓最新一筆。這不是財務季度查詢——PER/PBR 是逐日市場資料，
   // 跟其他指標的 year/season 查詢介面不是同一種時間刻度，刻意不套用那套模板。
   date?: string;
 }
 
 export interface MarketRatiosResult {
-  companyId: string;
+  symbol: string;
   // 實際套用的交易日——有指定 date 時，是「該日期或之前」最新一筆；沒指定就是整張表最新一筆。
   tradeDate: string | null;
 

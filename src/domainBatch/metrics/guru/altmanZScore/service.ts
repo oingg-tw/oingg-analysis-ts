@@ -20,14 +20,14 @@ const INDUSTRY_APPLICABILITY_WARNING =
 // 見 shared/sourceData/latestQuarter.ts 的說明，不同公司財報進度不同步是實測驗證過的真實狀況（2887 損益表
 // 曾經卡在比資產負債表舊 3 季），只看資產負債表會誤判成「有資料」但其實那一季損益表是空的。
 const resolveQuarter = async (
-  companyId: string,
+  symbol: string,
   dataType: string,
   subsidiaryCompanyId: string,
   year: string | undefined,
   season: Season | undefined
 ): Promise<{ year: string; season: Season } | null> => {
   if (year !== undefined && season !== undefined) return { year, season };
-  return getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  return getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
 };
 
 const toRatio = (numerator: number, denominator: number): number | null => {
@@ -36,11 +36,11 @@ const toRatio = (numerator: number, denominator: number): number | null => {
 };
 
 export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<AltmanZScoreResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [INDUSTRY_APPLICABILITY_WARNING];
 
   const emptyResult = (year: string | null, season: Season | null, statuses: Array<[string, MetricStatus]>): AltmanZScoreResult => ({
-    companyId,
+    symbol,
     year,
     season,
     dataType,
@@ -58,7 +58,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     warnings,
   });
 
-  const resolvedQuarter = await resolveQuarter(companyId, dataType, subsidiaryCompanyId, query.year, query.season);
+  const resolvedQuarter = await resolveQuarter(symbol, dataType, subsidiaryCompanyId, query.year, query.season);
   if (!resolvedQuarter) {
     warnings.push('查無任何一季的資產負債表資料，無法決定要用哪一季計算 Altman Z-Score。');
     const noData: MetricStatus = { status: 'no_data', message: '查無任何一季的資產負債表資料。' };
@@ -75,13 +75,13 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   const { year, season } = resolvedQuarter;
   const yearNum = Number(year);
   const seasonNum = Number(season);
-  const composedQuery = { companyId, year, season, dataType, subsidiaryCompanyId };
+  const composedQuery = { symbol, year, season, dataType, subsidiaryCompanyId };
 
   // X3（EBIT TTM）、X5（營收 TTM/總資產）直接引用已經做好的 interestCoverage/turnoverRatio 服務，
   // 不重複實作 TTM 查詢邏輯——跟 grahamNumber 引用 eps/bvps 同一種模式。副作用是這兩支服務
   // 也會各自照常把自己的結果 upsert 進 solvency_interest_coverage/turnover_ratio，是預期行為。
   const [balanceSheet, interestCoverageResult, turnoverRatioResult] = await Promise.all([
-    getQuarterlyBalanceSheet({ symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    getQuarterlyBalanceSheet({ symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId }),
     calculateInterestCoverage(composedQuery),
     calculateTurnoverRatio(composedQuery),
   ]);
@@ -126,7 +126,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   // 只是會計期間的結尾，市場那天根本還不知道財報數字，拿期末日當股價基準會有 look-ahead bias。
   // 優先查 financial_report_announcement 的公告日，查無資料（目前覆蓋率很低）才退回期末日，
   // 見 shared/sourceData/reportAnnouncementDate.ts 的說明。
-  const priceAnchor = await getPriceAnchorDate(companyId, yearNum, seasonNum, reportDate);
+  const priceAnchor = await getPriceAnchorDate(symbol, yearNum, seasonNum, reportDate);
   let marketCapValue: number | null = null;
   let marketCapTradeDate: string | null = null;
   let x4: number | null = null;
@@ -136,7 +136,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
         `查無 ${year}Q${season} 的財報公告日（financial_report_announcement 目前只涵蓋少數公司/季度），X4 市值改用財報期末日（${priceAnchor.date.toISOString().slice(0, 10)}）估算，可能有 look-ahead bias——市場實際上要到公告日才知道這一季財報數字。`
       );
     }
-    const marketCap = await getMarketCapAsOf(companyId, priceAnchor.date);
+    const marketCap = await getMarketCapAsOf(symbol, priceAnchor.date);
     if (marketCap) {
       marketCapValue = marketCap.marketCap;
       marketCapTradeDate = marketCap.tradeDate;
@@ -146,7 +146,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
       if (totalLiabilities !== null) x4 = toRatio(marketCapValue, Number(totalLiabilities) * 1000);
     } else {
       warnings.push(
-        `查無 ${companyId} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算，見 fieldStatuses。`
+        `查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，X4（市值/總負債）無法計算，見 fieldStatuses。`
       );
     }
   }
@@ -169,7 +169,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   // 覆蓋率會持續成長（見 shared/sourceData/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
   // 在 oingg-twse daily_price 裡有沒有任何資料，用來區分 X4 是「這家公司結構性不在覆蓋範圍內」
   // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
-  const stockPriceCovered = x4 === null ? await hasStockPriceCoverage(companyId) : true;
+  const stockPriceCovered = x4 === null ? await hasStockPriceCoverage(symbol) : true;
 
   const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
     x1 === null
@@ -200,10 +200,10 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   try {
     await analysisPrisma.altmanZScoreResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -237,7 +237,7 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

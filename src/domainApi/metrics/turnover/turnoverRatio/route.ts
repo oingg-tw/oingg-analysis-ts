@@ -38,7 +38,7 @@ const router = Router();
  *       - Turnover
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string

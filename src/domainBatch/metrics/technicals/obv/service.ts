@@ -6,22 +6,22 @@ import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
 import type { ObvQuery, ObvResult } from './types';
 
 export const calculateObv = async (query: ObvQuery): Promise<ObvResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
 
-  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(companyId, asOfDate);
+  const { series, effectiveAsOf, fellBackFromRequestedDate } = await resolvePriceSeries(symbol, asOfDate);
   if (fellBackFromRequestedDate) {
     warnings.push(`指定日期 ${asOfDate} 不是交易日或還沒有資料，改用往前最近的交易日 ${effectiveAsOf}。`);
   }
 
   if (series.length === 0) {
-    const covered = await hasStockPriceCoverage(companyId);
+    const covered = await hasStockPriceCoverage(symbol);
     const status: MetricStatus = covered
       ? { status: 'no_data', message: '查無股價資料。' }
       : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-    warnings.push(covered ? `${companyId} 查無股價資料，無法計算 OBV。` : `${companyId} 不在 daily_price 覆蓋範圍內，無法計算 OBV。`);
+    warnings.push(covered ? `${symbol} 查無股價資料，無法計算 OBV。` : `${symbol} 不在 daily_price 覆蓋範圍內，無法計算 OBV。`);
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       obv: null,
       dataCoverage: { tradingDays: 0, earliestDate: null },
@@ -43,8 +43,8 @@ export const calculateObv = async (query: ObvQuery): Promise<ObvResult> => {
 
   try {
     await analysisPrisma.obvResult.upsert({
-      where: { symbol_tradeDate: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
-      create: { symbol: companyId, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), obv, warnings },
+      where: { symbol_tradeDate: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`) } },
+      create: { symbol: symbol, tradeDate: new Date(`${effectiveAsOf}T00:00:00.000Z`), obv, warnings },
       update: { obv, warnings },
     });
   } catch (error) {
@@ -52,7 +52,7 @@ export const calculateObv = async (query: ObvQuery): Promise<ObvResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     obv: obv?.toString() ?? null,
     dataCoverage: { tradingDays: closes.length, earliestDate: series[0]!.tradeDate },

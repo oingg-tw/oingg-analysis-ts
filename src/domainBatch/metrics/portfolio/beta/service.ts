@@ -122,7 +122,7 @@ const computeWindow = (points: OverlapPoint[], windowEnd: Date, years: number, f
 };
 
 export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
-  const { companyId, asOfDate } = query;
+  const { symbol, asOfDate } = query;
   const warnings: string[] = [];
   const requestedAsOf = asOfDate ? new Date(`${asOfDate}T00:00:00.000Z`) : null;
 
@@ -136,12 +136,12 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     requestedAsOf
       ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
           SELECT trade_date, close FROM "export"."daily_price"
-          WHERE symbol = ${companyId} AND trade_date >= ${fiveYearsBack} AND trade_date <= ${requestedAsOf}
+          WHERE symbol = ${symbol} AND trade_date >= ${fiveYearsBack} AND trade_date <= ${requestedAsOf}
           ORDER BY trade_date ASC
         `
       : twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
           SELECT trade_date, close FROM "export"."daily_price"
-          WHERE symbol = ${companyId} AND trade_date >= ${fiveYearsBack}
+          WHERE symbol = ${symbol} AND trade_date >= ${fiveYearsBack}
           ORDER BY trade_date ASC
         `,
     requestedAsOf
@@ -155,7 +155,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
           WHERE trade_date >= ${fiveYearsBack}
           ORDER BY trade_date ASC
         `,
-    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_price" WHERE symbol = ${companyId}`,
+    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_price" WHERE symbol = ${symbol}`,
     twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_taiex_index"`,
   ]);
   const stockRange = stockRangeRows[0]!;
@@ -188,13 +188,13 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // portfolio/README.md 說明。這裡本來就是現查 stockRange（不是寫死公司代號判斷），只有訊息
   // 文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
   if (stockRange.min_date === null) {
-    warnings.push(`daily_price 目前沒有 ${companyId} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
+    warnings.push(`daily_price 目前沒有 ${symbol} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
     const notApplicable: MetricStatus = {
       status: 'not_applicable',
-      message: `daily_price 目前沒有涵蓋 ${companyId}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
+      message: `daily_price 目前沒有涵蓋 ${symbol}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
     };
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       beta1Y: emptyWindow('daily'),
       beta2Y: emptyWindow('weekly'),
@@ -228,7 +228,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     warnings.push('查無股價與指數都有資料的重疊交易日，無法計算 Beta（兩個資料源的交易日完全沒有交集）。');
     const noData: MetricStatus = { status: 'no_data', message: '查無股價與指數都有資料的重疊交易日。' };
     return {
-      companyId,
+      symbol,
       asOfDate: null,
       beta1Y: emptyWindow('daily'),
       beta2Y: emptyWindow('weekly'),
@@ -269,9 +269,9 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // 跟 marketRatios/ 同一種「跟季度脫鉤」的存檔模式。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.betaResult.upsert({
-      where: { symbol_asOfDate: { symbol: companyId, asOfDate: effectiveAsOfDate } },
+      where: { symbol_asOfDate: { symbol: symbol, asOfDate: effectiveAsOfDate } },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         asOfDate: effectiveAsOfDate,
         beta1Y: beta1Y.value,
         beta2Y: beta2Y.value,
@@ -296,7 +296,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   }
 
   return {
-    companyId,
+    symbol,
     asOfDate: effectiveAsOf,
     beta1Y,
     beta2Y,

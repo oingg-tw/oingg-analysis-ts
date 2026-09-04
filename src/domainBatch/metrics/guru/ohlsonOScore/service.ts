@@ -36,8 +36,8 @@ const sumNetIncome = (
   return { sum: quartersMissing.length === 0 ? sum : null, quartersUsed, quartersMissing };
 };
 
-const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): OhlsonOScoreResult => ({
-  companyId,
+const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): OhlsonOScoreResult => ({
+  symbol,
   year: null,
   season: null,
   dataType,
@@ -68,7 +68,7 @@ const emptyResult = (companyId: string, dataType: '1' | '2', subsidiaryCompanyId
 });
 
 export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<OhlsonOScoreResult> => {
-  const { companyId, dataType, subsidiaryCompanyId } = query;
+  const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
   // year/season 沒指定時，自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季，
@@ -76,9 +76,9 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(companyId, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
   if (!resolvedQuarter) {
-    return emptyResult(companyId, dataType, subsidiaryCompanyId, [
+    return emptyResult(symbol, dataType, subsidiaryCompanyId, [
       '查無任何一季資產負債表/損益表/現金流量表都有資料的季度，無法決定要用哪一季計算 Ohlson O-Score。',
     ]);
   }
@@ -86,7 +86,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   const yearNum = Number(year);
   const seasonNum = Number(season);
 
-  const balanceSheetKey = { symbol: companyId, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const balanceSheetKey = { symbol: symbol, year: yearNum, quarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // INTWO/CHIN 需要「今年 TTM 淨利」跟「去年同季 TTM 淨利」——去年同季是用 getPastNQuarters 往前推
   // 5 季（含本季）取最舊那一筆，跟 Piotroski/Beneish 定位「去年同季」同一個 helper、同一種用法。
@@ -96,7 +96,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
 
   const fetchIncomeStatement = (q: { year: string; season: Season }) =>
     getQuarterlyIncomeStatement({
-      symbol: companyId,
+      symbol: symbol,
       year: Number(q.year),
       quarter: Number(q.season),
       dataType,
@@ -104,7 +104,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
     });
   const fetchCashFlow = (q: { year: string; season: Season }) =>
     getQuarterlyCashFlowStatement({
-      symbol: companyId,
+      symbol: symbol,
       year: Number(q.year),
       quarter: Number(q.season),
       dataType,
@@ -195,10 +195,10 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   try {
     await analysisPrisma.ohlsonOScoreResult.upsert({
       where: {
-        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: companyId, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
+        symbol_year_season_dataType_subsidiaryCompanyId: { symbol: symbol, year: yearNum, season: seasonNum, dataType, subsidiaryCompanyId },
       },
       create: {
-        symbol: companyId,
+        symbol: symbol,
         year: yearNum,
         season: seasonNum,
         dataType,
@@ -254,7 +254,7 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
   }
 
   return {
-    companyId,
+    symbol,
     year,
     season,
     dataType,

@@ -3,7 +3,7 @@ import type { MetricStatus } from '@/shared/metricStatus';
 import type { PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 
 export interface EvEbitdaQuery {
-  companyId: string;
+  symbol: string;
   // year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
   // 最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
   year?: string;
@@ -13,7 +13,7 @@ export interface EvEbitdaQuery {
 }
 
 export interface EvEbitdaResult {
-  companyId: string;
+  symbol: string;
   // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
   year: string | null;
   season: Season | null;

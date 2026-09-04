@@ -14,7 +14,7 @@ const router = Router();
  *       （2026-08-19 拍板決定：直接採用現成數字，不用本服務自己的 EPS/BVPS 重算）。
  *
  *       **跟本服務其他指標不同，這支 API 不是季度查詢**——PER/PBR 是逐日的市場資料，跟財務季度不是
- *       同一種時間刻度，所以查詢介面只有 `companyId`（+ 選填的 `date`），沒有 `year`/`season`/
+ *       同一種時間刻度，所以查詢介面只有 `symbol`（+ 選填的 `date`），沒有 `year`/`season`/
  *       `dataType`/`subsidiaryCompanyId`。第一版設計曾經誤把這支 API 套進其他指標的季度查詢模板，
  *       把 PER/PBR 綁在「該季報告日當天」的股價上，結果因為市場資料起始日晚於任何已報過的季度，
  *       永遠查不到資料，後來才改成現在這個設計。
@@ -30,7 +30,7 @@ const router = Router();
  *       - Valuation
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string

@@ -26,7 +26,7 @@ const router = Router();
  *       - Solvency
  *     parameters:
  *       - in: query
- *         name: companyId
+ *         name: symbol
  *         required: true
  *         schema:
  *           type: string
