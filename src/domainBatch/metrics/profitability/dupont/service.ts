@@ -3,6 +3,7 @@ import { calculateMargins } from '@/domainBatch/metrics/profitability/margins/se
 import { calculateTurnoverRatio } from '@/domainBatch/metrics/turnover/turnoverRatio/service';
 import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
 import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { DupontQuery, DupontResult } from './types';
 
@@ -76,6 +77,12 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
     const equityBigInt = BigInt(equity.value);
     if (equityBigInt !== 0n) {
       equityMultiplier = round2(Number(BigInt(totalAssetsValue)) / Number(equityBigInt));
+      // 權益為負時 equityMultiplier 本身是負數——decomposedRoe = 淨利率 x 週轉率 x 權益乘數，
+      // 虧損公司（淨利率也是負）會被兩個負數相乘抵消掉符號，算出看似正常的正值 ROE，
+      // 跟 roe/deRatio/nissimPenmanRnoa 三支指標的除法版本是同一種失真，只是透過乘法路徑，
+      // 2026-09-04 之前這裡漏了這個警告，只擋了「權益剛好等於零」的除以零錯誤。
+      const equityWarning = negativeEquityWarning(equityBigInt, '權益乘數與組裝 ROE');
+      if (equityWarning) warnings.push(equityWarning);
     } else {
       warnings.push('本季期末權益為零，無法計算權益乘數。');
     }

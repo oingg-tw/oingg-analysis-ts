@@ -1,5 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRoe } from '@/domainBatch/metrics/profitability/roe/service';
+import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -160,7 +161,8 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
   }
 
   const flev = nfo !== null && equity.value !== null ? toRatio(nfo, equity.value) : null;
-  if (equity.value !== null && equity.value <= 0n) warnings.push('本季期末權益為零或負數，FLEV 數值意義有限，請自行判斷是否採用。');
+  const equityWarning = negativeEquityWarning(equity.value, 'FLEV');
+  if (equityWarning) warnings.push(equityWarning);
 
   const afterTaxNetInterestExpenseQuarterly = calculateAfterTaxNetInterestExpense(currentIncomeStatement);
   const nbcQuarterlyPct = afterTaxNetInterestExpenseQuarterly !== null && nfo !== null ? toPct(afterTaxNetInterestExpenseQuarterly, nfo) : null;

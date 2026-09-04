@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -80,7 +81,8 @@ export const calculateRoe = async (query: RoeQuery): Promise<RoeResult> => {
   if (netIncome.value !== null && equity.value !== null) {
     roeQuarterlyPct = toPct(netIncome.value, equity.value);
     if (roeQuarterlyPct !== null) roeQuarterlyAnnualizedPct = Math.round(roeQuarterlyPct * 4 * 100) / 100;
-    if (equity.value <= 0n) warnings.push('本季期末權益為零或負數（股東權益為負），ROE 數值意義有限，請自行判斷是否採用。');
+    const equityWarning = negativeEquityWarning(equity.value, 'ROE');
+    if (equityWarning) warnings.push(equityWarning);
   }
 
   // TTM：近四季（含本季）淨利加總 / 本季期末權益。四季資料需全部存在且淨利欄位皆非 null，否則視為不齊。

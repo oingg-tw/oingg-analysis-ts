@@ -1,4 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { DeRatioQuery, DeRatioResult } from './types';
@@ -62,7 +63,8 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
   let deRatioPct: number | null = null;
   if (totalDebt !== null && equity.value !== null) {
     deRatioPct = toPct(totalDebt, equity.value);
-    if (equity.value <= 0n) warnings.push('本季期末權益為零或負數，負債權益比數值意義有限，請自行判斷是否採用。');
+    const equityWarning = negativeEquityWarning(equity.value, '負債權益比');
+    if (equityWarning) warnings.push(equityWarning);
   }
 
   const reportDate = balanceSheet?.reportDate ?? null;
