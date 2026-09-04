@@ -1,6 +1,6 @@
 // ETF screener 可篩選/排序/顯示的欄位白名單——不像股票 screener 有 40+ 張各自獨立的 curated
 // 表需要動態解析（那邊才需要 metricTableRegistry 那種通用機制），ETF 資料就是 etf_basic_info/
-// etf_monthly_statement/etf_performance 三張表（用 security_code+year_month 對齊）合併成一份
+// etf_monthly_statement/etf_performance 三張表（用 symbol+year_month 對齊）合併成一份
 // base 查詢，欄位固定已知，直接手動列出白名單即可，見 queryBuilder.ts 的 base CTE。
 //
 // market/assetClass 是 sitca-ts 的 category 字串（例如「上市ETF_國外成分證券ETF」）現場用

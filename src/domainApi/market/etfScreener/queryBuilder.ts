@@ -2,7 +2,7 @@ import { Prisma } from '#generated/sitca-export-client';
 import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
-// （用 security_code+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
+// （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
 // 表，這裡直接組一個固定形狀的 base CTE（所有欄位都在同一個查詢裡），filters/columns/sort
 // 都是對 base（或加上 expense）的欄位下條件，不需要股票那套「每個 field 各自找表、動態
 // JOIN」的通用機制。
@@ -26,7 +26,7 @@ import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, type NumericFieldDefinition, type C
 const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
   base AS (
     SELECT
-      b.security_code AS symbol,
+      b.symbol AS symbol,
       b.fund_name,
       b.security_short_name AS short_name,
       b.company_name,
@@ -54,8 +54,8 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       p.return_ytd,
       p.return_10y
     FROM "export"."etf_basic_info" b
-    JOIN "export"."etf_monthly_statement" m ON m.security_code = b.security_code AND m.year_month = b.year_month
-    JOIN "export"."etf_performance" p ON p.security_code = b.security_code AND p.year_month = b.year_month
+    JOIN "export"."etf_monthly_statement" m ON m.symbol = b.symbol AND m.year_month = b.year_month
+    JOIN "export"."etf_performance" p ON p.symbol = b.symbol AND p.year_month = b.year_month
     WHERE b.year_month = ${yearMonth}
   )
 `;
@@ -69,11 +69,11 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const latestCompleteYear = new Date().getFullYear() - 1;
   const cte = Prisma.sql`
     expense AS (
-      SELECT fund_id, total_rate FROM "export"."fund_expense_ratio_annual" WHERE year = ${latestCompleteYear}
+      SELECT fund_tax_id, total_rate FROM "export"."fund_expense_ratio_annual" WHERE year = ${latestCompleteYear}
     )
   `;
   const join = Prisma.sql`
-    LEFT JOIN expense ON expense.fund_id = base.fund_tax_id
+    LEFT JOIN expense ON expense.fund_tax_id = base.fund_tax_id
       AND EXTRACT(YEAR FROM base.established_date) < ${latestCompleteYear}
   `;
   return { cte, join };

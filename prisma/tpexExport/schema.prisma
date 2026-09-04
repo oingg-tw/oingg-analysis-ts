@@ -58,10 +58,13 @@ view DailyPrice {
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
 /// 只鏡像查公司名稱用得到的欄位，不是全部欄位都留，跟 prisma/tpex/schema.prisma（即將退休）
-/// 的 CompanyProfile 做法一致，多了 market（上櫃/興櫃）備用。
+/// 的 CompanyProfile 做法一致，多了 source（上櫃/興櫃登記類別，值域 COMPANY_PROFILE/
+/// COMPANY_PROFILE_EMERGING）備用。2026-09-04 tpex-ts 把這個欄位從 market 改名成
+/// source（硬切、無過渡期）——原本叫 market 容易誤會成 TWSE/TPEx 市場別，實際存的是登記
+/// 類別，見 docs/ubiquitous-language-glossary.md 的討論。
 view CompanyProfile {
   symbol                       String?
-  market                       String?
+  source                       String?
   report_date                  DateTime? @db.Date
   name                         String?
   shortName                    String?   @map("short_name")

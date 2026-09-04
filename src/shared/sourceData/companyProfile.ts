@@ -93,8 +93,8 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
         `
       : Promise.resolve([]),
     needsTpex
-      ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
-          SELECT symbol, short_name, market FROM "export"."company_profile"
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; source: string | null }[]>`
+          SELECT symbol, short_name, source FROM "export"."company_profile"
         `
       : Promise.resolve([]),
     needsPreferred
@@ -109,7 +109,7 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
       symbol: row.symbol,
       market: 'TPEx' as const,
       shortName: row.short_name,
-      isEmerging: row.market === 'COMPANY_PROFILE_EMERGING',
+      isEmerging: row.source === 'COMPANY_PROFILE_EMERGING',
       isPreferredStock: false,
     })),
     // isin_securities 沒有 shortName/KY 判斷用得到的欄位，用 name 頂替——特別股的名稱是跟著

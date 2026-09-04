@@ -15,6 +15,14 @@
 // 內省，這個 schema 由 gov-ts 擁有，本服務永遠不對它跑 migrate——內省後记得把 view 名稱/欄位
 // 手動改回 PascalCase model 名稱 + camelCase 欄位（`prisma db pull` 對 view 預設用原始
 // snake_case 名稱，跟本專案風格不一致，得手動調整）。
+//
+// ⚠️ 2026-09-04 教訓：直接跑 `db pull` 會把這個檔案裡所有一般 `//` 註解清掉（只保留
+// `///` 文件註解），還會順便拉進 gov-ts 這個 export schema 裡其他還沒決定要不要接的新
+// view（例如 industry_codes/monthly_cpi/monthly_gdp 這批總經資料）。之後只是要反映對方
+// 單一欄位改名這種小範圍變動時，改用手動編輯，不要整份跑 db pull 內省。
+//
+// 2026-09-04：CompanyIndustryClassification 的 stockCode 改名 symbol（跟 twse-ts/
+// tpex-ts/mops-ts 對齊），gov-ts 硬切上 prod，見 docs/ubiquitous-language-glossary.md。
 
 generator client {
   provider        = "prisma-client-js"
@@ -60,8 +68,9 @@ view MonthlyGovBondYield10y {
 /// dataset='company_industry_classification' 是整批同步（一次全部公司一個 run，不是逐公司），
 /// 跟 mops quarterly_income_statement 那種逐公司 run 不同，見 sync 檔案的說明。
 view CompanyIndustryClassification {
-  stockCode            String?   @map("stock_code")
+  symbol               String?
   taxId                String?   @map("tax_id")
+  rank                 Int?
   industryCode         String?   @map("industry_code")
   sourceIndustryName   String?   @map("source_industry_name")
   sectionCode          String?   @map("section_code")

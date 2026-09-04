@@ -4,7 +4,7 @@ import { parseDistributionFrequency } from './parseDistribution';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';
 
 interface RawBasicInfoRow {
-  security_code: string;
+  symbol: string;
   fund_name: string | null;
   security_short_name: string | null;
   company_name: string | null;
@@ -18,7 +18,7 @@ interface RawBasicInfoWithEstablishedRow extends RawBasicInfoRow {
 }
 
 interface RawStatementRow {
-  security_code: string;
+  symbol: string;
   fund_tax_id: string | null;
   aum_twd: bigint | null;
   total_holders: bigint | null;
@@ -29,7 +29,7 @@ interface RawStatementRow {
 }
 
 interface RawPerformanceRow {
-  security_code: string;
+  symbol: string;
   return_3m: number | null;
   return_6m: number | null;
   return_1y: number | null;
@@ -80,21 +80,21 @@ const getLatestYearMonth = async (): Promise<string | null> => {
 const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string): Promise<ResolvedRow[]> => {
   const [basicRows, statementRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
+      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
     sitcaExportPrisma.$queryRaw<RawStatementRow[]>`
-      SELECT security_code, fund_tax_id, aum_twd, total_holders, subscription_amount_twd, redemption_amount_twd, dca_amount_twd, aum_below_statutory_threshold
+      SELECT symbol, fund_tax_id, aum_twd, total_holders, subscription_amount_twd, redemption_amount_twd, dca_amount_twd, aum_below_statutory_threshold
       FROM "export"."etf_monthly_statement"
       WHERE year_month = ${yearMonth}
     `,
   ]);
 
-  const statementBySymbol = new Map(statementRows.map((row) => [row.security_code, row]));
+  const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
   const rows: ResolvedRow[] = [];
   for (const basic of basicRows) {
-    const stmt = statementBySymbol.get(basic.security_code);
+    const stmt = statementBySymbol.get(basic.symbol);
     if (!stmt) continue;
 
     let value: number | null;
@@ -120,7 +120,7 @@ const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string
     if (value === null) continue;
 
     rows.push({
-      symbol: basic.security_code,
+      symbol: basic.symbol,
       fundName: basic.fund_name,
       shortName: basic.security_short_name,
       companyName: basic.company_name,
@@ -144,39 +144,39 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
 
   const [basicRows, performanceRows, statementRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
+      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
     sitcaExportPrisma.$queryRaw<RawPerformanceRow[]>`
-      SELECT security_code, return_3m, return_6m, return_1y, return_2y, return_3y, return_5y, return_ytd, return_10y
+      SELECT symbol, return_3m, return_6m, return_1y, return_2y, return_3y, return_5y, return_ytd, return_10y
       FROM "export"."etf_performance"
       WHERE year_month = ${yearMonth}
     `,
-    sitcaExportPrisma.$queryRaw<{ security_code: string; aum_below_statutory_threshold: boolean | null }[]>`
-      SELECT security_code, aum_below_statutory_threshold
+    sitcaExportPrisma.$queryRaw<{ symbol: string; aum_below_statutory_threshold: boolean | null }[]>`
+      SELECT symbol, aum_below_statutory_threshold
       FROM "export"."etf_monthly_statement"
       WHERE year_month = ${yearMonth}
     `,
   ]);
 
-  const performanceBySymbol = new Map(performanceRows.map((row) => [row.security_code, row]));
-  const statementBySymbol = new Map(statementRows.map((row) => [row.security_code, row]));
+  const performanceBySymbol = new Map(performanceRows.map((row) => [row.symbol, row]));
+  const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
   const rows: ResolvedRow[] = [];
   for (const basic of basicRows) {
-    const perf = performanceBySymbol.get(basic.security_code);
+    const perf = performanceBySymbol.get(basic.symbol);
     const rawValue = perf?.[column];
     if (rawValue === undefined || rawValue === null) continue;
 
     rows.push({
-      symbol: basic.security_code,
+      symbol: basic.symbol,
       fundName: basic.fund_name,
       shortName: basic.security_short_name,
       companyName: basic.company_name,
       category: basic.category,
       distributionClassInfo: basic.distribution_class_info,
       isActive: basic.is_actively_managed,
-      belowStatutoryThreshold: statementBySymbol.get(basic.security_code)?.aum_below_statutory_threshold ?? null,
+      belowStatutoryThreshold: statementBySymbol.get(basic.symbol)?.aum_below_statutory_threshold ?? null,
       value: Number(rawValue),
       asOf: formatYearMonth(yearMonth),
     });
@@ -193,37 +193,37 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
 
   const [basicRows, statementRows, expenseRows] = await Promise.all([
     sitcaExportPrisma.$queryRaw<RawBasicInfoWithEstablishedRow[]>`
-      SELECT security_code, fund_name, security_short_name, company_name, category, distribution_class_info, established_date, is_actively_managed
+      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, established_date, is_actively_managed
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
-    sitcaExportPrisma.$queryRaw<{ security_code: string; fund_tax_id: string | null; aum_below_statutory_threshold: boolean | null }[]>`
-      SELECT security_code, fund_tax_id, aum_below_statutory_threshold
+    sitcaExportPrisma.$queryRaw<{ symbol: string; fund_tax_id: string | null; aum_below_statutory_threshold: boolean | null }[]>`
+      SELECT symbol, fund_tax_id, aum_below_statutory_threshold
       FROM "export"."etf_monthly_statement"
       WHERE year_month = ${yearMonth}
     `,
-    sitcaExportPrisma.$queryRaw<{ fund_id: string; total_rate: number | null }[]>`
-      SELECT fund_id, total_rate
+    sitcaExportPrisma.$queryRaw<{ fund_tax_id: string; total_rate: number | null }[]>`
+      SELECT fund_tax_id, total_rate
       FROM "export"."fund_expense_ratio_annual"
       WHERE year = ${latestCompleteYear}
     `,
   ]);
 
-  const statementBySymbol = new Map(statementRows.map((row) => [row.security_code, row]));
-  const totalRateByFundId = new Map(expenseRows.map((row) => [row.fund_id, row.total_rate]));
+  const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
+  const totalRateByFundTaxId = new Map(expenseRows.map((row) => [row.fund_tax_id, row.total_rate]));
 
   const rows: ResolvedRow[] = [];
   for (const basic of basicRows) {
     if (basic.established_date === null) continue;
     if (basic.established_date.getUTCFullYear() >= latestCompleteYear) continue; // 這個基準年本身不滿一整年，排除。
 
-    const statement = statementBySymbol.get(basic.security_code);
+    const statement = statementBySymbol.get(basic.symbol);
     if (!statement?.fund_tax_id) continue;
-    const totalRate = totalRateByFundId.get(statement.fund_tax_id);
+    const totalRate = totalRateByFundTaxId.get(statement.fund_tax_id);
     if (totalRate === undefined || totalRate === null) continue;
 
     rows.push({
-      symbol: basic.security_code,
+      symbol: basic.symbol,
       fundName: basic.fund_name,
       shortName: basic.security_short_name,
       companyName: basic.company_name,
