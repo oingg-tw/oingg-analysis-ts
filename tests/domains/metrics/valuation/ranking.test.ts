@@ -45,6 +45,14 @@ test('ranking: 指定查無資料的日期，應該優雅降級回傳空陣列�
 // 2026-08-30 接上 TPEx 之後的關鍵案例：合併結果裡應該真的看得到上櫃公司，不是只有上市——
 // 用市場整體覆蓋率反推期望值（現查 twse/tpex 各自今天有沒有資料），不寫死是哪幾檔股票，
 // 覆蓋率之後會持續變。
+//
+// 2026-09-05 修正：判斷「這個 symbol 是不是 TWSE」不能再用 `result.tradeDate` 去查
+// daily_valuation——calculateRanking 2026-09-04 起兩邊市場各自解析自己的最新交易日
+// （見 service.ts 的 resolveTwseTradeDate/resolveTpexTradeDate），`result.tradeDate`
+// 只是兩邊之中較新的那個，不代表 TWSE 那批資料實際查詢用的日期。twse/tpex 資料新鮮度
+// 不同步時（例如 twse 停在 09-03、tpex 已經到 09-04）舊寫法會查到空集合，導致這個測試
+// 誤判成「合併結果裡沒有上市公司」。改用市場歸屬（company_profile，跟日期無關）判斷，
+// 使用跟 service.ts 查 TWSE 母體同一組 filter（見 queryTwseMarket 呼叫端）。
 test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟上櫃公司', async () => {
   const [twseCountRows, tpexCountRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
@@ -55,10 +63,7 @@ test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟�
   if (twseCount === 0 || tpexCount === 0) return; // 其中一邊完全沒資料時無從驗證跨市場合併，跳過。
 
   const result = await calculateRanking({ metric: 'dividendYield', order: 'desc', limit: 500 });
-  const twseSymbolRows = await twseExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT symbol FROM "export"."daily_valuation" WHERE trade_date = ${new Date(`${result.tradeDate}T00:00:00.000Z`)}
-  `;
-  const twseSymbols = new Set(twseSymbolRows.map((r) => r.symbol));
+  const twseSymbols = await getSecuritySymbolSet({ market: 'TWSE', excludeKy: true, preferredStock: 'exclude' });
 
   const hasTwse = result.rankings.some((r) => twseSymbols.has(r.symbol));
   const hasTpex = result.rankings.some((r) => !twseSymbols.has(r.symbol));
