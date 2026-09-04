@@ -15,8 +15,6 @@
 | [`technicals/`](technicals/README.md) | 技術分析與價格量能指標 | Security | 全數實作（2026-08-30，`VWAP_OBV` 只做了 OBV，VWAP 結構性做不到）——6 家種子公司歷史夠深全部指標都算得出來，其他公司目前只有 3 天資料，見該分類 README |
 | [`portfolio/`](portfolio/README.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26，見該分類 README「為什麼 Beta 是例外」）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
 | [`macro/`](macro/README.md) | 總體經濟、固定收益與市場情緒 | Market_Macro | 部分實作（`Equity_Risk_Premium`——2026-08-30 使用者要求加的，taxonomy 原始清單沒有這個指標，見該分類 README）；其餘（GDP、公司債利差、VIX、賣買權比⋯）需要總體經濟/選擇權資料源，跟公司財報完全無關 |
-| [`marketData/`](marketData/README.md) | 市場行情數據 | Security | 未實作——見下方「第二套分類方案」 |
-| [`financials/`](financials/README.md) | 財務報表 | Security | 未實作——見下方「第二套分類方案」 |
 | [`growth/`](growth/README.md) | 成長性指標 | Security | 未實作——見下方「第二套分類方案」；2026-09-02 盤點存股需求，EPS CAGR、連續配發股利年數、ROE 歷史一致性檢驗排入未來規劃，見該分類 README |
 
 ## 跨分類的時間轉換算子（temporal_transformation_operators）
@@ -66,6 +64,7 @@ taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每�
 拆成兩種改動，分開處理：
 
 - **既有 21 支指標重新分組**：`marginsAndRatios` 會吃掉現有 `profitability`/`solvency`/`turnover`/`cashFlow` 四個資料夾的比率類指標；`dividends` 要從 `profitability`（配息率/SGR）跟 `valuation/marketRatios`（殖利率，目前跟 PER/PBR 同一支 API）拆出來。folder 搬動本身機制不難（相對 import 深度不變），但 `marketRatios` 那支 API 要不要真的拆表/拆 API，還是只在 `filterCatalog.ts` 讓同一個底層欄位掛兩個分類，**還沒決定，先不動**。
-- **全新的空分類先建骨架**：`marketData`、`financials`、`growth` 這三類目前完全沒有對應的程式碼（`technicals` 沿用原本的 `technical/`，只是改名跟第二套方案的 id 對齊），跟 `portfolio`/`macro` 一樣「有骨架沒程式碼」——只有 `README.md` 記錄範疇跟已知會用到的資料來源，`要不要真的動工再個別討論`，這裡不重複列規劃過程，各自的 `README.md` 有寫。原始分類表只給了每類的項目數量（26/37/47/9），沒有給到逐項清單，所以這三份 `README.md` 沒有像 `technical/`/`portfolio/`/`macro/` 那樣列出完整的「指標清單」表格，只列已知能對到的真實資料來源。
+- **全新的空分類先建骨架**：`growth` 這類目前完全沒有對應的程式碼（`technicals` 沿用原本的 `technical/`，只是改名跟第二套方案的 id 對齊），跟 `portfolio`/`macro` 一樣「有骨架沒程式碼」——只有 `README.md` 記錄範疇跟已知會用到的資料來源，`要不要真的動工再個別討論`，這裡不重複列規劃過程，`growth/README.md` 有寫。原始分類表只給了每類的項目數量，沒有給到逐項清單，所以這份 `README.md` 沒有像 `technical/`/`portfolio/`/`macro/` 那樣列出完整的「指標清單」表格，只列已知能對到的真實資料來源。
+  **2026-09-05：`marketData`（市場行情數據）、`financials`（財務報表）這兩個原本一起規劃的空分類骨架已經刪除**——使用者決定不做，`growth` 保留。
 
 **`securityInfo` 2026-09-02 從這份骨架清單移除**：原本規劃的範疇（公司基本資料——名稱、產業、上市日期、股本結構、經營層⋯⋯）已經不是「指標分類」的問題，是「查詢主體是公司還是證券」這個更根本的路由設計問題——實際做出來變成 `GET /companies/profile`（`src/domainApi/companies/`），跟真正上市櫃的證券範圍另外切開一支 `GET /securities/symbols`（`src/domainApi/securities/`，2026-09-04 已刪除，使用者確認即使 mops-ts 有在用也一併砍掉），不是掛在這份 metrics taxonomy 底下的分類，這裡不再保留這個骨架條目，避免跟真正的實作出現兩份互相不同步的規劃。
