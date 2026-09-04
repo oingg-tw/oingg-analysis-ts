@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from '@/domainApi/market/etfScreener/service';
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
@@ -136,6 +136,6 @@ test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
   });
 });
 
-after(async () => {
+afterAll(async () => {
   await sitcaExportPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listAllCompanyNames, countAllCompanyNames } from '@/shared/sourceData/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -43,7 +43,7 @@ test('countAllCompanyNames 應該跟 listAllCompanyNames 回傳的 count 一致'
   assert.equal(count, countFromList);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

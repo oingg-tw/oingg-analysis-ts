@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateForeignHoldingRanking } from '@/domainApi/market/foreignHoldingRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -46,6 +46,6 @@ test('calculateForeignHoldingRanking: 有兩天以上資料時，加碼/減碼�
   assert.equal(result.increases.length, Math.min(10, result.eligibleCompanyCount));
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, describe, after } from 'node:test';
+import { test, describe, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/domainApi/screener/service';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
@@ -191,6 +191,6 @@ describe('runScreenerValues', () => {
   });
 });
 
-after(async () => {
+afterAll(async () => {
   await analysisPrisma.$disconnect();
 });

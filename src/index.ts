@@ -5,7 +5,8 @@ const startTime = process.hrtime(); // Start timing before any other imports
 import express from 'ultimate-express';
 import helmet from 'helmet';
 import cors from 'cors';
-import morgan from 'morgan';
+import pinoHttp from 'pino-http';
+import { logger } from './shared/logger';
 import { connectAnalysisDb } from './adapters/prisma/analysisClient';
 import { connectMopsExportDb } from './adapters/prisma/mopsExportClient';
 import { connectGovExportDb } from './adapters/prisma/govExportClient';
@@ -29,10 +30,10 @@ app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging - only in development
-if (!config.isProduction) {
-  app.use(morgan('dev'));
-}
+// Request logging——2026-09-05 從 morgan 換成 pino-http：原本 morgan 只在開發模式開（正式環境
+// 完全沒有任何請求記錄），改用 pino-http 之後正式環境也會記錄，輸出結構化 JSON 讓 Cloud Run
+// 部署後可以直接用 Cloud Logging 依欄位查詢（例如篩某個 route 的 5xx），不用整段文字裡面找。
+app.use(pinoHttp({ logger }));
 
 // --- API Docs ---
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -68,14 +69,14 @@ const startServer = async () => {
       const startupTimeInMs = (endTime[0] * 1e9 + endTime[1]) / 1e6;
       setStartupTime(startupTimeInMs);
 
-      console.log(`[server]: Server is running at http://${host}:${port}`);
+      logger.info(`Server is running at http://${host}:${port}`);
       if (!config.isProduction) {
-        console.log(`[server]: Server started in ${startupTimeInMs.toFixed(2)}ms`);
-        console.log(`[server]: API docs available at http://localhost:${port}/api-docs`);
+        logger.info(`Server started in ${startupTimeInMs.toFixed(2)}ms`);
+        logger.info(`API docs available at http://localhost:${port}/api-docs`);
       }
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 };

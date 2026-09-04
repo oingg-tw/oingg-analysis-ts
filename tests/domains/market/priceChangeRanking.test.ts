@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculatePriceChangeRanking } from '@/domainApi/market/priceChangeRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -41,6 +41,6 @@ test('calculatePriceChangeRanking: limit 應該限制回傳筆數', async () => 
   assert.ok(result.losers.length <= 3);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

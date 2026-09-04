@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getLatestGovBondYield10y } from '@/domainBatch/metrics/macro/govBondYield10y/service';
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
@@ -25,6 +25,6 @@ test('getLatestGovBondYield10y: 應該回傳最新一個月的殖利率，跟資
   assert.deepEqual(result.warnings, []);
 });
 
-after(async () => {
+afterAll(async () => {
   await govExportPrisma.$disconnect();
 });

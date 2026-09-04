@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateAltmanZScore } from '@/domainBatch/metrics/guru/altmanZScore/service';
 import { hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
@@ -97,7 +97,7 @@ test('altmanZScore: 不存在的公司代號，X1/X2/X3/X5 應該是 no_data，X
   assert.equal(result.zScore, null);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

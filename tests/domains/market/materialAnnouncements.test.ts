@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listMaterialAnnouncements } from '@/domainApi/market/materialAnnouncements/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -16,6 +16,6 @@ test('listMaterialAnnouncements: limit 應該限制回傳筆數', async () => {
   assert.ok(result.items.length <= 1);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateMarginShortRatioRanking } from '@/domainApi/market/marginShortRatioRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -55,7 +55,7 @@ test('calculateMarginShortRatioRanking: 取夠大的 limit 時，應該同時看
   assert.ok(hasTpex, '合併結果裡應該有上櫃公司（沒有代表還是只查了 TWSE），也可能是 TPEx 券資比排名剛好都排不進 limit 內，先確認資料量再判斷');
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

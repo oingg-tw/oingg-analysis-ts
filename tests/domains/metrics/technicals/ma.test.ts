@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateMa } from '@/domainBatch/metrics/technicals/ma/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -41,7 +41,7 @@ test('ma: 9999（查無資料的公司）回傳 not_applicable，不是拋錯或
   assert.ok(result.warnings.length > 0);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

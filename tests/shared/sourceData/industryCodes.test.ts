@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { loadIndustryCodes, getIndustryCodes } from '@/shared/sourceData/industryCodes';
@@ -13,6 +13,6 @@ test('loadIndustryCodes: 應該從 export.industry_code 抓到對照表並可以
   assert.equal(codes!['24'], '半導體業', '兩碼代碼 24 應該對應半導體業（實測驗證過的固定值）');
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

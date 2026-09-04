@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateBiasIndicator } from '@/domainBatch/metrics/technicals/bias/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -34,7 +34,7 @@ test('bias: 9999（查無資料的公司）回傳 not_applicable', async () => {
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

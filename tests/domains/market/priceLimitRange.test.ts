@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getPriceLimitRange } from '@/domainApi/market/priceLimitRange/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -20,6 +20,6 @@ test('getPriceLimitRange: widest/narrowest 都應該依 rank 遞增，且不超�
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

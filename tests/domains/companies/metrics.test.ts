@@ -1,4 +1,4 @@
-import { test, describe, after } from 'node:test';
+import { test, describe, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runCompanyMetrics, CompanyMetricsValidationError } from '@/domainApi/companies/metricsService';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
@@ -69,7 +69,7 @@ describe('runCompanyMetrics', () => {
   });
 });
 
-after(async () => {
+afterAll(async () => {
   await analysisPrisma.$disconnect();
   await mopsExportPrisma.$disconnect();
 });

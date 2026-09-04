@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateRevenueRanking } from '@/domainApi/market/revenueRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -53,6 +53,6 @@ test('calculateRevenueRanking: mom/revenue 排行不套用 300% 排除規則', a
   assert.ok(hasExtremeMom, 'mom 排行應該還是看得到超過 300% 的公司（規則不適用於 mom）');
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

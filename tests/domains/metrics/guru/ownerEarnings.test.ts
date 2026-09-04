@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateOwnerEarnings } from '@/domainBatch/metrics/guru/ownerEarnings/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -41,7 +41,7 @@ test('ownerEarnings: 9999（查無資料的公司）自動抓最新一季應該�
   assert.ok(result.warnings.length > 0);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

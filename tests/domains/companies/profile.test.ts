@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCompanyProfileDetail } from '@/shared/sourceData/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -67,7 +67,7 @@ test('getCompanyProfileDetail: website 應該正規化成裸網域，不含 sche
   assert.equal(tpex?.website, 'dimerco.com');
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/domainBatch/metrics/macro/equityRiskPremium/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -59,7 +59,7 @@ test('equityRiskPremium: 窗口內重疊月份不足 2 個月時回傳 calculati
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await govExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateNcav } from '@/domainBatch/metrics/guru/ncav/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -52,7 +52,7 @@ test('ncav: 9999（查無資料的公司）自動抓最新一季應該回傳 yea
   assert.ok(result.warnings.length > 0);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

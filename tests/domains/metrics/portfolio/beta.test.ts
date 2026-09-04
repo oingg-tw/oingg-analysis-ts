@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateBeta, resample, type OverlapPoint } from '@/domainBatch/metrics/portfolio/beta/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -103,7 +103,7 @@ test('beta: asOfDate 指定成非重疊交易日時，會自動退回最近的�
   assert.ok(result.asOfDate! <= '2026-01-03');
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

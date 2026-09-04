@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateRanking } from '@/domainBatch/metrics/valuation/ranking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -89,7 +89,7 @@ test('ranking: 排行裡不應該出現 KY 股', async () => {
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

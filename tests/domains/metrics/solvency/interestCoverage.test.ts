@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateInterestCoverage } from '@/domainBatch/metrics/solvency/interestCoverage/service';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -47,7 +47,7 @@ test('interestCoverage: 9999（查無資料的公司）自動抓最新一季應�
   assert.ok(result.warnings.length > 0);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -57,6 +57,6 @@ test('getCumulativeChangePercent: 查無資料的 symbol 也回傳 null，不影
   assert.equal(result.get(cumulativeChangePercentKey('TWSE', '__NOT_A_REAL_SYMBOL__', asOfDate)), null);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

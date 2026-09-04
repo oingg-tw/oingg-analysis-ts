@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getVolumeTop20 } from '@/domainApi/market/volumeTop20/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -26,6 +26,6 @@ test('getVolumeTop20: changePercent 有值時應該落在合理範圍內（沒�
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

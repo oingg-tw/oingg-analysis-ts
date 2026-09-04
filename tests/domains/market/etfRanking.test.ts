@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEtfRanking } from '@/domainApi/market/etfRanking/service';
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
@@ -76,6 +76,6 @@ test('calculateEtfRanking: isActive/belowStatutoryThreshold 應該等於來源�
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await sitcaExportPrisma.$disconnect();
 });

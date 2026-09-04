@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
@@ -53,6 +53,6 @@ test('company_profile join daily_price 可以查到大量公司的市值（不�
   assert.ok(distinctSymbols > 1000, `join 到的公司數 ${distinctSymbols} 太少，可能是 join 條件寫錯`);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

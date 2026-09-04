@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateMacd } from '@/domainBatch/metrics/technicals/macd/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -33,7 +33,7 @@ test('macd: 9999（查無資料的公司）回傳 not_applicable', async () => {
   assert.equal(result.fieldStatuses.dif?.status, 'not_applicable');
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getSecuritySymbols } from '@/shared/sourceData/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -79,7 +79,7 @@ test('getSecuritySymbols: 排序過、沒有重複', async () => {
   assert.equal(new Set(symbols).size, symbols.length);
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

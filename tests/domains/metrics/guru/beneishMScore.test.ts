@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateBeneishMScore } from '@/domainBatch/metrics/guru/beneishMScore/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -67,7 +67,7 @@ test('beneishMScore: 9999（查無資料的公司）自動抓最新一季應該�
   assert.ok(result.warnings.length > 0);
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

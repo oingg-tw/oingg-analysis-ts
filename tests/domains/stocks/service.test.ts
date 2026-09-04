@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getStockQuote, getStockPrices, getExDividendNotices } from '@/domainApi/stocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -78,7 +78,7 @@ test('getExDividendNotices: 空陣列應該回傳空物件，不拋錯', async (
   assert.deepEqual(result.notices, {});
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
 });

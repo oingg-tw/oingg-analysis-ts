@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listAttentionStocks } from '@/domainApi/market/attentionStocks/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
@@ -29,6 +29,6 @@ test('listAttentionStocks: 清單裡不應該出現非上市/上櫃公司', asyn
   }
 });
 
-after(async () => {
+afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

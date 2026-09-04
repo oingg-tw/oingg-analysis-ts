@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateObv } from '@/domainBatch/metrics/technicals/obv/service';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
@@ -26,7 +26,7 @@ test('obv: 9999（查無資料的公司）回傳 not_applicable', async () => {
   assert.equal(result.fieldStatuses.obv?.status, 'not_applicable');
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
   await analysisPrisma.$disconnect();
 });

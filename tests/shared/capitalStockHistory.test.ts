@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
@@ -112,6 +112,6 @@ test('getCapitalStockHistory: sharesChangePercent 應該正確反映跟前一筆
   assert.equal(entries[entries.length - 1]!.sharesChangePercent, null, '最舊一筆沒有更早的可以比較，應該是 null');
 });
 
-after(async () => {
+afterAll(async () => {
   await mopsExportPrisma.$disconnect();
 });
