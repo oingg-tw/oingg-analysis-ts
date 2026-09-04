@@ -2,13 +2,14 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateEquityRiskPremium } from '@/domainBatch/metrics/macro/equityRiskPremium/service';
 
-const querySchema = z
-  .object({
-    startYear: z.coerce.number().int().optional(),
-    startMonth: z.coerce.number().int().min(1).max(12).optional(),
-    endYear: z.coerce.number().int().optional(),
-    endMonth: z.coerce.number().int().min(1).max(12).optional(),
-  })
+export const getEquityRiskPremiumQuerySchema = z.object({
+  startYear: z.coerce.number().int().optional().meta({ description: '選填，窗口起始年（西元），要跟 startMonth 一起給', example: 1999 }),
+  startMonth: z.coerce.number().int().min(1).max(12).optional().meta({ description: '選填，窗口起始月，要跟 startYear 一起給', example: 1 }),
+  endYear: z.coerce.number().int().optional().meta({ description: '選填，窗口結束年（西元），要跟 endMonth 一起給' }),
+  endMonth: z.coerce.number().int().min(1).max(12).optional().meta({ description: '選填，窗口結束月，要跟 endYear 一起給' }),
+});
+
+const querySchema = getEquityRiskPremiumQuerySchema
   .refine((v) => (v.startYear === undefined) === (v.startMonth === undefined), {
     message: 'startYear and startMonth must be provided together.',
   })

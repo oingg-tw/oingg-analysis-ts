@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import type { CompanyProfileDetail } from '@/domainApi/companies/types';
@@ -409,10 +410,11 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
   return result;
 };
 
-export interface CompanyNameEntry {
-  symbol: string;
-  companyName: string | null;
-}
+export const companyNameEntrySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+});
+export type CompanyNameEntry = z.infer<typeof companyNameEntrySchema>;
 
 // 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
 // 自己快取。現在 screener/ranking 這類多公司陣列結果已經直接帶 companyName（見

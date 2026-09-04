@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export interface PaidInSharesAsOf {
@@ -34,28 +35,30 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
 };
 
-export interface CapitalStockChangeSource {
-  // 五種結構化的股本變動原因，bigint 序列化成字串——2026-09-04 應 web-nuxt 要求新增，實測過
-  // capital_stock_history 沒有庫藏股/可轉債轉換的獨立欄位，這兩種變動反而是寫在 remarks
-  // 自由格式文字裡（例如「註銷庫藏股3,249,000股」），不是結構化數字欄位，見 remarks 說明。
-  cashIncrease: string | null;
-  capitalReserveTransfer: string | null;
-  retainedEarningsTransfer: string | null;
-  mergerIncrease: string | null;
-  capitalReduction: string | null;
-  other: string | null; // 自由格式文字，例如「發行限制員工權利新股2,353,000股」，不是這五種結構化原因之一時才會有值
-}
+// 五種結構化的股本變動原因，bigint 序列化成字串——2026-09-04 應 web-nuxt 要求新增，實測過
+// capital_stock_history 沒有庫藏股/可轉債轉換的獨立欄位，這兩種變動反而是寫在 remarks
+// 自由格式文字裡（例如「註銷庫藏股3,249,000股」），不是結構化數字欄位，見 remarks 說明。
+export const capitalStockChangeSourceSchema = z.object({
+  cashIncrease: z.string().nullable(),
+  capitalReserveTransfer: z.string().nullable(),
+  retainedEarningsTransfer: z.string().nullable(),
+  mergerIncrease: z.string().nullable(),
+  capitalReduction: z.string().nullable(),
+  other: z.string().nullable().meta({ description: '自由格式文字，例如「發行限制員工權利新股2,353,000股」，不是這五種結構化原因之一時才會有值' }),
+});
+export type CapitalStockChangeSource = z.infer<typeof capitalStockChangeSourceSchema>;
 
-export interface CapitalStockHistoryEntry {
-  effectiveDate: string; // "YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆
-  paidInShares: string; // 實際流通股數（不是千股），bigint 序列化成字串
-  paidInCapital: string | null; // 實收資本額（元）
-  // 跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）
-  // 相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。
-  sharesChangePercent: number | null;
-  changeSource: CapitalStockChangeSource;
-  remarks: string | null; // 自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位
-}
+export const capitalStockHistoryEntrySchema = z.object({
+  effectiveDate: z.string().meta({ description: '"YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆' }),
+  paidInShares: z.string().meta({ description: '實際流通股數（不是千股），bigint 序列化成字串' }),
+  paidInCapital: z.string().nullable().meta({ description: '實收資本額（元）' }),
+  sharesChangePercent: z.number().nullable().meta({
+    description: '跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。',
+  }),
+  changeSource: capitalStockChangeSourceSchema,
+  remarks: z.string().nullable().meta({ description: '自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位' }),
+});
+export type CapitalStockHistoryEntry = z.infer<typeof capitalStockHistoryEntrySchema>;
 
 interface RawCapitalStockHistoryRow {
   effective_year: number;

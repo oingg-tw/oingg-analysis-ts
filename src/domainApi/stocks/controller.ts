@@ -2,9 +2,10 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getStockQuote, getStockPrices, getExDividendNotices } from './service';
 
-const paramsSchema = z.object({
-  symbol: z.string().min(1),
+export const getQuoteParamsSchema = z.object({
+  symbol: z.string().min(1).meta({ description: '公司代號', example: '2330' }),
 });
+const paramsSchema = getQuoteParamsSchema;
 
 export const getQuote = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -28,10 +29,12 @@ export const getQuote = async (req: Request, res: Response, next: NextFunction) 
 // （避免濫用打包過大的清單），不是用 limit 去截斷結果——超過上限要 400，不能默默只回一部分。
 const MAX_SYMBOLS = 100;
 
-const querySchema = z.object({
-  symbols: z
-    .string({ error: 'symbols is required.' })
-    .min(1)
+export const symbolsQuerySchema = z.object({
+  symbols: z.string({ error: 'symbols is required.' }).min(1).meta({ description: `逗號分隔的公司/ETF 代號清單，一次最多 ${MAX_SYMBOLS} 檔`, example: '2330,2317,2454' }),
+});
+
+const querySchema = symbolsQuerySchema.extend({
+  symbols: symbolsQuerySchema.shape.symbols
     .transform((value) => value.split(',').map((s) => s.trim()).filter((s) => s.length > 0))
     .refine((symbols) => symbols.length > 0, { message: 'symbols 至少要有一個公司代號。' })
     .refine((symbols) => symbols.length <= MAX_SYMBOLS, { message: `symbols 一次最多 ${MAX_SYMBOLS} 檔，請分批查詢。` }),

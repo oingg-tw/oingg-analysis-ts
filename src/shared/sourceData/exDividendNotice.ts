@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 // 上市股票/ETF 除權除息預告——2026-09-04 twse-ts 新開的 export.ex_dividend_notice view
@@ -8,18 +9,19 @@ import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 // 用這個欄位標示類型，不是除權/除息各自分開一筆。純除息時權證相關欄位（stockDividendRatio
 // 等）是 null，只有 cashDividend 有值。這張表是純原始公告資料，沒有還原參考價這類衍生欄位，
 // 呼叫端要自己拿 exDate 對 daily_price 算除權息參考價/調整報酬率。
-export interface ExDividendNoticeEntry {
-  exDate: string; // "YYYY-MM-DD"，除權息基準日，是未來日期（TWSE 每天預告接下來的事件）
-  exType: '息' | '權' | '權息';
-  stockDividendRatio: number | null; // 股票股利比例（配股）
-  subscriptionRatio: number | null; // 認購比例
-  subscriptionPricePerShare: number | null; // 認購價
-  cashDividend: number | null; // 現金股利（每股金額）
-  sharesOffered: number | null;
-  sharesEmpOwner: number | null;
-  sharesholderOwner: number | null;
-  stockHoldingRatio: number | null;
-}
+export const exDividendNoticeEntrySchema = z.object({
+  exDate: z.string().meta({ description: '"YYYY-MM-DD"，除權息基準日，是未來日期（TWSE 每天預告接下來的事件）' }),
+  exType: z.enum(['息', '權', '權息']).meta({ description: '息=純除息、權=純除權、權息=合併發放，是同一筆事件用這個欄位標示類型' }),
+  stockDividendRatio: z.number().nullable().meta({ description: '股票股利比例（配股）；純除息時是 null' }),
+  subscriptionRatio: z.number().nullable().meta({ description: '認購比例' }),
+  subscriptionPricePerShare: z.number().nullable().meta({ description: '認購價' }),
+  cashDividend: z.number().nullable().meta({ description: '現金股利（每股金額）' }),
+  sharesOffered: z.number().nullable(),
+  sharesEmpOwner: z.number().nullable(),
+  sharesholderOwner: z.number().nullable(),
+  stockHoldingRatio: z.number().nullable(),
+});
+export type ExDividendNoticeEntry = z.infer<typeof exDividendNoticeEntrySchema>;
 
 // Postgres 的 numeric 欄位透過 $queryRaw 回來是字串（node-postgres 預設不轉成 JS number，
 // 避免大數字精度問題），不是 number——之前 evEbitda/marketRatios 這些既有指標都是這樣處理，

@@ -1,11 +1,13 @@
+import { z } from 'zod';
 import { parseChineseOrArabicNumber } from '@/shared/parseChineseOrArabicNumber';
 
-export interface AttentionCriteriaDetail {
-  startDate: string; // YYYY-MM-DD（西元）
-  endDate: string;
-  observationDays: number | null; // 「等N個營業日已有M次」的N，「連續M次」沒有這個概念時是 null
-  times: number;
-}
+export const attentionCriteriaDetailSchema = z.object({
+  startDate: z.string().meta({ description: 'YYYY-MM-DD（西元）' }),
+  endDate: z.string(),
+  observationDays: z.number().nullable().meta({ description: '「等N個營業日已有M次」的N，「連續M次」沒有這個概念時是 null' }),
+  times: z.number(),
+});
+export type AttentionCriteriaDetail = z.infer<typeof attentionCriteriaDetailSchema>;
 
 const formatRocDate = (rocYear: string, month: string, day: string): string => {
   const year = Number(rocYear) + 1911;

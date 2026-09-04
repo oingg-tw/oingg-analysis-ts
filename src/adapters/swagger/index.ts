@@ -1,52 +1,77 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import swaggerUi from 'swagger-ui-express';
-import { join } from 'path';
 import { config } from '@/shared/config';
+import { registry } from './registry';
+import { registerCompaniesOpenApi } from '@/domainApi/companies/openapi';
+import { registerStocksOpenApi } from '@/domainApi/stocks/openapi';
+import { registerScreenerOpenApi } from '@/domainApi/screener/openapi';
+import { registerFiltersOpenApi } from '@/domainApi/filter/openapi';
+import { registerSystemOpenApi } from '@/domainApi/system/openapi';
+import { registerBatchOpenApi } from '@/domainBatch/openapi';
+import { registerValuationRankingOpenApi } from '@/domainApi/metrics/valuation/ranking/openapi';
+import { registerEquityRiskPremiumOpenApi } from '@/domainApi/metrics/macro/equityRiskPremium/openapi';
+import { registerGovBondYield10yOpenApi } from '@/domainApi/metrics/macro/govBondYield10y/openapi';
+import { registerAttentionStocksOpenApi } from '@/domainApi/market/attentionStocks/openapi';
+import { registerDisposedStocksOpenApi } from '@/domainApi/market/disposedStocks/openapi';
+import { registerEtfRankingOpenApi } from '@/domainApi/market/etfRanking/openapi';
+import { registerEtfScreenerOpenApi } from '@/domainApi/market/etfScreener/openapi';
+import { registerForeignHoldingRankingOpenApi } from '@/domainApi/market/foreignHoldingRanking/openapi';
+import { registerMarginShortRatioRankingOpenApi } from '@/domainApi/market/marginShortRatioRanking/openapi';
+import { registerMaterialAnnouncementsOpenApi } from '@/domainApi/market/materialAnnouncements/openapi';
+import { registerPriceChangeRankingOpenApi } from '@/domainApi/market/priceChangeRanking/openapi';
+import { registerPriceLimitRangeOpenApi } from '@/domainApi/market/priceLimitRange/openapi';
+import { registerRevenueRankingOpenApi } from '@/domainApi/market/revenueRanking/openapi';
+import { registerVolumeTop20OpenApi } from '@/domainApi/market/volumeTop20/openapi';
 
-// swagger-jsdoc 在執行期直接讀 .ts 原始檔的文字（parse JSDoc 註解），不是讀編譯後的 .js——
-// 所以這裡固定指向 src/domains、src/shared 的原始碼路徑，不管正式環境是用 tsx 直接跑 .ts
-// 還是用 tsc build 出 dist/ 的 .js 都一樣（build 出來的 .js 不會保留 JSDoc 註解，指過去也沒用）。
-// 用 process.cwd() 而不是 __dirname，理由見 filterCatalogCheck.ts 的說明（import.meta 在
-// CommonJS build 底下是編譯期錯誤）。
-//
-// glob（swagger-jsdoc 內部用的）把 `\` 當跳脫字元，Windows 路徑用 join() 組出來會悄悄比對不到
-// 任何檔案，這裡統一換成 `/`。
-const toGlobPath = (...segments: string[]) => join(...segments).split('\\').join('/');
+// 2026-09-05 起改成手動 registry——取代原本 swagger-jsdoc 直接讀 .ts 原始檔文字解析 JSDoc
+// 註解的做法。每個 domainApi 路由資料夾各自的 openapi.ts 負責註冊自己的路徑（引用實際在用的
+// zod schema），這裡統一 import 並呼叫一次，是唯一知道「全部路由有哪些」的地方。
+registerSystemOpenApi();
+registerFiltersOpenApi();
+registerCompaniesOpenApi();
+registerStocksOpenApi();
+registerScreenerOpenApi();
+registerValuationRankingOpenApi();
+registerEquityRiskPremiumOpenApi();
+registerGovBondYield10yOpenApi();
+registerAttentionStocksOpenApi();
+registerDisposedStocksOpenApi();
+registerEtfRankingOpenApi();
+registerEtfScreenerOpenApi();
+registerForeignHoldingRankingOpenApi();
+registerMarginShortRatioRankingOpenApi();
+registerMaterialAnnouncementsOpenApi();
+registerPriceChangeRankingOpenApi();
+registerPriceLimitRangeOpenApi();
+registerRevenueRankingOpenApi();
+registerVolumeTop20OpenApi();
+registerBatchOpenApi();
 
-const options: swaggerJSDoc.Options = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'OINGG Ratios API',
-      version: '1.0.0',
-      description: 'API documentation for the OINGG financial-ratios service',
-    },
-    servers: [
-      {
-        url: `http://localhost:${config.port}`,
-        description: 'Development server',
-      },
-    ],
-    // 順序對應 src/domains 底下分類的實作順序，決定 Swagger UI 分組顯示的先後——
-    // 每個 tag 對應一個分類資料夾（見 src/domainApi/metrics/README.md 的分類索引），
-    // 不要再用單一的 "Ratios" tag 把所有 API 混在一起。
-    tags: [
-      { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單' },
-      { name: 'Profitability', description: '獲利能力與資本配置效率——ROE、ROA、BVPS、EPS、每股營收、毛利率/營業利益率/稅後淨利率' },
-      { name: 'Cash Flow', description: '現金流品質與法證會計防雷——每股營業現金流（OCF）、每股自由現金流（FCF）' },
-      { name: 'Solvency', description: '財務結構、償債安全與破產預警——負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比' },
-      { name: 'Turnover', description: '營運週轉與資產效率——存貨/應收帳款/總資產/固定資產周轉率、資本支出佔營收比' },
-      { name: 'Valuation', description: '估值與市場定價指標——PER、PBR、股利殖利率（直接採用 oingg-twse 現成數字，不是本服務自己算的）' },
-      { name: 'Guru', description: '大師策略與複合量化估值模型——葛拉漢數、Graham NCAV（淨流動資產價值）與安全邊際價' },
-      { name: 'Portfolio', description: '投資組合風險、超額報酬與量化因子——目前只有 Beta（貝塔係數）' },
-    ],
+const generator = new OpenApiGeneratorV3(registry.definitions);
+
+export const swaggerSpec = generator.generateDocument({
+  openapi: '3.0.0',
+  info: {
+    title: 'OINGG Ratios API',
+    version: '1.0.0',
+    description: 'API documentation for the OINGG financial-ratios service',
   },
-  // Path to the API docs. It's crucial to use absolute paths created with `join`.
-  apis: [
-    toGlobPath(process.cwd(), 'src/domainApi/**/*.ts'),
-    toGlobPath(process.cwd(), 'src/shared/**/*.ts'),
+  servers: [
+    {
+      url: `http://localhost:${config.port}`,
+      description: 'Development server',
+    },
   ],
-};
-
-export const swaggerSpec = swaggerJSDoc(options);
+  // 順序決定 Swagger UI 分組顯示的先後——2026-09-05 隨 zod-to-openapi 遷移一併校正，
+  // 舊清單（Profitability/Cash Flow/Solvency/Turnover/Guru/Portfolio）是給已刪除的
+  // 44 支單一指標端點用的分類，刪除後不再對應任何路徑；改成實際還在用的 tag。
+  tags: [
+    { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單、單一公司基本資料' },
+    { name: 'Stocks', description: '單一公司/批次股價、除權息預告' },
+    { name: 'Screener', description: '多條件篩選、排行、指定股票批次查值' },
+    { name: 'Market', description: '全市場排行榜與清單類——注意股/處置股、成交量前20、漲跌停幅度、月營收/ETF 排行、重大訊息' },
+    { name: 'Valuation', description: '估值排行——PER、PBR、股利殖利率（直接採用 oingg-twse/tpex 現成數字，不是本服務自己算的）' },
+    { name: 'Macro', description: '總體經濟——股權風險溢酬（ERP）、10 年期政府公債殖利率' },
+  ],
+});
 export { swaggerUi };

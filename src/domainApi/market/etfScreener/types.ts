@@ -1,54 +1,65 @@
-export interface EtfNumericFilterInput {
-  field: string;
-  min: number | null;
-  max: number | null;
-  exclude?: boolean;
-}
+import { z } from 'zod';
 
-export interface EtfCategoricalFilterInput {
-  field: string;
-  values: string[];
-}
+export const etfNumericFilterInputSchema = z.object({
+  field: z.string(),
+  min: z.number().nullable(),
+  max: z.number().nullable(),
+  exclude: z.boolean().optional(),
+});
+export type EtfNumericFilterInput = z.infer<typeof etfNumericFilterInputSchema>;
 
-export type EtfFilterInput = EtfNumericFilterInput | EtfCategoricalFilterInput;
+export const etfCategoricalFilterInputSchema = z.object({
+  field: z.string(),
+  values: z.array(z.string()),
+});
+export type EtfCategoricalFilterInput = z.infer<typeof etfCategoricalFilterInputSchema>;
 
-export interface EtfColumnInput {
-  field: string;
-}
+export const etfFilterInputSchema = z.union([etfNumericFilterInputSchema, etfCategoricalFilterInputSchema]);
+export type EtfFilterInput = z.infer<typeof etfFilterInputSchema>;
 
-export interface EtfScreenerRequest {
-  filters: EtfFilterInput[];
-  columns: EtfColumnInput[];
-  page?: number;
-  pageSize?: number;
-  sortField?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+export const etfColumnInputSchema = z.object({
+  field: z.string(),
+});
+export type EtfColumnInput = z.infer<typeof etfColumnInputSchema>;
 
-export interface EtfScreenerRow {
-  symbol: string;
-  fundName: string | null;
-  shortName: string | null;
-  companyName: string | null; // 發行的投信公司
-  category: string | null; // 原始分類字串
-  values: Record<string, number | string | boolean | null>;
-}
+export const etfScreenerRequestSchema = z.object({
+  filters: z.array(etfFilterInputSchema),
+  columns: z.array(etfColumnInputSchema),
+  page: z.number().optional(),
+  pageSize: z.number().optional(),
+  sortField: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
+export type EtfScreenerRequest = z.infer<typeof etfScreenerRequestSchema>;
 
-export interface EtfScreenerResponse {
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  results: EtfScreenerRow[];
-}
+export const etfScreenerRowSchema = z.object({
+  symbol: z.string(),
+  fundName: z.string().nullable(),
+  shortName: z.string().nullable(),
+  companyName: z.string().nullable().meta({ description: '發行的投信公司' }),
+  category: z.string().nullable().meta({ description: '原始分類字串' }),
+  values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()]).nullable()),
+});
+export type EtfScreenerRow = z.infer<typeof etfScreenerRowSchema>;
 
-export interface EtfFilterFieldCatalogEntry {
-  field: string;
-  label: string;
-  kind: 'numeric' | 'categorical';
-  values?: string[]; // 只有 categorical 欄位才有
-}
+export const etfScreenerResponseSchema = z.object({
+  count: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  totalPages: z.number(),
+  results: z.array(etfScreenerRowSchema),
+});
+export type EtfScreenerResponse = z.infer<typeof etfScreenerResponseSchema>;
 
-export interface EtfFilterCatalogResponse {
-  fields: EtfFilterFieldCatalogEntry[];
-}
+export const etfFilterFieldCatalogEntrySchema = z.object({
+  field: z.string(),
+  label: z.string(),
+  kind: z.enum(['numeric', 'categorical']),
+  values: z.array(z.string()).optional().meta({ description: '只有 categorical 欄位才有' }),
+});
+export type EtfFilterFieldCatalogEntry = z.infer<typeof etfFilterFieldCatalogEntrySchema>;
+
+export const etfFilterCatalogResponseSchema = z.object({
+  fields: z.array(etfFilterFieldCatalogEntrySchema),
+});
+export type EtfFilterCatalogResponse = z.infer<typeof etfFilterCatalogResponseSchema>;

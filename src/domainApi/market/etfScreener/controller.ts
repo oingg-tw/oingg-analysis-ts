@@ -18,14 +18,15 @@ const filterSchema = z.union([numericFilterSchema, categoricalFilterSchema]);
 
 const columnSchema = z.object({ field: z.string().min(1) });
 
-const bodySchema = z.object({
-  filters: z.array(filterSchema).default([]),
+export const postEtfScreenerBodySchema = z.object({
+  filters: z.array(filterSchema).default([]).meta({ description: '數字欄位用 {field, min, max, exclude?}；類別欄位用 {field, values: [...]}（IN 語意）' }),
   columns: z.array(columnSchema).default([]),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(200).default(50),
-  sortField: z.string().min(1).optional(),
+  sortField: z.string().min(1).optional().meta({ description: '不給就照 symbol 排序；要排別的欄位，那個欄位要先出現在 columns 裡' }),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
+const bodySchema = postEtfScreenerBodySchema;
 
 export const postEtfScreener = async (req: Request, res: Response, next: NextFunction) => {
   try {

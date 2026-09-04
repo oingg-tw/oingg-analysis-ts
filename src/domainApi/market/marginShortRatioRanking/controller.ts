@@ -2,9 +2,10 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateMarginShortRatioRanking } from './service';
 
-const querySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const getMarginShortRatioRankingQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20).meta({ description: '預設 20，上限 100。' }),
 });
+const querySchema = getMarginShortRatioRankingQuerySchema;
 
 export const getMarginShortRatioRanking = async (req: Request, res: Response, next: NextFunction) => {
   try {

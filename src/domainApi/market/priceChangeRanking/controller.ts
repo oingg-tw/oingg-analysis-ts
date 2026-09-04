@@ -2,9 +2,10 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculatePriceChangeRanking } from './service';
 
-const querySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+export const getPriceChangeRankingQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20).meta({ description: '預設 20，上限 50，漲幅/跌幅各取這麼多筆。' }),
 });
+const querySchema = getPriceChangeRankingQuerySchema;
 
 export const getPriceChangeRanking = async (req: Request, res: Response, next: NextFunction) => {
   try {
