@@ -1,9 +1,36 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
-import type { LiquidityRatioQuery, LiquidityRatioResult } from './types';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
+
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type LiquidityRatioQuery = QuarterlyMetricQuery;
+
+export interface LiquidityRatioResult extends QuarterlyMetricIdentity, MetricResultMeta {
+  // 流動比率 = 本季期末流動資產 / 本季期末流動負債 * 100
+  currentRatioPct: number | null;
+  // 速動比率 = (本季期末流動資產 - 存貨) / 本季期末流動負債 * 100
+  // 跟負債比率一樣，這是純資產負債表的時點快照，沒有單季/年化/TTM 的區別。
+  quickRatioPct: number | null;
+  // 現金比率 = 本季期末現金及約當現金 / 本季期末流動負債 * 100
+  cashRatioPct: number | null;
+
+  currentAssets: {
+    value: string | null; // BigInt as string
+  };
+  currentLiabilities: {
+    value: string | null; // BigInt as string
+  };
+  inventory: {
+    value: string | null; // BigInt as string
+  };
+  cashAndEquivalents: {
+    value: string | null; // BigInt as string
+  };
+}
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;

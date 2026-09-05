@@ -1,12 +1,38 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRevenuePerShare } from '@/domainMetrics/revenuePerShare/service';
 import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
-import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
+import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
-import type { PsrQuery, PsrResult } from './types';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
+
+// year/season 選填但要成對——不給就自動抓「這家公司損益表有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type PsrQuery = QuarterlyMetricQuery;
+
+export interface PsrResult extends QuarterlyMetricIdentity, MetricResultMeta {
+  // PSR = 市值（存量） / 營收（流量）——跟 netDebtToEbitda 同一種道理，拿市值除以「一季」的營收
+  // 沒有標準意義，只提供本季營收簡單年化（x4）跟近四季實際加總（TTM）兩種口徑，沒有純單季版本。
+  psrQuarterlyAnnualized: number | null;
+  psrTtm: number | null;
+
+  marketCap: {
+    value: number | null; // 元；股價（基準日見下方）x 流通股數
+    tradeDate: string | null; // YYYY-MM-DD；實際用到的股價交易日
+    priceAnchorSource: PriceAnchorSource | null;
+  };
+
+  operatingRevenue: {
+    value: string | null; // BigInt as string；本季營收（千元）
+  };
+  operatingRevenueTtm: {
+    value: string | null; // BigInt as string；近四季加總（千元），資料不齊則為 null
+  };
+
+  ttm: QuarterlyMetricTtmInfo;
+}
 
 // 市值是「股價 x 實際股數」的真實新台幣金額，但營收欄位（operatingRevenue）單位是千元——
 // 分母要先 x1000 換算成同一個單位再除，不然會差 1000 倍，這是 BVPS/Altman X4 都踩過的同一個坑。

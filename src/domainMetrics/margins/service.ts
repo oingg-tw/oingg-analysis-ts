@@ -1,10 +1,58 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import type { MarginsQuery, MarginsResult } from './types';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
+
+// year/season 選填但要成對——不給就自動抓「這家公司損益表有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type MarginsQuery = QuarterlyMetricQuery;
+
+export interface MarginsResult extends QuarterlyMetricIdentity, MetricResultMeta {
+  // 毛利率 = 本季毛利（grossProfit） / 本季營收 * 100
+  grossMarginQuarterly: number | null;
+  grossMarginTtm: number | null;
+
+  // 營業利益率 = 本季營業利益（operatingIncome） / 本季營收 * 100
+  operatingMarginQuarterly: number | null;
+  operatingMarginTtm: number | null;
+
+  // 稅後淨利率 = 本季淨利 / 本季營收 * 100
+  // 這三個都是「同期流量 / 同期流量」的比率，本身不需要年化（不像 ROE 是流量對存量），
+  // 所以只有單季跟 TTM 兩種口徑，沒有 quarterlyAnnualized。
+  netProfitMarginQuarterly: number | null;
+  netProfitMarginTtm: number | null;
+
+  operatingRevenue: {
+    value: string | null; // BigInt as string；本季營收
+  };
+  operatingRevenueTtm: {
+    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
+  };
+  grossProfit: {
+    value: string | null;
+  };
+  grossProfitTtm: {
+    value: string | null;
+  };
+  operatingIncome: {
+    value: string | null;
+  };
+  operatingIncomeTtm: {
+    value: string | null;
+  };
+  netIncome: {
+    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
+    value: string | null;
+  };
+  netIncomeTtm: {
+    value: string | null;
+  };
+
+  ttm: QuarterlyMetricTtmInfo;
+}
 
 // 淨利欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickNetIncome = (

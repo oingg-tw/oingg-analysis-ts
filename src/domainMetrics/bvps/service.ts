@@ -1,10 +1,32 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
-import type { BvpsQuery, BvpsResult } from './types';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
+
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type BvpsQuery = QuarterlyMetricQuery;
+
+export interface BvpsResult extends QuarterlyMetricIdentity, MetricResultMeta {
+  // BVPS 每股淨值 = 本季期末權益 / 股本歷史對應當時（報告日）的流通股數
+  bvps: number | null;
+
+  equity: {
+    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
+    value: string | null; // BigInt as string
+  };
+
+  paidInShares: {
+    value: string | null; // BigInt as string
+    // 股本資料的生效年月（西元曆），不是本季的民國年季——股本異動不是每季都有，
+    // 這裡標的是「實際套用的那筆股本紀錄生效於何時」。
+    effectiveYear: number | null;
+    effectiveMonth: number | null;
+  };
+}
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
 const pickEquity = (
