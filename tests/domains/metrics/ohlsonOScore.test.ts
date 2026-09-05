@@ -5,7 +5,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainMetrics/guru.md「Ohlson O-Score 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 2330（台積電）115Q2 合併報表實測值。
 test('ohlsonOScore: 2330 115Q2 合併報表，指定季度', async () => {
   const result = await calculateOhlsonOScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 

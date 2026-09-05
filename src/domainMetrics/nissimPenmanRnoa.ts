@@ -13,7 +13,7 @@ import { logger } from '@/shared/logger';
 export type NissimPenmanRnoaQuery = QuarterlyMetricQuery;
 
 export interface NissimPenmanRnoaResult extends QuarterlyMetricIdentity, MetricResultMeta {
-  // ROE = RNOA + (FLEV x SPREAD)——見 src/domainMetrics/guru.md「Nissim_Penman_RNOA 卡在哪裡」。
+  // ROE = RNOA + (FLEV x SPREAD)。
   // RNOA（本業報酬率） = NOPAT / NOA，跟 ROE/ROIC 同一種單季/年化/TTM 三數值結構。
   rnoaQuarterlyPct: number | null;
   rnoaQuarterlyAnnualizedPct: number | null;

@@ -29,7 +29,7 @@ export interface BetaResult extends MetricResultMeta {
   // 三個窗口獨立計算（各自取 asOfDate 往前 N 年的重疊交易日再降頻），不是用短窗口的資料去湊長窗口。
   // 2026-08-26 起改成三個窗口不同取樣頻率（1Y 日、2Y 週、5Y 月），對齊 Bloomberg（2Y 用週）、
   // Yahoo Finance（5Y 用月）常見做法——長窗口用日資料會把雜訊/非同步交易的短期波動也算進長期
-  // 結構性風險，不是業界慣例，見 src/domainMetrics/portfolio.md「Beta 計算口徑」的說明。
+  // 結構性風險，不是業界慣例。
   // fieldStatuses（見 MetricResultMeta）只列出值為 null 的欄位，key 是 beta1Y/beta2Y/beta5Y
   // 三者之一，沒列出的代表正常算出來了。
   beta1Y: BetaWindow;
@@ -289,8 +289,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     warnings.push(`指定日期 ${asOfDate} 不是股價與指數同時有資料的交易日，改用往前最近的重疊交易日 ${effectiveAsOf}。`);
   }
 
-  // 1Y 用日資料、2Y 用週資料（對齊 Bloomberg）、5Y 用月資料（對齊 Yahoo Finance）——
-  // 見 src/domainMetrics/portfolio.md「Beta 計算口徑」的說明。
+  // 1Y 用日資料、2Y 用週資料（對齊 Bloomberg）、5Y 用月資料（對齊 Yahoo Finance）。
   const beta1Y = computeWindow(overlap, effectiveAsOfDate, 1, 'daily');
   const beta2Y = computeWindow(overlap, effectiveAsOfDate, 2, 'weekly');
   const beta5Y = computeWindow(overlap, effectiveAsOfDate, 5, 'monthly');

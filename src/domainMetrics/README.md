@@ -1,6 +1,6 @@
 # 投資量化分析架構（investment_metrics_taxonomy v3.0）
 
-`src/domains` 底下的資料夾對應這份分類，每一類各自的 `README.md` 記錄該分類的範疇、描述，以及分類下每個指標的公式、支援口徑、說明——包含**已實作**跟**尚未實作**的。尚未實作的分類目前只有 `README.md`，沒有 `types.ts`/`service.ts` 之類的程式碼。
+`src/domainMetrics` 底下每個指標一個檔案，對應這份分類。分類層級的詳細說明（範疇、公式、支援口徑）2026-09-05 起不再各自維護一份 `.md` 文件——指標數量持續成長，分開維護的文件很快就跟實作脫節，改成統一以 `filterCatalog.csv` 當分類/指標層級的唯一真理來源，指標特有的計算口徑說明直接寫在各自檔案的程式碼註解裡。
 
 **2026-09-05 兩個結構調整**：`technicals` 分類（ma/rsi/kd/bollingerBands/atr/bias/macd/obv，
 8 支指標）使用者決定刪除，已從索引移除；`macro` 分類（跟單一公司財報完全無關，是全市場單一值）
@@ -9,16 +9,18 @@
 
 ## 分類索引
 
-| 資料夾 | 中文名稱 | scope | 狀態 |
+分類層級的詳細說明已不再各自維護 `.md` 文件（見上方 2026-09-05 的說明），這裡只維護最精簡的總覽，詳細的分類/指標中英文名稱、描述見 [`../api/bff/filter/filterCatalog.csv`](../api/bff/filter/filterCatalog.csv)。
+
+| 分類 | 中文名稱 | scope | 狀態 |
 |---|---|---|---|
-| [`profitability`](profitability.md) | 獲利能力與資本配置效率 | Security | 全數實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法——2026-08-27 新增，自行歸類非 guru；`CFROI` 2026-08-30 決定移除，見該分類文件） |
-| [`turnover`](turnover.md) | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
-| [`resilience`](resilience.md) | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru`；2026-09-02 盤點存股需求，銀行業專屬指標（CAR/CET1/NPL/備抵呆帳覆蓋率）排入未來規劃，卡在需要新資料源，見該分類文件 |
-| [`cashFlow`](cashFlow.md) | 現金流品質與法證會計防雷 | Security | 全數實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率、FCF_Yield——2026-08-30 股價來源解禁後補上最後一個）；`Beneish_M_Score` 2026-08-25 改歸類到 `guru` |
-| [`valuation`](valuation.md) | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield 直接採用 oingg-twse 現成數字；PSR、P_FCF、EV_EBITDA 2026-08-30 實作完成）；2026-09-02 盤點存股需求，歷史平均殖利率、估值定價帶模型排入未來規劃，見該分類文件 |
-| [`guru`](guru.md) | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本；`Altman_Z_Score`——2026-08-24 從 `resilience` 移入，2026-08-27 實作；`Piotroski_F_Score`；`Beneish_M_Score`——2026-08-25 從 `cashFlow` 移入，2026-08-27 實作；`Nissim_Penman_RNOA`——2026-08-25 新列入，2026-08-28 實作；Zmijewski Score、Ohlson O-Score——2026-08-30 新列入並實作，兩者都是財務危機預警模型，跟 `Altman_Z_Score` 同一種資料需求）；`Greenwald_EPV` 2026-08-25 曾列入，2026-08-28 因為資產重置成本無法忠於資料計算，決定移除 |
-| [`portfolio`](portfolio.md) | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26，見該分類文件「為什麼 Beta 是例外」）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
-| [`growth`](growth.md) | 成長性指標 | Security | 未實作——見下方「第二套分類方案」；2026-09-02 盤點存股需求，EPS CAGR、連續配發股利年數、ROE 歷史一致性檢驗排入未來規劃，見該分類文件 |
+| `profitability` | 獲利能力與資本配置效率 | Security | 全數實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法——2026-08-27 新增，自行歸類非 guru；`CFROI` 2026-08-30 決定移除） |
+| `turnover` | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
+| `resilience` | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru`；2026-09-02 盤點存股需求，銀行業專屬指標（CAR/CET1/NPL/備抵呆帳覆蓋率）排入未來規劃，卡在需要新資料源 |
+| `cashFlow` | 現金流品質與法證會計防雷 | Security | 全數實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率、FCF_Yield——2026-08-30 股價來源解禁後補上最後一個）；`Beneish_M_Score` 2026-08-25 改歸類到 `guru` |
+| `valuation` | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield 直接採用 oingg-twse 現成數字；PSR、P_FCF、EV_EBITDA 2026-08-30 實作完成）；2026-09-02 盤點存股需求，歷史平均殖利率、估值定價帶模型排入未來規劃 |
+| `guru` | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本；`Altman_Z_Score`——2026-08-24 從 `resilience` 移入，2026-08-27 實作；`Piotroski_F_Score`；`Beneish_M_Score`——2026-08-25 從 `cashFlow` 移入，2026-08-27 實作；`Nissim_Penman_RNOA`——2026-08-25 新列入，2026-08-28 實作；Zmijewski Score、Ohlson O-Score——2026-08-30 新列入並實作，兩者都是財務危機預警模型，跟 `Altman_Z_Score` 同一種資料需求）；`Greenwald_EPV` 2026-08-25 曾列入，2026-08-28 因為資產重置成本無法忠於資料計算，決定移除 |
+| `portfolio` | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
+| `growth` | 成長性指標 | Security | 未實作——見下方「第二套分類方案」；2026-09-02 盤點存股需求，EPS CAGR、連續配發股利年數、ROE 歷史一致性檢驗排入未來規劃 |
 
 ## 跨分類的時間轉換算子（temporal_transformation_operators）
 
@@ -58,7 +60,7 @@
 
 ## 跟既有指標的對應說明（現況 vs 理想 taxonomy）
 
-taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每股營收）不是 taxonomy 明列的獨立 code，是因為跟 EPS 同屬「每股基礎財務數字」家族，被放進 `profitability`——各分類 README 裡有標注哪些是「taxonomy 明列」、哪些是「本服務自行歸類」，也有標注哪些指標的公式跟 taxonomy 原文有差異（例如用期末值取代平均值、用有息負債取代總負債）。詳細的已實作/未實作清單、公式、口徑差異都在各分類自己的 README，這裡不重複列，只維護分類層級的總覽。
+taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每股營收）不是 taxonomy 明列的獨立 code，是因為跟 EPS 同屬「每股基礎財務數字」家族，被放進 `profitability`。哪些指標是「taxonomy 明列」、哪些是「本服務自行歸類」，哪些指標的公式跟 taxonomy 原文有差異（例如用期末值取代平均值、用有息負債取代總負債），這些細節 2026-09-05 起改成寫在各指標自己檔案的程式碼註解裡，不再維護獨立的分類文件。
 
 ## 第二套分類方案（8 類 + 大師策略，評估中）
 
@@ -67,7 +69,7 @@ taxonomy 是理想化的分類文件，已實作指標裡有 2 個（BVPS、每�
 拆成兩種改動，分開處理：
 
 - **既有 21 支指標重新分組**：`marginsAndRatios` 會吃掉現有 `profitability`/`resilience`/`turnover`/`cashFlow` 四個資料夾的比率類指標；`dividends` 要從 `profitability`（配息率/SGR）跟 `valuation/marketRatios`（殖利率，目前跟 PER/PBR 同一支 API）拆出來。folder 搬動本身機制不難（相對 import 深度不變），但 `marketRatios` 那支 API 要不要真的拆表/拆 API，還是只在 `filterCatalog.ts` 讓同一個底層欄位掛兩個分類，**還沒決定，先不動**。
-- **全新的空分類先建骨架**：`growth` 這類目前完全沒有對應的程式碼，跟 `portfolio` 一樣「有骨架沒程式碼」——只有一份文件記錄範疇跟已知會用到的資料來源，`要不要真的動工再個別討論`，這裡不重複列規劃過程，`growth.md` 有寫。原始分類表只給了每類的項目數量，沒有給到逐項清單，所以 `growth.md` 沒有像 `portfolio.md` 那樣列出完整的「指標清單」表格，只列已知能對到的真實資料來源。（`technicals` 已刪除、`macro` 已拉出去成獨立的 `domainMacro/`，見檔案開頭 2026-09-05 的說明，不再是這份文件討論的對象。）
+- **全新的空分類先建骨架**：`growth` 這類目前完全沒有對應的程式碼，跟 `portfolio` 一樣「有骨架沒程式碼」，`要不要真的動工再個別討論`，這裡不重複列規劃過程。原始分類表只給了每類的項目數量，沒有給到逐項清單，指標清單/已知能對到的真實資料來源這些細節不在這裡重複維護。（`technicals` 已刪除、`macro` 已拉出去成獨立的 `domainMacro/`，見檔案開頭 2026-09-05 的說明，不再是這份文件討論的對象。）
   **2026-09-05：`marketData`（市場行情數據）、`financials`（財務報表）這兩個原本一起規劃的空分類骨架已經刪除**——使用者決定不做，`growth` 保留。
 
 **`securityInfo` 2026-09-02 從這份骨架清單移除**：原本規劃的範疇（公司基本資料——名稱、產業、上市日期、股本結構、經營層⋯⋯）已經不是「指標分類」的問題，是「查詢主體是公司還是證券」這個更根本的路由設計問題——實際做出來變成 `GET /companies/profile`（`src/api/bff/companies/`），跟真正上市櫃的證券範圍另外切開一支 `GET /securities/symbols`（`src/api/bff/securities/`，2026-09-04 已刪除，使用者確認即使 mops-ts 有在用也一併砍掉），不是掛在這份 metrics taxonomy 底下的分類，這裡不再保留這個骨架條目，避免跟真正的實作出現兩份互相不同步的規劃。

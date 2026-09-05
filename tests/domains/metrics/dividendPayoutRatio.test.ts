@@ -4,7 +4,7 @@ import { calculateDividendPayoutRatio } from '@/domainMetrics/dividendPayoutRati
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 對照 src/domainMetrics/profitability.md「配息率／SGR 計算口徑」——2330（台積電）115Q2 合併報表實測值。
+// 2330（台積電）115Q2 合併報表實測值。
 // 2026-08-27 更新：mops 修正 quarterly_cash_flow_statement 為真的單季數（原本全部季度都是
 // 當年累計數，不是只有 Q4），本季（單季）跟 TTM 的股利發放/淨利數字都改變了。
 test('dividendPayoutRatio: 2330 115Q2 合併報表（只有 TTM 口徑）', async () => {

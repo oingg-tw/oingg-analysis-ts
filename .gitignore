@@ -10,7 +10,6 @@ dist
 # Generated Prisma client for the oingg-analysis DB (regenerated via postinstall)
 generated
 
-# LibreOffice/OpenOffice lock files——2026-09-05 起 src/domainMetrics/ 底下有幾份 CSV
-# 是刻意設計給 Excel/LibreOffice Calc 直接編輯的（見 filterCatalog.csv/metricFormulas.csv
-# 的說明），開啟編輯時會自動產生這種鎖檔，不該進版控。
+# LibreOffice/OpenOffice lock files——filterCatalog.csv 是刻意設計給 Excel/LibreOffice
+# Calc 直接編輯的，開啟編輯時會自動產生這種鎖檔，不該進版控。
 .~lock.*#
