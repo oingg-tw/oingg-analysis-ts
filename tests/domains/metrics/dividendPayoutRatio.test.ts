@@ -11,10 +11,6 @@ test('dividendPayoutRatio: 2330 115Q2 合併報表（只有 TTM 口徑）', asyn
   const result = await calculateDividendPayoutRatio({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.payoutRatioTtm, 23.76);
-  assert.equal(result.dividendsPaid.value, '-155595147');
-  assert.equal(result.dividendsPaidTtm.value, '-531618438');
-  assert.equal(result.netIncome.value, '706561938');
-  assert.equal(result.netIncomeTtm.value, '2237087087');
   assert.deepEqual(result.warnings, []);
 });
 

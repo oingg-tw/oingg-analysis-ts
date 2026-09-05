@@ -16,10 +16,6 @@ export interface BeneishMScoreResult extends QuarterlyMetricIdentity, MetricResu
   //     - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI
   // 8 個變量任一為 null，mScore 就是 null。
   mScore: number | null;
-  // M-Score > -1.78：財務造假/營收灌水風險較高；M-Score <= -1.78：財務數據可信度較高
-  // （這是原始論文的判別門檻，不是本服務自訂的）。
-  flagged: boolean | null;
-
   dsri: number | null; // 應收帳款指數
   gmi: number | null; // 毛利率指數
   aqi: number | null; // 資產品質指數（簡化版，沒有扣除有價證券，只扣流動資產+PPE）
@@ -28,11 +24,6 @@ export interface BeneishMScoreResult extends QuarterlyMetricIdentity, MetricResu
   sgai: number | null; // 管銷費用指數（SGA = 推銷費用 + 管理費用）
   tata: number | null; // 總應計利潤對總資產比（不需要跟去年比較，單期指標）
   lvgi: number | null; // 槓桿指數（簡化版，用總負債/總資產，不是長期負債+流動負債的嚴格定義）
-
-  // 拿來跟本季比較的「去年同季」，用 getPastNQuarters 往前推 4 季定位。
-  priorYear: string | null;
-  priorSeason: Season | null;
-  priorReportDate: string | null;
 }
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -120,7 +111,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   mScore: null,
-  flagged: null,
   dsri: null,
   gmi: null,
   aqi: null,
@@ -129,9 +119,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   sgai: null,
   tata: null,
   lvgi: null,
-  priorYear: null,
-  priorSeason: null,
-  priorReportDate: null,
   warnings,
 });
 
@@ -223,8 +210,6 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
       ) / 10000;
   }
 
-  const flagged = mScore === null ? null : mScore > -1.78;
-
   // 存進 oingg-analysis DB 的 guru_beneish_m_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.beneishMScoreResult.upsert({
@@ -287,7 +272,6 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
     subsidiaryCompanyId,
     reportDate: curr.reportDate ? curr.reportDate.toISOString().slice(0, 10) : null,
     mScore,
-    flagged,
     dsri,
     gmi,
     aqi,
@@ -296,9 +280,6 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
     sgai,
     tata,
     lvgi,
-    priorYear: prior.year,
-    priorSeason: prior.season,
-    priorReportDate: prev.reportDate ? prev.reportDate.toISOString().slice(0, 10) : null,
     warnings,
   };
 };

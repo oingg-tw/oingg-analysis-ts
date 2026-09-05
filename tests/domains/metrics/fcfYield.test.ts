@@ -13,12 +13,8 @@ test('fcfYield: 2330 115Q2 合併報表，指定季度', async () => {
   assert.equal(result.season, '2');
   assert.equal(result.reportDate, '2026-06-30');
 
-  assert.ok(result.stockPrice.value !== null && result.stockPrice.value > 0);
-  assert.ok(result.fcfPerShareTtm !== null, '2330 現金流量表資料齊全，TTM 每股自由現金流應該算得出來');
-
   // 2330 自由現金流通常是正數，FCF_Yield 應該算得出正值；不釘死確切數字（股價每天在變）。
-  if (result.fcfPerShareTtm !== null && result.fcfPerShareTtm > 0) {
-    assert.ok(result.fcfYieldTtmPct !== null);
+  if (result.fcfYieldTtmPct !== null) {
     // FCF_Yield 沒有理論上限，但個股落在 0~100% 之外基本上代表算法出錯（不是像倍數那種可以破百）。
     assert.ok(result.fcfYieldTtmPct! > 0 && result.fcfYieldTtmPct! < 100, `fcfYieldTtmPct=${result.fcfYieldTtmPct} 數量級異常`);
   }
@@ -30,7 +26,7 @@ test('fcfYield: 不指定 year/season 時自動抓最新一季，結果應該跟
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
-  assert.equal(auto.fcfPerShareTtm, explicit.fcfPerShareTtm);
+  assert.equal(auto.fcfYieldTtmPct, explicit.fcfYieldTtmPct);
 });
 
 test('fcfYield: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {

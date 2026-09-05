@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
-import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
+import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { calculateInterestCoverage } from '@/domainMetrics/interestCoverage';
@@ -19,23 +19,12 @@ export interface AltmanZScoreResult extends QuarterlyMetricIdentity, MetricResul
   // Z = 1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5——原始版（上市公司版）係數，五個變數
   // 任一為 null，Z 就是 null。
   zScore: number | null;
-  // Safe (>2.99) / Grey (1.81~2.99) / Distress (<1.81)——原始版切點，跟 Z''-Score 的切點不一樣，
-  // 兩個版本的分數不能互相比較（本服務只做原始版）。
-  zone: 'safe' | 'grey' | 'distress' | null;
 
   x1: number | null; // (流動資產 − 流動負債) / 總資產
   x2: number | null; // 保留盈餘 / 總資產
   x3: number | null; // EBIT（TTM） / 總資產
   x4: number | null; // 股權市值 / 總負債帳面值
   x5: number | null; // 營收（TTM） / 總資產
-
-  marketCap: {
-    value: number | null;
-    tradeDate: string | null; // 實際用到的股價交易日（股價基準日或之前最近一個重疊交易日）
-    // 股價基準日的來源：'announcement' = 財報公告日（正確口徑）；'report_date_fallback' = 查無
-    // 公告日，退回財報期末日估算（可能有 look-ahead bias，見 shared/sourceData/reportAnnouncementDate.ts）。
-    priceAnchorSource: PriceAnchorSource | null;
-  };
 }
 
 // 2026-08-24 從 resilience 移到 guru 分類時就講好要保留的適用性警告——這個模型是用上市製造業樣本
@@ -76,13 +65,11 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     subsidiaryCompanyId,
     reportDate: null,
     zScore: null,
-    zone: null,
     x1: null,
     x2: null,
     x3: null,
     x4: null,
     x5: null,
-    marketCap: { value: null, tradeDate: null, priceAnchorSource: null },
     warnings,
   });
 
@@ -179,12 +166,6 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     zScore = Math.round((1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5) * 100) / 100;
   }
 
-  let zone: 'safe' | 'grey' | 'distress' | null = null;
-  if (zScore !== null) {
-    zone = zScore > 2.99 ? 'safe' : zScore < 1.81 ? 'distress' : 'grey';
-  }
-
-  // 覆蓋率會持續成長（見 shared/sourceData/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
   // 存進 oingg-analysis DB 的 guru_altman_z_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.altmanZScoreResult.upsert({
@@ -233,13 +214,11 @@ export const calculateAltmanZScore = async (query: AltmanZScoreQuery): Promise<A
     subsidiaryCompanyId,
     reportDate: reportDate ? reportDate.toISOString().slice(0, 10) : null,
     zScore,
-    zone,
     x1,
     x2,
     x3,
     x4,
     x5,
-    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate, priceAnchorSource: priceAnchor?.source ?? null },
     warnings,
   };
 };

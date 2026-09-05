@@ -18,8 +18,6 @@ test('psr: 2330 115Q2 合併報表，指定季度，能算出合理範圍內的�
   // PSR 沒有理論上限，但個股 PSR 落在 0~1000 之外基本上代表單位換算算錯了（差 1000 倍那種坑）。
   assert.ok(result.psrQuarterlyAnnualized! > 0 && result.psrQuarterlyAnnualized! < 1000, `psrQuarterlyAnnualized=${result.psrQuarterlyAnnualized} 數量級異常`);
   assert.ok(result.psrTtm! > 0 && result.psrTtm! < 1000, `psrTtm=${result.psrTtm} 數量級異常`);
-
-  assert.ok(result.marketCap.value !== null && result.marketCap.value > 0);
 });
 
 test('psr: 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
@@ -28,7 +26,7 @@ test('psr: 不指定 year/season 時自動抓最新一季，結果應該跟指�
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
-  assert.equal(auto.operatingRevenue.value, explicit.operatingRevenue.value);
+  assert.equal(auto.psrTtm, explicit.psrTtm);
 });
 
 test('psr: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {

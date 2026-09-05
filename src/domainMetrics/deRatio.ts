@@ -15,15 +15,6 @@ export interface DeRatioResult extends QuarterlyMetricIdentity, MetricResultMeta
   // 分子是「有息負債」，不是總負債（那是 Debt_to_Assets 在算的），純資產負債表時點快照，
   // 沒有單季/年化/TTM 的區別。
   deRatioPct: number | null;
-
-  totalDebt: {
-    // 三個有息負債欄位加總；任一欄位為 null 視為 0（沒有借那種負債），不是資料缺漏。
-    value: string | null; // BigInt as string
-  };
-  equity: {
-    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
-    value: string | null; // BigInt as string
-  };
 }
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -49,8 +40,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   deRatioPct: null,
-  totalDebt: { value: null },
-  equity: { fieldUsed: null, value: null },
   warnings,
 });
 
@@ -132,8 +121,6 @@ export const calculateDeRatio = async (query: DeRatioQuery): Promise<DeRatioResu
     subsidiaryCompanyId,
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     deRatioPct,
-    totalDebt: { value: totalDebt?.toString() ?? null },
-    equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
     warnings,
   };
 };

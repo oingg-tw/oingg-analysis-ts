@@ -17,7 +17,6 @@ test('ohlsonOScore: 2330 115Q2 合併報表，指定季度', async () => {
   assert.equal(result.intwo, 0);
   assert.ok(result.oScore !== null && result.oScore < 0, 'TSMC 財務體質極佳，O-Score 應該是負值（低破產風險）');
   assert.ok(result.probabilityOfBankruptcy !== null && result.probabilityOfBankruptcy < 0.01, '財務危機機率應該極低');
-  assert.equal(result.flagged, false);
   assert.deepEqual(result.warnings, []);
 });
 

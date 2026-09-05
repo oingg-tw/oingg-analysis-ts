@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
-import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
+import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
@@ -18,16 +18,6 @@ export interface FcfYieldResult extends QuarterlyMetricIdentity, MetricResultMet
   // 也不需要流通股數，比 P_FCF 少一次查詢。
   fcfYieldQuarterlyAnnualizedPct: number | null;
   fcfYieldTtmPct: number | null;
-
-  stockPrice: {
-    value: number | null; // 元
-    tradeDate: string | null; // YYYY-MM-DD；實際用到的股價交易日
-    priceAnchorSource: PriceAnchorSource | null;
-  };
-
-  // 直接引用 cashFlowPerShare 已經算好的每股自由現金流（元），不重複查詢/計算。
-  fcfPerShareQuarterlyAnnualized: number | null;
-  fcfPerShareTtm: number | null;
 
   ttm: QuarterlyMetricTtmInfo;
 }
@@ -62,9 +52,6 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
     reportDate: null,
     fcfYieldQuarterlyAnnualizedPct: null,
     fcfYieldTtmPct: null,
-    stockPrice: { value: null, tradeDate: null, priceAnchorSource: null },
-    fcfPerShareQuarterlyAnnualized: null,
-    fcfPerShareTtm: null,
     ttm: { quartersUsed: [], quartersMissing: [] },
     warnings,
   });
@@ -155,9 +142,6 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
     reportDate: reportDate ? reportDate.toISOString().slice(0, 10) : null,
     fcfYieldQuarterlyAnnualizedPct,
     fcfYieldTtmPct,
-    stockPrice: { value: stockPriceValue, tradeDate: stockPriceTradeDate, priceAnchorSource: priceAnchor?.source ?? null },
-    fcfPerShareQuarterlyAnnualized,
-    fcfPerShareTtm,
     ttm: { quartersUsed: cashFlowResult.ttm.quartersUsed, quartersMissing: cashFlowResult.ttm.quartersMissing },
     warnings,
   };

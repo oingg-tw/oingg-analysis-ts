@@ -17,19 +17,6 @@ export interface LiquidityRatioResult extends QuarterlyMetricIdentity, MetricRes
   quickRatioPct: number | null;
   // 現金比率 = 本季期末現金及約當現金 / 本季期末流動負債 * 100
   cashRatioPct: number | null;
-
-  currentAssets: {
-    value: string | null; // BigInt as string
-  };
-  currentLiabilities: {
-    value: string | null; // BigInt as string
-  };
-  inventory: {
-    value: string | null; // BigInt as string
-  };
-  cashAndEquivalents: {
-    value: string | null; // BigInt as string
-  };
 }
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -47,10 +34,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   currentRatioPct: null,
   quickRatioPct: null,
   cashRatioPct: null,
-  currentAssets: { value: null },
-  currentLiabilities: { value: null },
-  inventory: { value: null },
-  cashAndEquivalents: { value: null },
   warnings,
 });
 
@@ -145,10 +128,6 @@ export const calculateLiquidityRatio = async (query: LiquidityRatioQuery): Promi
     currentRatioPct,
     quickRatioPct,
     cashRatioPct,
-    currentAssets: { value: currentAssets?.toString() ?? null },
-    currentLiabilities: { value: currentLiabilities?.toString() ?? null },
-    inventory: { value: inventory?.toString() ?? null },
-    cashAndEquivalents: { value: cashAndEquivalents?.toString() ?? null },
     warnings,
   };
 };

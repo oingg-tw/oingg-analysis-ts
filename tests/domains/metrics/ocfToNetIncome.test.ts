@@ -12,8 +12,6 @@ test('ocfToNetIncome: 2330 115Q2 合併報表', async () => {
 
   assert.equal(result.ocfToNetIncomeQuarterly, 1.11);
   assert.equal(result.ocfToNetIncomeTtm, 1.18);
-  assert.equal(result.operatingCashFlow.value, '783364977');
-  assert.equal(result.netIncome.value, '706561938');
   assert.deepEqual(result.warnings, []);
 });
 

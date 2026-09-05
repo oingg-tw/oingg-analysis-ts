@@ -18,14 +18,6 @@ export interface RoaResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // TTM ROA = 近四季（含本季）淨利加總 / 本季期末總資產 * 100；四季資料不齊則為 null
   roaTtmPct: number | null;
 
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string
-  };
-  totalAssets: {
-    value: string | null; // BigInt as string
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -56,8 +48,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   roaQuarterlyPct: null,
   roaQuarterlyAnnualizedPct: null,
   roaTtmPct: null,
-  netIncome: { fieldUsed: null, value: null },
-  totalAssets: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -189,8 +179,6 @@ export const calculateRoa = async (query: RoaQuery): Promise<RoaResult> => {
     roaQuarterlyPct,
     roaQuarterlyAnnualizedPct,
     roaTtmPct,
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    totalAssets: { value: totalAssets?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

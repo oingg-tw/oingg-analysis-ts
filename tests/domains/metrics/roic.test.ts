@@ -12,9 +12,6 @@ test('roic: 2330 115Q2 合併報表', async () => {
   assert.equal(result.roicQuarterlyPct, 17.04);
   assert.equal(result.roicQuarterlyAnnualizedPct, 68.16);
   assert.equal(result.roicTtmPct, 53.97);
-  assert.equal(result.nopat.value, '709309190');
-  assert.equal(result.nopatTtm.value, '2246684545');
-  assert.equal(result.investedCapital.value, '4162563795');
   assert.deepEqual(result.warnings, []);
 });
 

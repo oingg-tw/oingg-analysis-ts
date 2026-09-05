@@ -10,8 +10,6 @@ test('capexToRevenue: 2330 115Q2 合併報表，指定季度', async () => {
 
   assert.equal(result.capexToRevenueQuarterly, 39.04);
   assert.equal(result.capexToRevenueTtm, 33.58);
-  assert.equal(result.capitalExpenditures.value, '-496001947');
-  assert.equal(result.operatingRevenue.value, '1270380250');
   assert.deepEqual(result.ttm.quartersMissing, []);
   assert.deepEqual(result.warnings, []);
 });

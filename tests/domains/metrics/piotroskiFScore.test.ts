@@ -8,10 +8,6 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 test('piotroskiFScore: 2330 115Q2 vs 114Q2，9 項訊號全部能判斷，score=8', async () => {
   const result = await calculatePiotroskiFScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.equal(result.priorYear, '114');
-  assert.equal(result.priorSeason, '2');
-  assert.equal(result.priorReportDate, '2025-06-30');
-
   assert.equal(result.signals.length, 9);
   assert.ok(result.signals.every((s) => s.passed !== null), '2330 資料齊全，9 項訊號都應該能判斷');
 

@@ -12,7 +12,6 @@ test('zmijewskiScore: 2330 115Q2 合併報表，指定季度', async () => {
 
   assert.equal(result.xScore, -3.6198);
   assert.ok(result.probabilityOfDistress !== null && result.probabilityOfDistress < 0.01, 'TSMC 財務體質極佳，財務危機機率應該極低');
-  assert.equal(result.flagged, false);
   assert.deepEqual(result.warnings, []);
 });
 

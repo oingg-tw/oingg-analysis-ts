@@ -14,13 +14,6 @@ export interface DebtRatioResult extends QuarterlyMetricIdentity, MetricResultMe
   // 純資產負債表的時點快照，不像 ROE/ROA 那樣有單季/年化/TTM 的區別——資產負債表本身就是某一天的餘額，
   // 沒有「近四季加總」這種概念可以套用。
   debtRatioPct: number | null;
-
-  totalLiabilities: {
-    value: string | null; // BigInt as string
-  };
-  totalAssets: {
-    value: string | null; // BigInt as string
-  };
 }
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -36,8 +29,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   debtRatioPct: null,
-  totalLiabilities: { value: null },
-  totalAssets: { value: null },
   warnings,
 });
 
@@ -112,8 +103,6 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
     subsidiaryCompanyId,
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     debtRatioPct,
-    totalLiabilities: { value: totalLiabilities?.toString() ?? null },
-    totalAssets: { value: totalAssets?.toString() ?? null },
     warnings,
   };
 };

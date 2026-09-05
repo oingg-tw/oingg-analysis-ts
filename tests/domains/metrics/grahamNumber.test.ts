@@ -10,8 +10,6 @@ test('grahamNumber: 2330 115Q2 合併報表，指定季度', async () => {
   const result = await calculateGrahamNumber({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.grahamNumber, 693.89);
-  assert.equal(result.epsTtm.value, 86.27);
-  assert.equal(result.bvps.value, 248.05);
   assert.deepEqual(result.warnings, []);
 });
 

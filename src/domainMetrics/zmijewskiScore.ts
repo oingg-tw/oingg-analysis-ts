@@ -17,18 +17,6 @@ export interface ZmijewskiScoreResult extends QuarterlyMetricIdentity, MetricRes
   // probabilityOfDistress = Φ(X)，標準常態累積分布函數（Zmijewski 原始模型是 Probit，機率解讀
   // 比原始分數 X 本身更直覺）——X > 0 等同機率 > 0.5，都是「模型判斷財務危機風險較高」的訊號。
   probabilityOfDistress: number | null;
-  // 門檻是原始論文定的，不是本服務自訂：probabilityOfDistress > 0.5（等同 xScore > 0）判斷為
-  // 財務危機風險較高。
-  flagged: boolean | null;
-
-  netIncomeTtm: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  totalAssets: { value: string | null };
-  totalLiabilities: { value: string | null };
-  currentAssets: { value: string | null };
-  currentLiabilities: { value: string | null };
 
   ttm: QuarterlyMetricTtmInfo;
 }
@@ -63,12 +51,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reportDate: null,
   xScore: null,
   probabilityOfDistress: null,
-  flagged: null,
-  netIncomeTtm: { fieldUsed: null, value: null },
-  totalAssets: { value: null },
-  totalLiabilities: { value: null },
-  currentAssets: { value: null },
-  currentLiabilities: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -208,12 +190,6 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     xScore,
     probabilityOfDistress,
-    flagged,
-    netIncomeTtm: { fieldUsed: netIncomeFieldUsed, value: netIncomeTtmValue?.toString() ?? null },
-    totalAssets: { value: totalAssets?.toString() ?? null },
-    totalLiabilities: { value: totalLiabilities?.toString() ?? null },
-    currentAssets: { value: currentAssets?.toString() ?? null },
-    currentLiabilities: { value: currentLiabilities?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

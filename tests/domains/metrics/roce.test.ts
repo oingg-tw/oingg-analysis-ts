@@ -12,9 +12,6 @@ test('roce: 2330 115Q2 合併報表', async () => {
   assert.equal(result.roceQuarterlyPct, 11.51);
   assert.equal(result.roceQuarterlyAnnualizedPct, 46.04);
   assert.equal(result.roceTtmPct, 35.65);
-  assert.equal(result.ebit.value, '865515135');
-  assert.equal(result.ebitTtm.value, '2679765926');
-  assert.equal(result.capitalEmployed.value, '7517892902');
   assert.deepEqual(result.warnings, []);
 });
 

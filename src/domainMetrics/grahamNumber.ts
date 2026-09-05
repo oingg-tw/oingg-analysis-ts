@@ -18,13 +18,6 @@ export interface GrahamNumberResult extends QuarterlyMetricIdentity, MetricResul
   // 推導出合理價上限 sqrt(22.5 x EPS x BVPS)。EPS 用 TTM（近四季滾動），不是單季或簡單年化——
   // 這是本服務第一個複合指標，直接引用已經做好的 eps/、bvps/ 服務算出來的值，不重複實作查詢邏輯。
   grahamNumber: number | null;
-
-  epsTtm: {
-    value: number | null; // 引用自 GET /profitability/eps 的 epsTtm
-  };
-  bvps: {
-    value: number | null; // 引用自 GET /profitability/bvps 的 bvps
-  };
 }
 
 const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): GrahamNumberResult => ({
@@ -35,8 +28,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   grahamNumber: null,
-  epsTtm: { value: null },
-  bvps: { value: null },
   warnings,
 });
 
@@ -121,8 +112,6 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
     subsidiaryCompanyId,
     reportDate,
     grahamNumber,
-    epsTtm: { value: epsTtm },
-    bvps: { value: bvps },
     warnings,
   };
 };

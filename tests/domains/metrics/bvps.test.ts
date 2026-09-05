@@ -9,8 +9,6 @@ test('bvps: 2330 115Q2 合併報表，指定季度', async () => {
   const result = await calculateBvps({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.bvps, 248.05);
-  assert.equal(result.equity.value, '6432518334');
-  assert.equal(result.paidInShares.value, '25932370067');
   assert.deepEqual(result.warnings, []);
 });
 
@@ -32,7 +30,7 @@ test('bvps: 2887 只依賴資產負債表，自動抓最新一季應該直接是
 
   assert.equal(auto.year, '115');
   assert.equal(auto.season, '1');
-  assert.notEqual(auto.equity.value, null, '115Q1 資產負債表應該有資料');
+  assert.notEqual(auto.bvps, null, '115Q1 資產負債表應該有資料，BVPS 應該算得出來');
 });
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。

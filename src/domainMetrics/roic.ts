@@ -22,20 +22,6 @@ export interface RoicResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // TTM = 近四季（含本季）各季 NOPAT 加總 / 本季期末投入資本 * 100
   roicTtmPct: number | null;
 
-  nopat: {
-    value: string | null; // BigInt as string（四捨五入到整數）；本季 NOPAT
-  };
-  nopatTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  investedCapital: {
-    value: string | null; // BigInt as string；本季期末投入資本
-  };
-  equity: {
-    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
-    value: string | null; // BigInt as string
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -75,10 +61,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   roicQuarterlyPct: null,
   roicQuarterlyAnnualizedPct: null,
   roicTtmPct: null,
-  nopat: { value: null },
-  nopatTtm: { value: null },
-  investedCapital: { value: null },
-  equity: { fieldUsed: null, value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -223,10 +205,6 @@ export const calculateRoic = async (query: RoicQuery): Promise<RoicResult> => {
     roicQuarterlyPct,
     roicQuarterlyAnnualizedPct,
     roicTtmPct,
-    nopat: { value: nopat?.toString() ?? null },
-    nopatTtm: { value: nopatTtmValue?.toString() ?? null },
-    investedCapital: { value: investedCapital?.toString() ?? null },
-    equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

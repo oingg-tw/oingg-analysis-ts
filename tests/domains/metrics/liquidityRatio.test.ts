@@ -32,7 +32,6 @@ test('liquidityRatio: 2887 自動抓最新一季應該取資產負債表自己�
 
   assert.equal(auto.year, '115');
   assert.equal(auto.season, '1');
-  assert.notEqual(auto.cashAndEquivalents.value, null, '115Q1 資產負債表有資料（現金及約當現金欄位非 null）');
 });
 
 // 完全查無資料的公司，自動抓最新一季應該優雅降級，不是丟例外。

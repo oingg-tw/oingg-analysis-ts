@@ -8,10 +8,6 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 test('beneishMScore: 2330 115Q2 vs 114Q2，8 個變量全部能計算', async () => {
   const result = await calculateBeneishMScore({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.equal(result.priorYear, '114');
-  assert.equal(result.priorSeason, '2');
-  assert.equal(result.priorReportDate, '2025-06-30');
-
   assert.equal(result.dsri, 1.3723);
   assert.equal(result.gmi, 0.8656);
   assert.equal(result.aqi, 1.0667);
@@ -21,11 +17,11 @@ test('beneishMScore: 2330 115Q2 vs 114Q2，8 個變量全部能計算', async ()
   assert.equal(result.tata, -0.0082);
   assert.equal(result.lvgi, 0.9072);
 
-  assert.equal(result.mScore, -1.4827);
   // 台積電這一季 YoY 營收成長高達 36%（SGI=1.36），Beneish M-Score 對高成長公司有已知的偽陽性
-  // 傾向（模型沒辦法區分「真的在造假」跟「正常的高速成長」），flagged=true 是預期中的模型限制，
+  // 傾向（模型沒辦法區分「真的在造假」跟「正常的高速成長」），mScore > -1.78 是預期中的模型限制，
   // 不代表台積電真的有財報異常。
-  assert.equal(result.flagged, true);
+  assert.equal(result.mScore, -1.4827);
+  assert.ok(result.mScore! > -1.78);
 
   assert.deepEqual(result.warnings, []);
 });
@@ -38,7 +34,6 @@ test('beneishMScore: 查無資料的公司回傳 mScore=null，8 個變量都是
   const result = await calculateBeneishMScore({ symbol: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.mScore, null);
-  assert.equal(result.flagged, null);
   for (const key of ['dsri', 'gmi', 'aqi', 'sgi', 'depi', 'sgai', 'tata', 'lvgi'] as const) {
     assert.equal(result[key], null);
   }

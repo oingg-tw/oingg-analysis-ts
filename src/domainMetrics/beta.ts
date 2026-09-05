@@ -33,11 +33,6 @@ export interface BetaResult extends MetricResultMeta {
   beta1Y: BetaWindow;
   beta2Y: BetaWindow;
   beta5Y: BetaWindow;
-
-  dataCoverage: {
-    stockPriceDateRange: { min: string | null; max: string | null }; // 這個 symbol 在 oingg-twse daily_price 的資料範圍；查無資料則兩者皆 null
-    marketIndexDateRange: { min: string | null; max: string | null }; // oingg-twse daily_taiex_index 整體資料範圍，跟 symbol 無關
-  };
 }
 
 interface RawDailyPriceCloseRow {
@@ -169,7 +164,7 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // schema 沒有唯一識別欄位，走 $queryRaw）。
   const fiveYearsBack = subtractYears(requestedAsOf ?? new Date(), 5);
 
-  const [stockRows, indexRows, stockRangeRows, indexRangeRows] = await Promise.all([
+  const [stockRows, indexRows, stockRangeRows] = await Promise.all([
     requestedAsOf
       ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
           SELECT trade_date, close FROM "export"."daily_price"
@@ -193,23 +188,8 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
           ORDER BY trade_date ASC
         `,
     twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_price" WHERE symbol = ${symbol}`,
-    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM "export"."daily_taiex_index"`,
   ]);
   const stockRange = stockRangeRows[0]!;
-  const indexRange = indexRangeRows[0]!;
-
-  // 股價、大盤指數都改用 oingg-twse（daily_price / daily_taiex_index），不再用 mops 已消失的
-  // daily_stock_price / daily_market_index——見 shared/sourceData/marketCap.ts 開頭的說明。
-  const dataCoverage = {
-    stockPriceDateRange: {
-      min: stockRange.min_date ? toDateString(stockRange.min_date) : null,
-      max: stockRange.max_date ? toDateString(stockRange.max_date) : null,
-    },
-    marketIndexDateRange: {
-      min: indexRange.min_date ? toDateString(indexRange.min_date) : null,
-      max: indexRange.max_date ? toDateString(indexRange.max_date) : null,
-    },
-  };
 
   const emptyWindow = (frequency: BetaSamplingFrequency): BetaWindow => ({
     value: null,
@@ -232,7 +212,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
       beta1Y: emptyWindow('daily'),
       beta2Y: emptyWindow('weekly'),
       beta5Y: emptyWindow('monthly'),
-      dataCoverage,
       warnings,
     };
   }
@@ -260,7 +239,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
       beta1Y: emptyWindow('daily'),
       beta2Y: emptyWindow('weekly'),
       beta5Y: emptyWindow('monthly'),
-      dataCoverage,
       warnings,
     };
   }
@@ -315,7 +293,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     beta1Y,
     beta2Y,
     beta5Y,
-    dataCoverage,
     warnings,
   };
 };

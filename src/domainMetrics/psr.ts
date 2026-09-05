@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRevenuePerShare } from '@/domainMetrics/revenuePerShare';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
-import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
+import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
@@ -17,19 +17,6 @@ export interface PsrResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // 沒有標準意義，只提供本季營收簡單年化（x4）跟近四季實際加總（TTM）兩種口徑，沒有純單季版本。
   psrQuarterlyAnnualized: number | null;
   psrTtm: number | null;
-
-  marketCap: {
-    value: number | null; // 元；股價（基準日見下方）x 流通股數
-    tradeDate: string | null; // YYYY-MM-DD；實際用到的股價交易日
-    priceAnchorSource: PriceAnchorSource | null;
-  };
-
-  operatingRevenue: {
-    value: string | null; // BigInt as string；本季營收（千元）
-  };
-  operatingRevenueTtm: {
-    value: string | null; // BigInt as string；近四季加總（千元），資料不齊則為 null
-  };
 
   ttm: QuarterlyMetricTtmInfo;
 }
@@ -66,9 +53,6 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
     reportDate: null,
     psrQuarterlyAnnualized: null,
     psrTtm: null,
-    marketCap: { value: null, tradeDate: null, priceAnchorSource: null },
-    operatingRevenue: { value: null },
-    operatingRevenueTtm: { value: null },
     ttm: { quartersUsed: [], quartersMissing: [] },
     warnings,
   });
@@ -163,9 +147,6 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
     reportDate: reportDate ? reportDate.toISOString().slice(0, 10) : null,
     psrQuarterlyAnnualized,
     psrTtm,
-    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate, priceAnchorSource: priceAnchor?.source ?? null },
-    operatingRevenue: { value: operatingRevenue?.toString() ?? null },
-    operatingRevenueTtm: { value: operatingRevenueTtm?.toString() ?? null },
     ttm: { quartersUsed: revenueResult.ttm.quartersUsed, quartersMissing: revenueResult.ttm.quartersMissing },
     warnings,
   };

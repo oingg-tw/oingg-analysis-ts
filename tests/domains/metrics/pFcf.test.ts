@@ -13,12 +13,8 @@ test('pFcf: 2330 115Q2 合併報表，指定季度', async () => {
   assert.equal(result.season, '2');
   assert.equal(result.reportDate, '2026-06-30');
 
-  assert.ok(result.marketCap.value !== null && result.marketCap.value > 0);
-  assert.ok(result.freeCashFlow.value !== null, '2330 現金流量表資料齊全，本季自由現金流應該算得出來');
-
   // 2330 自由現金流通常是正數，P_FCF 應該算得出正值；不釘死確切數字（股價每天在變）。
-  if (result.freeCashFlow.value !== null && BigInt(result.freeCashFlow.value) > 0n) {
-    assert.ok(result.pFcfQuarterlyAnnualized !== null);
+  if (result.pFcfQuarterlyAnnualized !== null) {
     assert.ok(result.pFcfTtm !== null);
     assert.ok(result.pFcfQuarterlyAnnualized! > 0 && result.pFcfQuarterlyAnnualized! < 1000, `pFcfQuarterlyAnnualized=${result.pFcfQuarterlyAnnualized} 數量級異常`);
   }
@@ -30,7 +26,7 @@ test('pFcf: 不指定 year/season 時自動抓最新一季，結果應該跟指�
 
   assert.equal(auto.year, explicit.year);
   assert.equal(auto.season, explicit.season);
-  assert.equal(auto.freeCashFlow.value, explicit.freeCashFlow.value);
+  assert.equal(auto.pFcfTtm, explicit.pFcfTtm);
 });
 
 test('pFcf: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {

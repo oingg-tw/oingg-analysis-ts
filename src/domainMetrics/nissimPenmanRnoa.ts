@@ -37,23 +37,6 @@ export interface NissimPenmanRnoaResult extends QuarterlyMetricIdentity, MetricR
   actualRoeQuarterlyPct: number | null;
   actualRoeTtmPct: number | null;
 
-  nopat: {
-    value: string | null; // BigInt as string（四捨五入到整數）；本季 NOPAT = 營業利益 x (1 - 有效稅率)
-  };
-  nopatTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  noa: {
-    value: string | null; // BigInt as string；淨營業資產 = 權益 + NFO
-  };
-  nfo: {
-    value: string | null; // BigInt as string；淨金融負債 = 有息負債 - 現金及約當現金
-  };
-  equity: {
-    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
-    value: string | null; // BigInt as string
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -139,11 +122,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reconstructedRoeTtmPct: null,
   actualRoeQuarterlyPct: null,
   actualRoeTtmPct: null,
-  nopat: { value: null },
-  nopatTtm: { value: null },
-  noa: { value: null },
-  nfo: { value: null },
-  equity: { fieldUsed: null, value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -344,11 +322,6 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
     reconstructedRoeTtmPct,
     actualRoeQuarterlyPct: roeResult.roeQuarterlyPct,
     actualRoeTtmPct: roeResult.roeTtmPct,
-    nopat: { value: nopat?.toString() ?? null },
-    nopatTtm: { value: nopatTtmValue?.toString() ?? null },
-    noa: { value: noa?.toString() ?? null },
-    nfo: { value: nfo?.toString() ?? null },
-    equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

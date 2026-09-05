@@ -26,13 +26,6 @@ export interface RevenuePerShareResult extends QuarterlyMetricIdentity, MetricRe
     value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
   };
 
-  paidInShares: {
-    value: string | null; // BigInt as string
-    // 股本資料的生效年月（西元曆），是「實際套用的那筆股本紀錄生效於何時」，不是本季的民國年季。
-    effectiveYear: number | null;
-    effectiveMonth: number | null;
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -55,7 +48,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   revenuePerShareTtm: null,
   operatingRevenue: { value: null },
   operatingRevenueTtm: { value: null },
-  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -201,11 +193,6 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
     revenuePerShareTtm,
     operatingRevenue: { value: operatingRevenue?.toString() ?? null },
     operatingRevenueTtm: { value: operatingRevenueTtmValue?.toString() ?? null },
-    paidInShares: {
-      value: paidInShares?.toString() ?? null,
-      effectiveYear,
-      effectiveMonth,
-    },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

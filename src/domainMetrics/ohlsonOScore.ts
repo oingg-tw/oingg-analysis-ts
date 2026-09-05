@@ -18,9 +18,6 @@ export interface OhlsonOScoreResult extends QuarterlyMetricIdentity, MetricResul
   // probabilityOfBankruptcy = 1 / (1 + e^(-O))，Logit 模型的標準機率轉換，比單看 O 這個沒有
   // 直覺單位的分數好解讀。
   probabilityOfBankruptcy: number | null;
-  // 門檻是原始論文定的，不是本服務自訂：probabilityOfBankruptcy > 0.5（等同 oScore > 0）判斷為
-  // 財務危機風險較高。
-  flagged: boolean | null;
 
   size: number | null; // ln(總資產)——原始論文用 GNP 物價指數平減過的資產，本服務用未平減的原始總資產，見下方說明
   tlta: number | null; // 總負債 / 總資產
@@ -31,14 +28,6 @@ export interface OhlsonOScoreResult extends QuarterlyMetricIdentity, MetricResul
   futl: number | null; // 營運現金流（TTM，FFO 的代理變數） / 總負債
   intwo: number | null; // 今年、去年 TTM 淨利都是負數記 1，否則記 0
   chin: number | null; // (今年 TTM 淨利 - 去年 TTM 淨利) / (|今年| + |去年|)
-
-  netIncomeTtm: { value: string | null }; // BigInt as string；本季往前 4 季（含本季）加總
-  netIncomeTtmPriorYear: { value: string | null }; // BigInt as string；去年同季往前 4 季加總
-  operatingCashFlowTtm: { value: string | null }; // BigInt as string；本季往前 4 季（含本季）加總
-  totalAssets: { value: string | null };
-  totalLiabilities: { value: string | null };
-  currentAssets: { value: string | null };
-  currentLiabilities: { value: string | null };
 
   ttm: QuarterlyMetricTtmInfo;
 }
@@ -83,7 +72,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reportDate: null,
   oScore: null,
   probabilityOfBankruptcy: null,
-  flagged: null,
   size: null,
   tlta: null,
   wcta: null,
@@ -93,13 +81,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   futl: null,
   intwo: null,
   chin: null,
-  netIncomeTtm: { value: null },
-  netIncomeTtmPriorYear: { value: null },
-  operatingCashFlowTtm: { value: null },
-  totalAssets: { value: null },
-  totalLiabilities: { value: null },
-  currentAssets: { value: null },
-  currentLiabilities: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -291,7 +272,6 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     oScore,
     probabilityOfBankruptcy,
-    flagged,
     size,
     tlta,
     wcta,
@@ -301,13 +281,6 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
     futl,
     intwo,
     chin,
-    netIncomeTtm: { value: netIncomeTtm?.toString() ?? null },
-    netIncomeTtmPriorYear: { value: netIncomeTtmPriorYear?.toString() ?? null },
-    operatingCashFlowTtm: { value: operatingCashFlowTtm?.toString() ?? null },
-    totalAssets: { value: totalAssets?.toString() ?? null },
-    totalLiabilities: { value: totalLiabilities?.toString() ?? null },
-    currentAssets: { value: currentAssets?.toString() ?? null },
-    currentLiabilities: { value: currentLiabilities?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

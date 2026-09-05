@@ -18,20 +18,6 @@ export interface OcfToNetIncomeResult extends QuarterlyMetricIdentity, MetricRes
   ocfToNetIncomeQuarterly: number | null;
   ocfToNetIncomeTtm: number | null;
 
-  operatingCashFlow: {
-    value: string | null; // BigInt as string；本季 netCashFromOperatingActivities
-  };
-  operatingCashFlowTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；本季淨利
-  };
-  netIncomeTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -59,10 +45,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reportDate: null,
   ocfToNetIncomeQuarterly: null,
   ocfToNetIncomeTtm: null,
-  operatingCashFlow: { value: null },
-  operatingCashFlowTtm: { value: null },
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -209,10 +191,6 @@ export const calculateOcfToNetIncome = async (query: OcfToNetIncomeQuery): Promi
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     ocfToNetIncomeQuarterly,
     ocfToNetIncomeTtm,
-    operatingCashFlow: { value: operatingCashFlow?.toString() ?? null },
-    operatingCashFlowTtm: { value: operatingCashFlowTtmValue?.toString() ?? null },
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

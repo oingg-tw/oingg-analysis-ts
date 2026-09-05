@@ -21,29 +21,6 @@ export interface AccrualsRatioResult extends QuarterlyMetricIdentity, MetricResu
   // TTM = (近四季淨利加總 - 近四季 OCF 加總 - 近四季 ICF 加總) / 本季期末總資產 * 100
   accrualsRatioTtm: number | null;
 
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；本季淨利
-  };
-  netIncomeTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  operatingCashFlow: {
-    value: string | null; // BigInt as string；本季營業活動現金流量（OCF）
-  };
-  operatingCashFlowTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  investingCashFlow: {
-    value: string | null; // BigInt as string；本季投資活動現金流量（ICF，netCashFromInvestingActivities）
-  };
-  investingCashFlowTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  totalAssets: {
-    value: string | null; // BigInt as string；本季期末總資產（分母，用期末值，不是平均值）
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -72,13 +49,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   accrualsRatioQuarterly: null,
   accrualsRatioQuarterlyAnnualized: null,
   accrualsRatioTtm: null,
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
-  operatingCashFlow: { value: null },
-  operatingCashFlowTtm: { value: null },
-  investingCashFlow: { value: null },
-  investingCashFlowTtm: { value: null },
-  totalAssets: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -253,13 +223,6 @@ export const calculateAccrualsRatio = async (query: AccrualsRatioQuery): Promise
     accrualsRatioQuarterly,
     accrualsRatioQuarterlyAnnualized,
     accrualsRatioTtm,
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
-    operatingCashFlow: { value: operatingCashFlow?.toString() ?? null },
-    operatingCashFlowTtm: { value: operatingCashFlowTtmValue?.toString() ?? null },
-    investingCashFlow: { value: investingCashFlow?.toString() ?? null },
-    investingCashFlowTtm: { value: investingCashFlowTtmValue?.toString() ?? null },
-    totalAssets: { value: totalAssets?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

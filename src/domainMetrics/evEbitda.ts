@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateNetDebtToEbitda } from '@/domainMetrics/netDebtToEbitda';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
-import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
+import { getPriceAnchorDate } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
@@ -18,27 +18,6 @@ export interface EvEbitdaResult extends QuarterlyMetricIdentity, MetricResultMet
   // 兩種口徑，沒有純單季版本——跟 PSR/P_FCF/netDebtToEbitda 同一種道理。
   evToEbitdaQuarterlyAnnualized: number | null;
   evToEbitdaTtm: number | null;
-
-  // 企業價值 = 市值 + 淨負債（本季期末，可能是負數代表淨現金部位，此時 EV 會小於市值）。
-  enterpriseValue: {
-    value: number | null; // 元
-  };
-
-  marketCap: {
-    value: number | null; // 元；股價（基準日見下方）x 流通股數
-    tradeDate: string | null; // YYYY-MM-DD；實際用到的股價交易日
-    priceAnchorSource: PriceAnchorSource | null;
-  };
-
-  netDebt: {
-    value: string | null; // BigInt as string（千元）；本季期末：有息負債 - 現金及約當現金
-  };
-  ebitdaQuarterly: {
-    value: string | null; // BigInt as string（千元）；本季 EBITDA = EBIT + 折舊 + 攤銷
-  };
-  ebitdaTtm: {
-    value: string | null; // BigInt as string（千元）；近四季加總，資料不齊則為 null
-  };
 
   ttm: QuarterlyMetricTtmInfo;
 }
@@ -75,11 +54,6 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
     reportDate: null,
     evToEbitdaQuarterlyAnnualized: null,
     evToEbitdaTtm: null,
-    enterpriseValue: { value: null },
-    marketCap: { value: null, tradeDate: null, priceAnchorSource: null },
-    netDebt: { value: null },
-    ebitdaQuarterly: { value: null },
-    ebitdaTtm: { value: null },
     ttm: { quartersUsed: [], quartersMissing: [] },
     warnings,
   });
@@ -182,11 +156,6 @@ export const calculateEvEbitda = async (query: EvEbitdaQuery): Promise<EvEbitdaR
     reportDate: reportDate ? reportDate.toISOString().slice(0, 10) : null,
     evToEbitdaQuarterlyAnnualized,
     evToEbitdaTtm,
-    enterpriseValue: { value: enterpriseValue },
-    marketCap: { value: marketCapValue, tradeDate: marketCapTradeDate, priceAnchorSource: priceAnchor?.source ?? null },
-    netDebt: { value: netDebt?.toString() ?? null },
-    ebitdaQuarterly: { value: ebitdaQuarterly?.toString() ?? null },
-    ebitdaTtm: { value: ebitdaTtm?.toString() ?? null },
     ttm: { quartersUsed: netDebtResult.ttm.quartersUsed, quartersMissing: netDebtResult.ttm.quartersMissing },
     warnings,
   };

@@ -30,14 +30,6 @@ export interface DupontResult extends QuarterlyMetricIdentity, MetricResultMeta 
   decomposedRoeTtmPct: number | null;
   actualRoeQuarterlyPct: number | null; // 引用自 roe/ 的 roeQuarterlyPct，供對照
   actualRoeTtmPct: number | null; // 引用自 roe/ 的 roeTtmPct，供對照
-
-  totalAssets: {
-    value: string | null; // BigInt as string；本季期末總資產
-  };
-  equity: {
-    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
-    value: string | null; // BigInt as string；本季期末權益
-  };
 }
 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
@@ -58,8 +50,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   decomposedRoeTtmPct: null,
   actualRoeQuarterlyPct: null,
   actualRoeTtmPct: null,
-  totalAssets: { value: null },
-  equity: { fieldUsed: null, value: null },
   warnings,
 });
 
@@ -207,8 +197,6 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
     decomposedRoeTtmPct,
     actualRoeQuarterlyPct: roeResult.roeQuarterlyPct,
     actualRoeTtmPct: roeResult.roeTtmPct,
-    totalAssets: { value: totalAssetsValue },
-    equity,
     warnings,
   };
 };

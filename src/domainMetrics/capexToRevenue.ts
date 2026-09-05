@@ -17,21 +17,6 @@ export interface CapexToRevenueResult extends QuarterlyMetricIdentity, MetricRes
   capexToRevenueQuarterly: number | null;
   capexToRevenueTtm: number | null;
 
-  capitalExpenditures: {
-    // 資料庫裡 capitalExpenditures 本身是負數（現金流出），這裡回傳原始值（負數），
-    // 但比率計算用絕對值——資本支出佔營收比是慣例上的正數百分比，不是負的。
-    value: string | null; // BigInt as string；本季資本支出（現金流量表原始值，負數）
-  };
-  capitalExpendituresTtm: {
-    value: string | null; // BigInt as string；近四季加總（負數），資料不齊則為 null
-  };
-  operatingRevenue: {
-    value: string | null; // BigInt as string；本季營收
-  };
-  operatingRevenueTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -49,10 +34,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reportDate: null,
   capexToRevenueQuarterly: null,
   capexToRevenueTtm: null,
-  capitalExpenditures: { value: null },
-  capitalExpendituresTtm: { value: null },
-  operatingRevenue: { value: null },
-  operatingRevenueTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -195,10 +176,6 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     capexToRevenueQuarterly,
     capexToRevenueTtm,
-    capitalExpenditures: { value: capitalExpenditures?.toString() ?? null },
-    capitalExpendituresTtm: { value: capitalExpendituresTtmValue?.toString() ?? null },
-    operatingRevenue: { value: operatingRevenue?.toString() ?? null },
-    operatingRevenueTtm: { value: operatingRevenueTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

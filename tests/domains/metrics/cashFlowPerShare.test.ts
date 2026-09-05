@@ -16,7 +16,6 @@ test('cashFlowPerShare: 2330 115Q2 合併報表，指定季度', async () => {
   assert.equal(result.fcfPerShareTtm, 44.1);
   assert.equal(result.operatingCashFlow.value, '783364977');
   assert.equal(result.capitalExpenditures.value, '-496001947');
-  assert.equal(result.paidInShares.value, '25932370067');
   assert.deepEqual(result.ttm.quartersMissing, []);
   assert.deepEqual(result.warnings, []);
 });

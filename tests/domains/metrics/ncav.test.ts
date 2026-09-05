@@ -10,9 +10,6 @@ test('ncav: 2330 115Q2 合併報表，指定季度', async () => {
 
   assert.equal(result.ncav, 64.19);
   assert.equal(result.marginOfSafetyPrice, 42.79);
-  assert.equal(result.currentAssets.value, '4565700742');
-  assert.equal(result.totalLiabilities.value, '2901183746');
-  assert.equal(result.paidInShares.value, '25932370067');
   assert.deepEqual(result.warnings, []);
 });
 

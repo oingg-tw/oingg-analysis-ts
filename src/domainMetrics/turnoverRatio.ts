@@ -51,33 +51,8 @@ export interface TurnoverRatioResult extends QuarterlyMetricIdentity, MetricResu
   cashConversionCycleQuarterlyAnnualized: number | null;
   cashConversionCycleTtm: number | null;
 
-  operatingCost: {
-    value: string | null; // BigInt as string；本季營業成本
-  };
-  operatingCostTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  operatingRevenue: {
-    value: string | null; // BigInt as string；本季營收
-  };
-  operatingRevenueTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-
-  inventory: {
-    value: string | null; // BigInt as string；本季期末存貨（分母，用期末值，不是平均值）
-  };
-  accountsReceivable: {
-    value: string | null; // BigInt as string；本季期末應收帳款
-  };
   totalAssets: {
-    value: string | null; // BigInt as string；本季期末總資產
-  };
-  propertyPlantEquipment: {
-    value: string | null; // BigInt as string；本季期末不動產、廠房及設備
-  };
-  accountsPayable: {
-    value: string | null; // BigInt as string；本季期末應付帳款
+    value: string | null; // BigInt as string；本季期末總資產。dupont.ts 會讀 turnoverRatioResult.totalAssets.value，不能移除。
   };
 
   ttm: QuarterlyMetricTtmInfo;
@@ -125,15 +100,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   payablesDaysTtm: null,
   cashConversionCycleQuarterlyAnnualized: null,
   cashConversionCycleTtm: null,
-  operatingCost: { value: null },
-  operatingCostTtm: { value: null },
-  operatingRevenue: { value: null },
-  operatingRevenueTtm: { value: null },
-  inventory: { value: null },
-  accountsReceivable: { value: null },
   totalAssets: { value: null },
-  propertyPlantEquipment: { value: null },
-  accountsPayable: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -394,15 +361,7 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     payablesDaysTtm,
     cashConversionCycleQuarterlyAnnualized,
     cashConversionCycleTtm,
-    operatingCost: { value: operatingCost?.toString() ?? null },
-    operatingCostTtm: { value: operatingCostTtmValue?.toString() ?? null },
-    operatingRevenue: { value: operatingRevenue?.toString() ?? null },
-    operatingRevenueTtm: { value: operatingRevenueTtmValue?.toString() ?? null },
-    inventory: { value: inventory?.toString() ?? null },
-    accountsReceivable: { value: accountsReceivable?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
-    propertyPlantEquipment: { value: propertyPlantEquipment?.toString() ?? null },
-    accountsPayable: { value: accountsPayable?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

@@ -19,21 +19,6 @@ export interface EpsResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // TTM EPS = 近四季（含本季）淨利加總 / 本季報告日對應的流通股數
   epsTtm: number | null;
 
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；本季淨利
-  };
-  netIncomeTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-
-  paidInShares: {
-    value: string | null; // BigInt as string
-    // 股本資料的生效年月（西元曆），是「實際套用的那筆股本紀錄生效於何時」，不是本季的民國年季。
-    effectiveYear: number | null;
-    effectiveMonth: number | null;
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -64,9 +49,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   epsQuarterly: null,
   epsQuarterlyAnnualized: null,
   epsTtm: null,
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
-  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -213,13 +195,6 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
     epsQuarterly,
     epsQuarterlyAnnualized,
     epsTtm,
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
-    paidInShares: {
-      value: paidInShares?.toString() ?? null,
-      effectiveYear,
-      effectiveMonth,
-    },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

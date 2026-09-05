@@ -40,15 +40,11 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
 
   assert.ok(result.zScore !== null);
   assert.ok(result.zScore! > 0 && result.zScore! < 1000, `zScore=${result.zScore} 數量級異常`);
-  assert.equal(result.zone, 'safe'); // TSMC 財務體質極佳，Z-Score 落在 Safe 區間是預期結果
+  assert.ok(result.zScore! > 2.99, 'TSMC 財務體質極佳，Z-Score 應該落在 Safe 區間（>2.99）');
 
   if (announcement) {
-    assert.equal(result.marketCap.priceAnchorSource, 'announcement');
-    assert.equal(result.marketCap.tradeDate, announcement.announcement_date.toISOString().slice(0, 10));
     assert.equal(result.warnings.length, 1, '有公告日資料時不應該出現 fallback 警告，只剩固定的產業適用性警告');
   } else {
-    assert.equal(result.marketCap.priceAnchorSource, 'report_date_fallback');
-    assert.equal(result.marketCap.tradeDate, '2026-06-30');
     assert.equal(result.warnings.length, 2, '查無公告日時應該有固定的產業適用性警告 + fallback 到期末日的警告');
     assert.match(result.warnings[1]!, /財報公告日/);
   }
@@ -61,10 +57,8 @@ test('altmanZScore: 2330 114Q2 合併報表——有公告日資料，X4 股價�
   const result = await calculateAltmanZScore({ symbol: '2330', year: '114', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.reportDate, '2025-06-30');
-  assert.equal(result.marketCap.priceAnchorSource, 'announcement');
-  assert.equal(result.marketCap.tradeDate, '2025-08-12');
 
-  // 不應該出現 fallback 警告，只剩固定的產業適用性警告。
+  // 不應該出現 fallback 警告，只剩固定的產業適用性警告——間接證明真的用了公告日，不是期末日。
   assert.equal(result.warnings.length, 1);
   assert.match(result.warnings[0]!, /上市製造業樣本校準/);
 });

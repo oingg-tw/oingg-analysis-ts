@@ -36,13 +36,6 @@ export interface CashFlowPerShareResult extends QuarterlyMetricIdentity, MetricR
     value: string | null; // BigInt as string；近四季加總（負數），資料不齊則為 null
   };
 
-  paidInShares: {
-    value: string | null; // BigInt as string
-    // 股本資料的生效年月（西元曆），是「實際套用的那筆股本紀錄生效於何時」，不是本季的民國年季。
-    effectiveYear: number | null;
-    effectiveMonth: number | null;
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -70,7 +63,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   operatingCashFlowTtm: { value: null },
   capitalExpenditures: { value: null },
   capitalExpendituresTtm: { value: null },
-  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -250,11 +242,6 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
     operatingCashFlowTtm: { value: operatingCashFlowTtmValue?.toString() ?? null },
     capitalExpenditures: { value: capitalExpenditures?.toString() ?? null },
     capitalExpendituresTtm: { value: capitalExpendituresTtmValue?.toString() ?? null },
-    paidInShares: {
-      value: paidInShares?.toString() ?? null,
-      effectiveYear,
-      effectiveMonth,
-    },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

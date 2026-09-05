@@ -25,32 +25,6 @@ export interface MarginsResult extends QuarterlyMetricIdentity, MetricResultMeta
   netProfitMarginQuarterly: number | null;
   netProfitMarginTtm: number | null;
 
-  operatingRevenue: {
-    value: string | null; // BigInt as string；本季營收
-  };
-  operatingRevenueTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  grossProfit: {
-    value: string | null;
-  };
-  grossProfitTtm: {
-    value: string | null;
-  };
-  operatingIncome: {
-    value: string | null;
-  };
-  operatingIncomeTtm: {
-    value: string | null;
-  };
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null;
-  };
-  netIncomeTtm: {
-    value: string | null;
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -82,14 +56,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   operatingMarginTtm: null,
   netProfitMarginQuarterly: null,
   netProfitMarginTtm: null,
-  operatingRevenue: { value: null },
-  operatingRevenueTtm: { value: null },
-  grossProfit: { value: null },
-  grossProfitTtm: { value: null },
-  operatingIncome: { value: null },
-  operatingIncomeTtm: { value: null },
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -246,14 +212,6 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
     operatingMarginTtm,
     netProfitMarginQuarterly,
     netProfitMarginTtm,
-    operatingRevenue: { value: operatingRevenue?.toString() ?? null },
-    operatingRevenueTtm: { value: operatingRevenueTtmValue?.toString() ?? null },
-    grossProfit: { value: grossProfit?.toString() ?? null },
-    grossProfitTtm: { value: grossProfitTtmValue?.toString() ?? null },
-    operatingIncome: { value: operatingIncome?.toString() ?? null },
-    operatingIncomeTtm: { value: operatingIncomeTtmValue?.toString() ?? null },
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

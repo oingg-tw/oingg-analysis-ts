@@ -20,16 +20,6 @@ export interface RoceResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // TTM = 近四季（含本季）EBIT 加總 / 本季期末使用資本 * 100
   roceTtmPct: number | null;
 
-  ebit: {
-    value: string | null; // BigInt as string；本季 EBIT
-  };
-  ebitTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  capitalEmployed: {
-    value: string | null; // BigInt as string；本季期末總資產 - 流動負債
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -54,9 +44,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   roceQuarterlyPct: null,
   roceQuarterlyAnnualizedPct: null,
   roceTtmPct: null,
-  ebit: { value: null },
-  ebitTtm: { value: null },
-  capitalEmployed: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -191,9 +178,6 @@ export const calculateRoce = async (query: RoceQuery): Promise<RoceResult> => {
     roceQuarterlyPct,
     roceQuarterlyAnnualizedPct,
     roceTtmPct,
-    ebit: { value: ebit?.toString() ?? null },
-    ebitTtm: { value: ebitTtmValue?.toString() ?? null },
-    capitalEmployed: { value: capitalEmployed?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

@@ -22,13 +22,7 @@ export interface PiotroskiFScoreResult extends QuarterlyMetricIdentity, MetricRe
   // 9 項二元訊號加總（0~9）。**9 項全部能判斷才給分數**——任一項因為資料缺漏變成 null，
   // score 就是 null（不會用「9 項裡有幾項算出來」湊一個打折的分數），見 signals 找出是哪一項卡住。
   score: number | null;
-  maxScore: 9;
   signals: PiotroskiSignal[];
-
-  // 拿來跟本季比較的「去年同季」，用 getPastNQuarters 往前推 4 季定位，不是「上一季」。
-  priorYear: string | null;
-  priorSeason: Season | null;
-  priorReportDate: string | null;
 }
 
 // 淨利欄位選擇邏輯跟 ROE/EPS 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -105,11 +99,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   score: null,
-  maxScore: 9,
   signals: [],
-  priorYear: null,
-  priorSeason: null,
-  priorReportDate: null,
   warnings,
 });
 
@@ -269,11 +259,7 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
     subsidiaryCompanyId,
     reportDate: curr.reportDate ? curr.reportDate.toISOString().slice(0, 10) : null,
     score,
-    maxScore: 9,
     signals,
-    priorYear: prior.year,
-    priorSeason: prior.season,
-    priorReportDate: prev.reportDate ? prev.reportDate.toISOString().slice(0, 10) : null,
     warnings,
   };
 };

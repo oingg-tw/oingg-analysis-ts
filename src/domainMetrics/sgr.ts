@@ -16,13 +16,6 @@ export interface SgrResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // SGR 可持續成長率 = ROE(TTM) x (1 - 配息率(TTM))。直接引用 roe/、dividendPayoutRatio/ 已經算好的
   // roeTtmPct、payoutRatioTtm，不重複查詢——複合指標，只有 TTM 口徑（因為配息率本身只有 TTM 口徑）。
   sgrTtm: number | null;
-
-  roeTtm: {
-    value: number | null; // 引用自 GET /profitability/roe 的 roeTtmPct
-  };
-  payoutRatioTtm: {
-    value: number | null; // 引用自 GET /profitability/dividend-payout-ratio 的 payoutRatioTtm
-  };
 }
 
 const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: string, warnings: string[]): SgrResult => ({
@@ -33,8 +26,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   sgrTtm: null,
-  roeTtm: { value: null },
-  payoutRatioTtm: { value: null },
   warnings,
 });
 
@@ -119,8 +110,6 @@ export const calculateSgr = async (query: SgrQuery): Promise<SgrResult> => {
     subsidiaryCompanyId,
     reportDate,
     sgrTtm,
-    roeTtm: { value: roeTtm },
-    payoutRatioTtm: { value: payoutRatioTtm },
     warnings,
   };
 };

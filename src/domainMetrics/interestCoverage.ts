@@ -18,17 +18,8 @@ export interface InterestCoverageResult extends QuarterlyMetricIdentity, MetricR
   interestCoverageQuarterly: number | null;
   interestCoverageTtm: number | null;
 
-  ebit: {
-    value: string | null; // BigInt as string；本季 EBIT
-  };
   ebitTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  interestExpense: {
-    value: string | null; // BigInt as string；本季利息費用
-  };
-  interestExpenseTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
+    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null；被 altmanZScore 直接引用
   };
 
   ttm: QuarterlyMetricTtmInfo;
@@ -48,10 +39,7 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   reportDate: null,
   interestCoverageQuarterly: null,
   interestCoverageTtm: null,
-  ebit: { value: null },
   ebitTtm: { value: null },
-  interestExpense: { value: null },
-  interestExpenseTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -173,10 +161,7 @@ export const calculateInterestCoverage = async (query: InterestCoverageQuery): P
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     interestCoverageQuarterly,
     interestCoverageTtm,
-    ebit: { value: ebit?.toString() ?? null },
     ebitTtm: { value: ebitTtmValue?.toString() ?? null },
-    interestExpense: { value: interestExpense?.toString() ?? null },
-    interestExpenseTtm: { value: interestExpenseTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

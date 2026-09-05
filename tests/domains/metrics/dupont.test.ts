@@ -22,9 +22,6 @@ test('dupont: 2330 115Q2 合併報表', async () => {
   assert.equal(result.decomposedRoeTtmPct, 34.57);
   assert.equal(result.actualRoeQuarterlyPct, 10.98);
   assert.equal(result.actualRoeTtmPct, 34.78);
-  assert.equal(result.totalAssets.value, '9375654727');
-  assert.equal(result.equity.fieldUsed, 'equityAttributableToParent');
-  assert.equal(result.equity.value, '6432518334');
   assert.deepEqual(result.warnings, []);
 });
 

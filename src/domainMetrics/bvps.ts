@@ -13,19 +13,6 @@ export type BvpsQuery = QuarterlyMetricQuery;
 export interface BvpsResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // BVPS 每股淨值 = 本季期末權益 / 股本歷史對應當時（報告日）的流通股數
   bvps: number | null;
-
-  equity: {
-    fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
-    value: string | null; // BigInt as string
-  };
-
-  paidInShares: {
-    value: string | null; // BigInt as string
-    // 股本資料的生效年月（西元曆），不是本季的民國年季——股本異動不是每季都有，
-    // 這裡標的是「實際套用的那筆股本紀錄生效於何時」。
-    effectiveYear: number | null;
-    effectiveMonth: number | null;
-  };
 }
 
 // 權益欄位選擇邏輯跟 ROE 一致：優先採用「歸屬於母公司」口徑，缺漏時退回用整體數字。
@@ -53,8 +40,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   bvps: null,
-  equity: { fieldUsed: null, value: null },
-  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   warnings,
 });
 
@@ -153,12 +138,6 @@ export const calculateBvps = async (query: BvpsQuery): Promise<BvpsResult> => {
     subsidiaryCompanyId,
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     bvps,
-    equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
-    paidInShares: {
-      value: paidInShares?.toString() ?? null,
-      effectiveYear,
-      effectiveMonth,
-    },
     warnings,
   };
 };

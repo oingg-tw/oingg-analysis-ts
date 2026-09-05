@@ -23,32 +23,6 @@ export interface OwnerEarningsResult extends QuarterlyMetricIdentity, MetricResu
   // TTM = 近四季（含本季）淨利、折舊、攤銷、資本支出各自加總後再除以流通股數
   ownerEarningsPerShareTtm: number | null;
 
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；本季淨利
-  };
-  netIncomeTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  depreciationAndAmortization: {
-    value: string | null; // BigInt as string；本季折舊 + 攤銷
-  };
-  depreciationAndAmortizationTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-  capitalExpenditures: {
-    value: string | null; // BigInt as string；本季資本支出（現金流量表原始值，負數）
-  };
-  capitalExpendituresTtm: {
-    value: string | null; // BigInt as string；近四季加總（負數），資料不齊則為 null
-  };
-
-  paidInShares: {
-    value: string | null; // BigInt as string
-    effectiveYear: number | null;
-    effectiveMonth: number | null;
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -78,13 +52,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   ownerEarningsPerShareQuarterly: null,
   ownerEarningsPerShareQuarterlyAnnualized: null,
   ownerEarningsPerShareTtm: null,
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
-  depreciationAndAmortization: { value: null },
-  depreciationAndAmortizationTtm: { value: null },
-  capitalExpenditures: { value: null },
-  capitalExpendituresTtm: { value: null },
-  paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -283,17 +250,6 @@ export const calculateOwnerEarnings = async (query: OwnerEarningsQuery): Promise
     ownerEarningsPerShareQuarterly,
     ownerEarningsPerShareQuarterlyAnnualized,
     ownerEarningsPerShareTtm,
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
-    depreciationAndAmortization: { value: depreciationAndAmortization?.toString() ?? null },
-    depreciationAndAmortizationTtm: { value: daTtmValue?.toString() ?? null },
-    capitalExpenditures: { value: capitalExpenditures?.toString() ?? null },
-    capitalExpendituresTtm: { value: capexTtmValue?.toString() ?? null },
-    paidInShares: {
-      value: paidInShares?.toString() ?? null,
-      effectiveYear,
-      effectiveMonth,
-    },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

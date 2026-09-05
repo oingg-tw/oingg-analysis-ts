@@ -16,20 +16,6 @@ export interface DividendPayoutRatioResult extends QuarterlyMetricIdentity, Metr
   // payoutRatioTtm = |近四季現金股利發放（dividendsPaid）加總| / 近四季淨利加總 * 100。
   payoutRatioTtm: number | null;
 
-  dividendsPaid: {
-    value: string | null; // BigInt as string；本季現金股利發放（現金流量表原始值，通常是負數，代表現金流出）
-  };
-  dividendsPaidTtm: {
-    value: string | null; // BigInt as string；近四季加總（負數），資料不齊則為 null
-  };
-  netIncome: {
-    fieldUsed: 'netIncomeAttributableToParent' | 'netIncome' | null;
-    value: string | null; // BigInt as string；本季淨利
-  };
-  netIncomeTtm: {
-    value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
-  };
-
   ttm: QuarterlyMetricTtmInfo;
 }
 
@@ -56,10 +42,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   subsidiaryCompanyId,
   reportDate: null,
   payoutRatioTtm: null,
-  dividendsPaid: { value: null },
-  dividendsPaidTtm: { value: null },
-  netIncome: { fieldUsed: null, value: null },
-  netIncomeTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
   warnings,
 });
@@ -204,10 +186,6 @@ export const calculateDividendPayoutRatio = async (query: DividendPayoutRatioQue
     subsidiaryCompanyId,
     reportDate: reportDate?.toISOString().slice(0, 10) ?? null,
     payoutRatioTtm,
-    dividendsPaid: { value: dividendsPaid.toString() },
-    dividendsPaidTtm: { value: dividendsPaidTtmValue?.toString() ?? null },
-    netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
-    netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
     warnings,
   };

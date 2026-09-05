@@ -13,10 +13,6 @@ test('ownerEarnings: 2330 115Q2 合併報表（每股版本）', async () => {
   assert.equal(result.ownerEarningsPerShareQuarterly, 15.78);
   assert.equal(result.ownerEarningsPerShareQuarterlyAnnualized, 63.12);
   assert.equal(result.ownerEarningsPerShareTtm, 55.33);
-  assert.equal(result.netIncome.value, '706561938');
-  assert.equal(result.depreciationAndAmortization.value, '198538168');
-  assert.equal(result.capitalExpenditures.value, '-496001947');
-  assert.equal(result.paidInShares.value, '25932370067');
   assert.deepEqual(result.warnings, []);
 });
 

@@ -11,8 +11,6 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 test('sgr: 2330 115Q2 合併報表（只有 TTM 口徑）', async () => {
   const result = await calculateSgr({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.equal(result.roeTtm.value, 34.78);
-  assert.equal(result.payoutRatioTtm.value, 23.76);
   assert.equal(result.sgrTtm, 26.52);
   assert.deepEqual(result.warnings, []);
 });

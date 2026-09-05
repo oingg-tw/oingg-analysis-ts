@@ -20,12 +20,7 @@ export interface NetDebtToEbitdaResult extends QuarterlyMetricIdentity, MetricRe
 
   netDebt: {
     // 本季期末：有息負債 - 現金及約當現金。可能是負數（代表淨現金部位，不是淨負債）。
-    value: string | null; // BigInt as string
-  };
-  totalDebt: {
-    value: string | null; // BigInt as string；有息負債（短期借款+應付公司債+長期借款）
-  };
-  cashAndEquivalents: {
+    // 被 evEbitda 直接引用。
     value: string | null; // BigInt as string
   };
 
@@ -54,8 +49,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netDebtToEbitdaQuarterlyAnnualized: null,
   netDebtToEbitdaTtm: null,
   netDebt: { value: null },
-  totalDebt: { value: null },
-  cashAndEquivalents: { value: null },
   ebitdaQuarterly: { value: null },
   ebitdaTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
@@ -240,8 +233,6 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
     netDebtToEbitdaQuarterlyAnnualized,
     netDebtToEbitdaTtm,
     netDebt: { value: netDebt?.toString() ?? null },
-    totalDebt: { value: totalDebt?.toString() ?? null },
-    cashAndEquivalents: { value: cashAndEquivalents?.toString() ?? null },
     ebitdaQuarterly: { value: ebitdaQuarterly?.toString() ?? null },
     ebitdaTtm: { value: ebitdaTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
