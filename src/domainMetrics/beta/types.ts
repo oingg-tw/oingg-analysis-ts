@@ -1,4 +1,4 @@
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 
 export interface BetaQuery {
   symbol: string;
@@ -17,7 +17,7 @@ export interface BetaWindow {
   observations: number; // 降頻後的取樣點數（daily 就是重疊交易日數，weekly/monthly 是各週/月最後一個重疊交易日的數量）；報酬率樣本數 = observations - 1
 }
 
-export interface BetaResult {
+export interface BetaResult extends MetricResultMeta {
   symbol: string;
   // 實際使用的基準日——股價跟指數都有資料的最新（或指定日期之前最近）一個重疊交易日。
   asOfDate: string | null;
@@ -27,6 +27,8 @@ export interface BetaResult {
   // 2026-08-26 起改成三個窗口不同取樣頻率（1Y 日、2Y 週、5Y 月），對齊 Bloomberg（2Y 用週）、
   // Yahoo Finance（5Y 用月）常見做法——長窗口用日資料會把雜訊/非同步交易的短期波動也算進長期
   // 結構性風險，不是業界慣例，見 src/domainMetrics/portfolio.md「Beta 計算口徑」的說明。
+  // fieldStatuses（見 MetricResultMeta）只列出值為 null 的欄位，key 是 beta1Y/beta2Y/beta5Y
+  // 三者之一，沒列出的代表正常算出來了。
   beta1Y: BetaWindow;
   beta2Y: BetaWindow;
   beta5Y: BetaWindow;
@@ -35,10 +37,4 @@ export interface BetaResult {
     stockPriceDateRange: { min: string | null; max: string | null }; // 這個 symbol 在 oingg-twse daily_price 的資料範圍；查無資料則兩者皆 null
     marketIndexDateRange: { min: string | null; max: string | null }; // oingg-twse daily_taiex_index 整體資料範圍，跟 symbol 無關
   };
-
-  // 2026-08-26 起新指標統一用這個規範標註「值為 null 的原因」，見 src/shared/metricStatus.ts；
-  // 只列出值為 null 的欄位（beta1Y/beta2Y/beta5Y 三個 key 分別對應），沒列出的代表正常算出來了。
-  fieldStatuses: Record<string, MetricStatus>;
-
-  warnings: string[];
 }

@@ -1,25 +1,11 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 
-export interface RoicQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
-  // （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  year?: string; // 民國年，例如 "115"
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type RoicQuery = QuarterlyMetricQuery;
 
-export interface RoicResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface RoicResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // ROIC 投入資本回報率 = NOPAT / 投入資本（Invested Capital） * 100，跟 ROE/ROA 同一種
   // 單季/年化/TTM 三數值結構（流量對存量比率，分母是期末餘額，不是平均值）。
   // NOPAT（稅後淨營業利潤） = EBIT x (1 - 有效稅率)；有效稅率 = 本季所得稅費用 / 本季稅前淨利，
@@ -45,11 +31,5 @@ export interface RoicResult {
     value: string | null; // BigInt as string
   };
 
-  ttm: {
-    quartersUsed: string[];
-    quartersMissing: string[];
-  };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
+  ttm: QuarterlyMetricTtmInfo;
 }

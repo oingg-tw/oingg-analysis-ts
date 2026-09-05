@@ -1,25 +1,11 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 
-export interface AccrualsRatioQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季
-  // （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  year?: string; // 民國年，例如 "115"
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type AccrualsRatioQuery = QuarterlyMetricQuery;
 
-export interface AccrualsRatioResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface AccrualsRatioResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // 應計項目比率 = (淨利 - OCF - ICF) / 總資產 * 100。
   // 分母用**本季期末總資產**，不是 taxonomy 原文的「平均總資產」——跟 turnoverRatio 用期末餘額同一種
   // 刻意簡化（避免多查一期資料），跟 ROE/ROA 用期末權益/總資產也是同一種處理方式。
@@ -53,11 +39,5 @@ export interface AccrualsRatioResult {
     value: string | null; // BigInt as string；本季期末總資產（分母，用期末值，不是平均值）
   };
 
-  ttm: {
-    quartersUsed: string[];
-    quartersMissing: string[];
-  };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
+  ttm: QuarterlyMetricTtmInfo;
 }

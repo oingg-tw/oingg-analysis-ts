@@ -1,26 +1,13 @@
 import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 
-export interface BeneishMScoreQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
-  // 最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  // 這裡的自動解析只決定「本季」，YoY 比較用的「去年同季」邏輯不受影響，照常用 getPastNQuarters 往前推。
-  year?: string; // 民國年，例如 "115"
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
+// 最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+// 這裡的自動解析只決定「本季」，YoY 比較用的「去年同季」邏輯不受影響，照常用 getPastNQuarters 往前推。
+export type BeneishMScoreQuery = QuarterlyMetricQuery;
 
-export interface BeneishMScoreResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface BeneishMScoreResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // M = -4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI
   //     - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI
   // 8 個變量任一為 null，mScore 就是 null（見 fieldStatuses 找出是哪一個變數卡住）。
@@ -42,7 +29,4 @@ export interface BeneishMScoreResult {
   priorYear: string | null;
   priorSeason: Season | null;
   priorReportDate: string | null;
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
 }

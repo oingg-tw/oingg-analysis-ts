@@ -1,25 +1,11 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 
-export interface InterestCoverageQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司損益表有資料」的最新一季
-  // （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  year?: string; // 民國年，例如 "115"
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司損益表有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type InterestCoverageQuery = QuarterlyMetricQuery;
 
-export interface InterestCoverageResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface InterestCoverageResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // 利息保障倍數（次）= EBIT / 利息費用（financeCosts）
   // EBIT = 稅前淨利（profitBeforeTax） + 利息費用（financeCosts），反推回加計利息費用前的獲利。
   // 這是「同期流量 / 同期流量」的比率，本身不需要年化，只有單季跟 TTM 兩種口徑，
@@ -40,11 +26,5 @@ export interface InterestCoverageResult {
     value: string | null; // BigInt as string；近四季加總，資料不齊則為 null
   };
 
-  ttm: {
-    quartersUsed: string[];
-    quartersMissing: string[];
-  };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
+  ttm: QuarterlyMetricTtmInfo;
 }

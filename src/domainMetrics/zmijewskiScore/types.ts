@@ -1,25 +1,11 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 
-export interface ZmijewskiScoreQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
-  // （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  year?: string;
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type ZmijewskiScoreQuery = QuarterlyMetricQuery;
 
-export interface ZmijewskiScoreResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface ZmijewskiScoreResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // Mark Zmijewski（1984）Probit 財務危機預警模型：
   // X = -4.3 - 4.5*(NI_TTM/總資產) + 5.7*(總負債/總資產) - 0.004*(流動資產/流動負債)
   xScore: number | null;
@@ -39,11 +25,5 @@ export interface ZmijewskiScoreResult {
   currentAssets: { value: string | null };
   currentLiabilities: { value: string | null };
 
-  ttm: {
-    quartersUsed: string[];
-    quartersMissing: string[];
-  };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
+  ttm: QuarterlyMetricTtmInfo;
 }

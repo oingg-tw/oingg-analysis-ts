@@ -1,26 +1,12 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 
-export interface DupontQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
-  // （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  // 解析出來的季度會以固定值傳給 margins/turnoverRatio/roe 三支底層服務，不會讓它們各自再重複解析一次。
-  year?: string; // 民國年，例如 "115"
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表跟損益表都有資料」的最新一季
+// （見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+// 解析出來的季度會以固定值傳給 margins/turnoverRatio/roe 三支底層服務，不會讓它們各自再重複解析一次。
+export type DupontQuery = QuarterlyMetricQuery;
 
-export interface DupontResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface DupontResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // 3 步杜邦分析：ROE = 淨利率 x 總資產週轉率 x 權益乘數。
   // 淨利率、總資產週轉率直接引用 margins/、turnoverRatio/ 已經算好的值，不重複查詢。
   netProfitMarginQuarterly: number | null; // %，引用自 margins/ 的 netProfitMarginQuarterly
@@ -45,7 +31,4 @@ export interface DupontResult {
     fieldUsed: 'equityAttributableToParent' | 'totalEquity' | null;
     value: string | null; // BigInt as string；本季期末權益
   };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
 }

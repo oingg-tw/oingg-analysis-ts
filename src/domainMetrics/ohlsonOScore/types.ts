@@ -1,25 +1,11 @@
-import type { Season } from '@/shared/rocQuarter';
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
+import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 
-export interface OhlsonOScoreQuery {
-  symbol: string;
-  // year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
-  // 最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
-  year?: string;
-  season?: Season;
-  dataType: '1' | '2'; // 1 = 個體, 2 = 合併
-  subsidiaryCompanyId: string;
-}
+// year/season 選填但要成對——不給就自動抓「這家公司資產負債表/損益表/現金流量表都有資料」的
+// 最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效請求（在 controller 用 zod refine 擋掉）。
+export type OhlsonOScoreQuery = QuarterlyMetricQuery;
 
-export interface OhlsonOScoreResult {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-
+export interface OhlsonOScoreResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // James Ohlson（1980）Logit 財務危機預警模型：
   // O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG
   //     - 2.37*NITA - 1.83*FUTL + 0.285*INTWO - 0.521*CHIN
@@ -49,11 +35,5 @@ export interface OhlsonOScoreResult {
   currentAssets: { value: string | null };
   currentLiabilities: { value: string | null };
 
-  ttm: {
-    quartersUsed: string[];
-    quartersMissing: string[];
-  };
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
+  ttm: QuarterlyMetricTtmInfo;
 }

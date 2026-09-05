@@ -30,6 +30,13 @@ export const metricStatusSchema = z.object({
 });
 export type MetricStatus = z.infer<typeof metricStatusSchema>;
 
+// 全部「單一實體、固定欄位」指標 Result 收尾共用的欄位——2026-09-05 從 36 支指標的
+// types.ts 逐字重複中抽出來，`XxxResult extends MetricResultMeta` 取代手寫這兩行。
+export interface MetricResultMeta {
+  fieldStatuses: Record<string, MetricStatus>;
+  warnings: string[];
+}
+
 // 建構回應裡的 fieldStatuses 物件時的小工具——只放「值是 null」的欄位，算出值的欄位不需要出現在這裡
 // （沒有出現 = 正常算出來了），維持 payload 精簡，也不用每個欄位都寫一個 'ok' 進去。
 export const buildFieldStatuses = (entries: Array<[field: string, status: MetricStatus] | null>): Record<string, MetricStatus> => {

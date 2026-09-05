@@ -1,4 +1,4 @@
-import type { MetricStatus } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 
 export interface MarketRatiosQuery {
   symbol: string;
@@ -7,7 +7,7 @@ export interface MarketRatiosQuery {
   date?: string;
 }
 
-export interface MarketRatiosResult {
+export interface MarketRatiosResult extends MetricResultMeta {
   symbol: string;
   // 實際套用的交易日——有指定 date 時，是「該日期或之前」最新一筆；沒指定就是整張表最新一筆。
   tradeDate: string | null;
@@ -19,7 +19,4 @@ export interface MarketRatiosResult {
   peRatio: number | null;
   pbRatio: number | null;
   dividendYieldPct: number | null;
-
-  fieldStatuses: Record<string, MetricStatus>;
-  warnings: string[];
 }
