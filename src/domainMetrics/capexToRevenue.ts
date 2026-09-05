@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -54,7 +54,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   operatingRevenue: { value: null },
   operatingRevenueTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -150,12 +149,6 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
 
   const reportDate = currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    capexToRevenueQuarterly === null
-      ? ['capexToRevenueQuarterly', { status: 'no_data', message: '本季營收或資本支出缺漏，無法計算資本支出佔營收比。' }]
-      : null,
-    capexToRevenueTtm === null ? ['capexToRevenueTtm', { status: 'no_data', message: '近四季資料不齊，無法計算 TTM 資本支出佔營收比。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 turnover_capex_to_revenue，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -207,7 +200,6 @@ export const calculateCapexToRevenue = async (query: CapexToRevenueQuery): Promi
     operatingRevenue: { value: operatingRevenue?.toString() ?? null },
     operatingRevenueTtm: { value: operatingRevenueTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

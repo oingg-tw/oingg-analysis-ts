@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -58,7 +58,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   ebitTtm: { value: null },
   capitalEmployed: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -145,10 +144,6 @@ export const calculateRoce = async (query: RoceQuery): Promise<RoceResult> => {
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    roceQuarterlyPct === null ? ['roceQuarterlyPct', { status: 'no_data', message: 'EBIT 或使用資本缺漏，無法計算 ROCE。' }] : null,
-    roceTtmPct === null ? ['roceTtmPct', { status: 'no_data', message: '近四季損益表資料不齊，或使用資本缺漏，無法計算 TTM ROCE。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 profitability_roce，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -200,7 +195,6 @@ export const calculateRoce = async (query: RoceQuery): Promise<RoceResult> => {
     ebitTtm: { value: ebitTtmValue?.toString() ?? null },
     capitalEmployed: { value: capitalEmployed?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

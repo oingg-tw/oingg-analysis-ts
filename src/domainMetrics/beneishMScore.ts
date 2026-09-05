@@ -2,7 +2,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
 
@@ -14,7 +14,7 @@ export type BeneishMScoreQuery = QuarterlyMetricQuery;
 export interface BeneishMScoreResult extends QuarterlyMetricIdentity, MetricResultMeta {
   // M = -4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI
   //     - 0.172*SGAI + 4.037*TATA + 0.0327*LVGI
-  // 8 個變量任一為 null，mScore 就是 null（見 fieldStatuses 找出是哪一個變數卡住）。
+  // 8 個變量任一為 null，mScore 就是 null。
   mScore: number | null;
   // M-Score > -1.78：財務造假/營收灌水風險較高；M-Score <= -1.78：財務數據可信度較高
   // （這是原始論文的判別門檻，不是本服務自訂的）。
@@ -132,7 +132,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   priorYear: null,
   priorSeason: null,
   priorReportDate: null,
-  fieldStatuses: buildFieldStatuses([]),
   warnings,
 });
 
@@ -226,35 +225,6 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
 
   const flagged = mScore === null ? null : mScore > -1.78;
 
-  const variableStatuses: Array<{ key: string; value: number | null }> = [
-    { key: 'dsri', value: dsri },
-    { key: 'gmi', value: gmi },
-    { key: 'aqi', value: aqi },
-    { key: 'sgi', value: sgi },
-    { key: 'depi', value: depi },
-    { key: 'sgai', value: sgai },
-    { key: 'tata', value: tata },
-    { key: 'lvgi', value: lvgi },
-  ];
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = variableStatuses.map(({ key, value }) =>
-    value === null
-      ? [
-          key,
-          {
-            status: 'no_data' as const,
-            message: !curr.reportDate
-              ? `查無 ${year}Q${season} 的財報資料。`
-              : key !== 'tata' && !prev.reportDate
-                ? `查無去年同季 ${prior.year}Q${prior.season} 的財報資料。`
-                : '本季或去年同季的必要欄位缺漏。',
-          },
-        ]
-      : null
-  );
-  if (mScore === null) {
-    fieldStatusEntries.push(['mScore', { status: 'no_data', message: '8 個變量任一為 null，無法計算 M-Score，見各變數的 fieldStatuses。' }]);
-  }
-
   // 存進 oingg-analysis DB 的 guru_beneish_m_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
     await analysisPrisma.beneishMScoreResult.upsert({
@@ -329,7 +299,6 @@ export const calculateBeneishMScore = async (query: BeneishMScoreQuery): Promise
     priorYear: prior.year,
     priorSeason: prior.season,
     priorReportDate: prev.reportDate ? prev.reportDate.toISOString().slice(0, 10) : null,
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

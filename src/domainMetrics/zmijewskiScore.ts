@@ -2,7 +2,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
 
@@ -70,7 +70,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   currentAssets: { value: null },
   currentLiabilities: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: buildFieldStatuses([]),
   warnings,
 });
 
@@ -157,11 +156,6 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    xScore === null
-      ? ['xScore', { status: 'no_data', message: '淨利（TTM）、總資產、總負債、流動資產或流動負債任一缺漏，無法計算 Zmijewski Score。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_zmijewski_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -221,7 +215,6 @@ export const calculateZmijewskiScore = async (query: ZmijewskiScoreQuery): Promi
     currentAssets: { value: currentAssets?.toString() ?? null },
     currentLiabilities: { value: currentLiabilities?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

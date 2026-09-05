@@ -4,7 +4,7 @@ import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
 
@@ -145,7 +145,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   nfo: { value: null },
   equity: { fieldUsed: null, value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: buildFieldStatuses([]),
   warnings,
 });
 
@@ -265,19 +264,6 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    nopat === null ? ['nopat', { status: 'no_data', message: '營業利益、稅前淨利或所得稅費用缺漏，或稅前淨利非正，無法計算 NOPAT。' }] : null,
-    noa === null ? ['noa', { status: 'no_data', message: '淨金融負債或權益缺漏，無法計算淨營業資產（NOA）。' }] : null,
-    flev === null ? ['flev', { status: 'no_data', message: '淨金融負債或權益缺漏，無法計算 FLEV。' }] : null,
-    rnoaQuarterlyPct === null ? ['rnoaQuarterlyPct', { status: 'no_data', message: 'NOPAT 或 NOA 缺漏，無法計算單季 RNOA。' }] : null,
-    rnoaTtmPct === null ? ['rnoaTtmPct', { status: 'no_data', message: '近四季 NOPAT 不齊或 NOA 缺漏，無法計算 TTM RNOA。' }] : null,
-    reconstructedRoeQuarterlyPct === null
-      ? ['reconstructedRoeQuarterlyPct', { status: 'no_data', message: 'RNOA、FLEV 或 SPREAD 任一為 null，無法組裝出單季 ROE。' }]
-      : null,
-    reconstructedRoeTtmPct === null
-      ? ['reconstructedRoeTtmPct', { status: 'no_data', message: 'RNOA、FLEV 或 SPREAD（TTM）任一為 null，無法組裝出 TTM ROE。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_nissim_penman_rnoa，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -364,7 +350,6 @@ export const calculateNissimPenmanRnoa = async (query: NissimPenmanRnoaQuery): P
     nfo: { value: nfo?.toString() ?? null },
     equity: { fieldUsed: equity.field, value: equity.value?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

@@ -25,7 +25,6 @@ test('dupont: 2330 115Q2 合併報表', async () => {
   assert.equal(result.totalAssets.value, '9375654727');
   assert.equal(result.equity.fieldUsed, 'equityAttributableToParent');
   assert.equal(result.equity.value, '6432518334');
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 
@@ -33,8 +32,7 @@ test('dupont: 2330 115Q2 合併報表', async () => {
 // 現在沒資料，之後被回填（mops-ts 補資料是正常的資料庫演進）就會讓斷言過期，見 tests/README.md
 // 「不要拿會隨資料庫累積而改變的狀態寫死成斷言」的教訓（2026-08-31 原本用 1101 115Q2 踩過一次：
 // mops-ts 那陣子在做 reconciliation/backfill，補上了這一季的資料，斷言因此失敗）。用來驗證
-// 杜邦分析在底層資料缺漏時能優雅降級：所有欄位回 null、fieldStatuses 標明 no_data、warnings
-// 有人類可讀說明。
+// 杜邦分析在底層資料缺漏時能優雅降級：所有欄位回 null、warnings 有人類可讀說明。
 test('dupont: 9999 115Q2 合併報表（底層資料缺漏，優雅降級）', async () => {
   const result = await calculateDupont({ symbol: '9999', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
@@ -43,9 +41,6 @@ test('dupont: 9999 115Q2 合併報表（底層資料缺漏，優雅降級）', a
   assert.equal(result.equityMultiplier, null);
   assert.equal(result.decomposedRoeQuarterlyPct, null);
   assert.equal(result.decomposedRoeTtmPct, null);
-  assert.equal(result.fieldStatuses.netProfitMargin?.status, 'no_data');
-  assert.equal(result.fieldStatuses.assetTurnover?.status, 'no_data');
-  assert.equal(result.fieldStatuses.equityMultiplier?.status, 'no_data');
   assert.ok(result.warnings.length > 0);
 });
 

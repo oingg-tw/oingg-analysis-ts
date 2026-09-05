@@ -18,7 +18,6 @@ test('ohlsonOScore: 2330 115Q2 合併報表，指定季度', async () => {
   assert.ok(result.oScore !== null && result.oScore < 0, 'TSMC 財務體質極佳，O-Score 應該是負值（低破產風險）');
   assert.ok(result.probabilityOfBankruptcy !== null && result.probabilityOfBankruptcy < 0.01, '財務危機機率應該極低');
   assert.equal(result.flagged, false);
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 
@@ -49,7 +48,6 @@ test('ohlsonOScore: 2887（金控，流動資產/負債結構性為 null）WCTA/
   assert.equal(result.wcta, null);
   assert.equal(result.clca, null);
   assert.equal(result.oScore, null);
-  assert.equal(result.fieldStatuses.oScore?.status, 'no_data');
   assert.ok(result.size !== null, 'SIZE 不依賴流動資產/負債，應該照常算得出來');
   assert.ok(result.tlta !== null, 'TLTA 不依賴流動資產/負債，應該照常算得出來');
 });

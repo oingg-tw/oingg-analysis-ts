@@ -53,8 +53,6 @@ test('altmanZScore: 2330 115Q2 合併報表，指定季度', async () => {
     assert.match(result.warnings[1]!, /財報公告日/);
   }
   assert.match(result.warnings[0]!, /上市製造業樣本校準/);
-
-  assert.deepEqual(result.fieldStatuses, {});
 });
 
 // 114Q2 的 financial_report_announcement 有資料（2330 公告日 2025-08-12，比期末日 2025-06-30
@@ -93,7 +91,6 @@ test('altmanZScore: 不存在的公司代號，X1/X2/X3/X5 應該是 no_data，X
 
   assert.equal(covered, false, '假代號不應該有任何股價覆蓋率');
   assert.equal(result.x4, null);
-  assert.equal(result.fieldStatuses.x4?.status, 'not_applicable');
   assert.equal(result.zScore, null);
 });
 

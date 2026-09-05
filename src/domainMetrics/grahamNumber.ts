@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateEps } from '@/domainMetrics/eps';
 import { calculateBvps } from '@/domainMetrics/bvps';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
@@ -37,7 +37,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   grahamNumber: null,
   epsTtm: { value: null },
   bvps: { value: null },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -83,13 +82,6 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
 
   const reportDate = bvpsResult.reportDate ?? epsResult.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    grahamNumber === null
-      ? epsTtm === null || bvps === null
-        ? ['grahamNumber', { status: 'no_data', message: 'TTM EPS 或 BVPS 無法取得，詳見 eps/bvps 服務的 warnings。' }]
-        : ['grahamNumber', { status: 'calculation_error', message: 'TTM EPS 或 BVPS 為零或負值，葛拉漢數公式假設兩者皆為正值，無法計算。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_graham_number，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -131,7 +123,6 @@ export const calculateGrahamNumber = async (query: GrahamNumberQuery): Promise<G
     grahamNumber,
     epsTtm: { value: epsTtm },
     bvps: { value: bvps },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

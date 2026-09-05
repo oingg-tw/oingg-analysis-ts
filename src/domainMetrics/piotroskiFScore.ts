@@ -3,7 +3,7 @@ import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
 
@@ -110,7 +110,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   priorYear: null,
   priorSeason: null,
   priorReportDate: null,
-  fieldStatuses: buildFieldStatuses([]),
   warnings,
 });
 
@@ -205,24 +204,6 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
     warnings.push(`以下訊號因資料缺漏無法判斷，總分無法計算：${missing.join('、')}。`);
   }
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = signals.map((s) =>
-    s.passed === null
-      ? [
-          s.key,
-          {
-            status: 'no_data' as const,
-            message: !curr.reportDate
-              ? `查無 ${year}Q${season} 的財報資料。`
-              : !prev.reportDate
-                ? `查無去年同季 ${prior.year}Q${prior.season} 的財報資料。`
-                : '本季或去年同季的必要欄位缺漏。',
-          },
-        ]
-      : null
-  );
-  if (score === null) {
-    fieldStatusEntries.push(['score', { status: 'no_data', message: '9 項訊號任一無法判斷，無法計算總分，見各訊號的 fieldStatuses。' }]);
-  }
 
   // 存進 oingg-analysis DB 的 guru_piotroski_f_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -293,7 +274,6 @@ export const calculatePiotroskiFScore = async (query: PiotroskiFScoreQuery): Pro
     priorYear: prior.year,
     priorSeason: prior.season,
     priorReportDate: prev.reportDate ? prev.reportDate.toISOString().slice(0, 10) : null,
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

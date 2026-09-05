@@ -13,7 +13,6 @@ test('zmijewskiScore: 2330 115Q2 合併報表，指定季度', async () => {
   assert.equal(result.xScore, -3.6198);
   assert.ok(result.probabilityOfDistress !== null && result.probabilityOfDistress < 0.01, 'TSMC 財務體質極佳，財務危機機率應該極低');
   assert.equal(result.flagged, false);
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 
@@ -41,7 +40,6 @@ test('zmijewskiScore: 2887（金控，流動資產/負債結構性為 null）xSc
   const result = await calculateZmijewskiScore({ symbol: '2887', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(result.xScore, null);
-  assert.equal(result.fieldStatuses.xScore?.status, 'no_data');
 });
 
 test('zmijewskiScore: 9999（查無資料的公司）自動抓最新一季應該回傳 year/season 為 null 的優雅降級結果', async () => {

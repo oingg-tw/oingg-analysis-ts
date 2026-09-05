@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -68,7 +68,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netIncomeTtm: { value: null },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -161,10 +160,6 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
     epsTtm = toPerShare(netIncomeTtmValue, paidInShares);
   }
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    epsQuarterly === null ? ['epsQuarterly', { status: 'no_data', message: '本季淨利或流通股數缺漏，無法計算 EPS。' }] : null,
-    epsTtm === null ? ['epsTtm', { status: 'no_data', message: '流通股數缺漏，或近四季資料不齊，無法計算 TTM EPS。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 profitability_eps，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -226,7 +221,6 @@ export const calculateEps = async (query: EpsQuery): Promise<EpsResult> => {
       effectiveMonth,
     },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

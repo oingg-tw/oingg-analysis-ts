@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -135,7 +135,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   propertyPlantEquipment: { value: null },
   accountsPayable: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -276,60 +275,6 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    inventoryTurnoverQuarterly === null
-      ? ['inventoryTurnoverQuarterly', { status: 'no_data', message: '本季營業成本或期末存貨缺漏，無法計算存貨周轉率。' }]
-      : null,
-    inventoryTurnoverTtm === null
-      ? ['inventoryTurnoverTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末存貨缺漏，無法計算 TTM 存貨周轉率。' }]
-      : null,
-    receivablesTurnoverQuarterly === null
-      ? ['receivablesTurnoverQuarterly', { status: 'no_data', message: '本季營收或期末應收帳款缺漏，無法計算應收帳款周轉率。' }]
-      : null,
-    receivablesTurnoverTtm === null
-      ? ['receivablesTurnoverTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末應收帳款缺漏，無法計算 TTM 應收帳款周轉率。' }]
-      : null,
-    assetTurnoverQuarterly === null
-      ? ['assetTurnoverQuarterly', { status: 'no_data', message: '本季營收或期末總資產缺漏，無法計算總資產周轉率。' }]
-      : null,
-    assetTurnoverTtm === null
-      ? ['assetTurnoverTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末總資產缺漏，無法計算 TTM 總資產周轉率。' }]
-      : null,
-    fixedAssetTurnoverQuarterly === null
-      ? ['fixedAssetTurnoverQuarterly', { status: 'no_data', message: '本季營收或期末不動產、廠房及設備缺漏，無法計算固定資產周轉率。' }]
-      : null,
-    fixedAssetTurnoverTtm === null
-      ? ['fixedAssetTurnoverTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末不動產、廠房及設備缺漏，無法計算 TTM 固定資產周轉率。' }]
-      : null,
-    payablesTurnoverQuarterly === null
-      ? ['payablesTurnoverQuarterly', { status: 'no_data', message: '本季營業成本或期末應付帳款缺漏，無法計算應付帳款周轉率。' }]
-      : null,
-    payablesTurnoverTtm === null
-      ? ['payablesTurnoverTtm', { status: 'no_data', message: '近四季資料不齊，或本季期末應付帳款缺漏，無法計算 TTM 應付帳款周轉率。' }]
-      : null,
-    inventoryDaysQuarterlyAnnualized === null
-      ? ['inventoryDaysQuarterlyAnnualized', { status: 'no_data', message: '存貨周轉率（年化）無法計算或為零，無法換算 DIO 天數。' }]
-      : null,
-    inventoryDaysTtm === null ? ['inventoryDaysTtm', { status: 'no_data', message: 'TTM 存貨周轉率無法計算或為零，無法換算 DIO 天數。' }] : null,
-    receivablesDaysQuarterlyAnnualized === null
-      ? ['receivablesDaysQuarterlyAnnualized', { status: 'no_data', message: '應收帳款周轉率（年化）無法計算或為零，無法換算 DSO 天數。' }]
-      : null,
-    receivablesDaysTtm === null
-      ? ['receivablesDaysTtm', { status: 'no_data', message: 'TTM 應收帳款周轉率無法計算或為零，無法換算 DSO 天數。' }]
-      : null,
-    payablesDaysQuarterlyAnnualized === null
-      ? ['payablesDaysQuarterlyAnnualized', { status: 'no_data', message: '應付帳款周轉率（年化）無法計算或為零，無法換算 DPO 天數。' }]
-      : null,
-    payablesDaysTtm === null
-      ? ['payablesDaysTtm', { status: 'no_data', message: 'TTM 應付帳款周轉率無法計算或為零，無法換算 DPO 天數。' }]
-      : null,
-    cashConversionCycleQuarterlyAnnualized === null
-      ? ['cashConversionCycleQuarterlyAnnualized', { status: 'no_data', message: 'DIO/DSO/DPO（年化）任一為 null，無法計算現金轉換週期。' }]
-      : null,
-    cashConversionCycleTtm === null
-      ? ['cashConversionCycleTtm', { status: 'no_data', message: 'TTM DIO/DSO/DPO 任一為 null，無法計算 TTM 現金轉換週期。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 turnover_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -459,7 +404,6 @@ export const calculateTurnoverRatio = async (query: TurnoverRatioQuery): Promise
     propertyPlantEquipment: { value: propertyPlantEquipment?.toString() ?? null },
     accountsPayable: { value: accountsPayable?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

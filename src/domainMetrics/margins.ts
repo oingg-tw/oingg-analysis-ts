@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -91,7 +91,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   netIncome: { fieldUsed: null, value: null },
   netIncomeTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -179,18 +178,6 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
 
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    grossMarginQuarterly === null ? ['grossMarginQuarterly', { status: 'no_data', message: '本季營收或毛利缺漏，無法計算毛利率。' }] : null,
-    grossMarginTtm === null ? ['grossMarginTtm', { status: 'no_data', message: '近四季資料不齊，無法計算 TTM 毛利率。' }] : null,
-    operatingMarginQuarterly === null
-      ? ['operatingMarginQuarterly', { status: 'no_data', message: '本季營收或營業利益缺漏，無法計算營業利益率。' }]
-      : null,
-    operatingMarginTtm === null ? ['operatingMarginTtm', { status: 'no_data', message: '近四季資料不齊，無法計算 TTM 營業利益率。' }] : null,
-    netProfitMarginQuarterly === null
-      ? ['netProfitMarginQuarterly', { status: 'no_data', message: '本季營收或淨利缺漏，無法計算稅後淨利率。' }]
-      : null,
-    netProfitMarginTtm === null ? ['netProfitMarginTtm', { status: 'no_data', message: '近四季資料不齊，無法計算 TTM 稅後淨利率。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 profitability_margins，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -268,7 +255,6 @@ export const calculateMargins = async (query: MarginsQuery): Promise<MarginsResu
     netIncome: { fieldUsed: netIncome.field, value: netIncome.value?.toString() ?? null },
     netIncomeTtm: { value: netIncomeTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

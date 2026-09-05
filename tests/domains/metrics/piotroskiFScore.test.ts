@@ -22,7 +22,6 @@ test('piotroskiFScore: 2330 115Q2 vs 114Q2，9 項訊號全部能判斷，score=
   assert.equal(result.signals.find((s) => s.key === 'positiveCfo')?.passed, true);
   assert.equal(result.signals.find((s) => s.key === 'accrualQuality')?.passed, true);
 
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 
@@ -35,11 +34,6 @@ test('piotroskiFScore: 查無資料的公司回傳 score=null，9 項訊號都�
 
   assert.equal(result.score, null);
   assert.ok(result.signals.every((s) => s.passed === null));
-  assert.equal(Object.keys(result.fieldStatuses).length, 10); // 9 個訊號 + score 本身
-  for (const signal of result.signals) {
-    assert.equal(result.fieldStatuses[signal.key]?.status, 'no_data');
-  }
-  assert.equal(result.fieldStatuses.score?.status, 'no_data');
 });
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。

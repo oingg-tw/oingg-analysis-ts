@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { logger } from '@/shared/logger';
 
@@ -72,23 +72,6 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
   // valuation 查得到但個別欄位是 null，是「這天的估值資料本身沒有這個數字」（常見於虧損公司沒有
   // PER 這種結構性原因），不是「還沒查到」；valuation 整筆查不到（tradeDate 是 null）才是真的
   // no_data——兩種情況要分開標記，見各自 message。
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    peRatio === null
-      ? tradeDate === null
-        ? ['peRatio', { status: 'no_data', message: '查無股價/估值資料（oingg-twse daily_valuation）。' }]
-        : ['peRatio', { status: 'not_applicable', message: 'oingg-twse 該交易日的 PER 欄位為 null，可能是虧損等無法計算 PER 的情況。' }]
-      : null,
-    pbRatio === null
-      ? tradeDate === null
-        ? ['pbRatio', { status: 'no_data', message: '查無股價/估值資料（oingg-twse daily_valuation）。' }]
-        : ['pbRatio', { status: 'not_applicable', message: 'oingg-twse 該交易日的 PBR 欄位為 null。' }]
-      : null,
-    dividendYieldPct === null
-      ? tradeDate === null
-        ? ['dividendYieldPct', { status: 'no_data', message: '查無股價/估值資料（oingg-twse daily_valuation）。' }]
-        : ['dividendYieldPct', { status: 'not_applicable', message: 'oingg-twse 該交易日的殖利率欄位為 null。' }]
-      : null,
-  ];
 
   return {
     symbol,
@@ -96,7 +79,6 @@ export const calculateMarketRatios = async (query: MarketRatiosQuery): Promise<M
     peRatio,
     pbRatio,
     dividendYieldPct,
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

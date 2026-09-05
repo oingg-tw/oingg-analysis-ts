@@ -2,7 +2,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
 
@@ -101,7 +101,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   currentAssets: { value: null },
   currentLiabilities: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: buildFieldStatuses([]),
   warnings,
 });
 
@@ -220,14 +219,6 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    size === null ? ['size', { status: 'no_data', message: '總資產缺漏或非正數，無法計算 SIZE。' }] : null,
-    nita === null ? ['nita', { status: 'no_data', message: 'TTM 淨利或總資產缺漏，無法計算 NITA。' }] : null,
-    futl === null ? ['futl', { status: 'no_data', message: 'TTM 營運現金流或總負債缺漏，無法計算 FUTL。' }] : null,
-    intwo === null ? ['intwo', { status: 'no_data', message: '今年或去年 TTM 淨利缺漏，無法計算 INTWO。' }] : null,
-    chin === null ? ['chin', { status: 'no_data', message: '今年或去年 TTM 淨利缺漏，無法計算 CHIN。' }] : null,
-    oScore === null ? ['oScore', { status: 'no_data', message: 'SIZE/TLTA/WCTA/CLCA/OENEG/NITA/FUTL/INTWO/CHIN 任一為 null，無法計算 O-Score。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_ohlson_o_score，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -318,7 +309,6 @@ export const calculateOhlsonOScore = async (query: OhlsonOScoreQuery): Promise<O
     currentAssets: { value: currentAssets?.toString() ?? null },
     currentLiabilities: { value: currentLiabilities?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

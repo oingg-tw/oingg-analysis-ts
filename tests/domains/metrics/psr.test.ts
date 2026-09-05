@@ -20,7 +20,6 @@ test('psr: 2330 115Q2 合併報表，指定季度，能算出合理範圍內的�
   assert.ok(result.psrTtm! > 0 && result.psrTtm! < 1000, `psrTtm=${result.psrTtm} 數量級異常`);
 
   assert.ok(result.marketCap.value !== null && result.marketCap.value > 0);
-  assert.deepEqual(result.fieldStatuses, {});
 });
 
 test('psr: 不指定 year/season 時自動抓最新一季，結果應該跟指定最新季度一致', async () => {
@@ -39,8 +38,6 @@ test('psr: 9999（查無資料的公司）自動抓最新一季應該回傳 year
   assert.equal(result.season, null);
   assert.equal(result.psrQuarterlyAnnualized, null);
   assert.equal(result.psrTtm, null);
-  assert.equal(result.fieldStatuses.psrQuarterlyAnnualized?.status, 'no_data');
-  assert.equal(result.fieldStatuses.psrTtm?.status, 'no_data');
   assert.ok(result.warnings.length > 0);
 });
 

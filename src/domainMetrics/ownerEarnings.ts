@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -86,7 +86,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   capitalExpendituresTtm: { value: null },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -223,14 +222,6 @@ export const calculateOwnerEarnings = async (query: OwnerEarningsQuery): Promise
   const ownerEarningsPerShareTtm =
     ownerEarningsTtmValue !== null && paidInShares !== null ? toPerShare(ownerEarningsTtmValue, paidInShares) : null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    ownerEarningsPerShareQuarterly === null
-      ? ['ownerEarningsPerShareQuarterly', { status: 'no_data', message: '淨利、折舊攤銷、資本支出或流通股數任一缺漏，無法計算每股股東盈餘。' }]
-      : null,
-    ownerEarningsPerShareTtm === null
-      ? ['ownerEarningsPerShareTtm', { status: 'no_data', message: '流通股數缺漏，或近四季資料不齊，無法計算 TTM 每股股東盈餘。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_owner_earnings，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -304,7 +295,6 @@ export const calculateOwnerEarnings = async (query: OwnerEarningsQuery): Promise
       effectiveMonth,
     },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

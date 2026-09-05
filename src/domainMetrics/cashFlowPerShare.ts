@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -72,7 +72,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   capitalExpendituresTtm: { value: null },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -183,16 +182,6 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
     if (fcfTtmValue !== null) fcfPerShareTtm = toPerShare(fcfTtmValue, paidInShares);
   }
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    ocfPerShareQuarterly === null
-      ? ['ocfPerShareQuarterly', { status: 'no_data', message: '流通股數或本季營業活動現金流量缺漏，無法計算每股營業現金流。' }]
-      : null,
-    ocfPerShareTtm === null ? ['ocfPerShareTtm', { status: 'no_data', message: '流通股數缺漏，或近四季資料不齊，無法計算 TTM 每股營業現金流。' }] : null,
-    fcfPerShareQuarterly === null
-      ? ['fcfPerShareQuarterly', { status: 'no_data', message: '流通股數或本季自由現金流缺漏，無法計算每股自由現金流。' }]
-      : null,
-    fcfPerShareTtm === null ? ['fcfPerShareTtm', { status: 'no_data', message: '流通股數缺漏，或近四季資料不齊，無法計算 TTM 每股自由現金流。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 cash_flow_per_share，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -267,7 +256,6 @@ export const calculateCashFlowPerShare = async (query: CashFlowPerShareQuery): P
       effectiveMonth,
     },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

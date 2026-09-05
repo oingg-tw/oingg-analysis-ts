@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet, getQuarterlyCashFlowStatement, getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -59,7 +59,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   ebitdaQuarterly: { value: null },
   ebitdaTtm: { value: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -192,18 +191,6 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
 
   const reportDate = balanceSheet?.reportDate ?? currentIncomeStatement?.reportDate ?? currentCashFlow?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    netDebtToEbitdaQuarterlyAnnualized === null
-      ? netDebt === null || ebitdaQuarterly === null
-        ? ['netDebtToEbitdaQuarterlyAnnualized', { status: 'no_data', message: '本季淨負債或 EBITDA 缺漏，無法計算淨負債對 EBITDA 比（年化）。' }]
-        : ['netDebtToEbitdaQuarterlyAnnualized', { status: 'calculation_error', message: '本季 EBITDA 為零，淨負債對 EBITDA 比（年化）無法計算（除以零）。' }]
-      : null,
-    netDebtToEbitdaTtm === null
-      ? netDebt === null || ebitdaTtmValue === null
-        ? ['netDebtToEbitdaTtm', { status: 'no_data', message: '本季淨負債缺漏，或近四季資料不齊，無法計算 TTM 淨負債對 EBITDA 比。' }]
-        : ['netDebtToEbitdaTtm', { status: 'calculation_error', message: '近四季 EBITDA 加總為零，TTM 淨負債對 EBITDA 比無法計算（除以零）。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 resilience_net_debt_to_ebitda，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -258,7 +245,6 @@ export const calculateNetDebtToEbitda = async (query: NetDebtToEbitdaQuery): Pro
     ebitdaQuarterly: { value: ebitdaQuarterly?.toString() ?? null },
     ebitdaTtm: { value: ebitdaTtmValue?.toString() ?? null },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

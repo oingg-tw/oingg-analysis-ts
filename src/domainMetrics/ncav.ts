@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -57,7 +57,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   totalLiabilities: { value: null },
   preferredStock: { value: '0' },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -118,9 +117,6 @@ export const calculateNcav = async (query: NcavQuery): Promise<NcavResult> => {
     if (ncav !== null) marginOfSafetyPrice = Math.round(((ncav * 2) / 3) * 100) / 100;
   }
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    ncav === null ? ['ncav', { status: 'no_data', message: '流動資產、總負債或流通股數任一缺漏，無法計算 NCAV。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 guru_ncav，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -179,7 +175,6 @@ export const calculateNcav = async (query: NcavQuery): Promise<NcavResult> => {
       effectiveYear,
       effectiveMonth,
     },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

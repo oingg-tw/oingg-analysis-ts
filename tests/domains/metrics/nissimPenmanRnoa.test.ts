@@ -22,7 +22,6 @@ test('nissimPenmanRnoa: 2330 115Q2 合併報表，指定季度', async () => {
     Math.abs(result.reconstructedRoeTtmPct! - result.actualRoeTtmPct!) <= 10,
     `重組 TTM ROE（${result.reconstructedRoeTtmPct}）跟實際 TTM ROE（${result.actualRoeTtmPct}）差距過大`
   );
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 

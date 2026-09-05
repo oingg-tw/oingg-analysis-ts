@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { logger } from '@/shared/logger';
 
 export interface BetaQuery {
@@ -30,8 +30,6 @@ export interface BetaResult extends MetricResultMeta {
   // 2026-08-26 起改成三個窗口不同取樣頻率（1Y 日、2Y 週、5Y 月），對齊 Bloomberg（2Y 用週）、
   // Yahoo Finance（5Y 用月）常見做法——長窗口用日資料會把雜訊/非同步交易的短期波動也算進長期
   // 結構性風險，不是業界慣例。
-  // fieldStatuses（見 MetricResultMeta）只列出值為 null 的欄位，key 是 beta1Y/beta2Y/beta5Y
-  // 三者之一，沒列出的代表正常算出來了。
   beta1Y: BetaWindow;
   beta2Y: BetaWindow;
   beta5Y: BetaWindow;
@@ -228,10 +226,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   // 文字需要跟著覆蓋率更新，不要再點名固定是哪幾家。
   if (stockRange.min_date === null) {
     warnings.push(`daily_price 目前沒有 ${symbol} 的股價序列，無法計算 Beta（覆蓋率之後會持續成長）。`);
-    const notApplicable: MetricStatus = {
-      status: 'not_applicable',
-      message: `daily_price 目前沒有涵蓋 ${symbol}，這家公司不適用（不是資料還沒補齊，是目前完全沒有覆蓋這檔股票，覆蓋率之後會持續成長）。`,
-    };
     return {
       symbol,
       asOfDate: null,
@@ -239,11 +233,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
       beta2Y: emptyWindow('weekly'),
       beta5Y: emptyWindow('monthly'),
       dataCoverage,
-      fieldStatuses: buildFieldStatuses([
-        ['beta1Y', notApplicable],
-        ['beta2Y', notApplicable],
-        ['beta5Y', notApplicable],
-      ]),
       warnings,
     };
   }
@@ -265,7 +254,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
 
   if (overlap.length === 0) {
     warnings.push('查無股價與指數都有資料的重疊交易日，無法計算 Beta（兩個資料源的交易日完全沒有交集）。');
-    const noData: MetricStatus = { status: 'no_data', message: '查無股價與指數都有資料的重疊交易日。' };
     return {
       symbol,
       asOfDate: null,
@@ -273,11 +261,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
       beta2Y: emptyWindow('weekly'),
       beta5Y: emptyWindow('monthly'),
       dataCoverage,
-      fieldStatuses: buildFieldStatuses([
-        ['beta1Y', noData],
-        ['beta2Y', noData],
-        ['beta5Y', noData],
-      ]),
       warnings,
     };
   }
@@ -293,15 +276,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
   const beta1Y = computeWindow(overlap, effectiveAsOfDate, 1, 'daily');
   const beta2Y = computeWindow(overlap, effectiveAsOfDate, 2, 'weekly');
   const beta5Y = computeWindow(overlap, effectiveAsOfDate, 5, 'monthly');
-
-  const insufficientSampleMessage = (window: BetaWindow): string =>
-    `降頻成${window.samplingFrequency === 'daily' ? '日' : window.samplingFrequency === 'weekly' ? '週' : '月'}資料後只有 ${window.observations} 個取樣點，少於門檻 ${MIN_OBSERVATIONS}，樣本數不足以計算有意義的 Beta。5 年窗口容易卡在指數資料（${dataCoverage.marketIndexDateRange.max}）比股價資料（${dataCoverage.stockPriceDateRange.max}）舊，重疊區間比想像中短。`;
-
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    beta1Y.value === null ? ['beta1Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta1Y) }] : null,
-    beta2Y.value === null ? ['beta2Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta2Y) }] : null,
-    beta5Y.value === null ? ['beta5Y', { status: 'calculation_error' as const, message: insufficientSampleMessage(beta5Y) }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 portfolio_beta，PK 用 symbol+tradeDate（逐日基準日，不是財務
   // 季度，DB 欄位 2026-09-04 從 asOfDate 改名跟其他日資料型結果表統一，對外 API 參數仍叫
@@ -342,7 +316,6 @@ export const calculateBeta = async (query: BetaQuery): Promise<BetaResult> => {
     beta2Y,
     beta5Y,
     dataCoverage,
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

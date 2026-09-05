@@ -1,9 +1,9 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare';
-import { getStockPriceAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
+import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
@@ -53,7 +53,7 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
   const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
-  const emptyResult = (year: string | null, season: Season | null, statuses: Array<[string, MetricStatus]>): FcfYieldResult => ({
+  const emptyResult = (year: string | null, season: Season | null): FcfYieldResult => ({
     symbol,
     year,
     season,
@@ -66,18 +66,13 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
     fcfPerShareQuarterlyAnnualized: null,
     fcfPerShareTtm: null,
     ttm: { quartersUsed: [], quartersMissing: [] },
-    fieldStatuses: buildFieldStatuses(statuses),
     warnings,
   });
 
   const resolvedQuarter = await resolveQuarter(symbol, dataType, subsidiaryCompanyId, query.year, query.season);
   if (!resolvedQuarter) {
     warnings.push('查無任何一季的現金流量表資料，無法決定要用哪一季計算 FCF_Yield。');
-    const noData: MetricStatus = { status: 'no_data', message: '查無任何一季的現金流量表資料。' };
-    return emptyResult(null, null, [
-      ['fcfYieldQuarterlyAnnualizedPct', noData],
-      ['fcfYieldTtmPct', noData],
-    ]);
+    return emptyResult(null, null);
   }
 
   const { year, season } = resolvedQuarter;
@@ -111,33 +106,13 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
       stockPriceValue = stockPrice.closePrice;
       stockPriceTradeDate = stockPrice.tradeDate;
     } else {
-      warnings.push(`查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價資料，FCF_Yield 無法計算，見 fieldStatuses。`);
+      warnings.push(`查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價資料，FCF_Yield 無法計算。`);
     }
   }
 
   const fcfYieldQuarterlyAnnualizedPct =
     stockPriceValue !== null && fcfPerShareQuarterlyAnnualized !== null ? toPct(fcfPerShareQuarterlyAnnualized, stockPriceValue) : null;
   const fcfYieldTtmPct = stockPriceValue !== null && fcfPerShareTtm !== null ? toPct(fcfPerShareTtm, stockPriceValue) : null;
-
-  // 覆蓋率會持續成長（見 shared/sourceData/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
-  // 在 oingg-twse daily_price 裡有沒有任何資料，用來區分是「這家公司結構性不在覆蓋範圍內」
-  // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
-  const stockPriceCovered = stockPriceValue === null ? await hasStockPriceCoverage(symbol) : true;
-  const stockPriceMissingStatus: MetricStatus = stockPriceCovered
-    ? { status: 'no_data', message: '股價缺漏，無法計算 FCF_Yield。' }
-    : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    fcfYieldQuarterlyAnnualizedPct === null
-      ? [
-          'fcfYieldQuarterlyAnnualizedPct',
-          stockPriceValue === null ? stockPriceMissingStatus : { status: 'no_data', message: '本季每股自由現金流缺漏，無法計算單季年化 FCF_Yield。' },
-        ]
-      : null,
-    fcfYieldTtmPct === null
-      ? ['fcfYieldTtmPct', stockPriceValue === null ? stockPriceMissingStatus : { status: 'no_data', message: 'TTM 每股自由現金流缺漏，無法計算 TTM FCF_Yield。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 cash_flow_fcf_yield，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -184,7 +159,6 @@ export const calculateFcfYield = async (query: FcfYieldQuery): Promise<FcfYieldR
     fcfPerShareQuarterlyAnnualized,
     fcfPerShareTtm,
     ttm: { quartersUsed: cashFlowResult.ttm.quartersUsed, quartersMissing: cashFlowResult.ttm.quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

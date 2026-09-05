@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
@@ -38,7 +38,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   debtRatioPct: null,
   totalLiabilities: { value: null },
   totalAssets: { value: null },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -74,9 +73,6 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
 
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    debtRatioPct === null ? ['debtRatioPct', { status: 'no_data', message: '本季期末總負債或總資產缺漏，無法計算負債比率。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 resilience_debt_ratio，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -118,7 +114,6 @@ export const calculateDebtRatio = async (query: DebtRatioQuery): Promise<DebtRat
     debtRatioPct,
     totalLiabilities: { value: totalLiabilities?.toString() ?? null },
     totalAssets: { value: totalAssets?.toString() ?? null },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

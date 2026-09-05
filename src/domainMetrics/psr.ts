@@ -1,9 +1,9 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateRevenuePerShare } from '@/domainMetrics/revenuePerShare';
-import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
+import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import type { Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity, QuarterlyMetricTtmInfo } from '@/shared/quarterlyMetric';
 import { logger } from '@/shared/logger';
@@ -57,7 +57,7 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
   const warnings: string[] = [];
 
-  const emptyResult = (year: string | null, season: Season | null, statuses: Array<[string, MetricStatus]>): PsrResult => ({
+  const emptyResult = (year: string | null, season: Season | null): PsrResult => ({
     symbol,
     year,
     season,
@@ -70,18 +70,13 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
     operatingRevenue: { value: null },
     operatingRevenueTtm: { value: null },
     ttm: { quartersUsed: [], quartersMissing: [] },
-    fieldStatuses: buildFieldStatuses(statuses),
     warnings,
   });
 
   const resolvedQuarter = await resolveQuarter(symbol, dataType, subsidiaryCompanyId, query.year, query.season);
   if (!resolvedQuarter) {
     warnings.push('查無任何一季的損益表資料，無法決定要用哪一季計算 PSR。');
-    const noData: MetricStatus = { status: 'no_data', message: '查無任何一季的損益表資料。' };
-    return emptyResult(null, null, [
-      ['psrQuarterlyAnnualized', noData],
-      ['psrTtm', noData],
-    ]);
+    return emptyResult(null, null);
   }
 
   const { year, season } = resolvedQuarter;
@@ -116,27 +111,12 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
       marketCapValue = marketCap.marketCap;
       marketCapTradeDate = marketCap.tradeDate;
     } else {
-      warnings.push(`查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，PSR 無法計算，見 fieldStatuses。`);
+      warnings.push(`查無 ${symbol} 在 ${priceAnchor.date.toISOString().slice(0, 10)} 或之前的股價/股本資料，PSR 無法計算。`);
     }
   }
 
   const psrQuarterlyAnnualized = marketCapValue !== null && operatingRevenue !== null ? toMultiple(marketCapValue, operatingRevenue * 4n) : null;
   const psrTtm = marketCapValue !== null && operatingRevenueTtm !== null ? toMultiple(marketCapValue, operatingRevenueTtm) : null;
-
-  // 覆蓋率會持續成長（見 shared/sourceData/marketCap.ts 的說明），不要寫死特定公司代號判斷——現查這家公司
-  // 在 oingg-twse daily_price 裡有沒有任何資料，用來區分是「這家公司結構性不在覆蓋範圍內」
-  // （not_applicable）還是「有覆蓋，這次查詢缺別的東西」（no_data）。
-  const stockPriceCovered = marketCapValue === null ? await hasStockPriceCoverage(symbol) : true;
-  const marketCapMissingStatus: MetricStatus = stockPriceCovered
-    ? { status: 'no_data', message: '市值缺漏（股價或股本資料查無），無法計算 PSR。' }
-    : { status: 'not_applicable', message: 'daily_price 目前沒有這家公司的股價資料，這家公司不適用（不是資料還沒補齊，覆蓋率之後會持續成長）。' };
-
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    psrQuarterlyAnnualized === null
-      ? ['psrQuarterlyAnnualized', marketCapValue === null ? marketCapMissingStatus : { status: 'no_data', message: '本季營收缺漏，無法計算單季年化 PSR。' }]
-      : null,
-    psrTtm === null ? ['psrTtm', marketCapValue === null ? marketCapMissingStatus : { status: 'no_data', message: '近四季營收不齊，無法計算 TTM PSR。' }] : null,
-  ];
 
   // 存進 oingg-analysis DB 的 valuation_psr，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -187,7 +167,6 @@ export const calculatePsr = async (query: PsrQuery): Promise<PsrResult> => {
     operatingRevenue: { value: operatingRevenue?.toString() ?? null },
     operatingRevenueTtm: { value: operatingRevenueTtm?.toString() ?? null },
     ttm: { quartersUsed: revenueResult.ttm.quartersUsed, quartersMissing: revenueResult.ttm.quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

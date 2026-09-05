@@ -40,8 +40,6 @@ test('fcfYield: 9999（查無資料的公司）自動抓最新一季應該回傳
   assert.equal(result.season, null);
   assert.equal(result.fcfYieldQuarterlyAnnualizedPct, null);
   assert.equal(result.fcfYieldTtmPct, null);
-  assert.equal(result.fieldStatuses.fcfYieldQuarterlyAnnualizedPct?.status, 'no_data');
-  assert.equal(result.fieldStatuses.fcfYieldTtmPct?.status, 'no_data');
   assert.ok(result.warnings.length > 0);
 });
 

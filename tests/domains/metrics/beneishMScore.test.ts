@@ -27,7 +27,6 @@ test('beneishMScore: 2330 115Q2 vs 114Q2，8 個變量全部能計算', async ()
   // 不代表台積電真的有財報異常。
   assert.equal(result.flagged, true);
 
-  assert.deepEqual(result.fieldStatuses, {});
   assert.deepEqual(result.warnings, []);
 });
 
@@ -42,9 +41,7 @@ test('beneishMScore: 查無資料的公司回傳 mScore=null，8 個變量都是
   assert.equal(result.flagged, null);
   for (const key of ['dsri', 'gmi', 'aqi', 'sgi', 'depi', 'sgai', 'tata', 'lvgi'] as const) {
     assert.equal(result[key], null);
-    assert.equal(result.fieldStatuses[key]?.status, 'no_data');
   }
-  assert.equal(result.fieldStatuses.mScore?.status, 'no_data');
 });
 
 // 2026-08-28 新增：year/season 不給時自動抓最新一季，跟指定最新季度結果應該一致。

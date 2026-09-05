@@ -55,7 +55,6 @@ test('beta: 2330 有資料，三個窗口都能算出合理範圍內的值', asy
 
   assert.equal(result.symbol, '2330');
   assert.ok(result.asOfDate !== null, '2330 應該要能找到重疊交易日當基準日');
-  assert.deepEqual(result.fieldStatuses, {}, '2330 目前資料齊全，不應該有任何 fieldStatuses 項目');
   assert.deepEqual(result.warnings, []);
 
   // 三個窗口取樣頻率不同（1Y 日、2Y 週、5Y 月），不能假設窗口越長取樣點越多——
@@ -88,10 +87,6 @@ test('beta: 查無資料的公司回傳 not_applicable，不是拋錯或裝作�
   assert.equal(result.beta1Y.value, null);
   assert.equal(result.beta2Y.value, null);
   assert.equal(result.beta5Y.value, null);
-
-  for (const field of ['beta1Y', 'beta2Y', 'beta5Y']) {
-    assert.equal(result.fieldStatuses[field]?.status, 'not_applicable');
-  }
   assert.ok(result.warnings.length > 0);
 });
 

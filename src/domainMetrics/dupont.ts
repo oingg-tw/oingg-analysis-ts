@@ -2,7 +2,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { calculateMargins } from '@/domainMetrics/margins';
 import { calculateTurnoverRatio } from '@/domainMetrics/turnoverRatio';
 import { calculateRoe } from '@/domainMetrics/roe';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';
@@ -60,7 +60,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   actualRoeTtmPct: null,
   totalAssets: { value: null },
   equity: { fieldUsed: null, value: null },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -137,21 +136,6 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
   const reportDate = marginsResult.reportDate ?? turnoverRatioResult.reportDate ?? roeResult.reportDate ?? null;
   const reportDateForDb = reportDate ? new Date(reportDate) : null;
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    netProfitMarginQuarterly === null && netProfitMarginTtm === null
-      ? ['netProfitMargin', { status: 'no_data', message: '淨利率無法取得，詳見 margins 服務的 warnings。' }]
-      : null,
-    assetTurnoverQuarterly === null && assetTurnoverTtm === null
-      ? ['assetTurnover', { status: 'no_data', message: '總資產週轉率無法取得，詳見 turnoverRatio 服務的 warnings。' }]
-      : null,
-    equityMultiplier === null ? ['equityMultiplier', { status: 'no_data', message: '總資產或權益缺漏，無法計算權益乘數。' }] : null,
-    decomposedRoeQuarterlyPct === null
-      ? ['decomposedRoeQuarterlyPct', { status: 'no_data', message: '淨利率、總資產週轉率或權益乘數任一為 null，無法組裝出單季 ROE。' }]
-      : null,
-    decomposedRoeTtmPct === null
-      ? ['decomposedRoeTtmPct', { status: 'no_data', message: '淨利率(TTM)、總資產週轉率(TTM)或權益乘數任一為 null，無法組裝出 TTM ROE。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 profitability_dupont，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -225,7 +209,6 @@ export const calculateDupont = async (query: DupontQuery): Promise<DupontResult>
     actualRoeTtmPct: roeResult.roeTtmPct,
     totalAssets: { value: totalAssetsValue },
     equity,
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };

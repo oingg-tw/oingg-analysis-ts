@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
+import type { MetricResultMeta } from '@/shared/metricStatus';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
@@ -57,7 +57,6 @@ const emptyResult = (symbol: string, dataType: '1' | '2', subsidiaryCompanyId: s
   operatingRevenueTtm: { value: null },
   paidInShares: { value: null, effectiveYear: null, effectiveMonth: null },
   ttm: { quartersUsed: [], quartersMissing: [] },
-  fieldStatuses: {},
   warnings,
 });
 
@@ -149,14 +148,6 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
     revenuePerShareTtm = toPerShare(operatingRevenueTtmValue, paidInShares);
   }
 
-  const fieldStatusEntries: Array<[string, MetricStatus] | null> = [
-    revenuePerShareQuarterly === null
-      ? ['revenuePerShareQuarterly', { status: 'no_data', message: '本季營收或流通股數缺漏，無法計算每股營收。' }]
-      : null,
-    revenuePerShareTtm === null
-      ? ['revenuePerShareTtm', { status: 'no_data', message: '流通股數缺漏，或近四季資料不齊，無法計算 TTM 每股營收。' }]
-      : null,
-  ];
 
   // 存進 oingg-analysis DB 的 profitability_revenue_per_share，供之後查歷史紀錄用。存檔失敗不應該讓已經算好的結果回傳失敗。
   try {
@@ -216,7 +207,6 @@ export const calculateRevenuePerShare = async (query: RevenuePerShareQuery): Pro
       effectiveMonth,
     },
     ttm: { quartersUsed, quartersMissing },
-    fieldStatuses: buildFieldStatuses(fieldStatusEntries),
     warnings,
   };
 };
