@@ -34,6 +34,14 @@ const NON_SECURITY_MODEL_KEYS = new Set<string>(['equityRiskPremium']);
 // 避免以後看到 NON_SECURITY_MODEL_KEYS 卻誤以為 technicals 是全市場單一值。
 const RETIRED_MODEL_KEYS = new Set<string>(['ma', 'rsi', 'kd', 'bollingerBands', 'atr', 'bias', 'macd', 'obv']);
 
+// 2026-09-05 新增：metric_values/metric_definitions（見 prisma/analysis/schema.prisma 檔尾、
+// src/pitMetrics/）是 ROE spike 用的 point-in-time 事實層，不是「每支指標一張表」模式底下的
+// XxxResult 之一——MetricValue.value 這個 Decimal 欄位剛好不以 `Value` 結尾（它就叫
+// `value`），會被上面的啟發式誤判成「可篩選的計算結果」。這次 spike 明確排除 MV/filter 整合
+// （見 docs/analysis-ts-spec-v0.2.md §10.2 的排除項），之後真的要把 metric_values 接進篩選器
+// 時，這裡的排除要拿掉、改成正式設計怎麼把 metricCode/basis 映射進 filterCatalog。
+const POINT_IN_TIME_SPIKE_MODEL_KEYS = new Set<string>(['metricValue', 'metricDefinition']);
+
 // model 名稱以 `Curated` 開頭的，是數據中台從後台同步過來的 curated 層原始資料副本（見
 // prisma/analysis/schema.prisma 開頭 2026-08-31 的說明、src/shared/sync/），不是本服務算出來的
 // 指標結果，即使欄位型別剛好是 Decimal（例如 CuratedMopsQuarterlyIncomeStatement.eps）也不算
@@ -112,6 +120,7 @@ export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText:
     if (dbMetric.fields.size === 0) continue;
     if (NON_SECURITY_MODEL_KEYS.has(metricKey)) continue;
     if (RETIRED_MODEL_KEYS.has(metricKey)) continue;
+    if (POINT_IN_TIME_SPIKE_MODEL_KEYS.has(metricKey)) continue;
     if (isCuratedLayerModel(dbMetric.modelName)) continue;
     if (!modelKeysSeen.has(metricKey)) {
       problems.push(

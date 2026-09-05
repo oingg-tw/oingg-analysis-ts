@@ -1422,3 +1422,99 @@ model EquityRiskPremiumResult {
   @@id([windowStart, windowEnd])
   @@map("macro_equity_risk_premium")
 }
+
+// ============================================================================
+// 2026-09-05 新增：ROE spike——point-in-time 事實層(metric_values)/定義層
+// (metric_definitions)，絞殺者模式第一步(docs/analysis-ts-spec-v0.2.md §10.2 步驟 2)。
+// 跟上方所有 XxxResult model 完全獨立並存：RoeResult/profitability_roe 不受影響，
+// 這次新增的管線(src/pitMetrics/)完全不寫 RoeResult。
+//
+// 命名決策(跟最初 DDL 草案不同的地方，是討論後的決定，不是隨意更動，見對話紀錄)：
+// - 主鍵欄位用 symbol，不是 stock_no——對齊本檔案上方所有 model 的既有慣例。
+// - fiscalYear 存西元年(民國+1911)，轉換只發生在 src/pitMetrics 邊界層，不滲透進
+//   QuarterlyMetricQuery 或現有 36 支指標(它們的 year 繼續是民國年字串)。
+// - basis/nullReason 用 String + zod(src/pitMetrics/metricBasis.ts)驗證，不用 Postgres
+//   enum——docs/analysis-ts-spec-v0.2.md §4.3 明講 basis 字彙要能「擴充不動 schema」，
+//   enum 加新值要跑 migration 違背這個設計目標。等字彙穩定、要進入多指標正式遷移(全市場
+//   backfill)之前，補一個 DB CHECK 約束是比較便宜的補強時機(比真正的 enum 轉型省掉整張表
+//   ALTER COLUMN TYPE 重寫)。
+// - value 欄位就是算出來的最終數字，跟本檔案上方 45 張表 `*Value` 結尾(原始輸入回顯)的
+//   慣例語意不同，只是剛好同名，活在完全不同的表。
+// ============================================================================
+
+// 指標定義層——這次只塞 1 筆(roe)，欄位設計成通用給之後其他指標遷入時不用改 schema。
+// dependsOn 目前只能填現有原始欄位名稱(如 netIncomeAttributableToParent)，不是 canonical
+// account_code(那套詞彙還不存在，見 spec v0.2 §6.1)，是暫時性做法。
+model MetricDefinition {
+  metricCode String @id @map("metric_code")
+
+  // 口徑說明，給人看的，不是拿來給程式邏輯 parse 的結構化資料。
+  formulaNote String @map("formula_note")
+
+  // 這支指標允許哪些 basis('Q'|'CUM'|'TTM'|'Q_ANN'|'FY' 的子集)，寫入前用來擋
+  // 「存量指標被拿去算 TTM」這類錯誤(spec v0.2 §5.5)。
+  allowedBases String[] @map("allowed_bases")
+
+  // 暫時性依賴清單，見上方檔頭說明。
+  dependsOn String[] @map("depends_on")
+
+  currentFormulaVersion Int @default(1) @map("current_formula_version") @db.SmallInt
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  values MetricValue[]
+
+  @@map("metric_definitions")
+}
+
+// 指標事實層——spike 範圍只會有 metric_code = 'roe' 的資料。
+model MetricValue {
+  // fiscalQuarter 未來給 FY 類 basis 用時允許 null，nullable 欄位不能進 Postgres
+  // PRIMARY KEY，所以用 surrogate key，複合識別鍵另開 @@unique。
+  id BigInt @id @default(autoincrement())
+
+  symbol String
+
+  metricCode String @map("metric_code")
+
+  // 'Q' | 'CUM' | 'TTM' | 'Q_ANN' | 'FY'，應用層 zod 驗證見 src/pitMetrics/metricBasis.ts。
+  basis String
+
+  // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
+  // 分開存——複合唯一鍵必須含這兩欄，否則同一家公司同一季的個體/合併 ROE 會撞在同一個座標。
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  fiscalYear    Int  @map("fiscal_year") @db.SmallInt // 西元年（民國 + 1911）
+  fiscalQuarter Int? @map("fiscal_quarter") @db.SmallInt // 1~4；FY 類 basis 才是 null（ROE 這次不會用到 null）
+
+  // 算出來的最終數字，跟本檔案上方 45 表 `*Value` 結尾（原始輸入回顯）語意不同，見檔頭說明。
+  // null 代表算不出來，原因見 nullReason。
+  value Decimal? @db.Decimal(24, 6)
+
+  // 'missing_input' | 'zero_or_negative_denominator' | 'not_applicable_industry' | 'insufficient_history'
+  // 只有 value 為 null 時才有意義；value 非 null 時應為 null。應用層 zod 驗證見 metricBasis.ts。
+  nullReason String? @map("null_reason")
+
+  // 該值最早可被市場知道的日期。Q/Q_ANN = 本季財報公告日；TTM 完整時 = 近四季公告日最大值；
+  // TTM 不齊（value=null）時 = 主季自己的公告日。
+  knowledgeDate DateTime @map("knowledge_date") @db.Date
+
+  // true = knowledgeDate 是用 reportDate（財報期末日）頂替，不是真公告日，有 look-ahead
+  // bias。見 src/shared/sourceData/reportAnnouncementDate.ts 的 PriceAnchorSource。目前
+  // financial_report_announcement 只驗證過 2330/2887/6488 114 年度，其餘幾乎都會是 true。
+  knowledgeDateIsFallback Boolean @map("knowledge_date_is_fallback")
+
+  formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
+  computedAt     DateTime @default(now()) @map("computed_at")
+
+  metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
+
+  // 複合識別鍵。fiscalQuarter 可為 null 時 Postgres UNIQUE 預設把多個 null 視為互不相同
+  // （不是 NULLS NOT DISTINCT，Prisma 無原生語法表達）——ROE 這次恆有 fiscalQuarter 非
+  // null，不受影響，是已知但刻意不處理的缺口，等真的有 FY 類 basis 指標遷入時再處理。
+  @@unique([symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_values_identity_key")
+  @@index([symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
+  @@map("metric_values")
+}
