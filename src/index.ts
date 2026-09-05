@@ -21,6 +21,7 @@ import errorHandler from './shared/errorHandler';
 import { checkFilterCatalogConsistency } from './api/bff/filter/filterCatalogCheck';
 import { validateMetricTableRegistry } from './api/bff/filter/metricTableRegistry';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
+import { loadIndustryClassification } from './shared/sourceData/industryClassification';
 
 const app = express();
 
@@ -73,6 +74,9 @@ const startServer = async () => {
     // 背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
     // export DB 連線問題拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();
+    // 背景載入 gov-ts 產業分類資料（同業比較功能用）——同樣輔助性質，不 await，失敗只影響
+    // 「同業比較」查詢結果，不擋伺服器啟動，見 shared/sourceData/industryClassification.ts。
+    void loadIndustryClassification();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
     // connection refused。改成明確的 IPv4 位址，不讓 Node 自己決定要 bind 哪個位址族。

@@ -85,3 +85,30 @@ view CompanyIndustryClassification {
   @@ignore
   @@schema("export")
 }
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 2026-09-05 新增：財政部稅籍行業標準分類代碼字典，供「產業同業比較」功能查代碼對應的
+/// 中文/英文名稱用——CompanyIndustryClassification 每個公司只帶最細層級（industryCode）
+/// 的 classificationNameZh，回退到較粗層級（例如 divisionCode）時要查這張表才拿得到名稱。
+/// 已用 govExportPrisma.$queryRaw 對真實 DB 內省過（2026-09-05）：一列一個代碼，level 標明
+/// 這列屬於哪一層（'section'|'division'|'group'|'class'|'subclass'），code 就是該層自己的
+/// 代碼（等同 sectionCode/divisionCode/.../subclassCode 五欄裡跟 level 對應的那一欄），同時
+/// 帶出上層祖先代碼方便追溯。實測 2466 筆，各層代碼格式天生不會互撞（section 單一字母、
+/// division 兩位數字、group 三位數字、class 四位數字、subclass 四位數字+dash+兩位數字），
+/// code 欄位查詢時不需要額外帶 level 當複合鍵。
+view TaxIndustryCode {
+  code         String?
+  level        String? // 'section' | 'division' | 'group' | 'class' | 'subclass'
+  sectionCode  String?   @map("section_code")
+  divisionCode String?   @map("division_code")
+  groupCode    String?   @map("group_code")
+  classCode    String?   @map("class_code")
+  subclassCode String?   @map("subclass_code")
+  nameZh       String?   @map("name_zh")
+  nameEn       String?   @map("name_en")
+  updatedAt    DateTime? @map("updated_at")
+
+  @@map("industry_codes")
+  @@ignore
+  @@schema("export")
+}

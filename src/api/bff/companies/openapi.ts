@@ -7,9 +7,16 @@ import {
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
   getCompanyRoeHistoryQuerySchema,
+  getCompanyPeerGroupQuerySchema,
   getCompanyMetricsQuerySchema,
 } from './controller';
-import { companyProfileDetailSchema, companyMetricsResultSchema, companiesListResultSchema, companiesCountOnlyResultSchema } from './types';
+import {
+  companyProfileDetailSchema,
+  companyMetricsResultSchema,
+  companiesListResultSchema,
+  companiesCountOnlyResultSchema,
+  companyPeerGroupResultSchema,
+} from './types';
 
 const capitalStockHistoryResultSchema = z.object({
   symbol: z.string(),
@@ -108,6 +115,28 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: 'ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roeHistoryResultSchema } } },
       400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/peer-group',
+    summary: '單一公司產業同業清單（產業同業比較功能第一步）',
+    description:
+      '用財政部稅籍行業標準分類（來源：gov-ts）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
+      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns）查實際指標數值（獲利能力/估值倍數/財務體質等），' +
+      '這支端點刻意不重複做數值查詢那一層。' +
+      '同業分組用動態層級回退：子類→細類→小類→中類，依序嘗試，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
+      '連中類都不足門檻也會停在中類（不繼續往更粗的層級爬），此時 warnings 會提示「已回退到最粗層級，同業可能包含商業模式不同的公司」。' +
+      'industryLevel 明確標示這次比較實際用的是哪一層，避免誤把寬鬆比較當成精確比較。' +
+      'found:false 代表查無分類資料，分兩種情況：這家公司資料暫時沒被 gov-ts 涵蓋到，或是境外註冊（KY）公司——' +
+      'KY 股結構上沒有台灣稅籍、永遠不會有分類資料，這種情況 warnings 會明確提示「請在呼叫前先篩掉 KY 股」，' +
+      '不是暫時性的資料缺漏。這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。',
+    tags: ['System'],
+    request: { query: getCompanyPeerGroupQuerySchema },
+    responses: {
+      200: { description: '同業清單（含目標公司自己），查無分類資料時 found 為 false、peers 為空陣列。', content: { 'application/json': { schema: companyPeerGroupResultSchema } } },
+      400: { description: '缺少 symbol，或 minPeers 格式錯誤。' },
     },
   });
 

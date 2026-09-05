@@ -89,3 +89,21 @@ export const companiesCountOnlyResultSchema = z.object({
   count: z.number().meta({ description: '全部公司總筆數' }),
 });
 export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
+
+// 2026-09-05 新增——「產業同業比較」功能，見 src/shared/sourceData/industryClassification.ts。
+export const companyPeerEntrySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+});
+
+export const companyPeerGroupResultSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+  found: z.boolean().meta({ description: 'false 代表查無產業分類資料（見 warnings 是否有 KY 股提示），其餘欄位皆為 null/空陣列' }),
+  industryLevel: z.enum(['subclass', 'class', 'group', 'division']).nullable().meta({ description: '這次比較實際使用的分類層級（子類/細類/小類/中類），由動態回退演算法決定' }),
+  industryCode: z.string().nullable(),
+  industryName: z.string().nullable(),
+  peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
+  warnings: z.array(z.string()),
+});
+export type CompanyPeerGroupResult = z.infer<typeof companyPeerGroupResultSchema>;
