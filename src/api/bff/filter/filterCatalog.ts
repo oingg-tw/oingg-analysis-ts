@@ -163,7 +163,7 @@ export const filterCatalog: FilterCategory[] = loadFilterCatalog();
 // 篩選個股的東西（2026-08-31 使用者明確定調：只在運算中內部引用，不直接開放篩選）。
 // 對應的例外處理見 filterCatalogCheck.ts 的 NON_SECURITY_MODEL_KEYS。
 //
-// 2026-09-05：technicals 分類（ma/rsi/kd/bollingerBands/atr/bias/macd，8 支指標）
-// 使用者決定先刪除——domainMetrics/technicals/ 的計算邏輯、這裡的 catalog 條目都已移除，
-// prisma/analysis/schema.prisma 的 8 張 technicals_* 表刻意保留未動（刪表是破壞性的資料庫
-// 操作，不在這次範圍內，之後如果真的要刪再另外處理）。
+// 2026-09-05：technicals 分類（ma/rsi/kd/bollingerBands/atr/bias/macd/obv，8 支指標）
+// 使用者決定刪除——domainMetrics/technicals/ 的計算邏輯、這裡的 catalog 條目都已移除；
+// 2026-09-06 起連 prisma/analysis/schema.prisma 的 8 張 technicals_* 表也一併 DROP 掉，
+// 整個功能徹底清乾淨，不再有殘留的 schema/資料。

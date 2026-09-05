@@ -26,13 +26,9 @@ const analysisSchemaPath = join(process.cwd(), 'prisma/analysis/schema.prisma');
 //   不開放使用者拿 ERP 去篩選個股（2026-08-31 使用者明確定調）。
 const NON_SECURITY_MODEL_KEYS = new Set<string>(['equityRiskPremium']);
 
-// 2026-09-05 使用者決定刪除 technicals 分類（ma/rsi/kd/bollingerBands/atr/bias/macd/obv，
-// 8 支技術指標）——domainMetrics/technicals/ 的計算邏輯、filterCatalog.ts 的條目都已移除，
-// 但 prisma/analysis/schema.prisma 的 8 張 technicals_* 表刻意保留未刪（刪表是破壞性的
-// 資料庫操作，不在這次範圍內）。這些 model 語意上不是「不適用於單一證券」——跟
-// NON_SECURITY_MODEL_KEYS 的理由不同，是功能單純停用但表還留著，故意分開一個集合，
-// 避免以後看到 NON_SECURITY_MODEL_KEYS 卻誤以為 technicals 是全市場單一值。
-const RETIRED_MODEL_KEYS = new Set<string>(['ma', 'rsi', 'kd', 'bollingerBands', 'atr', 'bias', 'macd', 'obv']);
+// 2026-09-06：technicals 分類（ma/rsi/kd/bollingerBands/atr/bias/macd/obv，8 支技術指標）
+// 的 8 張 technicals_* 表已經正式 DROP（2026-09-05 刪除功能時保留的表，這次清掉），不再需要
+// RETIRED_MODEL_KEYS 這個例外集合——表不存在了，這個檢查邏輯自然不會再看到它們。
 
 // 2026-09-05 新增：metric_values/metric_definitions（見 prisma/analysis/schema.prisma 檔尾、
 // src/pitMetrics/）是 ROE spike 用的 point-in-time 事實層，不是「每支指標一張表」模式底下的
@@ -119,7 +115,6 @@ export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText:
   for (const [metricKey, dbMetric] of dbMetrics) {
     if (dbMetric.fields.size === 0) continue;
     if (NON_SECURITY_MODEL_KEYS.has(metricKey)) continue;
-    if (RETIRED_MODEL_KEYS.has(metricKey)) continue;
     if (POINT_IN_TIME_SPIKE_MODEL_KEYS.has(metricKey)) continue;
     if (isCuratedLayerModel(dbMetric.modelName)) continue;
     if (!modelKeysSeen.has(metricKey)) {

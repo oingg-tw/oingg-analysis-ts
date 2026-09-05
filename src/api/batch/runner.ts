@@ -23,7 +23,8 @@
 //   這批指標受限於三表目前實際涵蓋的公司範圍，不是這支腳本能解決的，mops-ts ingest 更多公司
 //   財報後這裡會自動涵蓋，不用改程式碼。
 // - twse `daily_price`／twse+tpex `daily_valuation` 涵蓋 1,000+ 家，`portfolio/beta`、
-//   `technicals` 8 個指標、`valuation/marketRatios` 走這條路線。
+//   `valuation/marketRatios` 走這條路線（`technicals` 8 支指標曾經也走這條路線，2026-09-06
+//   已隨功能刪除連同表一起清掉）。
 
 import type { IndicatorJob } from './indicatorRegistry';
 import { logger } from '@/shared/logger';
