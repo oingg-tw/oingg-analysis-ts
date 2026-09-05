@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail } from '@/shared/sourceData/companyProfile';
 import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
+import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { runCompanyMetrics, CompanyMetricsValidationError } from './metricsService';
 
@@ -81,6 +82,37 @@ export const getCompanyCapitalStockHistory = async (req: Request, res: Response,
     const { symbol } = validationResult.data;
     const entries = await getCapitalStockHistory(symbol);
     res.status(200).json({ symbol, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ROE 這支指標目前允許的 basis 只有這三種（見 src/pitMetrics/metricDefinitionRegistry.ts 的
+// metricDefinitionRegistry.roe.allowedBases），這裡刻意獨立宣告成 query 參數的合法值，
+// 不直接沿用通用的 metricBasisSchema（那個還有 CUM/FY，對 ROE 沒有意義）——兩邊要保持同步。
+const ROE_HISTORY_BASIS_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+const MAX_ROE_HISTORY_LIMIT = 40; // 10 年份季度資料，畫圖情境不需要更多
+
+export const getCompanyRoeHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  basis: z.enum(ROE_HISTORY_BASIS_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+});
+
+// 給前端畫「ROE 歷史時序」圖表用——第一支直接讀 metric_values（point-in-time 架構）而不是
+// profitability_roe 的對外端點，見 src/pitMetrics/roe/queryRoeHistory.ts 的說明。目前資料
+// 覆蓋率極低（只有 spike 手動 backfill 過的少數公司），查無資料回傳 entries: []，不是 404
+// 或錯誤——跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
+export const getCompanyRoeHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyRoeHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, basis, limit } = validationResult.data;
+    const entries = await getRoeHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, metricCode: 'roe', basis, entries });
   } catch (error) {
     next(error);
   }

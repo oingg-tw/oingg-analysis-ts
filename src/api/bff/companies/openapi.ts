@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock';
+import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
+  getCompanyRoeHistoryQuerySchema,
   getCompanyMetricsQuerySchema,
 } from './controller';
 import { companyProfileDetailSchema, companyMetricsResultSchema, companiesListResultSchema, companiesCountOnlyResultSchema } from './types';
@@ -12,6 +14,13 @@ import { companyProfileDetailSchema, companyMetricsResultSchema, companiesListRe
 const capitalStockHistoryResultSchema = z.object({
   symbol: z.string(),
   entries: z.array(capitalStockHistoryEntrySchema),
+});
+
+const roeHistoryResultSchema = z.object({
+  symbol: z.string(),
+  metricCode: z.literal('roe'),
+  basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  entries: z.array(roeHistoryEntrySchema),
 });
 
 // registerCompanyRoute 會在 handler 回傳的物件上補一個 companyName 欄位再送出（見
@@ -79,6 +88,26 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '股本異動歷史（由新到舊排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: capitalStockHistoryResultSchema } } },
       400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/roe-history',
+    summary: '單一公司 ROE 歷史時序（畫圖用）',
+    description:
+      '第一支直接讀 metric_values（point-in-time 事實層，見 docs/analysis-ts-spec-v0.2.md）而不是傳統結果表' +
+      '（profitability_roe）的端點——每一筆帶 knowledgeDate（該值最早可被市場知道的日期）跟 knowledgeDateIsFallback' +
+      '（true 代表查無真實財報公告日、用財報期末日頂替，有 look-ahead bias 風險，前端可考慮標示）。' +
+      'basis 預設 TTM（近四季滾動）；同一個 (fiscalYear, fiscalQuarter) 如果有多筆（未來的重編疊加情境），' +
+      '只回傳 knowledge_date 最新的那一筆。entries 依期別由舊到新排序，方便直接畫時序圖。' +
+      '**目前資料覆蓋率極低**：只有少數公司/季度有資料（全市場 backfill 尚未進行），查無資料回傳 entries: []，' +
+      '不是 404 或錯誤，是正常情境。',
+    tags: ['System'],
+    request: { query: getCompanyRoeHistoryQuerySchema },
+    responses: {
+      200: { description: 'ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roeHistoryResultSchema } } },
+      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
     },
   });
 
