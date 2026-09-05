@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateDeRatio } from '@/domainMetrics/deRatio/service';
+import { calculateDeRatio } from '@/domainMetrics/deRatio';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

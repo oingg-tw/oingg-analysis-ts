@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateNetDebtToEbitda } from '@/domainMetrics/netDebtToEbitda/service';
+import { calculateNetDebtToEbitda } from '@/domainMetrics/netDebtToEbitda';
 import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';

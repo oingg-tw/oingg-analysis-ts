@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateRoe } from '@/domainMetrics/roe/service';
+import { calculateRoe } from '@/domainMetrics/roe';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getPastNQuarters } from '@/shared/rocQuarter';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';

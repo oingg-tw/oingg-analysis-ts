@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare/service';
+import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare';
 import { getStockPriceAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';

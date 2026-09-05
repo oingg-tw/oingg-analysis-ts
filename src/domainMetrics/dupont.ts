@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateMargins } from '@/domainMetrics/margins/service';
-import { calculateTurnoverRatio } from '@/domainMetrics/turnoverRatio/service';
-import { calculateRoe } from '@/domainMetrics/roe/service';
+import { calculateMargins } from '@/domainMetrics/margins';
+import { calculateTurnoverRatio } from '@/domainMetrics/turnoverRatio';
+import { calculateRoe } from '@/domainMetrics/roe';
 import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import { negativeEquityWarning } from '@/shared/negativeEquityGuard';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';

@@ -46,7 +46,7 @@
 
 taxonomy 列的是 `Graham_NCAV`（葛拉漢淨流動資產價值），跟這裡的「葛拉漢數」是葛拉漢提出的**兩個不同公式**，taxonomy 沒有把葛拉漢數單獨列出來，但這是一個廣為人知、常被引用的獨立公式，所以自行歸類進來。Nissim & Penman、Zmijewski、Ohlson 也是同樣道理——不在 investment_metrics_taxonomy v3.0 裡，但公式複雜、掛名特定學者，符合這一類的分類標準（見上方「分類範圍」）。Zmijewski Score、Ohlson O-Score 是 2026-08-30 使用者要求「破產預警模型，只要資料完整沒問題就做」新增列入並直接實作的——跟 `Altman_Z_Score` 同一種「以特定學者命名的財務危機預警複合模型」，資料需求量級也相同（都是資產負債表/損益表/現金流量表衍生比率，不需要跨公司比較或前瞻性假設）。2026-08-25 使用者提供的清單裡還有 Novy-Marx GP/A（毛利/總資產），因為只是單一比率（換分子的 ROA）沒有收進來，該歸哪一類還沒決定；Greenwald EPV 也曾經列入評估，2026-08-28 決定移除，見下方「為什麼不做 Greenwald_EPV」。
 
-**本服務第一個複合指標**：[`grahamNumber/service.ts`](grahamNumber/service.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`eps/service.ts`](eps/service.ts)）跟 `calculateBvps`（[`bvps/service.ts`](bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
+**本服務第一個複合指標**：[`grahamNumber.ts`](grahamNumber.ts) 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`eps.ts`](eps.ts)）跟 `calculateBvps`（[`bvps.ts`](bvps.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為。之後其他複合指標（例如 `Lynch_PEG_Fair_Value` 需要 PER）都可以照這個模式，直接引用既有服務，不要重新查資料庫。
 
 葛拉漢數用 **TTM EPS**（不是單季或簡單年化版本）；EPS 或 BVPS 為零或負值時無法計算（公式假設公司要有正的獲利跟正的淨值）。已用台積電（2330）115Q2（2026 Q2）合併報表實測驗證：`sqrt(22.5 x 86.27 x 248.05)` = 葛拉漢數 693.89 元（2026-08-27 更新：oingg-mops-ts 修正 `quarterly_income_statement` 的 Q4 資料後 TTM EPS 改變，原本是 133.01 元/葛拉漢數 861.59 元，見 [`../../README.md`](../../README.md) 的說明）。
 

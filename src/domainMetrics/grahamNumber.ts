@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateEps } from '@/domainMetrics/eps/service';
-import { calculateBvps } from '@/domainMetrics/bvps/service';
+import { calculateEps } from '@/domainMetrics/eps';
+import { calculateBvps } from '@/domainMetrics/bvps';
 import { buildFieldStatuses, type MetricStatus, type MetricResultMeta } from '@/shared/metricStatus';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import type { QuarterlyMetricQuery, QuarterlyMetricIdentity } from '@/shared/quarterlyMetric';

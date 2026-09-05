@@ -7,8 +7,8 @@ import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import type { IndicatorJob } from '../indicatorJob';
-import { calculateMarketRatios } from '@/domainMetrics/marketRatios/service';
-import { calculateBeta } from '@/domainMetrics/beta/service';
+import { calculateMarketRatios } from '@/domainMetrics/marketRatios';
+import { calculateBeta } from '@/domainMetrics/beta';
 
 const twsePriceIdsPromise = twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."daily_price"`.then((rows) => rows.map((r) => r.symbol));
 

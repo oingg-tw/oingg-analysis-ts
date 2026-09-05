@@ -22,7 +22,7 @@ taxonomy 的 `FCF` 是公司層級的總額（Operating Cash Flow - CapEx，單�
 
 ## 實作慣例
 
-- `capitalExpenditures` 在資料庫裡本身是負數（現金流出），FCF = OCF **+** capex，不是減——這是計算這類指標時最容易踩的坑，見 [`cashFlowPerShare/service.ts`](cashFlowPerShare/service.ts) 註解。
+- `capitalExpenditures` 在資料庫裡本身是負數（現金流出），FCF = OCF **+** capex，不是減——這是計算這類指標時最容易踩的坑，見 [`cashFlowPerShare.ts`](cashFlowPerShare.ts) 註解。
 - OCF、FCF 共用同一支 API/同一張表，也共用同一組 TTM 完整性判斷（一季只要 OCF 或資本支出任一為 `null`，該季就整個視為不齊）。
 - `OCF_to_Net_Income` 是「流量/流量」比率（OCF / 淨利），結構跟 `margins/` 一樣：只有單季跟 TTM 兩種口徑，沒有年化。比率明顯低於 1（尤其是負值）代表帳面淨利缺乏真實現金流量支撐，常跟 `Accruals_Ratio` 一起判讀盈餘品質。
 - `Accruals_Ratio` 需要用到 `netCashFromInvestingActivities`（ICF，投資活動現金流）——這個欄位資料庫裡一直都有，但在這之前沒有任何 service 用過。

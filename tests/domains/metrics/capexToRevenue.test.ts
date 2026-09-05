@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateCapexToRevenue } from '@/domainMetrics/capexToRevenue/service';
+import { calculateCapexToRevenue } from '@/domainMetrics/capexToRevenue';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

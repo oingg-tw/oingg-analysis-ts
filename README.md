@@ -136,7 +136,7 @@ pnpm prisma:tpex:studio   # Prisma Studio 開這個 DB
 
 底下每支指標各自的計算公式、口徑、資料源限制記錄在 [`src/domainMetrics/README.md`](src/domainMetrics/README.md) 的分類索引（計算邏輯本身沒有變，只是不再各自掛一支 HTTP 端點）。
 
-以下「Query 參數，兩種介面」跟「year/season 選填」兩段描述的是**已刪除端點當時的參數形狀**，保留是因為同一套參數形狀現在換了個位置繼續活著——`domainMetrics/**/service.ts` 的 `calculate*()` 函式簽名完全沒變，`GET /companies/metrics` 的 compute-on-miss 跟批次預算都是直接呼叫這些函式，下面的設計理由（尤其是「最新一季怎麼決定」）現在仍然成立，只是不會再有人直接對著這些函式名稱打 HTTP 請求。
+以下「Query 參數，兩種介面」跟「year/season 選填」兩段描述的是**已刪除端點當時的參數形狀**，保留是因為同一套參數形狀現在換了個位置繼續活著——`domainMetrics/*.ts` 的 `calculate*()` 函式簽名完全沒變，`GET /companies/metrics` 的 compute-on-miss 跟批次預算都是直接呼叫這些函式，下面的設計理由（尤其是「最新一季怎麼決定」）現在仍然成立，只是不會再有人直接對著這些函式名稱打 HTTP 請求。
 
 Query 參數，兩種介面：(1) `market-ratios`、`beta`、`technicals`（8 個技術指標）只有 `symbol`（必填）+ 選填的日期（`market-ratios` 是 `date`，`beta`/`technicals` 是 `asOfDate`），因為都是逐日市場資料，不是季度財報資料，見下方「PER/PBR/股利殖利率計算口徑」、[`src/domainMetrics/portfolio.md`](src/domainMetrics/portfolio.md) 的說明（`technicals` 分類 2026-09-05 已刪除）。(2) **其餘所有季度財報類指標**（`profitability`/`cashFlow`/`resilience`/`turnover`/`guru` 五個分類，包含只回傳 TTM 口徑的 `dividendPayoutRatio`、`sgr`）共用同一組：`symbol`（必填）、`dataType`（`'1'`=個別, `'2'`=合併，預設 `'2'`）、`subsidiaryCompanyId`（預設空字串，選填）；`year`（民國年）/`season`（`'1'`~`'4'`）**選填但要成對**（要嘛都給要嘛都不給，只給其中一個是 400），不給就自動抓最新一季——見下方「year/season 選填、自動抓最新一季的設計」。
 
@@ -296,7 +296,7 @@ Query 參數，兩種介面：(1) `market-ratios`、`beta`、`technicals`（8 �
 
 ## 葛拉漢數計算口徑
 
-**本服務第一個複合指標**：`GET /guru/graham-number` 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`src/domainMetrics/eps/service.ts`](src/domainMetrics/eps/service.ts)）跟 `calculateBvps`（[`src/domainMetrics/bvps/service.ts`](src/domainMetrics/bvps/service.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為，不是意外。之後其他複合指標都應該照這個模式，直接引用既有服務，不要重新查資料庫。
+**本服務第一個複合指標**：`GET /guru/graham-number` 不自己查資料庫，而是直接呼叫已經寫好的 `calculateEps`（[`src/domainMetrics/eps.ts`](src/domainMetrics/eps.ts)）跟 `calculateBvps`（[`src/domainMetrics/bvps.ts`](src/domainMetrics/bvps.ts)），取兩者算出來的 `epsTtm`/`bvps` 直接套公式——不重複實作淨利/權益口徑選擇、流通股數查詢那些邏輯。副作用是呼叫這支 API 時，`eps`/`bvps` 兩支服務也會各自照常把自己的結果 upsert 進 `profitability_eps`/`profitability_bvps`，這是預期行為，不是意外。之後其他複合指標都應該照這個模式，直接引用既有服務，不要重新查資料庫。
 
 - **公式**：`葛拉漢數 = sqrt(22.5 x EPS(TTM) x BVPS)`。出處：葛拉漢認為本益比不超過 15 倍、股價淨值比不超過 1.5 倍的股票才算便宜，兩者乘積上限 15 x 1.5 = 22.5，推導出合理價上限。
 - **EPS 用 TTM**（近四季滾動），不是單季或簡單年化版本。

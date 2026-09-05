@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { calculateRevenuePerShare } from '@/domainMetrics/revenuePerShare/service';
+import { calculateRevenuePerShare } from '@/domainMetrics/revenuePerShare';
 import { getMarketCapAsOf, hasStockPriceCoverage } from '@/shared/sourceData/marketCap';
 import { getPriceAnchorDate, type PriceAnchorSource } from '@/shared/sourceData/reportAnnouncementDate';
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';

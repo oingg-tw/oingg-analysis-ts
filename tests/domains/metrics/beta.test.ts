@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateBeta, resample, type OverlapPoint } from '@/domainMetrics/beta/service';
+import { calculateBeta, resample, type OverlapPoint } from '@/domainMetrics/beta';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

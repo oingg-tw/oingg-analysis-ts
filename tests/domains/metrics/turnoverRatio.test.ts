@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateTurnoverRatio } from '@/domainMetrics/turnoverRatio/service';
+import { calculateTurnoverRatio } from '@/domainMetrics/turnoverRatio';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

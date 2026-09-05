@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare/service';
+import { calculateCashFlowPerShare } from '@/domainMetrics/cashFlowPerShare';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
