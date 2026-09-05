@@ -3,6 +3,7 @@ import swaggerUi from 'swagger-ui-express';
 import { config } from '@/shared/config';
 import { registry } from './registry';
 import { registerCompaniesOpenApi } from '@/api/bff/companies/openapi';
+import { registerIndustriesOpenApi } from '@/api/bff/industries/openapi';
 import { registerStocksOpenApi } from '@/api/bff/stocks/openapi';
 import { registerScreenerOpenApi } from '@/api/bff/screener/openapi';
 import { registerFiltersOpenApi } from '@/api/bff/filter/openapi';
@@ -29,6 +30,7 @@ import { registerVolumeTop20OpenApi } from '@/api/bff/market/volumeTop20/openapi
 registerSystemOpenApi();
 registerFiltersOpenApi();
 registerCompaniesOpenApi();
+registerIndustriesOpenApi();
 registerStocksOpenApi();
 registerScreenerOpenApi();
 registerValuationRankingOpenApi();
@@ -67,6 +69,7 @@ export const swaggerSpec = generator.generateDocument({
   // 44 支單一指標端點用的分類，刪除後不再對應任何路徑；改成實際還在用的 tag。
   tags: [
     { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單、單一公司基本資料' },
+    { name: 'Industries', description: '產業分類階層瀏覽（財政部稅籍五層分類 section/division/group/class/subclass）' },
     { name: 'Stocks', description: '單一公司/批次股價、除權息預告' },
     { name: 'Screener', description: '多條件篩選、排行、指定股票批次查值' },
     { name: 'Market', description: '全市場排行榜與清單類——注意股/處置股、成交量前20、漲跌停幅度、月營收/ETF 排行、重大訊息' },

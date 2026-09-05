@@ -3,6 +3,7 @@ import batchRouter from './api/batch/route';
 import rootRouter from './api/bff/system/root';
 import filtersRouter from './api/bff/filter/filters';
 import companiesRouter from './api/bff/companies/route';
+import industriesRouter from './api/bff/industries/route';
 import stocksRouter from './api/bff/stocks/route';
 import screenerRouter from './api/bff/screener/route';
 import foreignHoldingRankingRouter from './api/bff/market/foreignHoldingRanking/route';
@@ -38,6 +39,7 @@ router.use(bffAuth);
 
 router.use(filtersRouter);
 router.use(companiesRouter);
+router.use(industriesRouter);
 router.use(stocksRouter);
 router.use(screenerRouter);
 router.use(foreignHoldingRankingRouter);
