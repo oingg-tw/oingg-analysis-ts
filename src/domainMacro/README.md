@@ -11,11 +11,11 @@
 
 ## 為什麼整類都還沒做
 
-這類指標**跟單一公司財報完全無關**——需要的是總體經濟數據（GDP）、公債殖利率曲線、公司債利差、選擇權隱含波動度（VIX）、賣買權成交量比等總體市場資料，沒有一項能從 oingg-mops-ts 的公司季度財報衍生出來。這是完全獨立於現有「查某公司某季比率」架構之外的資料源與領域，優先度上應該排在其他還缺資料源的分類（[`../domainMetrics/valuation/`](../domainMetrics/valuation/README.md) 的股價）之後再考慮，因為那一類至少還能沿用現有的「公司財報」骨幹，這一類完全是另起爐灶。
+這類指標**跟單一公司財報完全無關**——需要的是總體經濟數據（GDP）、公債殖利率曲線、公司債利差、選擇權隱含波動度（VIX）、賣買權成交量比等總體市場資料，沒有一項能從 oingg-mops-ts 的公司季度財報衍生出來。這是完全獨立於現有「查某公司某季比率」架構之外的資料源與領域，優先度上應該排在其他還缺資料源的分類（[`../domainMetrics/`](../domainMetrics/valuation.md) 的股價）之後再考慮，因為那一類至少還能沿用現有的「公司財報」骨幹，這一類完全是另起爐灶。
 
-**2026-08-28 部分解套**：原本為了 `guru/Greenwald_EPV` 的 CAPM 無風險利率，接上了第四個資料庫 **GOV**（中央銀行統計資料庫，`.env` 的 `GOV_DATABASE_URL`，2026-08-30 從 CBC 改名）——`Greenwald_EPV` 後來因為「資產重置成本」這個成分無法用忠於資料的方式算，2026-08-28 決定整個移除（見 [`../domainMetrics/guru/README.md`](../domainMetrics/guru/README.md) 的「為什麼不做 Greenwald_EPV」），但這個資料源本身是通用的，沒有一併移除：目前鏡像了 10年期政府公債次級市場殖利率（月資料，1994-12 至今，見 [`../shared/sourceData/riskFreeRate.ts`](../shared/sourceData/riskFreeRate.ts)）。這只解掉 `YTM` 這一項裡「10年期公債」這一個天期的資料，不是整條殖利率曲線（`Yield_Curve_Spread` 還需要 2 年期公債，目前沒有）——`YTM` 指標本身的完整定義（債券現金流內部報酬率）也還沒實作，只是原本完全沒有的資料源現在有一部分了。GDP、公司債利差、VIX、賣買權比等其餘資料維度仍然完全沒有。
+**2026-08-28 部分解套**：原本為了 `guru/Greenwald_EPV` 的 CAPM 無風險利率，接上了第四個資料庫 **GOV**（中央銀行統計資料庫，`.env` 的 `GOV_DATABASE_URL`，2026-08-30 從 CBC 改名）——`Greenwald_EPV` 後來因為「資產重置成本」這個成分無法用忠於資料的方式算，2026-08-28 決定整個移除（見 [`../domainMetrics/guru.md`](../domainMetrics/guru.md) 的「為什麼不做 Greenwald_EPV」），但這個資料源本身是通用的，沒有一併移除：目前鏡像了 10年期政府公債次級市場殖利率（月資料，1994-12 至今，見 [`../shared/sourceData/riskFreeRate.ts`](../shared/sourceData/riskFreeRate.ts)）。這只解掉 `YTM` 這一項裡「10年期公債」這一個天期的資料，不是整條殖利率曲線（`Yield_Curve_Spread` 還需要 2 年期公債，目前沒有）——`YTM` 指標本身的完整定義（債券現金流內部報酬率）也還沒實作，只是原本完全沒有的資料源現在有一部分了。GDP、公司債利差、VIX、賣買權比等其餘資料維度仍然完全沒有。
 
-**2026-08-30 `Equity_Risk_Premium`（股權風險溢酬）實作**：taxonomy 原始清單裡沒有這個指標，是使用者在評估「CAPM 完整資料管線」時發現 Rf（無風險利率，上面那段已解掉）跟 Beta（`../domainMetrics/portfolio/beta/`）都有了，唯獨 Rm − Rf（市場風險溢酬）這一塊完全沒有，才另外要求加的。用的是歷史法（Historical Risk Premium Approach）：TAIEX 年化報酬率（來自 oingg-twse 的 `daily_taiex_index` 月底收盤）減去同期 10 年期公債殖利率平均值，`GET /macro/equity-risk-premium`，見 [`equityRiskPremium/`](equityRiskPremium/)。
+**2026-08-30 `Equity_Risk_Premium`（股權風險溢酬）實作**：taxonomy 原始清單裡沒有這個指標，是使用者在評估「CAPM 完整資料管線」時發現 Rf（無風險利率，上面那段已解掉）跟 Beta（`../domainMetrics/beta/`）都有了，唯獨 Rm − Rf（市場風險溢酬）這一塊完全沒有，才另外要求加的。用的是歷史法（Historical Risk Premium Approach）：TAIEX 年化報酬率（來自 oingg-twse 的 `daily_taiex_index` 月底收盤）減去同期 10 年期公債殖利率平均值，`GET /macro/equity-risk-premium`，見 [`equityRiskPremium/`](equityRiskPremium/)。
 
 開發過程中直接用真實資料驗證過「樣本窗口長度」對結果的影響有多大：TAIEX 2026-08-30 之前只回填到 2021-09（約 5 年），拿這個窗口算出來的 ERP ≈ 21%；使用者接著把 `daily_taiex_index` 回填到 1999-01（27 年歷史）之後重算，27 年窗口的 ERP 才落回 5.8%（幾何）~7.9%（算術），貼近文獻常見的 4%~8%——短窗口（5~10 年）容易被單一段多空行情主導，不是本服務憑空的臆測，是這次開發過程實測出來的。服務本身不會擋下短窗口的計算（使用者可能就是想看不同窗口的比較），但預設不指定 start/end 時一律用完整可用歷史，且窗口低於 20 年會在 `warnings` 明確提醒可信度風險。
 

@@ -11,7 +11,7 @@ pnpm test:types    # 只型別檢查 tests/（不影響 pnpm build 用的主 tsc
 
 本服務每支 service.ts 本來就直接查 `.env` 指到的開發資料庫（`DATABASE_URL`/`ANALYSIS_DATABASE_URL`/`TWSE_DATABASE_URL`），程式碼裡完全沒有 mock 資料庫這件事——各分類 README 裡「已用台積電（2330）115Q2 實測驗證：xxx」那些段落，就是目前唯一的驗證紀錄方式，只存在文件裡、每次要重驗證都得手動重跑一次查詢。
 
-`tests/domains/**` 就是把這些手動驗證過的數字釘死下來，跑真的 DB、斷言真的回傳值（例如 [`tests/domains/metrics/guru/ncav.test.ts`](domains/metrics/guru/ncav.test.ts) 斷言 2330 115Q2 NCAV = 64.19，對應 [`../src/domainMetrics/guru/README.md`](../src/domainMetrics/guru/README.md) 記錄的那次實測）——之後改到共用邏輯（例如 `rocQuarter.ts`、`capitalStock.ts`）不小心動到別的指標時，這些測試能立刻抓到，不用每次都重新手動 curl 一輪。
+`tests/domains/**` 就是把這些手動驗證過的數字釘死下來，跑真的 DB、斷言真的回傳值（例如 [`tests/domains/metrics/guru/ncav.test.ts`](domains/metrics/guru/ncav.test.ts) 斷言 2330 115Q2 NCAV = 64.19，對應 [`../src/domainMetrics/guru.md`](../src/domainMetrics/guru.md) 記錄的那次實測）——之後改到共用邏輯（例如 `rocQuarter.ts`、`capitalStock.ts`）不小心動到別的指標時，這些測試能立刻抓到，不用每次都重新手動 curl 一輪。
 
 **這些測試需要 `.env` 裡的五個 DB 連線都能連得到**（mops、analysis、twse、gov、tpex），跟跑 `pnpm dev` 的前提一樣；CI 如果要跑這些測試，需要準備對應的開發資料庫連線。
 

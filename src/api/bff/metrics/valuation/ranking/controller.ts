@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { calculateRanking } from '@/domainMetrics/valuation/ranking/service';
+import { calculateRanking } from '@/domainMetrics/ranking/service';
 import { logger } from '@/shared/logger';
 
 export const getRankingQuerySchema = z.object({
