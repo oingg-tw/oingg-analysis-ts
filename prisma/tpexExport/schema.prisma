@@ -61,7 +61,7 @@ view DailyPrice {
 /// 的 CompanyProfile 做法一致，多了 source（上櫃/興櫃登記類別，值域 COMPANY_PROFILE/
 /// COMPANY_PROFILE_EMERGING）備用。2026-09-04 tpex-ts 把這個欄位從 market 改名成
 /// source（硬切、無過渡期）——原本叫 market 容易誤會成 TWSE/TPEx 市場別，實際存的是登記
-/// 類別，見 docs/ubiquitous-language-glossary.md 的討論。
+/// 類別，見 UBIQUITOUS_LANGUAGE.md 的討論。
 view CompanyProfile {
   symbol                       String?
   source                       String?

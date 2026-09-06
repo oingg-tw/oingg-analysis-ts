@@ -22,7 +22,7 @@
 // 單一欄位改名這種小範圍變動時，改用手動編輯，不要整份跑 db pull 內省。
 //
 // 2026-09-04：CompanyIndustryClassification 的 stockCode 改名 symbol（跟 twse-ts/
-// tpex-ts/mops-ts 對齊），gov-ts 硬切上 prod，見 docs/ubiquitous-language-glossary.md。
+// tpex-ts/mops-ts 對齊），gov-ts 硬切上 prod，見 UBIQUITOUS_LANGUAGE.md。
 
 generator client {
   provider        = "prisma-client-js"

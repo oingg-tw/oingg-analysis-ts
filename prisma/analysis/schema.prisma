@@ -825,7 +825,7 @@ model OwnerEarningsResult {
 // 欄位對應 src/domainMetrics/portfolio/beta/types.ts 的 BetaResult。
 // 2026-09-04：DB 欄位從 as_of_date 改名 tradeDate/trade_date，跟其他 7 支 technicals +
 // MarketRatiosResult 這些日資料型結果表統一（原本只有這張表叫 as_of_date，是同一服務內
-// 唯一的命名例外，見 docs/ubiquitous-language-glossary.md）。對外 HTTP query 參數仍然叫
+// 唯一的命名例外，見 UBIQUITOUS_LANGUAGE.md）。對外 HTTP query 參數仍然叫
 // asOfDate，不受這次改動影響——這純粹是 DB 內部欄位改名，migration 用手動改成 RENAME
 // COLUMN，不是 drop+add，保留既有 1439 筆資料。
 model BetaResult {

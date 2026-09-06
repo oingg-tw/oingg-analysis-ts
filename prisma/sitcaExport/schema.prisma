@@ -50,7 +50,7 @@ model IngestionRun {
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
 /// 2026-09-04 sitca-ts 把 fund_id 改名 fund_tax_id（硬切，dev/prod 都上了）——跟
 /// EtfMonthlyStatement 原本就有的 fund_tax_id 是同一個「基金統編」概念，改名前兩邊叫法
-/// 不一致，見 docs/ubiquitous-language-glossary.md。
+/// 不一致，見 UBIQUITOUS_LANGUAGE.md。
 view FundExpenseRatioAnnual {
   fundTaxId           String?   @map("fund_tax_id")
   year                Int?
@@ -99,7 +99,7 @@ view FundLifecycleEvent {
 /// ETF 基本資料——symbol + year_month 是概念上的鍵，established_date 是計算「總費用率
 /// 排行要不要納入這檔」的依據（見 etfRanking 的說明）。2026-09-04 sitca-ts 把 security_code
 /// 改名 symbol（硬切，dev/prod 都上了），跟其他來源一致，見
-/// docs/ubiquitous-language-glossary.md。
+/// UBIQUITOUS_LANGUAGE.md。
 view EtfBasicInfo {
   symbol                 String?
   yearMonth              String?   @map("year_month")
