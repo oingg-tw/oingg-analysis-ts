@@ -41,50 +41,63 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 2. **`pitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
    架構（`metric_values`/`metric_definitions`，見 ROE spike）用這套，例如
    `metric_code='roe'`、`basis='Q'`。
-3. **mops-ts 原始欄位名稱**（camelCase，跟三大表 `quarterly_income_statement`/
-   `quarterly_balance_sheet` 對應）——例如 `netIncomeAttributableToParent`、
-   `equityAttributableToParent`，是 `pitMetrics` 目前 `dependsOn` 唯一能填的內容
-   （見下方「已知落差」）。
-4. **XBRL IFRS Full Taxonomy 標籤**（未來的第四套，`ifrs-full:` 前綴）——mops-ts 的
-   `financialReportXbrl`（40 張表）長期要取代三大表的資料源，目前還在測試階段（僅測試
-   公司 1101），還沒有任何 analysis-ts 程式碼引用這套標籤。
+3. **mops-ts XBRL account_code**（snake_case，`export.xbrl_three_statements_long` 的
+   `account_code` 欄位）——**2026-09-06 起 `pitMetrics` 的 `dependsOn` 改填這一套**（見下方
+   「已解決的落差」），例如 `profit_loss_attributable_to_owners_of_parent`、
+   `equity_attributable_to_owners_of_parent`。這是 mops-ts 自己把原始 XBRL 標籤整理過的
+   命名，不是 IFRS 原始 PascalCase 標籤，也不是 mops-ts 三大表（`quarterly_income_statement`/
+   `quarterly_balance_sheet`）原本的 camelCase 欄位名稱（`netIncomeAttributableToParent`
+   這種，2026-09-06 之前 `dependsOn` 填的是這一套，現在已經不用了，但三大表本身的實際
+   欄位名稱沒有變，計算邏輯依然讀這兩張表，只有 `dependsOn` 的宣告內容改變）。
+4. **mops-ts 三大表原始欄位名稱**（camelCase，`quarterly_income_statement`/
+   `quarterly_balance_sheet` 實際的表欄位，例如 `netIncomeAttributableToParent`）——
+   這是實際計算時真正查詢的欄位，涵蓋 249 家公司；跟上面第 3 套（XBRL account_code，
+   目前只涵蓋 3 家公司）是同一組會計概念的兩種不同命名系統，`dependsOn` 現在記錄的是
+   XBRL 那一套名稱，但程式碼實際查資料庫用的還是這一套 camelCase 欄位名稱——兩者的對應
+   關係見下方示範表格。
 
-### 示範：2330（台積電）115Q2 ROE 走過這四層系統
+### 示範：2330（台積電）115Q2 ROE 走過這幾層系統
 
 用這個 session 已經實測驗證過的真實數字（不是虛構範例）：
 
 | 層級 | 內容 |
 |---|---|
-| mops-ts 原始欄位（現況資料源） | `netIncomeAttributableToParent = 706561938`（千元，淨利歸屬母公司）<br>`equityAttributableToParent = 6432518334`（千元，權益歸屬母公司） |
-| XBRL IFRS Full Taxonomy 標籤（**公開標準名稱，不是查證 mops-ts 實作結果**，見下方警語） | `ifrs-full:ProfitLossAttributableToOwnersOfParent` 對應 `netIncomeAttributableToParent`<br>`ifrs-full:EquityAttributableToOwnersOfParent` 對應 `equityAttributableToParent` |
+| mops-ts 三大表原始欄位（實際計算查詢的來源，249 家公司覆蓋） | `netIncomeAttributableToParent = 706561938`（千元，淨利歸屬母公司）<br>`equityAttributableToParent = 6432518334`（千元，權益歸屬母公司） |
+| mops-ts XBRL account_code（**2026-09-06 已拿 2330 真實資料驗證過**，見下方說明） | `profit_loss_attributable_to_owners_of_parent` 對應 `netIncomeAttributableToParent`<br>`equity_attributable_to_owners_of_parent` 對應 `equityAttributableToParent` |
 | 計算結果 | ROE（單季）= 706561938 / 6432518334 × 100 ≈ **10.98%** |
 | filterCatalog 定址 | `metricKey="roe"`, `fieldKey="roeQuarterlyPct"` → `roe.roeQuarterlyPct` |
-| pitMetrics 定址 | `metric_code="roe"`, `basis="Q"` → `value=10.98`；`dependsOn=['netIncomeAttributableToParent','netIncome','equityAttributableToParent','totalEquity']` |
+| pitMetrics 定址 | `metric_code="roe"`, `basis="Q"` → `value=10.98`；`dependsOn=['profit_loss_attributable_to_owners_of_parent','profit_loss','equity_attributable_to_owners_of_parent','equity']` |
 
-**⚠️ 重要警語**：上面「XBRL 標籤」那一列填的是 IFRS Full Taxonomy 公開發布的標準科目
-名稱（全球通用、跟哪家公司無關，任何人都查得到），**不是**去查證 mops-ts 的
-`financialReportXbrl` 資料集裡 2330 實際被標記的標籤——那個資料集目前只有測試公司 1101
-（台泥），還沒有 2330 的資料可查。這一列的用途是示範「概念上將來會怎麼對應」，不是「已經
-驗證過的事實」，等 mops-ts 的 XBRL 資料真的涵蓋到 2330 之後，應該回來對照真實資料修正
-（或確認）這一列，不要假設這裡寫的標籤名稱一定跟 mops-ts 實際 ingest 的結果一致。
+**驗證方式**：直接查詢 mops-ts 的 `export.xbrl_three_statements_long`（2330 目前有 902
+筆不同 `account_code`），確認 `profit_loss_attributable_to_owners_of_parent`/
+`equity_attributable_to_owners_of_parent`/`assets`/`equity`/`revenue`/`profit_loss`
+這幾個名稱真實存在於 2330 的 XBRL 資料裡，不是照 IFRS 標準科目名稱推論——上一版本這裡
+寫的是 `ifrs-full:` 開頭的推論值，2026-09-06 已經拿真實資料修正掉。
 
-### 已知落差（這份對照表記錄下來，不是這次要解決的技術債）
+### 已解決的落差（原「已知落差」，2026-09-06 更新）
+
+- **`pitMetrics` 的 `dependsOn` 曾經只能填 mops-ts 三大表的原始欄位名稱**——因為 XBRL
+  資料當時只涵蓋測試公司 1101，沒有真實公司可以驗證對應關係。**mops-ts 2026-09-06 補上
+  2330（台積電）、2801（彰化銀行）兩家真實公司的 XBRL 資料後，這個落差已經解決**：
+  `metricDefinitionRegistry.ts` 的 6 個 `dependsOn` 陣列已經全部改成驗證過的 XBRL
+  account_code（見上方示範表格）。**範圍說明**：這次只改 `dependsOn` 這個宣告欄位的內容
+  （純字串陣列，不是 schema/計算來源的變更）——實際計算依然讀 `quarterly_income_statement`/
+  `quarterly_balance_sheet`（249 家公司覆蓋），沒有切換去讀 XBRL 表（那邊只有 3 家公司，
+  拿來當計算來源會大幅縮減覆蓋率）；舊架構 37 張表內部存的欄位挑選紀錄（例如
+  `RoeResult.netIncomeFieldUsed`）也沒有跟著改，那些是逐列的操作/稽核用途，不是命名宣告，
+  使用者已明確決定這次不動。之後新增 `metricDefinitionRegistry` entry 時，`dependsOn`
+  應該優先查 `export.xbrl_three_statements_long` 有沒有對應的 account_code 可用，沒有的
+  話才退回填三大表原始欄位名稱。
+- **意外發現**：2801（彰化銀行）的 XBRL 資料裡有 `bank_capital_adequacy_detail_xbrl`、
+  `eligible_capital_composition_xbrl`、`bank_npl_disposal_xbrl`、
+  `non_performing_receivables_xbrl` 這幾張表——可能可以解掉「銀行業專屬指標（CAR/CET1/
+  NPL/備抵呆帳覆蓋率）卡在缺資料源」這項技術債，還沒評估細節，先記錄在這裡。
+
+### 尚未解決的落差
 
 - **`metricKey`（filterCatalog）跟 `metric_code`（pitMetrics）目前只是碰巧同名**，沒有
   正式的程式碼對照表，兩套系統各自獨立維護。如果之後有指標在兩邊取了不同名字，不會有
   任何自動化機制抓出來。
-- **`pitMetrics` 的 `dependsOn` 目前只能填 mops-ts 原始欄位名稱**（`netIncomeAttributableToParent`
-  這種），不是 canonical account code——因為 canonical 科目詞彙還不存在，等 XBRL 真的
-  接上後，`dependsOn` 應該改成存 `ifrs-full:` 標籤，而不是現在的 mops 原始欄位名稱，
-  屆時這份文件的「示範」表格也要跟著更新成真實驗證過的對照，不能再依賴標準標籤名稱推論。
-  **原則已定調（2026-09-06，使用者明確要求）**：這個落差真的要解決時，優先選擇改 DB
-  （即使要做破壞性 migration、重新命名欄位）去對齊 XBRL/國際慣例，不要蓋一層「內部命名
-  ↔ XBRL」的轉換層讓內部命名維持不變——跟本文件第一節列的四項硬切對齊決策同一種做法，
-  不是為了相容性保留舊命名。
-
-### 這次刻意排除的範圍
-
-- 不接真實 XBRL 資料——mops-ts 的 `financialReportXbrl` 還在測試階段（僅 1101 一家），
-  接資料是之後的事，這次只做命名概念設計。
-- 不修改 `metricDefinitionRegistry.ts`/`filterCatalog.ts` 等任何現有程式碼——這份文件
-  純粹是命名對照的參考資料，程式碼要不要照著改是之後真的要接 XBRL 時的決定。
+- **原則維持（2026-09-06 再次確認）**：命名落差真的要解決時，優先選擇改 DB（即使要做
+  破壞性 migration、重新命名欄位）去對齊 XBRL/國際慣例，不要蓋一層「內部命名 ↔ XBRL」的
+  轉換層讓內部命名維持不變——跟本文件第一節列的四項硬切對齊決策同一種做法。
