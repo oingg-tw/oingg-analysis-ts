@@ -13,10 +13,6 @@ interface RawBasicInfoRow {
   is_actively_managed: boolean | null;
 }
 
-interface RawBasicInfoWithEstablishedRow extends RawBasicInfoRow {
-  established_date: Date | null;
-}
-
 interface RawStatementRow {
   symbol: string;
   fund_tax_id: string | null;
@@ -185,15 +181,18 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
 };
 
 // 總費用率——只用「最新一個完整年度」（今年還沒過完，不能拿來跟其他基金比，見
-// route.ts 說明）。發行日期落在這個完整年度（或更晚）的 ETF，代表它在這個基準年度本身就不滿
-// 一整年，沒有可比的完整年度資料，直接排除，不套用其他年度或做時間比例換算——2026-09-02
-// 應使用者要求，統一用同一個基準年比較才公平，不同基金各自套不同年度會失去排行的意義。
+// route.ts 說明）。2026-09-06 起改吃 sitca-ts 的 fund_expense_ratio_annual_full_year
+// view（取代原本自己用 established_date 判斷「這個基準年本身不滿一整年」的手動邏輯）——
+// 那個手動邏輯只抓得到「當年新掛牌」，抓不到「當年中途清算/分割」這類同樣會讓 total_rate
+// 只涵蓋部分期間的情況；sitca-ts 這個 view 用他們自己的 is_partial_year 判斷，涵蓋範圍
+// 更完整（PROD 已驗證：17233/18444 列，1211 列被標記 is_partial_year 排除掉），不需要
+// 再自己另外判斷發行日期。
 const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow[]> => {
   const latestCompleteYear = new Date().getFullYear() - 1;
 
   const [basicRows, statementRows, expenseRows] = await Promise.all([
-    sitcaExportPrisma.$queryRaw<RawBasicInfoWithEstablishedRow[]>`
-      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, established_date, is_actively_managed
+    sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
+      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
       FROM "export"."etf_basic_info"
       WHERE year_month = ${yearMonth}
     `,
@@ -204,7 +203,7 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
     `,
     sitcaExportPrisma.$queryRaw<{ fund_tax_id: string; total_rate: number | null }[]>`
       SELECT fund_tax_id, total_rate
-      FROM "export"."fund_expense_ratio_annual"
+      FROM "export"."fund_expense_ratio_annual_full_year"
       WHERE year = ${latestCompleteYear}
     `,
   ]);
@@ -214,9 +213,6 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
 
   const rows: ResolvedRow[] = [];
   for (const basic of basicRows) {
-    if (basic.established_date === null) continue;
-    if (basic.established_date.getUTCFullYear() >= latestCompleteYear) continue; // 這個基準年本身不滿一整年，排除。
-
     const statement = statementBySymbol.get(basic.symbol);
     if (!statement?.fund_tax_id) continue;
     const totalRate = totalRateByFundTaxId.get(statement.fund_tax_id);

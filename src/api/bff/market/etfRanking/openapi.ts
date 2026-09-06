@@ -11,7 +11,8 @@ export const registerEtfRankingOpenApi = (): void => {
       '取最新一個月份的 ETF 快照資料排行（來源：sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance）。metric 決定依哪個數字排序：' +
       'aum（規模，新台幣）、holders（受益人數）、netFlow（淨申購，申購金額 - 贖回金額，本服務計算，不是來源現成欄位）、dcaAmount（定期定額申購金額）、' +
       'return3m/return6m/return1y/return2y/return3y/return5y/returnYtd/return10y（各天期累積報酬率，百分比，不是年化報酬率）、' +
-      'expenseRatio（總費用率——只用「最新一個完整年度」，發行日期落在這個基準年度（或更晚）的 ETF 因為那一年本身不滿一整年會被排除，' +
+      'expenseRatio（總費用率——只用「最新一個完整年度」，該年度不滿一整年的 ETF（當年新掛牌、或當年中途清算/分割，' +
+      '來源：sitca-ts 的 fund_expense_ratio_annual_full_year，已排除 is_partial_year 的列）會被排除，' +
       '不套用其他年度或做時間比例換算，確保每一檔都是同一個基準年比較）。目前 sitca-ts 只有單一個月的快照資料，還沒有累積多月，' +
       '暫時無法做月增/年增這類趨勢型指標。asOf 標示這筆資料實際採用的月份（YYYY-MM）或年度（expenseRatio 是 YYYY）。' +
       'category（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成兩個獨立欄位：market（TWSE/TPEx）、assetClass（國內成分證券/' +

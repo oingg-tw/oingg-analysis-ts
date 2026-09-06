@@ -80,6 +80,42 @@ view FundExpenseRatioAnnual {
 }
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 2026-09-06 sitca-ts 新增：跟 FundExpenseRatioAnnual 同一份資料，但已經排除
+/// is_partial_year=true 的列（當年新掛牌/中途清算或分割，total_rate 只涵蓋部分期間，
+/// 不適合拿來跟其他基金的整年費用率比較）。PROD 已驗證：18444 筆原始資料排除 1211 筆
+/// is_partial_year=true 之後剩 17233 筆。etfRanking 的 resolveExpenseRatioMetric() 用
+/// 這個 view 取代原本自己用 established_date 判斷「今年新掛牌」的手動邏輯——那個邏輯
+/// 只抓得到新掛牌，抓不到中途清算/分割。
+view FundExpenseRatioAnnualFullYear {
+  fundTaxId            String?   @map("fund_tax_id")
+  year                 Int?
+  typeCode             String?   @map("type_code")
+  fundName             String?   @map("fund_name")
+  commissionAmount     BigInt?   @map("commission_amount")
+  commissionRate       Decimal?  @map("commission_rate") @db.Decimal(8, 4)
+  transactionTaxAmount BigInt?   @map("transaction_tax_amount")
+  transactionTaxRate   Decimal?  @map("transaction_tax_rate") @db.Decimal(8, 4)
+  etfTradingFeeAmount  BigInt?   @map("etf_trading_fee_amount")
+  etfTradingFeeRate    Decimal?  @map("etf_trading_fee_rate") @db.Decimal(8, 4)
+  managementFeeAmount  BigInt?   @map("management_fee_amount")
+  managementFeeRate    Decimal?  @map("management_fee_rate") @db.Decimal(8, 4)
+  custodianFeeAmount   BigInt?   @map("custodian_fee_amount")
+  custodianFeeRate     Decimal?  @map("custodian_fee_rate") @db.Decimal(8, 4)
+  guaranteeFeeAmount   BigInt?   @map("guarantee_fee_amount")
+  guaranteeFeeRate     Decimal?  @map("guarantee_fee_rate") @db.Decimal(8, 4)
+  otherFeeAmount       BigInt?   @map("other_fee_amount")
+  otherFeeRate         Decimal?  @map("other_fee_rate") @db.Decimal(8, 4)
+  totalAmount          BigInt?   @map("total_amount")
+  totalRate            Decimal?  @map("total_rate") @db.Decimal(8, 4)
+  fetchedAt            DateTime? @map("fetched_at")
+  isPartialYear        Boolean?  @map("is_partial_year")
+
+  @@ignore
+  @@map("fund_expense_ratio_annual_full_year")
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
 view FundLifecycleEvent {
   id              BigInt?
   fundTaxId       String?   @map("fund_tax_id")
