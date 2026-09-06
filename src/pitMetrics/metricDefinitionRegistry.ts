@@ -516,6 +516,112 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     ],
     currentFormulaVersion: 1,
   },
+  piotroskiFScore: {
+    metricCode: 'piotroskiFScore',
+    formulaNote:
+      '9 個二元訊號（ROA 為正、CFO 為正、ROA 較去年同季提升、CFO>淨利、長期負債比率較去年同季' +
+      '下降、流動比率較去年同季提升、流通股數未增加、毛利率較去年同季提升、總資產週轉率較去年' +
+      '同季提升）通過數加總（0-9）。9 訊號需全部可判斷才有分數，任一無法判斷則整體為 null。' +
+      '只有 Q 一種 basis——純粹本季 vs 去年同季的單點比較，沒有 TTM/年化概念。去年同季用' +
+      'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。',
+    allowedBases: ['Q'],
+    dependsOn: [
+      'profit_loss_attributable_to_owners_of_parent',
+      'profit_loss',
+      'assets',
+      'netCashFromOperatingActivities',
+      'longTermBorrowings',
+      'current_assets',
+      'current_liabilities',
+      'gross_profit',
+      'revenue',
+      'paidInShares',
+    ],
+    currentFormulaVersion: 1,
+  },
+  beneishMScore: {
+    metricCode: 'beneishMScore',
+    formulaNote:
+      '8 變量迴歸式：M=-4.84+0.92*DSRI+0.528*GMI+0.404*AQI+0.892*SGI+0.115*DEPI-0.172*SGAI' +
+      '+4.037*TATA+0.0327*LVGI，除 TATA（單期指標）外，其餘 7 個變量都是本季 vs 去年同季的' +
+      '比較。只有 Q 一種 basis，去年同季取法同 piotroskiFScore。',
+    allowedBases: ['Q'],
+    dependsOn: [
+      'accountsReceivable',
+      'revenue',
+      'gross_profit',
+      'current_assets',
+      'property_plant_and_equipment',
+      'assets',
+      'depreciation',
+      'sellingExpenses',
+      'adminExpenses',
+      'profit_loss_attributable_to_owners_of_parent',
+      'profit_loss',
+      'netCashFromOperatingActivities',
+      'liabilities',
+    ],
+    currentFormulaVersion: 1,
+  },
+  nissimPenmanRnoa: {
+    metricCode: 'nissimPenmanRnoa',
+    formulaNote:
+      'NOPAT = 營業利益*(1-有效稅率)；NOA(淨營業資產) = 權益+NFO(淨金融負債，= 有息負債-現金)；' +
+      'Q(單季) = NOPAT/NOA*100；Q_ANN = Q*4；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
+      '（分母固定用本季，同 ROIC）。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
+      '（沒有獨立查詢價值，範圍刻意限縮）。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: [
+      'operatingIncome',
+      'profit_loss_before_tax',
+      'income_tax_expense_continuing_operations',
+      'shortTermBorrowings',
+      'bondsPayable',
+      'longterm_borrowings',
+      'cash_and_cash_equivalents',
+      'equity_attributable_to_owners_of_parent',
+      'equity',
+    ],
+    currentFormulaVersion: 1,
+  },
+  zmijewskiScore: {
+    metricCode: 'zmijewskiScore',
+    formulaNote:
+      'X = -4.3-4.5*(淨利TTM/總資產)+5.7*(總負債/總資產)-0.004*(流動資產/流動負債)。淨利用' +
+      'TTM（原始模型用年度財報校準，TTM 是最接近的替代口徑，跟 ROE/ROA 邏輯一致），其餘皆為' +
+      '本季資產負債表快照。沒有 YoY，只有 TTM 一種 basis。',
+    allowedBases: ['TTM'],
+    dependsOn: [
+      'profit_loss_attributable_to_owners_of_parent',
+      'profit_loss',
+      'assets',
+      'liabilities',
+      'current_assets',
+      'current_liabilities',
+    ],
+    currentFormulaVersion: 1,
+  },
+  ohlsonOScore: {
+    metricCode: 'ohlsonOScore',
+    formulaNote:
+      '9 變量 Logit 模型：SIZE=ln(總資產)、TLTA=總負債/總資產、WCTA=(流動資產-流動負債)/總資產、' +
+      'CLCA=流動負債/流動資產、OENEG=總負債>總資產?1:0、NITA=淨利(TTM)/總資產、' +
+      'FUTL=營運現金流(TTM)/總負債、INTWO=今年及去年TTM淨利皆為負?1:0、' +
+      'CHIN=(今年TTM淨利-去年TTM淨利)/(|今年|+|去年|)。INTWO/CHIN 需要「今年 TTM vs 去年同季' +
+      'TTM」比較——去年同季 TTM 窗口用 getPastNQuarters n=5 取錨點、再從錨點往前抓 4 季建窗口，' +
+      '不是新機制。只有 TTM 一種 basis。',
+    allowedBases: ['TTM'],
+    dependsOn: [
+      'assets',
+      'liabilities',
+      'current_assets',
+      'current_liabilities',
+      'profit_loss_attributable_to_owners_of_parent',
+      'profit_loss',
+      'netCashFromOperatingActivities',
+    ],
+    currentFormulaVersion: 1,
+  },
   fcfYield: {
     metricCode: 'fcfYield',
     formulaNote:
