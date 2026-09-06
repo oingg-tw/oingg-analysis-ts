@@ -353,6 +353,101 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     dependsOn: ['assets', 'current_liabilities', 'profit_loss_before_tax', 'finance_costs'],
     currentFormulaVersion: 1,
   },
+  // 第五批遷移（第二層：margins/turnoverRatio 補完整，共 10 個 metric_code）：不動
+  // netProfitMargin/assetTurnover（已由 computeDupontFamilyPit.ts 寫入），這裡只補這兩支
+  // 舊架構檔案裡還沒做的其餘欄位。grossMargin/operatingMargin 由
+  // src/pitMetrics/margins/computeMarginsFamilyPit.ts 一次查詢寫入；
+  // inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/
+  // inventoryDays/receivablesDays/payablesDays/cashConversionCycle 由
+  // src/pitMetrics/turnoverRatio/computeTurnoverRatioFamilyPit.ts 一次查詢寫入（跟
+  // Dupont 家族同一種「一次查詢拆多個 metric_code」模式）。
+  grossMargin: {
+    metricCode: 'grossMargin',
+    formulaNote:
+      'Q(單季) = 本季毛利/本季營收*100；TTM = 近四季（含本季）毛利加總/近四季營收加總*100。' +
+      '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['gross_profit', 'revenue'],
+    currentFormulaVersion: 1,
+  },
+  operatingMargin: {
+    metricCode: 'operatingMargin',
+    formulaNote:
+      'Q(單季) = 本季營業利益/本季營收*100；TTM = 近四季（含本季）營業利益加總/近四季營收加總*100。' +
+      '沒有 Q_ANN。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['operatingIncome', 'revenue'],
+    currentFormulaVersion: 1,
+  },
+  inventoryTurnover: {
+    metricCode: 'inventoryTurnover',
+    formulaNote:
+      'Q(單季) = 本季營業成本/本季期末存貨（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
+      '加總/本季期末存貨。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: ['operating_costs', 'inventories'],
+    currentFormulaVersion: 1,
+  },
+  receivablesTurnover: {
+    metricCode: 'receivablesTurnover',
+    formulaNote:
+      'Q(單季) = 本季營收/本季期末應收帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總/' +
+      '本季期末應收帳款。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: ['revenue', 'accountsReceivable'],
+    currentFormulaVersion: 1,
+  },
+  fixedAssetTurnover: {
+    metricCode: 'fixedAssetTurnover',
+    formulaNote:
+      'Q(單季) = 本季營收/本季期末不動產、廠房及設備（次）；Q_ANN = Q*4；TTM = 近四季（含本季）' +
+      '營收加總/本季期末不動產、廠房及設備。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: ['revenue', 'property_plant_and_equipment'],
+    currentFormulaVersion: 1,
+  },
+  payablesTurnover: {
+    metricCode: 'payablesTurnover',
+    formulaNote:
+      'Q(單季) = 本季營業成本/本季期末應付帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
+      '加總/本季期末應付帳款。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: ['operating_costs', 'accountsPayable'],
+    currentFormulaVersion: 1,
+  },
+  inventoryDays: {
+    metricCode: 'inventoryDays',
+    formulaNote:
+      'DIO = 365/存貨周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis——365/單季周轉率算出來是' +
+      '「一季裡的天數」，不是有意義的週轉天數，週轉天數的定義本來就以一年為基準。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['operating_costs', 'inventories'],
+    currentFormulaVersion: 1,
+  },
+  receivablesDays: {
+    metricCode: 'receivablesDays',
+    formulaNote: 'DSO = 365/應收帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['revenue', 'accountsReceivable'],
+    currentFormulaVersion: 1,
+  },
+  payablesDays: {
+    metricCode: 'payablesDays',
+    formulaNote: 'DPO = 365/應付帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['operating_costs', 'accountsPayable'],
+    currentFormulaVersion: 1,
+  },
+  cashConversionCycle: {
+    metricCode: 'cashConversionCycle',
+    formulaNote:
+      'CCC = DIO + DSO − DPO。只有 Q_ANN/TTM 兩種 basis（跟三個組成天數一致）。三個組成任一為' +
+      'null，不管原因為何，一律回報 missing_input——除非是因為 TTM 四季不齊，這種情況回報' +
+      'insufficient_history（跟 Dupont 家族的複合值傳染判斷一致）。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['operating_costs', 'inventories', 'revenue', 'accountsReceivable', 'accountsPayable'],
+    currentFormulaVersion: 1,
+  },
   fcfYield: {
     metricCode: 'fcfYield',
     formulaNote:
