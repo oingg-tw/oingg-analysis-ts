@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
