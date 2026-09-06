@@ -107,3 +107,21 @@ export const companyPeerGroupResultSchema = z.object({
   warnings: z.array(z.string()),
 });
 export type CompanyPeerGroupResult = z.infer<typeof companyPeerGroupResultSchema>;
+
+// 2026-09-06 新增——「會計模式」單一公司單張財報表查詢（資產負債表/損益表/現金流量表整列
+// 透傳，不是算好的比率），見 controller.ts 的 getCompanyFinancialStatement。
+export const financialStatementResultSchema = z.object({
+  symbol: z.string(),
+  statementType: z.enum(['balanceSheet', 'incomeStatement', 'cashFlowStatement']),
+  dataType: z.enum(['1', '2']),
+  subsidiaryCompanyId: z.string(),
+  year: z.string().nullable().meta({ description: '民國年，例如 "115"；查無資料時為 null' }),
+  season: z.string().nullable(),
+  reportDate: z.string().nullable(),
+  found: z.boolean().meta({ description: 'false 代表查無該公司這張表的資料（或指定的 year/season 那一季查無資料），此時 statement 為 null' }),
+  statement: z
+    .record(z.string(), z.string().nullable())
+    .nullable()
+    .meta({ description: '該表全部科目欄位（camelCase key），金額欄位皆序列化成字串避免 JS 數字精度問題；found=false 時為 null' }),
+});
+export type FinancialStatementResult = z.infer<typeof financialStatementResultSchema>;

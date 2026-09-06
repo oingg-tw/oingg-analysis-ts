@@ -14,6 +14,7 @@ import {
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
   getCompanyMetricHistoryQuerySchema,
+  getCompanyFinancialStatementQuerySchema,
   getCompanyPeerGroupQuerySchema,
   getCompanyMetricsQuerySchema,
 } from './controller';
@@ -23,6 +24,7 @@ import {
   companiesListResultSchema,
   companiesCountOnlyResultSchema,
   companyPeerGroupResultSchema,
+  financialStatementResultSchema,
 } from './types';
 
 const capitalStockHistoryResultSchema = z.object({
@@ -203,6 +205,28 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
       400: { description: '缺少 symbol/metricCode/basis，或 metricCode 未知，或 basis 不在該 metricCode 允許的清單內。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/financial-statement',
+    summary: '單一公司單張財報表原始科目（會計模式，資產負債表/損益表/現金流量表整列透傳）',
+    description:
+      '給前端「會計模式」用——選定 statementType（資產負債表/損益表/現金流量表其中一張），一次拿到' +
+      '該季全部科目欄位的原始金額，不是算好的單一比率，符合傳統看報表的習慣，跟 point-in-time 那套' +
+      '算好的指標歷史（GET /companies/roe-history 那些）刻意分開；資料來源相同（mops-ts 的三張季報表' +
+      'export view），這支端點整列透傳不做任何計算。year/season 選填但要成對，不給就自動抓該張表' +
+      '（只看這一張，不是三張表的交集）最新一季。dataType 固定用合併報表、subsidiaryCompanyId 固定' +
+      '空字串，不對外曝露這兩個內部參數，跟 metric-history 同一個慣例。statement 物件的每個科目欄位' +
+      '都是 camelCase key，金額欄位序列化成字串避免 JS 數字精度問題；查無資料（這家公司這張表完全' +
+      '沒有資料，或指定的 year/season 那一季沒有資料）回傳 200 + found:false + statement:null，' +
+      '不是 404，跟 roe-history/capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。',
+    tags: ['System'],
+    request: { query: getCompanyFinancialStatementQuerySchema },
+    responses: {
+      200: { description: '該季該表全部科目欄位；查無資料時 found 為 false、statement 為 null。', content: { 'application/json': { schema: financialStatementResultSchema } } },
+      400: { description: '缺少 symbol/statementType，statementType 不是合法值，或 year/season 只給了其中一個。' },
     },
   });
 
