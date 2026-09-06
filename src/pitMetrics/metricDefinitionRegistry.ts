@@ -448,6 +448,74 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     dependsOn: ['operating_costs', 'inventories', 'revenue', 'accountsReceivable', 'accountsPayable'],
     currentFormulaVersion: 1,
   },
+  // 第六批遷移（第三層：guru 分類 9 支重型多因子模型）：範圍刻意限縮成只遷移「最終分數/
+  // 輸出」，不拆分內部子變量成獨立 metric_code（Piotroski 的 9 訊號、Beneish 的 8 變量、
+  // Ohlson 的 9 變量、Altman 的 X1-X5、Nissim-Penman 的 FLEV/NBC/SPREAD 都是模型內部
+  // 機制，不是一般會單獨查詢比較的財務比率）。grahamNumber/altmanZScore/
+  // nissimPenmanRnoa 獨立重新實作，不依賴 eps/bvps/interestCoverage/assetTurnover/roe
+  // 這些已遷移 metric_code。piotroskiFScore/beneishMScore/ohlsonOScore 第一次用到 YoY
+  // 比較——沒有專門的「去年同季」查詢函式，重用既有 getPastNQuarters({rocYear,season},5)[0]
+  // 拿去年同季的 year/season，不是新機制。
+  grahamNumber: {
+    metricCode: 'grahamNumber',
+    formulaNote:
+      '= sqrt(22.5 x EPS(TTM) x BVPS)，EPS(TTM)/BVPS 須為正才有意義。獨立重新計算 EPS(TTM)/' +
+      'BVPS（不依賴 eps/bvps 這兩個 metric_code 已寫入的值）。只有 TTM 一種 basis——因為' +
+      'EPS(TTM) 是否齊全決定整個公式算不算得出來。',
+    allowedBases: ['TTM'],
+    dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
+    currentFormulaVersion: 1,
+  },
+  ncav: {
+    metricCode: 'ncav',
+    formulaNote:
+      '= (本季期末流動資產 − 總負債 − 特別股股本)/流通股數。純資產負債表時點快照，只有 Q 一種' +
+      'basis。marginOfSafetyPrice（= ncav x 2/3）不獨立遷移，是純線性換算，呼叫端自己乘 2/3 即可。',
+    allowedBases: ['Q'],
+    dependsOn: ['current_assets', 'liabilities', 'paidInShares'],
+    currentFormulaVersion: 1,
+  },
+  ownerEarnings: {
+    metricCode: 'ownerEarnings',
+    formulaNote:
+      '每股股東盈餘 = (本季淨利+折舊+攤銷+資本支出)/流通股數（資本支出來源資料是負值/流出，' +
+      '用加法）。Q(單季)/Q_ANN(=Q*4)/TTM（近四季各分項各自加總再除以流通股數），跟 eps/' +
+      'revenuePerShare 同形狀。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: [
+      'profit_loss_attributable_to_owners_of_parent',
+      'profit_loss',
+      'depreciation',
+      'amortization',
+      'capitalExpenditures',
+      'paidInShares',
+    ],
+    currentFormulaVersion: 1,
+  },
+  altmanZScore: {
+    metricCode: 'altmanZScore',
+    formulaNote:
+      'Z = 1.2*X1+1.4*X2+3.3*X3+0.6*X4+0.999*X5，X1=(流動資產-流動負債)/總資產、' +
+      'X2=保留盈餘/總資產、X3=EBIT(TTM)/總資產、X4=市值/(總負債*1000)、X5=營收(TTM)/總資產。' +
+      '獨立重新計算 EBIT(TTM)（公式抄自 interestCoverage，不依賴該 metric_code 已寫入的值）' +
+      '跟 X5（公式抄自 assetTurnover，同樣不依賴）。市值查詢複用 resolveKnowledgeDate 的' +
+      'knowledge_date，跟第四批 psr/pFcf/evEbitda 同一個套路。只有 TTM 一種 basis——X3/X5' +
+      '都需要 TTM 資料才算得出來。原始版模型用上市製造業樣本校準，對非製造業（尤其金融/服務/' +
+      '營建）適用性有限，這個警語只在舊架構的 warnings 呈現，PIT 版本不重複記錄使用限制文字' +
+      '（metric_value 沒有 warnings 欄位）。',
+    allowedBases: ['TTM'],
+    dependsOn: [
+      'current_assets',
+      'current_liabilities',
+      'assets',
+      'retained_earnings',
+      'profit_loss_before_tax',
+      'finance_costs',
+      'liabilities',
+      'revenue',
+    ],
+    currentFormulaVersion: 1,
+  },
   fcfYield: {
     metricCode: 'fcfYield',
     formulaNote:
