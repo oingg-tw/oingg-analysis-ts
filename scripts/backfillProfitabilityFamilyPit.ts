@@ -20,22 +20,7 @@ import { computeAndWriteDupontFamilyPit } from '../src/pitMetrics/dupont/compute
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
-
-const COVERED_SYMBOLS = ['2330', '2887'];
-const FALLBACK_SYMBOL = process.env.PIT_ROE_FALLBACK_SYMBOL ?? '2317';
-const SYMBOLS = [...COVERED_SYMBOLS, FALLBACK_SYMBOL];
-
-// 113Q3 ~ 115Q2（民國年/季），舊到新排列。
-const QUARTERS: { year: string; season: '1' | '2' | '3' | '4' }[] = [
-  { year: '113', season: '3' },
-  { year: '113', season: '4' },
-  { year: '114', season: '1' },
-  { year: '114', season: '2' },
-  { year: '114', season: '3' },
-  { year: '114', season: '4' },
-  { year: '115', season: '1' },
-  { year: '115', season: '2' },
-];
+import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 
 const main = async () => {
   await Promise.all([
@@ -46,8 +31,8 @@ const main = async () => {
     upsertMetricDefinition(metricDefinitionRegistry.dupontDecomposedRoe!),
   ]);
 
-  for (const symbol of SYMBOLS) {
-    for (const { year, season } of QUARTERS) {
+  for (const symbol of PIT_BACKFILL_SYMBOLS) {
+    for (const { year, season } of PIT_BACKFILL_QUARTERS) {
       const roaOutcome = await computeAndWriteRoaPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
       console.log(`[roa-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roaOutcome.q)} qAnn=${JSON.stringify(roaOutcome.qAnn)} ttm=${JSON.stringify(roaOutcome.ttm)}`);
 
