@@ -5,6 +5,8 @@ import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
 import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
 import { getRoaHistory } from '@/pitMetrics/roa/queryRoaHistory';
 import { getDupontHistory } from '@/pitMetrics/dupont/queryDupontHistory';
+import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
+import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { runCompanyMetrics, CompanyMetricsValidationError } from './metricsService';
@@ -175,6 +177,48 @@ export const getCompanyDupontHistory = async (req: Request, res: Response, next:
     const { symbol, basis, limit } = validationResult.data;
     const entries = await getDupontHistory(symbol, basis, limit);
     res.status(200).json({ symbol, basis, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const MAX_METRIC_HISTORY_LIMIT = 40;
+
+export const getCompanyMetricHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  metricCode: z
+    .string({ error: 'metricCode is required.' })
+    .min(1)
+    .meta({ description: 'point-in-time 架構的指標代碼，例如 "eps"、"bvps"——完整清單見 metricDefinitionRegistry.ts，之後新增指標會持續增加', example: 'eps' }),
+  basis: z.string({ error: 'basis is required.' }).min(1).meta({ description: "'Q'/'Q_ANN'/'TTM'/'CUM'/'FY' 之一，實際允許哪些由 metricCode 決定，不符合會回 400" }),
+  limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
+});
+
+// 泛化版的單一 metric_code 歷史查詢端點——2026-09-06 point-in-time 架構第三批遷移（10 個
+// 新 metric_code）動工前新增，取代「每遷一支指標就在這三個檔案各自複製貼上一段」的模式
+// （roe-history/roa-history 就是這樣長出來的）。metricCode/basis 都不是寫死的 zod enum，
+// 而是動態查 metricDefinitionRegistry——這份 registry 之後會持續成長，沒辦法每次新增指標
+// 都回來改一次這裡的型別。roe-history/roa-history/dupont-history 三支既有端點維持不動，
+// 這支只是之後新增指標的曝露管道，不是要取代它們（dupont-history 是真正的多 metric_code
+// 組合，泛化不適用；另外兩支沒有壞掉，不用強行改掉可能已經在用的呼叫端）。
+export const getCompanyMetricHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyMetricHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, metricCode, basis, limit } = validationResult.data;
+    const definition = metricDefinitionRegistry[metricCode];
+    if (!definition) {
+      return res.status(400).json({ message: `未知的 metricCode "${metricCode}"。` });
+    }
+    if (!definition.allowedBases.includes(basis as (typeof definition.allowedBases)[number])) {
+      return res.status(400).json({ message: `metricCode "${metricCode}" 不允許 basis "${basis}"，允許的值：${definition.allowedBases.join(', ')}。` });
+    }
+
+    const entries = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
+    res.status(200).json({ symbol, metricCode, basis, entries });
   } catch (error) {
     next(error);
   }

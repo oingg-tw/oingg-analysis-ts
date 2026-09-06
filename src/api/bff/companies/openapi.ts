@@ -4,6 +4,8 @@ import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock
 import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/pitMetrics/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/pitMetrics/dupont/queryDupontHistory';
+import { metricHistoryEntrySchema } from '@/pitMetrics/queryMetricHistory';
+import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
@@ -11,6 +13,7 @@ import {
   getCompanyRoeHistoryQuerySchema,
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
+  getCompanyMetricHistoryQuerySchema,
   getCompanyPeerGroupQuerySchema,
   getCompanyMetricsQuerySchema,
 } from './controller';
@@ -45,6 +48,13 @@ const dupontHistoryResultSchema = z.object({
   symbol: z.string(),
   basis: z.enum(['Q', 'TTM']),
   entries: z.array(dupontHistoryEntrySchema),
+});
+
+const metricHistoryResultSchema = z.object({
+  symbol: z.string(),
+  metricCode: z.string(),
+  basis: z.string(),
+  entries: z.array(metricHistoryEntrySchema),
 });
 
 // registerCompanyRoute 會在 handler 回傳的物件上補一個 companyName 欄位再送出（見
@@ -171,6 +181,28 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '杜邦拆解歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dupontHistoryResultSchema } } },
       400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/metric-history',
+    summary: '單一公司任意 point-in-time 指標歷史時序（泛化版，畫圖用）',
+    description:
+      '直接讀 metric_values（point-in-time 事實層）的泛化版查詢端點——2026-09-06 第三批遷移' +
+      '（10 個新 metric_code）動工前新增，取代每遷一支指標就各自複製貼上一段端點樣板碼的模式。' +
+      'metricCode 決定要查哪支指標，完整清單見程式碼裡的 metricDefinitionRegistry（目前已知：' +
+      `${Object.keys(metricDefinitionRegistry).join('、')}），之後新增指標會持續增加，這裡不逐一列出维護。` +
+      'basis 允許的值由 metricCode 決定（例如 bvps 只允許 Q，dividendPayoutRatio 只允許 TTM），' +
+      '傳不允許的組合會回 400 並附上這個 metricCode 實際允許的 basis 清單。' +
+      'knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history 一致。' +
+      '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
+      '之後新增指標的曝露管道，不是要取代它們。',
+    tags: ['System'],
+    request: { query: getCompanyMetricHistoryQuerySchema },
+    responses: {
+      200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
+      400: { description: '缺少 symbol/metricCode/basis，或 metricCode 未知，或 basis 不在該 metricCode 允許的清單內。' },
     },
   });
 
