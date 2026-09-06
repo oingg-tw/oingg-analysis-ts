@@ -46,10 +46,12 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
 
         const nominalDividendRatePct = right?.dividendRate != null && right.issuePrice != null ? toRatio2(right.dividendRate, right.issuePrice) : null;
         const currentYieldPct = right?.dividendRate != null && price?.closePrice != null ? toRatio2(right.dividendRate, price.closePrice) : null;
-        // 買回風險（call risk）= 現價 - 發行價，只在可贖回（redeemable）時才有意義——發行人
-        // 贖回時是按發行價買回，如果現價已經漲超過發行價，這個差額就是投資人可能被迫吃下的
-        // 損失（用市價買進，卻只能拿回發行價）；不可贖回的特別股沒有這個風險，回傳 null。
-        const callRiskAmount = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? Math.round((price.closePrice - right.issuePrice) * 100) / 100 : null;
+        // 買回風險（call risk）= 發行價 - 現價，只在可贖回（redeemable）時才有意義——發行人
+        // 贖回時是按發行價買回，如果現價已經漲超過發行價，這個差額就會是負值，代表投資人
+        // 用市價買進卻只能拿回發行價，可能被迫吃下這個負值大小的損失；不可贖回的特別股沒有
+        // 這個風險，回傳 null。2026-09-06 使用者更正過方向（原本寫成現價-發行價，已改成
+        // 發行價-現價），這裡不要改回去。
+        const callRiskAmount = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? Math.round((right.issuePrice - price.closePrice) * 100) / 100 : null;
 
         return {
           symbol: security.symbol,

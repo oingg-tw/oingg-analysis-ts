@@ -30,7 +30,10 @@ export const preferredStockEntrySchema = z.object({
   callRiskAmount: z
     .number()
     .nullable()
-    .meta({ description: '買回風險 = 最新收盤價 - 發行價（新台幣元），只在可贖回（redeemable=true）時才計算——發行人贖回是按發行價買回，現價高於發行價時這個差額就是投資人可能被迫吃下的損失；不可贖回或查無股價時為 null' }),
+    .meta({
+      description:
+        '買回風險 = 發行價 - 最新收盤價（新台幣元），只在可贖回（redeemable=true）時才計算——發行人贖回是按發行價買回，現價高於發行價時這個值是負的，代表投資人用市價買進卻只能拿回發行價，可能被迫吃下這個負值大小的損失；不可贖回或查無股價時為 null',
+    }),
 });
 export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;
 

@@ -22,8 +22,9 @@ export const registerPreferredStockOpenApi = (): void => {
       '面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。' +
       'callProtectionYears 是從 redemptionConditions 自由格式中文條款文字 parse 出來的贖回' +
       '保護期年數，parse 不出來時為 null，不代表沒有贖回權。callRiskAmount（買回風險）= ' +
-      '最新收盤價 - 發行價，只在可贖回時才計算——現價高於發行價時，這個差額就是投資人可能被' +
-      '發行人用發行價買回、被迫吃下的損失。limit/offset 分頁沿用 GET /companies 的慣例。',
+      '發行價 - 最新收盤價，只在可贖回時才計算——現價高於發行價時這個值是負的，代表投資人' +
+      '可能被發行人用發行價買回、被迫吃下這個負值大小的損失。limit/offset 分頁沿用' +
+      'GET /companies 的慣例。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {
