@@ -634,6 +634,55 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],
     currentFormulaVersion: 1,
   },
+  // 2026-09-06 新增——銀行業專屬指標，全新指標不是舊架構遷移（src/domainMetrics/ 從來沒有
+  // 銀行業指標的既有檔案）。資料來自 mops-ts 銀行監理揭露 XBRL 表（不是 xbrl_three_
+  // statements_long 三大表那套 account_code），dependsOn 直接用查詢層的 camelCase 欄位
+  // 名稱。都只有 Q 一種 basis（資產負債表時點快照，沒有 TTM/年化概念）。
+  bankNplRatio: {
+    metricCode: 'bankNplRatio',
+    formulaNote:
+      '全行逾放比，直接讀 mops-ts 的 bank_asset_quality_xbrl（category=\'TotalLoans\'）已經算好的' +
+      'non_performing_loans_ratio，不用自己推公式。覆蓋約 19-20 檔銀行/金控股，每季都有資料；' +
+      '非銀行公司一律優雅降級成 missing_input，不做前置的「這家公司是不是銀行」判斷。',
+    allowedBases: ['Q'],
+    dependsOn: ['nonPerformingLoansRatio'],
+    currentFormulaVersion: 1,
+  },
+  bankNplCoverageRatio: {
+    metricCode: 'bankNplCoverageRatio',
+    formulaNote:
+      '備抵呆帳覆蓋率，跟 bankNplRatio 同一列（bank_asset_quality_xbrl 的 TotalLoans）、' +
+      '同一次查詢、同一組 knowledge_date，直接讀已經算好的 coverage_ratio。',
+    allowedBases: ['Q'],
+    dependsOn: ['coverageRatio'],
+    currentFormulaVersion: 1,
+  },
+  bankCarRatio: {
+    metricCode: 'bankCarRatio',
+    formulaNote:
+      '資本適足率 = eligible_capital / risk_weighted_assets * 100——這批唯一自己做除法的' +
+      '欄位（其餘都是直接讀 mops-ts 算好的比率）。資料源 bank_capital_adequacy_detail_xbrl' +
+      '只覆蓋 6-7 檔銀行/金控股，且只有 Q2/Q4 有真實值（監理揭露頻率本來就是半年一次，' +
+      'Q1/Q3 一律 missing_input，不是資料缺漏）。不給 year/season 時的「最新一季」判斷刻意' +
+      '排除值為 null 的季度，見 getLatestQuarterWithBankCapitalAdequacy 的說明。',
+    allowedBases: ['Q'],
+    dependsOn: ['eligibleCapital', 'riskWeightedAssets'],
+    currentFormulaVersion: 1,
+  },
+  bankCet1Ratio: {
+    metricCode: 'bankCet1Ratio',
+    formulaNote: '普通股權益比率（CET1），直接讀 bank_capital_adequacy_detail_xbrl 已經算好的 ratio_ordinary_share_equity_to_rwa，覆蓋率/頻率限制同 bankCarRatio。',
+    allowedBases: ['Q'],
+    dependsOn: ['ratioOrdinaryShareEquityToRwa'],
+    currentFormulaVersion: 1,
+  },
+  bankTier1Ratio: {
+    metricCode: 'bankTier1Ratio',
+    formulaNote: '第一類資本比率（Tier1），直接讀已經算好的 ratio_tier_i_capital_to_rwa，跟 bankCarRatio/bankCet1Ratio 共用同一次查詢/同一組 knowledge_date，覆蓋率/頻率限制同 bankCarRatio。',
+    allowedBases: ['Q'],
+    dependsOn: ['ratioTierICapitalToRwa'],
+    currentFormulaVersion: 1,
+  },
 };
 
 // 冪等，backfill 腳本開跑前呼叫一次即可。

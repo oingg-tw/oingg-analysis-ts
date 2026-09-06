@@ -88,10 +88,16 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
   使用者已明確決定這次不動。之後新增 `metricDefinitionRegistry` entry 時，`dependsOn`
   應該優先查 `export.xbrl_three_statements_long` 有沒有對應的 account_code 可用，沒有的
   話才退回填三大表原始欄位名稱。
-- **意外發現**：2801（彰化銀行）的 XBRL 資料裡有 `bank_capital_adequacy_detail_xbrl`、
-  `eligible_capital_composition_xbrl`、`bank_npl_disposal_xbrl`、
-  `non_performing_receivables_xbrl` 這幾張表——可能可以解掉「銀行業專屬指標（CAR/CET1/
-  NPL/備抵呆帳覆蓋率）卡在缺資料源」這項技術債，還沒評估細節，先記錄在這裡。
+- **2026-09-06 已解決**（原「意外發現，還沒評估細節」）：銀行業專屬指標（CAR/CET1/Tier1/
+  逾放比/備抵呆帳覆蓋率）已經直接查 mops-ts export DB 驗證過並實作完成
+  （`src/pitMetrics/bankAssetQuality/`、`src/pitMetrics/bankCapitalAdequacy/`）。**原本這裡
+  記錄的表名是錯的**：`non_performing_receivables_xbrl` 只有信用卡業務/應收帳款受讓業務
+  兩個類別，不是全行放款逾放比；真正對的表是 `bank_asset_quality_xbrl`（`category=
+  'TotalLoans'` 那一列才是全行加總，覆蓋約 19-20 檔銀行/金控股，每季都有真實值）。
+  `bank_capital_adequacy_detail_xbrl` 可用（CET1/Tier1 已算好，CAR 要自己除），但只覆蓋
+  6-7 檔股票，且監理揭露頻率本來就是半年一次（只有 Q2/Q4 有真實值，Q1/Q3 一律 null，不是
+  資料缺漏）。`eligible_capital_composition_xbrl`（3593 列僅 33 列非 null）、
+  `bank_npl_disposal_xbrl`（呆帳處分交易紀錄，不是比率）這批沒有做，涵蓋率太低/形狀不合。
 
 ### 尚未解決的落差
 
