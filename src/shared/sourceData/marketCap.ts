@@ -23,10 +23,16 @@ interface RawPriceRow {
 // 也會因為股本查無資料而白白讓整個結果變 null。跟 getMarketCapAsOf 共用同一段股價查詢邏輯。
 // 2026-09-03 使用者決定 curated 中台層現階段太早，改回直接查 twseExportPrisma（export schema
 // 沒有唯一識別欄位，走 $queryRaw）。
+//
+// **2026-09-06 加上 `close IS NOT NULL`**：`daily_price` 對每個交易日都會有一列，沒成交的
+// 那天 `close` 是 null（不是沒有這一天的紀錄）。原本只抓「最新一列」，冷門股票（例如特別股
+// 1312A）好幾天沒成交時，會直接回傳 null，即使往前一兩天就有真實成交價——用特別股功能實測
+// 時發現的，改成找「最近一筆真的有成交價的日期」，不是「最新一列」，避免這種可以往前找到
+// 真實價格的情況被誤判成查無股價。
 const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeDate: Date; close: unknown } | null> => {
   const rows = await twseExportPrisma.$queryRaw<RawPriceRow[]>`
     SELECT trade_date, close FROM "export"."daily_price"
-    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
+    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate} AND close IS NOT NULL
     ORDER BY trade_date DESC LIMIT 1
   `;
   const row = rows[0];
