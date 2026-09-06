@@ -28,6 +28,7 @@
 
 import type { IndicatorJob } from './indicatorRegistry';
 import { logger } from '@/shared/logger';
+import { checkJobCompleteness } from './completenessCheck';
 
 // 小併發，對齊現有 Prisma client 的 connection_limit=5 池大小設定，不要一次打爆連線池。
 const CONCURRENCY = 5;
@@ -67,7 +68,21 @@ export const runBatchCompute = async (jobs: IndicatorJob[]): Promise<void> => {
   for (const job of jobs) {
     const companyIds = await job.getCompanyIds();
     logger.info(`[${job.name}] 開始，共 ${companyIds.length} 家公司`);
+    const batchStartedAt = new Date();
     const { success, failed } = await runWithConcurrency(companyIds, job.run);
     logger.info(`[${job.name}] 完成：成功 ${success}，失敗 ${failed.length}${failed.length > 0 ? `（${failed.join(', ')}）` : ''}`);
+
+    // 完整性檢查：success/failed 只反映 job.run() 有沒有 throw，calculate* 函式內部的
+    // upsert 失敗會被自己吞掉不重新 throw（見 completenessCheck.ts 開頭說明），這裡從外部
+    // 獨立驗證這次時間窗內實際被寫入/更新的列數，不影響批次本身的行為。
+    const completeness = await checkJobCompleteness(job, companyIds, batchStartedAt);
+    if (completeness.skipped) {
+      logger.warn({ metricKey: completeness.metricKey, reason: completeness.skipped }, `[${job.name}] 完整性檢查已跳過`);
+    } else {
+      logger.info(
+        { metricKey: completeness.metricKey, attempted: completeness.attempted, written: completeness.written, coverageRatio: completeness.coverageRatio },
+        `[${job.name}] 完整性：攻打 ${completeness.attempted} 家，本次時間窗內實際寫入/更新 ${completeness.written} 家（覆蓋率 ${(completeness.coverageRatio * 100).toFixed(1)}%）`,
+      );
+    }
   }
 };
