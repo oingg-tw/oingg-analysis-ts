@@ -23,10 +23,6 @@ export const preferredStockEntrySchema = z.object({
   redeemable: z.boolean().nullable().meta({ description: '發行公司是否可強制買回（發行人贖回權/call，不是投資人賣回權/put——這批資料源沒有投資人賣回權的欄位）' }),
   redemptionDate: z.string().nullable(),
   redemptionConditions: z.string().nullable(),
-  callProtectionYears: z
-    .number()
-    .nullable()
-    .meta({ description: '從 redemptionConditions 文字 parse 出來的贖回保護期年數（發行後幾年才可贖回）；parse 不出來時為 null，不代表沒有贖回權' }),
   callRiskAmount: z
     .number()
     .nullable()

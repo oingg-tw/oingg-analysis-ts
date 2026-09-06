@@ -27,11 +27,10 @@
 `redeemable`/`redemptionDate`/`redemptionConditions` 描述的是**發行人贖回權（call）**，
 不是投資人賣回權（put）——2026-09-06 跟 web-nuxt 確認過：查了多檔 `redemption_conditions`
 原文都是「（本公司）得...收回」句型，主詞是發行公司，`preferred_stock_right` 這張表也
-完全沒有投資人賣回權的欄位。從這段自由格式中文條款文字再 parse 出兩個欄位：
+完全沒有投資人賣回權的欄位。`redemptionDate` 是 mops-ts 存好的真實欄位（已驗證等於
+「發行日 + redemptionConditions 描述的保護期」），代表「發行人開始有權贖回」的日期，不是
+「已經被贖回」——即使已經過了這個日期，特別股仍然可能正常交易（發行人選擇不贖回）。
 
-- `callProtectionYears`：贖回保護期年數（發行後幾年才可贖回），支援阿拉伯數字（含小數，
-  例如 `5.5年`）、中文數字（`五年`／`七年`）、跟「X年Y個月」換算成小數年（`五年六個月`=5.5）。
-  parse 不出來時為 `null`（例如條款文字引用公司章程而不寫年限），不代表沒有贖回權。
 - `callRiskAmount`：買回風險 = 發行價 − 最新收盤價，只在可贖回時才計算——發行人贖回是按
   發行價買回，現價高於發行價時這個值是負的，代表投資人可能被迫吃下這個負值大小的損失
   （用市價買進卻只能拿回發行價）。
@@ -56,7 +55,6 @@
 
 `src/shared/sourceData/preferredStock.ts`（查詢層）、`controller.ts`／`route.ts`／
 `openapi.ts`／`types.ts`（API 層）、`tests/shared/sourceData/preferredStock.test.ts`
-（真實資料交叉驗證，含「同一個 preferred_stock_code 要拿最新 series_no」跟
-`callProtectionYears` parse 各種文字格式的邊界案例）、
+（真實資料交叉驗證，含「同一個 preferred_stock_code 要拿最新 series_no」的邊界案例）、
 `tests/shared/sourceData/marketCap.test.ts`（`getStockPriceAsOf` 冷門股票沒成交日的
 回歸測試）。

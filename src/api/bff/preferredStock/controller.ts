@@ -75,7 +75,6 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
           redeemable: right?.redeemable ?? null,
           redemptionDate: right?.redemptionDate?.toISOString().slice(0, 10) ?? null,
           redemptionConditions: right?.redemptionConditions ?? null,
-          callProtectionYears: right?.callProtectionYears ?? null,
           callRiskAmount,
         };
       })
