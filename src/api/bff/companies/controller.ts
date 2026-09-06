@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
 import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
+import { getRoaHistory } from '@/pitMetrics/roa/queryRoaHistory';
+import { getDupontHistory } from '@/pitMetrics/dupont/queryDupontHistory';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { runCompanyMetrics, CompanyMetricsValidationError } from './metricsService';
@@ -114,6 +116,65 @@ export const getCompanyRoeHistory = async (req: Request, res: Response, next: Ne
     const { symbol, basis, limit } = validationResult.data;
     const entries = await getRoeHistory(symbol, basis, limit);
     res.status(200).json({ symbol, metricCode: 'roe', basis, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ROA 這支指標目前允許的 basis 跟 ROE 一模一樣（見
+// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedBases）。
+const ROA_HISTORY_BASIS_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+const MAX_ROA_HISTORY_LIMIT = 40;
+
+export const getCompanyRoaHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  basis: z.enum(ROA_HISTORY_BASIS_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+});
+
+// 給前端畫「ROA 歷史時序」圖表用，完全比照 getCompanyRoeHistory 的模式（第二支直接讀
+// metric_values 的端點）。查無資料回傳 entries: []，不是 404。
+export const getCompanyRoaHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyRoaHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, basis, limit } = validationResult.data;
+    const entries = await getRoaHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, metricCode: 'roa', basis, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Dupont 拆解沒有 Q_ANN——dupontDecomposedRoe/equityMultiplier 都沒有這個變體（見
+// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.dupontDecomposedRoe/
+// equityMultiplier.allowedBases）。
+const DUPONT_HISTORY_BASIS_VALUES = ['Q', 'TTM'] as const;
+const MAX_DUPONT_HISTORY_LIMIT = 40;
+
+export const getCompanyDupontHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  basis: z.enum(DUPONT_HISTORY_BASIS_VALUES).default('Q').meta({ description: '單季(Q)/近四季(TTM)，預設 Q' }),
+  limit: z.coerce.number().int().min(1).max(MAX_DUPONT_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+});
+
+// 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
+// 權益乘數 + 組裝出來的 ROE），不是完整的毛利率/週轉率家族，見
+// src/pitMetrics/dupont/queryDupontHistory.ts 的說明。basis=TTM 時 equityMultiplier 恆為
+// null。查無資料回傳 entries: []，不是 404。
+export const getCompanyDupontHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyDupontHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, basis, limit } = validationResult.data;
+    const entries = await getDupontHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, basis, entries });
   } catch (error) {
     next(error);
   }

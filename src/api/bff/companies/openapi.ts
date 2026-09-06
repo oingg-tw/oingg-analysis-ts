@@ -2,11 +2,15 @@ import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock';
 import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
+import { roaHistoryEntrySchema } from '@/pitMetrics/roa/queryRoaHistory';
+import { dupontHistoryEntrySchema } from '@/pitMetrics/dupont/queryDupontHistory';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
   getCompanyRoeHistoryQuerySchema,
+  getCompanyRoaHistoryQuerySchema,
+  getCompanyDupontHistoryQuerySchema,
   getCompanyPeerGroupQuerySchema,
   getCompanyMetricsQuerySchema,
 } from './controller';
@@ -28,6 +32,19 @@ const roeHistoryResultSchema = z.object({
   metricCode: z.literal('roe'),
   basis: z.enum(['Q', 'Q_ANN', 'TTM']),
   entries: z.array(roeHistoryEntrySchema),
+});
+
+const roaHistoryResultSchema = z.object({
+  symbol: z.string(),
+  metricCode: z.literal('roa'),
+  basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  entries: z.array(roaHistoryEntrySchema),
+});
+
+const dupontHistoryResultSchema = z.object({
+  symbol: z.string(),
+  basis: z.enum(['Q', 'TTM']),
+  entries: z.array(dupontHistoryEntrySchema),
 });
 
 // registerCompanyRoute 會在 handler 回傳的物件上補一個 companyName 欄位再送出（見
@@ -114,6 +131,45 @@ export const registerCompaniesOpenApi = (): void => {
     request: { query: getCompanyRoeHistoryQuerySchema },
     responses: {
       200: { description: 'ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roeHistoryResultSchema } } },
+      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/roa-history',
+    summary: '單一公司 ROA 歷史時序（畫圖用）',
+    description:
+      '第二支直接讀 metric_values（point-in-time 事實層）而不是傳統結果表（profitability_roa）的端點，' +
+      '完全比照 GET /companies/roe-history 的模式（basis 語意、knowledgeDate/knowledgeDateIsFallback、' +
+      '排序、資料覆蓋率現況說明皆相同，這裡不重複列一次）。',
+    tags: ['System'],
+    request: { query: getCompanyRoaHistoryQuerySchema },
+    responses: {
+      200: { description: 'ROA 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roaHistoryResultSchema } } },
+      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/dupont-history',
+    summary: '單一公司杜邦分析拆解歷史時序（畫圖用）',
+    description:
+      '直接讀 metric_values 的 netProfitMargin/assetTurnover/equityMultiplier/dupontDecomposedRoe' +
+      '四個 metric_code 組合而成——**這批遷移刻意只做 Dupont 拆解嚴格需要的最小集合**：只有淨利率、' +
+      '總資產週轉率兩個因子，不是完整的毛利率（含毛利率/營業利益率）或週轉率（含存貨/應收帳款/' +
+      '固定資產/應付帳款周轉率跟 DIO/DSO/DPO/CCC）家族，這兩個因子也因此不單獨開歷史查詢端點，' +
+      '只在這支組合端點裡曝露。decomposedRoePct = netProfitMarginPct x assetTurnover x equityMultiplier，' +
+      '理論上應該接近（但不必完全等於）GET /companies/roe-history 的實際 ROE，差異來自中間值四捨五入' +
+      '造成的正常誤差。basis=TTM 時 equityMultiplier 恆為 null（權益乘數是資產負債表時點快照，沒有 TTM' +
+      '變體，Q/TTM 拆解共用同一個 Q 快照值）。knowledgeDate/knowledgeDateIsFallback 取這四個 metric_code' +
+      '裡 netProfitMargin 那組的值當代表（同一次計算共用同一組 knowledge_date，正常情況下一致）。' +
+      '**目前資料覆蓋率極低**：只有少數公司/季度有資料，查無資料回傳 entries: []，是正常情境。',
+    tags: ['System'],
+    request: { query: getCompanyDupontHistoryQuerySchema },
+    responses: {
+      200: { description: '杜邦拆解歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dupontHistoryResultSchema } } },
       400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
     },
   });
