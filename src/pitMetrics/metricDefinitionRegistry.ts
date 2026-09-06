@@ -194,6 +194,165 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     ],
     currentFormulaVersion: 1,
   },
+  // 第四批遷移（resilience/turnover/valuation 簡單型 11 支舊架構檔案，共 13 個
+  // metric_code）：debtRatio/currentRatio/quickRatio/cashRatio/deRatio/interestCoverage/
+  // netDebtToEbitda/capexToRevenue/roic/roce 都是獨立重新實作，不呼叫任何 calculateXxx()。
+  // currentRatio/quickRatio/cashRatio 由 src/pitMetrics/liquidityRatio/computeLiquidityRatioPit.ts
+  // 一次查詢寫三個 metric_code（跟 Dupont 家族同一種處理）。psr/pFcf/evEbitda 第一次用到
+  // 市值（getMarketCapAsOf）——複用 resolveKnowledgeDate 算出的 knowledgeDate 去查，跟
+  // 第三批 fcfYield 發現的「股價/市值不需要另外設計 knowledge_date 機制」一致；三者都是
+  // 獨立重新計算子公式鏈（不依賴 revenuePerShare/cashFlowPerShare/netDebtToEbitda 這些
+  // 已寫入的 metric_value）。
+  debtRatio: {
+    metricCode: 'debtRatio',
+    formulaNote: '= 本季期末總負債/本季期末總資產*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    allowedBases: ['Q'],
+    dependsOn: ['liabilities', 'assets'],
+    currentFormulaVersion: 1,
+  },
+  currentRatio: {
+    metricCode: 'currentRatio',
+    formulaNote: '= 本季期末流動資產/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    allowedBases: ['Q'],
+    dependsOn: ['current_assets', 'current_liabilities'],
+    currentFormulaVersion: 1,
+  },
+  quickRatio: {
+    metricCode: 'quickRatio',
+    formulaNote: '= (本季期末流動資產-存貨)/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    allowedBases: ['Q'],
+    dependsOn: ['current_assets', 'current_liabilities', 'inventories'],
+    currentFormulaVersion: 1,
+  },
+  cashRatio: {
+    metricCode: 'cashRatio',
+    formulaNote: '= 本季期末現金及約當現金/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    allowedBases: ['Q'],
+    dependsOn: ['cash_and_cash_equivalents', 'current_liabilities'],
+    currentFormulaVersion: 1,
+  },
+  deRatio: {
+    metricCode: 'deRatio',
+    formulaNote:
+      '= 有息負債(短期借款+應付公司債+長期借款)/本季期末權益*100，權益優先採歸屬母公司口徑，' +
+      '缺漏退回整體口徑。純資產負債表時點快照，只有 Q 一種 basis。',
+    allowedBases: ['Q'],
+    dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'equity_attributable_to_owners_of_parent', 'equity'],
+    currentFormulaVersion: 1,
+  },
+  interestCoverage: {
+    metricCode: 'interestCoverage',
+    formulaNote:
+      'EBIT = 稅前淨利+利息費用；Q(單季) = EBIT/利息費用（倍）；TTM = 近四季（含本季）EBIT 加總/' +
+      '近四季利息費用加總。沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['profit_loss_before_tax', 'finance_costs'],
+    currentFormulaVersion: 1,
+  },
+  netDebtToEbitda: {
+    metricCode: 'netDebtToEbitda',
+    formulaNote:
+      '淨負債 = 有息負債(短期借款+應付公司債+長期借款) - 現金及約當現金；EBITDA = 稅前淨利+利息費用' +
+      '+折舊+攤銷；Q_ANN = 淨負債/(本季 EBITDA*4)；TTM = 淨負債/近四季（含本季）EBITDA 加總。' +
+      '只有 Q_ANN/TTM 兩種 basis——跟舊架構一致，taxonomy 只支援這兩種（store/flow 比率），沒有' +
+      '單季非年化版本。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: [
+      'shortTermBorrowings',
+      'bondsPayable',
+      'longterm_borrowings',
+      'cash_and_cash_equivalents',
+      'profit_loss_before_tax',
+      'finance_costs',
+      'depreciation',
+      'amortization',
+    ],
+    currentFormulaVersion: 1,
+  },
+  capexToRevenue: {
+    metricCode: 'capexToRevenue',
+    formulaNote:
+      'Q(單季) = |資本支出|/本季營收*100；TTM = |近四季（含本季）資本支出加總|/近四季營收加總*100。' +
+      '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['revenue', 'capitalExpenditures'],
+    currentFormulaVersion: 1,
+  },
+  psr: {
+    metricCode: 'psr',
+    formulaNote:
+      'Q_ANN = 市值/(本季營收*4*1000)；TTM = 市值/(近四季營收加總*1000)。市值取這個座標解析出來的' +
+      'knowledge_date 當天（或之前最近一筆交易日）市值——跟財報公告日共用同一個 knowledge_date。' +
+      '獨立重新計算營收（不依賴 revenuePerShare 這個 metric_code 已寫入的值）。沒有單季非年化版本' +
+      '（store/flow 比率）。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['revenue'],
+    currentFormulaVersion: 1,
+  },
+  pFcf: {
+    metricCode: 'pFcf',
+    formulaNote:
+      '自由現金流 = 營業活動現金流+資本支出（資本支出來源資料是負值/流出，用加法）；Q_ANN = 市值/' +
+      '(本季自由現金流*4*1000)；TTM = 市值/(近四季自由現金流加總*1000)。股價/市值查詢邏輯同 psr。' +
+      '獨立重新計算自由現金流（不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。' +
+      '沒有單季非年化版本。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures'],
+    currentFormulaVersion: 1,
+  },
+  evEbitda: {
+    metricCode: 'evEbitda',
+    formulaNote:
+      '企業價值 = 市值+淨負債*1000；Q_ANN = 企業價值/(本季 EBITDA*4*1000)；TTM = 企業價值/' +
+      '(近四季 EBITDA 加總*1000)。股價/市值查詢邏輯同 psr。獨立重新計算淨負債+EBITDA（不依賴' +
+      'netDebtToEbitda 這個 metric_code 已寫入的值，公式在兩個檔案各自重複一次，延續舊架構本身' +
+      '在 interestCoverage/netDebtToEbitda/roic/roce 四個檔案各自重複定義 EBIT 的既有慣例）。' +
+      '沒有單季非年化版本。',
+    allowedBases: ['Q_ANN', 'TTM'],
+    dependsOn: [
+      'shortTermBorrowings',
+      'bondsPayable',
+      'longterm_borrowings',
+      'cash_and_cash_equivalents',
+      'profit_loss_before_tax',
+      'finance_costs',
+      'depreciation',
+      'amortization',
+    ],
+    currentFormulaVersion: 1,
+  },
+  roic: {
+    metricCode: 'roic',
+    formulaNote:
+      'EBIT = 稅前淨利+利息費用；有效稅率 = 所得稅費用/稅前淨利（稅前淨利須為正，否則 NOPAT 為 ' +
+      'null）；NOPAT = EBIT*(1-有效稅率)；投入資本 = 有息負債(短期借款+應付公司債+長期借款)+權益-' +
+      '現金及約當現金，權益優先採歸屬母公司口徑；Q(單季) = NOPAT/投入資本*100；Q_ANN = Q*4；' +
+      'TTM = 近四季（含本季）NOPAT 加總/本季期末投入資本*100（分母固定用本季，不平均不加總，跟' +
+      'ROE/ROA 用期末值同一種簡化）。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: [
+      'profit_loss_before_tax',
+      'finance_costs',
+      'income_tax_expense_continuing_operations',
+      'shortTermBorrowings',
+      'bondsPayable',
+      'longterm_borrowings',
+      'equity_attributable_to_owners_of_parent',
+      'equity',
+      'cash_and_cash_equivalents',
+    ],
+    currentFormulaVersion: 1,
+  },
+  roce: {
+    metricCode: 'roce',
+    formulaNote:
+      'EBIT = 稅前淨利+利息費用；使用資本(Capital Employed) = 本季期末總資產-本季期末流動負債；' +
+      'Q(單季) = EBIT/使用資本*100；Q_ANN = Q*4；TTM = 近四季（含本季）EBIT 加總/本季期末使用' +
+      '資本*100（分母固定用本季，同 roic）。',
+    allowedBases: ['Q', 'Q_ANN', 'TTM'],
+    dependsOn: ['assets', 'current_liabilities', 'profit_loss_before_tax', 'finance_costs'],
+    currentFormulaVersion: 1,
+  },
   fcfYield: {
     metricCode: 'fcfYield',
     formulaNote:
