@@ -17,12 +17,18 @@ export const registerPreferredStockOpenApi = (): void => {
       '這裡算兩個不同的百分比：nominalDividendRatePct（票面利率，dividendRate/issuePrice，' +
       '發行時基準，之後不隨股價變動）跟 currentYieldPct（目前殖利率，dividendRate/最新收盤價，' +
       '隨股價每天變動，查無股價資料時為 null）——兩者是不同概念，票面利率偏高不代表現在買進的' +
-      '殖利率也高（例如 2002A 中鋼特票面利率 14% 是 1974 年發行當時的利率環境）。',
+      '殖利率也高（例如 2002A 中鋼特票面利率 14% 是 1974 年發行當時的利率環境）。' +
+      'redeemable/redemptionDate/redemptionConditions 描述的是發行人贖回權（call，公司單方' +
+      '面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。' +
+      'callProtectionYears 是從 redemptionConditions 自由格式中文條款文字 parse 出來的贖回' +
+      '保護期年數，parse 不出來時為 null，不代表沒有贖回權。callRiskAmount（買回風險）= ' +
+      '最新收盤價 - 發行價，只在可贖回時才計算——現價高於發行價時，這個差額就是投資人可能被' +
+      '發行人用發行價買回、被迫吃下的損失。limit/offset 分頁沿用 GET /companies 的慣例。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {
-      200: { description: '特別股清單，查無資料（symbol 篩選後沒有結果）時 entries 是空陣列。', content: { 'application/json': { schema: preferredStocksResultSchema } } },
-      400: { description: 'symbol 格式錯誤。' },
+      200: { description: '特別股清單，查無資料（symbol 篩選後沒有結果）時 entries 是空陣列，count 一律是全部符合條件的總筆數（不受 limit/offset 影響）。', content: { 'application/json': { schema: preferredStocksResultSchema } } },
+      400: { description: 'symbol/limit/offset 格式錯誤。' },
     },
   });
 };

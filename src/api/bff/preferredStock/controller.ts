@@ -3,8 +3,15 @@ import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/shared/sourceData/preferredStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 
+// 目前只有 28 檔，遠低於這個上限——加分頁是為了跟其他清單型端點（GET /companies）維持
+// 一致的介面慣例，也預留之後名單成長的空間，不是現在就有效能疑慮。
+const MAX_LIMIT = 200;
+const DEFAULT_LIMIT = 50;
+
 export const getPreferredStocksQuerySchema = z.object({
   symbol: z.string().min(1).optional().meta({ description: '公司代號選填，給了就只回這一檔；不給回全部目前上市中的特別股', example: '1101B' }),
+  limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT).meta({ description: `這次要拿幾筆，預設 ${DEFAULT_LIMIT}，上限 ${MAX_LIMIT}。` }),
+  offset: z.coerce.number().int().min(0).default(0).meta({ description: '跳過前面幾筆，預設 0。' }),
 });
 
 const toRatio2 = (numerator: number, denominator: number): number | null => {
@@ -28,16 +35,21 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol } = validationResult.data;
+    const { symbol, limit, offset } = validationResult.data;
     const securities = await getPreferredStockSecurities();
     const filtered = symbol ? securities.filter((s) => s.symbol === symbol) : securities;
+    const page = filtered.slice(offset, offset + limit);
 
     const entries = await Promise.all(
-      filtered.map(async (security) => {
+      page.map(async (security) => {
         const [right, price] = await Promise.all([getLatestPreferredStockRight(security.symbol), getStockPriceAsOf(security.symbol, new Date())]);
 
         const nominalDividendRatePct = right?.dividendRate != null && right.issuePrice != null ? toRatio2(right.dividendRate, right.issuePrice) : null;
         const currentYieldPct = right?.dividendRate != null && price?.closePrice != null ? toRatio2(right.dividendRate, price.closePrice) : null;
+        // 買回風險（call risk）= 現價 - 發行價，只在可贖回（redeemable）時才有意義——發行人
+        // 贖回時是按發行價買回，如果現價已經漲超過發行價，這個差額就是投資人可能被迫吃下的
+        // 損失（用市價買進，卻只能拿回發行價）；不可贖回的特別股沒有這個風險，回傳 null。
+        const callRiskAmount = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? Math.round((price.closePrice - right.issuePrice) * 100) / 100 : null;
 
         return {
           symbol: security.symbol,
@@ -61,11 +73,13 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
           redeemable: right?.redeemable ?? null,
           redemptionDate: right?.redemptionDate?.toISOString().slice(0, 10) ?? null,
           redemptionConditions: right?.redemptionConditions ?? null,
+          callProtectionYears: right?.callProtectionYears ?? null,
+          callRiskAmount,
         };
       })
     );
 
-    res.status(200).json({ entries });
+    res.status(200).json({ count: filtered.length, limit, offset, entries });
   } catch (error) {
     next(error);
   }

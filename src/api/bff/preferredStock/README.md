@@ -12,7 +12,7 @@
 | TWSE `export.daily_price` | 特別股的 symbol（例如 `1101B`）跟一般股票一樣是 key，直接複用既有的 `getStockPriceAsOf`（`src/shared/sourceData/marketCap.ts`），不用新寫查詢。 |
 | mops-ts `export.preferred_stock_right`（`mopsExportPrisma`） | 77 列，`preferred_stock_code` 對應 `isin_securities.symbol`（28 檔目前上市的全部對得上）。**同一個 code 會有多列**（`series_no` 遞增，代表配息條件歷次修訂），查詢時要 `ORDER BY series_no DESC LIMIT 1` 拿最新條款，不能假設一個 code 只有一列。 |
 
-## 實作決定：relay + 兩個輕量計算欄位
+## 實作決定：relay + 幾個輕量計算欄位
 
 `dividend_rate` 欄位是「每股固定配息金額」（新台幣元），不是百分比——欄位名稱容易誤會，
 2026-09-06 逐檔核對過目前 28 檔上市中的特別股才確認。算出兩個不同的百分比，都用同一個
@@ -24,13 +24,38 @@
 這兩個是不同概念——例如 `2002A`（中鋼特，1974 年發行）`nominalDividendRatePct=14`（當年
 利率環境），但用 2026 年目前股價算出來的 `currentYieldPct` 只有 3.75%，不要混為一談。
 
+`redeemable`/`redemptionDate`/`redemptionConditions` 描述的是**發行人贖回權（call）**，
+不是投資人賣回權（put）——2026-09-06 跟 web-nuxt 確認過：查了多檔 `redemption_conditions`
+原文都是「（本公司）得...收回」句型，主詞是發行公司，`preferred_stock_right` 這張表也
+完全沒有投資人賣回權的欄位。從這段自由格式中文條款文字再 parse 出兩個欄位：
+
+- `callProtectionYears`：贖回保護期年數（發行後幾年才可贖回），支援阿拉伯數字（含小數，
+  例如 `5.5年`）、中文數字（`五年`／`七年`）、跟「X年Y個月」換算成小數年（`五年六個月`=5.5）。
+  parse 不出來時為 `null`（例如條款文字引用公司章程而不寫年限），不代表沒有贖回權。
+- `callRiskAmount`：買回風險 = 最新收盤價 − 發行價，只在可贖回時才計算——發行人贖回是按
+  發行價買回，現價高於發行價時這個差額就是投資人可能被迫吃下的損失。
+
 不進 `pitMetrics`（沒有「季度財報」「knowledge_date」這些概念可以套）也不進
 `filterCatalog.ts`（不是季度財報衍生的計算指標，是證券基本資料 + 市場資料的組合，形狀
 接近 `GET /companies/profile`）。只做「目前上市中」的清單，不做歷史已收回系列的查詢
 （`preferred_stock_right` 裡不在目前 28 檔 `isin_securities` 名單內的那 49 列）。
 
+`limit`/`offset` 分頁沿用 `GET /companies` 的慣例——目前只有 28 檔，遠低於上限，是為了
+介面一致性跟預留成長空間，不是現在就有效能疑慮。
+
+## 順帶修正的共用基礎設施 bug（2026-09-06）
+
+實測特別股股價時發現 `getStockPriceAsOf`（`src/shared/sourceData/marketCap.ts`）對冷門
+股票（例如 `1312A` 國喬特連續幾天沒成交）會誤判成查無股價——原本只抓「最新一列」，沒過濾
+`close IS NOT NULL`，沒成交那天 `close` 是 null 但那一列還是存在。已修正成「找最近一筆真的
+有成交價的日期」，這是共用函式，`fcfYield`/`psr`/`pFcf`/`evEbitda`/`altmanZScore` 的市值
+（X4）這些既有指標理論上都會受惠，只是流動性好的股票平常不會踩到這個 bug。
+
 ## 相關檔案
 
 `src/shared/sourceData/preferredStock.ts`（查詢層）、`controller.ts`／`route.ts`／
 `openapi.ts`／`types.ts`（API 層）、`tests/shared/sourceData/preferredStock.test.ts`
-（真實資料交叉驗證，含「同一個 preferred_stock_code 要拿最新 series_no」的邊界案例）。
+（真實資料交叉驗證，含「同一個 preferred_stock_code 要拿最新 series_no」跟
+`callProtectionYears` parse 各種文字格式的邊界案例）、
+`tests/shared/sourceData/marketCap.test.ts`（`getStockPriceAsOf` 冷門股票沒成交日的
+回歸測試）。
