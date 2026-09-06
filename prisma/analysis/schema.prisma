@@ -1373,3 +1373,20 @@ model MetricValue {
   @@index([symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
   @@map("metric_values")
 }
+
+// ============================================================================
+// P0 止血：上方 37 張指標結果表的 upsert 在真的覆蓋既有列之前，先把即將被蓋掉的舊值
+// 存進這張 append-only 影子表，純粹是保險，不做任何回溯查詢/清理排程。攔截邏輯見
+// src/adapters/prisma/upsertShadowExtension.ts。
+// ============================================================================
+model MetricUpsertShadow {
+  id BigInt @id @default(autoincrement())
+
+  modelName   String   @map("model_name") // Prisma model 名稱（PascalCase，如 "RoeResult"）
+  primaryKey  Json     @map("primary_key") // 這次 upsert 呼叫的 args.where 原始內容
+  previousRow Json     @map("previous_row") // 即將被蓋掉的完整舊列快照
+  capturedAt  DateTime @default(now()) @map("captured_at")
+
+  @@index([modelName, capturedAt])
+  @@map("metric_upsert_shadow")
+}
