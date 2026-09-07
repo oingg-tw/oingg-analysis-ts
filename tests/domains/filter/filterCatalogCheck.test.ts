@@ -17,31 +17,34 @@ describe('findFilterCatalogProblems', () => {
   });
 
   test('catalog 欄位在 schema 找不到對應 Decimal 欄位時要抓出來', () => {
+    // 2026-09-07：改用 roa（不在 RETIRED_FROM_FILTER_CATALOG_MODEL_KEYS 例外集合裡）取代
+    // 原本的 grahamNumber 範例——guru 分類已從 filterCatalog.csv 移除並加了例外，繼續用
+    // grahamNumber 當測試範例會被那個例外吃掉，「schema 有但 catalog 沒列」這半段斷言會失效。
     const fakeCatalog: FilterCategory[] = [
       {
-        key: 'guru',
+        key: 'profitability',
         name: '測試分類',
         metrics: [
           {
-            key: 'grahamNumber',
-            name: '葛拉漢數',
-            path: '/guru/graham-number',
-            unit: 'ratio',
-            fields: [{ key: 'grahamNumberTypo', name: '打錯的欄位', period: 'ttm', sort: 1 }],
+            key: 'roa',
+            name: '資產報酬率',
+            path: '/profitability/roa',
+            unit: 'percent',
+            fields: [{ key: 'roaTtmPctTypo', name: '打錯的欄位', period: 'ttm', sort: 1 }],
           },
         ],
       },
     ];
     const fakeSchema = `
-      model GrahamNumberResult {
+      model RoaResult {
         symbol String
-        grahamNumber Decimal? @map("graham_number") @db.Decimal(14, 4)
+        roaTtmPct Decimal? @map("roa_ttm_pct") @db.Decimal(10, 2)
       }
     `;
     const problems = findFilterCatalogProblems(fakeCatalog, fakeSchema);
     assert.equal(problems.length, 2);
-    assert.match(problems[0]!, /grahamNumberTypo.*找不到對應的 Decimal 欄位/);
-    assert.match(problems[1]!, /新增了 Decimal 欄位 grahamNumber.*沒有列/);
+    assert.match(problems[0]!, /roaTtmPctTypo.*找不到對應的 Decimal 欄位/);
+    assert.match(problems[1]!, /新增了 Decimal 欄位 roaTtmPct.*沒有列/);
   });
 
   test('schema 有 model 但 catalog 完全沒列這個指標時要抓出來', () => {

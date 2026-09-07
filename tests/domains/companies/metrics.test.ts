@@ -17,23 +17,27 @@ describe('runCompanyMetrics', () => {
   });
 
   test('cache miss 會委派 api/batch 現算+upsert，回傳 source=computed，且 DB 真的多一列', async () => {
-    // 刻意刪掉 2330 的 NissimPenmanRnoaResult，製造真正的 cache miss——刪掉之後這個測試自己會
-    // 觸發重算把資料寫回去，不是破壞性操作（跟批次本來就會定期重算覆蓋是同一件事）。
-    await analysisPrisma.nissimPenmanRnoaResult.deleteMany({ where: { symbol: '2330' } });
-    const before = await analysisPrisma.nissimPenmanRnoaResult.findFirst({ where: { symbol: '2330' } });
+    // 2026-09-07：guru 分類（含原本這裡用的 nissimPenmanRnoa）已從 filterCatalog.csv 移除
+    // （見 filterCatalogCheck.ts 的 RETIRED_FROM_FILTER_CATALOG_MODEL_KEYS），resolveFieldOrThrow
+    // 查不到這個 field 了，改用同樣「純財報計算、無市值依賴」的 netDebtToEbitda（resilience
+    // 分類，仍在 filterCatalog 裡）取代，驗證的行為不變。刻意刪掉 2330 的
+    // NetDebtToEbitdaResult，製造真正的 cache miss——刪掉之後這個測試自己會觸發重算把資料
+    // 寫回去，不是破壞性操作（跟批次本來就會定期重算覆蓋是同一件事）。
+    await analysisPrisma.netDebtToEbitdaResult.deleteMany({ where: { symbol: '2330' } });
+    const before = await analysisPrisma.netDebtToEbitdaResult.findFirst({ where: { symbol: '2330' } });
     assert.equal(before, null, '刪除後應該確實查無資料，測試前提才成立');
 
-    const result = await runCompanyMetrics('2330', ['nissimPenmanRnoa.rnoaQuarterlyPct']);
-    const value = result.values['nissimPenmanRnoa.rnoaQuarterlyPct']!;
+    const result = await runCompanyMetrics('2330', ['netDebtToEbitda.netDebtToEbitdaQuarterlyAnnualized']);
+    const value = result.values['netDebtToEbitda.netDebtToEbitdaQuarterlyAnnualized']!;
     assert.equal(value.source, 'computed');
-    assert.ok(value.value !== null, '2330 有完整財報資料，應該算得出 RNOA');
+    assert.ok(value.value !== null, '2330 有完整財報資料，應該算得出淨負債對 EBITDA 比');
 
-    const after = await analysisPrisma.nissimPenmanRnoaResult.findFirst({ where: { symbol: '2330' } });
+    const after = await analysisPrisma.netDebtToEbitdaResult.findFirst({ where: { symbol: '2330' } });
     assert.ok(after !== null, 'compute-on-miss 應該把結果 upsert 回 analysis 表');
 
     // 緊接著再查一次，這次應該是 cache hit。
-    const second = await runCompanyMetrics('2330', ['nissimPenmanRnoa.rnoaQuarterlyPct']);
-    assert.equal(second.values['nissimPenmanRnoa.rnoaQuarterlyPct']!.source, 'cache');
+    const second = await runCompanyMetrics('2330', ['netDebtToEbitda.netDebtToEbitdaQuarterlyAnnualized']);
+    assert.equal(second.values['netDebtToEbitda.netDebtToEbitdaQuarterlyAnnualized']!.source, 'cache');
   });
 
   test('查無任何資料的公司，重算後仍是 null 時應該回傳 source=unavailable', async () => {
