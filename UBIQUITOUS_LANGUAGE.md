@@ -10,7 +10,14 @@ sitca-ts）之間已經做過的命名對齊決策，以及 analysis-ts 內部�
 斷link。
 
 放在 repo 根目錄（不是 `docs/`）是刻意的——`docs/` 是隨手筆記，內容可能隨時被清掉，這份
-文件是跨服務都在引用的參考資料，需要更高的持久性保證。
+文件是跨服務都在引用的參考資料，需要更高的持久性保證。**2026-09-07 印證過這個判斷**：
+`docs/` 底下兩份規格草案（`analysis-ts-spec.md`/`analysis-ts-spec-v0.2.md`）因為描述的
+「現況」跟「目標架構」都已經是過去式（point-in-time 架構已經全部落地、v0.2 提案裡的
+45 張舊表已經砍到剩 3 張），直接刪除；同一批清理把外部命名慣例研究資料
+[`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md)（CRSP/Compustat/
+供應商 mnemonic 對照，用來輔助命名決策的參考資料，不是本文件這種「已經做過的決策紀錄」）
+從 `docs/` 移到根目錄一起正式進版控，理由跟這份文件一樣：這是會被重複引用的參考資料，
+不該放在隨時可能被清掉的 `docs/`。
 
 **⚠️ 已知重疊，尚未整併**：oingg-conductor-ts 那邊也維護一份涵蓋範圍幾乎一樣的跨服務命名
 決策紀錄（2026-09-06 建立，含這裡列的四項對齊決策 + 完整決策過程/dispatch 狀態），目前
@@ -35,9 +42,14 @@ sitca-ts）之間已經做過的命名對齊決策，以及 analysis-ts 內部�
 analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的識別碼系統，彼此沒有正式的程式碼
 層級對照表（各自獨立演進，只是碰巧常常同名）：
 
-1. **`filterCatalog.ts` 的 `metricKey.fieldKey`**（camelCase）——現有 45 張
-   「每指標一表」架構、`GET /companies/metrics`、`POST /screener/values` 用這套定址，
-   例如 `roe.roeQuarterlyPct`。
+1. **`filterCatalog.ts` 的 `metricKey.fieldKey`**（camelCase）——**2026-09-07 使用者要求
+   把「每指標一表」架構裡的 34 張表整批 DROP**（這批全部已經有 pitMetrics 版本可查），
+   目前只剩 3 張沒有 pitMetrics 替代版本的表（`BetaResult`／`MarketRatiosResult`／
+   `EquityRiskPremiumResult`，後者其實不算這套「指標」的一員，是獨立的總經資料）。
+   `filterCatalog.csv` 現在只剩 `portfolio`（beta）跟 `valuation` 的 `per`/`pbr`/
+   `dividendYield`（marketRatios）共 6 列，`GET /companies/metrics`、
+   `POST /screener/values` 這套定址系統本身還在，只是背後的表已經大幅縮減，不要再假設
+   這套系統涵蓋 45（或 37）支指標。
 2. **`pitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
    架構（`metric_values`/`metric_definitions`，見 ROE spike）用這套，例如
    `metric_code='roe'`、`basis='Q'`。
@@ -79,15 +91,19 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 - **`pitMetrics` 的 `dependsOn` 曾經只能填 mops-ts 三大表的原始欄位名稱**——因為 XBRL
   資料當時只涵蓋測試公司 1101，沒有真實公司可以驗證對應關係。**mops-ts 2026-09-06 補上
   2330（台積電）、2801（彰化銀行）兩家真實公司的 XBRL 資料後，這個落差已經解決**：
-  `metricDefinitionRegistry.ts` 的 6 個 `dependsOn` 陣列已經全部改成驗證過的 XBRL
-  account_code（見上方示範表格）。**範圍說明**：這次只改 `dependsOn` 這個宣告欄位的內容
-  （純字串陣列，不是 schema/計算來源的變更）——實際計算依然讀 `quarterly_income_statement`/
-  `quarterly_balance_sheet`（249 家公司覆蓋），沒有切換去讀 XBRL 表（那邊只有 3 家公司，
-  拿來當計算來源會大幅縮減覆蓋率）；舊架構 37 張表內部存的欄位挑選紀錄（例如
-  `RoeResult.netIncomeFieldUsed`）也沒有跟著改，那些是逐列的操作/稽核用途，不是命名宣告，
-  使用者已明確決定這次不動。之後新增 `metricDefinitionRegistry` entry 時，`dependsOn`
-  應該優先查 `export.xbrl_three_statements_long` 有沒有對應的 account_code 可用，沒有的
-  話才退回填三大表原始欄位名稱。
+  `metricDefinitionRegistry.ts` 的 `dependsOn` 陣列已經全部改成驗證過的 XBRL
+  account_code（見上方示範表格）。**2026-09-07 更新：這已經不只是宣告欄位的改動**——
+  現金流量表/資產負債表/損益表依賴的全部 PIT 指標都已經換源成「XBRL 寬表/長表優先，
+  查無資料才 fallback 舊三大表」（`balanceSheetXbrlFirst.ts`/`incomeStatementXbrlFirst.ts`/
+  `cashFlowStatementXbrlFirst.ts`），**實際計算現在真的是 XBRL 優先**，不是只有
+  `dependsOn` 這個宣告字串變了、計算來源沒變——這段話跟舊版本說的「沒有切換去讀 XBRL
+  表」已經不成立，XBRL 目前覆蓋約 745 家公司（資產負債表/損益表）、722 家（現金流量表），
+  遠超過舊三大表的 247~249 家，但不是嚴格超集合（部分公司/季度組合舊表有但 XBRL 沒有），
+  fallback 機制仍然必要。舊架構 37 張表內部存的欄位挑選紀錄（例如 `RoeResult.
+  netIncomeFieldUsed`）已經隨著 2026-09-07 那批表刪除一起消失，不再是「不動」的狀態，
+  是「已經不存在」。之後新增 `metricDefinitionRegistry` entry 時，`dependsOn`
+  應該優先查 `export.xbrl_three_statements_long`/寬表有沒有對應的 account_code 可用，
+  沒有的話才退回填三大表原始欄位名稱。
 - **2026-09-06 已解決**（原「意外發現，還沒評估細節」）：銀行業專屬指標（CAR/CET1/Tier1/
   逾放比/備抵呆帳覆蓋率）已經直接查 mops-ts export DB 驗證過並實作完成
   （`src/pitMetrics/bankAssetQuality/`、`src/pitMetrics/bankCapitalAdequacy/`）。**原本這裡
