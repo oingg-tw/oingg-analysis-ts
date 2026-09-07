@@ -286,17 +286,28 @@ export const registerCompaniesOpenApi = (): void => {
   registry.registerPath({
     method: 'get',
     path: '/companies/financial-statement',
-    summary: '單一公司單張財報表原始科目（會計模式，資產負債表/損益表/現金流量表整列透傳）',
+    summary: '單一公司單張財報表原始科目（會計模式，資產負債表/損益表/現金流量表整列透傳，供稽核用）',
     description:
       '給前端「會計模式」用——選定 statementType（資產負債表/損益表/現金流量表其中一張），一次拿到' +
-      '該季全部科目欄位的原始金額，不是算好的單一比率，符合傳統看報表的習慣，跟 point-in-time 那套' +
-      '算好的指標歷史（GET /companies/roe-history 那些）刻意分開；資料來源相同（mops-ts 的三張季報表' +
-      'export view），這支端點整列透傳不做任何計算。year/season 選填但要成對，不給就自動抓該張表' +
-      '（只看這一張，不是三張表的交集）最新一季。dataType 固定用合併報表、subsidiaryCompanyId 固定' +
-      '空字串，不對外曝露這兩個內部參數，跟 metric-history 同一個慣例。statement 物件的每個科目欄位' +
-      '都是 camelCase key，金額欄位序列化成字串避免 JS 數字精度問題；查無資料（這家公司這張表完全' +
-      '沒有資料，或指定的 year/season 那一季沒有資料）回傳 200 + found:false + statement:null，' +
-      '不是 404，跟 roe-history/capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。',
+      '該季申報方原始揭露的**全部**科目欄位金額，不是算好的單一比率、也不是服務內部計算需要的精簡' +
+      '欄位子集，是給會計用戶稽核數字用的完整版本，符合傳統看報表的習慣，跟 point-in-time 那套算好的' +
+      '指標歷史（GET /companies/roe-history 那些）刻意分開。' +
+      '2026-09-07 起資產負債表/損益表改接 XBRL 寬表（export.quarterly_balance_sheet_xbrl/' +
+      'quarterly_income_statement_xbrl，動態回傳扣掉 identity/metadata 欄位後的全部科目，資產負債表' +
+      '約 90 個、損益表約 48 個，不手動列舉欄位名稱，mops-ts 那邊寬表新增欄位會自動出現），現金流量表' +
+      '接 XBRL 長表（export.xbrl_three_statements_long，account_code 數量依該公司該季實際揭露而定，' +
+      '沒有固定欄位數）——**這批 XBRL 情境下 statement 物件的 key 是資料庫原始 snake_case account_code' +
+      '（例如 current_fin_assets_fvtpl），不轉 camelCase**，方便使用者直接拿科目代碼去對照 XBRL 官方' +
+      '分類或其他工具核對，這是刻意的設計。查無 XBRL 資料時會 fallback 到舊三大表（mops-ts 較早期的' +
+      '季報表 export view，欄位數量少很多，資產負債表約 26 個），**這個情境下 key 會是 camelCase**——' +
+      '同一支端點依資料源不同回傳不同 key 風格，是刻意的不一致，前端不應該假設 key 一定是某一種風格，' +
+      '應該把 statement 當成不透明的 key-value 集合整包呈現。year/season 選填但要成對，不給就自動抓' +
+      '該張表（只看這一張，不是三張表的交集）最新一季——這個「最新一季」的判斷仍然只看舊三大表（跟' +
+      '哪一季有資料無關的 XBRL 覆蓋率不影響這個判斷）。dataType 固定用合併報表、subsidiaryCompanyId' +
+      '固定空字串，不對外曝露這兩個內部參數，跟 metric-history 同一個慣例。金額欄位序列化成字串避免' +
+      'JS 數字精度問題；查無資料（這家公司這張表完全沒有資料，新舊都沒有，或指定的 year/season 那一季' +
+      '沒有資料）回傳 200 + found:false + statement:null，不是 404，跟 roe-history/' +
+      'capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。',
     tags: ['System'],
     request: { query: getCompanyFinancialStatementQuerySchema },
     responses: {

@@ -11,7 +11,10 @@ import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
-import { getQuarterlyBalanceSheet, getQuarterlyIncomeStatement, getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
+import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
+import { getBalanceSheetXbrlFull } from '@/shared/sourceData/balanceSheetXbrlFull';
+import { getIncomeStatementXbrlFull } from '@/shared/sourceData/incomeStatementXbrlFull';
+import { getXbrlCashFlowQuarterly } from '@/shared/sourceData/xbrlCashFlowQuarterly';
 import type { Season } from '@/shared/rocQuarter';
 import type { CompanyRouteRequest, CompanyRouteResponse } from '@/shared/registerCompanyRoute';
 import { runCompanyMetrics, CompanyMetricsValidationError } from './metricsService';
@@ -333,18 +336,35 @@ export const getCompanyFinancialStatementQuerySchema = z
     path: ['season'],
   });
 
-// object（不是 Record<string, unknown>）——三個 getQuarterlyXxx 函式各自回傳不同的具名
-// interface，這幾個 interface 沒有索引簽章，賦值到 Record<string, unknown> 會被 TS 拒絕；
-// object 沒有這個限制，取用時再用 Object.entries 轉成一般物件遍歷。
+// object（不是 Record<string, unknown>）——這幾支 getXxx 函式各自回傳不同形狀的物件，
+// 有些是具名 interface（沒有索引簽章，賦值到 Record<string, unknown> 會被 TS 拒絕），
+// 有些是動態欄位的泛化物件；object 沒有這個限制，取用時再用 Object.entries 轉成一般
+// 物件遍歷。
 type FinancialStatementRow = object;
+
+// 現金流量表沒有 XBRL 寬表，是長表格式（xbrl_three_statements_long），
+// getXbrlCashFlowQuarterly 回傳 { reportDate, accounts: Record<string, bigint> }——這裡
+// 把 accounts 攤平成跟 balanceSheet/incomeStatement 一致的扁平物件形狀，完全查無資料時
+// fallback 舊三大表（camelCase）。
+const getCashFlowStatementXbrlFull = async (key: {
+  symbol: string;
+  year: number;
+  quarter: number;
+  dataType: string;
+  subsidiaryCompanyId: string;
+}): Promise<FinancialStatementRow | null> => {
+  const xbrl = await getXbrlCashFlowQuarterly(key);
+  if (xbrl) return { reportDate: xbrl.reportDate, ...xbrl.accounts };
+  return getQuarterlyCashFlowStatement(key);
+};
 
 const STATEMENT_FETCHERS: Record<
   (typeof FINANCIAL_STATEMENT_TYPES)[number],
   (key: { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string }) => Promise<FinancialStatementRow | null>
 > = {
-  balanceSheet: getQuarterlyBalanceSheet,
-  incomeStatement: getQuarterlyIncomeStatement,
-  cashFlowStatement: getQuarterlyCashFlowStatement,
+  balanceSheet: getBalanceSheetXbrlFull,
+  incomeStatement: getIncomeStatementXbrlFull,
+  cashFlowStatement: getCashFlowStatementXbrlFull,
 };
 
 // 三張表的 identity 欄位（symbol/year/quarter/dataType/subsidiaryCompanyId/reportDate）
