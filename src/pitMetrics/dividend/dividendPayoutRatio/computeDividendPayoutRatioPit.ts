@@ -3,10 +3,10 @@ import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/sh
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../knowledgeDate';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../metricValueWriter';
-import type { MetricNullReason } from '../metricBasis';
+import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/dividendPayoutRatio.ts 的獨立重新實作。只有 TTM 一種
 // basis——股利通常一年發放 1-2 次，單季配息率會嚴重失真，舊架構本來就沒有 Q/Q_ANN。

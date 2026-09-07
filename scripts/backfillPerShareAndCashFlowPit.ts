@@ -9,7 +9,7 @@
 import { computeAndWriteEpsPit } from '../src/pitMetrics/profitability/eps/computeEpsPit';
 import { computeAndWriteBvpsPit } from '../src/pitMetrics/valuation/bvps/computeBvpsPit';
 import { computeAndWriteRevenuePerSharePit } from '../src/pitMetrics/profitability/revenuePerShare/computeRevenuePerSharePit';
-import { computeAndWriteDividendPayoutRatioPit } from '../src/pitMetrics/dividendPayoutRatio/computeDividendPayoutRatioPit';
+import { computeAndWriteDividendPayoutRatioPit } from '../src/pitMetrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
 import { computeAndWriteSgrPit } from '../src/pitMetrics/growth/sgr/computeSgrPit';
 import { computeAndWriteCashFlowPerSharePit } from '../src/pitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
 import { computeAndWriteOcfToNetIncomePit } from '../src/pitMetrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
