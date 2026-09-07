@@ -3,14 +3,19 @@
 //
 // 這支腳本**不沿用**共用的 scripts/pitBackfillFixtures.ts（那組是 113Q3~115Q2 共 8 季，
 // 給其他既有批次共用，改動它會讓其他批次的既有測試基準跟著變動範圍）——自己定義
-// 110Q3~115Q2 共 20 季（5 年），只做 2330 這一家（使用者說的範例，之後要擴大到其他股票
-// 是後續的事）。直接查證過這 20 季 2330 的 quarterly_balance_sheet/quarterly_income_statement
-// 完全沒有缺季、daily_price 從 2021-08-31 開始（早於 110Q3 期末，價格資料足夠涵蓋）。
+// 109Q4~115Q2 共 23 季，只做 2330 這一家（使用者說的範例，之後要擴大到其他股票是後續
+// 的事）。
 //
-// 除了 peRatio/pbRatio 本身，也把 eps/bvps 往回補到同樣的 20 季範圍——這兩支目前只
-// backfill 到 113Q3（2 年），需要跟 peRatio/pbRatio 涵蓋同樣的 5 年範圍，前端才能同時
-// 顯示三者的完整時序。113Q3~115Q2 這段既有已經 backfill 過的資料重跑會自然變成
-// skipped_unchanged（writeMetricValue 內建去重語意），不會壞掉既有資料。
+// 2026-09-07 追加 109Q4~110Q2 這 3 季（原本只有 110Q3~115Q2 共 20 季）——前端河流圖
+// 需要「往前 3 季的緩衝資料」才能在起點畫出統計意義上合理的百分位帶，這 3 季就是那個
+// 緩衝。twse-ts 把 daily_price 全市場往前補到 2020-11-01（2330 實際最早交易日
+// 2020-11-02）後才解除這個瓶頸——之前卡在股價資料只到 2021-08-31，capital_stock_history/
+// quarterly_income_statement_xbrl 早就沒問題（分別回溯到 1991 年/民國 108 年）。
+//
+// 除了 peRatio/pbRatio 本身，也把 eps/bvps 往回補到同樣的範圍——這兩支目前只 backfill
+// 到 113Q3（2 年），需要跟 peRatio/pbRatio 涵蓋同樣的範圍，前端才能同時顯示三者的完整
+// 時序。已經 backfill 過的季度重跑會自然變成 skipped_unchanged（writeMetricValue 內建
+// 去重語意），不會壞掉既有資料。
 //
 // 用法：pnpm tsx scripts/backfillPeRatioAndPbRatioPit.ts
 
@@ -25,9 +30,11 @@ import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 
 const SYMBOLS = ['2330'];
 
-// 110Q3 ~ 115Q2（民國年/季），舊到新排列——2330 這 20 季完全沒有缺季（2026-09-07 直接
-// 查證過）。
+// 109Q4 ~ 115Q2（民國年/季），舊到新排列。
 const QUARTERS: { year: string; season: '1' | '2' | '3' | '4' }[] = [
+  { year: '109', season: '4' },
+  { year: '110', season: '1' },
+  { year: '110', season: '2' },
   { year: '110', season: '3' },
   { year: '110', season: '4' },
   { year: '111', season: '1' },
