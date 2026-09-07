@@ -27,7 +27,13 @@ export const registerPreferredStockOpenApi = (): void => {
       'TWSE 個股日成交資訊查詢），不是內部資料庫的表名——顆粒度到來源，不到逐欄位（逐欄位' +
       '對照見 preferredStock/README.md），每個 entry 都是同一組來源組成的。這些連結目前' +
       '都是互動查詢頁，不是能帶參數直接跳到某一筆記錄的深連結，需要使用者自行輸入公司代號/' +
-      '日期查詢，note 欄位會說明這一點。',
+      '日期查詢，note 欄位會說明這一點。' +
+      'ytwPct（最差殖利率 YTW）= min(currentYieldPct, ytcPct)——currentYieldPct 就是永續殖利率' +
+      '（YTP）；ytcPct（贖回殖利率 YTC）用二分法對現金流現值公式求根，只在可贖回且輸入齊全時' +
+      '才有值。ytcAssumption 標記 ytcPct 的期數假設：贖回日還沒到就用真實到贖回日的年數；' +
+      '贖回日已過（發行人隨時可能贖回但還沒動作，沒有下一個確定贖回時點）就假設「下一次配息後' +
+      '即被贖回」，這是簡化假設不是真實排定的時間，前端顯示時應該額外標註。' +
+      'negativeConvexityWarning 是現價相對發行價溢價超過 2% 的警示旗標。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {

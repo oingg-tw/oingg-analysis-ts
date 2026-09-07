@@ -30,6 +30,25 @@ export const preferredStockEntrySchema = z.object({
       description:
         '買回風險 = 發行價 - 最新收盤價（新台幣元），只在可贖回（redeemable=true）時才計算——發行人贖回是按發行價買回，現價高於發行價時這個值是負的，代表投資人用市價買進卻只能拿回發行價，可能被迫吃下這個負值大小的損失；不可贖回或查無股價時為 null',
     }),
+  ytcPct: z.number().nullable().meta({
+    description:
+      '贖回殖利率（Yield to Call）年化百分比，只在可贖回且發行價/配息/現價/贖回日都齊全時才計算——沒有封閉解，用二分法對現金流現值公式求根。搭配 ytcAssumption 判斷這個數字的期數假設是什麼，不可贖回或缺輸入時為 null',
+  }),
+  ytcAssumption: z
+    .enum(['scheduled_redemption_date', 'past_redemption_date_assumed_next_period'])
+    .nullable()
+    .meta({
+      description:
+        "ytcPct 計算時期數(n)用的假設：'scheduled_redemption_date' 代表贖回日還在未來、n 是真實到贖回日的年數；" +
+        "'past_redemption_date_assumed_next_period' 代表贖回日已過（發行人隨時可能贖回但選擇還沒贖回，沒有下一個確定贖回時點），" +
+        'n 用「下一次配息後即被贖回」的簡化假設，不是真實排定的贖回時間——前端顯示 ytcPct 時應該根據這個欄位額外標註警語',
+    }),
+  ytwPct: z.number().nullable().meta({
+    description: 'YTW（最差殖利率）= min(currentYieldPct, ytcPct)，ytcPct 為 null 時退回等於 currentYieldPct（永續殖利率單獨成立）',
+  }),
+  negativeConvexityWarning: z.boolean().nullable().meta({
+    description: '負凸性警示：現價相對發行價（贖回價）溢價超過 2% 時為 true，代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失；只在可贖回且輸入齊全時計算，否則為 null',
+  }),
 });
 export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;
 

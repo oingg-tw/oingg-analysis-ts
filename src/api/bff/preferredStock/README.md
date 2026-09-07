@@ -43,6 +43,7 @@ API 本身要能查證來源，一開始想標內部 table 名稱，但使用者
 | `nominalDividendRatePct` | **本服務自算**：`dividendRate / issuePrice * 100` |
 | `currentYieldPct` | **本服務自算**：`dividendRate / latestClosePrice * 100` |
 | `callRiskAmount` | **本服務自算**：`issuePrice − latestClosePrice`，只在 `redeemable=true` 時計算 |
+| `ytcPct`／`ytcAssumption`／`ytwPct`／`negativeConvexityWarning` | **本服務自算**：見下方「YTW（最差殖利率）/負凸性警示」一節 |
 
 ## 實作決定：relay + 幾個輕量計算欄位
 
@@ -67,6 +68,32 @@ API 本身要能查證來源，一開始想標內部 table 名稱，但使用者
   發行價買回，現價高於發行價時這個值是負的，代表投資人可能被迫吃下這個負值大小的損失
   （用市價買進卻只能拿回發行價）。
 
+## YTW（最差殖利率）/負凸性警示（2026-09-07 新增）
+
+依 conductor-ts 的「特別股指標計算引擎」規劃文件實作，只做文件裡標註優先評估的這兩支
+（DM/有效存續期/OAS 需要利率樹模型，複雜度高很多，這批不做；股息覆蓋率/信評調降沒有
+任何前端頁面要求，也不做）。純函式計算層在 `src/shared/preferredStockYield.ts`。
+
+- **YTP（永續殖利率）就是 `currentYieldPct`**，不用重算（文件公式 $P_0=D/y_{YTP}$
+  反推 $y_{YTP}=D/P_0$，跟 `currentYieldPct` 的定義完全相同）。
+- **YTC（贖回殖利率）**：現金流是 n 期年配息（`dividendRate`）+ 第 n 期末贖回價
+  （`issuePrice`，發行人贖回是按發行價買回），沒有封閉解，用二分法對現值公式求根
+  （`solveYieldToCall`）。
+- **`n`（期數）依贖回日狀態分兩種情境（`resolveYtcPeriods`）**：實測 26 檔可贖回特別股
+  裡 **14 檔（54%）贖回日已經過了**（例如 1101B 台泥乙特 2023-12-13 已過，現在仍正常
+  交易）——這些證券的真實狀態是「發行人隨時可能贖回，但選擇還沒贖回」，沒有下一個確定
+  的贖回時點可以當 n 用。使用者確認的處理方式：兩種情境都算，都回傳，用 `ytcAssumption`
+  標記清楚：
+  - `scheduled_redemption_date`：贖回日還在未來，n = 無條件進位到贖回日的年數（最小值 1）。
+  - `past_redemption_date_assumed_next_period`：贖回日已過，n=1，假設「下一次配息後即
+    被贖回」的簡化情境——**這是人為假設，不是真實排定的贖回時間**，前端顯示 `ytcPct`
+    時應該根據這個欄位額外標註警語。
+- **`ytwPct` = min(`currentYieldPct`, `ytcPct`)**，`ytcPct` 為 null（不可贖回或缺輸入）
+  時退回等於 `currentYieldPct`。
+- **`negativeConvexityWarning`**：現價相對發行價（贖回價）溢價超過 2% 時為 true，只在
+  可贖回且輸入齊全時計算——沿用 `callRiskAmount` 已確認的「發行人贖回按發行價買回」
+  對應關係。
+
 不進 `pitMetrics`（沒有「季度財報」「knowledge_date」這些概念可以套）也不進
 `filterCatalog.ts`（不是季度財報衍生的計算指標，是證券基本資料 + 市場資料的組合，形狀
 接近 `GET /companies/profile`）。只做「目前上市中」的清單，不做歷史已收回系列的查詢
@@ -85,8 +112,11 @@ API 本身要能查證來源，一開始想標內部 table 名稱，但使用者
 
 ## 相關檔案
 
-`src/shared/sourceData/preferredStock.ts`（查詢層）、`controller.ts`／`route.ts`／
-`openapi.ts`／`types.ts`（API 層）、`tests/shared/sourceData/preferredStock.test.ts`
-（真實資料交叉驗證，含「同一個 preferred_stock_code 要拿最新 series_no」的邊界案例）、
+`src/shared/sourceData/preferredStock.ts`（查詢層）、`src/shared/preferredStockYield.ts`
+（YTW/負凸性純函式計算層）、`controller.ts`／`route.ts`／`openapi.ts`／`types.ts`
+（API 層）、`tests/shared/sourceData/preferredStock.test.ts`（真實資料交叉驗證，含
+「同一個 preferred_stock_code 要拿最新 series_no」的邊界案例）、
+`tests/shared/preferredStockYield.test.ts`（YTC 二分法的封閉解交叉驗證+自洽性驗證、
+`resolveYtcPeriods`/`calculateNegativeConvexityWarning` 邊界案例）、
 `tests/shared/sourceData/marketCap.test.ts`（`getStockPriceAsOf` 冷門股票沒成交日的
 回歸測試）。

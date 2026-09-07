@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/shared/sourceData/preferredStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { solveYieldToCall, resolveYtcPeriods, calculateNegativeConvexityWarning } from '@/shared/preferredStockYield';
 import type { PreferredStockDataSource } from './types';
 
 // 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到來源即可，不用到逐欄位（逐
@@ -88,6 +89,23 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
         // 發行價-現價），這裡不要改回去。
         const callRiskAmount = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? Math.round((right.issuePrice - price.closePrice) * 100) / 100 : null;
 
+        // YTW（最差殖利率）= min(YTC, YTP)。YTP 就是上面已經算好的 currentYieldPct，不用
+        // 重算。YTC 只在可贖回、且發行價/配息/現價/贖回日都齊全時才算得出來——見
+        // preferredStockYield.ts 檔頭說明，n（期數）依贖回日是否已過分兩種情境，
+        // ytcAssumption 標記告訴呼叫端是哪一種。
+        let ytcPct: number | null = null;
+        let ytcAssumption: 'scheduled_redemption_date' | 'past_redemption_date_assumed_next_period' | null = null;
+        if (right?.redeemable === true && right.issuePrice != null && right.dividendRate != null && price?.closePrice != null && right.redemptionDate != null) {
+          const { periods, assumption } = resolveYtcPeriods(right.redemptionDate, new Date());
+          const ytc = solveYieldToCall({ currentPrice: price.closePrice, dividendRate: right.dividendRate, callPrice: right.issuePrice, periods });
+          ytcPct = Math.round(ytc * 100 * 100) / 100;
+          ytcAssumption = assumption;
+        }
+        const ytwPct = ytcPct !== null && currentYieldPct !== null ? Math.min(currentYieldPct, ytcPct) : currentYieldPct;
+
+        const negativeConvexityWarning =
+          right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? calculateNegativeConvexityWarning(price.closePrice, right.issuePrice) : null;
+
         return {
           symbol: security.symbol,
           name: security.name,
@@ -111,6 +129,10 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
           redemptionDate: right?.redemptionDate?.toISOString().slice(0, 10) ?? null,
           redemptionConditions: right?.redemptionConditions ?? null,
           callRiskAmount,
+          ytcPct,
+          ytcAssumption,
+          ytwPct,
+          negativeConvexityWarning,
         };
       })
     );
