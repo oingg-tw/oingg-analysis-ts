@@ -5,6 +5,7 @@ import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/pitMetrics/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/pitMetrics/dupont/queryDupontHistory';
 import { metricHistoryEntrySchema } from '@/pitMetrics/queryMetricHistory';
+import { multiMetricHistoryEntrySchema } from '@/pitMetrics/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import {
@@ -15,6 +16,7 @@ import {
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
   getCompanyMetricHistoryQuerySchema,
+  getCompanyMetricsHistoryQuerySchema,
   getCompanyMonthlyRevenueHistoryQuerySchema,
   getCompanyFinancialStatementQuerySchema,
   getCompanyPeerGroupQuerySchema,
@@ -72,6 +74,14 @@ const metricHistoryResultSchema = z.object({
   basis: z.string(),
   ...totalHasMoreFields,
   entries: z.array(metricHistoryEntrySchema),
+});
+
+const metricsHistoryResultSchema = z.object({
+  symbol: z.string(),
+  metricCodes: z.array(z.string()),
+  basis: z.string(),
+  ...totalHasMoreFields,
+  entries: z.array(multiMetricHistoryEntrySchema),
 });
 
 const monthlyRevenueHistoryResultSchema = z.object({
@@ -226,6 +236,29 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
       400: { description: '缺少 symbol/metricCode/basis，或 metricCode 未知，或 basis 不在該 metricCode 允許的清單內。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/metrics-history',
+    summary: '單一公司一次抓多個 point-in-time 指標歷史時序（畫圖/卡片用）',
+    description:
+      '泛化版「一次抓多個指標」端點——跟 metric-history 一次只能查一個 metricCode 不同，' +
+      '這支用逗號分隔的 metricCodes 一次查多個（例如三率一次拿：' +
+      '"grossMargin,operatingMargin,netProfitMargin"，最多 10 個），依 (fiscalYear,fiscalQuarter)' +
+      '合併成一列，entries[].values 是以 metricCode 為 key 的物件，對應請求時給的清單。' +
+      'basis 套用到清單裡的每個 metricCode，任一個不允許該 basis 就整體回 400（附上是哪個' +
+      'metricCode 不允許），不會部分成功。**這支跟 dupont-history 是不同定位**：dupont-history' +
+      '是杜邦拆解這種真正有語意組裝關係（三/五因子相乘）的家族專用組合端點，寫死具名欄位；這支' +
+      '是任意 metricCode 的通用合併，沒有假設彼此有數學關係，純粹省去前端自己併多次呼叫結果的' +
+      '麻煩。某個 metricCode 在某一期完全沒有列時（例如不同指標 backfill 範圍不同步），對應' +
+      'values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。',
+    tags: ['System'],
+    request: { query: getCompanyMetricsHistoryQuerySchema },
+    responses: {
+      200: { description: '多指標歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricsHistoryResultSchema } } },
+      400: { description: '缺少 symbol/metricCodes/basis，或某個 metricCode 未知，或 basis 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。' },
     },
   });
 

@@ -6,6 +6,7 @@ import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
 import { getRoaHistory } from '@/pitMetrics/roa/queryRoaHistory';
 import { getDupontHistory } from '@/pitMetrics/dupont/queryDupontHistory';
 import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
+import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
@@ -223,6 +224,57 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
 
     const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
     res.status(200).json({ symbol, metricCode, basis, total, hasMore, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const MAX_METRIC_CODES_PER_REQUEST = 10;
+
+export const getCompanyMetricsHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  metricCodes: z
+    .string({ error: 'metricCodes is required.' })
+    .min(1)
+    .meta({ description: `逗號分隔的 metricCode 清單，例如 "grossMargin,operatingMargin,netProfitMargin"（最多 ${MAX_METRIC_CODES_PER_REQUEST} 個）`, example: 'grossMargin,operatingMargin,netProfitMargin' }),
+  basis: z.string({ error: 'basis is required.' }).min(1).meta({ description: "'Q'/'Q_ANN'/'TTM'/'CUM'/'FY' 之一，套用到清單裡的每個 metricCode，任一個不允許就整體回 400" }),
+  limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
+});
+
+// 泛化版的「一次抓多個 metric_code」歷史查詢端點——2026-09-07 使用者要「五年三率」（毛利率/
+// 營業利益率/淨利率）一次拿齊時新增。跟 dupont-history 不同：dupont-history 是特定家族寫死
+// 具名欄位的組合端點；這支是任意 metricCode 清單、用 metricCode 當 key 合併回傳，不要求
+// 彼此有語意組裝關係。basis 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
+// （附上是哪個 metricCode 不允許），不會部分成功。
+export const getCompanyMetricsHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyMetricsHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, basis, limit } = validationResult.data;
+    const metricCodes = [...new Set(validationResult.data.metricCodes.split(',').map((code) => code.trim()).filter((code) => code.length > 0))];
+
+    if (metricCodes.length === 0) {
+      return res.status(400).json({ message: 'metricCodes 至少要指定一個。' });
+    }
+    if (metricCodes.length > MAX_METRIC_CODES_PER_REQUEST) {
+      return res.status(400).json({ message: `metricCodes 最多 ${MAX_METRIC_CODES_PER_REQUEST} 個，收到 ${metricCodes.length} 個。` });
+    }
+
+    for (const metricCode of metricCodes) {
+      const definition = metricDefinitionRegistry[metricCode];
+      if (!definition) {
+        return res.status(400).json({ message: `未知的 metricCode "${metricCode}"。` });
+      }
+      if (!definition.allowedBases.includes(basis as (typeof definition.allowedBases)[number])) {
+        return res.status(400).json({ message: `metricCode "${metricCode}" 不允許 basis "${basis}"，允許的值：${definition.allowedBases.join(', ')}。` });
+      }
+    }
+
+    const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, basis as never, '2', '', limit);
+    res.status(200).json({ symbol, metricCodes, basis, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
