@@ -21,7 +21,7 @@ import etfScreenerRouter from './api/bff/market/etfScreener/route';
 import rankingRouter from './api/bff/metrics/valuation/ranking/route';
 import equityRiskPremiumRouter from './api/bff/metrics/macro/equityRiskPremium/route';
 import govBondYield10yRouter from './api/bff/metrics/macro/govBondYield10y/route';
-import { bffAuth } from './shared/bffAuth';
+import { bffAuth } from './api/bff/bffAuth';
 
 const router = Router();
 

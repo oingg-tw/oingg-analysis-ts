@@ -62,7 +62,7 @@ const startServer = async () => {
     // （bffAuth.ts 本身在沒設這個環境變數時會直接放行，那個行為是為了本機開發方便，正式環境
     // 不該依賴同一個寬容度）。
     if (config.isProduction && !config.bffApiKey) {
-      throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/shared/bffAuth.ts。');
+      throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/api/bff/bffAuth.ts。');
     }
     checkFilterCatalogConsistency(config.isProduction);
     validateMetricTableRegistry(config.isProduction);

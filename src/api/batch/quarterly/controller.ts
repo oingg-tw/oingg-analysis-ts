@@ -12,7 +12,7 @@ import { quarterlyIndicatorJobs } from './indicatorRegistry';
 // 202、背景繼續跑」的非同步模式，現在先不用預先做那一層複雜度。
 //
 // 目前沒有任何驗證機制擋這支端點——跟 api/bff 不一樣（api/bff 已經接上 bff-ts 共用
-// 密鑰驗證，見 src/shared/bffAuth.ts），這支是刻意留在 bffAuth 的驗證範圍之外，因為呼叫方
+// 密鑰驗證，見 src/api/bff/bffAuth.ts），這支是刻意留在 bffAuth 的驗證範圍之外，因為呼叫方
 // 是 Cloud Scheduler 不是 bff-ts，不該共用同一把密鑰。正式部署前至少要靠 Cloud Run 的 IAM
 // invoker 權限（只有指定的 Scheduler 服務帳號能呼叫）擋住，不能公開曝露。
 export const triggerQuarterlyBatchCompute = async (req: Request, res: Response, next: NextFunction) => {
