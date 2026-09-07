@@ -119,8 +119,8 @@ export const getCompanyRoeHistory = async (req: Request, res: Response, next: Ne
     }
 
     const { symbol, basis, limit } = validationResult.data;
-    const entries = await getRoeHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, metricCode: 'roe', basis, entries });
+    const { entries, total, hasMore } = await getRoeHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, metricCode: 'roe', basis, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -147,8 +147,8 @@ export const getCompanyRoaHistory = async (req: Request, res: Response, next: Ne
     }
 
     const { symbol, basis, limit } = validationResult.data;
-    const entries = await getRoaHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, metricCode: 'roa', basis, entries });
+    const { entries, total, hasMore } = await getRoaHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, metricCode: 'roa', basis, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -178,8 +178,8 @@ export const getCompanyDupontHistory = async (req: Request, res: Response, next:
     }
 
     const { symbol, basis, limit } = validationResult.data;
-    const entries = await getDupontHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, basis, entries });
+    const { entries, total, hasMore } = await getDupontHistory(symbol, basis, limit);
+    res.status(200).json({ symbol, basis, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -220,8 +220,8 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
       return res.status(400).json({ message: `metricCode "${metricCode}" 不允許 basis "${basis}"，允許的值：${definition.allowedBases.join(', ')}。` });
     }
 
-    const entries = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
-    res.status(200).json({ symbol, metricCode, basis, entries });
+    const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
+    res.status(200).json({ symbol, metricCode, basis, total, hasMore, entries });
   } catch (error) {
     next(error);
   }

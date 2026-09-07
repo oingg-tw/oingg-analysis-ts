@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory } from '../queryMetricHistory';
+import { getMetricHistory, type MetricHistoryResult } from '../queryMetricHistory';
 import type { MetricBasis } from '../metricBasis';
 
 export const roeHistoryEntrySchema = z.object({
@@ -31,5 +31,5 @@ export type RoeHistoryEntry = z.infer<typeof roeHistoryEntrySchema>;
 // dataType/subsidiaryCompanyId 比照 src/api/bff/screener/queryBuilder.ts 的既有慣例，
 // 固定用合併報表('2')、母公司本身('')，不開放使用者選——BFF 面向的端點目前一律不曝露
 // 這兩個內部細節維度。
-export const getRoeHistory = (symbol: string, basis: MetricBasis, limit: number): Promise<RoeHistoryEntry[]> =>
+export const getRoeHistory = (symbol: string, basis: MetricBasis, limit: number): Promise<MetricHistoryResult> =>
   getMetricHistory(symbol, 'roe', basis, '2', '', limit);

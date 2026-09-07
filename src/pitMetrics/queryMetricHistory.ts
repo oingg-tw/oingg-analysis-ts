@@ -17,6 +17,18 @@ export const metricHistoryEntrySchema = z.object({
 });
 export type MetricHistoryEntry = z.infer<typeof metricHistoryEntrySchema>;
 
+export interface MetricHistoryResult {
+  entries: MetricHistoryEntry[];
+  // 這個 symbol/metricCode/basis 去重後總共有幾期資料（不受 limit 影響）——前端可以拿
+  // 這個數字決定要不要提供「看更長區間」的選項（例如完整歷史只有 6 年，就不要讓使用者
+  // 點下「近 10 年」，點了也只會拿到一樣的 6 年資料）。
+  total: number;
+  // = total > entries.length，等同於「還有更早的資料沒有回傳」；entries 固定是「最近 N
+  // 期」，往前翻頁目前還做不到（見 abstract-crafting-journal.md 的相關規劃），這個欄位
+  // 至少讓前端知道「有更多」跟「這就是全部」的差別。
+  hasMore: boolean;
+}
+
 // 從 src/pitMetrics/roe/queryRoeHistory.ts 抽出來的通用版本：任何單一 metric_code 查
 // metric_values 歷史時序都走這支，不用每支指標各自重寫一次「依 (fiscalYear,fiscalQuarter)
 // 去重取最大 knowledge_date、切 limit、反轉成舊到新」的邏輯。live 語意：同一個座標如果有
@@ -29,7 +41,7 @@ export const getMetricHistory = async (
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
   limit: number
-): Promise<MetricHistoryEntry[]> => {
+): Promise<MetricHistoryResult> => {
   const rows = await analysisPrisma.metricValue.findMany({
     where: { symbol, metricCode, basis, dataType, subsidiaryCompanyId },
     orderBy: [{ fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { knowledgeDate: 'desc' }],
@@ -41,7 +53,10 @@ export const getMetricHistory = async (
     if (!latestPerPeriod.has(key)) latestPerPeriod.set(key, row);
   }
 
-  return [...latestPerPeriod.values()]
+  const allPeriods = [...latestPerPeriod.values()];
+  const total = allPeriods.length;
+
+  const entries = allPeriods
     .slice(0, limit)
     .reverse() // 轉成由舊到新，方便前端直接畫時序圖
     .map((row) => ({
@@ -52,4 +67,6 @@ export const getMetricHistory = async (
       knowledgeDate: row.knowledgeDate.toISOString().slice(0, 10),
       knowledgeDateIsFallback: row.knowledgeDateIsFallback,
     }));
+
+  return { entries, total, hasMore: total > entries.length };
 };

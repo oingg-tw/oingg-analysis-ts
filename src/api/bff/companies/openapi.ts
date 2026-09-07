@@ -32,10 +32,20 @@ const capitalStockHistoryResultSchema = z.object({
   entries: z.array(capitalStockHistoryEntrySchema),
 });
 
+// total/hasMore：2026-09-07 使用者要求——total 是這個 symbol/metricCode/basis 去重後
+// 總共有幾期（不受 limit 影響），hasMore = total > entries.length。前端可以用這兩個
+// 欄位決定要不要提供「看更長區間」的選項，例如完整歷史只有 6 年就不該讓使用者點「近 10
+// 年」（點了也只會拿到一樣的 6 年資料）。四支歷史端點都是同樣的語意，用同一段說明。
+const totalHasMoreFields = {
+  total: z.number().meta({ description: '這個查詢條件去重後總共有幾期資料，不受 limit 影響——前端可以用這個數字判斷要不要提供更長區間的選項' }),
+  hasMore: z.boolean().meta({ description: '= total > entries 的實際筆數，代表是否還有更早的資料沒有回傳（目前沒有 offset，無法翻頁取得）' }),
+};
+
 const roeHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roe'),
   basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  ...totalHasMoreFields,
   entries: z.array(roeHistoryEntrySchema),
 });
 
@@ -43,12 +53,14 @@ const roaHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roa'),
   basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  ...totalHasMoreFields,
   entries: z.array(roaHistoryEntrySchema),
 });
 
 const dupontHistoryResultSchema = z.object({
   symbol: z.string(),
   basis: z.enum(['Q', 'TTM']),
+  ...totalHasMoreFields,
   entries: z.array(dupontHistoryEntrySchema),
 });
 
@@ -56,6 +68,7 @@ const metricHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.string(),
   basis: z.string(),
+  ...totalHasMoreFields,
   entries: z.array(metricHistoryEntrySchema),
 });
 
