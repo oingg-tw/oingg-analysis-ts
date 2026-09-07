@@ -22,7 +22,9 @@ export const registerPreferredStockOpenApi = (): void => {
       '面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。' +
       'callRiskAmount（買回風險）= 發行價 - 最新收盤價，只在可贖回時才計算——現價高於發行價' +
       '時這個值是負的，代表投資人可能被發行人用發行價買回、被迫吃下這個負值大小的損失。' +
-      'limit/offset 分頁沿用 GET /companies 的慣例。',
+      'limit/offset 分頁沿用 GET /companies 的慣例。' +
+      'dataSources 標記這份清單合併自哪些上游資料表，方便查證——顆粒度到表，不到逐欄位' +
+      '（逐欄位對照見 preferredStock/README.md），每個 entry 都是同一組來源組成的。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {

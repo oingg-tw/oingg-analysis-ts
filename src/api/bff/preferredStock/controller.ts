@@ -2,6 +2,16 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/shared/sourceData/preferredStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import type { PreferredStockDataSource } from './types';
+
+// 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到表即可，不用到逐欄位（逐欄位
+// 對照見 README.md）。每個 entry 都是同樣這三個上游來源合併出來的，固定不變，所以放在
+// 回應最外層一次，不重複塞進每個 entry。
+const PREFERRED_STOCK_DATA_SOURCES: PreferredStockDataSource[] = [
+  { service: 'twse-ts', table: 'export.isin_securities' },
+  { service: 'mops-ts', table: 'export.preferred_stock_right' },
+  { service: 'twse-ts', table: 'export.daily_price' },
+];
 
 // 目前只有 28 檔，遠低於這個上限——加分頁是為了跟其他清單型端點（GET /companies）維持
 // 一致的介面慣例，也預留之後名單成長的空間，不是現在就有效能疑慮。
@@ -80,7 +90,7 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
       })
     );
 
-    res.status(200).json({ count: filtered.length, limit, offset, entries });
+    res.status(200).json({ count: filtered.length, limit, offset, dataSources: PREFERRED_STOCK_DATA_SOURCES, entries });
   } catch (error) {
     next(error);
   }

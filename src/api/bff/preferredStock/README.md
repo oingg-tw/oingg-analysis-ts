@@ -12,6 +12,25 @@
 | TWSE `export.daily_price` | 特別股的 symbol（例如 `1101B`）跟一般股票一樣是 key，直接複用既有的 `getStockPriceAsOf`（`src/shared/sourceData/marketCap.ts`），不用新寫查詢。 |
 | mops-ts `export.preferred_stock_right`（`mopsExportPrisma`） | 77 列，`preferred_stock_code` 對應 `isin_securities.symbol`（28 檔目前上市的全部對得上）。**同一個 code 會有多列**（`series_no` 遞增，代表配息條件歷次修訂），查詢時要 `ORDER BY series_no DESC LIMIT 1` 拿最新條款，不能假設一個 code 只有一列。 |
 
+## 逐欄位資料來源對照
+
+`GET /preferred-stocks` 的回應是三個來源攤平合併成一個物件。2026-09-07 使用者要求
+API 本身要能查證來源，已在回應最外層加上 `dataSources`（`[{service, table}, ...]`，
+見 `types.ts` 的 `preferredStockDataSourceSchema`）——**顆粒度只到表，不到逐欄位**
+（每個 entry 都是同樣這三個上游來源合併出來的，逐欄位標記是不必要的重複資訊）。逐
+欄位要對到哪個確切欄位，查以下這張表（之後這支端點的欄位有變動要同步更新）：
+
+| 欄位 | 來源 |
+|---|---|
+| `symbol`/`name`/`isinCode`/`listedDate`/`marketType` | twse-ts `export.isin_securities`（原樣透傳） |
+| `issueDate`/`issuePrice`/`dividendRate` | mops-ts `export.preferred_stock_right`（原樣透傳，取最新 `series_no`） |
+| `cumulativeDividend`/`participatingExcessDividend`/`liquidationPreference`/`votingRights`/`convertible`/`conversionStartDate` | 同上，`preferred_stock_right`（原樣透傳） |
+| `redeemable`/`redemptionDate`/`redemptionConditions` | 同上，`preferred_stock_right`（原樣透傳，見下方「發行人贖回權」說明） |
+| `latestClosePrice`/`latestPriceDate` | twse-ts `export.daily_price`（透過 `getStockPriceAsOf`，見 `marketCap.ts`） |
+| `nominalDividendRatePct` | **本服務自算**：`dividendRate / issuePrice * 100` |
+| `currentYieldPct` | **本服務自算**：`dividendRate / latestClosePrice * 100` |
+| `callRiskAmount` | **本服務自算**：`issuePrice − latestClosePrice`，只在 `redeemable=true` 時計算 |
+
 ## 實作決定：relay + 幾個輕量計算欄位
 
 `dividend_rate` 欄位是「每股固定配息金額」（新台幣元），不是百分比——欄位名稱容易誤會，

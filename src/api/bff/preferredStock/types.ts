@@ -33,10 +33,22 @@ export const preferredStockEntrySchema = z.object({
 });
 export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;
 
+// 顆粒度只到「表」，不到逐欄位——每個 entry 都是同樣這三個上游來源合併出來的，逐欄位標記
+// 對這批資料來說是不必要的重複資訊，見 controller.ts 的 PREFERRED_STOCK_DATA_SOURCES。
+// 逐欄位對照表留在 README.md（人看的文件），這裡只回答「查證時要去哪幾個地方對」。
+export const preferredStockDataSourceSchema = z.object({
+  service: z.string().meta({ description: '提供資料的上游服務名稱', example: 'mops-ts' }),
+  table: z.string().meta({ description: '上游服務裡的資料表/view 名稱', example: 'export.preferred_stock_right' }),
+});
+export type PreferredStockDataSource = z.infer<typeof preferredStockDataSourceSchema>;
+
 export const preferredStocksResultSchema = z.object({
   count: z.number().meta({ description: '符合條件（套用 symbol 篩選後）的總筆數，不受 limit/offset 影響' }),
   limit: z.number(),
   offset: z.number(),
+  dataSources: z
+    .array(preferredStockDataSourceSchema)
+    .meta({ description: '這份清單合併自哪些上游資料表——顆粒度到表，不到逐欄位（逐欄位對照見 README.md），每個 entry 都是同一組來源組成的' }),
   entries: z.array(preferredStockEntrySchema),
 });
 export type PreferredStocksResult = z.infer<typeof preferredStocksResultSchema>;
