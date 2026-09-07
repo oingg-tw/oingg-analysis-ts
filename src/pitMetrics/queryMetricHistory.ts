@@ -34,6 +34,14 @@ export interface MetricHistoryResult {
 // 去重取最大 knowledge_date、切 limit、反轉成舊到新」的邏輯。live 語意：同一個座標如果有
 // 多筆（重編疊加），只取 knowledge_date 最大的那筆，符合
 // docs/analysis-ts-spec-v0.2.md §4.4「live 端點一律隱含取每組最大 knowledge_date」語義。
+//
+// 已知限制（2026-09-08）：目前不適用逐日型指標。下方 dedup key 是
+// `${fiscalYear}-${fiscalQuarter}`，對逐日型指標（fiscalQuarter 固定填
+// DAILY_CADENCE_FISCAL_QUARTER=0，見 metricValueWriter.ts）而言，同一年所有交易日會
+// 全部壓成同一個 key（例如「2026-0」），只留下 knowledgeDate 最大的一筆，等於整年只剩
+// 一天——這對季報型指標是正確的去重邏輯，但對逐日型指標會遺失幾乎全部資料。之後真的把
+// Beta/MarketRatios 遷入 pitMetrics 時，需要另外寫一支以 knowledgeDate（或
+// tradeDate）為期別鍵的逐日版 history 查詢，不能直接複用這支。
 export const getMetricHistory = async (
   symbol: string,
   metricCode: string,

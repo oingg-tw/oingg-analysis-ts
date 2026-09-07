@@ -2,14 +2,20 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { metricDefinitionRegistry } from './metricDefinitionRegistry';
 import type { MetricBasis, MetricNullReason } from './metricBasis';
 
+// 逐日型指標（Beta/MarketRatios 未來遷入 pitMetrics 時）固定使用的 fiscalQuarter
+// sentinel 值。真實季報型指標只會用 1~4，不會撞到。詳見 schema.prisma 的
+// MetricValue model 註解——fiscalQuarter 不再允許 null，逐日型指標一律填這個常數。
+export const DAILY_CADENCE_FISCAL_QUARTER = 0;
+
 export interface MetricValueCoordinate {
   symbol: string;
   metricCode: string;
   basis: MetricBasis;
-  fiscalYear: number; // 西元年
-  fiscalQuarter: number | null;
+  fiscalYear: number; // 西元年；逐日型指標填交易日的西元年
+  fiscalQuarter: number; // 季報型 1~4；逐日型固定 DAILY_CADENCE_FISCAL_QUARTER
   dataType: string;
   subsidiaryCompanyId: string;
+  tradeDate?: Date | null; // 純資訊性欄位，只有逐日型指標會填，不進唯一鍵
 }
 
 export interface MetricValueInput extends MetricValueCoordinate {
@@ -63,6 +69,10 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     dataType: input.dataType,
     subsidiaryCompanyId: input.subsidiaryCompanyId,
   };
+  // tradeDate 刻意不放進 coordinateWhere：逐日型指標靠 fiscalYear +
+  // fiscalQuarter=DAILY_CADENCE_FISCAL_QUARTER 定位到「這支指標這一年的全部逐日列」，
+  // 再用 knowledgeDate desc 取最新，跟季報型走同一條路徑，不用另開分支。
+  const tradeDate = input.tradeDate ?? null;
 
   const existing = await analysisPrisma.metricValue.findFirst({
     where: coordinateWhere,
@@ -75,6 +85,7 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     await analysisPrisma.metricValue.create({
       data: {
         ...coordinateWhere,
+        tradeDate,
         value: input.value,
         nullReason: input.nullReason,
         knowledgeDate: input.knowledgeDate,
@@ -109,6 +120,7 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
   await analysisPrisma.metricValue.create({
     data: {
       ...coordinateWhere,
+      tradeDate,
       value: input.value,
       nullReason: input.nullReason,
       knowledgeDate: input.knowledgeDate,

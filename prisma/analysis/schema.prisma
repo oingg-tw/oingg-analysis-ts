@@ -177,10 +177,20 @@ model MetricDefinition {
   @@map("metric_definitions")
 }
 
-// 指標事實層——spike 範圍只會有 metric_code = 'roe' 的資料。
+// 指標事實層。
+//
+// 2026-09-08：解決逐日型指標（Beta/MarketRatios 未來若遷入 pitMetrics）的
+// fiscalQuarter=NULL 唯一鍵缺口。原本考慮「加 tradeDate 欄位 + 手寫 SQL 的 partial
+// unique index（WHERE trade_date IS NOT NULL）」，但 Prisma schema DSL 不支援 partial
+// index——手寫進 migration 的 index 不會出現在 schema.prisma，下一次 `prisma migrate
+// dev` 比對時會被判定成「DB 多出來的物件」而產生 DROP INDEX，這是一條會遲早出事的脆弱
+// 防線。改用 **sentinel 值**：逐日型指標的 fiscalQuarter 固定寫 0（真實季度只有
+// 1~4，不會撞到既有資料），fiscalYear 寫交易日的西元年，knowledgeDate 寫交易日本身
+// （逐日資料沒有公告延遲，當天就是市場知道的那天）——這樣現有的 @@unique 完全不用改
+// 就能正確運作，Prisma 原生可表達，零 schema 漂移風險。任何寫入路徑都不應該再寫
+// fiscalQuarter=null，見下方 fiscalQuarter 欄位註解與 metricValueWriter.ts 的
+// DAILY_CADENCE_FISCAL_QUARTER 常數。
 model MetricValue {
-  // fiscalQuarter 未來給 FY 類 basis 用時允許 null，nullable 欄位不能進 Postgres
-  // PRIMARY KEY，所以用 surrogate key，複合識別鍵另開 @@unique。
   id BigInt @id @default(autoincrement())
 
   symbol String
@@ -188,6 +198,8 @@ model MetricValue {
   metricCode String @map("metric_code")
 
   // 'Q' | 'CUM' | 'TTM' | 'Q_ANN' | 'FY'，應用層 zod 驗證見 src/pitMetrics/metricBasis.ts。
+  // 逐日型指標的 basis 詞彙（例如 Beta 的 1Y 日頻/2Y 週頻/5Y 月頻三個窗口）目前完全沒有
+  // 涵蓋，是獨立於這次 schema 修正之外、還沒解的設計問題，等真的要遷移逐日型指標時再設計。
   basis String
 
   // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
@@ -195,8 +207,15 @@ model MetricValue {
   dataType            String @map("data_type") // '1' = 個體, '2' = 合併
   subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
 
-  fiscalYear    Int  @map("fiscal_year") @db.SmallInt // 西元年（民國 + 1911）
-  fiscalQuarter Int? @map("fiscal_quarter") @db.SmallInt // 1~4；FY 類 basis 才是 null（ROE 這次不會用到 null）
+  fiscalYear Int @map("fiscal_year") @db.SmallInt // 西元年（民國 + 1911）；逐日型指標填交易日的西元年
+  // 1~4 是季報型指標；逐日型指標固定填 0（sentinel，見上方 model 註解）——**任何寫入路徑
+  // 都不應該寫 null**，這是 2026-09-08 之前的舊規則，已經改掉。
+  fiscalQuarter Int @map("fiscal_quarter") @db.SmallInt
+
+  // 逐日型指標的實際交易日——純資訊性欄位，不進任何唯一鍵/索引，季報型指標永遠是 null。
+  // 讓查資料的人不用知道「fiscalQuarter=0 代表看 knowledgeDate」這條隱規則就能看懂
+  // 這是哪一天的逐日值。命名沿用 BetaResult/MarketRatiosResult 既有慣例。
+  tradeDate DateTime? @map("trade_date") @db.Date
 
   // 算出來的最終數字，跟本檔案上方 45 表 `*Value` 結尾（原始輸入回顯）語意不同，見檔頭說明。
   // null 代表算不出來，原因見 nullReason。
@@ -220,9 +239,8 @@ model MetricValue {
 
   metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
 
-  // 複合識別鍵。fiscalQuarter 可為 null 時 Postgres UNIQUE 預設把多個 null 視為互不相同
-  // （不是 NULLS NOT DISTINCT，Prisma 無原生語法表達）——ROE 這次恆有 fiscalQuarter 非
-  // null，不受影響，是已知但刻意不處理的缺口，等真的有 FY 類 basis 指標遷入時再處理。
+  // 複合識別鍵。2026-09-08 起 fiscalQuarter 恆為實值（季報型 1~4、逐日型 sentinel 0），
+  // 不再允許 null，這個唯一鍵現在對逐日型指標也能正確去重（見上方 model 註解的設計過程）。
   @@unique([symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_values_identity_key")
   @@index([symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
   @@map("metric_values")
