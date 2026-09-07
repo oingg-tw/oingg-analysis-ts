@@ -33,12 +33,19 @@ export const preferredStockEntrySchema = z.object({
 });
 export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;
 
-// 顆粒度只到「表」，不到逐欄位——每個 entry 都是同樣這三個上游來源合併出來的，逐欄位標記
-// 對這批資料來說是不必要的重複資訊，見 controller.ts 的 PREFERRED_STOCK_DATA_SOURCES。
-// 逐欄位對照表留在 README.md（人看的文件），這裡只回答「查證時要去哪幾個地方對」。
+// 顆粒度只到「來源」，不到逐欄位——每個 entry 都是同樣這三個上游來源合併出來的，逐欄位
+// 標記對這批資料來說是不必要的重複資訊，見 controller.ts 的 PREFERRED_STOCK_DATA_SOURCES。
+// 逐欄位對照表留在 README.md（人看的文件），這裡只回答「查證時要去哪個公開頁面對」。
+//
+// 2026-09-07 原本用內部 table 名稱（例如 export.preferred_stock_right），使用者指出這對
+// 終端使用者沒有意義（看不到也查不了我們的內部資料庫）——改成跟 twse-ts/mops-ts 要來的
+// 公開查證頁面 URL。這些大多是互動查詢頁（使用者要自己輸入公司代號/日期），不是能直接
+// 帶參數跳到某一筆記錄的深連結，`note` 欄位說明這個限制，避免使用者誤以為點了就會看到
+// 對應那一列。
 export const preferredStockDataSourceSchema = z.object({
-  service: z.string().meta({ description: '提供資料的上游服務名稱', example: 'mops-ts' }),
-  table: z.string().meta({ description: '上游服務裡的資料表/view 名稱', example: 'export.preferred_stock_right' }),
+  name: z.string().meta({ description: '這個公開查證來源的名稱', example: 'MOPS 特別股權利基本資料查詢' }),
+  url: z.string().meta({ description: '公開查證頁面網址', example: 'https://mopsov.twse.com.tw/mops/web/t47sb12' }),
+  note: z.string().nullable().meta({ description: '查證時的補充說明（例如是互動查詢頁、需要自行輸入哪些條件，不是深連結）' }),
 });
 export type PreferredStockDataSource = z.infer<typeof preferredStockDataSourceSchema>;
 

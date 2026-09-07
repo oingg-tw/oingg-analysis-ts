@@ -15,10 +15,23 @@
 ## 逐欄位資料來源對照
 
 `GET /preferred-stocks` 的回應是三個來源攤平合併成一個物件。2026-09-07 使用者要求
-API 本身要能查證來源，已在回應最外層加上 `dataSources`（`[{service, table}, ...]`，
-見 `types.ts` 的 `preferredStockDataSourceSchema`）——**顆粒度只到表，不到逐欄位**
-（每個 entry 都是同樣這三個上游來源合併出來的，逐欄位標記是不必要的重複資訊）。逐
-欄位要對到哪個確切欄位，查以下這張表（之後這支端點的欄位有變動要同步更新）：
+API 本身要能查證來源，一開始想標內部 table 名稱，但使用者指出這對終端使用者沒有
+意義（看不到也查不了我們的內部資料庫）——改成跨團隊跟 twse-ts/mops-ts 要來的**公開
+查證頁面 URL**，已在回應最外層加上 `dataSources`（`[{name, url, note}, ...]`，見
+`types.ts` 的 `preferredStockDataSourceSchema`）：
+
+| `name` | `url` | 說明 |
+|---|---|---|
+| TWSE 國際證券辨識號碼（ISIN）一覽表 | `https://isin.twse.com.tw/isin/C_public.jsp?strMode=2` | twse-ts 實際抓取 `isin_securities` 的來源本身（不是 API，是這個公開網頁），使用者要自行在「特別股」分類區塊找到對應代號核對。目前 28 檔特別股全部是「上市」（`strMode=2`）；twse-ts 提到「上櫃」（`strMode=4`）有額外例外收錄，但目前資料庫裡沒有任何一檔特別股是上櫃，之後如果出現要記得補上第二個來源。 |
+| MOPS 特別股權利基本資料查詢 | `https://mopsov.twse.com.tw/mops/web/t47sb12` | `preferred_stock_right` 的公開來源，mops-ts 2026-09-07 用 2002A/2881A 逐欄位對照過完全吻合。 |
+| TWSE 個股日成交資訊查詢 | `https://www.twse.com.tw/zh/trading/historical/stock-day.html` | `daily_price` 的公開來源——twse-ts 實際抓取走的是機器可讀的 OpenAPI（`openapi.twse.com.tw`），但這裡選人看得懂、能操作的查詢頁，因為 `dataSources` 是給終端使用者查證用的。 |
+
+**三個都是互動查詢頁，不是深連結**——沒有辦法帶參數直接跳到某一筆記錄，使用者點進去
+後還要自己輸入公司代號/日期查詢，`note` 欄位會說明這一點，避免使用者誤以為點了就會
+看到對應那一列。
+
+**逐欄位**要對到哪個確切欄位（比 `dataSources` 更細的顆粒度），查以下這張表（之後這
+支端點的欄位有變動要同步更新）：
 
 | 欄位 | 來源 |
 |---|---|

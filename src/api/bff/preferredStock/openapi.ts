@@ -23,8 +23,11 @@ export const registerPreferredStockOpenApi = (): void => {
       'callRiskAmount（買回風險）= 發行價 - 最新收盤價，只在可贖回時才計算——現價高於發行價' +
       '時這個值是負的，代表投資人可能被發行人用發行價買回、被迫吃下這個負值大小的損失。' +
       'limit/offset 分頁沿用 GET /companies 的慣例。' +
-      'dataSources 標記這份清單合併自哪些上游資料表，方便查證——顆粒度到表，不到逐欄位' +
-      '（逐欄位對照見 preferredStock/README.md），每個 entry 都是同一組來源組成的。',
+      'dataSources 是給終端使用者查證用的公開頁面連結（TWSE ISIN 網站/MOPS 特別股權利查詢/' +
+      'TWSE 個股日成交資訊查詢），不是內部資料庫的表名——顆粒度到來源，不到逐欄位（逐欄位' +
+      '對照見 preferredStock/README.md），每個 entry 都是同一組來源組成的。這些連結目前' +
+      '都是互動查詢頁，不是能帶參數直接跳到某一筆記錄的深連結，需要使用者自行輸入公司代號/' +
+      '日期查詢，note 欄位會說明這一點。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {

@@ -4,13 +4,38 @@ import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/sha
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import type { PreferredStockDataSource } from './types';
 
-// 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到表即可，不用到逐欄位（逐欄位
-// 對照見 README.md）。每個 entry 都是同樣這三個上游來源合併出來的，固定不變，所以放在
-// 回應最外層一次，不重複塞進每個 entry。
+// 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到來源即可，不用到逐欄位（逐
+// 欄位對照見 README.md）。每個 entry 都是同樣這三個上游來源合併出來的，固定不變，所以
+// 放在回應最外層一次，不重複塞進每個 entry。
+//
+// 原本標內部 table 名稱，使用者指出對使用者沒意義，改成跟 twse-ts/mops-ts 要來的公開
+// 查證頁面 URL（2026-09-07 跨團隊確認過）：
+// - isin_securities（特別股清單）：twse-ts 實際抓取的來源就是這個公開頁面本身（不是
+//   API），目前 28 檔特別股全部是「上市」（strMode=2）——twse-ts 提到他們對「上櫃」
+//   （strMode=4）有額外例外收錄，但目前資料庫裡沒有任何一檔特別股是上櫃，這裡先只放
+//   上市那個頁面連結，之後如果真的出現上櫃特別股要記得補上第二個來源。
+// - preferred_stock_right（發行條款）：MOPS 公開資訊觀測站的特別股權利查詢頁，mops-ts
+//   已用 2002A/2881A 逐欄位對照過完全吻合。
+// - daily_price（收盤價）：twse-ts 同時有機器可讀的 OpenAPI（openapi.twse.com.tw）跟
+//   人看的查詢頁兩種來源，這裡選查詢頁——這個欄位是給終端使用者查證用，不是給機器讀的。
+// 三個來源目前都是「互動查詢頁」，不是能帶參數直接跳到那一筆記錄的深連結，`note` 說明
+// 這個限制。
 const PREFERRED_STOCK_DATA_SOURCES: PreferredStockDataSource[] = [
-  { service: 'twse-ts', table: 'export.isin_securities' },
-  { service: 'mops-ts', table: 'export.preferred_stock_right' },
-  { service: 'twse-ts', table: 'export.daily_price' },
+  {
+    name: 'TWSE 國際證券辨識號碼（ISIN）一覽表',
+    url: 'https://isin.twse.com.tw/isin/C_public.jsp?strMode=2',
+    note: '查詢頁面，需自行在「特別股」分類區塊裡找到對應股票代號核對，非深連結',
+  },
+  {
+    name: 'MOPS 特別股權利基本資料查詢',
+    url: 'https://mopsov.twse.com.tw/mops/web/t47sb12',
+    note: '互動查詢頁，需自行輸入公司代號＋市場別查詢，非深連結',
+  },
+  {
+    name: 'TWSE 個股日成交資訊查詢',
+    url: 'https://www.twse.com.tw/zh/trading/historical/stock-day.html',
+    note: '互動查詢頁，需自行輸入日期與股票代號查詢，非深連結',
+  },
 ];
 
 // 目前只有 28 檔，遠低於這個上限——加分頁是為了跟其他清單型端點（GET /companies）維持
