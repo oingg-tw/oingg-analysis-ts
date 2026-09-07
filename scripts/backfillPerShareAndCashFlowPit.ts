@@ -6,15 +6,15 @@
 // 用法：pnpm tsx scripts/backfillPerShareAndCashFlowPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前兩批 backfill 腳本同一組）。
 
-import { computeAndWriteEpsPit } from '../src/pitMetrics/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/pitMetrics/bvps/computeBvpsPit';
-import { computeAndWriteRevenuePerSharePit } from '../src/pitMetrics/revenuePerShare/computeRevenuePerSharePit';
+import { computeAndWriteEpsPit } from '../src/pitMetrics/profitability/eps/computeEpsPit';
+import { computeAndWriteBvpsPit } from '../src/pitMetrics/valuation/bvps/computeBvpsPit';
+import { computeAndWriteRevenuePerSharePit } from '../src/pitMetrics/profitability/revenuePerShare/computeRevenuePerSharePit';
 import { computeAndWriteDividendPayoutRatioPit } from '../src/pitMetrics/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { computeAndWriteSgrPit } from '../src/pitMetrics/sgr/computeSgrPit';
-import { computeAndWriteCashFlowPerSharePit } from '../src/pitMetrics/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWriteOcfToNetIncomePit } from '../src/pitMetrics/ocfToNetIncome/computeOcfToNetIncomePit';
-import { computeAndWriteAccrualsRatioPit } from '../src/pitMetrics/accrualsRatio/computeAccrualsRatioPit';
-import { computeAndWriteFcfYieldPit } from '../src/pitMetrics/fcfYield/computeFcfYieldPit';
+import { computeAndWriteSgrPit } from '../src/pitMetrics/growth/sgr/computeSgrPit';
+import { computeAndWriteCashFlowPerSharePit } from '../src/pitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
+import { computeAndWriteOcfToNetIncomePit } from '../src/pitMetrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
+import { computeAndWriteAccrualsRatioPit } from '../src/pitMetrics/quality/accrualsRatio/computeAccrualsRatioPit';
+import { computeAndWriteFcfYieldPit } from '../src/pitMetrics/valuation/fcfYield/computeFcfYieldPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

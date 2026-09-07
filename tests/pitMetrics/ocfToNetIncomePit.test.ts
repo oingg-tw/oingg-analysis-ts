@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteOcfToNetIncomePit } from '@/pitMetrics/ocfToNetIncome/computeOcfToNetIncomePit';
+import { computeAndWriteOcfToNetIncomePit } from '@/pitMetrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

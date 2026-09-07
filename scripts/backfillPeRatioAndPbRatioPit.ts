@@ -19,10 +19,10 @@
 //
 // 用法：pnpm tsx scripts/backfillPeRatioAndPbRatioPit.ts
 
-import { computeAndWriteEpsPit } from '../src/pitMetrics/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/pitMetrics/bvps/computeBvpsPit';
-import { computeAndWritePeRatioPit } from '../src/pitMetrics/peRatio/computePeRatioPit';
-import { computeAndWritePbRatioPit } from '../src/pitMetrics/pbRatio/computePbRatioPit';
+import { computeAndWriteEpsPit } from '../src/pitMetrics/profitability/eps/computeEpsPit';
+import { computeAndWriteBvpsPit } from '../src/pitMetrics/valuation/bvps/computeBvpsPit';
+import { computeAndWritePeRatioPit } from '../src/pitMetrics/valuation/peRatio/computePeRatioPit';
+import { computeAndWritePbRatioPit } from '../src/pitMetrics/valuation/pbRatio/computePbRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';

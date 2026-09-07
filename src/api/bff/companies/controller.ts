@@ -2,9 +2,9 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
-import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
-import { getRoaHistory } from '@/pitMetrics/roa/queryRoaHistory';
-import { getDupontHistory } from '@/pitMetrics/dupont/queryDupontHistory';
+import { getRoeHistory } from '@/pitMetrics/profitability/roe/queryRoeHistory';
+import { getRoaHistory } from '@/pitMetrics/profitability/roa/queryRoaHistory';
+import { getDupontHistory } from '@/pitMetrics/shared/dupont/queryDupontHistory';
 import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
 import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
@@ -113,7 +113,7 @@ export const getCompanyRoeHistoryQuerySchema = z.object({
 });
 
 // 給前端畫「ROE 歷史時序」圖表用——第一支直接讀 metric_values（point-in-time 架構）而不是
-// profitability_roe 的對外端點，見 src/pitMetrics/roe/queryRoeHistory.ts 的說明。目前資料
+// profitability_roe 的對外端點，見 src/pitMetrics/profitability/roe/queryRoeHistory.ts 的說明。目前資料
 // 覆蓋率極低（只有 spike 手動 backfill 過的少數公司），查無資料回傳 entries: []，不是 404
 // 或錯誤——跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyRoeHistory = async (req: Request, res: Response, next: NextFunction) => {
@@ -173,7 +173,7 @@ export const getCompanyDupontHistoryQuerySchema = z.object({
 
 // 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
 // 權益乘數 + 組裝出來的 ROE），不是完整的毛利率/週轉率家族，見
-// src/pitMetrics/dupont/queryDupontHistory.ts 的說明。basis=TTM 時 equityMultiplier 恆為
+// src/pitMetrics/shared/dupont/queryDupontHistory.ts 的說明。basis=TTM 時 equityMultiplier 恆為
 // null。查無資料回傳 entries: []，不是 404。
 export const getCompanyDupontHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {

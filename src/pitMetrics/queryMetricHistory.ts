@@ -29,7 +29,7 @@ export interface MetricHistoryResult {
   hasMore: boolean;
 }
 
-// 從 src/pitMetrics/roe/queryRoeHistory.ts 抽出來的通用版本：任何單一 metric_code 查
+// 從 src/pitMetrics/profitability/roe/queryRoeHistory.ts 抽出來的通用版本：任何單一 metric_code 查
 // metric_values 歷史時序都走這支，不用每支指標各自重寫一次「依 (fiscalYear,fiscalQuarter)
 // 去重取最大 knowledge_date、切 limit、反轉成舊到新」的邏輯。live 語意：同一個座標如果有
 // 多筆（重編疊加），只取 knowledge_date 最大的那筆，符合

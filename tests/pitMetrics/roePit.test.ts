@@ -1,11 +1,11 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRoePit } from '@/pitMetrics/roe/computeRoePit';
+import { computeAndWriteRoePit } from '@/pitMetrics/profitability/roe/computeRoePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// ROE spike 驗證——src/pitMetrics/roe/computeRoePit.ts 是 src/domainMetrics/roe.ts 的獨立
+// ROE spike 驗證——src/pitMetrics/profitability/roe/computeRoePit.ts 是 src/domainMetrics/roe.ts 的獨立
 // 重新實作（不呼叫 calculateRoe()，見 computeRoePit.ts 檔頭說明），這裡拿 tests/domains/metrics/roe.test.ts
 // 裡 2330 115Q2 的既有基準數字交叉驗證：這些數字不是從呼叫 calculateRoe() 拿到的，是兩份
 // 獨立實作各自算出來又剛好一致，才是真正驗證新管線的計算邏輯沒錯（不是同一份邏輯繞一圈）。

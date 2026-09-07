@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock';
-import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
-import { roaHistoryEntrySchema } from '@/pitMetrics/roa/queryRoaHistory';
-import { dupontHistoryEntrySchema } from '@/pitMetrics/dupont/queryDupontHistory';
+import { roeHistoryEntrySchema } from '@/pitMetrics/profitability/roe/queryRoeHistory';
+import { roaHistoryEntrySchema } from '@/pitMetrics/profitability/roa/queryRoaHistory';
+import { dupontHistoryEntrySchema } from '@/pitMetrics/shared/dupont/queryDupontHistory';
 import { metricHistoryEntrySchema } from '@/pitMetrics/queryMetricHistory';
 import { multiMetricHistoryEntrySchema } from '@/pitMetrics/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';

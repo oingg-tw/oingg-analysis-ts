@@ -1,10 +1,10 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../knowledgeDate';
-import { rocYearToGregorian } from '../rocYear';
+
 import { writeMetricValue, type MetricValueWriteOutcome } from '../metricValueWriter';
 import type { MetricNullReason } from '../metricBasis';
 

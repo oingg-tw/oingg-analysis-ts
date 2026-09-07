@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteNissimPenmanRnoaPit } from '@/pitMetrics/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
+import { computeAndWriteNissimPenmanRnoaPit } from '@/pitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

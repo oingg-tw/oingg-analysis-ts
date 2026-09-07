@@ -15,8 +15,8 @@
 // - 季度範圍：113Q3~115Q2 共 8 季/家。
 // - dataType 只做 '2'（合併報表）。
 
-import { computeAndWriteRoaPit } from '../src/pitMetrics/roa/computeRoaPit';
-import { computeAndWriteDupontFamilyPit } from '../src/pitMetrics/dupont/computeDupontFamilyPit';
+import { computeAndWriteRoaPit } from '../src/pitMetrics/profitability/roa/computeRoaPit';
+import { computeAndWriteDupontFamilyPit } from '../src/pitMetrics/shared/dupont/computeDupontFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

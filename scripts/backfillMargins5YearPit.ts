@@ -7,7 +7,7 @@
 //
 // 用法：pnpm tsx scripts/backfillMargins5YearPit.ts
 
-import { computeAndWriteMarginsFamilyPit } from '../src/pitMetrics/margins/computeMarginsFamilyPit';
+import { computeAndWriteMarginsFamilyPit } from '../src/pitMetrics/profitability/margins/computeMarginsFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

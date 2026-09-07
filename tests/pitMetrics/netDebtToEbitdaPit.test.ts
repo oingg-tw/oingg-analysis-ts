@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteNetDebtToEbitdaPit } from '@/pitMetrics/netDebtToEbitda/computeNetDebtToEbitdaPit';
+import { computeAndWriteNetDebtToEbitdaPit } from '@/pitMetrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

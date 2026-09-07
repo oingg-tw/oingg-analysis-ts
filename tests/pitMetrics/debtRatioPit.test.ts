@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteDebtRatioPit } from '@/pitMetrics/debtRatio/computeDebtRatioPit';
+import { computeAndWriteDebtRatioPit } from '@/pitMetrics/resilience/debtRatio/computeDebtRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';

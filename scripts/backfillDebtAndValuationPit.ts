@@ -7,17 +7,17 @@
 // 用法：pnpm tsx scripts/backfillDebtAndValuationPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前幾批 backfill 腳本同一組）。
 
-import { computeAndWriteDebtRatioPit } from '../src/pitMetrics/debtRatio/computeDebtRatioPit';
-import { computeAndWriteLiquidityRatioPit } from '../src/pitMetrics/liquidityRatio/computeLiquidityRatioPit';
-import { computeAndWriteDeRatioPit } from '../src/pitMetrics/deRatio/computeDeRatioPit';
-import { computeAndWriteInterestCoveragePit } from '../src/pitMetrics/interestCoverage/computeInterestCoveragePit';
-import { computeAndWriteNetDebtToEbitdaPit } from '../src/pitMetrics/netDebtToEbitda/computeNetDebtToEbitdaPit';
-import { computeAndWriteCapexToRevenuePit } from '../src/pitMetrics/capexToRevenue/computeCapexToRevenuePit';
-import { computeAndWritePsrPit } from '../src/pitMetrics/psr/computePsrPit';
-import { computeAndWritePFcfPit } from '../src/pitMetrics/pFcf/computePFcfPit';
-import { computeAndWriteEvEbitdaPit } from '../src/pitMetrics/evEbitda/computeEvEbitdaPit';
-import { computeAndWriteRoicPit } from '../src/pitMetrics/roic/computeRoicPit';
-import { computeAndWriteRocePit } from '../src/pitMetrics/roce/computeRocePit';
+import { computeAndWriteDebtRatioPit } from '../src/pitMetrics/resilience/debtRatio/computeDebtRatioPit';
+import { computeAndWriteLiquidityRatioPit } from '../src/pitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit';
+import { computeAndWriteDeRatioPit } from '../src/pitMetrics/resilience/deRatio/computeDeRatioPit';
+import { computeAndWriteInterestCoveragePit } from '../src/pitMetrics/resilience/interestCoverage/computeInterestCoveragePit';
+import { computeAndWriteNetDebtToEbitdaPit } from '../src/pitMetrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
+import { computeAndWriteCapexToRevenuePit } from '../src/pitMetrics/efficiency/capexToRevenue/computeCapexToRevenuePit';
+import { computeAndWritePsrPit } from '../src/pitMetrics/valuation/psr/computePsrPit';
+import { computeAndWritePFcfPit } from '../src/pitMetrics/valuation/pFcf/computePFcfPit';
+import { computeAndWriteEvEbitdaPit } from '../src/pitMetrics/valuation/evEbitda/computeEvEbitdaPit';
+import { computeAndWriteRoicPit } from '../src/pitMetrics/profitability/roic/computeRoicPit';
+import { computeAndWriteRocePit } from '../src/pitMetrics/profitability/roce/computeRocePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

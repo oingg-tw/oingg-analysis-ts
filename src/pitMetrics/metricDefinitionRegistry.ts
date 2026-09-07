@@ -27,7 +27,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = 本季淨利/本季期末權益*100，淨利/權益優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'Q_ANN = Q*4（簡易年化，非複利）；TTM = 近四季（含本季）淨利加總/本季期末權益*100，' +
       '四季不齊為 null（null_reason=insufficient_history）。這是獨立於 src/domainMetrics/roe.ts ' +
-      '的重新實作（src/pitMetrics/roe/computeRoePit.ts），兩者理論上算出相同數字，差異即代表其中一份有 bug。',
+      '的重新實作（src/pitMetrics/profitability/roe/computeRoePit.ts），兩者理論上算出相同數字，差異即代表其中一份有 bug。',
     allowedBases: ['Q', 'Q_ANN', 'TTM'],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
@@ -36,7 +36,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 是第一次遇到「一個概念天生由多個數字組成」的複合指標，拆成多個獨立 metric_code（各自
   // 單一數字），不是改 metric_values schema 塞多欄位——這是之後 ROIC/ROCE/多因子指標要
   // 複用的先例。5 個都是獨立於 src/domainMetrics/roa.ts|margins.ts|turnoverRatio.ts|dupont.ts
-  // 的重新實作（src/pitMetrics/roa/computeRoaPit.ts、src/pitMetrics/dupont/computeDupontFamilyPit.ts），
+  // 的重新實作（src/pitMetrics/profitability/roa/computeRoaPit.ts、src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts），
   // 不呼叫任何 calculateXxx()、也不互相讀取彼此已寫入的 metric_value 列。
   roa: {
     metricCode: 'roa',
@@ -127,7 +127,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 第三批遷移（profitability/cashFlow 簡單型 9 支舊架構檔案，共 10 個 metric_code）：
   // eps/bvps/revenuePerShare/dividendPayoutRatio/ocfPerShare/fcfPerShare/ocfToNetIncome/
   // accrualsRatio 都是獨立重新實作（跟 roa 同形狀），不呼叫任何 calculateXxx()。
-  // ocfPerShare/fcfPerShare 由 src/pitMetrics/cashFlowPerShare/computeCashFlowPerSharePit.ts
+  // ocfPerShare/fcfPerShare 由 src/pitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit.ts
   // 一次查詢寫兩個 metric_code（跟 Dupont 家族同一種處理）。sgr/fcfYield 是複合指標，
   // 分別獨立重新計算 ROE TTM+配息率 TTM、每股 FCF+股價，不依賴 roe/dividendPayoutRatio/
   // ocfPerShare/fcfPerShare 這些已寫入的 metric_value，維持每條 pipeline 獨立的原則。
@@ -269,7 +269,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 第四批遷移（resilience/turnover/valuation 簡單型 11 支舊架構檔案，共 13 個
   // metric_code）：debtRatio/currentRatio/quickRatio/cashRatio/deRatio/interestCoverage/
   // netDebtToEbitda/capexToRevenue/roic/roce 都是獨立重新實作，不呼叫任何 calculateXxx()。
-  // currentRatio/quickRatio/cashRatio 由 src/pitMetrics/liquidityRatio/computeLiquidityRatioPit.ts
+  // currentRatio/quickRatio/cashRatio 由 src/pitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit.ts
   // 一次查詢寫三個 metric_code（跟 Dupont 家族同一種處理）。psr/pFcf/evEbitda 第一次用到
   // 市值（getMarketCapAsOf）——複用 resolveKnowledgeDate 算出的 knowledgeDate 去查，跟
   // 第三批 fcfYield 發現的「股價/市值不需要另外設計 knowledge_date 機制」一致；三者都是
@@ -428,10 +428,10 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 第五批遷移（第二層：margins/turnoverRatio 補完整，共 10 個 metric_code）：不動
   // netProfitMargin/assetTurnover（已由 computeDupontFamilyPit.ts 寫入），這裡只補這兩支
   // 舊架構檔案裡還沒做的其餘欄位。grossMargin/operatingMargin 由
-  // src/pitMetrics/margins/computeMarginsFamilyPit.ts 一次查詢寫入；
+  // src/pitMetrics/profitability/margins/computeMarginsFamilyPit.ts 一次查詢寫入；
   // inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/
   // inventoryDays/receivablesDays/payablesDays/cashConversionCycle 由
-  // src/pitMetrics/turnoverRatio/computeTurnoverRatioFamilyPit.ts 一次查詢寫入（跟
+  // src/pitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts 一次查詢寫入（跟
   // Dupont 家族同一種「一次查詢拆多個 metric_code」模式）。
   grossMargin: {
     metricCode: 'grossMargin',

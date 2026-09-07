@@ -6,15 +6,15 @@
 // 用法：pnpm tsx scripts/backfillGuruPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts。
 
-import { computeAndWriteGrahamNumberPit } from '../src/pitMetrics/grahamNumber/computeGrahamNumberPit';
-import { computeAndWriteNcavPit } from '../src/pitMetrics/ncav/computeNcavPit';
-import { computeAndWriteOwnerEarningsPit } from '../src/pitMetrics/ownerEarnings/computeOwnerEarningsPit';
-import { computeAndWriteAltmanZScorePit } from '../src/pitMetrics/altmanZScore/computeAltmanZScorePit';
-import { computeAndWritePiotroskiFScorePit } from '../src/pitMetrics/piotroskiFScore/computePiotroskiFScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/pitMetrics/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteNissimPenmanRnoaPit } from '../src/pitMetrics/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
-import { computeAndWriteZmijewskiScorePit } from '../src/pitMetrics/zmijewskiScore/computeZmijewskiScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/pitMetrics/ohlsonOScore/computeOhlsonOScorePit';
+import { computeAndWriteGrahamNumberPit } from '../src/pitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
+import { computeAndWriteNcavPit } from '../src/pitMetrics/valuation/ncav/computeNcavPit';
+import { computeAndWriteOwnerEarningsPit } from '../src/pitMetrics/quality/ownerEarnings/computeOwnerEarningsPit';
+import { computeAndWriteAltmanZScorePit } from '../src/pitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
+import { computeAndWritePiotroskiFScorePit } from '../src/pitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
+import { computeAndWriteBeneishMScorePit } from '../src/pitMetrics/quality/beneishMScore/computeBeneishMScorePit';
+import { computeAndWriteNissimPenmanRnoaPit } from '../src/pitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
+import { computeAndWriteZmijewskiScorePit } from '../src/pitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
+import { computeAndWriteOhlsonOScorePit } from '../src/pitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

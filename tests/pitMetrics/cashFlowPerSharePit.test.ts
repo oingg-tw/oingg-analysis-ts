@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteCashFlowPerSharePit } from '@/pitMetrics/cashFlowPerShare/computeCashFlowPerSharePit';
+import { computeAndWriteCashFlowPerSharePit } from '@/pitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
