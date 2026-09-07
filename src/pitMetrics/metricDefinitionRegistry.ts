@@ -87,6 +87,43 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
+  // 2026-09-07 新增：五因子 Extended DuPont，把上面 dupontDecomposedRoe 用的
+  // netProfitMargin 再拆成稅務負擔×利息負擔×EBIT利潤率三層。EBIT = 稅前淨利+財務費用，
+  // 跟 roic/roce/interestCoverage/netDebtToEbitda/evEbitda 已經在用的定義一致——**注意
+  // 這個 EBIT 不等於既有 operatingMargin 用的 operatingIncome**（後者嚴格排除所有非
+  // 營業損益，前者只加回財務費用，非營業損益還留在裡面），兩個「利潤率」數字不一樣，
+  // 這批全部加 dupont 前綴避免混淆。已用 2330 115Q2 真實資料驗證過 dupontExtendedRoe
+  // 精確等於既有的 dupontDecomposedRoe。
+  dupontTaxBurden: {
+    metricCode: 'dupontTaxBurden',
+    formulaNote: 'Q(單季) = 本季淨利/本季稅前淨利*100；TTM = 近四季淨利加總/近四季稅前淨利加總*100。淨利優先採歸屬母公司口徑，缺漏退回整體口徑。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax'],
+    currentFormulaVersion: 1,
+  },
+  dupontInterestBurden: {
+    metricCode: 'dupontInterestBurden',
+    formulaNote: 'Q(單季) = 本季稅前淨利/本季EBIT*100（EBIT=稅前淨利+財務費用）；TTM = 近四季稅前淨利加總/近四季EBIT加總*100。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['profit_loss_before_tax', 'finance_costs'],
+    currentFormulaVersion: 1,
+  },
+  dupontEbitMargin: {
+    metricCode: 'dupontEbitMargin',
+    formulaNote: 'Q(單季) = 本季EBIT/本季營收*100（EBIT=稅前淨利+財務費用）；TTM = 近四季EBIT加總/近四季營收加總*100。跟既有 operatingMargin（=operatingIncome/營收）是不同的數字，operatingIncome 嚴格排除非營業損益，這裡的 EBIT 只加回財務費用。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['profit_loss_before_tax', 'finance_costs', 'revenue'],
+    currentFormulaVersion: 1,
+  },
+  dupontExtendedRoe: {
+    metricCode: 'dupontExtendedRoe',
+    formulaNote:
+      '五因子相乘 = dupontTaxBurden x dupontInterestBurden x dupontEbitMargin x assetTurnover x equityMultiplier（三個百分比因子跟兩個原始比率因子相乘後除以 10000 校正尺度）。' +
+      '五個因子任一為 null，一律回報 null_reason=missing_input，細節記在各自的 metric_value 列上。理論上等於 dupontDecomposedRoe（已用真實資料驗證過一致）。沒有 Q_ANN。',
+    allowedBases: ['Q', 'TTM'],
+    dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax', 'finance_costs', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],
+    currentFormulaVersion: 1,
+  },
   // 第三批遷移（profitability/cashFlow 簡單型 9 支舊架構檔案，共 10 個 metric_code）：
   // eps/bvps/revenuePerShare/dividendPayoutRatio/ocfPerShare/fcfPerShare/ocfToNetIncome/
   // accrualsRatio 都是獨立重新實作（跟 roa 同形狀），不呼叫任何 calculateXxx()。

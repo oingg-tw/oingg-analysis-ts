@@ -22,6 +22,10 @@ beforeAll(async () => {
     upsertMetricDefinition(metricDefinitionRegistry.assetTurnover!),
     upsertMetricDefinition(metricDefinitionRegistry.equityMultiplier!),
     upsertMetricDefinition(metricDefinitionRegistry.dupontDecomposedRoe!),
+    upsertMetricDefinition(metricDefinitionRegistry.dupontTaxBurden!),
+    upsertMetricDefinition(metricDefinitionRegistry.dupontInterestBurden!),
+    upsertMetricDefinition(metricDefinitionRegistry.dupontEbitMargin!),
+    upsertMetricDefinition(metricDefinitionRegistry.dupontExtendedRoe!),
   ]);
 });
 
@@ -50,6 +54,42 @@ test('dupontFamilyPit: 2330 115Q2 合併報表，跟 dupont.test.ts 的既有基
   assert.equal(decomposedRoeQ!.nullReason, null);
   assert.equal(decomposedRoeTtm!.nullReason, null);
   assert.equal(netProfitMarginQ!.knowledgeDateIsFallback, false);
+});
+
+// 五因子 Extended DuPont（2026-09-07 新增）：把上面的 netProfitMargin 再拆成稅務負擔×
+// 利息負擔×EBIT利潤率。用 2330 115Q2 真實 XBRL 資料手動核算過（netIncome=706561938、
+// preTax=862430086、financeCosts=3085049、revenue=1270380250），五因子相乘的結果
+// 精確等於既有 dupontDecomposedRoe 的基準值（11.37/34.57）——這是驗證這批新公式本身
+// 沒有算錯的關鍵交叉點：如果五因子相乘公式（尤其是 *100 尺度校正那段）寫錯，這裡會
+// 對不上，不會是巧合。
+test('dupontFamilyPit: 五因子 Extended DuPont（2330 115Q2）應該精確等於既有三因子 dupontDecomposedRoe', async () => {
+  await computeAndWriteDupontFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+
+  const taxBurdenQ = await findLatest('2330', 'dupontTaxBurden', 'Q', 2026, 2);
+  const interestBurdenQ = await findLatest('2330', 'dupontInterestBurden', 'Q', 2026, 2);
+  const ebitMarginQ = await findLatest('2330', 'dupontEbitMargin', 'Q', 2026, 2);
+  const extendedRoeQ = await findLatest('2330', 'dupontExtendedRoe', 'Q', 2026, 2);
+  const taxBurdenTtm = await findLatest('2330', 'dupontTaxBurden', 'TTM', 2026, 2);
+  const interestBurdenTtm = await findLatest('2330', 'dupontInterestBurden', 'TTM', 2026, 2);
+  const ebitMarginTtm = await findLatest('2330', 'dupontEbitMargin', 'TTM', 2026, 2);
+  const extendedRoeTtm = await findLatest('2330', 'dupontExtendedRoe', 'TTM', 2026, 2);
+
+  assert.ok(
+    taxBurdenQ && interestBurdenQ && ebitMarginQ && extendedRoeQ && taxBurdenTtm && interestBurdenTtm && ebitMarginTtm && extendedRoeTtm,
+    '8 個新 metric_code/basis 組合應該全部寫入 metric_values'
+  );
+
+  assert.equal(Number(taxBurdenQ!.value), 81.93);
+  assert.equal(Number(interestBurdenQ!.value), 99.64);
+  assert.equal(Number(ebitMarginQ!.value), 68.13);
+  assert.equal(Number(extendedRoeQ!.value), 11.37, '五因子相乘應該精確等於既有 dupontDecomposedRoeQ 基準值 11.37');
+  assert.equal(extendedRoeQ!.nullReason, null);
+
+  assert.equal(Number(taxBurdenTtm!.value), 83.85);
+  assert.equal(Number(interestBurdenTtm!.value), 99.56);
+  assert.equal(Number(ebitMarginTtm!.value), 60.35);
+  assert.equal(Number(extendedRoeTtm!.value), 34.57, '五因子相乘應該精確等於既有 dupontDecomposedRoeTtm 基準值 34.57');
+  assert.equal(extendedRoeTtm!.nullReason, null);
 });
 
 test('dupontFamilyPit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipped_unchanged，且列數維持 1', async () => {
