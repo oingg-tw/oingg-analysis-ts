@@ -5,6 +5,7 @@ import { roeHistoryEntrySchema } from '@/pitMetrics/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/pitMetrics/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/pitMetrics/dupont/queryDupontHistory';
 import { metricHistoryEntrySchema } from '@/pitMetrics/queryMetricHistory';
+import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import {
   getCompaniesQuerySchema,
@@ -14,6 +15,7 @@ import {
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
   getCompanyMetricHistoryQuerySchema,
+  getCompanyMonthlyRevenueHistoryQuerySchema,
   getCompanyFinancialStatementQuerySchema,
   getCompanyPeerGroupQuerySchema,
   getCompanyMetricsQuerySchema,
@@ -70,6 +72,12 @@ const metricHistoryResultSchema = z.object({
   basis: z.string(),
   ...totalHasMoreFields,
   entries: z.array(metricHistoryEntrySchema),
+});
+
+const monthlyRevenueHistoryResultSchema = z.object({
+  symbol: z.string(),
+  ...totalHasMoreFields,
+  entries: z.array(monthlyRevenueEntrySchema),
 });
 
 // registerCompanyRoute 會在 handler 回傳的物件上補一個 companyName 欄位再送出（見
@@ -218,6 +226,27 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
       400: { description: '缺少 symbol/metricCode/basis，或 metricCode 未知，或 basis 不在該 metricCode 允許的清單內。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/monthly-revenue-history',
+    summary: '單一公司月營收歷史（畫圖用，目前僅 2330 有資料）',
+    description:
+      '**目前只有 2330 有資料**（twse-ts 2026-09-07 一次性手動回填，2021-08~2026-07 共 60 個月，' +
+      '從 MOPS 舊制個股查詢頁逐月抓的，不是常態每日更新的管道，之後也不會自動長出新月份或新公司）。' +
+      '查其他公司代號會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種' +
+      '「查無歷史資料是正常情境」的慣例——**不要誤以為這是全市場即時月營收功能**。' +
+      'momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的' +
+      '（來源這批一次性回填的資料沒有這個欄位）；yoyChangePercent（年增率）、cumulativeChangePercent' +
+      '（累計營收年增率）是來源直接算好的欄位，原樣透傳。金額欄位（currentMonthRevenue 等）都是' +
+      'bigint 序列化成字串，單位新台幣千元。',
+    tags: ['System'],
+    request: { query: getCompanyMonthlyRevenueHistoryQuerySchema },
+    responses: {
+      200: { description: '月營收歷史（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: monthlyRevenueHistoryResultSchema } } },
+      400: { description: '缺少 symbol，或 limit 格式錯誤。' },
     },
   });
 

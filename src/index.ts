@@ -13,6 +13,7 @@ import { connectGovExportDb } from './adapters/prisma/govExportClient';
 import { connectTpexExportDb } from './adapters/prisma/tpexExportClient';
 import { connectSitcaExportDb } from './adapters/prisma/sitcaExportClient';
 import { connectTwseExportDb } from './adapters/prisma/twseExportClient';
+import { connectTwseExportDevDb } from './adapters/prisma/twseExportDevClient';
 import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
@@ -71,6 +72,7 @@ const startServer = async () => {
     await connectTpexExportDb();
     await connectSitcaExportDb();
     await connectTwseExportDb();
+    await connectTwseExportDevDb();
     // 背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
     // export DB 連線問題拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
     void loadIndustryCodes();

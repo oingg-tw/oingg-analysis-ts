@@ -9,6 +9,7 @@ import {
   getCompanyRoaHistory,
   getCompanyDupontHistory,
   getCompanyMetricHistory,
+  getCompanyMonthlyRevenueHistory,
   getCompanyFinancialStatement,
   getCompanyPeerGroup,
 } from './controller';
@@ -22,6 +23,7 @@ router.get('/companies/roe-history', getCompanyRoeHistory);
 router.get('/companies/roa-history', getCompanyRoaHistory);
 router.get('/companies/dupont-history', getCompanyDupontHistory);
 router.get('/companies/metric-history', getCompanyMetricHistory);
+router.get('/companies/monthly-revenue-history', getCompanyMonthlyRevenueHistory);
 router.get('/companies/financial-statement', getCompanyFinancialStatement);
 router.get('/companies/peer-group', getCompanyPeerGroup);
 registerCompanyRoute(router, '/companies/metrics', getCompanyMetrics);

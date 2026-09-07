@@ -6,6 +6,7 @@ import { getRoeHistory } from '@/pitMetrics/roe/queryRoeHistory';
 import { getRoaHistory } from '@/pitMetrics/roa/queryRoaHistory';
 import { getDupontHistory } from '@/pitMetrics/dupont/queryDupontHistory';
 import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
+import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
@@ -222,6 +223,39 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
 
     const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
     res.status(200).json({ symbol, metricCode, basis, total, hasMore, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const MAX_MONTHLY_REVENUE_HISTORY_LIMIT = 120; // 上限抓 10 年份，目前資料只有 2330 60 個月，上限只是預留空間
+
+export const getCompanyMonthlyRevenueHistoryQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_MONTHLY_REVENUE_HISTORY_LIMIT)
+    .default(60)
+    .meta({ description: `取最近幾個月，預設 60（5 年），上限 ${MAX_MONTHLY_REVENUE_HISTORY_LIMIT}。` }),
+});
+
+// 月營收歷史——**目前只有 2330 有資料**（twse-ts 2026-09-07 一次性手動回填，
+// 2021-08~2026-07 共 60 個月，不是常態每日更新的管道，見
+// src/adapters/prisma/twseExportDevClient.ts 的完整說明）。查其他公司代號會正確回
+// entries: []（不是 404 或錯誤），跟 getCompanyCapitalStockHistory 同一種「查無歷史
+// 資料是正常情境」的慣例——不要誤以為這是全市場即時月營收功能。
+export const getCompanyMonthlyRevenueHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyMonthlyRevenueHistoryQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol, limit } = validationResult.data;
+    const { entries, total, hasMore } = await getMonthlyRevenueHistory(symbol, limit);
+    res.status(200).json({ symbol, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
