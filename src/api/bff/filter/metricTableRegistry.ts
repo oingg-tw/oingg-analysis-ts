@@ -41,7 +41,12 @@ export interface ResolvedField extends MetricTableInfo {
 
 const deriveModelName = (modelKey: string): string => `${modelKey.charAt(0).toUpperCase()}${modelKey.slice(1)}Result`;
 
-const deriveShape = (model: ModelIntrospection): { shape: TableShape; dateColumn?: string; quarterlyFilterColumns?: QuarterlyFilterColumns } => {
+// 2026-09-07：目前的舊架構已經沒有任何真正的季報型（quarterly）model 存活（34 張季報型
+// Result 表已 DROP，只剩 beta/marketRatios 兩個日資料型）——這個分支的邏輯目前沒有真實資料
+// 可以整合測試，但保留這個判斷（跟 quarterly/ 批次基礎設施一樣，是刻意留給未來可能重新登記
+// 季報型舊架構指標的空殼）。導出這支純函式，讓 metricTableRegistry.test.ts 可以用合成的
+// ModelIntrospection 物件單獨驗證這個分支，不用依賴真的有一個季報型 model 存在。
+export const deriveShape = (model: ModelIntrospection): { shape: TableShape; dateColumn?: string; quarterlyFilterColumns?: QuarterlyFilterColumns } => {
   const idFieldSet = new Set(model.idFields);
   const isQuarterly = QUARTERLY_ID_FIELDS.every((f) => idFieldSet.has(f)) && model.idFields.length === QUARTERLY_ID_FIELDS.length;
   if (isQuarterly) {

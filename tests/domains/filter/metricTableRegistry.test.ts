@@ -1,19 +1,33 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { getTableForMetric, resolveField, validateMetricTableRegistry } from '@/api/bff/filter/metricTableRegistry';
+import { getTableForMetric, resolveField, validateMetricTableRegistry, deriveShape } from '@/api/bff/filter/metricTableRegistry';
 
 describe('metricTableRegistry', () => {
   test('真正的 filterCatalog.ts 裡每個 metric 都應該能解析出對應的 table（不拋錯）', () => {
     assert.doesNotThrow(() => validateMetricTableRegistry(false));
   });
 
+  // 2026-09-07：舊架構 34 張季報型 Result 表已經全部 DROP（使用者要求，這批已經有 pitMetrics
+  // 版本可查），目前 filterCatalog 裡已經沒有任何真正的季報型 model 存活（只剩 beta/
+  // marketRatios 兩個日資料型），沒辦法再用真的 metricKey 整合測試這個分支——改用合成的
+  // ModelIntrospection 物件直接測 deriveShape 這支純函式，保留對這個判斷邏輯本身的驗證
+  // （這個分支是刻意保留給未來可能重新登記季報型舊架構指標的空殼，見 metricTableRegistry.ts
+  // 的說明）。
   test('季報型（quarterly）metric 解析出正確的表名跟五個 PK 欄位的資料庫欄名', () => {
-    const info = getTableForMetric('roe');
-    assert.ok(info);
-    assert.equal(info!.modelName, 'RoeResult');
-    assert.equal(info!.tableName, 'profitability_roe');
-    assert.equal(info!.shape, 'quarterly');
-    assert.deepEqual(info!.quarterlyFilterColumns, {
+    const syntheticModel = {
+      modelName: 'FakeQuarterlyResult',
+      tableName: 'fake_quarterly',
+      idFields: ['symbol', 'year', 'season', 'dataType', 'subsidiaryCompanyId'],
+      fields: new Map([
+        ['year', { columnName: 'year', type: 'Int' }],
+        ['season', { columnName: 'season', type: 'Int' }],
+        ['dataType', { columnName: 'data_type', type: 'String' }],
+        ['subsidiaryCompanyId', { columnName: 'subsidiary_company_id', type: 'String' }],
+      ]),
+    };
+    const info = deriveShape(syntheticModel);
+    assert.equal(info.shape, 'quarterly');
+    assert.deepEqual(info.quarterlyFilterColumns, {
       yearColumn: 'year',
       seasonColumn: 'season',
       dataTypeColumn: 'data_type',
@@ -47,14 +61,14 @@ describe('metricTableRegistry', () => {
   });
 
   test('resolveField 解析出欄位的實際資料庫欄名', () => {
-    const field = resolveField('roe', 'roeQuarterlyPct');
+    const field = resolveField('per', 'peRatio');
     assert.ok(field);
-    assert.equal(field!.valueColumn, 'roe_quarterly_pct');
-    assert.equal(field!.tableName, 'profitability_roe');
+    assert.equal(field!.valueColumn, 'pe_ratio');
+    assert.equal(field!.tableName, 'valuation_market_ratios');
   });
 
   test('resolveField 對不存在的 field 回傳 null，不拋錯', () => {
-    assert.equal(resolveField('roe', 'notARealField'), null);
+    assert.equal(resolveField('per', 'notARealField'), null);
   });
 
   test('resolveField/getTableForMetric 對不存在的 metricKey 回傳 null，不拋錯', () => {

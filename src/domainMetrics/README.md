@@ -7,19 +7,29 @@
 拉出去成獨立的頂層 `domainMacro/`，不再是這份 taxonomy 底下的分類，見
 [`../domainMacro/README.md`](../domainMacro/README.md)。
 
+**2026-09-07：`profitability`／`cashFlow`／`resilience`／`turnover`／`guru` 五個分類、以及
+`valuation` 底下的 `psr`/`pFcf`/`evEbitda`，共 34 支舊架構指標（各自一張 `XxxResult` 表）已
+整批刪除**——這批全部已經有 pitMetrics 版本可查（`src/pitMetrics/`，透過
+`GET /companies/metric-history` 泛化端點對外曝露），使用者確認不需要繼續維護舊架構的兩份
+並存實作。**只保留 3 個沒有 pitMetrics 替代版本的舊架構指標**：`portfolio/beta`（完全沒
+遷移）、`valuation` 的 `per`/`pbr`/`dividendYield`（`marketRatios`，直接 relay TWSE 已算好的
+值，覆蓋全市場每日更新，pitMetrics 的 `peRatio`/`pbRatio` 目前只 backfill 了 2330 一家，
+覆蓋率不對等）。下方分類索引表格已同步更新，之後新增指標一律進 `src/pitMetrics/`，不要再
+加回這份 taxonomy／`domainMetrics/`。
+
 ## 分類索引
 
 分類層級的詳細說明已不再各自維護 `.md` 文件（見上方 2026-09-05 的說明），這裡只維護最精簡的總覽，詳細的分類/指標中英文名稱、描述見 [`../api/bff/filter/filterCatalog.csv`](../api/bff/filter/filterCatalog.csv)。
 
 | 分類 | 中文名稱 | scope | 狀態 |
 |---|---|---|---|
-| `profitability` | 獲利能力與資本配置效率 | Security | 全數實作（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法——2026-08-27 新增，自行歸類非 guru；`CFROI` 2026-08-30 決定移除） |
-| `turnover` | 營運週轉與資產效率 | Security | 全部完成（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
-| `resilience` | 財務結構、償債安全與破產預警 | Security | 全部完成（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；`Altman_Z_Score` 2026-08-24 改歸類到 `guru`；2026-09-02 盤點存股需求，銀行業專屬指標（CAR/CET1/NPL/備抵呆帳覆蓋率）排入未來規劃，卡在需要新資料源 |
-| `cashFlow` | 現金流品質與法證會計防雷 | Security | 全數實作（每股 OCF/FCF、OCF 對淨利比、應計項目比率、FCF_Yield——2026-08-30 股價來源解禁後補上最後一個）；`Beneish_M_Score` 2026-08-25 改歸類到 `guru` |
-| `valuation` | 估值與市場定價指標 | Security | 部分實作（PER、PBR、Dividend_Yield 直接採用 oingg-twse 現成數字；PSR、P_FCF、EV_EBITDA 2026-08-30 實作完成）；2026-09-02 盤點存股需求，歷史平均殖利率、估值定價帶模型排入未來規劃 |
-| `guru` | 大師策略與複合量化估值模型 | Security | 部分實作（葛拉漢數——本服務第一個複合指標；`Graham_NCAV`；`Buffett_Owner_Earnings`——每股版本；`Altman_Z_Score`——2026-08-24 從 `resilience` 移入，2026-08-27 實作；`Piotroski_F_Score`；`Beneish_M_Score`——2026-08-25 從 `cashFlow` 移入，2026-08-27 實作；`Nissim_Penman_RNOA`——2026-08-25 新列入，2026-08-28 實作；Zmijewski Score、Ohlson O-Score——2026-08-30 新列入並實作，兩者都是財務危機預警模型，跟 `Altman_Z_Score` 同一種資料需求）；`Greenwald_EPV` 2026-08-25 曾列入，2026-08-28 因為資產重置成本無法忠於資料計算，決定移除 |
-| `portfolio` | 投資組合風險、超額報酬與量化因子 | Portfolio | 部分實作（`Beta`，2026-08-26）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
+| `profitability` | 獲利能力與資本配置效率 | Security | **2026-09-07 舊架構已刪除**，全部 11 支已遷移至 `src/pitMetrics/`（ROE、ROA、ROIC、ROCE、EPS、BVPS、每股營收、毛利率/營業利益率/稅後淨利率、配息率、SGR、杜邦分析法） |
+| `turnover` | 營運週轉與資產效率 | Security | **2026-09-07 舊架構已刪除**，全部已遷移至 `src/pitMetrics/`（存貨/應收帳款/應付帳款/總資產/固定資產周轉率、DIO/DSO/DPO/CCC、資本支出佔營收比） |
+| `resilience` | 財務結構、償債安全與破產預警 | Security | **2026-09-07 舊架構已刪除**，全部已遷移至 `src/pitMetrics/`（負債比率、流動/速動/現金比率、負債權益比、利息保障倍數、淨負債對 EBITDA 比）；銀行業專屬指標（CAR/CET1/NPL/備抵呆帳覆蓋率）已直接建在 `src/pitMetrics/bankAssetQuality/`／`bankCapitalAdequacy/`，沒有走過這份舊架構 |
+| `cashFlow` | 現金流品質與法證會計防雷 | Security | **2026-09-07 舊架構已刪除**，全部已遷移至 `src/pitMetrics/`（每股 OCF/FCF、OCF 對淨利比、應計項目比率、FCF_Yield） |
+| `valuation` | 估值與市場定價指標 | Security | PSR、P_FCF、EV_EBITDA **2026-09-07 舊架構已刪除**，已遷移至 `src/pitMetrics/`；**PER、PBR、Dividend_Yield（`marketRatios`）維持舊架構**，直接 relay TWSE 已算好的值、覆蓋全市場，pitMetrics 雖然有 `peRatio`/`pbRatio` 但目前只 backfill 2330 一家，覆蓋率不對等，暫不取代 |
+| `guru` | 大師策略與複合量化估值模型 | Security | **2026-09-07 舊架構已刪除**，全部 9 支已遷移至 `src/pitMetrics/`（葛拉漢數、NCAV、股東盈餘、Altman Z-Score、Piotroski F-Score、Beneish M-Score、Nissim-Penman RNOA、Zmijewski Score、Ohlson O-Score） |
+| `portfolio` | 投資組合風險、超額報酬與量化因子 | Portfolio | **維持舊架構**（`Beta`，2026-08-26 實作，目前沒有 pitMetrics 替代版本）；其餘指標需要「投資組合」這個資料模型，目前只有單一公司查詢 |
 | `growth` | 成長性指標 | Security | 未實作——見下方「第二套分類方案」；2026-09-02 盤點存股需求，EPS CAGR、連續配發股利年數、ROE 歷史一致性檢驗排入未來規劃 |
 
 ## 跨分類的時間轉換算子（temporal_transformation_operators）

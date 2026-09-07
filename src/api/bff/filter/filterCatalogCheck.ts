@@ -30,26 +30,12 @@ const NON_SECURITY_MODEL_KEYS = new Set<string>(['equityRiskPremium']);
 // 的 8 張 technicals_* 表已經正式 DROP（2026-09-05 刪除功能時保留的表，這次清掉），不再需要
 // RETIRED_MODEL_KEYS 這個例外集合——表不存在了，這個檢查邏輯自然不會再看到它們。
 //
-// 2026-09-07：guru 分類（grahamNumber/ncav/ownerEarnings/altmanZScore/piotroskiFScore/
-// beneishMScore/nissimPenmanRnoa/zmijewskiScore/ohlsonOScore，9 支）從 filterCatalog.csv
-// 移除——使用者要求不再對外曝露這個分類（這批已經有 pitMetrics 版本可以透過
-// GET /companies/metric-history 查，見 src/pitMetrics/{grahamNumber,ncav,...}/）。**只移除
-// filterCatalog 曝露，不停用夜間批次計算**（src/api/batch/quarterly/indicatorRegistry.ts
-// 的 9 個 guru job 繼續跑，legacy 9 張結果表繼續累積資料）——這跟 technicals 當初「先停用
-// 批次、後來才 DROP 表」的兩階段退場不同，這次是刻意只做曝露層的移除，schema 裡的 9 張表
-// 還在，所以需要用這個例外集合跳過「schema 有 model 但 catalog 沒列」的檢查，不能沿用
-// technicals 那種「表已經不存在，自然不會被抓到」的做法。
-const RETIRED_FROM_FILTER_CATALOG_MODEL_KEYS = new Set<string>([
-  'grahamNumber',
-  'ncav',
-  'ownerEarnings',
-  'altmanZScore',
-  'piotroskiFScore',
-  'beneishMScore',
-  'nissimPenmanRnoa',
-  'zmijewskiScore',
-  'ohlsonOScore',
-]);
+// 2026-09-07：guru 分類 9 支曾經短暫只移除 filterCatalog 曝露、保留舊表繼續跑批次，當時
+// 加過一個 RETIRED_FROM_FILTER_CATALOG_MODEL_KEYS 例外集合來跳過一致性檢查。後續使用者
+// 決定把包含這 9 支在內的舊架構 34 張「單一指標一張表」的 Result 表全部實際 DROP 掉（這批
+// 全部都已經有 pitMetrics 版本可查，見 src/pitMetrics/），schema 裡已經沒有對應 model 了，
+// 這個例外集合因此變成不會再被觸發的死碼，移除——跟 technicals 現在同一種狀態：表不存在，
+// 檢查邏輯自然不會再看到它們，不需要額外例外。
 
 // 2026-09-05 新增：metric_values/metric_definitions（見 prisma/analysis/schema.prisma 檔尾、
 // src/pitMetrics/）是 ROE spike 用的 point-in-time 事實層，不是「每支指標一張表」模式底下的
@@ -137,7 +123,6 @@ export const findFilterCatalogProblems = (catalog: FilterCategory[], schemaText:
     if (dbMetric.fields.size === 0) continue;
     if (NON_SECURITY_MODEL_KEYS.has(metricKey)) continue;
     if (POINT_IN_TIME_SPIKE_MODEL_KEYS.has(metricKey)) continue;
-    if (RETIRED_FROM_FILTER_CATALOG_MODEL_KEYS.has(metricKey)) continue;
     if (isCuratedLayerModel(dbMetric.modelName)) continue;
     if (!modelKeysSeen.has(metricKey)) {
       problems.push(

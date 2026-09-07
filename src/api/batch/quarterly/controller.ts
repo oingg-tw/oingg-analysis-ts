@@ -4,10 +4,12 @@ import { quarterlyIndicatorJobs } from './indicatorRegistry';
 
 // 給 GCP Cloud Scheduler 觸發用的 HTTP 入口——跟 api/bff 的 controller.ts 是同一種角色，
 // 只是呼叫方是排程器不是 BFF。目前刻意做成「整個批次跑完才回應」的同步呼叫，是這個階段
-// 最簡單能動的版本，不是最終設計：34 支指標 x 1000+ 家公司實際會跑好幾分鐘，Cloud Run
-// Service 的 request timeout（可設到 60 分鐘）跟 Cloud Scheduler 本身的逾時上限都要另外
-// 調整才扛得住；等真的接近這個上限造成逾時失敗，再改成「收到請求先回 202、背景繼續跑」
-// 的非同步模式，現在先不用預先做那一層複雜度。
+// 最簡單能動的版本，不是最終設計。2026-09-07 起 `quarterlyIndicatorJobs`（見
+// ./indicatorRegistry.ts）是空陣列——原本登記的 34 支舊架構指標已經全部 DROP，這支端點
+// 呼叫了會立刻回應（空跑），不會有逾時問題；之後如果重新登記新的季度型指標、數量夠多到
+// 會跑好幾分鐘，Cloud Run Service 的 request timeout（可設到 60 分鐘）跟 Cloud Scheduler
+// 本身的逾時上限要另外調整才扛得住，等真的接近上限造成逾時失敗，再改成「收到請求先回
+// 202、背景繼續跑」的非同步模式，現在先不用預先做那一層複雜度。
 //
 // 目前沒有任何驗證機制擋這支端點——跟 api/bff 不一樣（api/bff 已經接上 bff-ts 共用
 // 密鑰驗證，見 src/shared/bffAuth.ts），這支是刻意留在 bffAuth 的驗證範圍之外，因為呼叫方
