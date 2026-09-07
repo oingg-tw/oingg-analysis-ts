@@ -27,3 +27,20 @@ export const resolveKnowledgeDate = async (symbol: string, quarters: QuarterAnch
     perQuarter: quarters.map((q, i) => ({ rocYear: q.rocYear, season: q.season, source: resolved[i]!.source })),
   };
 };
+
+export interface DailyCadenceKnowledgeDateResolution {
+  knowledgeDate: Date;
+  isFallback: false;
+}
+
+// 逐日型指標（未來 Beta/MarketRatios 遷入 pitMetrics 時使用，見 metricValueWriter.ts 的
+// DAILY_CADENCE_FISCAL_QUARTER）的 knowledgeDate 慣例：交易日股價是公開資訊，當天收盤
+// 就是市場知道的那一刻，不像季報財報有「期末日 vs 公告日」的落差，所以沒有
+// resolveKnowledgeDate 那套 getPriceAnchorDate/fallback 機制可言——knowledgeDate 直接
+// 等於 tradeDate，isFallback 恆為 false（沒有「查無真實公告日、退回期末日頂替」這回事）。
+// 之後寫逐日型指標的 computeXxxPit.ts 應該呼叫這支，不要自己把 tradeDate 當
+// knowledgeDate 硬寫，讓這條規則有唯一的程式碼依據可循，不是散落在各自檔案裡的隱規則。
+export const resolveDailyCadenceKnowledgeDate = (tradeDate: Date): DailyCadenceKnowledgeDateResolution => ({
+  knowledgeDate: tradeDate,
+  isFallback: false,
+});
