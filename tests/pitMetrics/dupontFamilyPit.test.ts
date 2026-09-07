@@ -77,27 +77,27 @@ test('dupontFamilyPit: 2317 115Q2——financial_report_announcement 無覆蓋�
   assert.equal(netProfitMarginQ!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 
-// 2317 114Q4 損益表缺資料，115Q2 的 TTM 會自然湊不齊——同時驗證 insufficient_history 標記，
-// 以及「TTM 任一因子不齊時，組裝出來的 dupontDecomposedRoe TTM 列也要正確傳染 null +
-// insufficient_history」這個複合指標特有的傳播規則。
-test('dupontFamilyPit: 2317 115Q2 的 TTM 因 114Q4 損益表缺資料而不齊，netProfitMargin/assetTurnover/decomposedRoe 三者都應該寫 null 列標記 insufficient_history', async () => {
+// 損益表/資產負債表依賴指標換源到 XBRL 之後（2026-09-07），舊表原本缺漏的 2317 114Q4
+// 損益表被 XBRL 補齊了，115Q2 的 TTM 因此從 insufficient_history 變成算得出真實數字——
+// 這是換源後覆蓋率變廣的正面副作用，這裡直接驗證換源後的真實數字（用四季 XBRL 營收/淨利
+// 加總跟本季期末總資產/權益手動核算過）。
+test('dupontFamilyPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出真實數字，不再是 insufficient_history', async () => {
   await computeAndWriteDupontFamilyPit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const netProfitMarginTtm = await findLatest('2317', 'netProfitMargin', 'TTM', 2026, 2);
   const assetTurnoverTtm = await findLatest('2317', 'assetTurnover', 'TTM', 2026, 2);
   const decomposedRoeTtm = await findLatest('2317', 'dupontDecomposedRoe', 'TTM', 2026, 2);
-  const netProfitMarginQ = await findLatest('2317', 'netProfitMargin', 'Q', 2026, 2);
 
-  assert.ok(netProfitMarginTtm && assetTurnoverTtm && decomposedRoeTtm, 'TTM 不齊時也應該寫 null 列，不是完全跳過');
-  assert.equal(netProfitMarginTtm!.value, null);
-  assert.equal(netProfitMarginTtm!.nullReason, 'insufficient_history');
-  assert.equal(assetTurnoverTtm!.value, null);
-  assert.equal(assetTurnoverTtm!.nullReason, 'insufficient_history');
-  assert.equal(decomposedRoeTtm!.value, null);
-  assert.equal(decomposedRoeTtm!.nullReason, 'insufficient_history');
-  // TTM 不齊時的 knowledge_date 沿用主季（Q）自己的 knowledge_date，見 computeDupontFamilyPit.ts 的說明。
-  assert.ok(netProfitMarginQ, '交叉比對用的 Q 列應該存在');
-  assert.equal(decomposedRoeTtm!.knowledgeDate.getTime(), netProfitMarginQ!.knowledgeDate.getTime());
+  assert.ok(netProfitMarginTtm && assetTurnoverTtm && decomposedRoeTtm, '3 個 TTM metric_code 都應該寫入真實數字');
+  // 114Q3~115Q2 四季營收加總 9310748978、淨利加總 212778460，除以 115Q2 期末
+  // totalAssets 5622576474 / equityAttributableToParent 1907936607，手動核算過：
+  // netProfitMargin=2.29%、assetTurnover=1.66 次、decomposedRoe = round2(2.29*1.66*2.95) = 11.21%。
+  assert.equal(Number(netProfitMarginTtm!.value), 2.29);
+  assert.equal(netProfitMarginTtm!.nullReason, null);
+  assert.equal(Number(assetTurnoverTtm!.value), 1.66);
+  assert.equal(assetTurnoverTtm!.nullReason, null);
+  assert.equal(Number(decomposedRoeTtm!.value), 11.21);
+  assert.equal(decomposedRoeTtm!.nullReason, null);
 });
 
 test('dupontFamilyPit: 9999（查無資料的公司）應該優雅降級，全部 metric_code 都不寫入', async () => {

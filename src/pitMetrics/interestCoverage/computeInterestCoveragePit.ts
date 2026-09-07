@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getQuarterlyIncomeStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../knowledgeDate';

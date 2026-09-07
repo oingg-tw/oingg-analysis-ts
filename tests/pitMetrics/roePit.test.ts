@@ -60,8 +60,11 @@ test('roePit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
 });
 
 // 2317：financial_report_announcement 完全零筆覆蓋（實測確認），保證 Q/Q_ANN 落到
-// report_date_fallback；且 114Q4 損益表缺資料，115Q1/115Q2 的 TTM 會自然湊不齊，
-// 剛好同時驗證 fallback 標記跟 insufficient_history 兩種真實案例，不用刻意構造假資料。
+// report_date_fallback。損益表/資產負債表依賴指標換源到 XBRL 之後（2026-09-07），舊表
+// 原本缺漏的 114Q4 損益表被 XBRL 補齊了（舊表 quarterly_income_statement 完全查無這一列，
+// XBRL quarterly_income_statement_xbrl 有真實資料），2317 115Q2 的 TTM 因此從
+// insufficient_history 變成算得出真實數字——這是換源後覆蓋率變廣帶來的正面副作用，不是
+// bug，這裡直接驗證換源後的真實數字（用四季 XBRL 淨利加總/本季期末權益手動核算過）。
 test('roePit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledge_date 應該標記為 fallback', async () => {
   const outcome = await computeAndWriteRoePit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
@@ -74,24 +77,19 @@ test('roePit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledg
   assert.equal(q!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 
-test('roePit: 2317 115Q2 的 TTM 因 114Q4 損益表缺資料而不齊，應該寫 null 列標記 insufficient_history', async () => {
+test('roePit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出真實數字，不再是 insufficient_history', async () => {
   await computeAndWriteRoePit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
     where: { symbol: '2317', metricCode: 'roe', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
-  const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2317', metricCode: 'roe', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
-    orderBy: { knowledgeDate: 'desc' },
-  });
 
-  assert.ok(ttm, 'TTM 不齊時也應該寫一列（value=null），不是完全跳過這個 basis');
-  assert.equal(ttm!.value, null);
-  assert.equal(ttm!.nullReason, 'insufficient_history');
-  // TTM 不齊時的 knowledge_date 沿用主季（Q）自己的 knowledge_date，見 computeRoePit.ts 的說明。
-  assert.ok(q, '交叉比對用的 Q 列應該存在');
-  assert.equal(ttm!.knowledgeDate.getTime(), q!.knowledgeDate.getTime());
+  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
+  // equityAttributableToParent 1907936607，手動核算過等於 11.15%。
+  assert.equal(Number(ttm!.value), 11.15);
+  assert.equal(ttm!.nullReason, null);
 });
 
 test('roePit: 9999（查無資料的公司）應該優雅降級，三個 basis 都不寫入', async () => {

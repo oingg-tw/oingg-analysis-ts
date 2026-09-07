@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getQuarterlyBalanceSheet } from '@/shared/sourceData/mopsQuarterlyStatements';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../knowledgeDate';

@@ -57,8 +57,9 @@ test('roaPit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });
 
-// 2317：financial_report_announcement 完全零筆覆蓋、114Q4 損益表缺資料，見 roePit.test.ts
-// 同一組案例的說明——這裡用同一家公司驗證 fallback 標記跟 insufficient_history。
+// 2317：financial_report_announcement 完全零筆覆蓋，見 roePit.test.ts 同一組案例的說明。
+// 換源到 XBRL 之後（2026-09-07）舊表原本缺漏的 114Q4 損益表被補齊，TTM 從
+// insufficient_history 變成算得出真實數字，這裡驗證換源後的真實情況。
 test('roaPit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledge_date 應該標記為 fallback', async () => {
   const outcome = await computeAndWriteRoaPit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
@@ -71,23 +72,19 @@ test('roaPit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledg
   assert.equal(q!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 
-test('roaPit: 2317 115Q2 的 TTM 因 114Q4 損益表缺資料而不齊，應該寫 null 列標記 insufficient_history', async () => {
+test('roaPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出真實數字，不再是 insufficient_history', async () => {
   await computeAndWriteRoaPit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
     where: { symbol: '2317', metricCode: 'roa', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
-  const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2317', metricCode: 'roa', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
-    orderBy: { knowledgeDate: 'desc' },
-  });
 
-  assert.ok(ttm, 'TTM 不齊時也應該寫一列（value=null），不是完全跳過這個 basis');
-  assert.equal(ttm!.value, null);
-  assert.equal(ttm!.nullReason, 'insufficient_history');
-  assert.ok(q, '交叉比對用的 Q 列應該存在');
-  assert.equal(ttm!.knowledgeDate.getTime(), q!.knowledgeDate.getTime());
+  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
+  // totalAssets 5622576474，手動核算過等於 3.78%。
+  assert.equal(Number(ttm!.value), 3.78);
+  assert.equal(ttm!.nullReason, null);
 });
 
 test('roaPit: 9999（查無資料的公司）應該優雅降級，三個 basis 都不寫入', async () => {
