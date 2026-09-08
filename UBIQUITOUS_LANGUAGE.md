@@ -17,7 +17,10 @@ sitca-ts）之間已經做過的命名對齊決策，以及 analysis-ts 內部�
 [`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md)（CRSP/Compustat/
 供應商 mnemonic 對照，用來輔助命名決策的參考資料，不是本文件這種「已經做過的決策紀錄」）
 從 `docs/` 移到根目錄一起正式進版控，理由跟這份文件一樣：這是會被重複引用的參考資料，
-不該放在隨時可能被清掉的 `docs/`。
+不該放在隨時可能被清掉的 `docs/`。**2026-09-08 已完成第一次整合**：下方「〇、與外部
+研究報告的落地檢核」逐節核對過建議報告的內容跟本專案實際程式碼的對應關係，不再是兩份
+互不相關的文件——之後建議報告如果有新增章節，或本專案新增命名決策時發現跟報告建議
+衝突/一致，都應該回來更新這個檢核表，不要讓它變成又一份一次性快照。
 
 **⚠️ 已知重疊，尚未整併**：oingg-conductor-ts 那邊也維護一份涵蓋範圍幾乎一樣的跨服務命名
 決策紀錄（2026-09-06 建立，含這裡列的四項對齊決策 + 完整決策過程/dispatch 狀態），目前
@@ -25,6 +28,27 @@ sitca-ts）之間已經做過的命名對齊決策，以及 analysis-ts 內部�
 ——之後 vault 位置穩定下來，應該回來這裡補上交叉參照，並且明確分工：conductor 那份是
 「跨服務決策的完整過程紀錄」，這份是「analysis-ts 視角、給程式碼裡的 schema 註解引用」的
 精簡版，避免兩份各自漂移出不一致的內容。
+
+## 〇、與外部研究報告（建議報告.md）的落地檢核（2026-09-08 新增）
+
+[`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md) 是 CRSP/
+Compustat/供應商 mnemonic 的外部研究資料，本身不是決策——這裡逐節核對報告的建議跟
+analysis-ts 實際程式碼現況的對應關係，區分「已經對齊」「刻意不適用」「真正的落差」
+三種情況，避免報告內容停在「參考資料」就沒人真的核對過。
+
+| 報告章節 | 建議 | 本專案現況 | 判定 |
+|---|---|---|---|
+| 一、識別碼 | PERMNO/GVKEY 式永久 surrogate key + 帶生效期間的識別碼歷史表 | 全生態系已統一用 `symbol` 當唯一鍵（見下方一、已完成對齊表），台股 symbol 由主管機關配發、極少重用，不像美股 ticker 會被回收 | **刻意不適用**：symbol reuse 在台股市場不是真實痛點，加一層永久 surrogate key 是不必要的複雜度 |
+| 二、`close` vs `last` | 分開 `close_price`（EOD）與 `last_price`（即時 quote） | 全平台只有 `closePrice`（`getStockPriceAsOf` 等）——這個生態系永遠不會有盤中逐筆/分鐘資料 | **刻意不適用**：沒有即時報價來源，`last_price` 概念不存在，`close_price` 已經是唯一且明確的語意 |
+| 二、`adjusted` 的多義 | 拆成 `close_raw`/`close_split_adj`/`close_total_return_adj` | 全平台目前**沒有任何價格調整層**——PE/PB/Beta（規劃中）等所有拿股價當輸入的指標一律用原始收盤價，沒有除權息還原、沒有 total-return adjusted 序列 | **真正的落差，但目前刻意擱置**：`exDividendNotice.ts` 只有「未來除權息預告」，沒有「歷史除權息事件」可以拿來算調整因子；等真的需要還原股價（例如報酬率類指標要跨除權息日比較）才需要引入這套三欄位命名，現在硬加只是空殼 |
+| 三、`report date` 歧義（`datadate` vs `rdq`/filing date） | 拆成 `fiscal_period_end_date` 與 `filing_date`/`announcement_date` 兩個獨立欄位 | **已完全對齊**：`reportDate`（財報期末日，=`datadate`）與 `knowledgeDate`（實際公告日，=`rdq`）在 `src/pitMetrics/knowledgeDate.ts`/`src/shared/sourceData/reportAnnouncementDate.ts` 已經是兩個嚴格分開的欄位，`knowledgeDateIsFallback` 額外標記「查無真實公告日、退回用 reportDate 頂替」的 look-ahead bias 風險——這正是報告點名「最容易造成 bug 的三個陷阱」之一，本專案是目前唯一已經徹底解決的一項 | **已對齊**，命名雖不同（`reportDate`/`knowledgeDate` vs 報告建議的 `fiscal_period_end_date`/`filing_date`）但語意完全一致，不需要改名 |
+| 三、TTM vs LTM | 擇一當 canonical，建議 `ttm` | `pitMetrics` 的 `basis` 欄位已採用 `'TTM'`（`src/pitMetrics/metricBasis.ts`），全平台只用這個字，從未出現 `LTM` | **已對齊** |
+| 四、PIT/版本化（bitemporal 設計） | `fiscal_period_end_date`/`filing_date`/`data_vintage`/`is_restated`/`source_version` | `metric_values`（`MetricValue` model）已經是 bitemporal 設計：`fiscalYear`+`fiscalQuarter`=valid time、`knowledgeDate`=transaction/knowledge time；`formulaVersion` 對應 `source_version`；沒有獨立的 `is_restated` 布林欄位，但 `writeMetricValue` 的 `updated_same_knowledge_date`/`inserted` 兩種寫入結果已經隱含「同一天重算覆蓋」vs「新公告日疊加新版本」的區分，效果等價 | **已對齊**，`is_restated` 用寫入結果分支表達而非獨立欄位，是刻意的實作選擇不是遺漏 |
+| 五、衍生指標標準命名 | `roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`ev`/`ebitda`/`fcf`/`beta`/`margin` | `pitMetrics` 的 `metricCode` 已經直接採用這些全球通用縮寫（`roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`evEbitda`/`fcfYield`，`beta` 目前只有 domainMetrics 舊架構版本，pitMetrics 版尚未實作，見本文件〈二、指標識別碼〉一節） | **已對齊** |
+| 六、Fama-French 因子 | `mkt_rf`/`smb`/`hml`/`rmw`/`cma`/`umd`/`rf` | 平台沒有任何因子投資/多因子模型功能 | **不適用**，非本平台範圍 |
+| 七、WRDS CCM Linking | `GVKEY`↔`LPERMNO` 橋接 + 有效期間 | 沒有 CRSP/Compustat 概念；生態系內部的跨服務橋接鍵已經是 `symbol`（見一、已完成對齊）跟 `fund_tax_id`（見二、指標識別碼、ETF 相關 join），且都沒有帶生效期間——這是台股單一市場場景，橋接鍵本身穩定，不像 CCM 要處理兩個獨立資料庫的覆蓋範圍落差 | **不適用**，場景不對應 |
+| 八、籌碼資料（台灣概念對應） | `short_to_margin_ratio`/`margin_purchase_balance`/`short_sale_balance`/`foreign_net`（買賣超） | `marginShortRatioRanking` 的 `shortToMarginRatioPct` 已對齊報告建議的 `short_to_margin_ratio`；`marginTodayBalance`/`shortTodayBalance` 概念對應 `margin_purchase_balance`/`short_sale_balance`，但命名用「Today」而非報告建議的字面對應，語意仍清楚不算落差。**`foreignHoldingRanking` 算的是「外資持股比例」（ownership level），不是報告講的「外資買賣超」（`foreign_net`，net buy/sell flow）**——這是兩個不同的籌碼概念，本平台目前只做了持股比例排行，沒有買賣超（T86 報表）資料源 | **部分對齊 + 一個命名易混淆點**：往後如果真的要做外資「買賣超」，metricCode/欄位名稱要用 `foreignNet`（或類似字眼）跟現有的 `sharesHeldPercent`（持股比例）明確區分，不要都叫「外資」混在一起 |
+| 九、市場結構詞彙 | universe/constituent/reconstitution/rebalancing | 平台沒有指數複製、成分股追蹤、universe 篩選這類功能 | **不適用**，非本平台範圍 |
 
 ## 一、已完成的跨服務命名對齊
 
