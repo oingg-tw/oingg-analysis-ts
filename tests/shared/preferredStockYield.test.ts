@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { solveYieldToCall, resolveYtcPeriods, calculateNegativeConvexityWarning } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods } from '@/shared/preferredStockYield';
 
 // n=1 有封閉解可以交叉驗證：P0 = (D+CallPrice)/(1+y) => y = (D+CallPrice)/P0 - 1。
 test('solveYieldToCall: n=1 時應該精確等於封閉解', () => {
@@ -69,14 +69,4 @@ test('resolveYtcPeriods: 贖回日已過，應該回傳 past_redemption_date_ass
   const result = resolveYtcPeriods(redemptionDate, asOfDate);
   assert.equal(result.assumption, 'past_redemption_date_assumed_next_period');
   assert.equal(result.periods, 1);
-});
-
-test('calculateNegativeConvexityWarning: 溢價邊界案例（2%/2.01%/1.99%）', () => {
-  assert.equal(calculateNegativeConvexityWarning(102, 100), false, '剛好 2% 不觸發（>2% 才觸發）');
-  assert.equal(calculateNegativeConvexityWarning(102.01, 100), true, '2.01% 應該觸發');
-  assert.equal(calculateNegativeConvexityWarning(101.99, 100), false, '1.99% 不應該觸發');
-});
-
-test('calculateNegativeConvexityWarning: 現價低於贖回價時不觸發', () => {
-  assert.equal(calculateNegativeConvexityWarning(90, 100), false);
 });

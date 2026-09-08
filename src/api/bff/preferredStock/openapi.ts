@@ -20,8 +20,6 @@ export const registerPreferredStockOpenApi = (): void => {
       '殖利率也高（例如 2002A 中鋼特票面利率 14% 是 1974 年發行當時的利率環境）。' +
       'redeemable/redemptionDate/redemptionConditions 描述的是發行人贖回權（call，公司單方' +
       '面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。' +
-      'callRiskAmount（買回風險）= 發行價 - 最新收盤價，只在可贖回時才計算——現價高於發行價' +
-      '時這個值是負的，代表投資人可能被發行人用發行價買回、被迫吃下這個負值大小的損失。' +
       'limit/offset 分頁沿用 GET /companies 的慣例。' +
       'dataSources 是給終端使用者查證用的公開頁面連結（TWSE ISIN 網站/MOPS 特別股權利查詢/' +
       'TWSE 個股日成交資訊查詢），不是內部資料庫的表名——顆粒度到來源，不到逐欄位（逐欄位' +
@@ -33,7 +31,9 @@ export const registerPreferredStockOpenApi = (): void => {
       '才有值。ytcAssumption 標記 ytcPct 的期數假設：贖回日還沒到就用真實到贖回日的年數；' +
       '贖回日已過（發行人隨時可能贖回但還沒動作，沒有下一個確定贖回時點）就假設「下一次配息後' +
       '即被贖回」，這是簡化假設不是真實排定的時間，前端顯示時應該額外標註。' +
-      'negativeConvexityWarning 是現價相對發行價溢價超過 2% 的警示旗標。',
+      'premiumRatePct（溢價率）= (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回時才計算——' +
+      '現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失，前端可以' +
+      '自行決定要用什麼門檻標示風險。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {

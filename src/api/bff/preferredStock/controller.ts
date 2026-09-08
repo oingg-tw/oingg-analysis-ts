@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/shared/sourceData/preferredStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
-import { solveYieldToCall, resolveYtcPeriods, calculateNegativeConvexityWarning } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods } from '@/shared/preferredStockYield';
 import type { PreferredStockDataSource } from './types';
 
 // 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到來源即可，不用到逐欄位（逐
@@ -82,12 +82,6 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
 
         const nominalDividendRatePct = right?.dividendRate != null && right.issuePrice != null ? toRatio2(right.dividendRate, right.issuePrice) : null;
         const currentYieldPct = right?.dividendRate != null && price?.closePrice != null ? toRatio2(right.dividendRate, price.closePrice) : null;
-        // 買回風險（call risk）= 發行價 - 現價，只在可贖回（redeemable）時才有意義——發行人
-        // 贖回時是按發行價買回，如果現價已經漲超過發行價，這個差額就會是負值，代表投資人
-        // 用市價買進卻只能拿回發行價，可能被迫吃下這個負值大小的損失；不可贖回的特別股沒有
-        // 這個風險，回傳 null。2026-09-06 使用者更正過方向（原本寫成現價-發行價，已改成
-        // 發行價-現價），這裡不要改回去。
-        const callRiskAmount = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? Math.round((right.issuePrice - price.closePrice) * 100) / 100 : null;
 
         // YTW（最差殖利率）= min(YTC, YTP)。YTP 就是上面已經算好的 currentYieldPct，不用
         // 重算。YTC 只在可贖回、且發行價/配息/現價/贖回日都齊全時才算得出來——見
@@ -103,8 +97,12 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
         }
         const ytwPct = ytcPct !== null && currentYieldPct !== null ? Math.min(currentYieldPct, ytcPct) : currentYieldPct;
 
-        const negativeConvexityWarning =
-          right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? calculateNegativeConvexityWarning(price.closePrice, right.issuePrice) : null;
+        // 溢價率 = (現價 − 發行價) / 發行價 * 100，只在可贖回時才有意義（發行人贖回是按
+        // 發行價買回，現價已經漲超過發行價時，投資人有被迫在高於市場認知價值處被贖回的
+        // 風險）。2026-09-08 改回傳原始百分比取代原本的 negativeConvexityWarning 布林值——
+        // 後者只是「溢價率 > 2%」的判斷式，前端本來就會自己算溢價率，兩者是同一個公式重複
+        // 曝露成兩種形式，直接給原始數字讓前端自己決定門檻更單純。
+        const premiumRatePct = right?.redeemable === true && right.issuePrice != null && price?.closePrice != null ? toRatio2(price.closePrice - right.issuePrice, right.issuePrice) : null;
 
         return {
           symbol: security.symbol,
@@ -128,11 +126,10 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
           redeemable: right?.redeemable ?? null,
           redemptionDate: right?.redemptionDate?.toISOString().slice(0, 10) ?? null,
           redemptionConditions: right?.redemptionConditions ?? null,
-          callRiskAmount,
           ytcPct,
           ytcAssumption,
           ytwPct,
-          negativeConvexityWarning,
+          premiumRatePct,
         };
       })
     );

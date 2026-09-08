@@ -23,13 +23,6 @@ export const preferredStockEntrySchema = z.object({
   redeemable: z.boolean().nullable().meta({ description: '發行公司是否可強制買回（發行人贖回權/call，不是投資人賣回權/put——這批資料源沒有投資人賣回權的欄位）' }),
   redemptionDate: z.string().nullable(),
   redemptionConditions: z.string().nullable(),
-  callRiskAmount: z
-    .number()
-    .nullable()
-    .meta({
-      description:
-        '買回風險 = 發行價 - 最新收盤價（新台幣元），只在可贖回（redeemable=true）時才計算——發行人贖回是按發行價買回，現價高於發行價時這個值是負的，代表投資人用市價買進卻只能拿回發行價，可能被迫吃下這個負值大小的損失；不可贖回或查無股價時為 null',
-    }),
   ytcPct: z.number().nullable().meta({
     description:
       '贖回殖利率（Yield to Call）年化百分比，只在可贖回且發行價/配息/現價/贖回日都齊全時才計算——沒有封閉解，用二分法對現金流現值公式求根。搭配 ytcAssumption 判斷這個數字的期數假設是什麼，不可贖回或缺輸入時為 null',
@@ -46,8 +39,8 @@ export const preferredStockEntrySchema = z.object({
   ytwPct: z.number().nullable().meta({
     description: 'YTW（最差殖利率）= min(currentYieldPct, ytcPct)，ytcPct 為 null 時退回等於 currentYieldPct（永續殖利率單獨成立）',
   }),
-  negativeConvexityWarning: z.boolean().nullable().meta({
-    description: '負凸性警示：現價相對發行價（贖回價）溢價超過 2% 時為 true，代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失；只在可贖回且輸入齊全時計算，否則為 null',
+  premiumRatePct: z.number().nullable().meta({
+    description: '溢價率 = (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回（redeemable=true）時才計算——現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失；不可贖回或查無股價時為 null',
   }),
 });
 export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;

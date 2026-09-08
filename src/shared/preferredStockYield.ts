@@ -57,10 +57,3 @@ export const resolveYtcPeriods = (redemptionDate: Date, asOfDate: Date): { perio
   const periods = Math.max(1, Math.ceil(diffMs / MS_PER_YEAR));
   return { periods, assumption: 'scheduled_redemption_date' };
 };
-
-// 負凸性警示：現價相對贖回價（發行價）溢價 >2% 時觸發——現價已經漲超過發行人贖回會
-// 支付的價格，投資人有被迫在高於市場認知價值處被贖回的風險。
-export const calculateNegativeConvexityWarning = (currentPrice: number, callPrice: number): boolean => {
-  if (callPrice === 0) return false;
-  return (currentPrice - callPrice) / callPrice > 0.02;
-};
