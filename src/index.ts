@@ -21,6 +21,7 @@ import routes from './routes';
 import errorHandler from './shared/errorHandler';
 import { checkFilterCatalogConsistency } from './api/bff/filter/filterCatalogCheck';
 import { validateMetricTableRegistry } from './api/bff/filter/metricTableRegistry';
+import { checkColumnPresetsConsistency } from './api/bff/filter/columnPresets';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 import { loadIndustryClassification } from './shared/sourceData/industryClassification';
 
@@ -66,6 +67,7 @@ const startServer = async () => {
     }
     checkFilterCatalogConsistency(config.isProduction);
     validateMetricTableRegistry(config.isProduction);
+    checkColumnPresetsConsistency(config.isProduction);
     await connectAnalysisDb();
     await connectMopsExportDb();
     await connectGovExportDb();
