@@ -3,15 +3,18 @@ import { registry } from '@/adapters/swagger/registry';
 import { periodTypeSchema, lookbackRangeSchema, samplingIntervalSchema, snapshotCadenceSchema } from '@/pitMetrics/metricBasis';
 
 // 2026-09-08 起改成直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構（見
-// metricFolderCatalog.ts 的說明），取代舊架構手動維護的 filterCatalog.csv——這份 schema
-// 對應的是新的、簡化過的回應形狀：只有 categoryKey/metricCode/四個 allowedXxx 陣列，沒有
-// 舊版 filterCatalog 那種手寫的 name/description/unit/aliases 使用者文案（那需要另外一批
-// 寫作工作，不在這次範圍內）。四個陣列對應 metricBasis.ts 的四組概念（periodType/
-// lookbackRange/samplingInterval/snapshotCadence，取代舊的單一 basis 欄位——那個名字違反
-// ubiquitous language，「basis」在會計裡是保留字，不是這裡要表達的東西），每個 metricCode
-// 只會有其中一組是真實值（超過 1 個元素），其餘固定 `['N/A']`。
+// metricFolderCatalog.ts 的說明），取代舊架構手動維護的 filterCatalog.csv。四個
+// allowedXxx 陣列對應 metricBasis.ts 的四組概念（periodType/lookbackRange/
+// samplingInterval/snapshotCadence，取代舊的單一 basis 欄位——那個名字違反 ubiquitous
+// language，「basis」在會計裡是保留字，不是這裡要表達的東西），每個 metricCode 只會有
+// 其中一組是真實值（超過 1 個元素），其餘固定 `['N/A']`。
+// 2026-09-09 補上 displayName/unit（使用者可讀的中文名稱/單位）——之前這支端點沒有這批
+// 文案，前端沒辦法直接拿來組欄位選單/顯示標籤，見 metricDefinitionRegistry.ts 每個
+// metricCode 宣告的這兩個欄位。
 const metricFolderCatalogEntrySchema = z.object({
   metricCode: z.string().meta({ description: '對應 metricDefinitionRegistry.ts 的 key，也是 GET /companies/metric-history 等端點的 metricCode 參數值' }),
+  displayName: z.string().meta({ description: '中文名稱，給前端直接顯示用（例如 "股東權益報酬率 (ROE)"）' }),
+  unit: z.string().meta({ description: '單位（%、元、次、天、倍、分、無單位）' }),
   allowedPeriodTypes: z.array(periodTypeSchema).meta({ description: '季報型指標的期間聚合方式（Q/YTD/TTM/Q_ANN/FY）；非本組指標固定 ["N/A"]' }),
   allowedLookbackRanges: z.array(lookbackRangeSchema).meta({ description: '滾動統計量（Beta）的回溯範圍（1Y/2Y/5Y）；非本組指標固定 ["N/A"]' }),
   allowedSamplingIntervals: z.array(samplingIntervalSchema).meta({ description: '滾動統計量（Beta）的取樣粒度（1D/1W/1M）；非本組指標固定 ["N/A"]' }),
@@ -50,8 +53,8 @@ export const registerFiltersOpenApi = (): void => {
       '這兩個陣列不是自由交叉組合，例如 beta 的 1Y/2Y/5Y x 1D/1W/1M 只有 3 種（1Y_1D/2Y_1W/5Y_1M）真的有資料，' +
       '其餘 6 種格式合法但永遠查無資料，validTokens 才是每個 metricCode 唯一該信任的合法 token 清單。可以拿' +
       'metricCode 直接打 GET /companies/metric-history、GET /companies/metrics-history ' +
-      '查歷史數值——這支端點目前不提供使用者可讀的中文名稱/單位/公式說明（那批文案還沒有寫，是後續工作），純粹是給呼叫端' +
-      '知道「目前有哪些指標可以查、每個指標接受哪些參數值」。',
+      '查歷史數值。每個 metric 也帶 displayName（中文名稱）/unit（單位），可以直接拿來組欄位選單/顯示標籤，' +
+      '不用前端自己維護一份中文對照表。',
     tags: ['System'],
     responses: {
       200: {

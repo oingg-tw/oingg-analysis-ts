@@ -29,6 +29,11 @@ const CATEGORY_DIR_NAMES = ['dividend', 'efficiency', 'growth', 'profitability',
 
 export interface MetricFolderCatalogEntry {
   metricCode: string;
+  // 2026-09-09 新增：給前端顯示用的中文名稱/單位，來源是 metricDefinitionRegistry.ts
+  // 每個 metricCode 宣告的 displayName/unit——之前這支端點只有 metricCode 跟四個
+  // allowedXxx 陣列，前端組欄位選單時沒有可讀文案可以用。
+  displayName: string;
+  unit: string;
   allowedPeriodTypes: PeriodType[];
   allowedLookbackRanges: LookbackRange[];
   allowedSamplingIntervals: SamplingInterval[];
@@ -65,6 +70,8 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
         const definition = metricDefinitionRegistry[metricCode]!;
         return {
           metricCode,
+          displayName: definition.displayName,
+          unit: definition.unit,
           allowedPeriodTypes: definition.allowedPeriodTypes,
           allowedLookbackRanges: definition.allowedLookbackRanges,
           allowedSamplingIntervals: definition.allowedSamplingIntervals,

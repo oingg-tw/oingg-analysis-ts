@@ -3,6 +3,13 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 
 export interface MetricDefinitionSpec {
   metricCode: string;
+  // 2026-09-09：給前端顯示用的中文名稱/單位——GET /filters 之前只有 metricCode 跟四個
+  // allowedXxx 陣列，沒有使用者可讀文案，前端沒辦法直接拿來組欄位選單。displayName 是
+  // 精簡的中文指標名稱（常見英文縮寫視慣例保留，例如 ROE/EPS），unit 是這個數字的單位
+  // （%、元、次、天、倍、分、無單位）——這兩個是給 UI 標籤用的最小可用集合，不是完整的
+  // 公式/計算邏輯說明（那個看 formulaNote，太技術性不適合直接顯示給終端使用者）。
+  displayName: string;
+  unit: string;
   formulaNote: string;
   // 2026-09-08：原本是單一 allowedBases，拆成四個獨立陣列（見 metricBasis.ts 的完整
   // 說明）——每個 metricCode 只會落在其中一組，非本組固定 ['N/A']（sentinel，不是空陣列）。
@@ -54,6 +61,8 @@ export interface MetricDefinitionSpec {
 export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roe: {
     metricCode: 'roe',
+    displayName: '股東權益報酬率 (ROE)',
+    unit: '%',
     formulaNote:
       'Q(單季) = 本季淨利/本季期末權益*100，淨利/權益優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'Q_ANN = Q*4（簡易年化，非複利）；TTM = 近四季（含本季）淨利加總/本季期末權益*100，' +
@@ -75,6 +84,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 不呼叫任何 calculateXxx()、也不互相讀取彼此已寫入的 metric_value 列。
   roa: {
     metricCode: 'roa',
+    displayName: '資產報酬率 (ROA)',
+    unit: '%',
     formulaNote:
       'Q(單季) = 本季淨利/本季期末總資產*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'Q_ANN = Q*4（簡易年化）；TTM = 近四季（含本季）淨利加總/本季期末總資產*100，四季不齊為 null。',
@@ -88,6 +99,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   netProfitMargin: {
     metricCode: 'netProfitMargin',
+    displayName: '稅後淨利率',
+    unit: '%',
     formulaNote:
       'Q(單季) = 本季淨利/本季營收*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'TTM = 近四季（含本季）淨利加總/近四季營收加總*100，四季不齊為 null。' +
@@ -102,6 +115,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   assetTurnover: {
     metricCode: 'assetTurnover',
+    displayName: '總資產週轉率',
+    unit: '次',
     formulaNote:
       'Q(單季) = 本季營收/本季期末總資產（次）；Q_ANN = Q*4（簡易年化）；' +
       'TTM = 近四季（含本季）營收加總/本季期末總資產，四季不齊為 null。',
@@ -115,6 +130,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   equityMultiplier: {
     metricCode: 'equityMultiplier',
+    displayName: '權益乘數',
+    unit: '倍',
     formulaNote:
       '= 本季期末總資產/本季期末權益，權益優先採歸屬於母公司口徑，缺漏退回整體口徑。純資產負債表' +
       '時點快照，只有 Q 一種 basis——跟 ROE 的權益一樣沒有 TTM/年化概念。',
@@ -128,6 +145,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dupontDecomposedRoe: {
     metricCode: 'dupontDecomposedRoe',
+    displayName: '杜邦三因子拆解 ROE',
+    unit: '%',
     formulaNote:
       'Q(單季) = netProfitMargin(Q) x assetTurnover(Q) x equityMultiplier；' +
       'TTM = netProfitMargin(TTM) x assetTurnover(TTM) x equityMultiplier（沿用同一個 Q 的權益乘數，' +
@@ -151,6 +170,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 精確等於既有的 dupontDecomposedRoe。
   dupontTaxBurden: {
     metricCode: 'dupontTaxBurden',
+    displayName: '稅務負擔',
+    unit: '%',
     formulaNote: 'Q(單季) = 本季淨利/本季稅前淨利*100；TTM = 近四季淨利加總/近四季稅前淨利加總*100。淨利優先採歸屬母公司口徑，缺漏退回整體口徑。',
     allowedPeriodTypes: ['Q', 'TTM'],
     allowedLookbackRanges: ['N/A'],
@@ -162,6 +183,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dupontInterestBurden: {
     metricCode: 'dupontInterestBurden',
+    displayName: '利息負擔',
+    unit: '%',
     formulaNote: 'Q(單季) = 本季稅前淨利/本季EBIT*100（EBIT=稅前淨利+財務費用）；TTM = 近四季稅前淨利加總/近四季EBIT加總*100。',
     allowedPeriodTypes: ['Q', 'TTM'],
     allowedLookbackRanges: ['N/A'],
@@ -173,6 +196,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dupontEbitMargin: {
     metricCode: 'dupontEbitMargin',
+    displayName: 'EBIT 利潤率',
+    unit: '%',
     formulaNote: 'Q(單季) = 本季EBIT/本季營收*100（EBIT=稅前淨利+財務費用）；TTM = 近四季EBIT加總/近四季營收加總*100。跟既有 operatingMargin（=operatingIncome/營收）是不同的數字，operatingIncome 嚴格排除非營業損益，這裡的 EBIT 只加回財務費用。',
     allowedPeriodTypes: ['Q', 'TTM'],
     allowedLookbackRanges: ['N/A'],
@@ -184,6 +209,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dupontExtendedRoe: {
     metricCode: 'dupontExtendedRoe',
+    displayName: '杜邦五因子拆解 ROE',
+    unit: '%',
     formulaNote:
       '五因子相乘 = dupontTaxBurden x dupontInterestBurden x dupontEbitMargin x assetTurnover x equityMultiplier（三個百分比因子跟兩個原始比率因子相乘後除以 10000 校正尺度）。' +
       '五個因子任一為 null，一律回報 null_reason=missing_input，細節記在各自的 metric_value 列上。理論上等於 dupontDecomposedRoe（已用真實資料驗證過一致）。沒有 Q_ANN。',
@@ -204,6 +231,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // ocfPerShare/fcfPerShare 這些已寫入的 metric_value，維持每條 pipeline 獨立的原則。
   eps: {
     metricCode: 'eps',
+    displayName: '每股盈餘 (EPS)',
+    unit: '元',
     formulaNote:
       'Q(單季) = 本季淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆），淨利優先採歸屬' +
       '母公司口徑，缺漏退回整體口徑；Q_ANN = Q*4；TTM = 近四季（含本季）淨利加總*1000/流通股數，' +
@@ -218,6 +247,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   bvps: {
     metricCode: 'bvps',
+    displayName: '每股淨值 (BVPS)',
+    unit: '元',
     formulaNote:
       '= 本季期末權益*1000/流通股數，權益優先採歸屬母公司口徑，缺漏退回整體口徑。純資產負債表' +
       '時點快照，只有 Q 一種 basis——跟 equityMultiplier 同一種形狀，沒有 TTM/年化概念。',
@@ -235,6 +266,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // (knowledge_date) 查，跟 fcfYield/psr/pFcf/evEbitda 同一個模式。
   peRatio: {
     metricCode: 'peRatio',
+    displayName: '本益比',
+    unit: '倍',
     formulaNote:
       '= 股價(knowledge_date當天或之前最近一筆收盤價) / EPS(TTM，近四季淨利加總*1000/流通股數)。' +
       '只有 TTM 一種 basis——台股慣例的本益比就是用近四季 EPS。EPS_TTM 剛好等於 0 才是 null' +
@@ -249,6 +282,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   pbRatio: {
     metricCode: 'pbRatio',
+    displayName: '股價淨值比',
+    unit: '倍',
     formulaNote:
       '= 股價(knowledge_date當天或之前最近一筆收盤價) / BVPS(本季期末權益*1000/流通股數)。只有 Q' +
       ' 一種 basis——跟 bvps 自己一樣是資產負債表時點快照，沒有 TTM/年化概念。BVPS 剛好等於 0' +
@@ -267,6 +302,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 保證跟 pbRatio 完全同步；跟 peRatio 絕大多數情況一致但沒有數學保證）。
   stockPrice: {
     metricCode: 'stockPrice',
+    displayName: '股價',
+    unit: '元',
     formulaNote: '= knowledge_date 當天或之前最近一筆收盤價（新台幣元）。查無股價資料時為 null（missing_input）。knowledge_date 解析只用資產負債表，不查損益表。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -278,6 +315,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   revenuePerShare: {
     metricCode: 'revenuePerShare',
+    displayName: '每股營收',
+    unit: '元',
     formulaNote:
       'Q(單季) = 本季營收*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總*1000/流通' +
       '股數，四季不齊為 null。',
@@ -291,6 +330,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dividendPayoutRatio: {
     metricCode: 'dividendPayoutRatio',
+    displayName: '股利發放率',
+    unit: '%',
     formulaNote:
       'TTM = |近四季（含本季）股利發放加總| / 近四季淨利加總 * 100，淨利優先採歸屬母公司口徑，' +
       '淨利須為正才有意義（≤0 視為 zero_or_negative_denominator）。沒有 Q/Q_ANN——股利通常一年' +
@@ -305,6 +346,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   sgr: {
     metricCode: 'sgr',
+    displayName: '永續成長率',
+    unit: '%',
     formulaNote:
       'TTM = ROE(TTM) x (1 - 配息率(TTM)/100)——獨立重新計算 ROE TTM 跟配息率 TTM 兩個子公式' +
       '（不依賴 roe/dividendPayoutRatio 這兩個 metric_code 已寫入的值），只有 TTM 一種 basis，' +
@@ -326,6 +369,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   ocfPerShare: {
     metricCode: 'ocfPerShare',
+    displayName: '每股營業現金流',
+    unit: '元',
     formulaNote:
       'Q(單季) = 本季營業活動現金流*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營業活動' +
       '現金流加總*1000/流通股數，四季不齊為 null。',
@@ -339,6 +384,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   fcfPerShare: {
     metricCode: 'fcfPerShare',
+    displayName: '每股自由現金流',
+    unit: '元',
     formulaNote:
       'FCF = 營業活動現金流 + 資本支出（資本支出在來源資料是負值/流出，用加法，不是減法）；' +
       'Q(單季) = 本季 FCF*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）FCF 加總*1000/流通' +
@@ -353,6 +400,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   ocfToNetIncome: {
     metricCode: 'ocfToNetIncome',
+    displayName: '營業現金流對淨利比',
+    unit: '倍',
     formulaNote:
       'Q(單季) = 本季營業活動現金流/本季淨利（倍，不是百分比）；TTM = 近四季（含本季）營業活動' +
       '現金流加總/近四季淨利加總。沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 netProfitMargin 同' +
@@ -367,6 +416,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   accrualsRatio: {
     metricCode: 'accrualsRatio',
+    displayName: '應計項目比率',
+    unit: '%',
     formulaNote:
       'Q(單季) = (本季淨利 − 本季營業活動現金流 − 本季投資活動現金流) / 本季期末總資產 * 100；' +
       'Q_ANN = Q*4；TTM 分子改用近四季（含本季）加總，分母仍固定用本季期末總資產（不平均、不' +
@@ -396,6 +447,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 已寫入的 metric_value）。
   debtRatio: {
     metricCode: 'debtRatio',
+    displayName: '負債比率',
+    unit: '%',
     formulaNote: '= 本季期末總負債/本季期末總資產*100。純資產負債表時點快照，只有 Q 一種 basis。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -407,6 +460,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   currentRatio: {
     metricCode: 'currentRatio',
+    displayName: '流動比率',
+    unit: '%',
     formulaNote: '= 本季期末流動資產/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -418,6 +473,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   quickRatio: {
     metricCode: 'quickRatio',
+    displayName: '速動比率',
+    unit: '%',
     formulaNote: '= (本季期末流動資產-存貨)/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -429,6 +486,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   cashRatio: {
     metricCode: 'cashRatio',
+    displayName: '現金比率',
+    unit: '%',
     formulaNote: '= 本季期末現金及約當現金/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -440,6 +499,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   deRatio: {
     metricCode: 'deRatio',
+    displayName: '負債權益比',
+    unit: '倍',
     formulaNote:
       '= 有息負債(短期借款+應付公司債+長期借款)/本季期末權益*100，權益優先採歸屬母公司口徑，' +
       '缺漏退回整體口徑。純資產負債表時點快照，只有 Q 一種 basis。',
@@ -453,6 +514,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   interestCoverage: {
     metricCode: 'interestCoverage',
+    displayName: '利息保障倍數',
+    unit: '倍',
     formulaNote:
       'EBIT = 稅前淨利+利息費用；Q(單季) = EBIT/利息費用（倍）；TTM = 近四季（含本季）EBIT 加總/' +
       '近四季利息費用加總。沒有 Q_ANN——flow/flow 比率年化沒有意義。',
@@ -466,6 +529,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   netDebtToEbitda: {
     metricCode: 'netDebtToEbitda',
+    displayName: '淨負債對 EBITDA 比',
+    unit: '倍',
     formulaNote:
       '淨負債 = 有息負債(短期借款+應付公司債+長期借款) - 現金及約當現金；EBITDA = 稅前淨利+利息費用' +
       '+折舊+攤銷；Q_ANN = 淨負債/(本季 EBITDA*4)；TTM = 淨負債/近四季（含本季）EBITDA 加總。' +
@@ -490,6 +555,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   capexToRevenue: {
     metricCode: 'capexToRevenue',
+    displayName: '資本支出佔營收比',
+    unit: '%',
     formulaNote:
       'Q(單季) = |資本支出|/本季營收*100；TTM = |近四季（含本季）資本支出加總|/近四季營收加總*100。' +
       '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
@@ -503,6 +570,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   psr: {
     metricCode: 'psr',
+    displayName: '股價營收比',
+    unit: '倍',
     formulaNote:
       'Q_ANN = 市值/(本季營收*4*1000)；TTM = 市值/(近四季營收加總*1000)。市值取這個座標解析出來的' +
       'knowledge_date 當天（或之前最近一筆交易日）市值——跟財報公告日共用同一個 knowledge_date。' +
@@ -518,6 +587,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   pFcf: {
     metricCode: 'pFcf',
+    displayName: '股價自由現金流比',
+    unit: '倍',
     formulaNote:
       '自由現金流 = 營業活動現金流+資本支出（資本支出來源資料是負值/流出，用加法）；Q_ANN = 市值/' +
       '(本季自由現金流*4*1000)；TTM = 市值/(近四季自由現金流加總*1000)。股價/市值查詢邏輯同 psr。' +
@@ -533,6 +604,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   evEbitda: {
     metricCode: 'evEbitda',
+    displayName: 'EV/EBITDA',
+    unit: '倍',
     formulaNote:
       '企業價值 = 市值+淨負債*1000；Q_ANN = 企業價值/(本季 EBITDA*4*1000)；TTM = 企業價值/' +
       '(近四季 EBITDA 加總*1000)。股價/市值查詢邏輯同 psr。獨立重新計算淨負債+EBITDA（不依賴' +
@@ -558,6 +631,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   roic: {
     metricCode: 'roic',
+    displayName: '投入資本報酬率 (ROIC)',
+    unit: '%',
     formulaNote:
       'EBIT = 稅前淨利+利息費用；有效稅率 = 所得稅費用/稅前淨利（稅前淨利須為正，否則 NOPAT 為 ' +
       'null）；NOPAT = EBIT*(1-有效稅率)；投入資本 = 有息負債(短期借款+應付公司債+長期借款)+權益-' +
@@ -584,6 +659,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   roce: {
     metricCode: 'roce',
+    displayName: '已運用資本報酬率 (ROCE)',
+    unit: '%',
     formulaNote:
       'EBIT = 稅前淨利+利息費用；使用資本(Capital Employed) = 本季期末總資產-本季期末流動負債；' +
       'Q(單季) = EBIT/使用資本*100；Q_ANN = Q*4；TTM = 近四季（含本季）EBIT 加總/本季期末使用' +
@@ -606,6 +683,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // Dupont 家族同一種「一次查詢拆多個 metric_code」模式）。
   grossMargin: {
     metricCode: 'grossMargin',
+    displayName: '毛利率',
+    unit: '%',
     formulaNote:
       'Q(單季) = 本季毛利/本季營收*100；TTM = 近四季（含本季）毛利加總/近四季營收加總*100。' +
       '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
@@ -619,6 +698,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   operatingMargin: {
     metricCode: 'operatingMargin',
+    displayName: '營業利益率',
+    unit: '%',
     formulaNote:
       'Q(單季) = 本季營業利益/本季營收*100；TTM = 近四季（含本季）營業利益加總/近四季營收加總*100。' +
       '沒有 Q_ANN。',
@@ -632,6 +713,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   inventoryTurnover: {
     metricCode: 'inventoryTurnover',
+    displayName: '存貨週轉率',
+    unit: '次',
     formulaNote:
       'Q(單季) = 本季營業成本/本季期末存貨（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
       '加總/本季期末存貨。',
@@ -645,6 +728,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   receivablesTurnover: {
     metricCode: 'receivablesTurnover',
+    displayName: '應收帳款週轉率',
+    unit: '次',
     formulaNote:
       'Q(單季) = 本季營收/本季期末應收帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總/' +
       '本季期末應收帳款。',
@@ -658,6 +743,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   fixedAssetTurnover: {
     metricCode: 'fixedAssetTurnover',
+    displayName: '固定資產週轉率',
+    unit: '次',
     formulaNote:
       'Q(單季) = 本季營收/本季期末不動產、廠房及設備（次）；Q_ANN = Q*4；TTM = 近四季（含本季）' +
       '營收加總/本季期末不動產、廠房及設備。',
@@ -671,6 +758,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   payablesTurnover: {
     metricCode: 'payablesTurnover',
+    displayName: '應付帳款週轉率',
+    unit: '次',
     formulaNote:
       'Q(單季) = 本季營業成本/本季期末應付帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
       '加總/本季期末應付帳款。',
@@ -684,6 +773,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   inventoryDays: {
     metricCode: 'inventoryDays',
+    displayName: '存貨週轉天數 (DIO)',
+    unit: '天',
     formulaNote:
       'DIO = 365/存貨周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis——365/單季周轉率算出來是' +
       '「一季裡的天數」，不是有意義的週轉天數，週轉天數的定義本來就以一年為基準。',
@@ -697,6 +788,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   receivablesDays: {
     metricCode: 'receivablesDays',
+    displayName: '應收帳款收現天數 (DSO)',
+    unit: '天',
     formulaNote: 'DSO = 365/應收帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
     allowedLookbackRanges: ['N/A'],
@@ -708,6 +801,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   payablesDays: {
     metricCode: 'payablesDays',
+    displayName: '應付帳款付現天數 (DPO)',
+    unit: '天',
     formulaNote: 'DPO = 365/應付帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
     allowedLookbackRanges: ['N/A'],
@@ -719,6 +814,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   cashConversionCycle: {
     metricCode: 'cashConversionCycle',
+    displayName: '現金轉換循環 (CCC)',
+    unit: '天',
     formulaNote:
       'CCC = DIO + DSO − DPO。只有 Q_ANN/TTM 兩種 basis（跟三個組成天數一致）。三個組成任一為' +
       'null，不管原因為何，一律回報 missing_input——除非是因為 TTM 四季不齊，這種情況回報' +
@@ -741,6 +838,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 拿去年同季的 year/season，不是新機制。
   grahamNumber: {
     metricCode: 'grahamNumber',
+    displayName: '葛拉漢數字',
+    unit: '元',
     formulaNote:
       '= sqrt(22.5 x EPS(TTM) x BVPS)，EPS(TTM)/BVPS 須為正才有意義。獨立重新計算 EPS(TTM)/' +
       'BVPS（不依賴 eps/bvps 這兩個 metric_code 已寫入的值）。只有 TTM 一種 basis——因為' +
@@ -755,6 +854,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   ncav: {
     metricCode: 'ncav',
+    displayName: '淨流動資產價值 (NCAV)',
+    unit: '元',
     formulaNote:
       '= (本季期末流動資產 − 總負債 − 特別股股本)/流通股數。純資產負債表時點快照，只有 Q 一種' +
       'basis。marginOfSafetyPrice（= ncav x 2/3）不獨立遷移，是純線性換算，呼叫端自己乘 2/3 即可。',
@@ -768,6 +869,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   ownerEarnings: {
     metricCode: 'ownerEarnings',
+    displayName: '業主盈餘',
+    unit: '元',
     formulaNote:
       '每股股東盈餘 = (本季淨利+折舊+攤銷+資本支出)/流通股數（資本支出來源資料是負值/流出，' +
       '用加法）。Q(單季)/Q_ANN(=Q*4)/TTM（近四季各分項各自加總再除以流通股數），跟 eps/' +
@@ -789,6 +892,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   altmanZScore: {
     metricCode: 'altmanZScore',
+    displayName: 'Altman Z-Score 財務危機預警分數',
+    unit: '分',
     formulaNote:
       'Z = 1.2*X1+1.4*X2+3.3*X3+0.6*X4+0.999*X5，X1=(流動資產-流動負債)/總資產、' +
       'X2=保留盈餘/總資產、X3=EBIT(TTM)/總資產、X4=市值/(總負債*1000)、X5=營收(TTM)/總資產。' +
@@ -817,6 +922,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   piotroskiFScore: {
     metricCode: 'piotroskiFScore',
+    displayName: 'Piotroski F-Score 財務體質評分',
+    unit: '分',
     formulaNote:
       '9 個二元訊號（ROA 為正、CFO 為正、ROA 較去年同季提升、CFO>淨利、長期負債比率較去年同季' +
       '下降、流動比率較去年同季提升、流通股數未增加、毛利率較去年同季提升、總資產週轉率較去年' +
@@ -844,6 +951,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   beneishMScore: {
     metricCode: 'beneishMScore',
+    displayName: 'Beneish M-Score 財報操縱偵測分數',
+    unit: '分',
     formulaNote:
       '8 變量迴歸式：M=-4.84+0.92*DSRI+0.528*GMI+0.404*AQI+0.892*SGI+0.115*DEPI-0.172*SGAI' +
       '+4.037*TATA+0.0327*LVGI，除 TATA（單期指標）外，其餘 7 個變量都是本季 vs 去年同季的' +
@@ -872,6 +981,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   nissimPenmanRnoa: {
     metricCode: 'nissimPenmanRnoa',
+    displayName: '淨營業資產報酬率 (RNOA)',
+    unit: '%',
     formulaNote:
       'NOPAT = 營業利益*(1-有效稅率)；NOA(淨營業資產) = 權益+NFO(淨金融負債，= 有息負債-現金)；' +
       'Q(單季) = NOPAT/NOA*100；Q_ANN = Q*4；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
@@ -897,6 +1008,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   zmijewskiScore: {
     metricCode: 'zmijewskiScore',
+    displayName: 'Zmijewski Score 財務危機預警分數',
+    unit: '分',
     formulaNote:
       'X = -4.3-4.5*(淨利TTM/總資產)+5.7*(總負債/總資產)-0.004*(流動資產/流動負債)。淨利用' +
       'TTM（原始模型用年度財報校準，TTM 是最接近的替代口徑，跟 ROE/ROA 邏輯一致），其餘皆為' +
@@ -918,6 +1031,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   ohlsonOScore: {
     metricCode: 'ohlsonOScore',
+    displayName: 'Ohlson O-Score 財務危機預警分數',
+    unit: '分',
     formulaNote:
       '9 變量 Logit 模型：SIZE=ln(總資產)、TLTA=總負債/總資產、WCTA=(流動資產-流動負債)/總資產、' +
       'CLCA=流動負債/流動資產、OENEG=總負債>總資產?1:0、NITA=淨利(TTM)/總資產、' +
@@ -943,6 +1058,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   fcfYield: {
     metricCode: 'fcfYield',
+    displayName: '自由現金流殖利率',
+    unit: '%',
     formulaNote:
       'Q_ANN = 每股 FCF 單季年化 / 股價 * 100；TTM = 每股 FCF(TTM) / 股價 * 100。股價取這個座標' +
       '解析出來的 knowledge_date 當天（或之前最近一筆交易日）收盤價——跟財報公告日共用同一個' +
@@ -963,6 +1080,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // 名稱。都只有 Q 一種 basis（資產負債表時點快照，沒有 TTM/年化概念）。
   bankNplRatio: {
     metricCode: 'bankNplRatio',
+    displayName: '銀行逾期放款比率',
+    unit: '%',
     formulaNote:
       '全行逾放比，直接讀 mops-ts 的 bank_asset_quality_xbrl（category=\'TotalLoans\'）已經算好的' +
       'non_performing_loans_ratio，不用自己推公式。覆蓋約 19-20 檔銀行/金控股，每季都有資料；' +
@@ -977,6 +1096,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   bankNplCoverageRatio: {
     metricCode: 'bankNplCoverageRatio',
+    displayName: '銀行備抵呆帳覆蓋率',
+    unit: '%',
     formulaNote:
       '備抵呆帳覆蓋率，跟 bankNplRatio 同一列（bank_asset_quality_xbrl 的 TotalLoans）、' +
       '同一次查詢、同一組 knowledge_date，直接讀已經算好的 coverage_ratio。',
@@ -990,6 +1111,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   bankCarRatio: {
     metricCode: 'bankCarRatio',
+    displayName: '銀行資本適足率 (CAR)',
+    unit: '%',
     formulaNote:
       '資本適足率 = eligible_capital / risk_weighted_assets * 100——這批唯一自己做除法的' +
       '欄位（其餘都是直接讀 mops-ts 算好的比率）。資料源 bank_capital_adequacy_detail_xbrl' +
@@ -1006,6 +1129,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   bankCet1Ratio: {
     metricCode: 'bankCet1Ratio',
+    displayName: '銀行普通股權益第一類資本比率 (CET1)',
+    unit: '%',
     formulaNote: '普通股權益比率（CET1），直接讀 bank_capital_adequacy_detail_xbrl 已經算好的 ratio_ordinary_share_equity_to_rwa，覆蓋率/頻率限制同 bankCarRatio。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -1017,6 +1142,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   bankTier1Ratio: {
     metricCode: 'bankTier1Ratio',
+    displayName: '銀行第一類資本比率 (Tier 1)',
+    unit: '%',
     formulaNote: '第一類資本比率（Tier1），直接讀已經算好的 ratio_tier_i_capital_to_rwa，跟 bankCarRatio/bankCet1Ratio 共用同一次查詢/同一組 knowledge_date，覆蓋率/頻率限制同 bankCarRatio。',
     allowedPeriodTypes: ['Q'],
     allowedLookbackRanges: ['N/A'],
@@ -1033,6 +1160,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // account_code——這是本 registry 第一批「依賴市場資料而非財報資料」的 metricCode。
   exchangePeRatio: {
     metricCode: 'exchangePeRatio',
+    displayName: '本益比（交易所公告）',
+    unit: '倍',
     formulaNote:
       'TWSE/TPEx 官方每日公布的本益比，直接 passthrough export.daily_valuation.pe_ratio，' +
       '本服務不自己重算，不知道交易所用的 EPS 是單季/TTM/年度哪種口徑——跟自己算的' +
@@ -1048,6 +1177,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   exchangePbRatio: {
     metricCode: 'exchangePbRatio',
+    displayName: '股價淨值比（交易所公告）',
+    unit: '倍',
     formulaNote:
       'TWSE/TPEx 官方每日公布的股價淨值比，直接 passthrough export.daily_valuation.pb_ratio，' +
       '本服務不自己重算——跟自己算的 pitMetrics pbRatio（XBRL BVPS、季報知識時點更新）是' +
@@ -1062,6 +1193,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
   dividendYield: {
     metricCode: 'dividendYield',
+    displayName: '殖利率（交易所公告）',
+    unit: '%',
     formulaNote:
       'TWSE/TPEx 官方每日公布的殖利率，直接 passthrough export.daily_valuation.dividend_yield，' +
       '本服務不自己重算——沒有自算對應版本可比較，直接沿用交易所數字最貼近使用者查詢' +
@@ -1084,6 +1217,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   // altmanZScore 是不同概念，2026-09-08 使用者確認：「beta 不反映經營風險」）。
   beta: {
     metricCode: 'beta',
+    displayName: '貝他係數 (Beta)',
+    unit: '無單位',
     formulaNote:
       'Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)，樣本共變異數/變異數' +
       '（分母 n-1）。三個 (lookbackRange, samplingInterval) 組合各自獨立計算（各自取基準' +
