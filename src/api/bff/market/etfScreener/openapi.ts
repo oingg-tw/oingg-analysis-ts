@@ -29,7 +29,12 @@ export const registerEtfScreenerOpenApi = (): void => {
       'belowStatutoryThreshold（規模是否低於法定下市門檻，下市風險近似警示）都是 sitca-ts 提供的權威欄位，不是本服務推算的。' +
       'exclude=false（預設）保留落在 [min,max] 內的值，null 一律排除；exclude=true 保留範圍外的值，min/max 都沒給時篩掉全部。' +
       'expenseRatio 只用「最新一個完整年度」，發行日在這個基準年（或更晚）的 ETF 那一年不滿一整年，這個欄位的值是 null' +
-      '（不是整檔 ETF 被排除——screener 是列表瀏覽情境，跟 ranking 排行榜的「直接排除」不同）。sortField 不給就照 symbol 排序' +
+      '（不是整檔 ETF 被排除——screener 是列表瀏覽情境，跟 ranking 排行榜的「直接排除」不同）。' +
+      'expenseRatio2001~expenseRatio2026（2026-09-08 新增，共 26 個獨立數字欄位，見 GET /etf-screener/filters）' +
+      '是分年度總費用率，給前端橫向比較歷年費用率變化用——資料源跟 expenseRatio 不同：這裡用 sitca-ts 已經濾掉' +
+      '不完整期間資料的 fund_expense_ratio_annual_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio' +
+      '單純套「calendar year - 1」精確；某年份沒有值（基金那年還沒成立、或該年資料不完整）該年欄位是 null，' +
+      '不影響其他年份。sortField 不給就照 symbol 排序' +
       '（保證分頁穩定）；要排別的欄位，那個欄位要先出現在 columns 裡。',
     tags: ['Market'],
     request: { body: { content: { 'application/json': { schema: postEtfScreenerBodySchema } } } },

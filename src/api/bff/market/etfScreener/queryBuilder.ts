@@ -1,5 +1,5 @@
 import { Prisma } from '#generated/sitca-export-client';
-import type { NumericFieldDefinition, CategoricalFieldDefinition } from './fieldRegistry';
+import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
 // （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
@@ -79,12 +79,36 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   return { cte, join };
 };
 
+// 分年度總費用率 pivot——一次把 export.fund_expense_ratio_annual_full_year（已經濾掉
+// is_partial_year=true 的不完整期間資料）用條件式聚合攤平成「一個 fund_tax_id 一列、
+// 每年一欄」，不是對 26 個年份各自 LEFT JOIN 26 次（那樣可讀性差、SQL 也長很多）。
+// 欄位別名 expense_ratio_<year> 要跟 fieldRegistry.ts 的 sqlColumn 完全對應。
+const buildExpensePivotJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
+  const yearColumns: Prisma.Sql[] = [];
+  for (let year = EXPENSE_RATIO_FULL_YEAR_RANGE.start; year <= EXPENSE_RATIO_FULL_YEAR_RANGE.end; year++) {
+    yearColumns.push(Prisma.sql`MAX(CASE WHEN year = ${year} THEN total_rate END) AS ${Prisma.raw(`"expense_ratio_${year}"`)}`);
+  }
+  const cte = Prisma.sql`
+    expense_pivot AS (
+      SELECT fund_tax_id, ${Prisma.join(yearColumns, ', ')}
+      FROM "export"."fund_expense_ratio_annual_full_year"
+      GROUP BY fund_tax_id
+    )
+  `;
+  const join = Prisma.sql`LEFT JOIN expense_pivot ON expense_pivot.fund_tax_id = base.fund_tax_id`;
+  return { cte, join };
+};
+
 const q = (identifier: string): Prisma.Sql => Prisma.raw(`"${identifier}"`);
 
-// expenseRatio 的值來自 expense CTE（別名 total_rate），其他數字/類別欄位都在 base 裡——
-// 跟 columnSelectSql 用同一個判斷依據，兩處都要參照這裡才不會漏掉、各自猜錯來源表。
-const fieldSourceSql = (definition: NumericFieldDefinition | CategoricalFieldDefinition): Prisma.Sql =>
-  definition.kind === 'numeric' && definition.needsExpenseJoin ? Prisma.raw('expense.total_rate') : Prisma.sql`base.${q(definition.sqlColumn)}`;
+// expenseRatio 的值來自 expense CTE（別名 total_rate）；expenseRatio<year> 系列來自
+// expense_pivot CTE（見 buildExpensePivotJoin）；其他數字/類別欄位都在 base 裡——跟
+// columnSelectSql 用同一個判斷依據，兩處都要參照這裡才不會漏掉、各自猜錯來源表。
+const fieldSourceSql = (definition: NumericFieldDefinition | CategoricalFieldDefinition): Prisma.Sql => {
+  if (definition.kind === 'numeric' && definition.needsExpenseJoin) return Prisma.raw('expense.total_rate');
+  if (definition.kind === 'numeric' && definition.needsExpensePivotJoin) return Prisma.sql`expense_pivot.${q(definition.sqlColumn)}`;
+  return Prisma.sql`base.${q(definition.sqlColumn)}`;
+};
 
 export interface NumericFilterCondition {
   kind: 'numeric';
@@ -153,12 +177,19 @@ export const buildEtfScreenerSql = (
   pageSize: number,
   sort: SortSpec | null
 ): Prisma.Sql => {
+  const sortDefinition = sort ? columns.find((c) => c.field === sort.field)?.definition : undefined;
   const needsExpense = filters.some((f) => f.kind === 'numeric' && f.definition.needsExpenseJoin) || columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsExpenseJoin) || sort?.field === 'expenseRatio';
+  const needsExpensePivot =
+    filters.some((f) => f.kind === 'numeric' && f.definition.needsExpensePivotJoin) ||
+    columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsExpensePivotJoin) ||
+    (sortDefinition?.kind === 'numeric' && sortDefinition.needsExpensePivotJoin === true);
 
   const baseCte = buildBaseCte(yearMonth);
   const expense = needsExpense ? buildExpenseJoin() : null;
-  const ctes = expense ? [baseCte, expense.cte] : [baseCte];
-  const fromSql = expense ? Prisma.sql`FROM base ${expense.join}` : Prisma.sql`FROM base`;
+  const expensePivot = needsExpensePivot ? buildExpensePivotJoin() : null;
+  const ctes = [baseCte, ...(expense ? [expense.cte] : []), ...(expensePivot ? [expensePivot.cte] : [])];
+  const joinList = [...(expense ? [expense.join] : []), ...(expensePivot ? [expensePivot.join] : [])];
+  const fromSql = joinList.length > 0 ? Prisma.sql`FROM base ${Prisma.join(joinList, ' ')}` : Prisma.sql`FROM base`;
 
   const selectCols = columns.map(columnSelectSql);
   const selectList = [Prisma.sql`base.symbol AS symbol`, Prisma.sql`base.fund_name AS "fundName"`, Prisma.sql`base.short_name AS "shortName"`, Prisma.sql`base.company_name AS "companyName"`, Prisma.sql`base.category AS category`, ...selectCols, Prisma.sql`COUNT(*) OVER() AS total_count`];

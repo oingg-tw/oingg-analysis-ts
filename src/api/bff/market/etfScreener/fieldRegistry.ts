@@ -15,8 +15,9 @@ export interface NumericFieldDefinition {
   kind: 'numeric';
   field: string;
   label: string;
-  sqlColumn: string; // base（或 expense）查詢裡的欄位別名
-  needsExpenseJoin?: boolean;
+  sqlColumn: string; // base（或 expense/expensePivot）查詢裡的欄位別名
+  needsExpenseJoin?: boolean; // 舊：單一「最新完整年度」費用率，見 expenseRatio
+  needsExpensePivotJoin?: boolean; // 新：逐年費用率 pivot，見下方 expenseRatio<year> 系列
 }
 
 export interface CategoricalFieldDefinition {
@@ -52,6 +53,24 @@ export const NUMERIC_FIELDS: Record<string, NumericFieldDefinition> = {
   // （下面 CATEGORICAL_FIELDS）是同一組資料的一體兩面：這是門檻本身，那個是「是否低於門檻」。
   statutoryAumThreshold: { kind: 'numeric', field: 'statutoryAumThreshold', label: '法定下市規模門檻（新台幣）', sqlColumn: 'statutory_aum_threshold' },
 };
+
+// 2026-09-08 新增：分年度總費用率（bff-ts 轉達 web-nuxt 需求，2001~2026 共 26 年，橫向
+// 瀏覽/比較用，不是只顯示近幾年）。資料源刻意跟上面的 expenseRatio 不同：這裡用
+// export.fund_expense_ratio_annual_full_year（sitca-ts 已經濾掉 is_partial_year=true
+// 的不完整期間資料，逐檔逐年判斷，比「calendar year - 1」這種全體套一個門檻精確）；
+// expenseRatio 是舊的 export.fund_expense_ratio_annual 表 + 手動猜「最新完整年度」，
+// 兩者資料源/精確度不同，這次刻意不去動既有欄位（避免影響任何既有消費端），只加新的。
+// 見 queryBuilder.ts 的 buildExpensePivotJoin。
+export const EXPENSE_RATIO_FULL_YEAR_RANGE = { start: 2001, end: 2026 } as const;
+for (let year = EXPENSE_RATIO_FULL_YEAR_RANGE.start; year <= EXPENSE_RATIO_FULL_YEAR_RANGE.end; year++) {
+  NUMERIC_FIELDS[`expenseRatio${year}`] = {
+    kind: 'numeric',
+    field: `expenseRatio${year}`,
+    label: `總費用率（${year}）`,
+    sqlColumn: `expense_ratio_${year}`,
+    needsExpensePivotJoin: true,
+  };
+}
 
 export const CATEGORICAL_FIELDS: Record<string, CategoricalFieldDefinition> = {
   market: { kind: 'categorical', field: 'market', label: '市場別', sqlColumn: 'market', staticValues: ['TWSE', 'TPEx'] },

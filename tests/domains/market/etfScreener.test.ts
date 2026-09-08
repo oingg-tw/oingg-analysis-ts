@@ -128,6 +128,47 @@ test('runEtfScreener: statutoryAumThreshold 數字欄位應該是可以查詢的
   }
 });
 
+// 2026-09-08 新增：分年度總費用率（web-nuxt 橫向比較用），資料源是
+// fund_expense_ratio_annual_full_year（已濾掉不完整期間），跟 expenseRatio（最新一個
+// 完整年度）獨立並存、互不影響。
+test('runEtfScreener: expenseRatio2023 應該有值，跟舊的 expenseRatio 欄位互不影響', async () => {
+  const result = await runEtfScreener({ filters: [], columns: [{ field: 'expenseRatio2023' }, { field: 'expenseRatio' }], page: 1, pageSize: 200 });
+  const withValue = result.results.filter((r) => r.values.expenseRatio2023 !== null);
+  assert.ok(withValue.length > 0, '2023 年是完整年度，應該至少有幾檔 ETF 有 expenseRatio2023');
+  for (const row of withValue) {
+    assert.equal(typeof row.values.expenseRatio2023, 'number');
+  }
+});
+
+test('runEtfScreener: 多個年度欄位可以同時查詢（pivot 只需要一次 JOIN）', async () => {
+  const result = await runEtfScreener({
+    filters: [],
+    columns: [{ field: 'expenseRatio2021' }, { field: 'expenseRatio2022' }, { field: 'expenseRatio2023' }],
+    page: 1,
+    pageSize: 50,
+  });
+  assert.ok(result.results.length > 0);
+  for (const row of result.results) {
+    assert.ok('expenseRatio2021' in row.values && 'expenseRatio2022' in row.values && 'expenseRatio2023' in row.values);
+  }
+});
+
+test('runEtfScreener: 太早的年度（例如 2001，該基金那年還沒成立）應該是 null，不是拋錯', async () => {
+  const result = await runEtfScreener({ filters: [], columns: [{ field: 'expenseRatio2001' }], page: 1, pageSize: 200 });
+  assert.ok(result.results.length > 0);
+  const nullCount = result.results.filter((r) => r.values.expenseRatio2001 === null).length;
+  assert.ok(nullCount > 0, '2001 年時大部分現在的 ETF 都還沒成立，應該有很多 null');
+});
+
+test('getEtfFilterCatalog: expenseRatio<year> 系列欄位應該全部出現（2001~2026 共 26 個）', async () => {
+  const catalog = await getEtfFilterCatalog();
+  for (let year = 2001; year <= 2026; year++) {
+    const field = catalog.fields.find((f) => f.field === `expenseRatio${year}`);
+    assert.ok(field, `expenseRatio${year} 應該出現在 filter catalog 裡`);
+    assert.equal(field!.kind, 'numeric');
+  }
+});
+
 test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
   return getEtfFilterCatalog().then((catalog) => {
     for (const field of catalog.fields) {
