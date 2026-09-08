@@ -4,6 +4,7 @@ import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/sha
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate, type YtcAssumption } from '@/shared/preferredStockYield';
 import type { PreferredStockDataSource } from './types';
+import { PREFERRED_STOCK_FIELD_CATALOG } from './fieldCatalog';
 
 // 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到來源即可，不用到逐欄位（逐
 // 欄位對照見 README.md）。每個 entry 都是同樣這三個上游來源合併出來的，固定不變，所以
@@ -185,4 +186,10 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
   } catch (error) {
     next(error);
   }
+};
+
+// 2026-09-08 新增——給前端 hover 顯示公式說明用（見 fieldCatalog.ts 的說明）。純靜態
+// 資料，不查任何資料庫，跟 GET /preferred-stocks 完全獨立、互不影響。
+export const getPreferredStockFieldCatalog = (_req: Request, res: Response): void => {
+  res.status(200).json({ fields: PREFERRED_STOCK_FIELD_CATALOG });
 };

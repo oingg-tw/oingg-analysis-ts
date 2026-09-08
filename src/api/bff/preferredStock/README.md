@@ -135,6 +135,23 @@ passthrough，不需要額外計算。
 null 值（例如不可贖回的特別股沒有 `ytcPct`）**一律排在最後**，不管 `asc`/`desc`——
 這是排名類欄位的常見慣例，避免「查無資料」在 `asc` 排序時被誤讀成最小值排在最前面。
 
+## 欄位公式目錄：GET /preferred-stocks/field-catalog（2026-09-08 新增）
+
+web-nuxt 轉達使用者需求：特別股頁面每個計算/衍生欄位都要能溯源，前端做成 hover 提示，
+避免每次都要跨團隊確認「這個數字怎麼來的」（這個 session 光是 nominalDividendRatePct/
+currentYieldPct/redeemable 這幾個欄位的語意就來回確認了好幾輪）。
+
+公式是「欄位層級」的靜態中繼資料——同一個欄位對每一列特別股都是同一條公式，只有輸入
+值不同，逐筆資料重複帶同一段文字沒有額外資訊量，所以刻意做成獨立端點，不逐筆帶，跟
+`GET /etf-screener/filters` 那種欄位目錄端點是同一種精神。純靜態資料（見
+`fieldCatalog.ts` 的 `PREFERRED_STOCK_FIELD_CATALOG`），不查任何資料庫，不受
+`GET /preferred-stocks` 的查詢參數影響。
+
+只列出「有公式、需要解釋」的衍生欄位（`nominalDividendRatePct`/`currentYieldPct`/
+`premiumRatePct`/`ytcPct`/`ytcAssumption`/`ytwPct`）——`symbol`/`issuePrice`/
+`dividendRate` 這類原始 passthrough 欄位沒有公式可解釋（值本身就是來源），這批欄位的
+來源說明已經在上面「逐欄位資料來源對照」涵蓋，職責不重複。
+
 ## 順帶修正的共用基礎設施 bug（2026-09-06）
 
 實測特別股股價時發現 `getStockPriceAsOf`（`src/shared/sourceData/marketCap.ts`）對冷門

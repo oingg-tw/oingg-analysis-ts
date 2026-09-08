@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getPreferredStocksQuerySchema } from './controller';
-import { preferredStocksResultSchema } from './types';
+import { preferredStocksResultSchema, preferredStockFieldCatalogResponseSchema } from './types';
 
 export const registerPreferredStockOpenApi = (): void => {
   registry.registerPath({
@@ -53,6 +53,25 @@ export const registerPreferredStockOpenApi = (): void => {
     responses: {
       200: { description: '特別股清單，查無資料（symbol 篩選後沒有結果）時 entries 是空陣列，count 一律是全部符合條件的總筆數（不受 limit/offset 影響）。', content: { 'application/json': { schema: preferredStocksResultSchema } } },
       400: { description: 'symbol/limit/offset 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/preferred-stocks/field-catalog',
+    summary: '特別股衍生欄位的公式說明目錄（給前端 hover 提示用）',
+    description:
+      '2026-09-08 web-nuxt 轉達使用者需求：特別股頁面每個計算/衍生欄位都要能溯源，能看到' +
+      '這個值是怎麼算出來的、用了哪些原始輸入。公式是「欄位層級」的靜態中繼資料（同一個' +
+      '欄位對每一列特別股都是同一條公式，只有輸入值不同），所以做成獨立端點，不逐筆帶——' +
+      '跟 GET /etf-screener/filters 那種欄位目錄端點是同一種精神。只列出「有公式、需要' +
+      '解釋」的衍生欄位（nominalDividendRatePct/currentYieldPct/premiumRatePct/ytcPct/' +
+      'ytcAssumption/ytwPct），不含 symbol/issuePrice/dividendRate 這類原始 passthrough' +
+      '欄位（值本身就是來源，見 GET /preferred-stocks 跟 README.md 的逐欄位對照）。純靜態' +
+      '資料，不查任何資料庫，不受 GET /preferred-stocks 的 symbol/limit/offset 等參數影響。',
+    tags: ['Stocks'],
+    responses: {
+      200: { description: '欄位公式目錄。', content: { 'application/json': { schema: preferredStockFieldCatalogResponseSchema } } },
     },
   });
 };

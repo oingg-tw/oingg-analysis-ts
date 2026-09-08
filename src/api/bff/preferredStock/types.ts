@@ -69,6 +69,20 @@ export const preferredStockDataSourceSchema = z.object({
 });
 export type PreferredStockDataSource = z.infer<typeof preferredStockDataSourceSchema>;
 
+// 2026-09-08 新增——GET /preferred-stocks/field-catalog 用，給前端 hover 顯示公式說明。
+export const preferredStockFieldCatalogEntrySchema = z.object({
+  field: z.string().meta({ description: '對應 preferredStockEntrySchema 裡的欄位名稱' }),
+  label: z.string().meta({ description: '人類可讀的欄位名稱' }),
+  formula: z.string().meta({ description: '這個欄位怎麼算出來的（公式或分類邏輯的文字說明）' }),
+  inputs: z.array(z.string()).meta({ description: '這個欄位依賴哪些原始/其他欄位，欄位名稱對應 preferredStockEntrySchema' }),
+});
+export type PreferredStockFieldCatalogEntry = z.infer<typeof preferredStockFieldCatalogEntrySchema>;
+
+export const preferredStockFieldCatalogResponseSchema = z.object({
+  fields: z.array(preferredStockFieldCatalogEntrySchema),
+});
+export type PreferredStockFieldCatalogResponse = z.infer<typeof preferredStockFieldCatalogResponseSchema>;
+
 export const preferredStocksResultSchema = z.object({
   count: z.number().meta({ description: '符合條件（套用 symbol 篩選後）的總筆數，不受 limit/offset 影響' }),
   limit: z.number(),
