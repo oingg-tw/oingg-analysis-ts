@@ -16,7 +16,7 @@ test('ncavPit: 2330 115Q2 合併報表（只有 Q 口徑），跟既有基準數
   await computeAndWriteNcavPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'ncav', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'ncav', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

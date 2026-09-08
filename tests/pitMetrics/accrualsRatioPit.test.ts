@@ -17,7 +17,7 @@ test('accrualsRatioPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
 
   const findLatest = (basis: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'accrualsRatio', basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'accrualsRatio', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

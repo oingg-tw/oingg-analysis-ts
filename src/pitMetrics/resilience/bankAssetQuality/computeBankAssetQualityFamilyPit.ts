@@ -2,7 +2,7 @@ import { getBankAssetQualityTotalLoans, getLatestQuarterWithBankAssetQuality } f
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateBankNplRatio } from '@/pitMetrics/resilience/bankNplRatio/calculateBankNplRatio';
 import { calculateBankNplCoverageRatio } from '@/pitMetrics/resilience/bankNplCoverageRatio/calculateBankNplCoverageRatio';
@@ -64,7 +64,7 @@ export const computeAndWriteBankAssetQualityFamilyPit = async (query: QuarterlyM
     bankNplRatio = await writeMetricValue({
       ...coordinateBase,
       metricCode: 'bankNplRatio',
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: nplRatioCalc.value,
       nullReason: nplRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -73,7 +73,7 @@ export const computeAndWriteBankAssetQualityFamilyPit = async (query: QuarterlyM
     bankNplCoverageRatio = await writeMetricValue({
       ...coordinateBase,
       metricCode: 'bankNplCoverageRatio',
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: coverageRatioCalc.value,
       nullReason: coverageRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

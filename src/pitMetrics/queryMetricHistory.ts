@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import type { MetricBasis } from './metricBasis';
+import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from './metricBasis';
+
+// 2026-09-08：呼叫端要傳「四個 basis 相關欄位的完整組合」，不是單一 basis 字串——每個
+// metricCode 只會落在其中一組真實值，其餘固定 'N/A'（跟 metricValueWriter.ts 的
+// periodTypeGroup/rollingWindowGroup/snapshotCadenceGroup 是同一組 helper，呼叫端直接
+// spread 那三個其中一個的回傳值進來即可）。
+export interface MetricHistoryBasisGroup {
+  periodType: PeriodType;
+  lookbackRange: LookbackRange;
+  samplingInterval: SamplingInterval;
+  snapshotCadence: SnapshotCadence;
+}
 
 export const metricHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),
@@ -45,13 +56,13 @@ export interface MetricHistoryResult {
 export const getMetricHistory = async (
   symbol: string,
   metricCode: string,
-  basis: MetricBasis,
+  basisGroup: MetricHistoryBasisGroup,
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
   limit: number
 ): Promise<MetricHistoryResult> => {
   const rows = await analysisPrisma.metricValue.findMany({
-    where: { symbol, metricCode, basis, dataType, subsidiaryCompanyId },
+    where: { symbol, metricCode, ...basisGroup, dataType, subsidiaryCompanyId },
     orderBy: [{ fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { knowledgeDate: 'desc' }],
   });
 

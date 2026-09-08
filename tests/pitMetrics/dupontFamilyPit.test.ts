@@ -12,7 +12,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 const findLatest = (symbol: string, metricCode: string, basis: string, fiscalYear: number, fiscalQuarter: number) =>
   analysisPrisma.metricValue.findFirst({
-    where: { symbol, metricCode, basis, fiscalYear, fiscalQuarter, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol, metricCode, periodType: basis, fiscalYear, fiscalQuarter, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -103,7 +103,7 @@ test('dupontFamilyPit: 重跑同一組座標，去重邏輯應該讓第二次全
   assert.deepEqual(second.dupontDecomposedRoeQ, { action: 'skipped_unchanged' });
 
   const count = await analysisPrisma.metricValue.count({
-    where: { symbol: '2887', metricCode: 'dupontDecomposedRoe', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2887', metricCode: 'dupontDecomposedRoe', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
   });
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });

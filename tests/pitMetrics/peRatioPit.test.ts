@@ -19,7 +19,7 @@ test('peRatioPit: 2330 115Q2，用真實股價/EPS_TTM 手動核算過的基準�
   const outcome = await computeAndWritePeRatioPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'peRatio', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'peRatio', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -41,7 +41,7 @@ test('peRatioPit: 重跑同一組座標，去重邏輯應該讓第二次全部 s
   }
 
   const count = await analysisPrisma.metricValue.count({
-    where: { symbol: '2330', metricCode: 'peRatio', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'peRatio', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
   });
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });

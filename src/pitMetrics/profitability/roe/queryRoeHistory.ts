@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getMetricHistory, type MetricHistoryResult } from '../../queryMetricHistory';
-import type { MetricBasis } from '../../metricBasis';
+import { periodTypeGroup } from '../../metricValueWriter';
+import type { PeriodType } from '../../metricBasis';
 
 export const roeHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),
@@ -31,5 +32,7 @@ export type RoeHistoryEntry = z.infer<typeof roeHistoryEntrySchema>;
 // dataType/subsidiaryCompanyId 固定用合併報表('2')、母公司本身('')，不開放使用者選——
 // BFF 面向的端點目前一律不曝露
 // 這兩個內部細節維度。
-export const getRoeHistory = (symbol: string, basis: MetricBasis, limit: number): Promise<MetricHistoryResult> =>
-  getMetricHistory(symbol, 'roe', basis, '2', '', limit);
+// ROE 只落在 periodType 這一組（Q/Q_ANN/TTM），不涉及 lookbackRange/samplingInterval/
+// snapshotCadence——呼叫端只需要傳 periodType，這裡用 periodTypeGroup 補齊其餘欄位。
+export const getRoeHistory = (symbol: string, periodType: PeriodType, limit: number): Promise<MetricHistoryResult> =>
+  getMetricHistory(symbol, 'roe', periodTypeGroup(periodType), '2', '', limit);

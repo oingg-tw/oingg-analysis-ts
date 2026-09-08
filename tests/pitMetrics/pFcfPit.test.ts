@@ -15,7 +15,7 @@ test('pFcfPit: 2330 115Q2 合併報表，寫入的值應該落在合理區間', 
   await computeAndWritePFcfPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'pFcf', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'pFcf', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

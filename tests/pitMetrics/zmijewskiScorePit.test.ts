@@ -17,7 +17,7 @@ test('zmijewskiScorePit: 2330 115Q2 合併報表（只有 TTM 口徑），跟既
   await computeAndWriteZmijewskiScorePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'zmijewskiScore', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'zmijewskiScore', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

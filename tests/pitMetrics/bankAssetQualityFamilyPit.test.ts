@@ -17,8 +17,8 @@ test('bankAssetQualityFamilyPit: 2801（彰化銀行）115Q2，跟實測驗證�
   await computeAndWriteBankAssetQualityFamilyPit({ symbol: '2801', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const where = { symbol: '2801', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
-  const npl = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankNplRatio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const coverage = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankNplCoverageRatio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const npl = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankNplRatio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const coverage = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankNplCoverageRatio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(npl, 'bankNplRatio 應該有寫入');
   assert.equal(Number(npl!.value), 0.15);
@@ -36,7 +36,7 @@ test('bankAssetQualityFamilyPit: 2330（台積電，真實存在但不是銀行�
   // 季度組合先前有沒有跑過，dev DB 是持久狀態不是每次測試都乾淨）——只驗證最終 DB 狀態。
   await computeAndWriteBankAssetQualityFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const where = { symbol: '2330', metricCode: 'bankNplRatio', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
+  const where = { symbol: '2330', metricCode: 'bankNplRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const npl = await analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' } });
   assert.ok(npl);
   assert.equal(npl!.value, null);

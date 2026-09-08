@@ -2,7 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteBetaPit } from '@/pitMetrics/valuation/beta/computeBetaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
-import { DAILY_CADENCE_FISCAL_QUARTER } from '@/pitMetrics/metricValueWriter';
+import { DAILY_CADENCE_FISCAL_QUARTER, rollingWindowGroup } from '@/pitMetrics/metricValueWriter';
+import type { LookbackRange, SamplingInterval } from '@/pitMetrics/metricBasis';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
@@ -20,9 +21,14 @@ test('betaPit: 2330 三個 basis 都應該算出合理範圍內的值，並正�
 
   assert.notEqual(outcome.tradeDate, null, '2330 應該要能找到重疊交易日當基準日');
 
-  for (const basis of ['1Y_DAILY', '2Y_WEEKLY', '5Y_MONTHLY'] as const) {
+  for (const [lookbackRange, samplingInterval] of [
+    ['1Y', '1D'],
+    ['2Y', '1W'],
+    ['5Y', '1M'],
+  ] as [LookbackRange, SamplingInterval][]) {
+    const basis = `${lookbackRange}_${samplingInterval}`; // 只是給斷言訊息用的顯示字串，不是查詢欄位
     const row = await analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'beta', basis, fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'beta', ...rollingWindowGroup(lookbackRange, samplingInterval), fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
     assert.ok(row, `basis=${basis} 應該有寫入 metric_values`);

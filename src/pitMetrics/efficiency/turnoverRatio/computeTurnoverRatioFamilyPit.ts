@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { calculateInventoryTurnover } from '@/pitMetrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
 import { calculateReceivablesTurnover } from '@/pitMetrics/efficiency/receivablesTurnover/calculateReceivablesTurnover';
 import { calculateFixedAssetTurnover } from '@/pitMetrics/efficiency/fixedAssetTurnover/calculateFixedAssetTurnover';
@@ -134,28 +134,28 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
     inventoryDaysQAnn = receivablesDaysQAnn = payablesDaysQAnn = cashConversionCycleQAnn = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    inventoryTurnoverQ = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q', value: inventoryTurnoverQuarterly.value, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    inventoryTurnoverQAnn = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q_ANN', value: inventoryTurnoverQuarterly.quarterlyAnnualized, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQ = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q', value: receivablesTurnoverQuarterly.value, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q_ANN', value: receivablesTurnoverQuarterly.quarterlyAnnualized, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQ = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q', value: fixedAssetTurnoverQuarterly.value, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQAnn = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q_ANN', value: fixedAssetTurnoverQuarterly.quarterlyAnnualized, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQ = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q', value: payablesTurnoverQuarterly.value, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q_ANN', value: payablesTurnoverQuarterly.quarterlyAnnualized, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryTurnoverQ = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q'), value: inventoryTurnoverQuarterly.value, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryTurnoverQAnn = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q_ANN'), value: inventoryTurnoverQuarterly.quarterlyAnnualized, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverQ = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q'), value: receivablesTurnoverQuarterly.value, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q_ANN'), value: receivablesTurnoverQuarterly.quarterlyAnnualized, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverQ = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q'), value: fixedAssetTurnoverQuarterly.value, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverQAnn = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q_ANN'), value: fixedAssetTurnoverQuarterly.quarterlyAnnualized, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverQ = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q'), value: payablesTurnoverQuarterly.value, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q_ANN'), value: payablesTurnoverQuarterly.quarterlyAnnualized, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
     // DIO/DSO/DPO（Q_ANN）+ CCC（Q_ANN）
     const inventoryDaysQAnnCalc = calculateInventoryDays(inventoryTurnoverQuarterly.quarterlyAnnualized, inventoryTurnoverQuarterly.nullReason);
     const receivablesDaysQAnnCalc = calculateReceivablesDays(receivablesTurnoverQuarterly.quarterlyAnnualized, receivablesTurnoverQuarterly.nullReason);
     const payablesDaysQAnnCalc = calculatePayablesDays(payablesTurnoverQuarterly.quarterlyAnnualized, payablesTurnoverQuarterly.nullReason);
 
-    inventoryDaysQAnn = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'Q_ANN', value: inventoryDaysQAnnCalc.value, nullReason: inventoryDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesDaysQAnn = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'Q_ANN', value: receivablesDaysQAnnCalc.value, nullReason: receivablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesDaysQAnn = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'Q_ANN', value: payablesDaysQAnnCalc.value, nullReason: payablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryDaysQAnn = await writeMetricValue({ ...coordinateFor('inventoryDays'), ...periodTypeGroup('Q_ANN'), value: inventoryDaysQAnnCalc.value, nullReason: inventoryDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesDaysQAnn = await writeMetricValue({ ...coordinateFor('receivablesDays'), ...periodTypeGroup('Q_ANN'), value: receivablesDaysQAnnCalc.value, nullReason: receivablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesDaysQAnn = await writeMetricValue({ ...coordinateFor('payablesDays'), ...periodTypeGroup('Q_ANN'), value: payablesDaysQAnnCalc.value, nullReason: payablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
     const cccQAnnCalc = calculateCashConversionCycle(inventoryDaysQAnnCalc.value, receivablesDaysQAnnCalc.value, payablesDaysQAnnCalc.value);
     cashConversionCycleQAnn = await writeMetricValue({
       ...coordinateFor('cashConversionCycle'),
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: cccQAnnCalc.value,
       nullReason: cccQAnnCalc.nullReason,
       knowledgeDate,
@@ -200,32 +200,32 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
       inventoryDaysTtm = receivablesDaysTtm = payablesDaysTtm = cashConversionCycleTtm = { action: 'skipped_no_knowledge_date' };
     } else {
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
-      inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'TTM', value: inventoryTurnoverTtmCalc.value, nullReason: inventoryTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'TTM', value: receivablesTurnoverTtmCalc.value, nullReason: receivablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'TTM', value: fixedAssetTurnoverTtmCalc.value, nullReason: fixedAssetTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'TTM', value: payablesTurnoverTtmCalc.value, nullReason: payablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('TTM'), value: inventoryTurnoverTtmCalc.value, nullReason: inventoryTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('TTM'), value: receivablesTurnoverTtmCalc.value, nullReason: receivablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('TTM'), value: fixedAssetTurnoverTtmCalc.value, nullReason: fixedAssetTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('TTM'), value: payablesTurnoverTtmCalc.value, nullReason: payablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
       const inventoryDaysTtmCalc = calculateInventoryDays(inventoryTurnoverTtmCalc.value, inventoryTurnoverTtmCalc.nullReason);
       const receivablesDaysTtmCalc = calculateReceivablesDays(receivablesTurnoverTtmCalc.value, receivablesTurnoverTtmCalc.nullReason);
       const payablesDaysTtmCalc = calculatePayablesDays(payablesTurnoverTtmCalc.value, payablesTurnoverTtmCalc.nullReason);
 
-      inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'TTM', value: inventoryDaysTtmCalc.value, nullReason: inventoryDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'TTM', value: receivablesDaysTtmCalc.value, nullReason: receivablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'TTM', value: payablesDaysTtmCalc.value, nullReason: payablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), ...periodTypeGroup('TTM'), value: inventoryDaysTtmCalc.value, nullReason: inventoryDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), ...periodTypeGroup('TTM'), value: receivablesDaysTtmCalc.value, nullReason: receivablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), ...periodTypeGroup('TTM'), value: payablesDaysTtmCalc.value, nullReason: payablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
       const cccTtmCalc = calculateCashConversionCycle(inventoryDaysTtmCalc.value, receivablesDaysTtmCalc.value, payablesDaysTtmCalc.value);
-      cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), basis: 'TTM', value: cccTtmCalc.value, nullReason: cccTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), ...periodTypeGroup('TTM'), value: cccTtmCalc.value, nullReason: cccTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
     }
   } else if (mainAnchor) {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
   } else {
     inventoryTurnoverTtm = receivablesTurnoverTtm = fixedAssetTurnoverTtm = payablesTurnoverTtm = { action: 'skipped_no_knowledge_date' };
     inventoryDaysTtm = receivablesDaysTtm = payablesDaysTtm = cashConversionCycleTtm = { action: 'skipped_no_knowledge_date' };

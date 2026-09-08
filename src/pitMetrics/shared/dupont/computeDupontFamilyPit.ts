@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { pickNetIncome, pickEquity } from './pickers';
 import { calculateEbit } from './ebit';
 import { calculateNetProfitMargin } from '@/pitMetrics/profitability/netProfitMargin/calculateNetProfitMargin';
@@ -158,7 +158,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
     netProfitMarginQ = await writeMetricValue({
       ...coordinateFor('netProfitMargin'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: netProfitMarginQuarterly.value,
       nullReason: netProfitMarginQuarterly.nullReason,
       knowledgeDate,
@@ -166,7 +166,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     assetTurnoverQ = await writeMetricValue({
       ...coordinateFor('assetTurnover'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: assetTurnoverQuarterly.value,
       nullReason: assetTurnoverQuarterly.nullReason,
       knowledgeDate,
@@ -174,7 +174,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     assetTurnoverQAnn = await writeMetricValue({
       ...coordinateFor('assetTurnover'),
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: assetTurnoverQuarterly.quarterlyAnnualized,
       nullReason: assetTurnoverQuarterly.nullReason,
       knowledgeDate,
@@ -182,7 +182,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     equityMultiplierOutcome = await writeMetricValue({
       ...coordinateFor('equityMultiplier'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: equityMultiplierResult.value,
       nullReason: equityMultiplierResult.nullReason,
       knowledgeDate,
@@ -190,7 +190,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontDecomposedRoeQ = await writeMetricValue({
       ...coordinateFor('dupontDecomposedRoe'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: decomposedRoeQuarterly.value,
       nullReason: decomposedRoeQuarterly.nullReason,
       knowledgeDate,
@@ -198,7 +198,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontTaxBurdenQ = await writeMetricValue({
       ...coordinateFor('dupontTaxBurden'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: dupontTaxBurdenQuarterly.value,
       nullReason: dupontTaxBurdenQuarterly.nullReason,
       knowledgeDate,
@@ -206,7 +206,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontInterestBurdenQ = await writeMetricValue({
       ...coordinateFor('dupontInterestBurden'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: dupontInterestBurdenQuarterly.value,
       nullReason: dupontInterestBurdenQuarterly.nullReason,
       knowledgeDate,
@@ -214,7 +214,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontEbitMarginQ = await writeMetricValue({
       ...coordinateFor('dupontEbitMargin'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: dupontEbitMarginQuarterly.value,
       nullReason: dupontEbitMarginQuarterly.nullReason,
       knowledgeDate,
@@ -222,7 +222,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontExtendedRoeQ = await writeMetricValue({
       ...coordinateFor('dupontExtendedRoe'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: extendedRoeQuarterly.value,
       nullReason: extendedRoeQuarterly.nullReason,
       knowledgeDate,
@@ -311,7 +311,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
       netProfitMarginTtm = await writeMetricValue({
         ...coordinateFor('netProfitMargin'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: netProfitMarginTtmCalc.value,
         nullReason: netProfitMarginTtmCalc.nullReason,
         knowledgeDate,
@@ -319,7 +319,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       });
       assetTurnoverTtm = await writeMetricValue({
         ...coordinateFor('assetTurnover'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: assetTurnoverTtmCalc.value,
         nullReason: assetTurnoverTtmCalc.nullReason,
         knowledgeDate,
@@ -327,7 +327,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       });
       dupontDecomposedRoeTtm = await writeMetricValue({
         ...coordinateFor('dupontDecomposedRoe'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: decomposedRoeTtmCalc.value,
         nullReason: decomposedRoeTtmNullReason,
         knowledgeDate,
@@ -340,7 +340,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       // 輸入不齊）。
       dupontTaxBurdenTtm = await writeMetricValue({
         ...coordinateFor('dupontTaxBurden'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: dupontTaxBurdenTtmCalc.value,
         nullReason: dupontTaxBurdenTtmCalc.nullReason,
         knowledgeDate,
@@ -348,7 +348,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       });
       dupontInterestBurdenTtm = await writeMetricValue({
         ...coordinateFor('dupontInterestBurden'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: dupontInterestBurdenTtmCalc.value,
         nullReason: dupontInterestBurdenTtmCalc.nullReason,
         knowledgeDate,
@@ -356,7 +356,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       });
       dupontEbitMarginTtm = await writeMetricValue({
         ...coordinateFor('dupontEbitMargin'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: dupontEbitMarginTtmCalc.value,
         nullReason: dupontEbitMarginTtmCalc.nullReason,
         knowledgeDate,
@@ -364,7 +364,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       });
       dupontExtendedRoeTtm = await writeMetricValue({
         ...coordinateFor('dupontExtendedRoe'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: extendedRoeTtmCalc.value,
         nullReason: extendedRoeTtmNullReason,
         knowledgeDate,
@@ -375,7 +375,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
     netProfitMarginTtm = await writeMetricValue({
       ...coordinateFor('netProfitMargin'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -383,7 +383,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     assetTurnoverTtm = await writeMetricValue({
       ...coordinateFor('assetTurnover'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -391,7 +391,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontDecomposedRoeTtm = await writeMetricValue({
       ...coordinateFor('dupontDecomposedRoe'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -399,7 +399,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontTaxBurdenTtm = await writeMetricValue({
       ...coordinateFor('dupontTaxBurden'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -407,7 +407,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontInterestBurdenTtm = await writeMetricValue({
       ...coordinateFor('dupontInterestBurden'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -415,7 +415,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontEbitMarginTtm = await writeMetricValue({
       ...coordinateFor('dupontEbitMargin'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,
@@ -423,7 +423,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     });
     dupontExtendedRoeTtm = await writeMetricValue({
       ...coordinateFor('dupontExtendedRoe'),
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate,

@@ -17,9 +17,9 @@ test('ownerEarningsPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
   await computeAndWriteOwnerEarningsPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const where = { symbol: '2330', metricCode: 'ownerEarnings', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
-  const q = await analysisPrisma.metricValue.findFirst({ where: { ...where, basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const qAnn = await analysisPrisma.metricValue.findFirst({ where: { ...where, basis: 'Q_ANN' }, orderBy: { knowledgeDate: 'desc' } });
-  const ttm = await analysisPrisma.metricValue.findFirst({ where: { ...where, basis: 'TTM' }, orderBy: { knowledgeDate: 'desc' } });
+  const q = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const qAnn = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q_ANN' }, orderBy: { knowledgeDate: 'desc' } });
+  const ttm = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'TTM' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(q, 'basis=Q 應該有寫入');
   assert.equal(Number(q!.value), 15.78);

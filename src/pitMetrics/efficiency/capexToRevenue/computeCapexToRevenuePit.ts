@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/capexToRevenue.ts 的獨立重新實作。資本支出來源資料是負值
@@ -68,7 +68,7 @@ export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQue
   } else {
     q = await writeMetricValue({
       ...coordinateBase,
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: quarterly,
       nullReason: quarterlyNullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -112,7 +112,7 @@ export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQue
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: ttmValue,
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -122,7 +122,7 @@ export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQue
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

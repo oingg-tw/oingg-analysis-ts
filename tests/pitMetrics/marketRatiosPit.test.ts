@@ -2,7 +2,7 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteMarketRatiosPit } from '@/pitMetrics/shared/marketRatios/computeMarketRatiosPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
-import { DAILY_CADENCE_FISCAL_QUARTER } from '@/pitMetrics/metricValueWriter';
+import { DAILY_CADENCE_FISCAL_QUARTER, snapshotCadenceGroup } from '@/pitMetrics/metricValueWriter';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
@@ -24,7 +24,7 @@ test('marketRatiosPit: 2330 應該把 daily_valuation 的三個欄位原封不�
   const [pe, pb, dy] = await Promise.all(
     ['exchangePeRatio', 'exchangePbRatio', 'dividendYield'].map((metricCode) =>
       analysisPrisma.metricValue.findFirst({
-        where: { symbol: '2330', metricCode, basis: 'DAILY', fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER, dataType: '2', subsidiaryCompanyId: '' },
+        where: { symbol: '2330', metricCode, ...snapshotCadenceGroup('EOD'), fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER, dataType: '2', subsidiaryCompanyId: '' },
         orderBy: { knowledgeDate: 'desc' },
       })
     )

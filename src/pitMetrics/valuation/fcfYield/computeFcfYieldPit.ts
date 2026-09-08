@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案獨立重新實作 src/domainMetrics/fcfYield.ts——舊架構呼叫 calculateCashFlowPerShare()，
@@ -82,7 +82,7 @@ export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): P
   } else {
     qAnn = await writeMetricValue({
       ...coordinateBase,
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: fcfYieldQuarterlyAnnualizedPct,
       nullReason: qAnnNullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -122,7 +122,7 @@ export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): P
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: fcfYieldTtmPct,
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -132,7 +132,7 @@ export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): P
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

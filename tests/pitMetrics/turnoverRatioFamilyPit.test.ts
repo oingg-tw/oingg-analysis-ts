@@ -31,7 +31,7 @@ test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交
 
   const findLatest = (metricCode: string, basis: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode, basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode, periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

@@ -13,7 +13,7 @@ test('deRatioPit: 2330 115Q2 合併報表，跟 deRatio.test.ts 的既有基準�
   await computeAndWriteDeRatioPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'deRatio', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'deRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

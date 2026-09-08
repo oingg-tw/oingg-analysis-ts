@@ -18,11 +18,11 @@ test('marginsFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
   await computeAndWriteMarginsFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const grossQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'grossMargin', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'grossMargin', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
   const operatingQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'operatingMargin', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'operatingMargin', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -46,11 +46,11 @@ test('marginsFamilyPit: 2851（中再保，legacy 表完全無資料）應該 fa
   assert.notEqual(outcome.rocYear, null, '應該能透過保險替代來源解析出最新一季，不是 skipped_no_quarter');
 
   const grossQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2851', metricCode: 'grossMargin', basis: 'Q' },
+    where: { symbol: '2851', metricCode: 'grossMargin', periodType: 'Q' },
     orderBy: { knowledgeDate: 'desc' },
   });
   const operatingQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2851', metricCode: 'operatingMargin', basis: 'Q' },
+    where: { symbol: '2851', metricCode: 'operatingMargin', periodType: 'Q' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -72,7 +72,7 @@ test('marginsFamilyPit: 2867（三商美邦人壽，legacy/保險替代都缺 re
   assert.notEqual(outcome.rocYear, null, 'legacy 表能解析出最新一季');
 
   const grossQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2867', metricCode: 'grossMargin', basis: 'Q' },
+    where: { symbol: '2867', metricCode: 'grossMargin', periodType: 'Q' },
     orderBy: { knowledgeDate: 'desc' },
   });
   assert.ok(grossQ, '應該有寫入一列，只是 value 是 null');

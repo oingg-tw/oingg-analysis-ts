@@ -20,9 +20,9 @@ test('bankCapitalAdequacyFamilyPit: 2801（彰化銀行）115Q2（有揭露的�
   await computeAndWriteBankCapitalAdequacyFamilyPit({ symbol: '2801', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const where = { symbol: '2801', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
-  const car = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCarRatio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const cet1 = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCet1Ratio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const tier1 = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankTier1Ratio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const car = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCarRatio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const cet1 = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCet1Ratio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const tier1 = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankTier1Ratio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(car, 'bankCarRatio 應該有寫入');
   assert.equal(Number(car!.value), 13.99);
@@ -37,7 +37,7 @@ test('bankCapitalAdequacyFamilyPit: 2801 115Q1（監理揭露半年一次，這�
   await computeAndWriteBankCapitalAdequacyFamilyPit({ symbol: '2801', year: '115', season: '1', dataType: '2', subsidiaryCompanyId: '' });
 
   const where = { symbol: '2801', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' };
-  const car = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCarRatio', basis: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
+  const car = await analysisPrisma.metricValue.findFirst({ where: { ...where, metricCode: 'bankCarRatio', periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(car, 'basis=Q 應該有寫入（有 reportDate，只是值為 null）');
   assert.equal(car!.value, null);
@@ -58,7 +58,7 @@ test('bankCapitalAdequacyFamilyPit: 2330（台積電，真實存在但不是銀�
   // 季度組合先前有沒有跑過，dev DB 是持久狀態不是每次測試都乾淨）——只驗證最終 DB 狀態。
   await computeAndWriteBankCapitalAdequacyFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const where = { symbol: '2330', metricCode: 'bankCarRatio', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
+  const where = { symbol: '2330', metricCode: 'bankCarRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const car = await analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' } });
   assert.ok(car);
   assert.equal(car!.value, null);

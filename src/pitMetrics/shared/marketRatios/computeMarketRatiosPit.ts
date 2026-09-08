@@ -1,6 +1,6 @@
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
-import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER, snapshotCadenceGroup } from '../../metricValueWriter';
 import { calculateExchangePeRatio } from '@/pitMetrics/valuation/exchangePeRatio/calculateExchangePeRatio';
 import { calculateExchangePbRatio } from '@/pitMetrics/valuation/exchangePbRatio/calculateExchangePbRatio';
 import { calculateDividendYield } from '@/pitMetrics/dividend/dividendYield/calculateDividendYield';
@@ -10,7 +10,7 @@ import { calculateDividendYield } from '@/pitMetrics/dividend/dividendYield/calc
 // passthrough，不自己重算——這三個數字是原始市場觀察值（跟 stockPrice 同類），不是
 // 從財報衍生出來的比率，所以這支檔案不做任何計算，純粹把 getDailyValuationAsOf
 // （src/domainMetrics/marketRatios.ts 現有在用的同一個查詢函式）的結果寫進
-// metric_values，用 sentinel 值（DAILY_CADENCE_FISCAL_QUARTER=0）+ basis='DAILY' +
+// metric_values，用 sentinel 值（DAILY_CADENCE_FISCAL_QUARTER=0）+ snapshotCadence='EOD' +
 // resolveDailyCadenceKnowledgeDate（knowledgeDate = 交易日本身，isFallback 恆為 false）。
 //
 // metricCode 命名故意跟既有 pitMetrics 的 peRatio/pbRatio（自己拿 XBRL 算 EPS/BVPS，
@@ -62,7 +62,7 @@ export const computeAndWriteMarketRatiosPit = async (query: MarketRatiosPitQuery
   const coordinateFor = (metricCode: string) => ({
     symbol,
     metricCode,
-    basis: 'DAILY' as const,
+    ...snapshotCadenceGroup('EOD'),
     fiscalYear,
     fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER,
     dataType,

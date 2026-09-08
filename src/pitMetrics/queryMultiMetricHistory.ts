@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, metricHistoryEntrySchema } from './queryMetricHistory';
-import type { MetricBasis } from './metricBasis';
+import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryBasisGroup } from './queryMetricHistory';
 
 // 2026-09-07 使用者要「一次抓多個指標」（例如三率：grossMargin/operatingMargin/
 // netProfitMargin），本來只有 dupont-history 這種為特定家族寫死欄位名稱的組合端點——
@@ -40,12 +39,12 @@ const periodKey = (row: { fiscalYear: number; fiscalQuarter: number | null }): s
 export const getMultiMetricHistory = async (
   symbol: string,
   metricCodes: string[],
-  basis: MetricBasis,
+  basisGroup: MetricHistoryBasisGroup,
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
   limit: number
 ): Promise<MultiMetricHistoryResult> => {
-  const results = await Promise.all(metricCodes.map((metricCode) => getMetricHistory(symbol, metricCode, basis, dataType, subsidiaryCompanyId, limit)));
+  const results = await Promise.all(metricCodes.map((metricCode) => getMetricHistory(symbol, metricCode, basisGroup, dataType, subsidiaryCompanyId, limit)));
 
   const rowsByCodeByPeriod = metricCodes.map((_, i) => new Map(results[i]!.entries.map((row) => [periodKey(row), row])));
 

@@ -13,11 +13,11 @@ test('netDebtToEbitdaPit: 2330 115Q2 合併報表，跟既有基準數字交叉�
   await computeAndWriteNetDebtToEbitdaPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const qAnn = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'netDebtToEbitda', basis: 'Q_ANN', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'netDebtToEbitda', periodType: 'Q_ANN', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'netDebtToEbitda', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'netDebtToEbitda', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

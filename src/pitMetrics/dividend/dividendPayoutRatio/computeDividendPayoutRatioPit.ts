@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/dividendPayoutRatio.ts 的獨立重新實作。只有 TTM 一種
@@ -99,7 +99,7 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: payoutRatioTtm,
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -109,7 +109,7 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

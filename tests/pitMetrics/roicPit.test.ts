@@ -14,7 +14,7 @@ test('roicPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', asy
 
   const findLatest = (basis: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'roic', basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'roic', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

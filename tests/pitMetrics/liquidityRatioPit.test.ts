@@ -16,7 +16,7 @@ test('liquidityRatioPit: 2330 115Q2 合併報表，跟 liquidityRatio.test.ts �
 
   const findLatest = (metricCode: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode, basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode, periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

@@ -19,7 +19,7 @@ test('stockPricePit: 2330 115Q2，價格應該精確等於 knowledge_date 當天
   const outcome = await computeAndWriteStockPricePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'stockPrice', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'stockPrice', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -38,7 +38,7 @@ test('stockPricePit: 重跑同一組座標，去重邏輯應該讓第二次 skip
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
 
   const count = await analysisPrisma.metricValue.count({
-    where: { symbol: '2330', metricCode: 'stockPrice', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'stockPrice', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
   });
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });

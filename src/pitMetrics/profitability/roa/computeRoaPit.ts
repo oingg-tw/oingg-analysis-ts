@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/roa.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
@@ -99,7 +99,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery): Promis
   } else {
     q = await writeMetricValue({
       ...coordinateBase,
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: roaQuarterlyPct,
       nullReason: quarterlyNullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -107,7 +107,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery): Promis
     });
     qAnn = await writeMetricValue({
       ...coordinateBase,
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: roaQuarterlyAnnualizedPct,
       nullReason: quarterlyNullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -148,7 +148,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery): Promis
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: roaTtmPct,
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -158,7 +158,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery): Promis
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

@@ -19,7 +19,7 @@ test(
     await computeAndWriteBeneishMScorePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
     const q = await analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'beneishMScore', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'beneishMScore', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { calculateFcf } from './fcf';
 import { calculateOcfPerShare } from '@/pitMetrics/quality/ocfPerShare/calculateOcfPerShare';
 import { calculateFcfPerShare } from '@/pitMetrics/quality/fcfPerShare/calculateFcfPerShare';
@@ -88,19 +88,19 @@ export const computeAndWriteCashFlowPerSharePit = async (query: QuarterlyMetricQ
     fcfPerShareQAnn = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    ocfPerShareQ = await writeMetricValue({ ...coordinateFor('ocfPerShare'), basis: 'Q', value: ocfPerShareQuarterly.value, nullReason: ocfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    ocfPerShareQ = await writeMetricValue({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('Q'), value: ocfPerShareQuarterly.value, nullReason: ocfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     ocfPerShareQAnn = await writeMetricValue({
       ...coordinateFor('ocfPerShare'),
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: ocfPerShareQuarterly.quarterlyAnnualized,
       nullReason: ocfPerShareQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
-    fcfPerShareQ = await writeMetricValue({ ...coordinateFor('fcfPerShare'), basis: 'Q', value: fcfPerShareQuarterly.value, nullReason: fcfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fcfPerShareQ = await writeMetricValue({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('Q'), value: fcfPerShareQuarterly.value, nullReason: fcfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     fcfPerShareQAnn = await writeMetricValue({
       ...coordinateFor('fcfPerShare'),
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: fcfPerShareQuarterly.quarterlyAnnualized,
       nullReason: fcfPerShareQuarterly.nullReason,
       knowledgeDate,
@@ -144,13 +144,13 @@ export const computeAndWriteCashFlowPerSharePit = async (query: QuarterlyMetricQ
       fcfPerShareTtm = { action: 'skipped_no_knowledge_date' };
     } else {
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
-      ocfPerShareTtm = await writeMetricValue({ ...coordinateFor('ocfPerShare'), basis: 'TTM', value: ocfPerShareTtmCalc.value, nullReason: ocfPerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      fcfPerShareTtm = await writeMetricValue({ ...coordinateFor('fcfPerShare'), basis: 'TTM', value: fcfPerShareTtmCalc.value, nullReason: fcfPerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      ocfPerShareTtm = await writeMetricValue({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('TTM'), value: ocfPerShareTtmCalc.value, nullReason: ocfPerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      fcfPerShareTtm = await writeMetricValue({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('TTM'), value: fcfPerShareTtmCalc.value, nullReason: fcfPerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
     }
   } else if (mainAnchor) {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    ocfPerShareTtm = await writeMetricValue({ ...coordinateFor('ocfPerShare'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    fcfPerShareTtm = await writeMetricValue({ ...coordinateFor('fcfPerShare'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    ocfPerShareTtm = await writeMetricValue({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    fcfPerShareTtm = await writeMetricValue({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
   } else {
     ocfPerShareTtm = { action: 'skipped_no_knowledge_date' };
     fcfPerShareTtm = { action: 'skipped_no_knowledge_date' };

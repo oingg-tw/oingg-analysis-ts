@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/grahamNumber.ts 的獨立重新實作——舊架構呼叫
@@ -112,7 +112,7 @@ export const computeAndWriteGrahamNumberPit = async (query: QuarterlyMetricQuery
       fiscalQuarter: seasonNum,
       dataType,
       subsidiaryCompanyId,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: grahamNumber,
       nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

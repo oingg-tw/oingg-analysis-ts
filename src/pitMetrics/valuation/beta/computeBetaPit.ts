@@ -1,18 +1,20 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
-import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER } from '../../metricValueWriter';
-import type { MetricBasis, MetricNullReason } from '../../metricBasis';
+import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER, rollingWindowGroup } from '../../metricValueWriter';
+import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../metricBasis';
 
 // 獨立重新實作 src/domainMetrics/beta.ts——同一套公式跟降頻邏輯（不呼叫舊架構），改寫成
 // pitMetrics 的寫入形狀：舊架構是「一列存三個窗口」，這裡是「一個 metricCode='beta'，
-// 三個 basis 值各自一列」（'1Y_DAILY'/'2Y_WEEKLY'/'5Y_MONTHLY'，見 metricBasis.ts 的
-// 說明），跟 dupont 家族「一個概念拆成多個獨立 metric_code」的先例是同一種精神，只是這裡
-// 反過來是「一個 metric_code、多個 basis」，因為三個窗口本來就是同一個概念（系統性風險
-// 係數）在不同取樣頻率下的版本，不是三個不同概念。
+// 三個 (lookbackRange, samplingInterval) 組合各自一列」（1Y×1D/2Y×1W/5Y×1M，見
+// metricBasis.ts 的說明），跟 dupont 家族「一個概念拆成多個獨立 metric_code」的先例是
+// 同一種精神，只是這裡反過來是「一個 metric_code、多個 (lookbackRange, samplingInterval)
+// 組合」，因為三個窗口本來就是同一個概念（系統性風險係數）在不同取樣頻率下的版本，不是
+// 三個不同概念。
 //
 // Beta = Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)，三個窗口各自
 // 獨立計算（各自取基準日往前 N 年的重疊交易日再降頻，不是用短窗口的資料湊長窗口）：
-// 1Y 用日資料、2Y 用週資料（對齊 Bloomberg）、5Y 用月資料（對齊 Yahoo Finance）。
+// 1Y 用日資料、2Y 用週資料（對齊 Bloomberg BETA 頁面）、5Y 用月資料（對齊 Morningstar/
+// S&P 長期 Beta 標準）。
 //
 // knowledgeDate 用 resolveDailyCadenceKnowledgeDate——逐日股價資料沒有公告延遲，基準
 // 交易日當天就是市場已知的那天，跟 knowledgeDate.ts 的既有說明一致。fiscalQuarter 用
@@ -23,15 +25,17 @@ import type { MetricBasis, MetricNullReason } from '../../metricBasis';
 export type BetaSamplingFrequency = 'daily' | 'weekly' | 'monthly';
 
 interface BetaWindowConfig {
-  basis: MetricBasis;
+  outputKey: 'beta1YDaily' | 'beta2YWeekly' | 'beta5YMonthly';
+  lookbackRange: LookbackRange;
+  samplingInterval: SamplingInterval;
   years: number;
   frequency: BetaSamplingFrequency;
 }
 
 const WINDOW_CONFIGS: BetaWindowConfig[] = [
-  { basis: '1Y_DAILY', years: 1, frequency: 'daily' },
-  { basis: '2Y_WEEKLY', years: 2, frequency: 'weekly' },
-  { basis: '5Y_MONTHLY', years: 5, frequency: 'monthly' },
+  { outputKey: 'beta1YDaily', lookbackRange: '1Y', samplingInterval: '1D', years: 1, frequency: 'daily' },
+  { outputKey: 'beta2YWeekly', lookbackRange: '2Y', samplingInterval: '1W', years: 2, frequency: 'weekly' },
+  { outputKey: 'beta5YMonthly', lookbackRange: '5Y', samplingInterval: '1M', years: 5, frequency: 'monthly' },
 ];
 
 const MIN_OBSERVATIONS = 20; // 降頻後至少要有 20 個取樣點（19 個報酬率樣本），跟舊架構同一個門檻。
@@ -216,10 +220,10 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
   const fiscalYear = effectiveAsOfDate.getUTCFullYear();
   const { knowledgeDate } = resolveDailyCadenceKnowledgeDate(effectiveAsOfDate);
 
-  const coordinateFor = (basis: MetricBasis) => ({
+  const coordinateFor = (lookbackRange: LookbackRange, samplingInterval: SamplingInterval) => ({
     symbol,
     metricCode: 'beta',
-    basis,
+    ...rollingWindowGroup(lookbackRange, samplingInterval),
     fiscalYear,
     fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER,
     dataType,
@@ -227,11 +231,11 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
     tradeDate: effectiveAsOfDate,
   });
 
-  const outcomes: Record<string, BasisOutcome> = {};
+  const outcomes = {} as Record<BetaWindowConfig['outputKey'], BasisOutcome>;
   for (const config of WINDOW_CONFIGS) {
     const { value, nullReason } = computeWindow(overlap, effectiveAsOfDate, config);
-    outcomes[config.basis] = await writeMetricValue({
-      ...coordinateFor(config.basis),
+    outcomes[config.outputKey] = await writeMetricValue({
+      ...coordinateFor(config.lookbackRange, config.samplingInterval),
       value,
       nullReason,
       knowledgeDate,
@@ -242,8 +246,8 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
   return {
     symbol,
     tradeDate: effectiveAsOf,
-    beta1YDaily: outcomes['1Y_DAILY']!,
-    beta2YWeekly: outcomes['2Y_WEEKLY']!,
-    beta5YMonthly: outcomes['5Y_MONTHLY']!,
+    beta1YDaily: outcomes.beta1YDaily,
+    beta2YWeekly: outcomes.beta2YWeekly,
+    beta5YMonthly: outcomes.beta5YMonthly,
   };
 };

@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案獨立重新實作 src/domainMetrics/sgr.ts——舊架構呼叫 calculateRoe()+
@@ -120,7 +120,7 @@ export const computeAndWriteSgrPit = async (query: QuarterlyMetricQuery): Promis
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: sgrTtm,
         nullReason: sgrNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -130,7 +130,7 @@ export const computeAndWriteSgrPit = async (query: QuarterlyMetricQuery): Promis
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

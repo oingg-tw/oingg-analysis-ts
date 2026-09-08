@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/netDebtToEbitda.ts 的獨立重新實作。只有 Q_ANN/TTM 兩種
@@ -83,7 +83,7 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
   } else {
     qAnn = await writeMetricValue({
       ...coordinateBase,
-      basis: 'Q_ANN',
+      ...periodTypeGroup('Q_ANN'),
       value: qAnnValue,
       nullReason: qAnnNullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -133,7 +133,7 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
     } else {
       ttm = await writeMetricValue({
         ...coordinateBase,
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: ttmValue,
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
@@ -143,7 +143,7 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
   } else if (mainAnchor) {
     ttm = await writeMetricValue({
       ...coordinateBase,
-      basis: 'TTM',
+      ...periodTypeGroup('TTM'),
       value: null,
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,

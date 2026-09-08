@@ -8,7 +8,7 @@ import { getDupontHistory } from '@/pitMetrics/shared/dupont/queryDupontHistory'
 import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
 import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { resolveTokenForMetric, ScreenerValidationError, type FieldRef } from '@/api/bff/screener/fieldResolver';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -98,15 +98,18 @@ export const getCompanyCapitalStockHistory = async (req: Request, res: Response,
   }
 };
 
-// ROE 這支指標目前允許的 basis 只有這三種（見 src/pitMetrics/metricDefinitionRegistry.ts 的
-// metricDefinitionRegistry.roe.allowedBases），這裡刻意獨立宣告成 query 參數的合法值，
-// 不直接沿用通用的 metricBasisSchema（那個還有 CUM/FY，對 ROE 沒有意義）——兩邊要保持同步。
-const ROE_HISTORY_BASIS_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+// ROE 這支指標目前允許的 periodType 只有這三種（見 src/pitMetrics/metricDefinitionRegistry.ts
+// 的 metricDefinitionRegistry.roe.allowedPeriodTypes），這裡刻意獨立宣告成 query 參數的合法值，
+// 不直接沿用通用的 periodTypeSchema（那個還有 YTD/FY，對 ROE 沒有意義）——兩邊要保持同步。
+// 2026-09-08：這個 query 參數原本叫 basis，改名 periodType 是這次「metric_values.basis 拆成
+// 四個精準命名欄位」重構的一部分（basis 違反 ubiquitous language，見 abstract-crafting-
+// journal.md），不是單純改名，是外部契約 breaking change。
+const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
 const MAX_ROE_HISTORY_LIMIT = 40; // 10 年份季度資料，畫圖情境不需要更多
 
 export const getCompanyRoeHistoryQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
-  basis: z.enum(ROE_HISTORY_BASIS_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
   limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
@@ -121,22 +124,22 @@ export const getCompanyRoeHistory = async (req: Request, res: Response, next: Ne
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, basis, limit } = validationResult.data;
-    const { entries, total, hasMore } = await getRoeHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, metricCode: 'roe', basis, total, hasMore, entries });
+    const { symbol, periodType, limit } = validationResult.data;
+    const { entries, total, hasMore } = await getRoeHistory(symbol, periodType, limit);
+    res.status(200).json({ symbol, metricCode: 'roe', periodType, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
 };
 
-// ROA 這支指標目前允許的 basis 跟 ROE 一模一樣（見
-// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedBases）。
-const ROA_HISTORY_BASIS_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+// ROA 這支指標目前允許的 periodType 跟 ROE 一模一樣（見
+// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedPeriodTypes）。
+const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
 const MAX_ROA_HISTORY_LIMIT = 40;
 
 export const getCompanyRoaHistoryQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
-  basis: z.enum(ROA_HISTORY_BASIS_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  periodType: z.enum(ROA_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
   limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
@@ -149,9 +152,9 @@ export const getCompanyRoaHistory = async (req: Request, res: Response, next: Ne
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, basis, limit } = validationResult.data;
-    const { entries, total, hasMore } = await getRoaHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, metricCode: 'roa', basis, total, hasMore, entries });
+    const { symbol, periodType, limit } = validationResult.data;
+    const { entries, total, hasMore } = await getRoaHistory(symbol, periodType, limit);
+    res.status(200).json({ symbol, metricCode: 'roa', periodType, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -159,20 +162,20 @@ export const getCompanyRoaHistory = async (req: Request, res: Response, next: Ne
 
 // Dupont 拆解沒有 Q_ANN——dupontDecomposedRoe/equityMultiplier 都沒有這個變體（見
 // src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.dupontDecomposedRoe/
-// equityMultiplier.allowedBases）。
-const DUPONT_HISTORY_BASIS_VALUES = ['Q', 'TTM'] as const;
+// equityMultiplier.allowedPeriodTypes）。
+const DUPONT_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_DUPONT_HISTORY_LIMIT = 40;
 
 export const getCompanyDupontHistoryQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
-  basis: z.enum(DUPONT_HISTORY_BASIS_VALUES).default('Q').meta({ description: '單季(Q)/近四季(TTM)，預設 Q' }),
+  periodType: z.enum(DUPONT_HISTORY_PERIOD_TYPE_VALUES).default('Q').meta({ description: '單季(Q)/近四季(TTM)，預設 Q' }),
   limit: z.coerce.number().int().min(1).max(MAX_DUPONT_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
 // 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
 // 權益乘數 + 組裝出來的 ROE），不是完整的毛利率/週轉率家族，見
-// src/pitMetrics/shared/dupont/queryDupontHistory.ts 的說明。basis=TTM 時 equityMultiplier 恆為
-// null。查無資料回傳 entries: []，不是 404。
+// src/pitMetrics/shared/dupont/queryDupontHistory.ts 的說明。periodType=TTM 時
+// equityMultiplier 恆為 null。查無資料回傳 entries: []，不是 404。
 export const getCompanyDupontHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validationResult = getCompanyDupontHistoryQuerySchema.safeParse(req.query);
@@ -180,9 +183,9 @@ export const getCompanyDupontHistory = async (req: Request, res: Response, next:
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, basis, limit } = validationResult.data;
-    const { entries, total, hasMore } = await getDupontHistory(symbol, basis, limit);
-    res.status(200).json({ symbol, basis, total, hasMore, entries });
+    const { symbol, periodType, limit } = validationResult.data;
+    const { entries, total, hasMore } = await getDupontHistory(symbol, periodType, limit);
+    res.status(200).json({ symbol, periodType, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -196,17 +199,24 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
     .string({ error: 'metricCode is required.' })
     .min(1)
     .meta({ description: 'point-in-time 架構的指標代碼，例如 "eps"、"bvps"——完整清單見 metricDefinitionRegistry.ts，之後新增指標會持續增加', example: 'eps' }),
-  basis: z.string({ error: 'basis is required.' }).min(1).meta({ description: "'Q'/'Q_ANN'/'TTM'/'CUM'/'FY' 之一，實際允許哪些由 metricCode 決定，不符合會回 400" }),
+  token: z
+    .string({ error: 'token is required.' })
+    .min(1)
+    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /filters" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
 // 泛化版的單一 metric_code 歷史查詢端點——2026-09-06 point-in-time 架構第三批遷移（10 個
 // 新 metric_code）動工前新增，取代「每遷一支指標就在這三個檔案各自複製貼上一段」的模式
-// （roe-history/roa-history 就是這樣長出來的）。metricCode/basis 都不是寫死的 zod enum，
+// （roe-history/roa-history 就是這樣長出來的）。metricCode/token 都不是寫死的 zod enum，
 // 而是動態查 metricDefinitionRegistry——這份 registry 之後會持續成長，沒辦法每次新增指標
 // 都回來改一次這裡的型別。roe-history/roa-history/dupont-history 三支既有端點維持不動，
 // 這支只是之後新增指標的曝露管道，不是要取代它們（dupont-history 是真正的多 metric_code
 // 組合，泛化不適用；另外兩支沒有壞掉，不用強行改掉可能已經在用的呼叫端）。
+// 2026-09-08：query 參數原本叫 basis（單一字串直接對應 metric_values.basis 欄位），改名
+// token 並改用 resolveTokenForMetric（跟 screener/fieldResolver.ts 的 "metricCode.token"
+// 解析共用同一套四組判斷邏輯）——這是「metric_values.basis 拆成四個精準命名欄位」重構
+// 的一部分，basis 這個字本身違反 ubiquitous language，見 abstract-crafting-journal.md。
 export const getCompanyMetricHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validationResult = getCompanyMetricHistoryQuerySchema.safeParse(req.query);
@@ -214,17 +224,20 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, metricCode, basis, limit } = validationResult.data;
-    const definition = metricDefinitionRegistry[metricCode];
-    if (!definition) {
-      return res.status(400).json({ message: `未知的 metricCode "${metricCode}"。` });
-    }
-    if (!definition.allowedBases.includes(basis as (typeof definition.allowedBases)[number])) {
-      return res.status(400).json({ message: `metricCode "${metricCode}" 不允許 basis "${basis}"，允許的值：${definition.allowedBases.join(', ')}。` });
+    const { symbol, metricCode, token, limit } = validationResult.data;
+    let fieldRef;
+    try {
+      fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
+    } catch (error) {
+      if (error instanceof ScreenerValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
+      throw error;
     }
 
-    const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, basis as (typeof definition.allowedBases)[number], '2', '', limit);
-    res.status(200).json({ symbol, metricCode, basis, total, hasMore, entries });
+    const { periodType, lookbackRange, samplingInterval, snapshotCadence } = fieldRef;
+    const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, { periodType, lookbackRange, samplingInterval, snapshotCadence }, '2', '', limit);
+    res.status(200).json({ symbol, metricCode, token, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -238,15 +251,19 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
     .string({ error: 'metricCodes is required.' })
     .min(1)
     .meta({ description: `逗號分隔的 metricCode 清單，例如 "grossMargin,operatingMargin,netProfitMargin"（最多 ${MAX_METRIC_CODES_PER_REQUEST} 個）`, example: 'grossMargin,operatingMargin,netProfitMargin' }),
-  basis: z.string({ error: 'basis is required.' }).min(1).meta({ description: "'Q'/'Q_ANN'/'TTM'/'CUM'/'FY' 之一，套用到清單裡的每個 metricCode，任一個不允許就整體回 400" }),
+  token: z
+    .string({ error: 'token is required.' })
+    .min(1)
+    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /filters" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
 // 泛化版的「一次抓多個 metric_code」歷史查詢端點——2026-09-07 使用者要「五年三率」（毛利率/
 // 營業利益率/淨利率）一次拿齊時新增。跟 dupont-history 不同：dupont-history 是特定家族寫死
 // 具名欄位的組合端點；這支是任意 metricCode 清單、用 metricCode 當 key 合併回傳，不要求
-// 彼此有語意組裝關係。basis 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
+// 彼此有語意組裝關係。token 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
 // （附上是哪個 metricCode 不允許），不會部分成功。
+// 2026-09-08：query 參數原本叫 basis，改名 token（理由同 getCompanyMetricHistory 上方註解）。
 export const getCompanyMetricsHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validationResult = getCompanyMetricsHistoryQuerySchema.safeParse(req.query);
@@ -254,7 +271,7 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, basis, limit } = validationResult.data;
+    const { symbol, token, limit } = validationResult.data;
     const metricCodes = [...new Set(validationResult.data.metricCodes.split(',').map((code) => code.trim()).filter((code) => code.length > 0))];
 
     if (metricCodes.length === 0) {
@@ -264,18 +281,29 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
       return res.status(400).json({ message: `metricCodes 最多 ${MAX_METRIC_CODES_PER_REQUEST} 個，收到 ${metricCodes.length} 個。` });
     }
 
+    let basisGroup: Pick<FieldRef, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'> | undefined;
     for (const metricCode of metricCodes) {
-      const definition = metricDefinitionRegistry[metricCode];
-      if (!definition) {
-        return res.status(400).json({ message: `未知的 metricCode "${metricCode}"。` });
+      let fieldRef;
+      try {
+        fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
+      } catch (error) {
+        if (error instanceof ScreenerValidationError) {
+          return res.status(400).json({ message: error.message });
+        }
+        throw error;
       }
-      if (!definition.allowedBases.includes(basis as (typeof definition.allowedBases)[number])) {
-        return res.status(400).json({ message: `metricCode "${metricCode}" 不允許 basis "${basis}"，允許的值：${definition.allowedBases.join(', ')}。` });
-      }
+      // 每個 metricCode 各自解析出自己的四欄組合（同一個 token 字面值，在不同 metricCode 底下
+      // 可能落在不同組——例如 "EOD" 對 exchangePeRatio 是合法的 snapshotCadence，對 roe 則會在
+      // 上面直接被 resolveTokenForMetric 拒絕），但因為 getMultiMetricHistory 目前是「同一組
+      // basisGroup 套用到全部 metricCode」的介面，這裡沿用第一個 metricCode 解析出的結果——
+      // 呼叫端如果混用不同組別的 metricCode 在同一次請求裡，本來就是誤用，上面的逐一驗證已經
+      // 保證每個 metricCode 都「接受」這個 token，沿用同一組四欄值不會查到錯誤的列（N/A 佔位
+      // 對不落在該組的 metricCode 沒有意義，但那些 metricCode 已經在驗證時被擋掉了）。
+      basisGroup ??= { periodType: fieldRef.periodType, lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence };
     }
 
-    const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, basis as never, '2', '', limit);
-    res.status(200).json({ symbol, metricCodes, basis, total, hasMore, entries });
+    const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, basisGroup!, '2', '', limit);
+    res.status(200).json({ symbol, metricCodes, token, total, hasMore, entries });
   } catch (error) {
     next(error);
   }

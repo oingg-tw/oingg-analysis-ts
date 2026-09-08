@@ -5,7 +5,7 @@ import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
@@ -96,7 +96,7 @@ export const computeAndWritePbRatioPit = async (query: QuarterlyMetricQuery): Pr
       fiscalQuarter: seasonNum,
       dataType,
       subsidiaryCompanyId,
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: pbRatio,
       nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

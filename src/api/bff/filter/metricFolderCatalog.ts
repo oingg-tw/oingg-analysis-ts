@@ -1,12 +1,14 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
-import type { MetricBasis } from '@/pitMetrics/metricBasis';
+import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/pitMetrics/metricBasis';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 pitMetrics 完全脫節）
 // ——這份改成直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08 那批拆分之後，
 // 每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），比對
-// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 basis，組出分類清單。
+// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的四組 basis 相關欄位值
+// （periodType/lookbackRange/samplingInterval/snapshotCadence，見 metricBasis.ts 的
+// 完整說明），組出分類清單。
 //
 // 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts（已退場）
 // 當初的說明一致：正式環境 build 產物是 CommonJS，import.meta 在那個模式下是編譯期錯誤；
@@ -26,7 +28,10 @@ const CATEGORY_DIR_NAMES = ['dividend', 'efficiency', 'growth', 'profitability',
 
 export interface MetricFolderCatalogEntry {
   metricCode: string;
-  allowedBases: MetricBasis[];
+  allowedPeriodTypes: PeriodType[];
+  allowedLookbackRanges: LookbackRange[];
+  allowedSamplingIntervals: SamplingInterval[];
+  allowedSnapshotCadences: SnapshotCadence[];
 }
 
 export interface MetricFolderCatalogCategory {
@@ -49,6 +54,15 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
     const metrics = listSubdirectoryNames(join(PIT_METRICS_ROOT, categoryKey))
       .filter((folderName) => folderName in metricDefinitionRegistry)
       .sort()
-      .map((metricCode): MetricFolderCatalogEntry => ({ metricCode, allowedBases: metricDefinitionRegistry[metricCode]!.allowedBases }));
+      .map((metricCode): MetricFolderCatalogEntry => {
+        const definition = metricDefinitionRegistry[metricCode]!;
+        return {
+          metricCode,
+          allowedPeriodTypes: definition.allowedPeriodTypes,
+          allowedLookbackRanges: definition.allowedLookbackRanges,
+          allowedSamplingIntervals: definition.allowedSamplingIntervals,
+          allowedSnapshotCadences: definition.allowedSnapshotCadences,
+        };
+      });
     return { categoryKey, metrics };
   }).filter((category) => category.metrics.length > 0);

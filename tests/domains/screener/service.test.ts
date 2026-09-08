@@ -7,7 +7,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // filterCatalog 一起退場（見 abstract-crafting-journal.md「filterCatalog/screener 整套
 // 機制退場」）。bff-ts 回報這其實是 web-nuxt「自訂篩選」這個獨立於任何選股模板之外的活
 // 功能唯一資料來源，使用者拍板重建——這次改成直接查 pitMetrics 共用的 metric_values 表，
-// field 格式從 "metricKey.fieldKey" 改成 "metricCode.basis"（例如 "roe.TTM"）。
+// field 格式從 "metricKey.fieldKey" 改成 "metricCode.token"（例如 "roe.TTM"）。
 //
 // 用 roe.TTM 當主要測試欄位——2330/2317 都有真實非 null 值（2026-09-08 查證：2330≈34.78、
 // 2317≈11.15，2330 > 2317），不寫死確切數字（財報重編/backfill 範圍擴大都可能讓數字變動），
@@ -80,7 +80,7 @@ describe('runScreener', () => {
 
   test('sortField 沒有先出現在 columns 裡應該拋 ScreenerValidationError', async () => {
     await assert.rejects(
-      () => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'beta.1Y_DAILY', sortOrder: 'asc' }),
+      () => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'beta.1Y_1D', sortOrder: 'asc' }),
       ScreenerValidationError,
     );
   });

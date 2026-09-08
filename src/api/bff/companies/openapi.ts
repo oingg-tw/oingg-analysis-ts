@@ -34,7 +34,7 @@ const capitalStockHistoryResultSchema = z.object({
   entries: z.array(capitalStockHistoryEntrySchema),
 });
 
-// total/hasMore：2026-09-07 使用者要求——total 是這個 symbol/metricCode/basis 去重後
+// total/hasMore：2026-09-07 使用者要求——total 是這個 symbol/metricCode/periodType(或 token) 去重後
 // 總共有幾期（不受 limit 影響），hasMore = total > entries.length。前端可以用這兩個
 // 欄位決定要不要提供「看更長區間」的選項，例如完整歷史只有 6 年就不該讓使用者點「近 10
 // 年」（點了也只會拿到一樣的 6 年資料）。四支歷史端點都是同樣的語意，用同一段說明。
@@ -46,7 +46,7 @@ const totalHasMoreFields = {
 const roeHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roe'),
-  basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  periodType: z.enum(['Q', 'Q_ANN', 'TTM']),
   ...totalHasMoreFields,
   entries: z.array(roeHistoryEntrySchema),
 });
@@ -54,14 +54,14 @@ const roeHistoryResultSchema = z.object({
 const roaHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roa'),
-  basis: z.enum(['Q', 'Q_ANN', 'TTM']),
+  periodType: z.enum(['Q', 'Q_ANN', 'TTM']),
   ...totalHasMoreFields,
   entries: z.array(roaHistoryEntrySchema),
 });
 
 const dupontHistoryResultSchema = z.object({
   symbol: z.string(),
-  basis: z.enum(['Q', 'TTM']),
+  periodType: z.enum(['Q', 'TTM']),
   ...totalHasMoreFields,
   entries: z.array(dupontHistoryEntrySchema),
 });
@@ -69,7 +69,7 @@ const dupontHistoryResultSchema = z.object({
 const metricHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.string(),
-  basis: z.string(),
+  token: z.string(),
   ...totalHasMoreFields,
   entries: z.array(metricHistoryEntrySchema),
 });
@@ -77,7 +77,7 @@ const metricHistoryResultSchema = z.object({
 const metricsHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCodes: z.array(z.string()),
-  basis: z.string(),
+  token: z.string(),
   ...totalHasMoreFields,
   entries: z.array(multiMetricHistoryEntrySchema),
 });
@@ -158,15 +158,16 @@ export const registerCompaniesOpenApi = (): void => {
       '第一支直接讀 metric_values（point-in-time 事實層，見 docs/analysis-ts-spec-v0.2.md）而不是傳統結果表' +
       '（profitability_roe）的端點——每一筆帶 knowledgeDate（該值最早可被市場知道的日期）跟 knowledgeDateIsFallback' +
       '（true 代表查無真實財報公告日、用財報期末日頂替，有 look-ahead bias 風險，前端可考慮標示）。' +
-      'basis 預設 TTM（近四季滾動）；同一個 (fiscalYear, fiscalQuarter) 如果有多筆（未來的重編疊加情境），' +
+      'periodType 預設 TTM（近四季滾動）；同一個 (fiscalYear, fiscalQuarter) 如果有多筆（未來的重編疊加情境），' +
       '只回傳 knowledge_date 最新的那一筆。entries 依期別由舊到新排序，方便直接畫時序圖。' +
       '**目前資料覆蓋率極低**：只有少數公司/季度有資料（全市場 backfill 尚未進行），查無資料回傳 entries: []，' +
-      '不是 404 或錯誤，是正常情境。',
+      '不是 404 或錯誤，是正常情境。（2026-09-08：這個 query 參數原本叫 basis，改名 periodType——' +
+      '「basis」違反 ubiquitous language，是會計保留用語，不是這裡要表達的「季報聚合方式」。）',
     tags: ['System'],
     request: { query: getCompanyRoeHistoryQuerySchema },
     responses: {
       200: { description: 'ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roeHistoryResultSchema } } },
-      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+      400: { description: '缺少 symbol，或 periodType/limit 格式錯誤。' },
     },
   });
 
@@ -176,13 +177,13 @@ export const registerCompaniesOpenApi = (): void => {
     summary: '單一公司 ROA 歷史時序（畫圖用）',
     description:
       '第二支直接讀 metric_values（point-in-time 事實層）而不是傳統結果表（profitability_roa）的端點，' +
-      '完全比照 GET /companies/roe-history 的模式（basis 語意、knowledgeDate/knowledgeDateIsFallback、' +
+      '完全比照 GET /companies/roe-history 的模式（periodType 語意、knowledgeDate/knowledgeDateIsFallback、' +
       '排序、資料覆蓋率現況說明皆相同，這裡不重複列一次）。',
     tags: ['System'],
     request: { query: getCompanyRoaHistoryQuerySchema },
     responses: {
       200: { description: 'ROA 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roaHistoryResultSchema } } },
-      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+      400: { description: '缺少 symbol，或 periodType/limit 格式錯誤。' },
     },
   });
 
@@ -197,7 +198,7 @@ export const registerCompaniesOpenApi = (): void => {
       '固定資產/應付帳款周轉率跟 DIO/DSO/DPO/CCC）家族，這兩個因子也因此不單獨開歷史查詢端點，' +
       '只在這支組合端點裡曝露。decomposedRoePct = netProfitMarginPct x assetTurnover x equityMultiplier，' +
       '理論上應該接近（但不必完全等於）GET /companies/roe-history 的實際 ROE，差異來自中間值四捨五入' +
-      '造成的正常誤差。basis=TTM 時 equityMultiplier 恆為 null（權益乘數是資產負債表時點快照，沒有 TTM' +
+      '造成的正常誤差。periodType=TTM 時 equityMultiplier 恆為 null（權益乘數是資產負債表時點快照，沒有 TTM' +
       '變體，Q/TTM 拆解共用同一個 Q 快照值）。knowledgeDate/knowledgeDateIsFallback 取這四個 metric_code' +
       '裡 netProfitMargin 那組的值當代表（同一次計算共用同一組 knowledge_date，正常情況下一致）。' +
       '**目前資料覆蓋率極低**：只有少數公司/季度有資料，查無資料回傳 entries: []，是正常情境。',
@@ -205,7 +206,7 @@ export const registerCompaniesOpenApi = (): void => {
     request: { query: getCompanyDupontHistoryQuerySchema },
     responses: {
       200: { description: '杜邦拆解歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dupontHistoryResultSchema } } },
-      400: { description: '缺少 symbol，或 basis/limit 格式錯誤。' },
+      400: { description: '缺少 symbol，或 periodType/limit 格式錯誤。' },
     },
   });
 
@@ -218,16 +219,19 @@ export const registerCompaniesOpenApi = (): void => {
       '（10 個新 metric_code）動工前新增，取代每遷一支指標就各自複製貼上一段端點樣板碼的模式。' +
       'metricCode 決定要查哪支指標，完整清單見程式碼裡的 metricDefinitionRegistry（目前已知：' +
       `${Object.keys(metricDefinitionRegistry).join('、')}），之後新增指標會持續增加，這裡不逐一列出维護。` +
-      'basis 允許的值由 metricCode 決定（例如 bvps 只允許 Q，dividendPayoutRatio 只允許 TTM），' +
-      '傳不允許的組合會回 400 並附上這個 metricCode 實際允許的 basis 清單。' +
+      'token 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，beta 只允許' +
+      '"<lookbackRange>_<samplingInterval>" 例如 "2Y_1W"，exchangePeRatio 只允許 "EOD"），' +
+      '傳不允許的值會回 400 並附上這個 metricCode 實際允許的清單，完整組合見 GET /filters。' +
       'knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history 一致。' +
       '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
-      '之後新增指標的曝露管道，不是要取代它們。',
+      '之後新增指標的曝露管道，不是要取代它們。（2026-09-08：這個 query 參數原本叫 basis，' +
+      '改名 token 並改成同時涵蓋四組概念（periodType/lookbackRange+samplingInterval/' +
+      'snapshotCadence，見 metric_values.basis 拆分重構）——「basis」違反 ubiquitous language。）',
     tags: ['System'],
     request: { query: getCompanyMetricHistoryQuerySchema },
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
-      400: { description: '缺少 symbol/metricCode/basis，或 metricCode 未知，或 basis 不在該 metricCode 允許的清單內。' },
+      400: { description: '缺少 symbol/metricCode/token，或 metricCode 未知，或 token 不在該 metricCode 允許的清單內。' },
     },
   });
 
@@ -240,17 +244,18 @@ export const registerCompaniesOpenApi = (): void => {
       '這支用逗號分隔的 metricCodes 一次查多個（例如三率一次拿：' +
       '"grossMargin,operatingMargin,netProfitMargin"，最多 10 個），依 (fiscalYear,fiscalQuarter)' +
       '合併成一列，entries[].values 是以 metricCode 為 key 的物件，對應請求時給的清單。' +
-      'basis 套用到清單裡的每個 metricCode，任一個不允許該 basis 就整體回 400（附上是哪個' +
+      'token 套用到清單裡的每個 metricCode，任一個不允許該 token 就整體回 400（附上是哪個' +
       'metricCode 不允許），不會部分成功。**這支跟 dupont-history 是不同定位**：dupont-history' +
       '是杜邦拆解這種真正有語意組裝關係（三/五因子相乘）的家族專用組合端點，寫死具名欄位；這支' +
       '是任意 metricCode 的通用合併，沒有假設彼此有數學關係，純粹省去前端自己併多次呼叫結果的' +
       '麻煩。某個 metricCode 在某一期完全沒有列時（例如不同指標 backfill 範圍不同步），對應' +
-      'values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。',
+      'values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。' +
+      '（2026-09-08：query 參數原本叫 basis，改名 token，理由同 GET /companies/metric-history。）',
     tags: ['System'],
     request: { query: getCompanyMetricsHistoryQuerySchema },
     responses: {
       200: { description: '多指標歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricsHistoryResultSchema } } },
-      400: { description: '缺少 symbol/metricCodes/basis，或某個 metricCode 未知，或 basis 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。' },
+      400: { description: '缺少 symbol/metricCodes/token，或某個 metricCode 未知，或 token 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。' },
     },
   });
 
@@ -314,7 +319,7 @@ export const registerCompaniesOpenApi = (): void => {
     summary: '單一公司產業同業清單（產業同業比較功能第一步）',
     description:
       '用財政部稅籍行業標準分類（來源：gov-ts）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
-      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.basis"）查實際指標數值，' +
+      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.token"）查實際指標數值，' +
       '這支端點刻意不重複做數值查詢那一層。' +
       '同業分組用動態層級回退：子類→細類→小類→中類，依序嘗試，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
       '連中類都不足門檻也會停在中類（不繼續往更粗的層級爬），此時 warnings 會提示「已回退到最粗層級，同業可能包含商業模式不同的公司」。' +

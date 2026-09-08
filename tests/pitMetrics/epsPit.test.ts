@@ -16,7 +16,7 @@ test('epsPit: 2330 115Q2 合併報表，跟 eps.test.ts 的既有基準數字交
 
   const findLatest = (basis: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'eps', basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'eps', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

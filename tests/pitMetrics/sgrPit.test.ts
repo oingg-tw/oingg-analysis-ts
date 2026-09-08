@@ -17,7 +17,7 @@ test('sgrPit: 2330 115Q2 合併報表（只有 TTM 口徑），跟既有基準�
   await computeAndWriteSgrPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'sgr', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'sgr', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

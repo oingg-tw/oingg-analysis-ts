@@ -19,7 +19,7 @@ test('roaPit: 2330 115Q2 合併報表，跟 roa.test.ts 的既有基準數字交
 
   const findLatest = (basis: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'roa', basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'roa', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -52,7 +52,7 @@ test('roaPit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   }
 
   const count = await analysisPrisma.metricValue.count({
-    where: { symbol: '2887', metricCode: 'roa', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2887', metricCode: 'roa', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
   });
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });
@@ -65,7 +65,7 @@ test('roaPit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledg
 
   assert.notEqual(outcome.q, undefined);
   const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2317', metricCode: 'roa', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2317', metricCode: 'roa', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
   assert.ok(q, '2317 115Q2 損益表/資產負債表皆有資料，basis=Q 應該算得出來並寫入');
@@ -76,7 +76,7 @@ test('roaPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
   await computeAndWriteRoaPit({ symbol: '2317', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2317', metricCode: 'roa', basis: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2317', metricCode: 'roa', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 

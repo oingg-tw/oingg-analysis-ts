@@ -19,7 +19,7 @@ test('pbRatioPit: 2330 115Q2，用真實股價/BVPS 手動核算過的基準數�
   const outcome = await computeAndWritePbRatioPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const q = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2330', metricCode: 'pbRatio', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'pbRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -37,7 +37,7 @@ test('pbRatioPit: 重跑同一組座標，去重邏輯應該讓第二次 skipped
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
 
   const count = await analysisPrisma.metricValue.count({
-    where: { symbol: '2330', metricCode: 'pbRatio', basis: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol: '2330', metricCode: 'pbRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 1, dataType: '2', subsidiaryCompanyId: '' },
   });
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });

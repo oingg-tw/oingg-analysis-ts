@@ -6,7 +6,7 @@ import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSourc
 import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ForeignShareholdingHistoryResult } from './types';
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
-// basis='DAILY'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
+// snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
 // 一起退場了（filterCatalog.csv 最後 6 列確認是開發環境假資料誤判、沒有真實功能依賴，
 // 見 abstract-crafting-journal.md）。三個 metricCode 是同一次 computeAndWriteMarketRatiosPit
 // 呼叫一起寫入的，理論上 tradeDate 一致，這裡各自獨立查「最新一筆」而不是假設一定同步，
@@ -18,7 +18,7 @@ const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 
 const getLatestMarketRatioValue = async (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> => {
   const row = await analysisPrisma.metricValue.findFirst({
-    where: { symbol, metricCode, basis: 'DAILY', dataType: MARKET_RATIOS_DATA_TYPE, subsidiaryCompanyId: MARKET_RATIOS_SUBSIDIARY_COMPANY_ID },
+    where: { symbol, metricCode, snapshotCadence: 'EOD', dataType: MARKET_RATIOS_DATA_TYPE, subsidiaryCompanyId: MARKET_RATIOS_SUBSIDIARY_COMPANY_ID },
     orderBy: { knowledgeDate: 'desc' },
   });
   if (!row || row.tradeDate === null) return null;

@@ -4,7 +4,7 @@ import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
@@ -78,7 +78,7 @@ export const computeAndWriteBvpsPit = async (query: QuarterlyMetricQuery): Promi
       fiscalQuarter: seasonNum,
       dataType,
       subsidiaryCompanyId,
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: bvps,
       nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

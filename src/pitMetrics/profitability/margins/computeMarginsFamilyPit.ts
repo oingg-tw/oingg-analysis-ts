@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { calculateGrossMargin } from '@/pitMetrics/profitability/grossMargin/calculateGrossMargin';
 import { calculateOperatingMargin } from '@/pitMetrics/profitability/operatingMargin/calculateOperatingMargin';
 
@@ -120,10 +120,10 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
     operatingMarginQ = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    grossMarginQ = await writeMetricValue({ ...coordinateFor('grossMargin'), basis: 'Q', value: grossMarginQuarterly.value, nullReason: grossMarginQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    grossMarginQ = await writeMetricValue({ ...coordinateFor('grossMargin'), ...periodTypeGroup('Q'), value: grossMarginQuarterly.value, nullReason: grossMarginQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     operatingMarginQ = await writeMetricValue({
       ...coordinateFor('operatingMargin'),
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: operatingMarginQuarterly.value,
       nullReason: operatingMarginQuarterly.nullReason,
       knowledgeDate,
@@ -172,7 +172,7 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
       grossMarginTtm = await writeMetricValue({
         ...coordinateFor('grossMargin'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: grossMarginTtmCalc.value,
         nullReason: grossMarginTtmCalc.nullReason,
         knowledgeDate,
@@ -180,7 +180,7 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
       });
       operatingMarginTtm = await writeMetricValue({
         ...coordinateFor('operatingMargin'),
-        basis: 'TTM',
+        ...periodTypeGroup('TTM'),
         value: operatingMarginTtmCalc.value,
         nullReason: operatingMarginTtmCalc.nullReason,
         knowledgeDate,
@@ -189,8 +189,8 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
     }
   } else if (mainAnchor) {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    grossMarginTtm = await writeMetricValue({ ...coordinateFor('grossMargin'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
-    operatingMarginTtm = await writeMetricValue({ ...coordinateFor('operatingMargin'), basis: 'TTM', value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    grossMarginTtm = await writeMetricValue({ ...coordinateFor('grossMargin'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    operatingMarginTtm = await writeMetricValue({ ...coordinateFor('operatingMargin'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
   } else {
     grossMarginTtm = { action: 'skipped_no_knowledge_date' };
     operatingMarginTtm = { action: 'skipped_no_knowledge_date' };

@@ -2,7 +2,7 @@ import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from 
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateBankCarRatio } from '@/pitMetrics/resilience/bankCarRatio/calculateBankCarRatio';
 import { calculateBankCet1Ratio } from '@/pitMetrics/resilience/bankCet1Ratio/calculateBankCet1Ratio';
@@ -68,7 +68,7 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
     bankCarRatio = await writeMetricValue({
       ...coordinateBase,
       metricCode: 'bankCarRatio',
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: carRatioCalc.value,
       nullReason: carRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -77,7 +77,7 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
     bankCet1Ratio = await writeMetricValue({
       ...coordinateBase,
       metricCode: 'bankCet1Ratio',
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: cet1Calc.value,
       nullReason: cet1Calc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
@@ -86,7 +86,7 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
     bankTier1Ratio = await writeMetricValue({
       ...coordinateBase,
       metricCode: 'bankTier1Ratio',
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: tier1Calc.value,
       nullReason: tier1Calc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

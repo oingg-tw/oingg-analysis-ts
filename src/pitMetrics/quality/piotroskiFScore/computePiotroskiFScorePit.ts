@@ -7,7 +7,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/piotroskiFScore.ts 的獨立重新實作。9 個二元訊號本季 vs
@@ -150,7 +150,7 @@ export const computeAndWritePiotroskiFScorePit = async (query: QuarterlyMetricQu
       fiscalQuarter: seasonNum,
       dataType,
       subsidiaryCompanyId,
-      basis: 'Q',
+      ...periodTypeGroup('Q'),
       value: score,
       nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,

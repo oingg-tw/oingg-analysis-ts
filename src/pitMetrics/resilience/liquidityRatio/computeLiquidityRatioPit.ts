@@ -3,7 +3,7 @@ import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/s
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateCurrentRatio } from '@/pitMetrics/resilience/currentRatio/calculateCurrentRatio';
 import { calculateQuickRatio } from '@/pitMetrics/resilience/quickRatio/calculateQuickRatio';
@@ -79,9 +79,9 @@ export const computeAndWriteLiquidityRatioPit = async (query: QuarterlyMetricQue
     cashRatio = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    currentRatio = await writeMetricValue({ ...coordinateFor('currentRatio'), basis: 'Q', value: currentRatioCalc.value, nullReason: currentRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    quickRatio = await writeMetricValue({ ...coordinateFor('quickRatio'), basis: 'Q', value: quickRatioCalc.value, nullReason: quickRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    cashRatio = await writeMetricValue({ ...coordinateFor('cashRatio'), basis: 'Q', value: cashRatioCalc.value, nullReason: cashRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    currentRatio = await writeMetricValue({ ...coordinateFor('currentRatio'), ...periodTypeGroup('Q'), value: currentRatioCalc.value, nullReason: currentRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    quickRatio = await writeMetricValue({ ...coordinateFor('quickRatio'), ...periodTypeGroup('Q'), value: quickRatioCalc.value, nullReason: quickRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    cashRatio = await writeMetricValue({ ...coordinateFor('cashRatio'), ...periodTypeGroup('Q'), value: cashRatioCalc.value, nullReason: cashRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
   }
 
   return { symbol, rocYear: year, season, currentRatio, quickRatio, cashRatio };
