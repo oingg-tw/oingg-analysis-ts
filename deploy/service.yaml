@@ -94,6 +94,3 @@ spec:
                 secretKeyRef:
                   name: TWSE-EXPORT-DATABASE-URL
                   key: latest
-            # TASK_SECRET/TPEX_TASK_SECRET 只有 loadIndustryCodes()（dev-only，見
-            # src/shared/sourceData/industryCodes.ts 的 `if (config.isProduction) return`）
-            # 會用到，正式環境不需要設。
