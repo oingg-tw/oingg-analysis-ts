@@ -6,7 +6,16 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
+import { pickNetIncome, pickEquity } from './calculations/shared';
+import { calculateNetProfitMargin } from './calculations/netProfitMargin';
+import { calculateAssetTurnover } from './calculations/assetTurnover';
+import { calculateEquityMultiplier } from './calculations/equityMultiplier';
+import { calculateDupontDecomposedRoe } from './calculations/dupontDecomposedRoe';
+import { calculateEbit } from './calculations/ebit';
+import { calculateDupontTaxBurden } from './calculations/dupontTaxBurden';
+import { calculateDupontInterestBurden } from './calculations/dupontInterestBurden';
+import { calculateDupontEbitMargin } from './calculations/dupontEbitMargin';
+import { calculateDupontExtendedRoe } from './calculations/dupontExtendedRoe';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts（僅 netProfitMargin 這個因子）、
 // src/domainMetrics/turnoverRatio.ts（僅 assetTurnover 這個因子）、src/domainMetrics/dupont.ts
@@ -22,50 +31,13 @@ import type { MetricNullReason } from '../../metricBasis';
 // 2026-09-07 加上五因子 Extended DuPont（把三因子的「淨利率」再拆成稅務負擔×利息負擔×
 // EBIT利潤率）——直接在這支函式裡擴充，不開新檔案，因為當季/近四季的損益表+資產負債表
 // 已經查好，assetTurnoverQuarterly/equityMultiplierValue（還有 TTM 版本）也已經是本地
-// 算好的變數，五因子版本直接重用，不用再查一次資料庫。EBIT = 稅前淨利+財務費用，跟
-// roic/roce/interestCoverage/netDebtToEbitda/evEbitda 已經在用的定義一致——注意這個
-// EBIT**不等於**既有的 operatingMargin 用的 operatingIncome（後者嚴格排除所有非營業
-// 損益，前者只加回財務費用，非營業損益還留在裡面），兩個「利潤率」數字不一樣，這批新
-// metric_code 全部加 dupont 前綴避免混淆。新的 4 個 metric_code：dupontTaxBurden（淨利/
-// 稅前淨利）、dupontInterestBurden（稅前淨利/EBIT）、dupontEbitMargin（EBIT/營收）、
-// dupontExtendedRoe（五因子相乘的組裝結果，理論上等於既有的 dupontDecomposedRoe，
-// 已用 2330 115Q2 真實資料驗證過兩者一致）。
-
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-// 比率型（「次」）的四捨五入到小數 2 位，跟 turnoverRatio.ts 的 toTurnover 一致。
-const toRatio = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100) / 100;
-};
-
-const round2 = (x: number): number => Math.round(x * 100) / 100;
-
-// 分子/分母任一為 null 視為缺輸入；兩者皆非 null 但分母為 0 才是「分母為零」——負值不擋，
-// 沿用既有「扭曲但仍是真實數字」的行為。
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
+// 算好的變數，五因子版本直接重用，不用再查一次資料庫。
+//
+// 2026-09-08：這個檔案本身只保留「查詢+編排+寫入」（IO 這一層）——每個 metricCode 的實際
+// 計算公式已經拆進 calculations/ 底下各自的檔案（一個指標一個檔案），這裡只負責把查回來的
+// 原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、決定 knowledge_date、呼叫
+// writeMetricValue。Q 跟 TTM 兩個 basis 共用同一個 calculateXxx() 純函式（公式本身不會因為
+// 輸入是單季還是近四季加總而不同），差別只在傳進去的 bigint 是單季原始值還是 TTM 加總值。
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -136,59 +108,26 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;
 
-  const netProfitMarginQuarterlyPct = netIncome.value !== null && operatingRevenue !== null ? toPct(netIncome.value, operatingRevenue) : null;
-  const netProfitMarginQuarterlyNullReason: MetricNullReason | null =
-    netProfitMarginQuarterlyPct === null ? determineNullReason(netIncome.value, operatingRevenue) : null;
-
-  const assetTurnoverQuarterly = operatingRevenue !== null && totalAssets !== null ? toRatio(operatingRevenue, totalAssets) : null;
-  const assetTurnoverQuarterlyAnnualized = assetTurnoverQuarterly !== null ? round2(assetTurnoverQuarterly * 4) : null;
-  const assetTurnoverQuarterlyNullReason: MetricNullReason | null =
-    assetTurnoverQuarterly === null ? determineNullReason(operatingRevenue, totalAssets) : null;
-
-  const equityMultiplierValue = totalAssets !== null && equity.value !== null ? toRatio(totalAssets, equity.value) : null;
-  const equityMultiplierNullReason: MetricNullReason | null = equityMultiplierValue === null ? determineNullReason(totalAssets, equity.value) : null;
-
-  const decomposedRoeQuarterlyPct =
-    netProfitMarginQuarterlyPct !== null && assetTurnoverQuarterly !== null && equityMultiplierValue !== null
-      ? round2(netProfitMarginQuarterlyPct * assetTurnoverQuarterly * equityMultiplierValue)
-      : null;
-  // 三個因子任一為 null，不管原因為何，一律回報 missing_input——各因子自己缺漏的細節記在
-  // 各自的 metric_value 列上，查歷史時可以自己對照，這裡不重複細分。
-  const decomposedRoeQuarterlyNullReason: MetricNullReason | null = decomposedRoeQuarterlyPct === null ? 'missing_input' : null;
+  const netProfitMarginQuarterly = calculateNetProfitMargin(netIncome.value, operatingRevenue);
+  const assetTurnoverQuarterly = calculateAssetTurnover(operatingRevenue, totalAssets);
+  const equityMultiplierResult = calculateEquityMultiplier(totalAssets, equity.value);
+  const decomposedRoeQuarterly = calculateDupontDecomposedRoe(netProfitMarginQuarterly.value, assetTurnoverQuarterly.value, equityMultiplierResult.value);
 
   // 五因子 Extended DuPont：把上面的 netProfitMargin 再拆成稅務負擔×利息負擔×EBIT利潤率。
-  // EBIT = 稅前淨利 + 財務費用，跟 roic/roce/interestCoverage/netDebtToEbitda/evEbitda
-  // 已經在用的定義一致。
   const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
   const financeCosts = incomeStatement?.financeCosts ?? null;
-  const ebit = profitBeforeTax !== null && financeCosts !== null ? profitBeforeTax + financeCosts : null;
+  const ebit = calculateEbit(profitBeforeTax, financeCosts);
 
-  const dupontTaxBurdenQuarterlyPct = netIncome.value !== null && profitBeforeTax !== null ? toPct(netIncome.value, profitBeforeTax) : null;
-  const dupontTaxBurdenQuarterlyNullReason: MetricNullReason | null =
-    dupontTaxBurdenQuarterlyPct === null ? determineNullReason(netIncome.value, profitBeforeTax) : null;
-
-  const dupontInterestBurdenQuarterlyPct = profitBeforeTax !== null && ebit !== null ? toPct(profitBeforeTax, ebit) : null;
-  const dupontInterestBurdenQuarterlyNullReason: MetricNullReason | null =
-    dupontInterestBurdenQuarterlyPct === null ? determineNullReason(profitBeforeTax, ebit) : null;
-
-  const dupontEbitMarginQuarterlyPct = ebit !== null && operatingRevenue !== null ? toPct(ebit, operatingRevenue) : null;
-  const dupontEbitMarginQuarterlyNullReason: MetricNullReason | null =
-    dupontEbitMarginQuarterlyPct === null ? determineNullReason(ebit, operatingRevenue) : null;
-
-  // 五因子相乘：dupontTaxBurdenQuarterlyPct/dupontInterestBurdenQuarterlyPct/dupontEbitMarginQuarterlyPct
-  // 三個都已經是 *100 的百分比（不是原始比率），跟 assetTurnoverQuarterly/equityMultiplierValue
-  // 這兩個原始比率相乘後，總共多乘了 100^2，最後除以 10000 校正回正確的百分比尺度——這是
-  // 這批新增最容易踩的坑，已經用 2330 115Q2 真實數字驗證過這個公式算出來的結果精確等於
-  // 既有的 dupontDecomposedRoe 基準值。
-  const extendedRoeQuarterlyPct =
-    dupontTaxBurdenQuarterlyPct !== null &&
-    dupontInterestBurdenQuarterlyPct !== null &&
-    dupontEbitMarginQuarterlyPct !== null &&
-    assetTurnoverQuarterly !== null &&
-    equityMultiplierValue !== null
-      ? round2((dupontTaxBurdenQuarterlyPct * dupontInterestBurdenQuarterlyPct * dupontEbitMarginQuarterlyPct * assetTurnoverQuarterly * equityMultiplierValue) / 10000)
-      : null;
-  const extendedRoeQuarterlyNullReason: MetricNullReason | null = extendedRoeQuarterlyPct === null ? 'missing_input' : null;
+  const dupontTaxBurdenQuarterly = calculateDupontTaxBurden(netIncome.value, profitBeforeTax);
+  const dupontInterestBurdenQuarterly = calculateDupontInterestBurden(profitBeforeTax, ebit);
+  const dupontEbitMarginQuarterly = calculateDupontEbitMargin(ebit, operatingRevenue);
+  const extendedRoeQuarterly = calculateDupontExtendedRoe(
+    dupontTaxBurdenQuarterly.value,
+    dupontInterestBurdenQuarterly.value,
+    dupontEbitMarginQuarterly.value,
+    assetTurnoverQuarterly.value,
+    equityMultiplierResult.value,
+  );
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
@@ -220,72 +159,72 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     netProfitMarginQ = await writeMetricValue({
       ...coordinateFor('netProfitMargin'),
       basis: 'Q',
-      value: netProfitMarginQuarterlyPct,
-      nullReason: netProfitMarginQuarterlyNullReason,
+      value: netProfitMarginQuarterly.value,
+      nullReason: netProfitMarginQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     assetTurnoverQ = await writeMetricValue({
       ...coordinateFor('assetTurnover'),
       basis: 'Q',
-      value: assetTurnoverQuarterly,
-      nullReason: assetTurnoverQuarterlyNullReason,
+      value: assetTurnoverQuarterly.value,
+      nullReason: assetTurnoverQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     assetTurnoverQAnn = await writeMetricValue({
       ...coordinateFor('assetTurnover'),
       basis: 'Q_ANN',
-      value: assetTurnoverQuarterlyAnnualized,
-      nullReason: assetTurnoverQuarterlyNullReason,
+      value: assetTurnoverQuarterly.quarterlyAnnualized,
+      nullReason: assetTurnoverQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     equityMultiplierOutcome = await writeMetricValue({
       ...coordinateFor('equityMultiplier'),
       basis: 'Q',
-      value: equityMultiplierValue,
-      nullReason: equityMultiplierNullReason,
+      value: equityMultiplierResult.value,
+      nullReason: equityMultiplierResult.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     dupontDecomposedRoeQ = await writeMetricValue({
       ...coordinateFor('dupontDecomposedRoe'),
       basis: 'Q',
-      value: decomposedRoeQuarterlyPct,
-      nullReason: decomposedRoeQuarterlyNullReason,
+      value: decomposedRoeQuarterly.value,
+      nullReason: decomposedRoeQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     dupontTaxBurdenQ = await writeMetricValue({
       ...coordinateFor('dupontTaxBurden'),
       basis: 'Q',
-      value: dupontTaxBurdenQuarterlyPct,
-      nullReason: dupontTaxBurdenQuarterlyNullReason,
+      value: dupontTaxBurdenQuarterly.value,
+      nullReason: dupontTaxBurdenQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     dupontInterestBurdenQ = await writeMetricValue({
       ...coordinateFor('dupontInterestBurden'),
       basis: 'Q',
-      value: dupontInterestBurdenQuarterlyPct,
-      nullReason: dupontInterestBurdenQuarterlyNullReason,
+      value: dupontInterestBurdenQuarterly.value,
+      nullReason: dupontInterestBurdenQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     dupontEbitMarginQ = await writeMetricValue({
       ...coordinateFor('dupontEbitMargin'),
       basis: 'Q',
-      value: dupontEbitMarginQuarterlyPct,
-      nullReason: dupontEbitMarginQuarterlyNullReason,
+      value: dupontEbitMarginQuarterly.value,
+      nullReason: dupontEbitMarginQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
     dupontExtendedRoeQ = await writeMetricValue({
       ...coordinateFor('dupontExtendedRoe'),
       basis: 'Q',
-      value: extendedRoeQuarterlyPct,
-      nullReason: extendedRoeQuarterlyNullReason,
+      value: extendedRoeQuarterly.value,
+      nullReason: extendedRoeQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
@@ -327,51 +266,25 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
     }
   }
 
-  const netProfitMarginTtmPct = ttmComplete ? toPct(netIncomeTtmSum, revenueTtmSum) : null;
-  const assetTurnoverTtmValue = ttmComplete && totalAssets !== null ? toRatio(revenueTtmSum, totalAssets) : null;
+  const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const assetTurnoverTtmCalc = ttmComplete && totalAssets !== null ? calculateAssetTurnover(revenueTtmSum, totalAssets) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
 
-  const netProfitMarginTtmNullReason: MetricNullReason | null = ttmComplete
-    ? netProfitMarginTtmPct === null
-      ? determineNullReason(netIncomeTtmSum, revenueTtmSum)
-      : null
-    : 'insufficient_history';
-  const assetTurnoverTtmNullReason: MetricNullReason | null = ttmComplete
-    ? assetTurnoverTtmValue === null
-      ? determineNullReason(revenueTtmSum, totalAssets)
-      : null
-    : 'insufficient_history';
+  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierResult.value);
+  const decomposedRoeTtmNullReason = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : ('insufficient_history' as const);
 
-  const decomposedRoeTtmPct =
-    netProfitMarginTtmPct !== null && assetTurnoverTtmValue !== null && equityMultiplierValue !== null
-      ? round2(netProfitMarginTtmPct * assetTurnoverTtmValue * equityMultiplierValue)
-      : null;
-  const decomposedRoeTtmNullReason: MetricNullReason | null = decomposedRoeTtmPct !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
+  const dupontTaxBurdenTtmCalc = extendedTtmComplete ? calculateDupontTaxBurden(netIncomeTtmSum, preTaxTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const ebitTtm = extendedTtmComplete ? ebitTtmSum : null;
+  const dupontInterestBurdenTtmCalc = extendedTtmComplete ? calculateDupontInterestBurden(preTaxTtmSum, ebitTtm) : { value: null, nullReason: 'insufficient_history' as const };
+  const dupontEbitMarginTtmCalc = extendedTtmComplete ? calculateDupontEbitMargin(ebitTtm, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
 
-  const dupontTaxBurdenTtmPct = extendedTtmComplete ? toPct(netIncomeTtmSum, preTaxTtmSum) : null;
-  const dupontInterestBurdenTtmPct = extendedTtmComplete ? toPct(preTaxTtmSum, ebitTtmSum) : null;
-  const dupontEbitMarginTtmPct = extendedTtmComplete ? toPct(ebitTtmSum, revenueTtmSum) : null;
-
-  const dupontTaxBurdenTtmNullReason: MetricNullReason | null = extendedTtmComplete
-    ? dupontTaxBurdenTtmPct === null
-      ? determineNullReason(netIncomeTtmSum, preTaxTtmSum)
-      : null
-    : 'insufficient_history';
-  const dupontInterestBurdenTtmNullReason: MetricNullReason | null = extendedTtmComplete
-    ? dupontInterestBurdenTtmPct === null
-      ? determineNullReason(preTaxTtmSum, ebitTtmSum)
-      : null
-    : 'insufficient_history';
-  const dupontEbitMarginTtmNullReason: MetricNullReason | null = extendedTtmComplete
-    ? dupontEbitMarginTtmPct === null
-      ? determineNullReason(ebitTtmSum, revenueTtmSum)
-      : null
-    : 'insufficient_history';
-
-  const extendedRoeTtmPct =
-    dupontTaxBurdenTtmPct !== null && dupontInterestBurdenTtmPct !== null && dupontEbitMarginTtmPct !== null && assetTurnoverTtmValue !== null && equityMultiplierValue !== null
-      ? round2((dupontTaxBurdenTtmPct * dupontInterestBurdenTtmPct * dupontEbitMarginTtmPct * assetTurnoverTtmValue * equityMultiplierValue) / 10000)
-      : null;
-  const extendedRoeTtmNullReason: MetricNullReason | null = extendedRoeTtmPct !== null ? null : extendedTtmComplete ? 'missing_input' : 'insufficient_history';
+  const extendedRoeTtmCalc = calculateDupontExtendedRoe(
+    dupontTaxBurdenTtmCalc.value,
+    dupontInterestBurdenTtmCalc.value,
+    dupontEbitMarginTtmCalc.value,
+    assetTurnoverTtmCalc.value,
+    equityMultiplierResult.value,
+  );
+  const extendedRoeTtmNullReason = extendedRoeTtmCalc.value !== null ? null : extendedTtmComplete ? 'missing_input' : ('insufficient_history' as const);
 
   let netProfitMarginTtm: BasisOutcome;
   let assetTurnoverTtm: BasisOutcome;
@@ -399,23 +312,23 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       netProfitMarginTtm = await writeMetricValue({
         ...coordinateFor('netProfitMargin'),
         basis: 'TTM',
-        value: netProfitMarginTtmPct,
-        nullReason: netProfitMarginTtmNullReason,
+        value: netProfitMarginTtmCalc.value,
+        nullReason: netProfitMarginTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       assetTurnoverTtm = await writeMetricValue({
         ...coordinateFor('assetTurnover'),
         basis: 'TTM',
-        value: assetTurnoverTtmValue,
-        nullReason: assetTurnoverTtmNullReason,
+        value: assetTurnoverTtmCalc.value,
+        nullReason: assetTurnoverTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       dupontDecomposedRoeTtm = await writeMetricValue({
         ...coordinateFor('dupontDecomposedRoe'),
         basis: 'TTM',
-        value: decomposedRoeTtmPct,
+        value: decomposedRoeTtmCalc.value,
         nullReason: decomposedRoeTtmNullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
@@ -428,31 +341,31 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
       dupontTaxBurdenTtm = await writeMetricValue({
         ...coordinateFor('dupontTaxBurden'),
         basis: 'TTM',
-        value: dupontTaxBurdenTtmPct,
-        nullReason: dupontTaxBurdenTtmNullReason,
+        value: dupontTaxBurdenTtmCalc.value,
+        nullReason: dupontTaxBurdenTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       dupontInterestBurdenTtm = await writeMetricValue({
         ...coordinateFor('dupontInterestBurden'),
         basis: 'TTM',
-        value: dupontInterestBurdenTtmPct,
-        nullReason: dupontInterestBurdenTtmNullReason,
+        value: dupontInterestBurdenTtmCalc.value,
+        nullReason: dupontInterestBurdenTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       dupontEbitMarginTtm = await writeMetricValue({
         ...coordinateFor('dupontEbitMargin'),
         basis: 'TTM',
-        value: dupontEbitMarginTtmPct,
-        nullReason: dupontEbitMarginTtmNullReason,
+        value: dupontEbitMarginTtmCalc.value,
+        nullReason: dupontEbitMarginTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       dupontExtendedRoeTtm = await writeMetricValue({
         ...coordinateFor('dupontExtendedRoe'),
         basis: 'TTM',
-        value: extendedRoeTtmPct,
+        value: extendedRoeTtmCalc.value,
         nullReason: extendedRoeTtmNullReason,
         knowledgeDate,
         knowledgeDateIsFallback,

@@ -3,8 +3,9 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { calculateBankNplRatio } from './calculations/bankNplRatio';
+import { calculateBankNplCoverageRatio } from './calculations/bankNplCoverageRatio';
 
 // 全新的銀行業專屬指標，不是舊架構遷移——src/domainMetrics/ 從來沒有銀行業指標的既有檔案。
 // 2026-09-06 盤點技術債時直接查 mops-ts export DB 驗證過：`bank_asset_quality_xbrl` 的
@@ -48,8 +49,8 @@ export const computeAndWriteBankAssetQualityFamilyPit = async (query: QuarterlyM
 
   const row = await getBankAssetQualityTotalLoans({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
-  const nplRatioNullReason: MetricNullReason | null = row?.nonPerformingLoansRatio == null ? 'missing_input' : null;
-  const coverageRatioNullReason: MetricNullReason | null = row?.coverageRatio == null ? 'missing_input' : null;
+  const nplRatioCalc = calculateBankNplRatio(row?.nonPerformingLoansRatio);
+  const coverageRatioCalc = calculateBankNplCoverageRatio(row?.coverageRatio);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: row?.reportDate ?? null }]);
   const coordinateBase = { symbol, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -64,8 +65,8 @@ export const computeAndWriteBankAssetQualityFamilyPit = async (query: QuarterlyM
       ...coordinateBase,
       metricCode: 'bankNplRatio',
       basis: 'Q',
-      value: row?.nonPerformingLoansRatio ?? null,
-      nullReason: nplRatioNullReason,
+      value: nplRatioCalc.value,
+      nullReason: nplRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });
@@ -73,8 +74,8 @@ export const computeAndWriteBankAssetQualityFamilyPit = async (query: QuarterlyM
       ...coordinateBase,
       metricCode: 'bankNplCoverageRatio',
       basis: 'Q',
-      value: row?.coverageRatio ?? null,
-      nullReason: coverageRatioNullReason,
+      value: coverageRatioCalc.value,
+      nullReason: coverageRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });

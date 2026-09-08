@@ -6,7 +6,14 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
+import { calculateInventoryTurnover } from './calculations/inventoryTurnover';
+import { calculateReceivablesTurnover } from './calculations/receivablesTurnover';
+import { calculateFixedAssetTurnover } from './calculations/fixedAssetTurnover';
+import { calculatePayablesTurnover } from './calculations/payablesTurnover';
+import { calculateInventoryDays } from './calculations/inventoryDays';
+import { calculateReceivablesDays } from './calculations/receivablesDays';
+import { calculatePayablesDays } from './calculations/payablesDays';
+import { calculateCashConversionCycle } from './calculations/cashConversionCycle';
 
 // 這份檔案獨立重新實作 src/domainMetrics/turnoverRatio.ts 裡「還沒遷移」的欄位——
 // assetTurnover 已經由 src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts 寫入，這裡不重複
@@ -19,31 +26,10 @@ import type { MetricNullReason } from '../../metricBasis';
 // 四個周轉率共用同一個 ttmComplete 旗標（只看 operatingCost/operatingRevenue 兩個欄位）
 // ——完全比照舊架構 turnoverRatio.ts 的判斷，這裡沒有像 margins 那批的行為差異，因為
 // 舊架構本來就只看這兩個欄位，跟這批要算的四個比率需要的欄位完全一致。
-
-const toTurnover = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100) / 100;
-};
-
-// DIO/DSO/DPO = 365/年化或TTM周轉率。周轉率為 0 時無法換算天數，回傳 null。
-const toDays = (turnover: number | null): number | null => {
-  if (turnover === null || turnover === 0) return null;
-  return Math.round((365 / turnover) * 100) / 100;
-};
-
-const round2 = (x: number): number => Math.round(x * 100) / 100;
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
-
-// 天數指標（DIO/DSO/DPO）null_reason：對應周轉率本身為 0（除以零）回報
-// zero_or_negative_denominator；周轉率本身就是 null，原因照搬周轉率自己的 nullReason。
-const daysNullReason = (turnover: number | null, turnoverNullReason: MetricNullReason | null): MetricNullReason => {
-  if (turnover === 0) return 'zero_or_negative_denominator';
-  return turnoverNullReason ?? 'missing_input';
-};
+//
+// 2026-09-08：這個檔案本身只保留「查詢+編排+寫入」（IO 這一層）——每個 metricCode 的實際
+// 計算公式已經拆進 calculations/ 底下各自的檔案，這裡只負責把查回來的原始財報數字傳給對應的
+// calculateXxx() 純函式、串接輸出、決定 knowledge_date、呼叫 writeMetricValue。
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -126,22 +112,10 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
   // Q
-  const inventoryTurnoverQuarterly = operatingCost !== null && inventory !== null ? toTurnover(operatingCost, inventory) : null;
-  const inventoryTurnoverQNullReason: MetricNullReason | null = inventoryTurnoverQuarterly === null ? determineNullReason(operatingCost, inventory) : null;
-  const receivablesTurnoverQuarterly = operatingRevenue !== null && accountsReceivable !== null ? toTurnover(operatingRevenue, accountsReceivable) : null;
-  const receivablesTurnoverQNullReason: MetricNullReason | null =
-    receivablesTurnoverQuarterly === null ? determineNullReason(operatingRevenue, accountsReceivable) : null;
-  const fixedAssetTurnoverQuarterly = operatingRevenue !== null && propertyPlantEquipment !== null ? toTurnover(operatingRevenue, propertyPlantEquipment) : null;
-  const fixedAssetTurnoverQNullReason: MetricNullReason | null =
-    fixedAssetTurnoverQuarterly === null ? determineNullReason(operatingRevenue, propertyPlantEquipment) : null;
-  const payablesTurnoverQuarterly = operatingCost !== null && accountsPayable !== null ? toTurnover(operatingCost, accountsPayable) : null;
-  const payablesTurnoverQNullReason: MetricNullReason | null = payablesTurnoverQuarterly === null ? determineNullReason(operatingCost, accountsPayable) : null;
-
-  // Q_ANN（沿用各自 Q 的 nullReason）
-  const inventoryTurnoverQAnnValue = inventoryTurnoverQuarterly !== null ? round2(inventoryTurnoverQuarterly * 4) : null;
-  const receivablesTurnoverQAnnValue = receivablesTurnoverQuarterly !== null ? round2(receivablesTurnoverQuarterly * 4) : null;
-  const fixedAssetTurnoverQAnnValue = fixedAssetTurnoverQuarterly !== null ? round2(fixedAssetTurnoverQuarterly * 4) : null;
-  const payablesTurnoverQAnnValue = payablesTurnoverQuarterly !== null ? round2(payablesTurnoverQuarterly * 4) : null;
+  const inventoryTurnoverQuarterly = calculateInventoryTurnover(operatingCost, inventory);
+  const receivablesTurnoverQuarterly = calculateReceivablesTurnover(operatingRevenue, accountsReceivable);
+  const fixedAssetTurnoverQuarterly = calculateFixedAssetTurnover(operatingRevenue, propertyPlantEquipment);
+  const payablesTurnoverQuarterly = calculatePayablesTurnover(operatingCost, accountsPayable);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
@@ -160,38 +134,30 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
     inventoryDaysQAnn = receivablesDaysQAnn = payablesDaysQAnn = cashConversionCycleQAnn = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    inventoryTurnoverQ = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q', value: inventoryTurnoverQuarterly, nullReason: inventoryTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    inventoryTurnoverQAnn = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q_ANN', value: inventoryTurnoverQAnnValue, nullReason: inventoryTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQ = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q', value: receivablesTurnoverQuarterly, nullReason: receivablesTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q_ANN', value: receivablesTurnoverQAnnValue, nullReason: receivablesTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQ = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q', value: fixedAssetTurnoverQuarterly, nullReason: fixedAssetTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQAnn = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q_ANN', value: fixedAssetTurnoverQAnnValue, nullReason: fixedAssetTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQ = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q', value: payablesTurnoverQuarterly, nullReason: payablesTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q_ANN', value: payablesTurnoverQAnnValue, nullReason: payablesTurnoverQNullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryTurnoverQ = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q', value: inventoryTurnoverQuarterly.value, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryTurnoverQAnn = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'Q_ANN', value: inventoryTurnoverQuarterly.quarterlyAnnualized, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverQ = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q', value: receivablesTurnoverQuarterly.value, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'Q_ANN', value: receivablesTurnoverQuarterly.quarterlyAnnualized, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverQ = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q', value: fixedAssetTurnoverQuarterly.value, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverQAnn = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'Q_ANN', value: fixedAssetTurnoverQuarterly.quarterlyAnnualized, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverQ = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q', value: payablesTurnoverQuarterly.value, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'Q_ANN', value: payablesTurnoverQuarterly.quarterlyAnnualized, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
     // DIO/DSO/DPO（Q_ANN）+ CCC（Q_ANN）
-    const inventoryDaysQAnnValue = toDays(inventoryTurnoverQAnnValue);
-    const receivablesDaysQAnnValue = toDays(receivablesTurnoverQAnnValue);
-    const payablesDaysQAnnValue = toDays(payablesTurnoverQAnnValue);
-    const inventoryDaysQAnnNullReason: MetricNullReason | null = inventoryDaysQAnnValue === null ? daysNullReason(inventoryTurnoverQAnnValue, inventoryTurnoverQNullReason) : null;
-    const receivablesDaysQAnnNullReason: MetricNullReason | null =
-      receivablesDaysQAnnValue === null ? daysNullReason(receivablesTurnoverQAnnValue, receivablesTurnoverQNullReason) : null;
-    const payablesDaysQAnnNullReason: MetricNullReason | null = payablesDaysQAnnValue === null ? daysNullReason(payablesTurnoverQAnnValue, payablesTurnoverQNullReason) : null;
+    const inventoryDaysQAnnCalc = calculateInventoryDays(inventoryTurnoverQuarterly.quarterlyAnnualized, inventoryTurnoverQuarterly.nullReason);
+    const receivablesDaysQAnnCalc = calculateReceivablesDays(receivablesTurnoverQuarterly.quarterlyAnnualized, receivablesTurnoverQuarterly.nullReason);
+    const payablesDaysQAnnCalc = calculatePayablesDays(payablesTurnoverQuarterly.quarterlyAnnualized, payablesTurnoverQuarterly.nullReason);
 
-    inventoryDaysQAnn = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'Q_ANN', value: inventoryDaysQAnnValue, nullReason: inventoryDaysQAnnNullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesDaysQAnn = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'Q_ANN', value: receivablesDaysQAnnValue, nullReason: receivablesDaysQAnnNullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesDaysQAnn = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'Q_ANN', value: payablesDaysQAnnValue, nullReason: payablesDaysQAnnNullReason, knowledgeDate, knowledgeDateIsFallback });
+    inventoryDaysQAnn = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'Q_ANN', value: inventoryDaysQAnnCalc.value, nullReason: inventoryDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesDaysQAnn = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'Q_ANN', value: receivablesDaysQAnnCalc.value, nullReason: receivablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesDaysQAnn = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'Q_ANN', value: payablesDaysQAnnCalc.value, nullReason: payablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
-    const cccQAnnValue =
-      inventoryDaysQAnnValue !== null && receivablesDaysQAnnValue !== null && payablesDaysQAnnValue !== null
-        ? round2(inventoryDaysQAnnValue + receivablesDaysQAnnValue - payablesDaysQAnnValue)
-        : null;
-    const cccQAnnNullReason: MetricNullReason | null = cccQAnnValue === null ? 'missing_input' : null;
+    const cccQAnnCalc = calculateCashConversionCycle(inventoryDaysQAnnCalc.value, receivablesDaysQAnnCalc.value, payablesDaysQAnnCalc.value);
     cashConversionCycleQAnn = await writeMetricValue({
       ...coordinateFor('cashConversionCycle'),
       basis: 'Q_ANN',
-      value: cccQAnnValue,
-      nullReason: cccQAnnNullReason,
+      value: cccQAnnCalc.value,
+      nullReason: cccQAnnCalc.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
@@ -216,18 +182,10 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
     }
   }
 
-  const inventoryTurnoverTtmValue = ttmComplete && inventory !== null ? toTurnover(costTtmSum, inventory) : null;
-  const receivablesTurnoverTtmValue = ttmComplete && accountsReceivable !== null ? toTurnover(revenueTtmSum, accountsReceivable) : null;
-  const fixedAssetTurnoverTtmValue = ttmComplete && propertyPlantEquipment !== null ? toTurnover(revenueTtmSum, propertyPlantEquipment) : null;
-  const payablesTurnoverTtmValue = ttmComplete && accountsPayable !== null ? toTurnover(costTtmSum, accountsPayable) : null;
-
-  const inventoryTurnoverTtmNullReason: MetricNullReason | null = inventoryTurnoverTtmValue !== null ? null : ttmComplete ? determineNullReason(costTtmSum, inventory) : 'insufficient_history';
-  const receivablesTurnoverTtmNullReason: MetricNullReason | null =
-    receivablesTurnoverTtmValue !== null ? null : ttmComplete ? determineNullReason(revenueTtmSum, accountsReceivable) : 'insufficient_history';
-  const fixedAssetTurnoverTtmNullReason: MetricNullReason | null =
-    fixedAssetTurnoverTtmValue !== null ? null : ttmComplete ? determineNullReason(revenueTtmSum, propertyPlantEquipment) : 'insufficient_history';
-  const payablesTurnoverTtmNullReason: MetricNullReason | null =
-    payablesTurnoverTtmValue !== null ? null : ttmComplete ? determineNullReason(costTtmSum, accountsPayable) : 'insufficient_history';
+  const inventoryTurnoverTtmCalc = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const receivablesTurnoverTtmCalc = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const fixedAssetTurnoverTtmCalc = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const payablesTurnoverTtmCalc = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
 
   let inventoryTurnoverTtm: BasisOutcome, receivablesTurnoverTtm: BasisOutcome, fixedAssetTurnoverTtm: BasisOutcome, payablesTurnoverTtm: BasisOutcome;
   let inventoryDaysTtm: BasisOutcome, receivablesDaysTtm: BasisOutcome, payablesDaysTtm: BasisOutcome, cashConversionCycleTtm: BasisOutcome;
@@ -242,29 +200,21 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
       inventoryDaysTtm = receivablesDaysTtm = payablesDaysTtm = cashConversionCycleTtm = { action: 'skipped_no_knowledge_date' };
     } else {
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
-      inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'TTM', value: inventoryTurnoverTtmValue, nullReason: inventoryTurnoverTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'TTM', value: receivablesTurnoverTtmValue, nullReason: receivablesTurnoverTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
-      fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'TTM', value: fixedAssetTurnoverTtmValue, nullReason: fixedAssetTurnoverTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'TTM', value: payablesTurnoverTtmValue, nullReason: payablesTurnoverTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
+      inventoryTurnoverTtm = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), basis: 'TTM', value: inventoryTurnoverTtmCalc.value, nullReason: inventoryTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      receivablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), basis: 'TTM', value: receivablesTurnoverTtmCalc.value, nullReason: receivablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      fixedAssetTurnoverTtm = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), basis: 'TTM', value: fixedAssetTurnoverTtmCalc.value, nullReason: fixedAssetTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      payablesTurnoverTtm = await writeMetricValue({ ...coordinateFor('payablesTurnover'), basis: 'TTM', value: payablesTurnoverTtmCalc.value, nullReason: payablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
-      const inventoryDaysTtmValue = toDays(inventoryTurnoverTtmValue);
-      const receivablesDaysTtmValue = toDays(receivablesTurnoverTtmValue);
-      const payablesDaysTtmValue = toDays(payablesTurnoverTtmValue);
-      const inventoryDaysTtmNullReason: MetricNullReason | null = inventoryDaysTtmValue === null ? daysNullReason(inventoryTurnoverTtmValue, inventoryTurnoverTtmNullReason) : null;
-      const receivablesDaysTtmNullReason: MetricNullReason | null =
-        receivablesDaysTtmValue === null ? daysNullReason(receivablesTurnoverTtmValue, receivablesTurnoverTtmNullReason) : null;
-      const payablesDaysTtmNullReason: MetricNullReason | null = payablesDaysTtmValue === null ? daysNullReason(payablesTurnoverTtmValue, payablesTurnoverTtmNullReason) : null;
+      const inventoryDaysTtmCalc = calculateInventoryDays(inventoryTurnoverTtmCalc.value, inventoryTurnoverTtmCalc.nullReason);
+      const receivablesDaysTtmCalc = calculateReceivablesDays(receivablesTurnoverTtmCalc.value, receivablesTurnoverTtmCalc.nullReason);
+      const payablesDaysTtmCalc = calculatePayablesDays(payablesTurnoverTtmCalc.value, payablesTurnoverTtmCalc.nullReason);
 
-      inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'TTM', value: inventoryDaysTtmValue, nullReason: inventoryDaysTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'TTM', value: receivablesDaysTtmValue, nullReason: receivablesDaysTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'TTM', value: payablesDaysTtmValue, nullReason: payablesDaysTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
+      inventoryDaysTtm = await writeMetricValue({ ...coordinateFor('inventoryDays'), basis: 'TTM', value: inventoryDaysTtmCalc.value, nullReason: inventoryDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      receivablesDaysTtm = await writeMetricValue({ ...coordinateFor('receivablesDays'), basis: 'TTM', value: receivablesDaysTtmCalc.value, nullReason: receivablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      payablesDaysTtm = await writeMetricValue({ ...coordinateFor('payablesDays'), basis: 'TTM', value: payablesDaysTtmCalc.value, nullReason: payablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
 
-      const cccTtmValue =
-        inventoryDaysTtmValue !== null && receivablesDaysTtmValue !== null && payablesDaysTtmValue !== null
-          ? round2(inventoryDaysTtmValue + receivablesDaysTtmValue - payablesDaysTtmValue)
-          : null;
-      const cccTtmNullReason: MetricNullReason | null = cccTtmValue === null ? 'missing_input' : null;
-      cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), basis: 'TTM', value: cccTtmValue, nullReason: cccTtmNullReason, knowledgeDate, knowledgeDateIsFallback });
+      const cccTtmCalc = calculateCashConversionCycle(inventoryDaysTtmCalc.value, receivablesDaysTtmCalc.value, payablesDaysTtmCalc.value);
+      cashConversionCycleTtm = await writeMetricValue({ ...coordinateFor('cashConversionCycle'), basis: 'TTM', value: cccTtmCalc.value, nullReason: cccTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
     }
   } else if (mainAnchor) {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;

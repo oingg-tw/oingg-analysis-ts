@@ -6,7 +6,8 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
+import { calculateGrossMargin } from './calculations/grossMargin';
+import { calculateOperatingMargin } from './calculations/operatingMargin';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts
@@ -50,15 +51,10 @@ const getMarginInputs = async (key: {
   return null;
 };
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
+// 2026-09-08：這個檔案本身只保留「查詢+編排+寫入」（IO 這一層）——grossMargin/
+// operatingMargin 兩個 metricCode 的實際計算公式已經拆進 calculations/ 底下各自的檔案，
+// 這裡只負責把查回來的原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、決定
+// knowledge_date、呼叫 writeMetricValue。
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -110,11 +106,8 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   const operatingIncome = marginInputs?.operatingIncomeLike ?? null;
   const reportDate = marginInputs?.reportDate ?? null;
 
-  const grossMarginQuarterly = grossProfit !== null && operatingRevenue !== null ? toPct(grossProfit, operatingRevenue) : null;
-  const grossMarginNullReason: MetricNullReason | null = grossMarginQuarterly === null ? determineNullReason(grossProfit, operatingRevenue) : null;
-
-  const operatingMarginQuarterly = operatingIncome !== null && operatingRevenue !== null ? toPct(operatingIncome, operatingRevenue) : null;
-  const operatingMarginNullReason: MetricNullReason | null = operatingMarginQuarterly === null ? determineNullReason(operatingIncome, operatingRevenue) : null;
+  const grossMarginQuarterly = calculateGrossMargin(grossProfit, operatingRevenue);
+  const operatingMarginQuarterly = calculateOperatingMargin(operatingIncome, operatingRevenue);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
@@ -127,12 +120,12 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
     operatingMarginQ = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    grossMarginQ = await writeMetricValue({ ...coordinateFor('grossMargin'), basis: 'Q', value: grossMarginQuarterly, nullReason: grossMarginNullReason, knowledgeDate, knowledgeDateIsFallback });
+    grossMarginQ = await writeMetricValue({ ...coordinateFor('grossMargin'), basis: 'Q', value: grossMarginQuarterly.value, nullReason: grossMarginQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     operatingMarginQ = await writeMetricValue({
       ...coordinateFor('operatingMargin'),
       basis: 'Q',
-      value: operatingMarginQuarterly,
-      nullReason: operatingMarginNullReason,
+      value: operatingMarginQuarterly.value,
+      nullReason: operatingMarginQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
     });
@@ -161,11 +154,8 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
     }
   }
 
-  const grossMarginTtmValue = ttmComplete ? toPct(grossProfitTtmSum, revenueTtmSum) : null;
-  const operatingMarginTtmValue = ttmComplete ? toPct(operatingIncomeTtmSum, revenueTtmSum) : null;
-  const grossMarginTtmNullReason: MetricNullReason | null = grossMarginTtmValue !== null ? null : ttmComplete ? determineNullReason(grossProfitTtmSum, revenueTtmSum) : 'insufficient_history';
-  const operatingMarginTtmNullReason: MetricNullReason | null =
-    operatingMarginTtmValue !== null ? null : ttmComplete ? determineNullReason(operatingIncomeTtmSum, revenueTtmSum) : 'insufficient_history';
+  const grossMarginTtmCalc = ttmComplete ? calculateGrossMargin(grossProfitTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const operatingMarginTtmCalc = ttmComplete ? calculateOperatingMargin(operatingIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
 
   let grossMarginTtm: BasisOutcome;
   let operatingMarginTtm: BasisOutcome;
@@ -183,16 +173,16 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
       grossMarginTtm = await writeMetricValue({
         ...coordinateFor('grossMargin'),
         basis: 'TTM',
-        value: grossMarginTtmValue,
-        nullReason: grossMarginTtmNullReason,
+        value: grossMarginTtmCalc.value,
+        nullReason: grossMarginTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
       operatingMarginTtm = await writeMetricValue({
         ...coordinateFor('operatingMargin'),
         basis: 'TTM',
-        value: operatingMarginTtmValue,
-        nullReason: operatingMarginTtmNullReason,
+        value: operatingMarginTtmCalc.value,
+        nullReason: operatingMarginTtmCalc.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });

@@ -3,8 +3,10 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { calculateBankCarRatio } from './calculations/bankCarRatio';
+import { calculateBankCet1Ratio } from './calculations/bankCet1Ratio';
+import { calculateBankTier1Ratio } from './calculations/bankTier1Ratio';
 
 // 全新的銀行業專屬指標，不是舊架構遷移。2026-09-06 盤點技術債時直接查 mops-ts export DB
 // 驗證過：`bank_capital_adequacy_detail_xbrl` 只覆蓋 6-7 檔銀行/金控股，且只有 Q2/Q4 有
@@ -12,11 +14,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 // bankCet1Ratio/bankTier1Ratio 直接讀 mops-ts 已經算好的比率；bankCarRatio（總資本適足率）
 // 是這批唯一自己做除法的欄位（eligible_capital / risk_weighted_assets），其餘都是 passthrough。
 // 只有 Q 一種 basis，同一次查詢寫三個 metric_code，共用同一組 knowledge_date。
-
-const toRatio = (numerator: bigint | null, denominator: bigint | null): number | null => {
-  if (numerator === null || denominator === null || denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -53,15 +50,9 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
 
   const row = await getBankCapitalAdequacy({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
-  const carRatio = row ? toRatio(row.eligibleCapital, row.riskWeightedAssets) : null;
-  let carNullReason: MetricNullReason | null = null;
-  if (carRatio === null) {
-    if (row?.eligibleCapital == null || row?.riskWeightedAssets == null) carNullReason = 'missing_input';
-    else carNullReason = 'zero_or_negative_denominator';
-  }
-
-  const cet1NullReason: MetricNullReason | null = row?.ratioOrdinaryShareEquityToRwa == null ? 'missing_input' : null;
-  const tier1NullReason: MetricNullReason | null = row?.ratioTierICapitalToRwa == null ? 'missing_input' : null;
+  const carRatioCalc = calculateBankCarRatio(row?.eligibleCapital, row?.riskWeightedAssets);
+  const cet1Calc = calculateBankCet1Ratio(row?.ratioOrdinaryShareEquityToRwa);
+  const tier1Calc = calculateBankTier1Ratio(row?.ratioTierICapitalToRwa);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: row?.reportDate ?? null }]);
   const coordinateBase = { symbol, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -78,8 +69,8 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
       ...coordinateBase,
       metricCode: 'bankCarRatio',
       basis: 'Q',
-      value: carRatio,
-      nullReason: carNullReason,
+      value: carRatioCalc.value,
+      nullReason: carRatioCalc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });
@@ -87,8 +78,8 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
       ...coordinateBase,
       metricCode: 'bankCet1Ratio',
       basis: 'Q',
-      value: row?.ratioOrdinaryShareEquityToRwa ?? null,
-      nullReason: cet1NullReason,
+      value: cet1Calc.value,
+      nullReason: cet1Calc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });
@@ -96,8 +87,8 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: Quarter
       ...coordinateBase,
       metricCode: 'bankTier1Ratio',
       basis: 'Q',
-      value: row?.ratioTierICapitalToRwa ?? null,
-      nullReason: tier1NullReason,
+      value: tier1Calc.value,
+      nullReason: tier1Calc.nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });

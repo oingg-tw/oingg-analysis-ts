@@ -1,7 +1,9 @@
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
+import { calculateExchangePeRatio } from './calculations/exchangePeRatio';
+import { calculateExchangePbRatio } from './calculations/exchangePbRatio';
+import { calculateDividendYield } from './calculations/dividendYield';
 
 // MarketRatios（本益比/股價淨值比/殖利率）遷入 pitMetrics 的方法論決策見
 // metricDefinitionRegistry.ts 頂部說明：直接沿用 TWSE/TPEx 官方每日公布的權威數字
@@ -37,10 +39,6 @@ export interface MarketRatiosPitOutcome {
   dividendYield: DailyOutcome;
 }
 
-// 三個欄位共用同一個判斷：daily_valuation 該欄位本身是 null（例如虧損公司沒有 PER），
-// 一律視為 missing_input——這是外部黑盒數字，沒有分子分母可以判斷是不是「分母為零」。
-const nullReasonFor = (value: number | null): MetricNullReason | null => (value === null ? 'missing_input' : null);
-
 export const computeAndWriteMarketRatiosPit = async (query: MarketRatiosPitQuery): Promise<MarketRatiosPitOutcome> => {
   const { symbol, date, dataType, subsidiaryCompanyId } = query;
 
@@ -72,24 +70,28 @@ export const computeAndWriteMarketRatiosPit = async (query: MarketRatiosPitQuery
     tradeDate,
   });
 
+  const exchangePeRatioCalc = calculateExchangePeRatio(valuation.peRatio);
+  const exchangePbRatioCalc = calculateExchangePbRatio(valuation.pbRatio);
+  const dividendYieldCalc = calculateDividendYield(valuation.dividendYield);
+
   const exchangePeRatio = await writeMetricValue({
     ...coordinateFor('exchangePeRatio'),
-    value: valuation.peRatio,
-    nullReason: nullReasonFor(valuation.peRatio),
+    value: exchangePeRatioCalc.value,
+    nullReason: exchangePeRatioCalc.nullReason,
     knowledgeDate,
     knowledgeDateIsFallback: false,
   });
   const exchangePbRatio = await writeMetricValue({
     ...coordinateFor('exchangePbRatio'),
-    value: valuation.pbRatio,
-    nullReason: nullReasonFor(valuation.pbRatio),
+    value: exchangePbRatioCalc.value,
+    nullReason: exchangePbRatioCalc.nullReason,
     knowledgeDate,
     knowledgeDateIsFallback: false,
   });
   const dividendYield = await writeMetricValue({
     ...coordinateFor('dividendYield'),
-    value: valuation.dividendYield,
-    nullReason: nullReasonFor(valuation.dividendYield),
+    value: dividendYieldCalc.value,
+    nullReason: dividendYieldCalc.nullReason,
     knowledgeDate,
     knowledgeDateIsFallback: false,
   });
