@@ -6,8 +6,8 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import { calculateGrossMargin } from './calculations/grossMargin';
-import { calculateOperatingMargin } from './calculations/operatingMargin';
+import { calculateGrossMargin } from '@/pitMetrics/profitability/grossMargin/calculateGrossMargin';
+import { calculateOperatingMargin } from '@/pitMetrics/profitability/operatingMargin/calculateOperatingMargin';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts

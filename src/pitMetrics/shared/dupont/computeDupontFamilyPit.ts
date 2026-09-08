@@ -6,16 +6,16 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import { pickNetIncome, pickEquity } from './calculations/shared';
-import { calculateNetProfitMargin } from './calculations/netProfitMargin';
-import { calculateAssetTurnover } from './calculations/assetTurnover';
-import { calculateEquityMultiplier } from './calculations/equityMultiplier';
-import { calculateDupontDecomposedRoe } from './calculations/dupontDecomposedRoe';
-import { calculateEbit } from './calculations/ebit';
-import { calculateDupontTaxBurden } from './calculations/dupontTaxBurden';
-import { calculateDupontInterestBurden } from './calculations/dupontInterestBurden';
-import { calculateDupontEbitMargin } from './calculations/dupontEbitMargin';
-import { calculateDupontExtendedRoe } from './calculations/dupontExtendedRoe';
+import { pickNetIncome, pickEquity } from './pickers';
+import { calculateEbit } from './ebit';
+import { calculateNetProfitMargin } from '@/pitMetrics/profitability/netProfitMargin/calculateNetProfitMargin';
+import { calculateAssetTurnover } from '@/pitMetrics/efficiency/assetTurnover/calculateAssetTurnover';
+import { calculateEquityMultiplier } from '@/pitMetrics/resilience/equityMultiplier/calculateEquityMultiplier';
+import { calculateDupontDecomposedRoe } from '@/pitMetrics/profitability/dupontDecomposedRoe/calculateDupontDecomposedRoe';
+import { calculateDupontTaxBurden } from '@/pitMetrics/profitability/dupontTaxBurden/calculateDupontTaxBurden';
+import { calculateDupontInterestBurden } from '@/pitMetrics/profitability/dupontInterestBurden/calculateDupontInterestBurden';
+import { calculateDupontEbitMargin } from '@/pitMetrics/profitability/dupontEbitMargin/calculateDupontEbitMargin';
+import { calculateDupontExtendedRoe } from '@/pitMetrics/profitability/dupontExtendedRoe/calculateDupontExtendedRoe';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts（僅 netProfitMargin 這個因子）、
 // src/domainMetrics/turnoverRatio.ts（僅 assetTurnover 這個因子）、src/domainMetrics/dupont.ts

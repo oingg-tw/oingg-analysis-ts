@@ -4,8 +4,8 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
-import { calculateBankNplRatio } from './calculations/bankNplRatio';
-import { calculateBankNplCoverageRatio } from './calculations/bankNplCoverageRatio';
+import { calculateBankNplRatio } from '@/pitMetrics/resilience/bankNplRatio/calculateBankNplRatio';
+import { calculateBankNplCoverageRatio } from '@/pitMetrics/resilience/bankNplCoverageRatio/calculateBankNplCoverageRatio';
 
 // 全新的銀行業專屬指標，不是舊架構遷移——src/domainMetrics/ 從來沒有銀行業指標的既有檔案。
 // 2026-09-06 盤點技術債時直接查 mops-ts export DB 驗證過：`bank_asset_quality_xbrl` 的

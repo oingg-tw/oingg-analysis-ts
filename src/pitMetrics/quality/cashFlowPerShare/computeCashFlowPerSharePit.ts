@@ -6,9 +6,9 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import { calculateOcfPerShare } from './calculations/ocfPerShare';
-import { calculateFcf } from './calculations/fcf';
-import { calculateFcfPerShare } from './calculations/fcfPerShare';
+import { calculateFcf } from './fcf';
+import { calculateOcfPerShare } from '@/pitMetrics/quality/ocfPerShare/calculateOcfPerShare';
+import { calculateFcfPerShare } from '@/pitMetrics/quality/fcfPerShare/calculateFcfPerShare';
 
 // 這份檔案獨立重新實作 src/domainMetrics/cashFlowPerShare.ts，一次查詢現金流量表 + 股本歷史，
 // 拆成兩個獨立 metric_code（ocfPerShare/fcfPerShare）——跟

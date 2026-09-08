@@ -1,9 +1,9 @@
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER } from '../../metricValueWriter';
-import { calculateExchangePeRatio } from './calculations/exchangePeRatio';
-import { calculateExchangePbRatio } from './calculations/exchangePbRatio';
-import { calculateDividendYield } from './calculations/dividendYield';
+import { calculateExchangePeRatio } from '@/pitMetrics/valuation/exchangePeRatio/calculateExchangePeRatio';
+import { calculateExchangePbRatio } from '@/pitMetrics/valuation/exchangePbRatio/calculateExchangePbRatio';
+import { calculateDividendYield } from '@/pitMetrics/dividend/dividendYield/calculateDividendYield';
 
 // MarketRatios（本益比/股價淨值比/殖利率）遷入 pitMetrics 的方法論決策見
 // metricDefinitionRegistry.ts 頂部說明：直接沿用 TWSE/TPEx 官方每日公布的權威數字

@@ -6,14 +6,14 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import { calculateInventoryTurnover } from './calculations/inventoryTurnover';
-import { calculateReceivablesTurnover } from './calculations/receivablesTurnover';
-import { calculateFixedAssetTurnover } from './calculations/fixedAssetTurnover';
-import { calculatePayablesTurnover } from './calculations/payablesTurnover';
-import { calculateInventoryDays } from './calculations/inventoryDays';
-import { calculateReceivablesDays } from './calculations/receivablesDays';
-import { calculatePayablesDays } from './calculations/payablesDays';
-import { calculateCashConversionCycle } from './calculations/cashConversionCycle';
+import { calculateInventoryTurnover } from '@/pitMetrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
+import { calculateReceivablesTurnover } from '@/pitMetrics/efficiency/receivablesTurnover/calculateReceivablesTurnover';
+import { calculateFixedAssetTurnover } from '@/pitMetrics/efficiency/fixedAssetTurnover/calculateFixedAssetTurnover';
+import { calculatePayablesTurnover } from '@/pitMetrics/efficiency/payablesTurnover/calculatePayablesTurnover';
+import { calculateInventoryDays } from '@/pitMetrics/efficiency/inventoryDays/calculateInventoryDays';
+import { calculateReceivablesDays } from '@/pitMetrics/efficiency/receivablesDays/calculateReceivablesDays';
+import { calculatePayablesDays } from '@/pitMetrics/efficiency/payablesDays/calculatePayablesDays';
+import { calculateCashConversionCycle } from '@/pitMetrics/efficiency/cashConversionCycle/calculateCashConversionCycle';
 
 // 這份檔案獨立重新實作 src/domainMetrics/turnoverRatio.ts 裡「還沒遷移」的欄位——
 // assetTurnover 已經由 src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts 寫入，這裡不重複

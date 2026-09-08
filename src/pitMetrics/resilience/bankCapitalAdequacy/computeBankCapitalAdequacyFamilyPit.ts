@@ -4,9 +4,9 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
-import { calculateBankCarRatio } from './calculations/bankCarRatio';
-import { calculateBankCet1Ratio } from './calculations/bankCet1Ratio';
-import { calculateBankTier1Ratio } from './calculations/bankTier1Ratio';
+import { calculateBankCarRatio } from '@/pitMetrics/resilience/bankCarRatio/calculateBankCarRatio';
+import { calculateBankCet1Ratio } from '@/pitMetrics/resilience/bankCet1Ratio/calculateBankCet1Ratio';
+import { calculateBankTier1Ratio } from '@/pitMetrics/resilience/bankTier1Ratio/calculateBankTier1Ratio';
 
 // 全新的銀行業專屬指標，不是舊架構遷移。2026-09-06 盤點技術債時直接查 mops-ts export DB
 // 驗證過：`bank_capital_adequacy_detail_xbrl` 只覆蓋 6-7 檔銀行/金控股，且只有 Q2/Q4 有
