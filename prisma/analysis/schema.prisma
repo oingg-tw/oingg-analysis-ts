@@ -118,10 +118,14 @@ model MetricDefinition {
   // 成對算一組），非本組的陣列固定是 ['N/A']（sentinel，不是空陣列，跟 MetricValue 那四個
   // 欄位的 sentinel 規則一致）。寫入前用來擋「存量指標被拿去算 TTM」這類錯誤(spec v0.2
   // §5.5)，見 metricValueWriter.ts 的獨立檢查。
-  allowedPeriodTypes       String[] @map("allowed_period_types")
-  allowedLookbackRanges    String[] @map("allowed_lookback_ranges")
-  allowedSamplingIntervals String[] @map("allowed_sampling_intervals")
-  allowedSnapshotCadences  String[] @map("allowed_snapshot_cadences")
+  // @default([]) 對齊 DB 實際狀態（migration 當初用 DEFAULT '{}' 加欄位，見
+  // 20260908120000_split_metric_values_basis_into_four_columns/migration.sql）——
+  // 沒宣告的話 `prisma migrate diff` 會把這個既有 DEFAULT 誤判成 drift，產生
+  // 一條無意義的 DROP DEFAULT（已實測確認過），這裡補上宣告讓兩邊一致。
+  allowedPeriodTypes       String[] @default([]) @map("allowed_period_types")
+  allowedLookbackRanges    String[] @default([]) @map("allowed_lookback_ranges")
+  allowedSamplingIntervals String[] @default([]) @map("allowed_sampling_intervals")
+  allowedSnapshotCadences  String[] @default([]) @map("allowed_snapshot_cadences")
 
   // 暫時性依賴清單，見上方檔頭說明。
   dependsOn String[] @map("depends_on")
@@ -169,6 +173,22 @@ model MetricValue {
   lookbackRange    String @map("lookback_range") // 'N/A' | '1Y' | '2Y' | '5Y'——滾動統計量（Beta）的回溯範圍
   samplingInterval String @map("sampling_interval") // 'N/A' | '1D' | '1W' | '1M'——滾動統計量（Beta）的取樣粒度
   snapshotCadence  String @map("snapshot_cadence") // 'N/A' | 'EOD'——純市場快照（exchangePeRatio 等），沒有聚合也沒有滾動視窗
+
+  // 2026-09-08 補：上面四欄「剛好一組是真實值」這條結構不變量，原本只靠應用層
+  // writeMetricValue() 推導/驗證（看哪個欄位不是 'N/A'）——這個欄位讓它變成顯式值，
+  // 由 writeMetricValue() 從已驗證過的四欄計算後寫入，呼叫端不用知道它存在。
+  // 'PERIOD'（periodType 這組）| 'ROLLING_WINDOW'（lookbackRange+samplingInterval 這組）|
+  // 'SNAPSHOT'（snapshotCadence 這組）。DB 層另外有一條 CHECK 約束（
+  // metric_values_coordinate_kind_check，手寫在 migration.sql 裡，Prisma schema DSL
+  // 這個版本不支援 @@check——npx prisma validate 對 @@check 回 P1012 Attribute not known，
+  // 已經實測確認過）確保 coordinateKind 跟四個 basis 欄位彼此一致，防止有人繞過
+  // writeMetricValue() 直接 insert 出不一致的列。**這條 CHECK 約束不會出現在這份
+  // schema.prisma 裡（DSL 表達不出來），只存在於 migration 歷史——`pnpm
+  // prisma:analysis:migrate`（= `prisma migrate dev`）如果之後真的被執行，會在跟
+  // shadow DB 比對時把它當成「schema.prisma 沒有宣告的物件」而產生 DROP CONSTRAINT，
+  // 千萬不要照著跑；這個專案的 migration 一律用既有的手寫 SQL + `prisma migrate
+  // deploy` 流程（見這個 model 上方幾次改動用的同一套流程），不要用 migrate dev。
+  coordinateKind String @map("coordinate_kind") // 'PERIOD' | 'ROLLING_WINDOW' | 'SNAPSHOT'
 
   // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
   // 分開存——複合唯一鍵必須含這兩欄，否則同一家公司同一季的個體/合併 ROE 會撞在同一個座標。

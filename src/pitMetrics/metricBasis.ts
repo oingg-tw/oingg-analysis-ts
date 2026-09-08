@@ -40,6 +40,16 @@ export type SamplingInterval = z.infer<typeof samplingIntervalSchema>;
 export const snapshotCadenceSchema = z.enum(['N/A', 'EOD']);
 export type SnapshotCadence = z.infer<typeof snapshotCadenceSchema>;
 
+// coordinateKind：2026-09-08 補的顯式 discriminator——「這一列屬於四組座標欄位裡的哪一組」
+// 原本要靠推導（看哪個欄位不是 'N/A'），這個欄位讓它變成一個顯式、可查詢、可加 DB CHECK
+// 約束的值，不用每個消費端各自重寫一次 isRealGroup() 判斷。跟四個 basis 欄位一樣寫進
+// metric_values 的複合唯一鍵沒有意義（已經被那四欄唯一決定），純粹是防禦深度：DB 層的
+// CHECK 約束用它把「periodType 是這組時，另外三欄必須是 N/A」這條結構不變量從應用層
+// （metricValueWriter.ts 的驗證）提升到 schema 層，防止有人繞過 writeMetricValue() 直接
+// insert 出不一致的列。
+export const coordinateKindSchema = z.enum(['PERIOD', 'ROLLING_WINDOW', 'SNAPSHOT']);
+export type CoordinateKind = z.infer<typeof coordinateKindSchema>;
+
 // 只有 value 為 null 時才有意義。
 export const metricNullReasonSchema = z.enum([
   'missing_input',

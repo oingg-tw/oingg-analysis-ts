@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { metricDefinitionRegistry } from './metricDefinitionRegistry';
-import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence, MetricNullReason } from './metricBasis';
+import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence, MetricNullReason, CoordinateKind } from './metricBasis';
 
 // 逐日型指標（Beta/MarketRatios）固定使用的 fiscalQuarter sentinel 值。真實季報型指標只會
 // 用 1~4，不會撞到。詳見 schema.prisma 的 MetricValue model 註解——fiscalQuarter 不再允許
@@ -61,6 +61,9 @@ export const snapshotCadenceGroup = (snapshotCadence: SnapshotCadence): Pick<Met
   snapshotCadence,
 });
 
+const periodTypeIsSet = (periodType: PeriodType): boolean => periodType !== 'N/A';
+const snapshotCadenceIsSet = (snapshotCadence: SnapshotCadence): boolean => snapshotCadence !== 'N/A';
+
 export type MetricValueWriteOutcome =
   | { action: 'inserted' }
   | { action: 'updated_same_knowledge_date' } // 同一天重跑，非新資訊，就地覆蓋而非疊列
@@ -111,6 +114,21 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     };
   }
 
+  // coordinateKind：2026-09-08 補的顯式 discriminator（見 metricBasis.ts 的完整說明）——
+  // 不是呼叫端要提供的欄位，是這裡從已經驗證過的四個 basis 欄位「推導」出來的單一寫入點，
+  // 呼叫端（periodTypeGroup/rollingWindowGroup/snapshotCadenceGroup 三個 helper）完全不用
+  // 知道這個欄位存在。上面的 allowedXxx 檢查已經保證：因為 metricDefinitionRegistry 每個
+  // metricCode 只會有一組 allowedXxx 是真實值清單、其餘固定 ['N/A']，通過驗證代表這筆
+  // 座標剛好落在其中一組——這裡用一個顯式的「剛好一組」檢查當防禦深度，不是重複驗證。
+  const realGroups = [periodTypeIsSet(input.periodType), lookbackIsSet, snapshotCadenceIsSet(input.snapshotCadence)].filter(Boolean).length;
+  if (realGroups !== 1) {
+    return {
+      action: 'rejected',
+      reason: `periodType/lookbackRange+samplingInterval/snapshotCadence 這三組座標欄位應該剛好有一組是真實值，實際偵測到 ${realGroups} 組——這代表 metricDefinitionRegistry 對 metric_code '${input.metricCode}' 的 allowedXxx 宣告本身有問題（同時允許多組或完全沒有允許任何一組）。`,
+    };
+  }
+  const coordinateKind: CoordinateKind = periodTypeIsSet(input.periodType) ? 'PERIOD' : lookbackIsSet ? 'ROLLING_WINDOW' : 'SNAPSHOT';
+
   const coordinateWhere = {
     symbol: input.symbol,
     metricCode: input.metricCode,
@@ -118,6 +136,7 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     lookbackRange: input.lookbackRange,
     samplingInterval: input.samplingInterval,
     snapshotCadence: input.snapshotCadence,
+    coordinateKind,
     fiscalYear: input.fiscalYear,
     fiscalQuarter: input.fiscalQuarter,
     dataType: input.dataType,
