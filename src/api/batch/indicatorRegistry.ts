@@ -6,11 +6,11 @@
 // compute-on-miss 完全不會觸發任何重算。
 //
 // 這裡合併回單一 indicatorJobs 清單，唯一的用途是給
-// src/api/bff/companies/metricsService.ts 的 compute-on-miss 用——那個情境要查任何一支
-// 指標（不分頻率），也是 scripts/batchComputeIndicators.ts（CLI 手動觸發，維持一次跑全部
-// 的行為）用的清單。`macro/equityRiskPremium`（全市場單一值，沒有 symbol）跟
-// `valuation/ranking`（本身是跨公司排行端點）不適用「單一公司」這個模式，兩份 registry 都
-// 沒有列進來。
+// scripts/batchComputeIndicators.ts（CLI 手動觸發，維持一次跑全部的行為）用的清單——
+// 2026-09-08 起 api/bff 的 compute-on-miss 讀取路徑（原 metricsService.ts）已隨
+// filterCatalog/screener 整套機制一起退場，不再有 API 端點消費這份清單。
+// `macro/equityRiskPremium`（全市場單一值，沒有 symbol）跟 `valuation/ranking`（本身是
+// 跨公司排行端點）不適用「單一公司」這個模式，兩份 registry 都沒有列進來。
 export { dailyIndicatorJobs } from './daily/indicatorRegistry';
 export { quarterlyIndicatorJobs } from './quarterly/indicatorRegistry';
 export type { IndicatorJob, IndicatorResult } from './indicatorJob';

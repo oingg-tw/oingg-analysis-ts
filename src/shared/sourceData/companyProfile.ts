@@ -390,7 +390,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyPr
   };
 };
 
-// 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
+// 給 ranking/market 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
 // 實際出現的 symbol，不是全市場，跟 GET /companies 的「一次拿全部自己快取」是不同情境：這裡
 // 是結果已經算好了、對這幾十~兩百檔補顯示名稱，不需要排序全部資料，跟 sortField 排公司名稱
 // 那個會撞到跨資料庫排序限制的情境不一樣。查無資料的 symbol 對應 null，不是整批失敗。
@@ -417,7 +417,7 @@ export const companyNameEntrySchema = z.object({
 export type CompanyNameEntry = z.infer<typeof companyNameEntrySchema>;
 
 // 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
-// 自己快取。現在 screener/ranking 這類多公司陣列結果已經直接帶 companyName（見
+// 自己快取。現在 ranking/market 這類多公司陣列結果已經直接帶 companyName（見
 // getCompanyNamesForSymbols），這支端點是備用管道，不是唯一的補名稱方式。涵蓋上市（TWSE）+
 // 上櫃（TPEx），見兩邊 company_profile 的覆蓋範圍。
 //

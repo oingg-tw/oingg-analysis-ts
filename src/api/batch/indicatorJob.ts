@@ -11,8 +11,8 @@ export interface IndicatorResult {
 }
 
 export interface IndicatorJob {
-  name: string; // 對應 filterCatalog metric key
-  category: string; // 對應 filterCatalog category key，給完整度報告分組用
+  name: string; // pitMetrics metricCode（metricDefinitionRegistry.ts 的 key），completenessCheck.ts 靠這個查 metric_values
+  category: string; // 給完整度報告分組用，不對應任何外部型錄
   getCompanyIds: () => Promise<string[]>;
   run: (symbol: string) => Promise<IndicatorResult>;
 }

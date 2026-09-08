@@ -19,9 +19,6 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
-import { checkFilterCatalogConsistency } from './api/bff/filter/filterCatalogCheck';
-import { validateMetricTableRegistry } from './api/bff/filter/metricTableRegistry';
-import { checkColumnPresetsConsistency } from './api/bff/filter/columnPresets';
 import { loadIndustryCodes } from './shared/sourceData/industryCodes';
 import { loadIndustryClassification } from './shared/sourceData/industryClassification';
 
@@ -65,9 +62,6 @@ const startServer = async () => {
     if (config.isProduction && !config.bffApiKey) {
       throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/api/bff/bffAuth.ts。');
     }
-    checkFilterCatalogConsistency(config.isProduction);
-    validateMetricTableRegistry(config.isProduction);
-    checkColumnPresetsConsistency(config.isProduction);
     await connectAnalysisDb();
     await connectMopsExportDb();
     await connectGovExportDb();

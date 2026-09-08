@@ -7,14 +7,12 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import type { IndicatorJob } from '@/api/batch/indicatorJob';
 
-// 2026-09-08：filterCatalog.csv 最後 6 列（beta/marketRatios）連同 BetaResult/
-// MarketRatiosResult 兩張表一起退場——這代表整個 analysis schema 已經不再有任何
-// 「一指標一張獨立 Result 表、用 symbol 當主鍵」的舊架構 model 存活（唯一倖存的
-// EquityRiskPremiumResult 主鍵是 windowStart/windowEnd，不符合這個形狀）。
-// checkJobCompleteness 因此新增了 pitMetrics 分支（見 completenessCheck.ts 的說明），
-// 這裡改用真實存在的 pitMetrics 銀行監理指標 bankNplRatio 當測試道具——這支測試在驗證
-// checkJobCompleteness 本身的邏輯，不是在驗證任何一支指標的公式，換哪個 metricCode
-// 當範例不重要，只是要是真的能查到寫入紀錄的案例。
+// checkJobCompleteness 現在只走 pitMetrics 的 metric_values 這一條路徑（舊架構「一指標
+// 一張獨立 Result 表」的 model 已經全部退場，連同 filterCatalog/metricTableRegistry 這套
+// 解析機制一起刪除，見 abstract-crafting-journal.md）。這裡用真實存在的 pitMetrics
+// 銀行監理指標 bankNplRatio 當測試道具——這支測試在驗證 checkJobCompleteness 本身的邏輯，
+// 不是在驗證任何一支指標的公式，換哪個 metricCode 當範例不重要，只是要是真的能查到寫入
+// 紀錄的案例。
 
 const bankNplRatioJob: IndicatorJob = {
   name: 'bankNplRatio',
@@ -60,12 +58,12 @@ test('completenessCheck: 時間窗設在寫入之後，應該算不到（驗證�
   assert.equal(result.coverageRatio, 0);
 });
 
-test('completenessCheck: filterCatalog 找不到、也不是已註冊 pitMetrics metricCode 的 metricKey，應該回傳 skipped 而不是 throw', async () => {
+test('completenessCheck: 不是已註冊 pitMetrics metricCode 的 metricKey，應該回傳 skipped 而不是 throw', async () => {
   const bogusJob: IndicatorJob = { ...bankNplRatioJob, name: '__not_a_real_metric_key__' };
 
   const result = await checkJobCompleteness(bogusJob, ['2801'], new Date());
 
-  assert.ok(result.skipped, 'metricKey 解析不出對應資料表時應該回傳 skipped 原因');
+  assert.ok(result.skipped, 'metricKey 不是已註冊的 metricCode 時應該回傳 skipped 原因');
 });
 
 test('completenessCheck: 空的 companyIds 視為完整（沒有攻打對象，無所謂完整度）', async () => {

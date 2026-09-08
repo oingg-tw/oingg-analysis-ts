@@ -51,11 +51,13 @@ generator output 在 `generated/<name>-client/`（已 `.gitignore`，`postinstal
 
 ## 指標架構：兩套並存（strangler pattern 進行中）
 
-1. **既有架構**（37 張「一指標一表」的結果表，見 `prisma/analysis/schema.prisma`）：
-   `src/domainMetrics/*.ts` 每個檔案一支指標，算完 `upsert` 進對應表。對外透過
-   `GET /companies/metrics`（consolidated 讀取優先端點，cache miss 才觸發現算）跟
-   `POST /screener/values`（給定 symbol 清單查值）消費，批次全量重算走
-   `src/api/batch/`（`daily`/`quarterly` 兩種頻率，GCP Cloud Scheduler 觸發）。
+1. **既有架構**（「一指標一表」的結果表）：2026-09-08 已全面退場——`domainMetrics/**`
+   計算檔案、`GET /companies/metrics`（consolidated 讀取優先端點）、`POST /screener/values`
+   （給定 symbol 清單查值）、連同這套機制賴以運作的 `filterCatalog.ts`/
+   `metricTableRegistry.ts` 都已經刪除，不再存在。**這整節（含下面第 2、3 點）的其餘描述
+   還沒有跟著更新，是已知的文件債，先別假設仍然準確。**批次觸發框架
+   （`src/api/batch/`，`daily`/`quarterly` 兩種頻率，GCP Cloud Scheduler 觸發）本身還在，
+   但目前兩份 `indicatorJobs` 登記都是空陣列。
 2. **Point-in-time 架構**（`src/pitMetrics/`，`metric_values`/`metric_definitions`
    通用事實表）：目前只有 ROE 一支指標當 spike 驗證過（`GET /companies/roe-history`），
    核心差異是帶 `knowledge_date`（該值最早可被市場知道的日期）版本化，支援之後的

@@ -66,14 +66,16 @@ analysis-ts 實際程式碼現況的對應關係，區分「已經對齊」「�
 analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的識別碼系統，彼此沒有正式的程式碼
 層級對照表（各自獨立演進，只是碰巧常常同名）：
 
-1. **`filterCatalog.ts` 的 `metricKey.fieldKey`**（camelCase）——**2026-09-07 使用者要求
-   把「每指標一表」架構裡的 34 張表整批 DROP**（這批全部已經有 pitMetrics 版本可查），
-   目前只剩 3 張沒有 pitMetrics 替代版本的表（`BetaResult`／`MarketRatiosResult`／
-   `EquityRiskPremiumResult`，後者其實不算這套「指標」的一員，是獨立的總經資料）。
-   `filterCatalog.csv` 現在只剩 `portfolio`（beta）跟 `valuation` 的 `per`/`pbr`/
-   `dividendYield`（marketRatios）共 6 列，`GET /companies/metrics`、
-   `POST /screener/values` 這套定址系統本身還在，只是背後的表已經大幅縮減，不要再假設
-   這套系統涵蓋 45（或 37）支指標。
+1. ~~`filterCatalog.ts` 的 `metricKey.fieldKey`~~（camelCase）——**2026-09-08 整套機制
+   已經完全退場**：「每指標一表」架構的最後 3 張表（`BetaResult`／`MarketRatiosResult`／
+   `EquityRiskPremiumResult`）已經 DROP TABLE（`EquityRiskPremiumResult` 其實不算這套
+   「指標」的一員，是獨立的總經資料，但也已刪除），`filterCatalog.ts`/`filterCatalog.csv`/
+   `metricTableRegistry.ts`/`columnPresets.ts`/`GET /companies/metrics`（compute-on-miss）/
+   `POST /screener/values`/整個 `GET /screener` 系列全部刪除，不再存在。`GET /filters`
+   現在改成直接掃描 `src/pitMetrics/` 資料夾結構產生（見
+   `src/api/bff/filter/metricFolderCatalog.ts`），回應形狀也變了（只有
+   `categoryKey`/`metricCode`/`allowedBases`，沒有這套系統原本的 `metricKey.fieldKey`
+   camelCase 識別碼、也沒有使用者可讀的 name/description/unit 文案）。
 2. **`pitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
    架構（`metric_values`/`metric_definitions`，見 ROE spike）用這套，例如
    `metric_code='roe'`、`basis='Q'`。

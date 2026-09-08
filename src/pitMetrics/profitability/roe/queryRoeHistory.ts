@@ -28,8 +28,8 @@ export type RoeHistoryEntry = z.infer<typeof roeHistoryEntrySchema>;
 // scripts/backfillRoePit.ts：2330/2887/2317，113Q3~115Q2），大部分公司查詢會得到空陣列，
 // 這是預期行為不是錯誤；全市場/多年 backfill 是下一步，這支先把讀取路徑打通。
 //
-// dataType/subsidiaryCompanyId 比照 src/api/bff/screener/queryBuilder.ts 的既有慣例，
-// 固定用合併報表('2')、母公司本身('')，不開放使用者選——BFF 面向的端點目前一律不曝露
+// dataType/subsidiaryCompanyId 固定用合併報表('2')、母公司本身('')，不開放使用者選——
+// BFF 面向的端點目前一律不曝露
 // 這兩個內部細節維度。
 export const getRoeHistory = (symbol: string, basis: MetricBasis, limit: number): Promise<MetricHistoryResult> =>
   getMetricHistory(symbol, 'roe', basis, '2', '', limit);

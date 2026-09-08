@@ -1,10 +1,8 @@
 import { Router } from 'ultimate-express';
-import { registerCompanyRoute } from '@/shared/registerCompanyRoute';
 import {
   getCompanies,
   getCompanyProfile,
   getCompanyCapitalStockHistory,
-  getCompanyMetrics,
   getCompanyRoeHistory,
   getCompanyRoaHistory,
   getCompanyDupontHistory,
@@ -28,6 +26,5 @@ router.get('/companies/metrics-history', getCompanyMetricsHistory);
 router.get('/companies/monthly-revenue-history', getCompanyMonthlyRevenueHistory);
 router.get('/companies/financial-statement', getCompanyFinancialStatement);
 router.get('/companies/peer-group', getCompanyPeerGroup);
-registerCompanyRoute(router, '/companies/metrics', getCompanyMetrics);
 
 export default router;

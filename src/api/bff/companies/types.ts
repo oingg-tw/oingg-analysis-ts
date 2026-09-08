@@ -58,24 +58,6 @@ export const companyProfileDetailSchema = z.object({
 });
 export type CompanyProfileDetail = z.infer<typeof companyProfileDetailSchema>;
 
-// 2026-09-04 新增——api/bff「讀取優先」consolidated 查詢 API 的回應形狀。
-// source 區分「本來就有快取」跟「這次請求觸發現算補上」，方便驗證 compute-on-miss
-// 是否真的有作用，也對之後除錯有幫助。
-export const companyMetricValueSchema = z.object({
-  value: z.number().nullable(),
-  asOfDate: z.string().nullable(),
-  source: z.enum(['cache', 'computed', 'unavailable']).meta({
-    description: 'cache=已有快取直接回傳；computed=查無快取，這次請求觸發現算並寫回；unavailable=現算後仍然沒有資料',
-  }),
-});
-export type CompanyMetricValue = z.infer<typeof companyMetricValueSchema>;
-
-export const companyMetricsResultSchema = z.object({
-  symbol: z.string(),
-  values: z.record(z.string(), companyMetricValueSchema).meta({ description: 'key 是請求時的 "metricKey.fieldKey"，每個要求的 field 都保證出現' }),
-});
-export type CompanyMetricsResult = z.infer<typeof companyMetricsResultSchema>;
-
 // 2026-09-01 應 bff-ts 要求新增的 GET /companies 兩種回應形狀（依 countOnly 決定回哪一種）。
 export const companiesListResultSchema = z.object({
   count: z.number().meta({ description: '全部公司總筆數（不受 limit/offset 影響）' }),
@@ -103,7 +85,7 @@ export const companyPeerGroupResultSchema = z.object({
   industryLevel: z.enum(['subclass', 'class', 'group', 'division']).nullable().meta({ description: '這次比較實際使用的分類層級（子類/細類/小類/中類），由動態回退演算法決定' }),
   industryCode: z.string().nullable(),
   industryName: z.string().nullable(),
-  peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
+  peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請對每個 symbol 另外呼叫 GET /companies/metric-history' }),
   warnings: z.array(z.string()),
 });
 export type CompanyPeerGroupResult = z.infer<typeof companyPeerGroupResultSchema>;
