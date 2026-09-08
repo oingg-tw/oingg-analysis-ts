@@ -22,20 +22,21 @@ export interface MetricDefinitionSpec {
 // src/adapters/swagger/registry.ts 已經有一個完全不同語意的 OpenAPIRegistry 實例叫這個名字。
 //
 // 2026-09-08 MarketRatios（src/domainMetrics/marketRatios.ts 的 per/pbr/dividendYield）
-// 遷入 pitMetrics 方法論決策（尚未實作，這裡只記錄決定，不是待辦清單）：維持現行的
-// TWSE/TPEx 官方每日公布數字 passthrough，不自己重算——這三個數字是交易所公開的權威
-// 市場觀察值（跟 stockPrice 同類，是原始市場事實，不是從財報衍生出來的比率），跟已存在
-// 的 pitMetrics `peRatio`/`pbRatio`（自己拿 XBRL 算 EPS/BVPS、只在季報知識時點更新一次）
-// 是完全不同用途、刻意並存的兩組數字，不合併、不互相取代。dividendYield 沒有自算對應
-// 版本可比較，直接沿用交易所數字最單純、也最貼近使用者查詢「殖利率」時的預期（跟大盤/
-// 看盤軟體顯示的數字一致）。
-// 規劃中的 metricCode 命名（避開跟既有 peRatio/pbRatio 撞名）：`exchangePeRatio`、
+// 遷入 pitMetrics：維持現行的 TWSE/TPEx 官方每日公布數字 passthrough，不自己重算——
+// 這三個數字是交易所公開的權威市場觀察值（跟 stockPrice 同類，是原始市場事實，不是從
+// 財報衍生出來的比率），跟已存在的 pitMetrics `peRatio`/`pbRatio`（自己拿 XBRL 算
+// EPS/BVPS、只在季報知識時點更新一次）是完全不同用途、刻意並存的兩組數字，不合併、
+// 不互相取代。dividendYield 沒有自算對應版本可比較，直接沿用交易所數字最單純、也最
+// 貼近使用者查詢「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。
+// metricCode 命名（避開跟既有 peRatio/pbRatio 撞名）：`exchangePeRatio`、
 // `exchangePbRatio`、`dividendYield`（無撞名問題），三者都用 `DAILY` 這個 basis 值
 // （見 metricBasis.ts 該值的說明）、`fiscalQuarter=DAILY_CADENCE_FISCAL_QUARTER`
 // sentinel（見 metricValueWriter.ts）、knowledgeDate 用 resolveDailyCadenceKnowledgeDate
-// 算（見 knowledgeDate.ts）——這三支基礎設施都已經在這批 Beta/MarketRatios 遷移前提
-// 工作中準備好，真的要動手寫 computeExchangePeRatioPit.ts 等檔案時可以直接用。全市場
-// 逐日回填的批次/排程基礎設施是另一個獨立、尚未開始的前提條件，不在這次決策範圍內。
+// 算（見 knowledgeDate.ts）。實際計算檔案是
+// `src/pitMetrics/shared/marketRatios/computeMarketRatiosPit.ts`（一次查詢
+// getDailyValuationAsOf、寫出三個 metricCode，放 shared/ 是因為橫跨 dividend/valuation
+// 兩個因子分類）。全市場逐日回填的批次/排程基礎設施是另一個獨立、尚未開始的前提條件，
+// 不在這批範圍內——這批只確保單一 symbol/date 呼叫時計算跟寫入邏輯是對的。
 export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roe: {
     metricCode: 'roe',
@@ -769,6 +770,42 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote: '第一類資本比率（Tier1），直接讀已經算好的 ratio_tier_i_capital_to_rwa，跟 bankCarRatio/bankCet1Ratio 共用同一次查詢/同一組 knowledge_date，覆蓋率/頻率限制同 bankCarRatio。',
     allowedBases: ['Q'],
     dependsOn: ['ratioTierICapitalToRwa'],
+    currentFormulaVersion: 1,
+  },
+  // MarketRatios 遷入 pitMetrics（見本檔案頂部的方法論說明）：直接沿用 TWSE/TPEx 官方
+  // 每日公布數字 passthrough，不自己重算。三支都是 getDailyValuationAsOf 一次查詢寫出來
+  // 的（src/pitMetrics/shared/marketRatios/computeMarketRatiosPit.ts），basis 固定
+  // 'DAILY'，dependsOn 填來源表欄位名稱（daily_valuation 的欄位），不是財報 account_code
+  // ——這是本 registry 第一批「依賴市場資料而非財報資料」的 metricCode。
+  exchangePeRatio: {
+    metricCode: 'exchangePeRatio',
+    formulaNote:
+      'TWSE/TPEx 官方每日公布的本益比，直接 passthrough export.daily_valuation.pe_ratio，' +
+      '本服務不自己重算，不知道交易所用的 EPS 是單季/TTM/年度哪種口徑——跟自己算的' +
+      'pitMetrics peRatio（XBRL EPS TTM、季報知識時點更新）是不同用途、刻意並存的兩組數字，' +
+      '不要混用或互相驗證。虧損等無法計算 PER 的情況為 null（missing_input）。',
+    allowedBases: ['DAILY'],
+    dependsOn: ['daily_valuation.pe_ratio'],
+    currentFormulaVersion: 1,
+  },
+  exchangePbRatio: {
+    metricCode: 'exchangePbRatio',
+    formulaNote:
+      'TWSE/TPEx 官方每日公布的股價淨值比，直接 passthrough export.daily_valuation.pb_ratio，' +
+      '本服務不自己重算——跟自己算的 pitMetrics pbRatio（XBRL BVPS、季報知識時點更新）是' +
+      '不同用途、刻意並存的兩組數字，不要混用或互相驗證。',
+    allowedBases: ['DAILY'],
+    dependsOn: ['daily_valuation.pb_ratio'],
+    currentFormulaVersion: 1,
+  },
+  dividendYield: {
+    metricCode: 'dividendYield',
+    formulaNote:
+      'TWSE/TPEx 官方每日公布的殖利率，直接 passthrough export.daily_valuation.dividend_yield，' +
+      '本服務不自己重算——沒有自算對應版本可比較，直接沿用交易所數字最貼近使用者查詢' +
+      '「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。',
+    allowedBases: ['DAILY'],
+    dependsOn: ['daily_valuation.dividend_yield'],
     currentFormulaVersion: 1,
   },
 };
