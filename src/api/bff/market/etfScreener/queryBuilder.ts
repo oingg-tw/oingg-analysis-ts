@@ -1,5 +1,5 @@
 import { Prisma } from '#generated/sitca-export-client';
-import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
+import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './fieldRegistry';
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
 // （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
@@ -99,14 +99,35 @@ const buildExpensePivotJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   return { cte, join };
 };
 
+// 費用率細項拆分（經理費/保管費/保證費/其他/手續費/交易稅/ETF買賣手續費）——跟
+// buildExpenseJoin 的「全體套同一個 calendar year - 1 基準年」不同，這裡是「該基金
+// 自己最新一筆完整年度」：DISTINCT ON (fund_tax_id) + ORDER BY year DESC 直接取每個
+// fund_tax_id 在 fund_expense_ratio_annual_full_year（已經濾掉不完整期間）裡最新的
+// 一列，不用手動判斷「今年還沒過完」，因為這張 view 本來就已經濾掉不完整年度。
+const buildExpenseLatestFullYearJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
+  const cte = Prisma.sql`
+    expense_latest AS (
+      SELECT DISTINCT ON (fund_tax_id)
+        fund_tax_id, management_fee_rate, custodian_fee_rate, guarantee_fee_rate,
+        other_fee_rate, commission_rate, transaction_tax_rate, etf_trading_fee_rate
+      FROM "export"."fund_expense_ratio_annual_full_year"
+      ORDER BY fund_tax_id, year DESC
+    )
+  `;
+  const join = Prisma.sql`LEFT JOIN expense_latest ON expense_latest.fund_tax_id = base.fund_tax_id`;
+  return { cte, join };
+};
+
 const q = (identifier: string): Prisma.Sql => Prisma.raw(`"${identifier}"`);
 
 // expenseRatio 的值來自 expense CTE（別名 total_rate）；expenseRatio<year> 系列來自
-// expense_pivot CTE（見 buildExpensePivotJoin）；其他數字/類別欄位都在 base 裡——跟
+// expense_pivot CTE（見 buildExpensePivotJoin）；費用率細項拆分來自 expense_latest CTE
+// （見 buildExpenseLatestFullYearJoin）；其他數字/類別/日期欄位都在 base 裡——跟
 // columnSelectSql 用同一個判斷依據，兩處都要參照這裡才不會漏掉、各自猜錯來源表。
-const fieldSourceSql = (definition: NumericFieldDefinition | CategoricalFieldDefinition): Prisma.Sql => {
+const fieldSourceSql = (definition: NumericFieldDefinition | CategoricalFieldDefinition | DateFieldDefinition): Prisma.Sql => {
   if (definition.kind === 'numeric' && definition.needsExpenseJoin) return Prisma.raw('expense.total_rate');
   if (definition.kind === 'numeric' && definition.needsExpensePivotJoin) return Prisma.sql`expense_pivot.${q(definition.sqlColumn)}`;
+  if (definition.kind === 'numeric' && definition.needsExpenseLatestFullYearJoin) return Prisma.sql`expense_latest.${q(definition.sqlColumn)}`;
   return Prisma.sql`base.${q(definition.sqlColumn)}`;
 };
 
@@ -124,7 +145,18 @@ export interface CategoricalFilterCondition {
   values: string[];
 }
 
-export type FilterCondition = NumericFilterCondition | CategoricalFilterCondition;
+// 日期欄位：跟數字欄位同一種 min/max 範圍語意（exclude 邏輯也相同），只是比較值是日期
+// 字串（'YYYY-MM-DD'）不是數字，且一律用 base 裡的欄位（目前只有 establishedDate，
+// 沒有需要額外 JOIN 的日期欄位）。
+export interface DateFilterCondition {
+  kind: 'date';
+  definition: DateFieldDefinition;
+  min: string | null;
+  max: string | null;
+  exclude: boolean;
+}
+
+export type FilterCondition = NumericFilterCondition | CategoricalFilterCondition | DateFilterCondition;
 
 // 數字欄位：exclude=false 保留落在 [min,max] 內的值（null 一律排除）；exclude=true 保留落在
 // 範圍外的值（min/max 都沒給時「外面」沒有邊界，篩掉全部）——跟股票 screener 同一套語意。
@@ -140,6 +172,24 @@ const buildNumericCondition = (condition: NumericFilterCondition): Prisma.Sql =>
   const bounds: Prisma.Sql[] = [];
   if (condition.min !== null) bounds.push(Prisma.sql`${col} < ${condition.min}`);
   if (condition.max !== null) bounds.push(Prisma.sql`${col} > ${condition.max}`);
+  return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
+};
+
+// 日期欄位：跟 buildNumericCondition 同一套 exclude 語意，比較值換成日期字串，Postgres
+// 會自動把 'YYYY-MM-DD' 字串轉成 date 型別比較，不是字串字典序比較（雖然對 ISO 格式
+// 兩者結果一致，但語意上是日期比較）。
+const buildDateCondition = (condition: DateFilterCondition): Prisma.Sql => {
+  const col = fieldSourceSql(condition.definition);
+  if (!condition.exclude) {
+    const parts: Prisma.Sql[] = [Prisma.sql`${col} IS NOT NULL`];
+    if (condition.min !== null) parts.push(Prisma.sql`${col} >= ${condition.min}::date`);
+    if (condition.max !== null) parts.push(Prisma.sql`${col} <= ${condition.max}::date`);
+    return Prisma.sql`(${Prisma.join(parts, ' AND ')})`;
+  }
+  if (condition.min === null && condition.max === null) return Prisma.sql`FALSE`;
+  const bounds: Prisma.Sql[] = [];
+  if (condition.min !== null) bounds.push(Prisma.sql`${col} < ${condition.min}::date`);
+  if (condition.max !== null) bounds.push(Prisma.sql`${col} > ${condition.max}::date`);
   return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
 };
 
@@ -159,7 +209,7 @@ const buildCategoricalCondition = (condition: CategoricalFilterCondition): Prism
 
 export interface ColumnRef {
   field: string;
-  definition: NumericFieldDefinition | CategoricalFieldDefinition;
+  definition: NumericFieldDefinition | CategoricalFieldDefinition | DateFieldDefinition;
 }
 
 export interface SortSpec {
@@ -183,18 +233,23 @@ export const buildEtfScreenerSql = (
     filters.some((f) => f.kind === 'numeric' && f.definition.needsExpensePivotJoin) ||
     columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsExpensePivotJoin) ||
     (sortDefinition?.kind === 'numeric' && sortDefinition.needsExpensePivotJoin === true);
+  const needsExpenseLatestFullYear =
+    filters.some((f) => f.kind === 'numeric' && f.definition.needsExpenseLatestFullYearJoin) ||
+    columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsExpenseLatestFullYearJoin) ||
+    (sortDefinition?.kind === 'numeric' && sortDefinition.needsExpenseLatestFullYearJoin === true);
 
   const baseCte = buildBaseCte(yearMonth);
   const expense = needsExpense ? buildExpenseJoin() : null;
   const expensePivot = needsExpensePivot ? buildExpensePivotJoin() : null;
-  const ctes = [baseCte, ...(expense ? [expense.cte] : []), ...(expensePivot ? [expensePivot.cte] : [])];
-  const joinList = [...(expense ? [expense.join] : []), ...(expensePivot ? [expensePivot.join] : [])];
+  const expenseLatest = needsExpenseLatestFullYear ? buildExpenseLatestFullYearJoin() : null;
+  const ctes = [baseCte, ...(expense ? [expense.cte] : []), ...(expensePivot ? [expensePivot.cte] : []), ...(expenseLatest ? [expenseLatest.cte] : [])];
+  const joinList = [...(expense ? [expense.join] : []), ...(expensePivot ? [expensePivot.join] : []), ...(expenseLatest ? [expenseLatest.join] : [])];
   const fromSql = joinList.length > 0 ? Prisma.sql`FROM base ${Prisma.join(joinList, ' ')}` : Prisma.sql`FROM base`;
 
   const selectCols = columns.map(columnSelectSql);
   const selectList = [Prisma.sql`base.symbol AS symbol`, Prisma.sql`base.fund_name AS "fundName"`, Prisma.sql`base.short_name AS "shortName"`, Prisma.sql`base.company_name AS "companyName"`, Prisma.sql`base.category AS category`, ...selectCols, Prisma.sql`COUNT(*) OVER() AS total_count`];
 
-  const whereConditions = filters.map((f) => (f.kind === 'numeric' ? buildNumericCondition(f) : buildCategoricalCondition(f)));
+  const whereConditions = filters.map((f) => (f.kind === 'numeric' ? buildNumericCondition(f) : f.kind === 'date' ? buildDateCondition(f) : buildCategoricalCondition(f)));
   const whereSql = whereConditions.length > 0 ? Prisma.join(whereConditions, ' AND ') : Prisma.sql`TRUE`;
 
   const offset = (page - 1) * pageSize;

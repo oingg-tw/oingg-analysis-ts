@@ -1,5 +1,5 @@
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
-import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, resolveEtfField, type NumericFieldDefinition, type CategoricalFieldDefinition } from './fieldRegistry';
+import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, DATE_FIELDS, resolveEtfField, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './fieldRegistry';
 import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from './queryBuilder';
 import type { EtfFilterInput, EtfColumnInput, EtfScreenerResponse, EtfScreenerRow, EtfFilterCatalogResponse, EtfFilterFieldCatalogEntry } from './types';
 
@@ -21,10 +21,17 @@ const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
   }
 
   if (definition.kind === 'numeric') {
-    if (!('min' in input) || !('max' in input)) {
-      throw new EtfScreenerValidationError(`"${input.field}" 是數字欄位，filter 要給 min/max，不是 values。`);
+    if (!('min' in input) || !('max' in input) || typeof input.min === 'string' || typeof input.max === 'string') {
+      throw new EtfScreenerValidationError(`"${input.field}" 是數字欄位，filter 要給數字 min/max，不是 values 或日期字串。`);
     }
     return { kind: 'numeric', definition, min: input.min, max: input.max, exclude: input.exclude ?? false };
+  }
+
+  if (definition.kind === 'date') {
+    if (!('min' in input) || !('max' in input) || typeof input.min === 'number' || typeof input.max === 'number') {
+      throw new EtfScreenerValidationError(`"${input.field}" 是日期欄位，filter 要給 'YYYY-MM-DD' 字串 min/max，不是 values 或數字。`);
+    }
+    return { kind: 'date', definition, min: input.min, max: input.max, exclude: input.exclude ?? false };
   }
 
   if (!('values' in input) || !Array.isArray(input.values)) {
@@ -61,9 +68,10 @@ const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | 
   return { field: sortField, order: sortOrder };
 };
 
-const parseValue = (raw: unknown, definition: NumericFieldDefinition | CategoricalFieldDefinition): number | string | boolean | null => {
+const parseValue = (raw: unknown, definition: NumericFieldDefinition | CategoricalFieldDefinition | DateFieldDefinition): number | string | boolean | null => {
   if (raw === null || raw === undefined) return null;
   if (definition.kind === 'numeric') return Number(raw);
+  if (definition.kind === 'date') return raw instanceof Date ? raw.toISOString().slice(0, 10) : String(raw);
   if (definition.isBoolean) return Boolean(raw);
   return String(raw);
 };
@@ -145,6 +153,10 @@ const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
 // 改程式碼）。
 export const getEtfFilterCatalog = async (): Promise<EtfFilterCatalogResponse> => {
   const fields: EtfFilterFieldCatalogEntry[] = Object.values(NUMERIC_FIELDS).map((def) => ({ field: def.field, label: def.label, kind: 'numeric' as const }));
+
+  for (const def of Object.values(DATE_FIELDS)) {
+    fields.push({ field: def.field, label: def.label, kind: 'date' });
+  }
 
   for (const def of Object.values(CATEGORICAL_FIELDS)) {
     if (def.staticValues) {

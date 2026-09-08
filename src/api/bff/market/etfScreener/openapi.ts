@@ -8,7 +8,8 @@ export const registerEtfScreenerOpenApi = (): void => {
     path: '/etf-screener/filters',
     summary: 'ETF screener 可篩選/顯示欄位目錄',
     description:
-      '給前端動態畫篩選 UI 用，不用寫死欄位清單。kind: "numeric" 的欄位畫成最小值~最大值區間輸入；kind: "categorical" 的欄位畫成勾選清單，' +
+      '給前端動態畫篩選 UI 用，不用寫死欄位清單。kind: "numeric" 的欄位畫成最小值~最大值區間輸入；kind: "date"（2026-09-08 新增，' +
+      '目前只有 establishedDate）畫成日期範圍輸入，min/max 是 "YYYY-MM-DD" 字串；kind: "categorical" 的欄位畫成勾選清單，' +
       '選項直接來自 values——market/isActive/belowStatutoryThreshold 選項固定已知，assetClass/distributionFrequency 是現查資料庫的 distinct 值，' +
       '之後 sitca-ts 分類異動會直接反映在這支端點，不用改程式碼。',
     tags: ['Market'],
@@ -34,7 +35,15 @@ export const registerEtfScreenerOpenApi = (): void => {
       '是分年度總費用率，給前端橫向比較歷年費用率變化用——資料源跟 expenseRatio 不同：這裡用 sitca-ts 已經濾掉' +
       '不完整期間資料的 fund_expense_ratio_annual_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio' +
       '單純套「calendar year - 1」精確；某年份沒有值（基金那年還沒成立、或該年資料不完整）該年欄位是 null，' +
-      '不影響其他年份。sortField 不給就照 symbol 排序' +
+      '不影響其他年份。' +
+      'establishedDate（2026-09-08 新增）是日期欄位，filter 用 {field, min, max, exclude?}，min/max 是 "YYYY-MM-DD" ' +
+      '字串（跟數字欄位同一套 exclude 語意）。' +
+      'managementFeeRate/custodianFeeRate/guaranteeFeeRate/otherFeeRate/commissionRate/transactionTaxRate/' +
+      'etfTradingFeeRate（2026-09-08 新增）是費用率細項拆分，只取「該基金自己最新一筆完整年度」（跟 expenseRatio 同一種' +
+      '「目前」語意，不是分年度系列），資料源是 fund_expense_ratio_annual_full_year，用該基金最新一筆完整年度資料，' +
+      '不是全體套同一個基準年——所以不同基金即使欄位都有值，對應的年度可能不一樣，這是刻意的設計（比全體套同一個基準年' +
+      '精確，代價是欄位本身不標註是哪一年，需要的話搭配 expenseRatio2001~2026 的分年度序列自己比對）。' +
+      'sortField 不給就照 symbol 排序' +
       '（保證分頁穩定）；要排別的欄位，那個欄位要先出現在 columns 裡。',
     tags: ['Market'],
     request: { body: { content: { 'application/json': { schema: postEtfScreenerBodySchema } } } },

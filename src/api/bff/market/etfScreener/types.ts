@@ -14,7 +14,17 @@ export const etfCategoricalFilterInputSchema = z.object({
 });
 export type EtfCategoricalFilterInput = z.infer<typeof etfCategoricalFilterInputSchema>;
 
-export const etfFilterInputSchema = z.union([etfNumericFilterInputSchema, etfCategoricalFilterInputSchema]);
+// 日期欄位（目前只有 establishedDate）——跟數字欄位同一種 min/max/exclude 形狀，只是
+// min/max 是 'YYYY-MM-DD' 字串不是數字，zod union 靠這個型別差異區分跟 numeric 的請求。
+export const etfDateFilterInputSchema = z.object({
+  field: z.string(),
+  min: z.string().nullable(),
+  max: z.string().nullable(),
+  exclude: z.boolean().optional(),
+});
+export type EtfDateFilterInput = z.infer<typeof etfDateFilterInputSchema>;
+
+export const etfFilterInputSchema = z.union([etfNumericFilterInputSchema, etfDateFilterInputSchema, etfCategoricalFilterInputSchema]);
 export type EtfFilterInput = z.infer<typeof etfFilterInputSchema>;
 
 export const etfColumnInputSchema = z.object({
@@ -54,7 +64,7 @@ export type EtfScreenerResponse = z.infer<typeof etfScreenerResponseSchema>;
 export const etfFilterFieldCatalogEntrySchema = z.object({
   field: z.string(),
   label: z.string(),
-  kind: z.enum(['numeric', 'categorical']),
+  kind: z.enum(['numeric', 'categorical', 'date']),
   values: z.array(z.string()).optional().meta({ description: '只有 categorical 欄位才有' }),
 });
 export type EtfFilterFieldCatalogEntry = z.infer<typeof etfFilterFieldCatalogEntrySchema>;

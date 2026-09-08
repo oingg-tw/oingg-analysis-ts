@@ -9,15 +9,16 @@
 // 原本也是這樣猜的，2026-09-04 起 sitca-ts 開了權威欄位 is_actively_managed，直接讀那個，
 // 不用再猜，見 queryBuilder.ts 的說明。
 
-export type EtfFieldKind = 'numeric' | 'categorical';
+export type EtfFieldKind = 'numeric' | 'categorical' | 'date';
 
 export interface NumericFieldDefinition {
   kind: 'numeric';
   field: string;
   label: string;
-  sqlColumn: string; // base（或 expense/expensePivot）查詢裡的欄位別名
+  sqlColumn: string; // base（或 expense/expensePivot/expenseLatestFullYear）查詢裡的欄位別名
   needsExpenseJoin?: boolean; // 舊：單一「最新完整年度」費用率，見 expenseRatio
-  needsExpensePivotJoin?: boolean; // 新：逐年費用率 pivot，見下方 expenseRatio<year> 系列
+  needsExpensePivotJoin?: boolean; // 逐年費用率 pivot，見下方 expenseRatio<year> 系列
+  needsExpenseLatestFullYearJoin?: boolean; // 最新完整年度的費用率細項拆分，見下方經理費等欄位
 }
 
 export interface CategoricalFieldDefinition {
@@ -29,7 +30,17 @@ export interface CategoricalFieldDefinition {
   isBoolean?: boolean; // 底層是 boolean 欄位（isActive/belowStatutoryThreshold）——filter values 的 'true'/'false' 字串要轉真正的布林值再比對，不是文字欄位直接比對字串
 }
 
-export type EtfFieldDefinition = NumericFieldDefinition | CategoricalFieldDefinition;
+// 日期欄位（目前只有 establishedDate）——跟數字欄位一樣走 min/max 範圍篩選，但值是
+// 'YYYY-MM-DD' 字串不是數字，SQL 比較用日期型別比較，不是字串字典序（剛好兩者對 ISO
+// 格式的日期字串結果一致，但語意上仍是日期比較，獨立成一個 kind 避免跟數字欄位混淆）。
+export interface DateFieldDefinition {
+  kind: 'date';
+  field: string;
+  label: string;
+  sqlColumn: string;
+}
+
+export type EtfFieldDefinition = NumericFieldDefinition | CategoricalFieldDefinition | DateFieldDefinition;
 
 export const NUMERIC_FIELDS: Record<string, NumericFieldDefinition> = {
   aum: { kind: 'numeric', field: 'aum', label: '規模（新台幣）', sqlColumn: 'aum' },
@@ -72,6 +83,30 @@ for (let year = EXPENSE_RATIO_FULL_YEAR_RANGE.start; year <= EXPENSE_RATIO_FULL_
   };
 }
 
+// 2026-09-08 新增：成立日、費用率細項拆分（sitca 建議的 ETF 欄位分類「身分/分類」「成本」
+// 兩組，使用者確認要做的部分）。
+export const DATE_FIELDS: Record<string, DateFieldDefinition> = {
+  // established_date 本來就在 base CTE 裡（給費用率的完整年度判斷用，見 queryBuilder.ts
+  // 的 buildExpenseJoin），但沒有曝露成可篩選/顯示的欄位——現在補上。
+  establishedDate: { kind: 'date', field: 'establishedDate', label: '成立日', sqlColumn: 'established_date' },
+};
+
+// 費用率細項拆分——只用「最新一個完整年度」（跟 expenseRatio 同一種「目前」語意，不是
+// 分年度系列），但資料源改用 export.fund_expense_ratio_annual_full_year（已經濾掉
+// is_partial_year=true 的不完整期間資料），不沿用 expenseRatio 舊表 + 手動猜
+// 「calendar year - 1」那套——這是本檔案第一次用「該基金自己最新一筆完整年度」而不是
+// 「全體套同一個基準年」，見 queryBuilder.ts 的 buildExpenseLatestFullYearJoin。
+export const NUMERIC_FIELDS_FEE_BREAKDOWN: Record<string, NumericFieldDefinition> = {
+  managementFeeRate: { kind: 'numeric', field: 'managementFeeRate', label: '經理費率（最新完整年度）', sqlColumn: 'management_fee_rate', needsExpenseLatestFullYearJoin: true },
+  custodianFeeRate: { kind: 'numeric', field: 'custodianFeeRate', label: '保管費率（最新完整年度）', sqlColumn: 'custodian_fee_rate', needsExpenseLatestFullYearJoin: true },
+  guaranteeFeeRate: { kind: 'numeric', field: 'guaranteeFeeRate', label: '保證費率（最新完整年度）', sqlColumn: 'guarantee_fee_rate', needsExpenseLatestFullYearJoin: true },
+  otherFeeRate: { kind: 'numeric', field: 'otherFeeRate', label: '其他費用率（最新完整年度）', sqlColumn: 'other_fee_rate', needsExpenseLatestFullYearJoin: true },
+  commissionRate: { kind: 'numeric', field: 'commissionRate', label: '手續費率（最新完整年度）', sqlColumn: 'commission_rate', needsExpenseLatestFullYearJoin: true },
+  transactionTaxRate: { kind: 'numeric', field: 'transactionTaxRate', label: '交易稅率（最新完整年度）', sqlColumn: 'transaction_tax_rate', needsExpenseLatestFullYearJoin: true },
+  etfTradingFeeRate: { kind: 'numeric', field: 'etfTradingFeeRate', label: 'ETF買賣手續費率（最新完整年度）', sqlColumn: 'etf_trading_fee_rate', needsExpenseLatestFullYearJoin: true },
+};
+Object.assign(NUMERIC_FIELDS, NUMERIC_FIELDS_FEE_BREAKDOWN);
+
 export const CATEGORICAL_FIELDS: Record<string, CategoricalFieldDefinition> = {
   market: { kind: 'categorical', field: 'market', label: '市場別', sqlColumn: 'market', staticValues: ['TWSE', 'TPEx'] },
   // assetClass 的選項不寫死——之後 sitca-ts 分類異動（例如新增一種成分類型）會直接反映在
@@ -87,6 +122,6 @@ export const CATEGORICAL_FIELDS: Record<string, CategoricalFieldDefinition> = {
   distributionFrequency: { kind: 'categorical', field: 'distributionFrequency', label: '配息頻率', sqlColumn: 'distribution_frequency' },
 };
 
-export const ALL_FIELDS: Record<string, EtfFieldDefinition> = { ...NUMERIC_FIELDS, ...CATEGORICAL_FIELDS };
+export const ALL_FIELDS: Record<string, EtfFieldDefinition> = { ...NUMERIC_FIELDS, ...CATEGORICAL_FIELDS, ...DATE_FIELDS };
 
 export const resolveEtfField = (field: string): EtfFieldDefinition | null => ALL_FIELDS[field] ?? null;

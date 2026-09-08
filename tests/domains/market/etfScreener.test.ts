@@ -177,6 +177,54 @@ test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
   });
 });
 
+// 2026-09-08 新增：sitca 建議的 ETF 欄位分類「身分/分類」（成立日）跟「成本」（費用率
+// 細項拆分）兩組，使用者確認要做的部分。
+test('getEtfFilterCatalog: establishedDate 應該以 kind=date 出現在目錄裡', async () => {
+  const catalog = await getEtfFilterCatalog();
+  const field = catalog.fields.find((f) => f.field === 'establishedDate');
+  assert.ok(field, 'establishedDate 應該出現在 filter catalog 裡');
+  assert.equal(field!.kind, 'date');
+  assert.equal(field!.values, undefined);
+});
+
+test('runEtfScreener: establishedDate 可以查詢，且可以用日期字串 min/max 篩選', async () => {
+  const result = await runEtfScreener({ filters: [], columns: [{ field: 'establishedDate' }], page: 1, pageSize: 50 });
+  assert.ok(result.results.length > 0);
+  const withValue = result.results.filter((r) => r.values.establishedDate !== null);
+  assert.ok(withValue.length > 0, '應該至少有幾檔 ETF 有成立日');
+  for (const row of withValue) {
+    assert.equal(typeof row.values.establishedDate, 'string');
+    assert.match(row.values.establishedDate as string, /^\d{4}-\d{2}-\d{2}$/, '成立日應該是 YYYY-MM-DD 格式的字串');
+  }
+
+  // 篩選 2020 年以後成立的 ETF，結果的成立日都應該落在範圍內。
+  const filtered = await runEtfScreener({
+    filters: [{ field: 'establishedDate', min: '2020-01-01', max: null }],
+    columns: [{ field: 'establishedDate' }],
+    page: 1,
+    pageSize: 200,
+  });
+  assert.ok(filtered.results.length > 0, '應該至少有幾檔 2020 年以後成立的 ETF');
+  for (const row of filtered.results) {
+    assert.ok((row.values.establishedDate as string) >= '2020-01-01');
+  }
+});
+
+test('runEtfScreener: 費用率細項拆分（managementFeeRate 等）應該可以查詢，取該基金自己最新一筆完整年度', async () => {
+  const result = await runEtfScreener({
+    filters: [],
+    columns: [{ field: 'managementFeeRate' }, { field: 'custodianFeeRate' }, { field: 'commissionRate' }],
+    page: 1,
+    pageSize: 200,
+  });
+  assert.ok(result.results.length > 0);
+  const withValue = result.results.filter((r) => r.values.managementFeeRate !== null);
+  assert.ok(withValue.length > 0, '應該至少有幾檔 ETF 有經理費率');
+  for (const row of withValue) {
+    assert.equal(typeof row.values.managementFeeRate, 'number');
+  }
+});
+
 afterAll(async () => {
   await sitcaExportPrisma.$disconnect();
 });
