@@ -35,59 +35,11 @@ datasource db {
   provider = "postgresql"
 }
 
-// PER/PBR/股利殖利率查詢結果——本服務第一個「不是自己算，而是直接採用外部資料源現成數字」的指標，
-// 也是第一個不跟財務季度掛鉤的指標。PER/PBR 是逐日的市場資料（跟 daily_valuation 同一種時間刻度），
-// 不是「某季度的數字」——一開始誤把它硬套進 symbol+year+season+dataType+subsidiaryCompanyId
-// 那套季度查詢模板，查歷史季度會永遠查不到資料（市場資料的起始日晚於任何已報過的季度），
-// 已改成用 symbol+tradeDate 做 PK，跟 oingg-twse daily_valuation 的資料顆粒度一致。
-// 數值來自 oingg-twse，本服務不知道對方 EPS 用的口徑，跟自己算的 EPS/BVPS 不保證一致，不要拿來互相驗證。
-// 欄位對應 src/domains/metrics/valuation/marketRatios/types.ts 的 MarketRatiosResult。
-model MarketRatiosResult {
-  symbol    String
-  tradeDate DateTime @map("trade_date") @db.Date
-
-  peRatio          Decimal? @map("pe_ratio") @db.Decimal(10, 2)
-  pbRatio          Decimal? @map("pb_ratio") @db.Decimal(10, 2)
-  dividendYieldPct Decimal? @map("dividend_yield_pct") @db.Decimal(10, 2)
-
-  warnings String[]
-
-  computedAt DateTime @default(now()) @map("computed_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@id([symbol, tradeDate])
-  @@map("valuation_market_ratios")
-}
-
-// Beta（貝塔係數）計算結果——跟財務季度脫鉤的逐日指標，PK 用 symbol+trade_date（基準日），
-// 跟 MarketRatiosResult 同一種模式，不是 symbol+year+season+dataType+subsidiaryCompanyId。
-// 欄位對應 src/domainMetrics/portfolio/beta/types.ts 的 BetaResult。
-// 2026-09-04：DB 欄位從 as_of_date 改名 tradeDate/trade_date，跟其他 7 支 technicals +
-// MarketRatiosResult 這些日資料型結果表統一（原本只有這張表叫 as_of_date，是同一服務內
-// 唯一的命名例外，見 UBIQUITOUS_LANGUAGE.md）。對外 HTTP query 參數仍然叫
-// asOfDate，不受這次改動影響——這純粹是 DB 內部欄位改名，migration 用手動改成 RENAME
-// COLUMN，不是 drop+add，保留既有 1439 筆資料。
-model BetaResult {
-  symbol    String
-  tradeDate DateTime @map("trade_date") @db.Date
-
-  beta1Y Decimal? @map("beta_1y") @db.Decimal(10, 4)
-  beta2Y Decimal? @map("beta_2y") @db.Decimal(10, 4)
-  beta5Y Decimal? @map("beta_5y") @db.Decimal(10, 4)
-
-  // 各窗口實際用到的重疊交易日數（樣本數不足門檻時 beta 為 null，但這裡仍記錄實際天數方便追蹤）。
-  observations1Y Int? @map("observations_1y")
-  observations2Y Int? @map("observations_2y")
-  observations5Y Int? @map("observations_5y")
-
-  warnings String[]
-
-  computedAt DateTime @default(now()) @map("computed_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@id([symbol, tradeDate])
-  @@map("portfolio_beta")
-}
+// 2026-09-08：MarketRatiosResult（PER/PBR/股利殖利率）、BetaResult（貝塔係數）已隨
+// filterCatalog.csv 最後 6 列一起退場並 DROP TABLE——兩者都已獨立遷入 pitMetrics
+// （exchangePeRatio/exchangePbRatio/dividendYield/beta，見
+// src/pitMetrics/shared/marketRatios/、src/pitMetrics/valuation/beta/），確認沒有真實
+// 功能依賴後刪除，見 abstract-crafting-journal.md「filterCatalog.ts 最後 6 列的退場」。
 
 // 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
 // 產業代碼服務，見 src/shared/sourceData/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」

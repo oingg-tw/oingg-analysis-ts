@@ -1,7 +1,9 @@
-// 2026-09-05 起這裡只是薄殼合併層——實際的 44 支「單一公司、有 calculate* 函式」指標分別
-// 登記在 ./daily/indicatorRegistry.ts（10 支，依賴每日股價/市場行情）跟
-// ./quarterly/indicatorRegistry.ts（34 支，依賴季度財報），兩份彼此獨立、依 getCompanyIds
-// 的公司清單來源分組，不是憑感覺分（見各自檔案開頭的說明）。
+// 2026-09-05 起這裡只是薄殼合併層——「單一公司、有 calculate* 函式」指標分別登記在
+// ./daily/indicatorRegistry.ts（依賴每日股價/市場行情）跟 ./quarterly/indicatorRegistry.ts
+// （依賴季度財報），兩份彼此獨立、依 getCompanyIds 的公司清單來源分組，不是憑感覺分（見
+// 各自檔案開頭的說明）。2026-09-08 起兩份都是空陣列——舊架構「單一指標一張表」的 model
+// 已經全部退場（見各自檔案開頭的說明），indicatorJobs 目前沒有任何登記中的 job，
+// compute-on-miss 完全不會觸發任何重算。
 //
 // 這裡合併回單一 indicatorJobs 清單，唯一的用途是給
 // src/api/bff/companies/metricsService.ts 的 compute-on-miss 用——那個情境要查任何一支

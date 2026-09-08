@@ -1,7 +1,1 @@
 categoryKey,categoryName,metricKey,metricName,metricPath,metricModelKey,metricDescription,metricSource,metricUnit,fieldKey,fieldName,fieldPeriod,fieldSort,fieldDescription,fieldSource,fieldUnit,fieldAliases
-valuation,估值指標,per,本益比 PER,/valuation/market-ratios,marketRatios,股價 ÷ 每股盈餘，衡量股價相對獲利的貴便宜程度,TWSE 已計算之估值比率,times,peRatio,本益比 PER,daily,1,,,,
-valuation,估值指標,pbr,股價淨值比 PBR,/valuation/market-ratios,marketRatios,股價 ÷ 每股淨值，衡量股價相對帳面資產的貴便宜程度,TWSE 已計算之估值比率,times,pbRatio,股價淨值比 PBR,daily,1,,,,
-valuation,估值指標,dividendYield,股息殖利率,/valuation/market-ratios,marketRatios,近一年現金股利 ÷ 股價，衡量持股領取現金股利的報酬率,TWSE 已計算之估值比率,percent,dividendYieldPct,股息殖利率,daily,1,,,,
-portfolio,投資組合,beta,貝塔係數 Beta,/portfolio/beta,,個股報酬率相對大盤報酬率的共變異數除以大盤報酬率的變異數，衡量個股相對大盤的系統性風險,TWSE 每日行情,ratio,beta1Y,Beta 1 年,daily,1,,,,
-portfolio,投資組合,beta,貝塔係數 Beta,/portfolio/beta,,個股報酬率相對大盤報酬率的共變異數除以大盤報酬率的變異數，衡量個股相對大盤的系統性風險,TWSE 每日行情,ratio,beta2Y,Beta 2 年,weekly,2,,,,
-portfolio,投資組合,beta,貝塔係數 Beta,/portfolio/beta,,個股報酬率相對大盤報酬率的共變異數除以大盤報酬率的變異數，衡量個股相對大盤的系統性風險,TWSE 每日行情,ratio,beta5Y,Beta 5 年,monthly,3,,,,
