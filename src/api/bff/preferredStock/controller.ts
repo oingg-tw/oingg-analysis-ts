@@ -44,15 +44,49 @@ const PREFERRED_STOCK_DATA_SOURCES: PreferredStockDataSource[] = [
 const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 50;
 
+// 2026-09-08 新增排序：只開放這幾個「使用者會想拿來排名」的數值/日期欄位，不是任意
+// entry 欄位都能排——避免對 boolean/字串描述欄位（例如 redemptionConditions）做排序
+// 這種沒有意義的操作，也讓 openapi 的可選值清楚列出來。命名沿用既有 etfScreener 的
+// sortField/sortOrder 慣例。
+const SORTABLE_FIELDS = [
+  'symbol',
+  'issueDate',
+  'listedDate',
+  'issuePrice',
+  'dividendRate',
+  'nominalDividendRatePct',
+  'currentYieldPct',
+  'ytcPct',
+  'ytwPct',
+  'premiumRatePct',
+] as const;
+
 export const getPreferredStocksQuerySchema = z.object({
   symbol: z.string().min(1).optional().meta({ description: '公司代號選填，給了就只回這一檔；不給回全部目前上市中的特別股', example: '1101B' }),
   limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT).meta({ description: `這次要拿幾筆，預設 ${DEFAULT_LIMIT}，上限 ${MAX_LIMIT}。` }),
   offset: z.coerce.number().int().min(0).default(0).meta({ description: '跳過前面幾筆，預設 0。' }),
+  sortField: z.enum(SORTABLE_FIELDS).optional().meta({ description: '依這個欄位排序，不給就維持 symbol 字母序（isin_securities 原始查詢順序）。' }),
+  sortOrder: z.enum(['asc', 'desc']).default('asc').meta({ description: '排序方向，預設 asc；只有給了 sortField 才有作用。' }),
 });
 
 const toRatio2 = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;
   return Math.round((numerator / denominator) * 100 * 100) / 100;
+};
+
+// 抽成獨立、純函式的比較器方便單元測試——null 一律排最後（不管 asc/desc），是排名類
+// 欄位的常見慣例，避免「查無資料」被 asc 排序誤導成排在最前面（看起來像是最小值，
+// 但其實只是沒有資料）。
+export const compareBySortField = <T extends Record<string, unknown>>(a: T, b: T, sortField: string, sortOrder: 'asc' | 'desc'): number => {
+  const direction = sortOrder === 'desc' ? -1 : 1;
+  const av = a[sortField];
+  const bv = b[sortField];
+  if (av === null && bv === null) return 0;
+  if (av === null) return 1;
+  if (bv === null) return -1;
+  if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * direction;
+  if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * direction;
+  return 0;
 };
 
 // 特別股清單 + 發行條款 + 目前殖利率——特別股本身是獨立證券（1101 台泥的普通股 vs 1101B
@@ -71,13 +105,16 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, limit, offset } = validationResult.data;
+    const { symbol, limit, offset, sortField, sortOrder } = validationResult.data;
     const securities = await getPreferredStockSecurities();
     const filtered = symbol ? securities.filter((s) => s.symbol === symbol) : securities;
-    const page = filtered.slice(offset, offset + limit);
 
-    const entries = await Promise.all(
-      page.map(async (security) => {
+    // 排序要用到 currentYieldPct/ytcPct 這些組合三個上游來源才算得出來的欄位，沒辦法在
+    // DB 查詢層下 ORDER BY——先把「全部」符合條件的 entry 都算出來再排序、再切分頁，不是
+    // 只算分頁那一頁再排（那樣排序會不正確，只在當頁內部排，跨頁順序仍然是原始 symbol
+    // 序）。目前只有 28 檔，全算一輪成本可忽略，不是效能問題。
+    const allEntries = await Promise.all(
+      filtered.map(async (security) => {
         const [right, price] = await Promise.all([getLatestPreferredStockRight(security.symbol), getStockPriceAsOf(security.symbol, new Date())]);
 
         const nominalDividendRatePct = right?.dividendRate != null && right.issuePrice != null ? toRatio2(right.dividendRate, right.issuePrice) : null;
@@ -134,6 +171,12 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
         };
       })
     );
+
+    if (sortField) {
+      allEntries.sort((a, b) => compareBySortField(a, b, sortField, sortOrder));
+    }
+
+    const entries = allEntries.slice(offset, offset + limit);
 
     res.status(200).json({ count: filtered.length, limit, offset, dataSources: PREFERRED_STOCK_DATA_SOURCES, entries });
   } catch (error) {

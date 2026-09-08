@@ -37,7 +37,13 @@ export const registerPreferredStockOpenApi = (): void => {
       '即被贖回」，這是簡化假設不是真實排定的時間，前端顯示時應該額外標註。' +
       'premiumRatePct（溢價率）= (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回時才計算——' +
       '現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失，前端可以' +
-      '自行決定要用什麼門檻標示風險。',
+      '自行決定要用什麼門檻標示風險。' +
+      'sortField/sortOrder（2026-09-08 新增）：sortField 只能是 symbol/issueDate/listedDate/' +
+      'issuePrice/dividendRate/nominalDividendRatePct/currentYieldPct/ytcPct/ytwPct/' +
+      'premiumRatePct 這幾個排名/日期類欄位，不給就維持 symbol 字母序；sortOrder 是 asc/desc，' +
+      '預設 asc。排序在分頁之前套用（先排序全部符合條件的結果，再切 limit/offset），跨頁順序' +
+      '正確。null 值（例如不可贖回沒有 ytcPct）一律排在最後，不管 asc/desc，避免被誤讀成' +
+      '最小值。',
     tags: ['Stocks'],
     request: { query: getPreferredStocksQuerySchema },
     responses: {

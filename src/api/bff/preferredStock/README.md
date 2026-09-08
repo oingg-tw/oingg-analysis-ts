@@ -108,6 +108,22 @@ passthrough，不需要額外計算。
 `limit`/`offset` 分頁沿用 `GET /companies` 的慣例——目前只有 28 檔，遠低於上限，是為了
 介面一致性跟預留成長空間，不是現在就有效能疑慮。
 
+## 排序（2026-09-08 新增，給 web-nuxt 用）
+
+`sortField`/`sortOrder` 查詢參數：`sortField` 限定在 `symbol`/`issueDate`/`listedDate`/
+`issuePrice`/`dividendRate`/`nominalDividendRatePct`/`currentYieldPct`/`ytcPct`/
+`ytwPct`/`premiumRatePct` 這幾個排名/日期類欄位（見 `controller.ts` 的
+`SORTABLE_FIELDS`），不開放對 boolean/描述性文字欄位（例如 `redemptionConditions`）
+排序，那沒有意義。`sortOrder` 是 `asc`/`desc`，預設 `asc`。
+
+`currentYieldPct`/`ytcPct` 這些欄位是合併三個上游來源才算得出來的，沒辦法在 DB 查詢層
+下 `ORDER BY`——實作上是先把「全部」符合 `symbol` 篩選條件的 entry 都算出來、排序完，
+才切 `limit`/`offset` 分頁，不是只排當頁那幾筆（那樣跨頁順序會亂掉）。目前只有 28 檔，
+全算一輪的成本可忽略不計。
+
+null 值（例如不可贖回的特別股沒有 `ytcPct`）**一律排在最後**，不管 `asc`/`desc`——
+這是排名類欄位的常見慣例，避免「查無資料」在 `asc` 排序時被誤讀成最小值排在最前面。
+
 ## 順帶修正的共用基礎設施 bug（2026-09-06）
 
 實測特別股股價時發現 `getStockPriceAsOf`（`src/shared/sourceData/marketCap.ts`）對冷門
