@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getStockQuote, getStockPrices, getExDividendNotices } from './service';
+import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from './service';
 import { logger } from '@/shared/logger';
 
 export const getQuoteParamsSchema = z.object({
@@ -67,6 +67,34 @@ export const getExDividendNoticesHandler = async (req: Request, res: Response, n
     res.status(200).json(result);
   } catch (error) {
     logger.error({ err: error }, 'Ex-dividend notices lookup failed:');
+    next(error);
+  }
+};
+
+// 目前 export.foreign_shareholding 只回填了 2330（twse-ts 一次性回填，不是常態排程），
+// 其他 symbol 一律回傳空陣列，不是 404——這不是「查無資料待補」的錯誤情境，是覆蓋率
+// 限制，之後 twse-ts 擴大到全市場會自動生效，見 foreignShareholding.ts 的說明。
+const MAX_FOREIGN_SHAREHOLDING_LIMIT = 1500; // 2330 目前累積約 1224 筆（2021-09~2026-09），留一點餘裕
+export const getForeignShareholdingHistoryParamsSchema = getQuoteParamsSchema;
+export const getForeignShareholdingHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(MAX_FOREIGN_SHAREHOLDING_LIMIT).default(250).meta({ description: `取最近幾個交易日，預設 250（約 1 年），上限 ${MAX_FOREIGN_SHAREHOLDING_LIMIT}。` }),
+});
+
+export const getForeignShareholdingHistoryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paramsResult = getForeignShareholdingHistoryParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return res.status(400).json({ message: 'Invalid path parameters.', errors: paramsResult.error.format() });
+    }
+    const queryResult = getForeignShareholdingHistoryQuerySchema.safeParse(req.query);
+    if (!queryResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: queryResult.error.format() });
+    }
+
+    const result = await getForeignShareholdingHistory(paramsResult.data.symbol, queryResult.data.limit);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error({ err: error }, 'Foreign shareholding history lookup failed:');
     next(error);
   }
 };

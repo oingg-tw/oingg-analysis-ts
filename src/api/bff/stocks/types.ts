@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { exDividendNoticeEntrySchema } from '@/shared/sourceData/exDividendNotice';
+import { foreignShareholdingEntrySchema } from '@/shared/sourceData/foreignShareholding';
 
 export const stockQuotePriceSchema = z.object({
   tradeDate: z.string(),
@@ -35,3 +36,9 @@ export const exDividendNoticesResultSchema = z.object({
   }),
 });
 export type ExDividendNoticesResult = z.infer<typeof exDividendNoticesResultSchema>;
+
+export const foreignShareholdingHistoryResultSchema = z.object({
+  symbol: z.string(),
+  entries: z.array(foreignShareholdingEntrySchema).meta({ description: '依日期新到舊排序' }),
+});
+export type ForeignShareholdingHistoryResult = z.infer<typeof foreignShareholdingHistoryResultSchema>;

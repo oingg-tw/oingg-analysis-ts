@@ -2,7 +2,8 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { companyExists } from '@/shared/sourceData/companyProfile';
 import { getLatestDailyPrice, getLatestDailyPricesBatch } from '@/shared/sourceData/twseMarketData';
 import { getUpcomingExDividendNotices } from '@/shared/sourceData/exDividendNotice';
-import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult } from './types';
+import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
+import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ForeignShareholdingHistoryResult } from './types';
 
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無
@@ -52,4 +53,12 @@ export const getStockPrices = async (symbols: string[]): Promise<StockPricesResu
 export const getExDividendNotices = async (symbols: string[]): Promise<ExDividendNoticesResult> => {
   const notices = await getUpcomingExDividendNotices(symbols);
   return { notices };
+};
+
+// 2026-09-08 web-nuxt 轉達使用者需求：個股頁面外資持股卡片。目前只有 2330 有真實資料
+// （twse-ts 一次性回填，不是常態排程），其他 symbol 會回傳空陣列——前端顯示「尚未提供」
+// 是前端自己的降級處理，這支不需要特別區分「查無資料」跟「這家公司真的沒有外資持股」。
+export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingHistoryResult> => {
+  const entries = await getForeignShareholdingHistoryFromSource(symbol, limit);
+  return { symbol, entries };
 };

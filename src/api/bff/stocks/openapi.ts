@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
-import { getQuoteParamsSchema, symbolsQuerySchema } from './controller';
-import { stockQuoteResultSchema, stockPricesResultSchema, exDividendNoticesResultSchema } from './types';
+import { getQuoteParamsSchema, symbolsQuerySchema, getForeignShareholdingHistoryParamsSchema, getForeignShareholdingHistoryQuerySchema } from './controller';
+import { stockQuoteResultSchema, stockPricesResultSchema, exDividendNoticesResultSchema, foreignShareholdingHistoryResultSchema } from './types';
 
 export const registerStocksOpenApi = (): void => {
   registry.registerPath({
@@ -56,6 +56,25 @@ export const registerStocksOpenApi = (): void => {
         content: { 'application/json': { schema: exDividendNoticesResultSchema } },
       },
       400: { description: '請求的參數格式錯誤，或 symbols 超過一次上限。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/stocks/{symbol}/foreign-shareholding-history',
+    summary: '查詢單一公司的外資/陸資持股比例歷史',
+    description:
+      '2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是 twse-ts 的 export.foreign_shareholding' +
+      '（TWSE MI_QFIIS 端點，取代已退役的 export.foreign_holding）。目前只有 2330 一檔有真實資料' +
+      '（twse-ts 一次性回填 2021-09~2026-09，不是常態排程），其他公司會回傳空陣列 entries，不是' +
+      '404——前端應該視為「尚未提供」而不是查詢失敗，之後 twse-ts 擴大到全市場會自動生效，不需要' +
+      '改任何呼叫方式。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - ' +
+      'sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。',
+    tags: ['Stocks'],
+    request: { params: getForeignShareholdingHistoryParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
+    responses: {
+      200: { description: '依日期新到舊排序的外資持股歷史，查無資料的公司 entries 是空陣列。', content: { 'application/json': { schema: foreignShareholdingHistoryResultSchema } } },
+      400: { description: '請求的參數格式錯誤。' },
     },
   });
 };
