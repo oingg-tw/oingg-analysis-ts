@@ -29,6 +29,21 @@ export interface FieldRef {
 
 const isRealGroup = (values: string[]): boolean => values.length > 0 && !(values.length === 1 && values[0] === 'N/A');
 
+// 2026-09-08 bff-ts 要做篩選/欄位選單，回報如果自己拿 allowedLookbackRanges x
+// allowedSamplingIntervals 做笛卡兒積會做出「選了也永遠查不到資料」的假選項（beta 9 種
+// 組合只有 3 種真的有效）——這支給 metricFolderCatalog.ts（GET /filters）用，回傳「這個
+// metricCode 實際可用的 token 清單」，呼叫端直接拿來當選單，不用自己組合、不用知道四組
+// 判斷邏輯。periodType/snapshotCadence 這兩組本來就是 1 token = 1 值，天生沒有這個問題；
+// 只有滾動統計量組（lookbackRange 這組）需要看 allowedRollingWindowTokens 而不是做交叉積。
+export const validTokensForMetric = (metricCode: string): string[] => {
+  const definition = metricDefinitionRegistry[metricCode];
+  if (!definition) return [];
+  if (isRealGroup(definition.allowedPeriodTypes)) return definition.allowedPeriodTypes;
+  if (isRealGroup(definition.allowedLookbackRanges)) return definition.allowedRollingWindowTokens;
+  if (isRealGroup(definition.allowedSnapshotCadences)) return definition.allowedSnapshotCadences;
+  return [];
+};
+
 // 抽出來給 companies/controller.ts 的泛化 metric-history/metrics-history 端點共用——那兩支
 // 端點的 query 已經有獨立的 metricCode 參數，不需要再解析 "metricCode.token" 這種複合字串，
 // 只需要「給定 metricCode，這個 token 屬於四組裡的哪一組、合不合法」這一段判斷邏輯，
@@ -48,13 +63,17 @@ export const resolveTokenForMetric = (metricCode: string, token: string, display
   }
 
   if (isRealGroup(definition.allowedLookbackRanges)) {
-    const [lookbackRange, samplingInterval] = token.split('_');
-    if (!lookbackRange || !samplingInterval || !definition.allowedLookbackRanges.includes(lookbackRange as LookbackRange) || !definition.allowedSamplingIntervals.includes(samplingInterval as SamplingInterval)) {
+    // 2026-09-08 bff-ts 實測回報：allowedLookbackRanges x allowedSamplingIntervals 不是自由
+    // 交叉組合（beta 3x3=9 種裡只有 3 種真的有資料，其餘 6 種原本各自欄位驗證都會通過，
+    // 查詢卻永遠是空結果）——改成看 allowedRollingWindowTokens（唯一正確的合法組合清單，
+    // 見 metricDefinitionRegistry.ts 該欄位的說明），不是各自檢查兩個獨立陣列的 includes()。
+    if (!definition.allowedRollingWindowTokens.includes(token)) {
       throw new ScreenerValidationError(
-        `"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 的 token 要是 "<lookbackRange>_<samplingInterval>" 格式，允許的 lookbackRange：${definition.allowedLookbackRanges.join(', ')}，允許的 samplingInterval：${definition.allowedSamplingIntervals.join(', ')}。`,
+        `"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 的 token 要是 "<lookbackRange>_<samplingInterval>" 格式，且必須是下列已知有資料的組合之一（不是 lookbackRange/samplingInterval 的自由交叉組合）：${definition.allowedRollingWindowTokens.join(', ')}。`,
       );
     }
-    return { field: displayField, metricCode, ...rollingWindowGroup(lookbackRange as LookbackRange, samplingInterval as SamplingInterval) };
+    const [lookbackRange, samplingInterval] = token.split('_') as [LookbackRange, SamplingInterval];
+    return { field: displayField, metricCode, ...rollingWindowGroup(lookbackRange, samplingInterval) };
   }
 
   if (isRealGroup(definition.allowedSnapshotCadences)) {

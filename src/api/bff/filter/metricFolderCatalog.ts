@@ -1,6 +1,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/pitMetrics/metricBasis';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 pitMetrics 完全脫節）
@@ -32,6 +33,12 @@ export interface MetricFolderCatalogEntry {
   allowedLookbackRanges: LookbackRange[];
   allowedSamplingIntervals: SamplingInterval[];
   allowedSnapshotCadences: SnapshotCadence[];
+  // 2026-09-08 bff-ts 回報：上面 allowedLookbackRanges x allowedSamplingIntervals 不是自由
+  // 交叉組合（beta 9 種組合只有 3 種真的有資料），直接拿兩個陣列做笛卡兒積會做出「選了也
+  // 永遠查不到資料」的假選項。這個欄位是唯一該信任的合法 token 清單，呼叫端（screener
+  // field 的 "." 後半段、companies 端點的 token query 參數）直接拿來當選單使用，不用自己
+  // 組合、不用知道背後是哪一組（periodType/滾動統計量/snapshotCadence）。
+  validTokens: string[];
 }
 
 export interface MetricFolderCatalogCategory {
@@ -62,6 +69,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           allowedLookbackRanges: definition.allowedLookbackRanges,
           allowedSamplingIntervals: definition.allowedSamplingIntervals,
           allowedSnapshotCadences: definition.allowedSnapshotCadences,
+          validTokens: validTokensForMetric(metricCode),
         };
       });
     return { categoryKey, metrics };

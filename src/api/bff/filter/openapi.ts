@@ -16,6 +16,14 @@ const metricFolderCatalogEntrySchema = z.object({
   allowedLookbackRanges: z.array(lookbackRangeSchema).meta({ description: '滾動統計量（Beta）的回溯範圍（1Y/2Y/5Y）；非本組指標固定 ["N/A"]' }),
   allowedSamplingIntervals: z.array(samplingIntervalSchema).meta({ description: '滾動統計量（Beta）的取樣粒度（1D/1W/1M）；非本組指標固定 ["N/A"]' }),
   allowedSnapshotCadences: z.array(snapshotCadenceSchema).meta({ description: '純市場快照的更新頻率（EOD）；非本組指標固定 ["N/A"]' }),
+  validTokens: z
+    .array(z.string())
+    .meta({
+      description:
+        '這個 metricCode 實際可查詢的 token 清單（screener field ".token" 後半段/companies 端點的 token 參數直接用這個值）——' +
+        '**不要**自己拿 allowedLookbackRanges x allowedSamplingIntervals 做笛卡兒積當選單，兩者不是自由交叉組合' +
+        '（例如 beta 的 3x3=9 種組合裡只有 3 種真的有資料，其餘 6 種雖然格式合法但永遠查無資料），這個欄位才是唯一該信任的來源。',
+    }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
@@ -37,8 +45,11 @@ export const registerFiltersOpenApi = (): void => {
       '分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類。' +
       '每個 metric 有 metricCode 跟四個 allowedXxx 陣列，只有其中一個會是真實值清單（超過 1 個元素），其餘固定 ["N/A"]——' +
       '每個 metricCode 只落在四組概念的其中一組：季報聚合方式（allowedPeriodTypes）、滾動統計量的回溯範圍/取樣粒度' +
-      '（allowedLookbackRanges/allowedSamplingIntervals，目前只有 beta 使用，成對出現）、純市場快照更新頻率' +
-      '（allowedSnapshotCadences）。可以拿 metricCode 直接打 GET /companies/metric-history、GET /companies/metrics-history ' +
+      '（allowedLookbackRanges/allowedSamplingIntervals，目前只有 beta 使用）、純市場快照更新頻率（allowedSnapshotCadences）。' +
+      '**組欄位選單請用 validTokens，不要自己對 allowedLookbackRanges/allowedSamplingIntervals 做笛卡兒積**——' +
+      '這兩個陣列不是自由交叉組合，例如 beta 的 1Y/2Y/5Y x 1D/1W/1M 只有 3 種（1Y_1D/2Y_1W/5Y_1M）真的有資料，' +
+      '其餘 6 種格式合法但永遠查無資料，validTokens 才是每個 metricCode 唯一該信任的合法 token 清單。可以拿' +
+      'metricCode 直接打 GET /companies/metric-history、GET /companies/metrics-history ' +
       '查歷史數值——這支端點目前不提供使用者可讀的中文名稱/單位/公式說明（那批文案還沒有寫，是後續工作），純粹是給呼叫端' +
       '知道「目前有哪些指標可以查、每個指標接受哪些參數值」。',
     tags: ['System'],
