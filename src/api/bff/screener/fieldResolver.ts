@@ -25,6 +25,11 @@ export interface FieldRef {
   lookbackRange: LookbackRange;
   samplingInterval: SamplingInterval;
   snapshotCadence: SnapshotCadence;
+  // 2026-09-09：逐日型指標（lookbackRange/snapshotCadence 這兩組）已經搬到獨立的
+  // metric_daily_cadence_values 表，跟季報型（periodType 這組）不再共用 metric_values——
+  // 這個欄位讓 queryBuilder.ts 的 buildCte() 不用重新推導「這個 FieldRef 該查哪張表」，
+  // 直接讀這個 boolean 決定 SQL 要打哪張表。
+  isDailyCadence: boolean;
 }
 
 const isRealGroup = (values: string[]): boolean => values.length > 0 && !(values.length === 1 && values[0] === 'N/A');
@@ -59,7 +64,7 @@ export const resolveTokenForMetric = (metricCode: string, token: string, display
     if (!definition.allowedPeriodTypes.includes(token as PeriodType)) {
       throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 periodType "${token}"，允許的值：${definition.allowedPeriodTypes.join(', ')}。`);
     }
-    return { field: displayField, metricCode, ...periodTypeGroup(token as PeriodType) };
+    return { field: displayField, metricCode, isDailyCadence: false, ...periodTypeGroup(token as PeriodType) };
   }
 
   if (isRealGroup(definition.allowedLookbackRanges)) {
@@ -73,14 +78,14 @@ export const resolveTokenForMetric = (metricCode: string, token: string, display
       );
     }
     const [lookbackRange, samplingInterval] = token.split('_') as [LookbackRange, SamplingInterval];
-    return { field: displayField, metricCode, ...rollingWindowGroup(lookbackRange, samplingInterval) };
+    return { field: displayField, metricCode, isDailyCadence: true, ...rollingWindowGroup(lookbackRange, samplingInterval) };
   }
 
   if (isRealGroup(definition.allowedSnapshotCadences)) {
     if (!definition.allowedSnapshotCadences.includes(token as SnapshotCadence)) {
       throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${token}"，允許的值：${definition.allowedSnapshotCadences.join(', ')}。`);
     }
-    return { field: displayField, metricCode, ...snapshotCadenceGroup(token as SnapshotCadence) };
+    return { field: displayField, metricCode, isDailyCadence: true, ...snapshotCadenceGroup(token as SnapshotCadence) };
   }
 
   throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 在 metricDefinitionRegistry 裡沒有宣告任何允許的 basis 組合，這是註冊資料本身的問題。`);

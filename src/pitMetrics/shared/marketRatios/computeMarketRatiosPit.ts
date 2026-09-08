@@ -1,6 +1,6 @@
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
-import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER, snapshotCadenceGroup } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, snapshotCadenceGroup } from '../../metricValueWriter';
 import { calculateExchangePeRatio } from '@/pitMetrics/valuation/exchangePeRatio/calculateExchangePeRatio';
 import { calculateExchangePbRatio } from '@/pitMetrics/valuation/exchangePbRatio/calculateExchangePbRatio';
 import { calculateDividendYield } from '@/pitMetrics/dividend/dividendYield/calculateDividendYield';
@@ -18,6 +18,10 @@ import { calculateDividendYield } from '@/pitMetrics/dividend/dividendYield/calc
 // dividendYield，三者都是這支檔案一次查詢寫出來的（跟 getDailyValuationAsOf 一次查詢
 // 回傳三個欄位一致），放在 shared/ 是因為 dividendYield 屬於 dividend 分類、
 // exchangePeRatio/exchangePbRatio 屬於 valuation 分類，橫跨兩個因子分類，物理上不拆檔案。
+//
+// 2026-09-09 起這三個 metricCode 寫進獨立的 metric_daily_cadence_values（不再跟季報型
+// 指標共用 metric_values），tradeDate 是那張表真正的自然鍵（NOT NULL），不再需要
+// fiscalYear/fiscalQuarter 這種假裝有意義的欄位。
 //
 // 沒有 quarter 概念，也沒有個體/合併財報那種 dataType/subsidiaryCompanyId 區分（這是
 // 純市場數字，不是財報衍生）——呼叫端固定傳 dataType/subsidiaryCompanyId，跟其他市場
@@ -55,16 +59,11 @@ export const computeAndWriteMarketRatiosPit = async (query: MarketRatiosPitQuery
 
   const { tradeDate } = valuation;
   const { knowledgeDate } = resolveDailyCadenceKnowledgeDate(tradeDate);
-  // trade_date 是 DATE 欄位，node-postgres 回傳的 Date 是該日曆日的 UTC 午夜，用
-  // getUTCFullYear() 才不會因為本機時區偏移算錯年份。
-  const fiscalYear = tradeDate.getUTCFullYear();
 
   const coordinateFor = (metricCode: string) => ({
     symbol,
     metricCode,
     ...snapshotCadenceGroup('EOD'),
-    fiscalYear,
-    fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER,
     dataType,
     subsidiaryCompanyId,
     tradeDate,

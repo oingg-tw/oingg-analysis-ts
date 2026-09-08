@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { getMetricHistory, type MetricHistoryResult } from '../../queryMetricHistory';
-import { periodTypeGroup } from '../../metricValueWriter';
 import type { PeriodType } from '../../metricBasis';
 
 const nullReasonSchema = z.enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history']).nullable();
@@ -52,16 +51,15 @@ export interface DupontHistoryResult {
 const EMPTY_METRIC_HISTORY: MetricHistoryResult = { entries: [], total: 0, hasMore: false };
 
 export const getDupontHistory = async (symbol: string, periodType: PeriodType, limit: number): Promise<DupontHistoryResult> => {
-  const basis = periodTypeGroup(periodType);
   const [netProfitMarginResult, assetTurnoverResult, decomposedRoeResult, equityMultiplierResult, taxBurdenResult, interestBurdenResult, ebitMarginResult, extendedRoeResult] = await Promise.all([
-    getMetricHistory(symbol, 'netProfitMargin', basis, '2', '', limit),
-    getMetricHistory(symbol, 'assetTurnover', basis, '2', '', limit),
-    getMetricHistory(symbol, 'dupontDecomposedRoe', basis, '2', '', limit),
-    periodType === 'Q' ? getMetricHistory(symbol, 'equityMultiplier', periodTypeGroup('Q'), '2', '', limit) : Promise.resolve(EMPTY_METRIC_HISTORY),
-    getMetricHistory(symbol, 'dupontTaxBurden', basis, '2', '', limit),
-    getMetricHistory(symbol, 'dupontInterestBurden', basis, '2', '', limit),
-    getMetricHistory(symbol, 'dupontEbitMargin', basis, '2', '', limit),
-    getMetricHistory(symbol, 'dupontExtendedRoe', basis, '2', '', limit),
+    getMetricHistory(symbol, 'netProfitMargin', periodType, '2', '', limit),
+    getMetricHistory(symbol, 'assetTurnover', periodType, '2', '', limit),
+    getMetricHistory(symbol, 'dupontDecomposedRoe', periodType, '2', '', limit),
+    periodType === 'Q' ? getMetricHistory(symbol, 'equityMultiplier', 'Q', '2', '', limit) : Promise.resolve(EMPTY_METRIC_HISTORY),
+    getMetricHistory(symbol, 'dupontTaxBurden', periodType, '2', '', limit),
+    getMetricHistory(symbol, 'dupontInterestBurden', periodType, '2', '', limit),
+    getMetricHistory(symbol, 'dupontEbitMargin', periodType, '2', '', limit),
+    getMetricHistory(symbol, 'dupontExtendedRoe', periodType, '2', '', limit),
   ]);
   const netProfitMarginRows = netProfitMarginResult.entries;
   const assetTurnoverRows = assetTurnoverResult.entries;

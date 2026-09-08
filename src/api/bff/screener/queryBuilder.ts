@@ -7,13 +7,12 @@ import type { FieldRef } from './fieldResolver';
 // 存在的組合（不是使用者可以任意輸入字串直接拼進 SQL）；filter 的 min/max 數值一律透過
 // Prisma.sql 的參數化模板帶入，不是字串拼接。
 //
-// 關鍵簡化：舊架構要分「季報型」（year/season 排序）跟「每日型」（date 欄位排序）兩種形狀，
-// pitMetrics 全部欄位統一都是 metric_values 這一張表、統一的
-// (fiscal_year, fiscal_quarter, knowledge_date) 三欄排序鍵——逐日型指標的 fiscal_quarter
-// 固定是 sentinel 值 0（不是季報 1~4），同一年的多筆逐日資料靠 knowledge_date 這個最終排序
-// 鍵正確取到最新一筆（不同天的 fiscal_year 本身也會不同，除非同一年內比較，那正是
-// knowledge_date 要負責的事）——不需要像 queryMetricHistory.ts 那樣特別處理「逐日型指標
-// 不適用」的例外，因為這裡只取「最新一筆」，不是要列出「每一期」的完整歷史。
+// 2026-09-08 重建時的簡化：逐日型指標曾經跟季報型共用 metric_values，靠 fiscal_quarter
+// sentinel=0 冒充季度、knowledge_date 當最終排序鍵。2026-09-09 拆表後（見
+// abstract-crafting-journal.md）逐日型指標搬到獨立的 metric_daily_cadence_values，
+// buildCte() 依 CteRef.isDailyCadence 分流查詢兩張表其中一張，其餘函式（
+// buildFromClause/buildSelectColumnsSql/buildFilterCondition/basisGroupKeyFor/
+// cteAliasFor）只在別名/欄位層級操作，完全不需要知道背後是哪張表。
 
 const DATA_TYPE = '2'; // 合併報表——跟 roe-history 等既有 pitMetrics 端點同一個慣例，不對外曝露
 const SUBSIDIARY_COMPANY_ID = ''; // 母公司本身
@@ -27,6 +26,7 @@ interface CteRef {
   lookbackRange: string;
   samplingInterval: string;
   snapshotCadence: string;
+  isDailyCadence: boolean;
 }
 
 const basisGroupKeyFor = (f: FieldRef): string => `${f.metricCode}:${f.periodType}:${f.lookbackRange}:${f.samplingInterval}:${f.snapshotCadence}`;
@@ -45,22 +45,38 @@ const dedupCtes = (fields: FieldRef[]): Map<string, CteRef> => {
   for (const f of fields) {
     const key = basisGroupKeyFor(f);
     if (!map.has(key)) {
-      map.set(key, { alias: cteAliasFor(key), metricCode: f.metricCode, periodType: f.periodType, lookbackRange: f.lookbackRange, samplingInterval: f.samplingInterval, snapshotCadence: f.snapshotCadence });
+      map.set(key, { alias: cteAliasFor(key), metricCode: f.metricCode, periodType: f.periodType, lookbackRange: f.lookbackRange, samplingInterval: f.samplingInterval, snapshotCadence: f.snapshotCadence, isDailyCadence: f.isDailyCadence });
     }
   }
   return map;
 };
 
+// 2026-09-09：逐日型指標（beta/exchangePeRatio 等）已經從 metric_values 拆到獨立的
+// metric_daily_cadence_values（見 abstract-crafting-journal.md 的拆表決策）——這是全
+// queryBuilder.ts 唯一直接寫死表名、組 SQL 的地方，改成依 CteRef.isDailyCadence 決定
+// 查哪張表：metric_values 縮回純季報型形狀（period_type 是唯一的 basis 相關欄位，
+// lookback_range/sampling_interval/snapshot_cadence 這三欄已經不存在），排序鍵不變；
+// metric_daily_cadence_values 沒有 period_type/fiscal_year/fiscal_quarter，排序改用
+// trade_date（真正的自然鍵）+ knowledge_date 當 tiebreaker。
 const buildCte = (ref: CteRef): Prisma.Sql => {
   const alias = Prisma.raw(ref.alias);
+  if (ref.isDailyCadence) {
+    return Prisma.sql`${alias} AS (
+      SELECT DISTINCT ON (${q('symbol')}) *
+      FROM ${q('metric_daily_cadence_values')}
+      WHERE ${q('metric_code')} = ${ref.metricCode}
+        AND ${q('lookback_range')} = ${ref.lookbackRange}
+        AND ${q('sampling_interval')} = ${ref.samplingInterval}
+        AND ${q('snapshot_cadence')} = ${ref.snapshotCadence}
+        AND ${q('data_type')} = ${DATA_TYPE} AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+      ORDER BY ${q('symbol')}, ${q('trade_date')} DESC, ${q('knowledge_date')} DESC
+    )`;
+  }
   return Prisma.sql`${alias} AS (
     SELECT DISTINCT ON (${q('symbol')}) *
     FROM ${q('metric_values')}
     WHERE ${q('metric_code')} = ${ref.metricCode}
       AND ${q('period_type')} = ${ref.periodType}
-      AND ${q('lookback_range')} = ${ref.lookbackRange}
-      AND ${q('sampling_interval')} = ${ref.samplingInterval}
-      AND ${q('snapshot_cadence')} = ${ref.snapshotCadence}
       AND ${q('data_type')} = ${DATA_TYPE} AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
     ORDER BY ${q('symbol')}, ${q('fiscal_year')} DESC, ${q('fiscal_quarter')} DESC, ${q('knowledge_date')} DESC
   )`;

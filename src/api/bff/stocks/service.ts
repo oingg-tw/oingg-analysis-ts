@@ -8,20 +8,23 @@ import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, Fore
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
 // 一起退場了（filterCatalog.csv 最後 6 列確認是開發環境假資料誤判、沒有真實功能依賴，
-// 見 abstract-crafting-journal.md）。三個 metricCode 是同一次 computeAndWriteMarketRatiosPit
-// 呼叫一起寫入的，理論上 tradeDate 一致，這裡各自獨立查「最新一筆」而不是假設一定同步，
-// 跟 getMetricHistory 的既有慣例一致（用 knowledgeDate desc 取最新，不是相信呼叫端
-// 保證同步）。dataType/subsidiaryCompanyId 固定 '2'/''——這是純市場數字，沒有個體/合併
-// 報表的區分，只是延續 metric_values 的識別欄位慣例，見 computeMarketRatiosPit.ts 的說明。
+// 見 abstract-crafting-journal.md）。2026-09-09 起改查 metricDailyCadenceValue——逐日型
+// 指標已經從共用的 metric_values 拆到獨立的 metric_daily_cadence_values，tradeDate 在
+// 那張表是 NOT NULL 的真正自然鍵，不再需要判斷「有沒有 tradeDate」。三個 metricCode 是
+// 同一次 computeAndWriteMarketRatiosPit 呼叫一起寫入的，理論上 tradeDate 一致，這裡各自
+// 獨立查「最新一筆」而不是假設一定同步，跟 getMetricHistory 的既有慣例一致（用
+// knowledgeDate desc 取最新，不是相信呼叫端保證同步）。dataType/subsidiaryCompanyId
+// 固定 '2'/''——這是純市場數字，沒有個體/合併報表的區分，只是延續 metric 識別欄位慣例，
+// 見 computeMarketRatiosPit.ts 的說明。
 const MARKET_RATIOS_DATA_TYPE = '2';
 const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 
 const getLatestMarketRatioValue = async (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> => {
-  const row = await analysisPrisma.metricValue.findFirst({
+  const row = await analysisPrisma.metricDailyCadenceValue.findFirst({
     where: { symbol, metricCode, snapshotCadence: 'EOD', dataType: MARKET_RATIOS_DATA_TYPE, subsidiaryCompanyId: MARKET_RATIOS_SUBSIDIARY_COMPANY_ID },
     orderBy: { knowledgeDate: 'desc' },
   });
-  if (!row || row.tradeDate === null) return null;
+  if (!row) return null;
   return { tradeDate: row.tradeDate, value: row.value !== null ? Number(row.value) : null };
 };
 

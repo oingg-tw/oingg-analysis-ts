@@ -136,6 +136,7 @@ model MetricDefinition {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   values MetricValue[]
+  dailyCadenceValues MetricDailyCadenceValue[]
 
   @@map("metric_definitions")
 }
@@ -147,12 +148,15 @@ model MetricDefinition {
 // unique index（WHERE trade_date IS NOT NULL）」，但 Prisma schema DSL 不支援 partial
 // index——手寫進 migration 的 index 不會出現在 schema.prisma，下一次 `prisma migrate
 // dev` 比對時會被判定成「DB 多出來的物件」而產生 DROP INDEX，這是一條會遲早出事的脆弱
-// 防線。改用 **sentinel 值**：逐日型指標的 fiscalQuarter 固定寫 0（真實季度只有
-// 1~4，不會撞到既有資料），fiscalYear 寫交易日的西元年，knowledgeDate 寫交易日本身
-// （逐日資料沒有公告延遲，當天就是市場知道的那天）——這樣現有的 @@unique 完全不用改
-// 就能正確運作，Prisma 原生可表達，零 schema 漂移風險。任何寫入路徑都不應該再寫
-// fiscalQuarter=null，見下方 fiscalQuarter 欄位註解與 metricValueWriter.ts 的
-// DAILY_CADENCE_FISCAL_QUARTER 常數。
+// 2026-09-09：逐日型指標（Beta/MarketRatios）已經搬到獨立的 MetricDailyCadenceValue
+// （見下方 model），這張表現在回到單純的季報型指標長表——fiscalYear/fiscalQuarter 對
+// 這張表剩下的每一列都是真正有業務意義的值，不再需要為了容納逐日資料而用 sentinel 值
+// 冒充季度、也不需要 coordinateKind 這種多形狀 discriminator。拆表前這裡有過
+// periodType/lookbackRange/samplingInterval/snapshotCadence 四欄 + coordinateKind
+// 共用一張表的設計，是為了讓 screener 用同一套 SQL 形狀查所有 metricCode；但代價是
+// fiscalYear/fiscalQuarter 對逐日資料完全沒有意義，只是騙 Postgres UNIQUE 約束的假值，
+// 導致 queryMetricHistory.ts 的歷史查詢對逐日型指標會把一整年資料誤判成同一期、遺失
+// 99%+ 資料——這是真正驅動這次拆表的 bug，完整脈絡見 abstract-crafting-journal.md。
 model MetricValue {
   id BigInt @id @default(autoincrement())
 
@@ -160,50 +164,19 @@ model MetricValue {
 
   metricCode String @map("metric_code")
 
-  // 2026-09-08：原本是單一 basis 欄位（塞了三組不同語意的值，使用者判斷違反 ubiquitous
-  // language——「basis」在會計裡是保留字，cash basis/accrual basis 指的是做帳慣例，不是
-  // 這裡要表達的東西），拆成四個獨立欄位、值對齊 Bloomberg/FactSet 等主流慣例（CUM→YTD、
-  // 複合視窗拆成 lookbackRange×samplingInterval 兩個正交維度、DAILY→EOD），應用層 zod
-  // 驗證與完整說明見 src/pitMetrics/metricBasis.ts。四個欄位都是 NOT NULL + sentinel 值
-  // 'N/A'（不是 nullable）——理由跟 fiscalQuarter 那次一致：Postgres UNIQUE 約束把 NULL
-  // 視為互不相等，nullable 欄位放進複合唯一鍵會讓去重保護失效，sentinel 字串沒有這個問題。
-  // 任何一列只會有其中「一組」是真實值（periodType 單獨；lookbackRange+samplingInterval
-  // 成對；snapshotCadence 單獨），其餘固定 'N/A'。
-  periodType       String @map("period_type") // 'N/A' | 'Q' | 'YTD' | 'TTM' | 'Q_ANN' | 'FY'——季報型指標的期間聚合方式
-  lookbackRange    String @map("lookback_range") // 'N/A' | '1Y' | '2Y' | '5Y'——滾動統計量（Beta）的回溯範圍
-  samplingInterval String @map("sampling_interval") // 'N/A' | '1D' | '1W' | '1M'——滾動統計量（Beta）的取樣粒度
-  snapshotCadence  String @map("snapshot_cadence") // 'N/A' | 'EOD'——純市場快照（exchangePeRatio 等），沒有聚合也沒有滾動視窗
-
-  // 2026-09-08 補：上面四欄「剛好一組是真實值」這條結構不變量，原本只靠應用層
-  // writeMetricValue() 推導/驗證（看哪個欄位不是 'N/A'）——這個欄位讓它變成顯式值，
-  // 由 writeMetricValue() 從已驗證過的四欄計算後寫入，呼叫端不用知道它存在。
-  // 'PERIOD'（periodType 這組）| 'ROLLING_WINDOW'（lookbackRange+samplingInterval 這組）|
-  // 'SNAPSHOT'（snapshotCadence 這組）。DB 層另外有一條 CHECK 約束（
-  // metric_values_coordinate_kind_check，手寫在 migration.sql 裡，Prisma schema DSL
-  // 這個版本不支援 @@check——npx prisma validate 對 @@check 回 P1012 Attribute not known，
-  // 已經實測確認過）確保 coordinateKind 跟四個 basis 欄位彼此一致，防止有人繞過
-  // writeMetricValue() 直接 insert 出不一致的列。**這條 CHECK 約束不會出現在這份
-  // schema.prisma 裡（DSL 表達不出來），只存在於 migration 歷史——`pnpm
-  // prisma:analysis:migrate`（= `prisma migrate dev`）如果之後真的被執行，會在跟
-  // shadow DB 比對時把它當成「schema.prisma 沒有宣告的物件」而產生 DROP CONSTRAINT，
-  // 千萬不要照著跑；這個專案的 migration 一律用既有的手寫 SQL + `prisma migrate
-  // deploy` 流程（見這個 model 上方幾次改動用的同一套流程），不要用 migrate dev。
-  coordinateKind String @map("coordinate_kind") // 'PERIOD' | 'ROLLING_WINDOW' | 'SNAPSHOT'
+  // periodType：季報型指標的期間聚合方式，唯一還留著的 basis 相關欄位（lookbackRange/
+  // samplingInterval/snapshotCadence 三個逐日型專用欄位已經隨著拆表搬到
+  // MetricDailyCadenceValue，這張表不再需要）。'Q' | 'YTD' | 'TTM' | 'Q_ANN' | 'FY'，
+  // 完整說明見 src/pitMetrics/metricBasis.ts。
+  periodType String @map("period_type")
 
   // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
   // 分開存——複合唯一鍵必須含這兩欄，否則同一家公司同一季的個體/合併 ROE 會撞在同一個座標。
   dataType            String @map("data_type") // '1' = 個體, '2' = 合併
   subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
 
-  fiscalYear Int @map("fiscal_year") @db.SmallInt // 西元年（民國 + 1911）；逐日型指標填交易日的西元年
-  // 1~4 是季報型指標；逐日型指標固定填 0（sentinel，見上方 model 註解）——**任何寫入路徑
-  // 都不應該寫 null**，這是 2026-09-08 之前的舊規則，已經改掉。
-  fiscalQuarter Int @map("fiscal_quarter") @db.SmallInt
-
-  // 逐日型指標的實際交易日——純資訊性欄位，不進任何唯一鍵/索引，季報型指標永遠是 null。
-  // 讓查資料的人不用知道「fiscalQuarter=0 代表看 knowledgeDate」這條隱規則就能看懂
-  // 這是哪一天的逐日值。命名沿用 BetaResult/MarketRatiosResult 既有慣例。
-  tradeDate DateTime? @map("trade_date") @db.Date
+  fiscalYear    Int @map("fiscal_year") @db.SmallInt // 西元年（民國 + 1911）
+  fiscalQuarter Int @map("fiscal_quarter") @db.SmallInt // 1~4，這張表拆表後恆為真實季度值
 
   // 算出來的最終數字，跟本檔案上方 45 表 `*Value` 結尾（原始輸入回顯）語意不同，見檔頭說明。
   // null 代表算不出來，原因見 nullReason。
@@ -227,11 +200,64 @@ model MetricValue {
 
   metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
 
-  // 複合識別鍵。2026-09-08 起 fiscalQuarter 恆為實值（季報型 1~4、逐日型 sentinel 0），
-  // 不再允許 null，這個唯一鍵現在對逐日型指標也能正確去重（見上方 model 註解的設計過程）。
-  @@unique([symbol, metricCode, periodType, lookbackRange, samplingInterval, snapshotCadence, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_values_identity_key")
-  @@index([symbol, metricCode, periodType, lookbackRange, samplingInterval, snapshotCadence, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
+  @@unique([symbol, metricCode, periodType, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_values_identity_key")
+  @@index([symbol, metricCode, periodType, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
   @@map("metric_values")
+}
+
+// 2026-09-09 新增：逐日型指標（目前 Beta / exchangePeRatio / exchangePbRatio /
+// dividendYield）從 MetricValue 拆出來的獨立表——那張表的 fiscalYear/fiscalQuarter
+// 對這批資料從來沒有真正的業務意義，只是用 sentinel 值 0 冒充季度騙唯一鍵，這裡改用
+// tradeDate（交易日）當真正的自然鍵，不再假裝有季度概念。
+//
+// lookbackRange/samplingInterval（Beta 的回溯範圍/取樣粒度，成對）跟 snapshotCadence
+// （市場快照更新頻率）兩組欄位放同一張表，因為兩者形狀完全一致（都是逐日、都用
+// tradeDate 當自然鍵），只是「哪一組座標欄位是真實值」不同——跟 MetricValue 拆表前
+// 「一張表多形狀」的精神一致，只是從三選一收斂成二選一，且不需要額外的 coordinateKind
+// discriminator：靠 lookbackRange/snapshotCadence 哪一個不是 'N/A' 就能區分。
+//
+// DB 層有一條 CHECK 約束（metric_daily_cadence_values_coordinate_check，手寫在
+// migration.sql 裡，這個版本的 Prisma schema DSL 不支援 @@check，已用 npx prisma
+// validate 實測確認過 P1012）確保 lookbackRange+samplingInterval 跟 snapshotCadence
+// 剛好一組是真實值。**這條 CHECK 約束不會出現在這份 schema.prisma 裡**——理由跟
+// metric_values_coordinate_kind_check 當初的說明一致，`prisma migrate dev`
+// （= `pnpm prisma:analysis:migrate`）如果被執行，會把它當成 schema.prisma 沒宣告
+// 的物件而產生 DROP CONSTRAINT，千萬不要跑；一律用 `prisma migrate diff` 產考
+// + 手寫 migration.sql + `prisma migrate deploy` 的既有流程。
+model MetricDailyCadenceValue {
+  id BigInt @id @default(autoincrement())
+
+  symbol String
+
+  metricCode String @map("metric_code")
+
+  lookbackRange    String @map("lookback_range") // 'N/A' | '1Y' | '2Y' | '5Y'——滾動統計量（Beta）的回溯範圍
+  samplingInterval String @map("sampling_interval") // 'N/A' | '1D' | '1W' | '1M'——滾動統計量（Beta）的取樣粒度
+  snapshotCadence  String @map("snapshot_cadence") // 'N/A' | 'EOD'——純市場快照（exchangePeRatio 等）
+
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  // 這張表的真正自然鍵——不像舊的 MetricValue.tradeDate 是「純資訊性、可為 null」，
+  // 這裡是 NOT NULL，任何寫入路徑都必須提供。
+  tradeDate DateTime @map("trade_date") @db.Date
+
+  value      Decimal? @db.Decimal(24, 6)
+  nullReason String?  @map("null_reason")
+
+  // 逐日型指標沒有公告延遲，knowledgeDate 恆等於 tradeDate，見
+  // src/pitMetrics/knowledgeDate.ts 的 resolveDailyCadenceKnowledgeDate 說明。
+  knowledgeDate           DateTime @map("knowledge_date") @db.Date
+  knowledgeDateIsFallback Boolean  @map("knowledge_date_is_fallback")
+
+  formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
+  computedAt     DateTime @default(now()) @map("computed_at")
+
+  metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
+
+  @@unique([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId, tradeDate, knowledgeDate], map: "metric_daily_cadence_values_identity_key")
+  @@index([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId], map: "metric_daily_cadence_values_latest_lookup")
+  @@map("metric_daily_cadence_values")
 }
 
 // ============================================================================

@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
-import { writeMetricValue, type MetricValueWriteOutcome, DAILY_CADENCE_FISCAL_QUARTER, rollingWindowGroup } from '../../metricValueWriter';
+import { writeMetricValue, type MetricValueWriteOutcome, rollingWindowGroup } from '../../metricValueWriter';
 import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../metricBasis';
 
 // 獨立重新實作 src/domainMetrics/beta.ts——同一套公式跟降頻邏輯（不呼叫舊架構），改寫成
@@ -17,10 +17,11 @@ import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../me
 // S&P 長期 Beta 標準）。
 //
 // knowledgeDate 用 resolveDailyCadenceKnowledgeDate——逐日股價資料沒有公告延遲，基準
-// 交易日當天就是市場已知的那天，跟 knowledgeDate.ts 的既有說明一致。fiscalQuarter 用
-// DAILY_CADENCE_FISCAL_QUARTER sentinel，fiscalYear 是基準交易日的西元年，tradeDate
-// 純資訊性欄位填基準交易日本身——跟 MarketRatios（computeMarketRatiosPit.ts）同一套
-// 逐日型指標寫入慣例。
+// 交易日當天就是市場已知的那天，跟 knowledgeDate.ts 的既有說明一致。2026-09-09 起
+// Beta 寫進獨立的 metric_daily_cadence_values（不再跟季報型指標共用 metric_values），
+// tradeDate 是那張表真正的自然鍵（NOT NULL），不再需要 fiscalYear/fiscalQuarter 這種
+// 假裝有意義的欄位——跟 MarketRatios（computeMarketRatiosPit.ts）同一套逐日型指標
+// 寫入慣例。
 
 export type BetaSamplingFrequency = 'daily' | 'weekly' | 'monthly';
 
@@ -217,15 +218,12 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
 
   const effectiveAsOf = overlap[overlap.length - 1]!.tradeDate;
   const effectiveAsOfDate = new Date(`${effectiveAsOf}T00:00:00.000Z`);
-  const fiscalYear = effectiveAsOfDate.getUTCFullYear();
   const { knowledgeDate } = resolveDailyCadenceKnowledgeDate(effectiveAsOfDate);
 
   const coordinateFor = (lookbackRange: LookbackRange, samplingInterval: SamplingInterval) => ({
     symbol,
     metricCode: 'beta',
     ...rollingWindowGroup(lookbackRange, samplingInterval),
-    fiscalYear,
-    fiscalQuarter: DAILY_CADENCE_FISCAL_QUARTER,
     dataType,
     subsidiaryCompanyId,
     tradeDate: effectiveAsOfDate,

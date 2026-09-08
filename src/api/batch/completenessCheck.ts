@@ -16,10 +16,15 @@
 //
 // 2026-09-08：舊架構「每指標一張獨立 Result 表」的 model 已經全部退場（連同
 // filterCatalog.ts/metricTableRegistry.ts 這套解析機制一起刪除，見
-// abstract-crafting-journal.md），現在全部指標都走 pitMetrics 共用的 metric_values 表，
-// 用 metricCode 欄位分辨——這裡不再需要判斷「這是舊架構指標還是 pitMetrics 指標」兩條路徑，
-// 只剩 metric_values 這一條查詢路徑。metric_values 用 computedAt 判斷寫入時間，不是
-// updatedAt（那個欄位在 metric_values 不存在）。
+// abstract-crafting-journal.md），現在全部指標都走 pitMetrics 共用的表，用 metricCode
+// 欄位分辨——用 computedAt 判斷寫入時間，不是 updatedAt（那個欄位不存在）。
+//
+// 2026-09-09：pitMetrics 現在拆成兩張表——季報型指標查 metric_values、逐日型指標（beta/
+// exchangePeRatio 等）查 metric_daily_cadence_values（見 abstract-crafting-journal.md
+// 的拆表決策）。目前 dailyIndicatorJobs（src/api/batch/daily/indicatorRegistry.ts）是
+// 空陣列，還沒有任何批次 job 用逐日型 metricCode 呼叫這支函式，但這裡還是先補上表路由，
+// 避免之後真的有人註冊逐日型 job 時悄悄查錯表（查 metric_values 永遠 written=0，
+// coverageRatio 永遠 0，會誤判成「這支指標完全沒寫入」）。
 
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
@@ -48,9 +53,11 @@ export const checkJobCompleteness = async (job: IndicatorJob, companyIds: string
   }
 
   try {
-    const written = await analysisPrisma.metricValue.count({
-      where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } },
-    });
+    const definition = metricDefinitionRegistry[job.name]!;
+    const isDailyCadence = definition.allowedPeriodTypes.length === 1 && definition.allowedPeriodTypes[0] === 'N/A';
+    const written = isDailyCadence
+      ? await analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } })
+      : await analysisPrisma.metricValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } });
     return { metricKey: job.name, attempted: companyIds.length, written, coverageRatio: written / companyIds.length };
   } catch (error) {
     logger.error({ err: error, metricKey: job.name }, '[completeness-check]: 查詢寫入列數失敗，本次跳過完整性檢查，不影響批次本身結果。');

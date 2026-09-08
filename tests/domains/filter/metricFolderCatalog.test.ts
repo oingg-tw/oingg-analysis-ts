@@ -15,7 +15,11 @@ describe('scanMetricFolderCatalog', () => {
       assert.ok(category.metrics.length > 0, `分類 "${category.categoryKey}" 不應該出現在結果裡卻沒有任何指標`);
       for (const metric of category.metrics) {
         assert.ok(metric.metricCode in metricDefinitionRegistry, `"${metric.metricCode}"（分類 "${category.categoryKey}"）應該要在 metricDefinitionRegistry 裡`);
-        assert.deepEqual(metric.allowedBases, metricDefinitionRegistry[metric.metricCode]!.allowedBases);
+        const definition = metricDefinitionRegistry[metric.metricCode]!;
+        assert.deepEqual(metric.allowedPeriodTypes, definition.allowedPeriodTypes);
+        assert.deepEqual(metric.allowedLookbackRanges, definition.allowedLookbackRanges);
+        assert.deepEqual(metric.allowedSamplingIntervals, definition.allowedSamplingIntervals);
+        assert.deepEqual(metric.allowedSnapshotCadences, definition.allowedSnapshotCadences);
       }
     }
   });

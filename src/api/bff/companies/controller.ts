@@ -6,9 +6,11 @@ import { getRoeHistory } from '@/pitMetrics/profitability/roe/queryRoeHistory';
 import { getRoaHistory } from '@/pitMetrics/profitability/roa/queryRoaHistory';
 import { getDupontHistory } from '@/pitMetrics/shared/dupont/queryDupontHistory';
 import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
+import { getDailyCadenceMetricHistory } from '@/pitMetrics/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
-import { resolveTokenForMetric, ScreenerValidationError, type FieldRef } from '@/api/bff/screener/fieldResolver';
+import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
+import type { PeriodType } from '@/pitMetrics/metricBasis';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -235,8 +237,12 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
       throw error;
     }
 
-    const { periodType, lookbackRange, samplingInterval, snapshotCadence } = fieldRef;
-    const { entries, total, hasMore } = await getMetricHistory(symbol, metricCode, { periodType, lookbackRange, samplingInterval, snapshotCadence }, '2', '', limit);
+    // 2026-09-09：逐日型指標（beta/exchangePeRatio 等）拆表後查的是不同的 Prisma model/
+    // 去重邏輯，見 queryDailyCadenceMetricHistory.ts 的說明——依 FieldRef.isDailyCadence
+    // 分流，呼叫端（這裡）完全不用知道背後是哪張表。
+    const { entries, total, hasMore } = fieldRef.isDailyCadence
+      ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, '2', '', limit)
+      : await getMetricHistory(symbol, metricCode, fieldRef.periodType, '2', '', limit);
     res.status(200).json({ symbol, metricCode, token, total, hasMore, entries });
   } catch (error) {
     next(error);
@@ -281,7 +287,11 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
       return res.status(400).json({ message: `metricCodes 最多 ${MAX_METRIC_CODES_PER_REQUEST} 個，收到 ${metricCodes.length} 個。` });
     }
 
-    let basisGroup: Pick<FieldRef, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'> | undefined;
+    // 2026-09-09：逐日型指標（beta/exchangePeRatio 等）刻意不支援多指標一次查——沒有
+    // 實際情境會把 beta 跟其他 metricCode 混在同一次多指標查詢裡，硬做這個組合的複雜度
+    // 換不到實際使用價值，見 abstract-crafting-journal.md 的拆表決策。偵測到任一
+    // metricCode 是逐日型就直接 400，附上請改走 metric-history 逐一查詢的訊息。
+    let periodType: PeriodType | undefined;
     for (const metricCode of metricCodes) {
       let fieldRef;
       try {
@@ -292,17 +302,13 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
         }
         throw error;
       }
-      // 每個 metricCode 各自解析出自己的四欄組合（同一個 token 字面值，在不同 metricCode 底下
-      // 可能落在不同組——例如 "EOD" 對 exchangePeRatio 是合法的 snapshotCadence，對 roe 則會在
-      // 上面直接被 resolveTokenForMetric 拒絕），但因為 getMultiMetricHistory 目前是「同一組
-      // basisGroup 套用到全部 metricCode」的介面，這裡沿用第一個 metricCode 解析出的結果——
-      // 呼叫端如果混用不同組別的 metricCode 在同一次請求裡，本來就是誤用，上面的逐一驗證已經
-      // 保證每個 metricCode 都「接受」這個 token，沿用同一組四欄值不會查到錯誤的列（N/A 佔位
-      // 對不落在該組的 metricCode 沒有意義，但那些 metricCode 已經在驗證時被擋掉了）。
-      basisGroup ??= { periodType: fieldRef.periodType, lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence };
+      if (fieldRef.isDailyCadence) {
+        return res.status(400).json({ message: `metricCode "${metricCode}" 是逐日型指標，metrics-history 目前不支援逐日型指標一次查詢多個，請改用 GET /companies/metric-history 逐一查詢。` });
+      }
+      periodType ??= fieldRef.periodType;
     }
 
-    const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, basisGroup!, '2', '', limit);
+    const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, '2', '', limit);
     res.status(200).json({ symbol, metricCodes, token, total, hasMore, entries });
   } catch (error) {
     next(error);
