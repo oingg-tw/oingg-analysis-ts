@@ -166,7 +166,7 @@ export const getSecuritySymbols = async (filter: SecuritySymbolsFilter): Promise
 
 // 2026-09-02 應使用者要求整併——之前 getTwseCompanySymbolSet/getTpexCompanySymbolSet/
 // getTwseNonKyCompanySymbolSet 是跟 getSecuritySymbols 平行的另一套「誰算真正證券」邏輯，
-// 只回傳單一市場、不支援篩選參數，給 revenueRanking/priceChangeRanking/foreignHoldingRanking/
+// 只回傳單一市場、不支援篩選參數，給 revenueRanking/priceChangeRanking/
 // marginShortRatioRanking/valuation-ranking/indicatorRegistry 這幾支排行/指標用。改成這個
 // 薄包裝，讓那些呼叫端也走 getSecuritySymbols 同一套邏輯，不用維護兩份幾乎一樣的查詢。
 export const getSecuritySymbolSet = async (filter: SecuritySymbolsFilter): Promise<Set<string>> => {

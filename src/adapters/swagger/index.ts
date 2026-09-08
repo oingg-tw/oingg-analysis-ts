@@ -17,7 +17,6 @@ import { registerAttentionStocksOpenApi } from '@/api/bff/market/attentionStocks
 import { registerDisposedStocksOpenApi } from '@/api/bff/market/disposedStocks/openapi';
 import { registerEtfRankingOpenApi } from '@/api/bff/market/etfRanking/openapi';
 import { registerEtfScreenerOpenApi } from '@/api/bff/market/etfScreener/openapi';
-import { registerForeignHoldingRankingOpenApi } from '@/api/bff/market/foreignHoldingRanking/openapi';
 import { registerMarginShortRatioRankingOpenApi } from '@/api/bff/market/marginShortRatioRanking/openapi';
 import { registerMaterialAnnouncementsOpenApi } from '@/api/bff/market/materialAnnouncements/openapi';
 import { registerPriceChangeRankingOpenApi } from '@/api/bff/market/priceChangeRanking/openapi';
@@ -42,7 +41,6 @@ registerAttentionStocksOpenApi();
 registerDisposedStocksOpenApi();
 registerEtfRankingOpenApi();
 registerEtfScreenerOpenApi();
-registerForeignHoldingRankingOpenApi();
 registerMarginShortRatioRankingOpenApi();
 registerMaterialAnnouncementsOpenApi();
 registerPriceChangeRankingOpenApi();
