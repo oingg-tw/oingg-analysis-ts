@@ -4,23 +4,20 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome } from '../../metricValueWriter';
-import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { calculateCurrentRatio } from '@/pitMetrics/resilience/currentRatio/calculateCurrentRatio';
+import { calculateQuickRatio } from '@/pitMetrics/resilience/quickRatio/calculateQuickRatio';
+import { calculateCashRatio } from '@/pitMetrics/resilience/cashRatio/calculateCashRatio';
 
 // 這份檔案獨立重新實作 src/domainMetrics/liquidityRatio.ts，一次查詢資產負債表，拆成三個
 // 獨立 metric_code（currentRatio/quickRatio/cashRatio）——跟
 // src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts 同一種「一次查詢、拆多個 metric_code」
 // 模式。三者都是純資產負債表時點快照，只有 Q 一種 basis。
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
+//
+// 2026-09-08：這個檔案本身只保留「查詢+編排+寫入」（IO 這一層）——currentRatio/quickRatio/
+// cashRatio 三個 metricCode 的實際計算公式已經拆進 pitMetrics/resilience/<指標>/ 底下各自
+// 的檔案，這裡只負責把查回來的原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、
+// 決定 knowledge_date、呼叫 writeMetricValue。
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -65,15 +62,9 @@ export const computeAndWriteLiquidityRatioPit = async (query: QuarterlyMetricQue
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const currentRatioPct = currentAssets !== null && currentLiabilities !== null ? toPct(currentAssets, currentLiabilities) : null;
-  const currentRatioNullReason: MetricNullReason | null = currentRatioPct === null ? determineNullReason(currentAssets, currentLiabilities) : null;
-
-  const quickAssets = currentAssets !== null && inventory !== null ? currentAssets - inventory : null;
-  const quickRatioPct = quickAssets !== null && currentLiabilities !== null ? toPct(quickAssets, currentLiabilities) : null;
-  const quickRatioNullReason: MetricNullReason | null = quickRatioPct === null ? determineNullReason(quickAssets, currentLiabilities) : null;
-
-  const cashRatioPct = cashAndEquivalents !== null && currentLiabilities !== null ? toPct(cashAndEquivalents, currentLiabilities) : null;
-  const cashRatioNullReason: MetricNullReason | null = cashRatioPct === null ? determineNullReason(cashAndEquivalents, currentLiabilities) : null;
+  const currentRatioCalc = calculateCurrentRatio(currentAssets, currentLiabilities);
+  const quickRatioCalc = calculateQuickRatio(currentAssets, inventory, currentLiabilities);
+  const cashRatioCalc = calculateCashRatio(cashAndEquivalents, currentLiabilities);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
@@ -88,9 +79,9 @@ export const computeAndWriteLiquidityRatioPit = async (query: QuarterlyMetricQue
     cashRatio = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    currentRatio = await writeMetricValue({ ...coordinateFor('currentRatio'), basis: 'Q', value: currentRatioPct, nullReason: currentRatioNullReason, knowledgeDate, knowledgeDateIsFallback });
-    quickRatio = await writeMetricValue({ ...coordinateFor('quickRatio'), basis: 'Q', value: quickRatioPct, nullReason: quickRatioNullReason, knowledgeDate, knowledgeDateIsFallback });
-    cashRatio = await writeMetricValue({ ...coordinateFor('cashRatio'), basis: 'Q', value: cashRatioPct, nullReason: cashRatioNullReason, knowledgeDate, knowledgeDateIsFallback });
+    currentRatio = await writeMetricValue({ ...coordinateFor('currentRatio'), basis: 'Q', value: currentRatioCalc.value, nullReason: currentRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    quickRatio = await writeMetricValue({ ...coordinateFor('quickRatio'), basis: 'Q', value: quickRatioCalc.value, nullReason: quickRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    cashRatio = await writeMetricValue({ ...coordinateFor('cashRatio'), basis: 'Q', value: cashRatioCalc.value, nullReason: cashRatioCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
   }
 
   return { symbol, rocYear: year, season, currentRatio, quickRatio, cashRatio };
