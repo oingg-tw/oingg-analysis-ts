@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "guru_ohlson_o_score" ALTER COLUMN "oeneg" SET DATA TYPE DECIMAL(1,0),
-ALTER COLUMN "intwo" SET DATA TYPE DECIMAL(1,0);
