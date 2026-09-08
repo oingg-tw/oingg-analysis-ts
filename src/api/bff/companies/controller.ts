@@ -448,14 +448,13 @@ export const getCompanyPeerGroupQuerySchema = z.object({
 });
 
 // 給前端「產業同業比較」功能用——找出同業清單，不含財務指標數值：呼叫端拿到 peers 之後
-// 需要再逐一（或依需要批次）查實際指標數值。2026-09-08 filterCatalog/screener 整套機制
-// 隨同已無真實依賴的舊架構一起退場後，本服務**沒有任何「多公司 x 多指標一次查值」的批次
-// 端點**——GET /companies/metric-history、GET /companies/metrics-history 都是單一 symbol
-// 查詢，呼叫端要組出同業比較表需要對每個 peer symbol 各自呼叫一次。這是刻意的能力縮減，
-// 不是遺漏；如果之後真的需要批次查值能力，要在 pitMetrics 架構下重新設計（舊的
-// screener/values 是靠已退場的 metricTableRegistry 解析出資料表，不能直接復原）。用動態
-// 層級回退（子類→細類→小類→中類）找同業，見 src/shared/sourceData/industryClassification.ts
-// 的說明。
+// 應該自己再打 POST /screener/values（symbols + columns）查實際指標數值，這支端點跟
+// screener/values 是刻意分開的兩支，不重複做數值查詢那一層。2026-09-08：screener 這套
+// 查詢引擎已經重建成直接讀 pitMetrics 的 metric_values（field 格式改成
+// "metricCode.basis"，例如 "roe.TTM"，見 GET /filters 的可用清單），不是原本靠
+// metricTableRegistry 解析舊架構表的那套（那套已隨無真實依賴的 filterCatalog 一起退場）。
+// 用動態層級回退（子類→細類→小類→中類）找同業，見
+// src/shared/sourceData/industryClassification.ts 的說明。
 //
 // 查無分類資料（found: false）分兩種成因，這支端點刻意不區分：(1) 這家公司是真實存在、可
 // 交易的公司，但 gov-ts 這批稅籍分類資料沒涵蓋到（例如資料落後）；(2) symbol 打錯或根本

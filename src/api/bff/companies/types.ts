@@ -85,7 +85,7 @@ export const companyPeerGroupResultSchema = z.object({
   industryLevel: z.enum(['subclass', 'class', 'group', 'division']).nullable().meta({ description: '這次比較實際使用的分類層級（子類/細類/小類/中類），由動態回退演算法決定' }),
   industryCode: z.string().nullable(),
   industryName: z.string().nullable(),
-  peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請對每個 symbol 另外呼叫 GET /companies/metric-history' }),
+  peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
   warnings: z.array(z.string()),
 });
 export type CompanyPeerGroupResult = z.infer<typeof companyPeerGroupResultSchema>;

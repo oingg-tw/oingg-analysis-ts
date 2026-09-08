@@ -94,7 +94,7 @@ export const registerCompaniesOpenApi = (): void => {
     path: '/companies',
     summary: '列出公司代號/名稱對照表（分頁）',
     description:
-      '給 bff-ts 自己快取用——多公司陣列結果（valuation/ranking、market/*-ranking 這類）已經直接在回應裡帶 companyName/name，' +
+      '給 bff-ts 自己快取用——多公司陣列結果（screener、valuation/ranking、market/*-ranking 這類）已經直接在回應裡帶 companyName/name，' +
       '單一公司的一般指標 API 也會明確補上 companyName（見 registerCompanyRoute.ts）。這支端點還留著，是給還沒被涵蓋到的情境、' +
       '或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 companyName 會是 null。' +
       '這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。' +
@@ -314,8 +314,8 @@ export const registerCompaniesOpenApi = (): void => {
     summary: '單一公司產業同業清單（產業同業比較功能第一步）',
     description:
       '用財政部稅籍行業標準分類（來源：gov-ts）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
-      '本服務目前沒有「多公司 x 多指標一次查值」的批次端點，拿到 peers 之後請自行對每個 symbol 呼叫' +
-      'GET /companies/metric-history 或 GET /companies/metrics-history 組出比較表。' +
+      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.basis"）查實際指標數值，' +
+      '這支端點刻意不重複做數值查詢那一層。' +
       '同業分組用動態層級回退：子類→細類→小類→中類，依序嘗試，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
       '連中類都不足門檻也會停在中類（不繼續往更粗的層級爬），此時 warnings 會提示「已回退到最粗層級，同業可能包含商業模式不同的公司」。' +
       'industryLevel 明確標示這次比較實際用的是哪一層，避免誤把寬鬆比較當成精確比較。' +
