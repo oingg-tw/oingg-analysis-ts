@@ -5,28 +5,55 @@ import { getUpcomingExDividendNotices } from '@/shared/sourceData/exDividendNoti
 import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
 import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ForeignShareholdingHistoryResult } from './types';
 
+// 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
+// basis='DAILY'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
+// 一起退場了（filterCatalog.csv 最後 6 列確認是開發環境假資料誤判、沒有真實功能依賴，
+// 見 abstract-crafting-journal.md）。三個 metricCode 是同一次 computeAndWriteMarketRatiosPit
+// 呼叫一起寫入的，理論上 tradeDate 一致，這裡各自獨立查「最新一筆」而不是假設一定同步，
+// 跟 getMetricHistory 的既有慣例一致（用 knowledgeDate desc 取最新，不是相信呼叫端
+// 保證同步）。dataType/subsidiaryCompanyId 固定 '2'/''——這是純市場數字，沒有個體/合併
+// 報表的區分，只是延續 metric_values 的識別欄位慣例，見 computeMarketRatiosPit.ts 的說明。
+const MARKET_RATIOS_DATA_TYPE = '2';
+const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
+
+const getLatestMarketRatioValue = async (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> => {
+  const row = await analysisPrisma.metricValue.findFirst({
+    where: { symbol, metricCode, basis: 'DAILY', dataType: MARKET_RATIOS_DATA_TYPE, subsidiaryCompanyId: MARKET_RATIOS_SUBSIDIARY_COMPANY_ID },
+    orderBy: { knowledgeDate: 'desc' },
+  });
+  if (!row || row.tradeDate === null) return null;
+  return { tradeDate: row.tradeDate, value: row.value !== null ? Number(row.value) : null };
+};
+
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無
 // 股價/估值資料是另一回事，price/valuation 個別是 null，仍然是 200——bff-ts 的規格明確要求
 // 這兩種情境要分開。
 export const getStockQuote = async (symbol: string): Promise<StockQuoteResult | null> => {
-  const [exists, price, valuationRow] = await Promise.all([
+  const [exists, price, peRatioRow, pbRatioRow, dividendYieldRow] = await Promise.all([
     companyExists(symbol),
     getLatestDailyPrice(symbol),
-    analysisPrisma.marketRatiosResult.findFirst({ where: { symbol }, orderBy: { tradeDate: 'desc' } }),
+    getLatestMarketRatioValue(symbol, 'exchangePeRatio'),
+    getLatestMarketRatioValue(symbol, 'exchangePbRatio'),
+    getLatestMarketRatioValue(symbol, 'dividendYield'),
   ]);
 
   if (!exists) return null;
 
+  // 三者理論上是同一次批次寫入、tradeDate 一致，但各自獨立查詢不保證同步——用任一筆
+  // 有值的 tradeDate 當代表（優先 peRatio，其次 pbRatio/dividendYield），三者都查無
+  // 資料時 valuation 整體是 null，跟舊架構「查無估值資料」的語意一致。
+  const representativeTradeDate = peRatioRow?.tradeDate ?? pbRatioRow?.tradeDate ?? dividendYieldRow?.tradeDate ?? null;
+
   return {
     symbol,
     price: price ? { tradeDate: price.tradeDate.toISOString().slice(0, 10), close: price.close } : null,
-    valuation: valuationRow
+    valuation: representativeTradeDate
       ? {
-          tradeDate: valuationRow.tradeDate.toISOString().slice(0, 10),
-          peRatio: valuationRow.peRatio !== null ? Number(valuationRow.peRatio) : null,
-          pbRatio: valuationRow.pbRatio !== null ? Number(valuationRow.pbRatio) : null,
-          dividendYield: valuationRow.dividendYieldPct !== null ? Number(valuationRow.dividendYieldPct) : null,
+          tradeDate: representativeTradeDate.toISOString().slice(0, 10),
+          peRatio: peRatioRow?.value ?? null,
+          pbRatio: pbRatioRow?.value ?? null,
+          dividendYield: dividendYieldRow?.value ?? null,
         }
       : null,
   };
