@@ -20,6 +20,22 @@ export interface MetricDefinitionSpec {
 // 程式碼中的宣告式 registry（docs/analysis-ts-spec-v0.2.md §6.3）；DB 的 metric_definitions
 // 一列從這裡 upsert 出去，避免兩邊各自維護一份定義而漂移。命名避開裸的 `registry`——
 // src/adapters/swagger/registry.ts 已經有一個完全不同語意的 OpenAPIRegistry 實例叫這個名字。
+//
+// 2026-09-08 MarketRatios（src/domainMetrics/marketRatios.ts 的 per/pbr/dividendYield）
+// 遷入 pitMetrics 方法論決策（尚未實作，這裡只記錄決定，不是待辦清單）：維持現行的
+// TWSE/TPEx 官方每日公布數字 passthrough，不自己重算——這三個數字是交易所公開的權威
+// 市場觀察值（跟 stockPrice 同類，是原始市場事實，不是從財報衍生出來的比率），跟已存在
+// 的 pitMetrics `peRatio`/`pbRatio`（自己拿 XBRL 算 EPS/BVPS、只在季報知識時點更新一次）
+// 是完全不同用途、刻意並存的兩組數字，不合併、不互相取代。dividendYield 沒有自算對應
+// 版本可比較，直接沿用交易所數字最單純、也最貼近使用者查詢「殖利率」時的預期（跟大盤/
+// 看盤軟體顯示的數字一致）。
+// 規劃中的 metricCode 命名（避開跟既有 peRatio/pbRatio 撞名）：`exchangePeRatio`、
+// `exchangePbRatio`、`dividendYield`（無撞名問題），三者都用 `DAILY` 這個 basis 值
+// （見 metricBasis.ts 該值的說明）、`fiscalQuarter=DAILY_CADENCE_FISCAL_QUARTER`
+// sentinel（見 metricValueWriter.ts）、knowledgeDate 用 resolveDailyCadenceKnowledgeDate
+// 算（見 knowledgeDate.ts）——這三支基礎設施都已經在這批 Beta/MarketRatios 遷移前提
+// 工作中準備好，真的要動手寫 computeExchangePeRatioPit.ts 等檔案時可以直接用。全市場
+// 逐日回填的批次/排程基礎設施是另一個獨立、尚未開始的前提條件，不在這次決策範圍內。
 export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roe: {
     metricCode: 'roe',
