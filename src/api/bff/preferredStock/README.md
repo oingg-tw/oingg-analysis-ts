@@ -83,15 +83,26 @@ passthrough，不需要額外計算。
 - **YTC（贖回殖利率）**：現金流是 n 期年配息（`dividendRate`）+ 第 n 期末贖回價
   （`issuePrice`，發行人贖回是按發行價買回），沒有封閉解，用二分法對現值公式求根
   （`solveYieldToCall`）。
-- **`n`（期數）依贖回日狀態分兩種情境（`resolveYtcPeriods`）**：實測 26 檔可贖回特別股
-  裡 **14 檔（54%）贖回日已經過了**（例如 1101B 台泥乙特 2023-12-13 已過，現在仍正常
-  交易）——這些證券的真實狀態是「發行人隨時可能贖回，但選擇還沒贖回」，沒有下一個確定
-  的贖回時點可以當 n 用。使用者確認的處理方式：兩種情境都算，都回傳，用 `ytcAssumption`
-  標記清楚：
+- **`n`（期數）依贖回日狀態分三種情境**：實測 26 檔可贖回特別股裡 **14 檔（54%）贖回日
+  已經過了**（例如 1101B 台泥乙特 2023-12-13 已過，現在仍正常交易），另外
+  **1312A/2002A 這 2 檔條款本身就沒有排定任何收回日期**（公司可隨時自行決定）——後兩種
+  證券的真實狀態都是「發行人隨時可能贖回，但選擇還沒贖回」，沒有下一個確定的贖回時點
+  可以當 n 用，只是起點狀態不同（有過期日 vs 從來沒有日期）。使用者確認的處理方式：
+  三種情境都算，都回傳，用 `ytcAssumption` 標記清楚：
   - `scheduled_redemption_date`：贖回日還在未來，n = 無條件進位到贖回日的年數（最小值 1）。
-  - `past_redemption_date_assumed_next_period`：贖回日已過，n=1，假設「下一次配息後即
-    被贖回」的簡化情境——**這是人為假設，不是真實排定的贖回時間**，前端顯示 `ytcPct`
-    時應該根據這個欄位額外標註警語。
+    對應 `resolveYtcPeriods`。
+  - `past_redemption_date_assumed_next_period`：有排定贖回日但已經過了，n=1，假設「下
+    一次配息後即被贖回」的簡化情境。對應 `resolveYtcPeriods`。
+  - `no_scheduled_redemption_date_assumed_next_period`（2026-09-08 新增）：條款本身
+    就沒有排定贖回日（`redemptionDate` 是 null 但 `redeemable=true`），n=1，同樣假設
+    「下一次配息後即被贖回」。對應 `resolveYtcPeriodsWithoutScheduledDate`——刻意跟
+    `past_redemption_date_assumed_next_period` 分開標記，因為「從來沒有日期」跟「有
+    日期但過期了」在語意上是不同的起點狀態，前端顯示警語措辭應該不一樣，即使算法
+    （n=1）完全相同。1312A/2002A 因為發行價（$10）遠低於現價（$23/$37.25），算出來
+    的 `ytcPct` 會是很大的負值——這是真實、值得揭露的風險（公司理論上可以用發行價
+    把用市價買進的股票收回），不是計算錯誤。
+  兩者（(2)(3)）都是**人為假設，不是真實排定的贖回時間**，前端顯示 `ytcPct` 時應該
+  根據 `ytcAssumption` 額外標註警語。
 - **`ytwPct` = min(`currentYieldPct`, `ytcPct`)**，`ytcPct` 為 null（不可贖回或缺輸入）
   時退回等於 `currentYieldPct`。
 - **`premiumRatePct`（溢價率）= (最新收盤價 − 發行價) / 發行價 * 100**，只在可贖回時

@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/shared/sourceData/preferredStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
-import { solveYieldToCall, resolveYtcPeriods } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate, type YtcAssumption } from '@/shared/preferredStockYield';
 import type { PreferredStockDataSource } from './types';
 
 // 2026-09-07 使用者要求：回應本身要能查證資料來源，顆粒度到來源即可，不用到逐欄位（逐
@@ -121,13 +121,16 @@ export const getPreferredStocks = async (req: Request, res: Response, next: Next
         const currentYieldPct = right?.dividendRate != null && price?.closePrice != null ? toRatio2(right.dividendRate, price.closePrice) : null;
 
         // YTW（最差殖利率）= min(YTC, YTP)。YTP 就是上面已經算好的 currentYieldPct，不用
-        // 重算。YTC 只在可贖回、且發行價/配息/現價/贖回日都齊全時才算得出來——見
-        // preferredStockYield.ts 檔頭說明，n（期數）依贖回日是否已過分兩種情境，
-        // ytcAssumption 標記告訴呼叫端是哪一種。
+        // 重算。YTC 只在可贖回、且發行價/配息/現價都齊全時才算得出來——見
+        // preferredStockYield.ts 檔頭說明，n（期數）分三種情境，ytcAssumption 標記告訴
+        // 呼叫端是哪一種：(1) 有排定贖回日且還沒到；(2) 有排定贖回日但已經過了；
+        // (3) 條款本身就沒有排定贖回日（例如 1312A/2002A，公司可隨時自行決定）——(2)(3)
+        // 實質風險相同（發行人隨時可能贖回，沒有下一個確定時點），都套用 n=1「假設下一次
+        // 配息後即被贖回」的簡化，只是用不同 assumption 值標記起點狀態不同。
         let ytcPct: number | null = null;
-        let ytcAssumption: 'scheduled_redemption_date' | 'past_redemption_date_assumed_next_period' | null = null;
-        if (right?.redeemable === true && right.issuePrice != null && right.dividendRate != null && price?.closePrice != null && right.redemptionDate != null) {
-          const { periods, assumption } = resolveYtcPeriods(right.redemptionDate, new Date());
+        let ytcAssumption: YtcAssumption | null = null;
+        if (right?.redeemable === true && right.issuePrice != null && right.dividendRate != null && price?.closePrice != null) {
+          const { periods, assumption } = right.redemptionDate != null ? resolveYtcPeriods(right.redemptionDate, new Date()) : resolveYtcPeriodsWithoutScheduledDate();
           const ytc = solveYieldToCall({ currentPrice: price.closePrice, dividendRate: right.dividendRate, callPrice: right.issuePrice, periods });
           ytcPct = Math.round(ytc * 100 * 100) / 100;
           ytcAssumption = assumption;

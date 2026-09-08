@@ -42,7 +42,7 @@ export const solveYieldToCall = (params: { currentPrice: number; dividendRate: n
   return (low + high) / 2;
 };
 
-export type YtcAssumption = 'scheduled_redemption_date' | 'past_redemption_date_assumed_next_period';
+export type YtcAssumption = 'scheduled_redemption_date' | 'past_redemption_date_assumed_next_period' | 'no_scheduled_redemption_date_assumed_next_period';
 
 const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000;
 
@@ -57,3 +57,15 @@ export const resolveYtcPeriods = (redemptionDate: Date, asOfDate: Date): { perio
   const periods = Math.max(1, Math.ceil(diffMs / MS_PER_YEAR));
   return { periods, assumption: 'scheduled_redemption_date' };
 };
+
+// 2026-09-08 新增：有些可贖回特別股（例如 1312A 國喬特、2002A 中鋼特）條款本身就沒有
+// 訂定任何收回日期（公司可隨時自行決定），跟「本來有排定日期、但已經過了」是不同的
+// 起點狀態，不應該套用 resolveYtcPeriods 需要一個真實 Date 才能判斷「過了沒」的邏輯——
+// 但兩者的實質風險完全一樣：發行人隨時可能贖回、選擇還沒動作，沒有下一個確定時點，
+// 所以沿用同一個 n=1「假設下一次配息後即被贖回」簡化，只是用獨立的 assumption 值標記
+// 清楚「這裡從來就沒有排定日期」，不要跟「有日期、已經過期」混為一談——前端顯示警語時
+// 這兩種情境的措辭應該不一樣。
+export const resolveYtcPeriodsWithoutScheduledDate = (): { periods: number; assumption: YtcAssumption } => ({
+  periods: 1,
+  assumption: 'no_scheduled_redemption_date_assumed_next_period',
+});

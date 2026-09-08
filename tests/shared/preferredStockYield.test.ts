@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { solveYieldToCall, resolveYtcPeriods } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate } from '@/shared/preferredStockYield';
 
 // n=1 有封閉解可以交叉驗證：P0 = (D+CallPrice)/(1+y) => y = (D+CallPrice)/P0 - 1。
 test('solveYieldToCall: n=1 時應該精確等於封閉解', () => {
@@ -69,4 +69,19 @@ test('resolveYtcPeriods: 贖回日已過，應該回傳 past_redemption_date_ass
   const result = resolveYtcPeriods(redemptionDate, asOfDate);
   assert.equal(result.assumption, 'past_redemption_date_assumed_next_period');
   assert.equal(result.periods, 1);
+});
+
+// 2026-09-08 新增：1312A/2002A 這種條款本身就沒有排定贖回日的情境（redeemable=true 但
+// redemptionDate=null），跟「有日期但過期了」用不同的 assumption 值標記，即使算法一樣。
+test('resolveYtcPeriodsWithoutScheduledDate: 應該回傳 no_scheduled_redemption_date_assumed_next_period 跟 periods=1', () => {
+  const result = resolveYtcPeriodsWithoutScheduledDate();
+  assert.equal(result.assumption, 'no_scheduled_redemption_date_assumed_next_period');
+  assert.equal(result.periods, 1);
+});
+
+// 1312A 型情境的自洽性驗證：發行價遠低於現價時，YTC 應該是很大的負值（公司理論上可以
+// 用發行價把用市價買進的股票收回，這是真實風險，不是計算錯誤）。
+test('solveYieldToCall: 現價遠高於發行價時（例如 1312A 型情境），YTC 應該是很大的負值', () => {
+  const y = solveYieldToCall({ currentPrice: 23, dividendRate: 0.6, callPrice: 10, periods: 1 });
+  assert.ok(y < -0.4, `發行價遠低於現價時應該是很大的負值，實際 ${y}`);
 });

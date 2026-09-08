@@ -31,16 +31,18 @@ export const preferredStockEntrySchema = z.object({
   }),
   ytcPct: z.number().nullable().meta({
     description:
-      '贖回殖利率（Yield to Call）年化百分比，只在可贖回且發行價/配息/現價/贖回日都齊全時才計算——沒有封閉解，用二分法對現金流現值公式求根。搭配 ytcAssumption 判斷這個數字的期數假設是什麼，不可贖回或缺輸入時為 null',
+      '贖回殖利率（Yield to Call）年化百分比，只在可贖回且發行價/配息/現價都齊全時才計算——沒有封閉解，用二分法對現金流現值公式求根。搭配 ytcAssumption 判斷這個數字的期數假設是什麼，不可贖回或缺輸入時為 null',
   }),
   ytcAssumption: z
-    .enum(['scheduled_redemption_date', 'past_redemption_date_assumed_next_period'])
+    .enum(['scheduled_redemption_date', 'past_redemption_date_assumed_next_period', 'no_scheduled_redemption_date_assumed_next_period'])
     .nullable()
     .meta({
       description:
         "ytcPct 計算時期數(n)用的假設：'scheduled_redemption_date' 代表贖回日還在未來、n 是真實到贖回日的年數；" +
-        "'past_redemption_date_assumed_next_period' 代表贖回日已過（發行人隨時可能贖回但選擇還沒贖回，沒有下一個確定贖回時點），" +
-        'n 用「下一次配息後即被贖回」的簡化假設，不是真實排定的贖回時間——前端顯示 ytcPct 時應該根據這個欄位額外標註警語',
+        "'past_redemption_date_assumed_next_period' 代表有排定贖回日但已經過了；" +
+        "'no_scheduled_redemption_date_assumed_next_period' 代表條款本身就沒有排定贖回日（例如 1312A/2002A，公司可隨時自行決定，見 redemptionVerified）——" +
+        '後兩種都是發行人隨時可能贖回但選擇還沒贖回、沒有下一個確定贖回時點的情境，n 用「下一次配息後即被贖回」的簡化假設，不是真實排定的贖回時間，' +
+        '只是起點狀態不同（有過期日 vs 從來沒有日期）——前端顯示 ytcPct 時應該根據這個欄位額外標註警語，兩種情境的措辭應該不一樣',
     }),
   ytwPct: z.number().nullable().meta({
     description: 'YTW（最差殖利率）= min(currentYieldPct, ytcPct)，ytcPct 為 null 時退回等於 currentYieldPct（永續殖利率單獨成立）',

@@ -31,10 +31,14 @@ export const registerPreferredStockOpenApi = (): void => {
       '都是互動查詢頁，不是能帶參數直接跳到某一筆記錄的深連結，需要使用者自行輸入公司代號/' +
       '日期查詢，note 欄位會說明這一點。' +
       'ytwPct（最差殖利率 YTW）= min(currentYieldPct, ytcPct)——currentYieldPct 就是永續殖利率' +
-      '（YTP）；ytcPct（贖回殖利率 YTC）用二分法對現金流現值公式求根，只在可贖回且輸入齊全時' +
-      '才有值。ytcAssumption 標記 ytcPct 的期數假設：贖回日還沒到就用真實到贖回日的年數；' +
-      '贖回日已過（發行人隨時可能贖回但還沒動作，沒有下一個確定贖回時點）就假設「下一次配息後' +
-      '即被贖回」，這是簡化假設不是真實排定的時間，前端顯示時應該額外標註。' +
+      '（YTP）；ytcPct（贖回殖利率 YTC）用二分法對現金流現值公式求根，只在可贖回且發行價/配息/' +
+      '現價都齊全時才有值，不再要求 redemptionDate 非 null（2026-09-08 起）。ytcAssumption ' +
+      '標記 ytcPct 的期數假設，三種情境：贖回日還沒到（scheduled_redemption_date，用真實到' +
+      '贖回日的年數）；有排定贖回日但已經過了（past_redemption_date_assumed_next_period）；' +
+      '條款本身就沒有排定贖回日（no_scheduled_redemption_date_assumed_next_period，例如' +
+      '1312A/2002A，公司可隨時自行決定）。後兩種都假設「下一次配息後即被贖回」的簡化情境，' +
+      '不是真實排定的時間，只是起點狀態不同（有過期日 vs 從來沒有日期），前端顯示時應該根據' +
+      'ytcAssumption 額外標註不同措辭的警語。' +
       'premiumRatePct（溢價率）= (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回時才計算——' +
       '現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失，前端可以' +
       '自行決定要用什麼門檻標示風險。' +
