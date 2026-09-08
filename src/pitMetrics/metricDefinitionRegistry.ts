@@ -808,6 +808,27 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     dependsOn: ['daily_valuation.dividend_yield'],
     currentFormulaVersion: 1,
   },
+  // 2026-09-08 獨立重新實作 src/domainMetrics/beta.ts（不呼叫舊架構，同一套公式跟降頻
+  // 邏輯）：Beta = Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)。
+  // 舊架構是「一列存三個窗口」，這裡改成「一個 metricCode，三個 basis 值各自一列」
+  // （1Y_DAILY/2Y_WEEKLY/5Y_MONTHLY），因為三個窗口是同一個概念（系統性風險係數）在
+  // 不同取樣頻率下的版本，不是三個不同概念——用 basis 表達，不是拆成三個 metricCode。
+  // dependsOn 填來源表欄位，不是財報 account_code，是市場資料而非財報資料。分類上歸
+  // valuation（Beta 是 CAPM/貼現率的輸入，跟經營/財務風險模型如 altmanZScore 是不同
+  // 概念，2026-09-08 使用者確認：「beta 不反映經營風險」）。
+  beta: {
+    metricCode: 'beta',
+    formulaNote:
+      'Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)，樣本共變異數/變異數' +
+      '（分母 n-1）。三個 basis 各自獨立計算（各自取基準交易日往前 N 年的重疊交易日再降頻，' +
+      '不是用短窗口的資料湊長窗口）：1Y_DAILY 用日資料、2Y_WEEKLY 用週資料（對齊 Bloomberg）、' +
+      '5Y_MONTHLY 用月資料（對齊 Yahoo Finance），降頻取「每個週期最後一個重疊交易日」代表。' +
+      '降頻後取樣點數 < 20 為 insufficient_history；指數變異數為 0（理論上不會發生但防呆）為' +
+      'zero_or_negative_denominator。基準日 = 個股股價與加權指數都有資料的最新重疊交易日。',
+    allowedBases: ['1Y_DAILY', '2Y_WEEKLY', '5Y_MONTHLY'],
+    dependsOn: ['daily_price.close', 'daily_taiex_index.close'],
+    currentFormulaVersion: 1,
+  },
 };
 
 // 冪等，backfill 腳本開跑前呼叫一次即可。
