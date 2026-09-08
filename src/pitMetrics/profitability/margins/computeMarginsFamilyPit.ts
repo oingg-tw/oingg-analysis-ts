@@ -1,5 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getInsuranceIncomeStatementXbrlFirst, getLatestQuarterWithInsuranceIncomeStatement } from '@/shared/sourceData/insuranceIncomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -15,6 +16,39 @@ import type { MetricNullReason } from '../../metricBasis';
 // 欄位共用一個旗標（因為舊架構一次算三個率）。這裡只算毛利率/營業利益率兩個率，TTM
 // 完整度判斷只看「營收/毛利/營業利益」三個欄位，不看淨利——不應該因為淨利缺漏就連累
 // 毛利率算不出來，這是比舊架構更精確的判斷，不是疏漏。
+//
+// 2026-09-08 新增保險業（IFRS17）替代科目 fallback——保險業財報結構沒有「銷貨成本/
+// 毛利」概念，一般產業科目在保險業 XBRL 資料裡完全不存在（不是資料缺漏）。查證+對照
+// conductor-ts 研究筆記後定案的三層對照見 insuranceIncomeStatementXbrlFirst.ts 檔頭：
+// revenue -> insurance_revenue、grossProfit -> insurance_service_result、
+// operatingIncome -> net_operating_income_loss。金控業刻意不做同樣的事（margin/
+// turnover 概念在金控業結構性不成立，需要全新指標概念，不是替代科目能解決的問題，
+// 同樣見那份研究筆記的說明），不要看到這裡的模式就依樣畫葫蘆幫金控業加。
+const getMarginInputs = async (key: {
+  symbol: string;
+  year: number;
+  quarter: number;
+  dataType: string;
+  subsidiaryCompanyId: string;
+}): Promise<{ reportDate: Date; revenue: bigint | null; grossProfitLike: bigint | null; operatingIncomeLike: bigint | null } | null> => {
+  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  if (incomeStatement?.operatingRevenue != null) {
+    return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome };
+  }
+
+  const insurance = await getInsuranceIncomeStatementXbrlFirst(key);
+  if (insurance) {
+    return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss };
+  }
+
+  // 一般查得到列但 operatingRevenue 是 null（例如保險業在一般表裡有 profit_loss 等
+  // 欄位、只是沒有 revenue），且保險替代也查無資料——回傳一般查詢結果的 reportDate（如果
+  // 有）讓 knowledgeDate 解析至少能跑，三個金額欄位維持 null 走既有的 missing_input 邏輯。
+  if (incomeStatement) {
+    return { reportDate: incomeStatement.reportDate, revenue: null, grossProfitLike: null, operatingIncomeLike: null };
+  }
+  return null;
+};
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
@@ -51,10 +85,16 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
     operatingMarginTtm: { action: 'skipped_no_quarter' },
   };
 
+  // 一般 incomeStatement 查無資料（例如 2851 中再保在舊架構 legacy 表完全沒有列）時，
+  // 改用保險替代來源解析「最新一季」——兩個資料源獨立各自解析一次最新季度，取交集下界
+  // 的邏輯跟 getLatestAvailableQuarter 內部一致，但這裡是「一般 OR 保險替代」不是
+  // 「一般 AND 現金流量表」，所以不能直接塞進 getLatestAvailableQuarter 的 sources
+  // 參數，用獨立的 fallback 呼叫。
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+      : ((await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement'])) ??
+        (await getLatestQuarterWithInsuranceIncomeStatement(symbol, dataType, subsidiaryCompanyId).then((q) => (q ? { year: String(q.year), season: String(q.quarter) as Season } : null))));
 
   if (!resolvedQuarter) return skippedNoQuarter;
 
@@ -64,11 +104,11 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
-  const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
-  const grossProfit = incomeStatement?.grossProfit ?? null;
-  const operatingIncome = incomeStatement?.operatingIncome ?? null;
-  const reportDate = incomeStatement?.reportDate ?? null;
+  const marginInputs = await getMarginInputs(key);
+  const operatingRevenue = marginInputs?.revenue ?? null;
+  const grossProfit = marginInputs?.grossProfitLike ?? null;
+  const operatingIncome = marginInputs?.operatingIncomeLike ?? null;
+  const reportDate = marginInputs?.reportDate ?? null;
 
   const grossMarginQuarterly = grossProfit !== null && operatingRevenue !== null ? toPct(grossProfit, operatingRevenue) : null;
   const grossMarginNullReason: MetricNullReason | null = grossMarginQuarterly === null ? determineNullReason(grossProfit, operatingRevenue) : null;
@@ -99,10 +139,12 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   }
 
   // TTM：近四季（含本季）營收/毛利/營業利益各自加總。一季只要這三個欄位任一為 null 就視為
-  // 該季不齊——刻意不看淨利（見檔頭說明的行為差異）。
+  // 該季不齊——刻意不看淨利（見檔頭說明的行為差異）。每一季各自呼叫 getMarginInputs（一般
+  // 查無資料時自動退回保險替代），不是整批只判斷一次資料源——理論上一家公司不會中途切換
+  // 產業別，但這樣寫不用假設「本季用的來源，前三季一定也用同一個」。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let revenueTtmSum = 0n;
@@ -110,12 +152,12 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   let operatingIncomeTtmSum = 0n;
   let ttmComplete = true;
   for (const record of ttmRecords) {
-    if (record === null || record.operatingRevenue === null || record.grossProfit === null || record.operatingIncome === null) {
+    if (record === null || record.revenue === null || record.grossProfitLike === null || record.operatingIncomeLike === null) {
       ttmComplete = false;
     } else {
-      revenueTtmSum += record.operatingRevenue;
-      grossProfitTtmSum += record.grossProfit;
-      operatingIncomeTtmSum += record.operatingIncome;
+      revenueTtmSum += record.revenue;
+      grossProfitTtmSum += record.grossProfitLike;
+      operatingIncomeTtmSum += record.operatingIncomeLike;
     }
   }
 
