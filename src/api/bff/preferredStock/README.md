@@ -38,7 +38,7 @@ API 本身要能查證來源，一開始想標內部 table 名稱，但使用者
 | `symbol`/`name`/`isinCode`/`listedDate`/`marketType` | twse-ts `export.isin_securities`（原樣透傳） |
 | `issueDate`/`issuePrice`/`dividendRate` | mops-ts `export.preferred_stock_right`（原樣透傳，取最新 `series_no`） |
 | `cumulativeDividend`/`participatingExcessDividend`/`liquidationPreference`/`votingRights`/`convertible`/`conversionStartDate` | 同上，`preferred_stock_right`（原樣透傳） |
-| `redeemable`/`redemptionDate`/`redemptionConditions` | 同上，`preferred_stock_right`（原樣透傳，見下方「發行人贖回權」說明） |
+| `redeemable`/`redemptionDate`/`redemptionConditions`/`redemptionVerified` | 同上，`preferred_stock_right`（原樣透傳，見下方「發行人贖回權」說明） |
 | `latestClosePrice`/`latestPriceDate` | twse-ts `export.daily_price`（透過 `getStockPriceAsOf`，見 `marketCap.ts`） |
 | `nominalDividendRatePct` | **本服務自算**：`dividendRate / issuePrice * 100` |
 | `currentYieldPct` | **本服務自算**：`dividendRate / latestClosePrice * 100` |
@@ -62,6 +62,15 @@ API 本身要能查證來源，一開始想標內部 table 名稱，但使用者
 完全沒有投資人賣回權的欄位。`redemptionDate` 是 mops-ts 存好的真實欄位（已驗證等於
 「發行日 + redemptionConditions 描述的保護期」），代表「發行人開始有權贖回」的日期，不是
 「已經被贖回」——即使已經過了這個日期，特別股仍然可能正常交易（發行人選擇不贖回）。
+
+`redemptionVerified`（2026-09-08 mops-ts 新增）：這檔是否經過人工查證章程確認收回權利，
+跟 `redemptionDate` 是否為 null 是兩件事。起因是 `1312A`（國喬特）、`2002A`（中鋼特）
+兩檔——mops-ts 人工查證章程後確認公司確實有收回權利，但條款本身沒有訂定具體收回日期，
+這跟「自動化資料本來就沒查證、不知道有沒有收回權利」是完全不同的狀態，原本只看
+`redemptionDate` 是不是 null 沒辦法區分。已驗證：`1312A`/`2002A` →
+`redemptionVerified=true`、`redemptionDate=null`；其他自動化資料（例如 2887 系列多檔）
+→ `redemptionVerified=false`。`null` 代表查無這個欄位資料，不代表「未查證」。純
+passthrough，不需要額外計算。
 
 ## YTW（最差殖利率）/溢價率（2026-09-07 新增，2026-09-08 負凸性警示改回傳原始溢價率）
 

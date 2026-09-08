@@ -36,6 +36,22 @@ test('getLatestPreferredStockRight: 查無此 preferred_stock_code 應該回傳 
   assert.equal(right, null);
 });
 
+// 2026-09-08 mops-ts 新增 redemption_verified：1312A/2002A 是已查證但條款本身沒有固定
+// 收回日的案例（redeemable=true 但 redemptionDate=null），跟「沒人查證過」要能區分開。
+test('getLatestPreferredStockRight: 1312A/2002A 已人工查證但無固定收回日，redemptionVerified 應為 true', async () => {
+  const guoju = await getLatestPreferredStockRight('1312A');
+  assert.ok(guoju);
+  assert.equal(guoju!.redeemable, true);
+  assert.equal(guoju!.redemptionDate, null);
+  assert.equal(guoju!.redemptionVerified, true);
+
+  const chinaSteel = await getLatestPreferredStockRight('2002A');
+  assert.ok(chinaSteel);
+  assert.equal(chinaSteel!.redeemable, true);
+  assert.equal(chinaSteel!.redemptionDate, null);
+  assert.equal(chinaSteel!.redemptionVerified, true);
+});
+
 afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await mopsExportPrisma.$disconnect();

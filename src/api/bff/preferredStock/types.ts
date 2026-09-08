@@ -23,6 +23,12 @@ export const preferredStockEntrySchema = z.object({
   redeemable: z.boolean().nullable().meta({ description: '發行公司是否可強制買回（發行人贖回權/call，不是投資人賣回權/put——這批資料源沒有投資人賣回權的欄位）' }),
   redemptionDate: z.string().nullable(),
   redemptionConditions: z.string().nullable(),
+  redemptionVerified: z.boolean().nullable().meta({
+    description:
+      '這檔是否經過人工查證章程確認收回權利（2026-09-08 mops-ts 新增）——跟 redemptionDate 是否為 null 是兩件事：' +
+      '有些特別股（例如 1312A/2002A）已查證確認可收回，但條款本身沒有固定收回日，redemptionDate 仍是 null；' +
+      '這個欄位用來區分「已查證、只是沒有固定日期」跟「還沒有人查證過」，null 代表查無此欄位資料，不代表未查證',
+  }),
   ytcPct: z.number().nullable().meta({
     description:
       '贖回殖利率（Yield to Call）年化百分比，只在可贖回且發行價/配息/現價/贖回日都齊全時才計算——沒有封閉解，用二分法對現金流現值公式求根。搭配 ytcAssumption 判斷這個數字的期數假設是什麼，不可贖回或缺輸入時為 null',

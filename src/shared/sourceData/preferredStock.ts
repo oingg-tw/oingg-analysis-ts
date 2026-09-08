@@ -54,6 +54,11 @@ export interface PreferredStockRight {
   redeemable: boolean;
   redemptionDate: Date | null;
   redemptionConditions: string | null;
+  // 2026-09-08 mops-ts 新增：這檔是否在人工驗證覆寫表裡有記錄，跟 redemptionDate 是否為
+  // null 是兩件事——1312A/2002A 這種「已查證章程、確認有收回權但條款本身沒有固定收回日」
+  // 跟「自動化資料，沒有人查證過」原本混在一起分不清，這個欄位解決這個問題。null 代表
+  // mops-ts 這批資料還沒有這個欄位或查無記錄，前端不應該當成「已查證為 false」。
+  redemptionVerified: boolean | null;
 }
 
 interface RawPreferredStockRightRow {
@@ -69,6 +74,7 @@ interface RawPreferredStockRightRow {
   redeemable: boolean;
   redemption_date: Date | null;
   redemption_conditions: string | null;
+  redemption_verified: boolean | null;
 }
 
 const toDecimalNumber = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
@@ -79,7 +85,7 @@ export const getLatestPreferredStockRight = async (preferredStockCode: string): 
   const rows = await mopsExportPrisma.$queryRaw<RawPreferredStockRightRow[]>`
     SELECT issue_date, issue_price, dividend_rate, cumulative_dividend, participating_excess_dividend,
       liquidation_preference, voting_rights, convertible, conversion_start_date, redeemable,
-      redemption_date, redemption_conditions
+      redemption_date, redemption_conditions, redemption_verified
     FROM "export"."preferred_stock_right"
     WHERE preferred_stock_code = ${preferredStockCode}
     ORDER BY series_no DESC LIMIT 1
@@ -99,5 +105,6 @@ export const getLatestPreferredStockRight = async (preferredStockCode: string): 
     redeemable: row.redeemable,
     redemptionDate: row.redemption_date,
     redemptionConditions: row.redemption_conditions,
+    redemptionVerified: row.redemption_verified,
   };
 };

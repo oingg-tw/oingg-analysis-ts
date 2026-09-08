@@ -20,6 +20,10 @@ export const registerPreferredStockOpenApi = (): void => {
       '殖利率也高（例如 2002A 中鋼特票面利率 14% 是 1974 年發行當時的利率環境）。' +
       'redeemable/redemptionDate/redemptionConditions 描述的是發行人贖回權（call，公司單方' +
       '面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。' +
+      'redemptionVerified（2026-09-08 新增）標示這檔是否經過人工查證章程確認收回權利，' +
+      '跟 redemptionDate 是否為 null 是兩件事——有些特別股已查證確認可收回，但條款本身' +
+      '沒有固定收回日，redemptionDate 仍是 null，這個欄位用來區分「已查證只是沒有固定' +
+      '日期」跟「還沒有人查證過」。' +
       'limit/offset 分頁沿用 GET /companies 的慣例。' +
       'dataSources 是給終端使用者查證用的公開頁面連結（TWSE ISIN 網站/MOPS 特別股權利查詢/' +
       'TWSE 個股日成交資訊查詢），不是內部資料庫的表名——顆粒度到來源，不到逐欄位（逐欄位' +
