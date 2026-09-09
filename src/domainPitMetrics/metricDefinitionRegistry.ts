@@ -18,6 +18,9 @@ import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/st
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
+import { buybackYieldDefinition } from '@/domainPitMetrics/dividend/buybackYield/buybackYieldDefinition';
+import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
+import { shareCountChangeRateDefinition } from '@/domainPitMetrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
 import { sgrDefinition } from '@/domainPitMetrics/growth/sgr/sgrDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
@@ -96,6 +99,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
+  buybackYield: buybackYieldDefinition,
+  dividendCoverageRatio: dividendCoverageRatioDefinition,
+  shareCountChangeRate: shareCountChangeRateDefinition,
   sgr: sgrDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,

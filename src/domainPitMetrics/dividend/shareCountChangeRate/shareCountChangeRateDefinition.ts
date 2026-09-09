@@ -1,0 +1,17 @@
+import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
+
+export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
+  metricCode: 'shareCountChangeRate',
+  displayName: '股本變化率（年增）',
+  unit: '%',
+  formulaNote:
+    '= (本季流通股數 - 去年同季流通股數) / 去年同季流通股數 * 100。正值代表股數增加（現金' +
+    '增資、可轉債轉換等稀釋股東權益），負值代表股數減少（庫藏股註銷減資）。去年同季用' +
+    'getPastNQuarters({rocYear,season},5)[0] 取得，跟 piotroskiFScore 既有慣例一致。只有 Q' +
+    ' 一種 basis——流通股數是資產負債表時點快照（跟 bvps/stockPrice 同一種性質），沒有' +
+    ' TTM/年化概念。',
+  group: 'period',
+  allowedPeriodTypes: ['Q'],
+  dependsOn: ['paidInShares'],
+  currentFormulaVersion: 1,
+};
