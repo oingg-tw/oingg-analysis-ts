@@ -19,6 +19,7 @@ export interface NumericFieldDefinition {
   needsExpenseJoin?: boolean; // 舊：單一「最新完整年度」費用率，見 expenseRatio
   needsExpensePivotJoin?: boolean; // 逐年費用率 pivot，見下方 expenseRatio<year> 系列
   needsExpenseLatestFullYearJoin?: boolean; // 最新完整年度的費用率細項拆分，見下方經理費等欄位
+  needsPremiumDiscountJoin?: boolean; // 折溢價率，見下方 premiumDiscountPct
 }
 
 export interface CategoricalFieldDefinition {
@@ -63,6 +64,12 @@ export const NUMERIC_FIELDS: Record<string, NumericFieldDefinition> = {
   // 2026-09-04 sitca-ts 新增欄位——法定下市規模門檻，純資訊性數字，跟 belowStatutoryThreshold
   // （下面 CATEGORICAL_FIELDS）是同一組資料的一體兩面：這是門檻本身，那個是「是否低於門檻」。
   statutoryAumThreshold: { kind: 'numeric', field: 'statutoryAumThreshold', label: '法定下市規模門檻（新台幣）', sqlColumn: 'statutory_aum_threshold' },
+  // 2026-09-10 新增：折溢價率 = (市價 - 淨值) / 淨值 * 100，取「淨值跟市價同一天都有資料」
+  // 的最新一天（見 queryBuilder.ts 的 buildPremiumDiscountJoin）。正值代表市價高於淨值
+  // （溢價），負值代表市價低於淨值（折價）。資料源是 sitca-ts 的 export.fundclear_etf_nav_history
+  // （逐日淨值）+ export.etf_closing_price（twse-ts/tpex-ts push 的逐日市價），市價回填
+  // 深度比淨值淺很多（上市 2020-11 起、上櫃 2021-09 起），見 TECH_DEBT.md。
+  premiumDiscountPct: { kind: 'numeric', field: 'premiumDiscountPct', label: '折溢價率', sqlColumn: 'premium_discount_pct', needsPremiumDiscountJoin: true },
 };
 
 // 2026-09-08 新增：分年度總費用率（bff-ts 轉達 web-nuxt 需求，2001~2026 共 26 年，橫向

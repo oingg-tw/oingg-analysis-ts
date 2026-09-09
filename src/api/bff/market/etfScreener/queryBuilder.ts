@@ -118,6 +118,26 @@ const buildExpenseLatestFullYearJoin = (): { cte: Prisma.Sql; join: Prisma.Sql }
   return { cte, join };
 };
 
+// 折溢價率——取「淨值跟市價同一天都有資料」的最新一天，不是各自抓各自的最新一天再硬湊
+// （那樣會把不同交易日的價格跟淨值算在一起，折溢價數字會失真）。DISTINCT ON (symbol) +
+// ORDER BY date DESC 直接對 JOIN 過的結果取每個 symbol 最新一列，同一個 CTE 裡順便算好
+// 百分比，不用另外查一次「這個 symbol 最新共同日期是哪天」。nav_value 為 0 或 null 時
+// 沒有意義，回傳 null（不是無限大或 0）。
+const buildPremiumDiscountJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
+  const cte = Prisma.sql`
+    premium_discount AS (
+      SELECT DISTINCT ON (n.symbol)
+        n.symbol,
+        CASE WHEN n.nav_value IS NOT NULL AND n.nav_value <> 0 THEN ROUND(((c.close - n.nav_value) / n.nav_value * 100)::numeric, 2) END AS premium_discount_pct
+      FROM "export"."fundclear_etf_nav_history" n
+      JOIN "export"."etf_closing_price" c ON c.symbol = n.symbol AND c.date = n.date
+      ORDER BY n.symbol, n.date DESC
+    )
+  `;
+  const join = Prisma.sql`LEFT JOIN premium_discount ON premium_discount.symbol = base.symbol`;
+  return { cte, join };
+};
+
 const q = (identifier: string): Prisma.Sql => Prisma.raw(`"${identifier}"`);
 
 // expenseRatio 的值來自 expense CTE（別名 total_rate）；expenseRatio<year> 系列來自
@@ -128,6 +148,7 @@ const fieldSourceSql = (definition: NumericFieldDefinition | CategoricalFieldDef
   if (definition.kind === 'numeric' && definition.needsExpenseJoin) return Prisma.raw('expense.total_rate');
   if (definition.kind === 'numeric' && definition.needsExpensePivotJoin) return Prisma.sql`expense_pivot.${q(definition.sqlColumn)}`;
   if (definition.kind === 'numeric' && definition.needsExpenseLatestFullYearJoin) return Prisma.sql`expense_latest.${q(definition.sqlColumn)}`;
+  if (definition.kind === 'numeric' && definition.needsPremiumDiscountJoin) return Prisma.sql`premium_discount.${q(definition.sqlColumn)}`;
   return Prisma.sql`base.${q(definition.sqlColumn)}`;
 };
 
@@ -237,13 +258,18 @@ export const buildEtfScreenerSql = (
     filters.some((f) => f.kind === 'numeric' && f.definition.needsExpenseLatestFullYearJoin) ||
     columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsExpenseLatestFullYearJoin) ||
     (sortDefinition?.kind === 'numeric' && sortDefinition.needsExpenseLatestFullYearJoin === true);
+  const needsPremiumDiscount =
+    filters.some((f) => f.kind === 'numeric' && f.definition.needsPremiumDiscountJoin) ||
+    columns.some((c) => c.definition.kind === 'numeric' && c.definition.needsPremiumDiscountJoin) ||
+    (sortDefinition?.kind === 'numeric' && sortDefinition.needsPremiumDiscountJoin === true);
 
   const baseCte = buildBaseCte(yearMonth);
   const expense = needsExpense ? buildExpenseJoin() : null;
   const expensePivot = needsExpensePivot ? buildExpensePivotJoin() : null;
   const expenseLatest = needsExpenseLatestFullYear ? buildExpenseLatestFullYearJoin() : null;
-  const ctes = [baseCte, ...(expense ? [expense.cte] : []), ...(expensePivot ? [expensePivot.cte] : []), ...(expenseLatest ? [expenseLatest.cte] : [])];
-  const joinList = [...(expense ? [expense.join] : []), ...(expensePivot ? [expensePivot.join] : []), ...(expenseLatest ? [expenseLatest.join] : [])];
+  const premiumDiscount = needsPremiumDiscount ? buildPremiumDiscountJoin() : null;
+  const ctes = [baseCte, ...(expense ? [expense.cte] : []), ...(expensePivot ? [expensePivot.cte] : []), ...(expenseLatest ? [expenseLatest.cte] : []), ...(premiumDiscount ? [premiumDiscount.cte] : [])];
+  const joinList = [...(expense ? [expense.join] : []), ...(expensePivot ? [expensePivot.join] : []), ...(expenseLatest ? [expenseLatest.join] : []), ...(premiumDiscount ? [premiumDiscount.join] : [])];
   const fromSql = joinList.length > 0 ? Prisma.sql`FROM base ${Prisma.join(joinList, ' ')}` : Prisma.sql`FROM base`;
 
   const selectCols = columns.map(columnSelectSql);
