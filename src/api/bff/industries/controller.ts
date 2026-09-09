@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/shared/sourceData/industryClassification';
+import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/shared/sourceData/industryClassification';
 
 export const getIndustryTreeQuerySchema = z.object({
   code: z.string().min(1).optional().meta({
@@ -37,6 +37,22 @@ export const getIndustryTree = async (req: Request, res: Response, next: NextFun
       companyCount: nodeInfo.companyCount,
       children,
       companies: companySymbols.map((symbol) => ({ symbol, companyName: nameMap.get(symbol) ?? null })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2026-09-09 應 bff-ts 要求新增——給「產業追蹤」頁的搜尋功能用（股票代號或分類名稱關鍵字
+// 跳到樹狀節點），一次回傳全部已分類公司的 symbol -> 完整路徑對照表，前端自己建索引，不用
+// 遞迴打 ~999 次 GET /industries/tree。見 industryClassification.ts 的
+// listAllCompanyIndustryPaths() 說明。沒有查詢參數，純讀記憶體快取，成本低。
+export const getIndustryFlat = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paths = listAllCompanyIndustryPaths();
+    const nameMap = await getCompanyNamesForSymbols(paths.map((p) => p.symbol));
+    res.status(200).json({
+      companies: paths.map((p) => ({ symbol: p.symbol, companyName: nameMap.get(p.symbol) ?? null, path: p.path })),
     });
   } catch (error) {
     next(error);

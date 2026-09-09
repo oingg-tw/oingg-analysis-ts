@@ -277,3 +277,47 @@ export const listIndustryCompanies = (code: string): string[] => {
   }
   return symbols;
 };
+
+// ============================================================================
+// 攤平全樹（symbol -> 從 section 到 subclass 的完整路徑）
+// ============================================================================
+
+export interface IndustryPathNode {
+  code: string;
+  level: IndustryLevel;
+  name: string | null;
+}
+
+export interface CompanyIndustryPath {
+  symbol: string;
+  path: IndustryPathNode[]; // 由粗到細排序（section -> ... -> subclass），不含 null 層級
+}
+
+// 2026-09-09 應 bff-ts 要求新增——web-nuxt「產業追蹤」頁要做搜尋（股票代號或分類名稱關鍵字
+// 跳到樹狀節點），需要「查某公司完整路徑」或「攤平整棵樹」的能力，現有的 getIndustryTree
+// 只能一次查一層直屬子節點，遞迴打 ~999 次組出全樹索引不合理（bff-ts 明確表示這違反他們
+// 「不擁有衍生計算」的原則）。這裡直接攤平回傳全部已分類公司的 symbol -> path 對照表，
+// 一次性成本低（999 家公司，純讀已經常駐在記憶體的 classificationCache/
+// industryNameCache，不用新的 DB 查詢），前端可以同時用來做代號搜尋跳轉（symbol 直接查表）
+// 跟分類名稱關鍵字搜尋（path 裡每層都帶 name，前端自己 filter）——比分別做
+// 「查單一公司路徑」+「查關鍵字」兩支端點更簡單、維護面更小。
+//
+// path 直接從 classificationCache 每家公司自己存的 5 個層級代碼組出來（不用走
+// industryTreeCache 的 parentCode 鏈爬樹），因為每家公司這 5 個欄位本來就已經是
+// 「從 section 到 subclass」的完整路徑，只是分開存在各自的欄位裡；null 層級（不是每家
+// 公司都會用到全部 5 層，理論上目前資料都是 5 層全滿，但保守起見還是過濾 null）直接跳過
+// 不放進 path。
+export const listAllCompanyIndustryPaths = (): CompanyIndustryPath[] => {
+  if (!classificationCache || !industryNameCache) return [];
+  const result: CompanyIndustryPath[] = [];
+  for (const [symbol, entry] of classificationCache) {
+    const path: IndustryPathNode[] = [];
+    for (const level of TREE_LEVELS) {
+      const code = entry[level];
+      if (code === null) continue;
+      path.push({ code, level, name: industryNameCache.get(code) ?? null });
+    }
+    result.push({ symbol, path });
+  }
+  return result;
+};

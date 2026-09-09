@@ -18,6 +18,23 @@ export const industryCompanyEntrySchema = z.object({
   companyName: z.string().nullable(),
 });
 
+export const industryPathNodeSchema = z.object({
+  code: z.string(),
+  level: industryLevelSchema,
+  name: z.string().nullable(),
+});
+
+export const industryFlatCompanySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+  path: z.array(industryPathNodeSchema).meta({ description: '由粗到細排序：section -> division -> group -> class -> subclass' }),
+});
+
+export const industryFlatResultSchema = z.object({
+  companies: z.array(industryFlatCompanySchema),
+});
+export type IndustryFlatResult = z.infer<typeof industryFlatResultSchema>;
+
 export const industryTreeNodeResultSchema = z.object({
   found: z.boolean().meta({ description: 'false 代表帶了 code 但查無此產業分類代碼；不給 code（查樹根）恆為 true' }),
   code: z.string().nullable().meta({ description: 'null 代表這是樹根（顯示全部 section）' }),
