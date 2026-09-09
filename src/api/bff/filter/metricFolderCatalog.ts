@@ -34,7 +34,7 @@ const CATEGORIES: { key: string; displayName: string }[] = [
   { key: 'growth', displayName: '成長動能' },
   { key: 'profitability', displayName: '獲利能力' },
   { key: 'quality', displayName: '獲利品質' },
-  { key: 'resilience', displayName: '財務體質' },
+  { key: 'resilience', displayName: '財務韌性' },
   { key: 'valuation', displayName: '估值水準' },
 ];
 
