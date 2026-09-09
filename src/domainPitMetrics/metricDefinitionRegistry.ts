@@ -28,6 +28,9 @@ import { netIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/netInco
 import { operatingIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/operatingIncomeGrowthRate/operatingIncomeGrowthRateDefinition';
 import { equityGrowthRateDefinition } from '@/domainPitMetrics/growth/equityGrowthRate/equityGrowthRateDefinition';
 import { bvpsGrowthRateDefinition } from '@/domainPitMetrics/growth/bvpsGrowthRate/bvpsGrowthRateDefinition';
+import { assetGrowthDefinition } from '@/domainPitMetrics/growth/assetGrowth/assetGrowthDefinition';
+import { consecutiveProfitYearsDefinition } from '@/domainPitMetrics/profitability/consecutiveProfitYears/consecutiveProfitYearsDefinition';
+import { earningsYieldDefinition } from '@/domainPitMetrics/valuation/earningsYield/earningsYieldDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
@@ -88,6 +91,7 @@ import { betaDefinition } from '@/domainPitMetrics/valuation/beta/betaDefinition
 // metricDefinitionSpec.ts，避免 64 個定義檔案 import 型別時形成循環依賴。
 export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roe: roeDefinition,
+  consecutiveProfitYears: consecutiveProfitYearsDefinition,
   roa: roaDefinition,
   netProfitMargin: netProfitMarginDefinition,
   assetTurnover: assetTurnoverDefinition,
@@ -100,6 +104,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   eps: epsDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,
+  earningsYield: earningsYieldDefinition,
   pbRatio: pbRatioDefinition,
   stockPrice: stockPriceDefinition,
   revenuePerShare: revenuePerShareDefinition,
@@ -115,6 +120,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   operatingIncomeGrowthRate: operatingIncomeGrowthRateDefinition,
   equityGrowthRate: equityGrowthRateDefinition,
   bvpsGrowthRate: bvpsGrowthRateDefinition,
+  assetGrowth: assetGrowthDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
