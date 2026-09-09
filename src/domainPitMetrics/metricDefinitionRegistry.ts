@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { legacyAllowedArrays, type MetricDefinitionSpec } from './metricDefinitionSpec';
+import type { MetricDefinitionSpec } from './metricDefinitionSpec';
 import { roeDefinition } from '@/domainPitMetrics/profitability/roe/roeDefinition';
 import { roaDefinition } from '@/domainPitMetrics/profitability/roa/roaDefinition';
 import { netProfitMarginDefinition } from '@/domainPitMetrics/profitability/netProfitMargin/netProfitMarginDefinition';
@@ -143,29 +143,13 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   beta: betaDefinition,
 };
 
-// 冪等，backfill 腳本開跑前呼叫一次即可。metric_definitions 表的外部形狀（四陣列並排）
-// 維持不變，用 legacyAllowedArrays() 從 discriminated union 展開，不用另外重寫一次
-// switch。
+// 冪等，backfill 腳本開跑前呼叫一次即可。2026-09-09 起 metric_definitions 只有一個
+// spec JSON 欄位，直接存整個 MetricDefinitionSpec——不用再做任何形狀轉換（原本的
+// legacyAllowedArrays() adapter 已經整個刪除，這是它唯一的消費端）。
 export const upsertMetricDefinition = async (spec: MetricDefinitionSpec): Promise<void> => {
-  // allowedRollingWindowTokens 特意不解構進去——那個欄位純粹是 registry 內部用的
-  // token 白名單，metric_definitions 表從來沒有對應欄位（DB 這張表本來就不是執行期
-  // 讀取路徑，見這個檔案上方 model 說明），只有四個 allowedXxx 陣列會實際寫進去。
-  const { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences } = legacyAllowedArrays(spec);
-  const allowed = { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences };
   await analysisPrisma.metricDefinition.upsert({
     where: { metricCode: spec.metricCode },
-    create: {
-      metricCode: spec.metricCode,
-      formulaNote: spec.formulaNote,
-      ...allowed,
-      dependsOn: spec.dependsOn,
-      currentFormulaVersion: spec.currentFormulaVersion,
-    },
-    update: {
-      formulaNote: spec.formulaNote,
-      ...allowed,
-      dependsOn: spec.dependsOn,
-      currentFormulaVersion: spec.currentFormulaVersion,
-    },
+    create: { metricCode: spec.metricCode, spec },
+    update: { spec },
   });
 };

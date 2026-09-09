@@ -32,13 +32,16 @@ interface MetricDefinitionSpecBase {
 // metric_values 表根本沒有 lookback_range 這個欄位）——改成 discriminated union，
 // 每個 metricCode 只宣告它真正用得到的欄位。'period'（季報型，寫進 metric_values）/
 // 'rollingWindow'（Beta 這類滾動統計量）/'snapshot'（純市場快照），後兩者都寫進
-// metric_daily_cadence_values。外部 GET /filters 回應形狀（四個 allowedXxx 陣列 +
-// validTokens）維持不變，見 legacyAllowedArrays()。
+// metric_daily_cadence_values。外部 GET /filters 回應原本也維持四陣列並排形狀，但
+// bff-ts 早就完全改讀 validTokens、不再碰那四個陣列，2026-09-09 已經把這個形狀從外部
+// 回應裡整個拿掉，metric_definitions 表也同一天改成單一 spec JSON 欄位直接存整個
+// MetricDefinitionSpec——原本用來在兩種形狀之間轉換的 legacyAllowedArrays() adapter
+// 已經沒有任何消費端，整個刪除。
 //
-// 2026-09-09 拆檔：這個型別本身（以及 legacyAllowedArrays()）從 metricDefinitionRegistry.ts
-// 搬到這支獨立檔案——metricDefinitionRegistry.ts 之後要 import 全部 64 個定義檔案，
-// 如果型別留在 metricDefinitionRegistry.ts，那 64 個定義檔案 import 型別時就會 import
-// 回 metricDefinitionRegistry.ts 本身，形成循環依賴。
+// 2026-09-09 拆檔：這個型別本身從 metricDefinitionRegistry.ts 搬到這支獨立檔案——
+// metricDefinitionRegistry.ts 之後要 import 全部 64 個定義檔案，如果型別留在
+// metricDefinitionRegistry.ts，那 64 個定義檔案 import 型別時就會 import 回
+// metricDefinitionRegistry.ts 本身，形成循環依賴。
 export type MetricDefinitionSpec =
   | (MetricDefinitionSpecBase & { group: 'period'; allowedPeriodTypes: PeriodType[] })
   | (MetricDefinitionSpecBase & {
@@ -55,21 +58,3 @@ export type MetricDefinitionSpec =
       allowedRollingWindowTokens: string[];
     })
   | (MetricDefinitionSpecBase & { group: 'snapshot'; allowedSnapshotCadences: SnapshotCadence[] });
-
-// 給仍然需要「四陣列並排」形狀的消費端用——2026-09-09 起唯一的消費端是
-// upsertMetricDefinition()（metric_definitions 表還是這個舊形狀的欄位，DB schema
-// 沒有跟著這次型別重構一起改）。GET /filters 的回應原本也用這個 adapter，但 bff-ts
-// 早就完全改讀 validTokens、不再碰四個 allowedXxx 陣列，2026-09-09 已經把這個形狀
-// 從外部回應裡整個拿掉，不用再維護「外部契約不變」這個理由。
-export const legacyAllowedArrays = (
-  spec: MetricDefinitionSpec,
-): { allowedPeriodTypes: PeriodType[]; allowedLookbackRanges: LookbackRange[]; allowedSamplingIntervals: SamplingInterval[]; allowedSnapshotCadences: SnapshotCadence[]; allowedRollingWindowTokens: string[] } => {
-  switch (spec.group) {
-    case 'period':
-      return { allowedPeriodTypes: spec.allowedPeriodTypes, allowedLookbackRanges: ['N/A'], allowedSamplingIntervals: ['N/A'], allowedSnapshotCadences: ['N/A'], allowedRollingWindowTokens: [] };
-    case 'rollingWindow':
-      return { allowedPeriodTypes: ['N/A'], allowedLookbackRanges: spec.allowedLookbackRanges, allowedSamplingIntervals: spec.allowedSamplingIntervals, allowedSnapshotCadences: ['N/A'], allowedRollingWindowTokens: spec.allowedRollingWindowTokens };
-    case 'snapshot':
-      return { allowedPeriodTypes: ['N/A'], allowedLookbackRanges: ['N/A'], allowedSamplingIntervals: ['N/A'], allowedSnapshotCadences: spec.allowedSnapshotCadences, allowedRollingWindowTokens: [] };
-  }
-};

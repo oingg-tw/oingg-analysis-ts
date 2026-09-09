@@ -111,34 +111,25 @@ model EquityRiskPremiumResult {
 //   慣例語意不同，只是剛好同名，活在完全不同的表。
 // ============================================================================
 
-// 指標定義層——這次只塞 1 筆(roe)，欄位設計成通用給之後其他指標遷入時不用改 schema。
-// dependsOn 目前只能填現有原始欄位名稱(如 netIncomeAttributableToParent)，不是 canonical
-// account_code(那套詞彙還不存在，見 spec v0.2 §6.1)，是暫時性做法。
+// 指標定義層——這張表唯一的結構性用途是當 MetricValue/MetricDailyCadenceValue 的 FK
+// 錨點（見那兩個 model 的 metricDefinition relation：寫入事實表前，對應 metricCode
+// 必須先在這裡有一列，否則撞 FK 違反錯誤，擋住打錯字/未註冊 metricCode 也能寫進事實表
+// 的情況）——這是它真正的用途，不是「沒人讀就是沒用的表」。
+//
+// 2026-09-09：欄位內容本身（formulaNote/allowedXxx/dependsOn）從來沒有被任何執行期
+// 程式碼查詢回來過（`writeMetricValue()` 驗證用的是記憶體內的 metricDefinitionRegistry
+// 靜態物件，不是這張表）——原本把 TS 的 MetricDefinitionSpec（discriminated union）拆成
+// 好幾個平面欄位（allowedPeriodTypes 等 4 個陣列），是假設有一天會有人用 SQL 查詢這些
+// 欄位，但從沒發生過，維護「discriminated union ↔ DB 平面欄位」這層轉換
+// （metricDefinitionSpec.ts 的 legacyAllowedArrays()）純粹是白費工。改成單一 JSON 欄位
+// 直接存整個 MetricDefinitionSpec——upsertMetricDefinition() 不用再做任何形狀轉換，
+// legacyAllowedArrays() 也跟著整個刪除。要用 Prisma Studio 人工查閱時展開這個 JSON
+// 欄位即可看到完整內容（displayName/unit/formulaNote/group/allowedXxx/dependsOn/
+// currentFormulaVersion）。
 model MetricDefinition {
   metricCode String @id @map("metric_code")
 
-  // 口徑說明，給人看的，不是拿來給程式邏輯 parse 的結構化資料。
-  formulaNote String @map("formula_note")
-
-  // 2026-09-08：原本是單一 allowedBases（塞了三組不同語意的值），拆成四個獨立陣列，
-  // 對應 src/domainPitMetrics/metricBasis.ts 的 periodType / lookbackRange / samplingInterval /
-  // snapshotCadence——每個 metricCode 只會落在其中一組（lookbackRange + samplingInterval
-  // 成對算一組），非本組的陣列固定是 ['N/A']（sentinel，不是空陣列，跟 MetricValue 那四個
-  // 欄位的 sentinel 規則一致）。寫入前用來擋「存量指標被拿去算 TTM」這類錯誤(spec v0.2
-  // §5.5)，見 metricValueWriter.ts 的獨立檢查。
-  // @default([]) 對齊 DB 實際狀態（migration 當初用 DEFAULT '{}' 加欄位，見
-  // 20260908120000_split_metric_values_basis_into_four_columns/migration.sql）——
-  // 沒宣告的話 `prisma migrate diff` 會把這個既有 DEFAULT 誤判成 drift，產生
-  // 一條無意義的 DROP DEFAULT（已實測確認過），這裡補上宣告讓兩邊一致。
-  allowedPeriodTypes       String[] @default([]) @map("allowed_period_types")
-  allowedLookbackRanges    String[] @default([]) @map("allowed_lookback_ranges")
-  allowedSamplingIntervals String[] @default([]) @map("allowed_sampling_intervals")
-  allowedSnapshotCadences  String[] @default([]) @map("allowed_snapshot_cadences")
-
-  // 暫時性依賴清單，見上方檔頭說明。
-  dependsOn String[] @map("depends_on")
-
-  currentFormulaVersion Int @default(1) @map("current_formula_version") @db.SmallInt
+  spec Json
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
