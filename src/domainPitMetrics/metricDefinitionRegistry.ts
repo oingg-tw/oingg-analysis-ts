@@ -17,6 +17,7 @@ import { pbRatioDefinition } from '@/domainPitMetrics/valuation/pbRatio/pbRatioD
 import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/stockPriceDefinition';
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
+import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
 import { sgrDefinition } from '@/domainPitMetrics/growth/sgr/sgrDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
@@ -94,6 +95,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   stockPrice: stockPriceDefinition,
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
+  consecutiveDividendYears: consecutiveDividendYearsDefinition,
   sgr: sgrDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
