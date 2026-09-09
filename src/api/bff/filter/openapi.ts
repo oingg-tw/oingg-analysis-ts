@@ -25,6 +25,7 @@ const metricFolderCatalogEntrySchema = z.object({
 
 const metricFolderCatalogCategorySchema = z.object({
   categoryKey: z.string().meta({ description: '對應 src/domainPitMetrics/<categoryKey>/ 資料夾名稱' }),
+  categoryDisplayName: z.string().meta({ description: '分類的中文名稱，給前端直接顯示用（例如 "獲利能力"）' }),
   metrics: z.array(metricFolderCatalogEntrySchema),
 });
 
@@ -39,7 +40,8 @@ export const registerFiltersOpenApi = (): void => {
     summary: '列出目前 pitMetrics 底下已實作的指標，依因子分類分組',
     description:
       '直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。' +
-      '分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類。' +
+      '分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類，' +
+      '每個分類同時帶 categoryDisplayName（中文名稱），前端不用自己維護一份分類對照表。' +
       '每個 metric 有 metricCode/displayName（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。',

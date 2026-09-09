@@ -23,7 +23,20 @@ import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 // （turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/cashFlowPerShare/
 // liquidityRatio，資料夾名稱本身都不是 metricCode）會被自然濾掉，不用額外維護排除清單。
 const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domainPitMetrics');
-const CATEGORY_DIR_NAMES = ['dividend', 'efficiency', 'growth', 'profitability', 'quality', 'resilience', 'valuation'];
+
+// 2026-09-09 web-nuxt 回報：指標本身已經有 displayName，但分類這一層完全沒有中文（前端只能
+// 顯示 categoryKey 這種英文字串當資料夾名稱，跟旁邊指標的中文名稱並排很突兀）。這裡補上
+// categoryDisplayName，直接跟 CATEGORY_DIR_NAMES 用同一個物件宣告，避免兩份清單各自維護
+// 卻漏改其中一份的風險。
+const CATEGORIES: { key: string; displayName: string }[] = [
+  { key: 'dividend', displayName: '股利' },
+  { key: 'efficiency', displayName: '營運效率' },
+  { key: 'growth', displayName: '成長性' },
+  { key: 'profitability', displayName: '獲利能力' },
+  { key: 'quality', displayName: '獲利品質' },
+  { key: 'resilience', displayName: '財務體質' },
+  { key: 'valuation', displayName: '估值' },
+];
 
 export interface MetricFolderCatalogEntry {
   metricCode: string;
@@ -43,6 +56,7 @@ export interface MetricFolderCatalogEntry {
 
 export interface MetricFolderCatalogCategory {
   categoryKey: string;
+  categoryDisplayName: string;
   metrics: MetricFolderCatalogEntry[];
 }
 
@@ -57,7 +71,7 @@ const listSubdirectoryNames = (dir: string): string[] => {
 };
 
 export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
-  CATEGORY_DIR_NAMES.map((categoryKey) => {
+  CATEGORIES.map(({ key: categoryKey, displayName: categoryDisplayName }) => {
     const metrics = listSubdirectoryNames(join(PIT_METRICS_ROOT, categoryKey))
       .filter((folderName) => folderName in metricDefinitionRegistry)
       .sort()
@@ -70,5 +84,5 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           validTokens: validTokensForMetric(metricCode),
         };
       });
-    return { categoryKey, metrics };
+    return { categoryKey, categoryDisplayName, metrics };
   }).filter((category) => category.metrics.length > 0);
