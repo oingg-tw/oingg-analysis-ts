@@ -11,16 +11,15 @@ import type { MetricNullReason } from '../../metricBasis';
 // SUE（標準化未預期盈餘，Standardized Unexpected Earnings）——季節性隨機漫步版
 // （Foster, Olsen & Shevlin 1984；Bernard & Thomas 1989），PEAD 文獻旗艦指標。
 // UE_i = EPS_i − EPS_{i-4}（本季 vs 去年同季單季 EPS 之差，不是成長率），SUE_t = UE_t /
-// σ(UE)，σ 用最近幾期 UE 的樣本標準差（ddof=1）估計——原始論文用 20 季估計，但那需要
-// 5 年的逐季 EPS 資料（我們目前資料深度普遍不到 20 季），這裡改用「最近 4~8 期 UE」的
-// 實務常見窗口（優先取到 8 期，不足 8 期但至少有 4 期仍可估計，因為 UE 本身已經是季節性
-// 隨機漫步殘差，比原始 EPS 序列更接近平穩，4 期估計雖然比 20 季粗糙但不是無意義），不足
-// 4 期視為 insufficient_history，不用更少的期數頂替。
+// σ(UE)，σ 用最近 20 期 UE 的樣本標準差（ddof=1）估計——原始論文用 20 季估計，2026-09-10
+// 實測驗證過 2330 的 XBRL 損益表資料至少連續回溯到 108Q3（28 季全部有值，無缺口），資料
+// 深度足夠支撐完整的 20 季窗口，不需要退回較短的實務替代窗口。不足 20 期視為
+// insufficient_history，不用更少的期數頂替（跟文件「不自訂較短視窗」的原則一致）。
 
-const TARGET_UE_WINDOW = 8;
-const MIN_UE_WINDOW = 4;
-// 算 8 期 UE 需要「本季往回 8 期」再加上「每期都要比對去年同季」，所以要抓到本季往回
-// 8+4-1=11 期前，共 12 期 EPS。
+const TARGET_UE_WINDOW = 20;
+const MIN_UE_WINDOW = 20;
+// 算 20 期 UE 需要「本季往回 20 期」再加上「每期都要比對去年同季」，所以要抓到本季往回
+// 20+4-1=23 期前，共 24 期 EPS。
 const QUARTERS_OF_EPS_NEEDED = TARGET_UE_WINDOW + 4;
 
 const pickNetIncome = (
