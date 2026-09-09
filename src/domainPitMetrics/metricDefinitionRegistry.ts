@@ -86,6 +86,7 @@ import { exchangePeRatioDefinition } from '@/domainPitMetrics/valuation/exchange
 import { exchangePbRatioDefinition } from '@/domainPitMetrics/valuation/exchangePbRatio/exchangePbRatioDefinition';
 import { dividendYieldDefinition } from '@/domainPitMetrics/dividend/dividendYield/dividendYieldDefinition';
 import { betaDefinition } from '@/domainPitMetrics/valuation/beta/betaDefinition';
+import { famaFrenchOperatingProfitabilityDefinition } from '@/domainPitMetrics/profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityDefinition';
 
 // 程式碼中的宣告式 registry（docs/analysis-ts-spec-v0.2.md §6.3）；DB 的 metric_definitions
 // 一列從這裡 upsert 出去，避免兩邊各自維護一份定義而漂移。命名避開裸的 `registry`——
@@ -185,6 +186,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   exchangePbRatio: exchangePbRatioDefinition,
   dividendYield: dividendYieldDefinition,
   beta: betaDefinition,
+  famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityDefinition,
 };
 
 // 冪等，backfill 腳本開跑前呼叫一次即可。2026-09-09 起 metric_definitions 只有一個
