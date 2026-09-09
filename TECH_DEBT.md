@@ -35,6 +35,14 @@
   都不動，只關掉 route 註冊跟 OpenAPI 文件），等 tpex-ts 決定要不要爭取授權或放棄
   這個資料源。
 
+## 已結案
+
+- **ETF 折溢價指標**：2026-09-10 已完成——sitca-ts 開好 `export.fundclear_etf_nav_history`/
+  `export.etf_closing_price` 兩個 view 後，直接在 `GET /etf-screener` 加了
+  `premiumDiscountPct` 欄位（commit `d0df562`）。市價 push 仍在持續回填中（目前 331 檔
+  ETF 裡 214 檔有值），且回溯深度比淨值淺（上市 2020-11 起、上櫃 2021-09 起）——這不是
+  待辦事項，是這個欄位本身的資料特性，null 值代表「市價還沒回填到」，不是查詢失敗。
+
 ## 已知但非本服務造成的上游 bug
 
 - **mops 季度資料越界問題**：查一季卻回兩季資料，已確認是 mops-ts 端的問題，已回報
