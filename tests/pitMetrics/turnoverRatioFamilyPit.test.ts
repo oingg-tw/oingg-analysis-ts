@@ -24,14 +24,14 @@ beforeAll(async () => {
 });
 
 test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', async () => {
-  // 這支 compute 函式一次寫 20 個 (metric_code, basis) 組合（4 個周轉率 x 3 basis + 3 個
-  // 天數指標 x 2 basis + CCC x 2 basis），每次 writeMetricValue 都是「先查後寫」兩次 DB
+  // 這支 compute 函式一次寫 20 個 (metric_code, periodType) 組合（4 個周轉率 x 3 periodType + 3 個
+  // 天數指標 x 2 periodType + CCC x 2 periodType），每次 writeMetricValue 都是「先查後寫」兩次 DB
   // 往返，比其他單一 metric_code 的測試慢，預設 5 秒逾時不夠，拉長到 20 秒。
   await computeAndWriteTurnoverRatioFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (metricCode: string, basis: string) =>
+  const findLatest = (metricCode: string, periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode, periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode, periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 

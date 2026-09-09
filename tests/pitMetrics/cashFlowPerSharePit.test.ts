@@ -16,9 +16,9 @@ beforeAll(async () => {
 test('cashFlowPerSharePit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', async () => {
   await computeAndWriteCashFlowPerSharePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (metricCode: string, basis: string) =>
+  const findLatest = (metricCode: string, periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode, periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode, periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -29,7 +29,7 @@ test('cashFlowPerSharePit: 2330 115Q2 合併報表，跟既有基準數字交叉
   const fcfQAnn = await findLatest('fcfPerShare', 'Q_ANN');
   const fcfTtm = await findLatest('fcfPerShare', 'TTM');
 
-  assert.ok(ocfQ && ocfQAnn && ocfTtm && fcfQ && fcfQAnn && fcfTtm, '兩個 metric_code 各 3 個 basis 應該全部寫入');
+  assert.ok(ocfQ && ocfQAnn && ocfTtm && fcfQ && fcfQAnn && fcfTtm, '兩個 metric_code 各 3 個 periodType 應該全部寫入');
   assert.equal(Number(ocfQ!.value), 30.21);
   assert.equal(Number(ocfQAnn!.value), 120.84);
   assert.equal(Number(ocfTtm!.value), 101.6);

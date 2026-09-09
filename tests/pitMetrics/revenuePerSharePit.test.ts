@@ -15,9 +15,9 @@ beforeAll(async () => {
 test('revenuePerSharePit: 2330 115Q2 合併報表，跟 revenuePerShare.test.ts 的既有基準數字交叉驗證', async () => {
   await computeAndWriteRevenuePerSharePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (basis: string) =>
+  const findLatest = (periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'revenuePerShare', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'revenuePerShare', periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -25,7 +25,7 @@ test('revenuePerSharePit: 2330 115Q2 合併報表，跟 revenuePerShare.test.ts 
   const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q && qAnn && ttm, '三個 basis 應該全部寫入 metric_values');
+  assert.ok(q && qAnn && ttm, '三個 periodType 應該全部寫入 metric_values');
   assert.equal(Number(q!.value), 48.99);
   assert.equal(Number(qAnn!.value), 195.96);
   assert.equal(Number(ttm!.value), 171.23);

@@ -12,9 +12,9 @@ beforeAll(async () => {
 test('roicPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', async () => {
   await computeAndWriteRoicPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (basis: string) =>
+  const findLatest = (periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'roic', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'roic', periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -22,7 +22,7 @@ test('roicPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', asy
   const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q && qAnn && ttm, '三個 basis 應該全部寫入');
+  assert.ok(q && qAnn && ttm, '三個 periodType 應該全部寫入');
   assert.equal(Number(q!.value), 17.04);
   assert.equal(Number(qAnn!.value), 68.16);
   assert.equal(Number(ttm!.value), 53.97);

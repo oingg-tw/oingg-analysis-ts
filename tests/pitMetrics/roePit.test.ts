@@ -17,9 +17,9 @@ beforeAll(async () => {
 test('roePit: 2330 115Q2 合併報表，跟 roe.test.ts 的既有基準數字交叉驗證', async () => {
   await computeAndWriteRoePit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (basis: string) =>
+  const findLatest = (periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'roe', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'roe', periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -27,9 +27,9 @@ test('roePit: 2330 115Q2 合併報表，跟 roe.test.ts 的既有基準數字交
   const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q, 'basis=Q 應該有寫入 metric_values');
-  assert.ok(qAnn, 'basis=Q_ANN 應該有寫入 metric_values');
-  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  assert.ok(q, 'periodType=Q 應該有寫入 metric_values');
+  assert.ok(qAnn, 'periodType=Q_ANN 應該有寫入 metric_values');
+  assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   assert.equal(Number(q!.value), 10.98);
   assert.equal(Number(qAnn!.value), 43.92);
   assert.equal(Number(ttm!.value), 34.78);
@@ -45,7 +45,7 @@ test('roePit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
 
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
   assert.deepEqual(second.qAnn, { action: 'skipped_unchanged' });
-  // 2887 115Q1 的 TTM 是否齊全視實際資料而定，只要 basis 有被計算（不是 skipped_no_quarter/
+  // 2887 115Q1 的 TTM 是否齊全視實際資料而定，只要 periodType 有被計算（不是 skipped_no_quarter/
   // skipped_no_knowledge_date），第二次呼叫就一定要落在 skipped_unchanged。
   if ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date')) {
     // 這組座標本來就算不出 TTM，不構成去重測試的一部分。
@@ -73,7 +73,7 @@ test('roePit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledg
     where: { symbol: '2317', metricCode: 'roe', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
-  assert.ok(q, '2317 115Q2 損益表/資產負債表皆有資料，basis=Q 應該算得出來並寫入');
+  assert.ok(q, '2317 115Q2 損益表/資產負債表皆有資料，periodType=Q 應該算得出來並寫入');
   assert.equal(q!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 
@@ -85,14 +85,14 @@ test('roePit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
     orderBy: { knowledgeDate: 'desc' },
   });
 
-  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
   // equityAttributableToParent 1907936607，手動核算過等於 11.15%。
   assert.equal(Number(ttm!.value), 11.15);
   assert.equal(ttm!.nullReason, null);
 });
 
-test('roePit: 9999（查無資料的公司）應該優雅降級，三個 basis 都不寫入', async () => {
+test('roePit: 9999（查無資料的公司）應該優雅降級，三個 periodType 都不寫入', async () => {
   const outcome = await computeAndWriteRoePit({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(outcome.rocYear, null);

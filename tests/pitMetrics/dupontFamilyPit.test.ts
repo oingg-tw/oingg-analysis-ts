@@ -10,9 +10,9 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 // dupont.ts 三支舊架構檔案的獨立重新實作，這裡拿 tests/domains/metrics/dupont.test.ts 裡
 // 2330 115Q2 的既有基準數字交叉驗證，測試結構比照 tests/domainPitMetrics/roePit.test.ts。
 
-const findLatest = (symbol: string, metricCode: string, basis: string, fiscalYear: number, fiscalQuarter: number) =>
+const findLatest = (symbol: string, metricCode: string, periodType: string, fiscalYear: number, fiscalQuarter: number) =>
   analysisPrisma.metricValue.findFirst({
-    where: { symbol, metricCode, periodType: basis, fiscalYear, fiscalQuarter, dataType: '2', subsidiaryCompanyId: '' },
+    where: { symbol, metricCode, periodType, fiscalYear, fiscalQuarter, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
 
@@ -76,7 +76,7 @@ test('dupontFamilyPit: 五因子 Extended DuPont（2330 115Q2）應該精確等�
 
   assert.ok(
     taxBurdenQ && interestBurdenQ && ebitMarginQ && extendedRoeQ && taxBurdenTtm && interestBurdenTtm && ebitMarginTtm && extendedRoeTtm,
-    '8 個新 metric_code/basis 組合應該全部寫入 metric_values'
+    '8 個新 metric_code/periodType 組合應該全部寫入 metric_values'
   );
 
   assert.equal(Number(taxBurdenQ!.value), 81.93);
@@ -113,7 +113,7 @@ test('dupontFamilyPit: 2317 115Q2——financial_report_announcement 無覆蓋�
 
   assert.notEqual(outcome.netProfitMarginQ, undefined);
   const netProfitMarginQ = await findLatest('2317', 'netProfitMargin', 'Q', 2026, 2);
-  assert.ok(netProfitMarginQ, '2317 115Q2 損益表/資產負債表皆有資料，basis=Q 應該算得出來並寫入');
+  assert.ok(netProfitMarginQ, '2317 115Q2 損益表/資產負債表皆有資料，periodType=Q 應該算得出來並寫入');
   assert.equal(netProfitMarginQ!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 

@@ -17,9 +17,9 @@ beforeAll(async () => {
 test('roaPit: 2330 115Q2 合併報表，跟 roa.test.ts 的既有基準數字交叉驗證', async () => {
   await computeAndWriteRoaPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
-  const findLatest = (basis: string) =>
+  const findLatest = (periodType: string) =>
     analysisPrisma.metricValue.findFirst({
-      where: { symbol: '2330', metricCode: 'roa', periodType: basis, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
+      where: { symbol: '2330', metricCode: 'roa', periodType, fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
       orderBy: { knowledgeDate: 'desc' },
     });
 
@@ -27,9 +27,9 @@ test('roaPit: 2330 115Q2 合併報表，跟 roa.test.ts 的既有基準數字交
   const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q, 'basis=Q 應該有寫入 metric_values');
-  assert.ok(qAnn, 'basis=Q_ANN 應該有寫入 metric_values');
-  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  assert.ok(q, 'periodType=Q 應該有寫入 metric_values');
+  assert.ok(qAnn, 'periodType=Q_ANN 應該有寫入 metric_values');
+  assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   assert.equal(Number(q!.value), 7.54);
   assert.equal(Number(qAnn!.value), 30.16);
   assert.equal(Number(ttm!.value), 23.86);
@@ -68,7 +68,7 @@ test('roaPit: 2317 115Q2——financial_report_announcement 無覆蓋，knowledg
     where: { symbol: '2317', metricCode: 'roa', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' },
     orderBy: { knowledgeDate: 'desc' },
   });
-  assert.ok(q, '2317 115Q2 損益表/資產負債表皆有資料，basis=Q 應該算得出來並寫入');
+  assert.ok(q, '2317 115Q2 損益表/資產負債表皆有資料，periodType=Q 應該算得出來並寫入');
   assert.equal(q!.knowledgeDateIsFallback, true, '2317 完全沒有公告日覆蓋，knowledge_date 應該是 reportDate fallback');
 });
 
@@ -80,14 +80,14 @@ test('roaPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
     orderBy: { knowledgeDate: 'desc' },
   });
 
-  assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
+  assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
   // totalAssets 5622576474，手動核算過等於 3.78%。
   assert.equal(Number(ttm!.value), 3.78);
   assert.equal(ttm!.nullReason, null);
 });
 
-test('roaPit: 9999（查無資料的公司）應該優雅降級，三個 basis 都不寫入', async () => {
+test('roaPit: 9999（查無資料的公司）應該優雅降級，三個 periodType 都不寫入', async () => {
   const outcome = await computeAndWriteRoaPit({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(outcome.rocYear, null);
