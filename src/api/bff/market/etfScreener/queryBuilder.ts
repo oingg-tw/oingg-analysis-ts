@@ -262,7 +262,10 @@ export const buildEtfScreenerSql = (
           if (!found) throw new Error(`buildEtfScreenerSql: sortField "${sort.field}" 不在 columns 裡，service.ts 應該在呼叫前就驗證過這件事。`);
           return Prisma.raw(`"${found.field}"`);
         })();
-  const orderDirection = sort?.order === 'desc' ? Prisma.raw('DESC') : Prisma.raw('ASC');
+  // bff-ts 2026-09-09 回報：desc 排序時 null 值跑到最前面——Postgres 對 DESC 預設
+  // NULLS FIRST（ASC 預設 NULLS LAST，剛好符合預期，一直沒發現）。這裡明確加 NULLS LAST，
+  // 不管 asc/desc，null 值一律排最後，是使用者預期的「缺資料排最後面」語意，不是 SQL 預設值。
+  const orderDirection = sort?.order === 'desc' ? Prisma.raw('DESC NULLS LAST') : Prisma.raw('ASC');
   const orderBySql = sort && sort.field !== 'symbol' ? Prisma.sql`${sortColumnSql} ${orderDirection}, symbol ASC` : Prisma.sql`${sortColumnSql} ${orderDirection}`;
 
   return Prisma.sql`
