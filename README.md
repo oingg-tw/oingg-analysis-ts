@@ -3,7 +3,8 @@
 台股財務指標計算服務——從 oingg 生態系上游服務（mops-ts/twse-ts/tpex-ts/gov-ts/sitca-ts）
 的公開揭露資料計算衍生財務指標（ROE、Altman Z-Score、估值倍數、產業分類瀏覽等），供
 bff-ts 消費。命名慣例、跨服務對齊決策見 [`UBIQUITOUS_LANGUAGE.md`](UBIQUITOUS_LANGUAGE.md)；
-指標分類/公式/口徑見 [`src/domainMetrics/README.md`](src/domainMetrics/README.md)；
+指標分類/公式/口徑見 `src/pitMetrics/metricDefinitionRegistry.ts`（每個 metricCode 各自
+的 `<metricCode>Definition.ts`，跟計算邏輯放在同一個資料夾）或執行期打 `GET /filters`；
 架構演進脈絡見 [`docs/analysis-ts-spec-v0.2.md`](docs/analysis-ts-spec-v0.2.md)（如果
 `docs/` 還在——那個資料夾內容可能隨時被清掉，不保證持久）。
 
@@ -72,12 +73,15 @@ generator output 在 `generated/<name>-client/`（已 `.gitignore`，`postinstal
    靜靜銷毀歷史資料的保險。
 
 指標分類（獲利能力/現金流/財務結構/周轉率/大師模型/估值）跟每支指標的計算公式/口徑，
-見 [`src/domainMetrics/README.md`](src/domainMetrics/README.md)——這裡不重複維護一份
+見 `src/pitMetrics/metricDefinitionRegistry.ts`（每個 metricCode 各自的
+`<metricCode>Definition.ts`）或執行期打 `GET /filters`——`domainMetrics/` 這個舊架構
+資料夾本身已經在 2026-09-09 完全刪除（唯一倖存的 `ranking.ts` 搬進
+`src/api/bff/metrics/valuation/ranking/calculateRanking.ts`），這裡不重複維護一份
 容易過期的清單。
 
 `src/domainMacro/`（`equityRiskPremium`/`govBondYield10y`）是全市場單一值（不分公司）的
-總體經濟指標，跟上面「每支證券一份數值」的 `domainMetrics` 是不同的資料形狀，回應直接
-就是 HTTP 輸出本身，沒有中間的 filterCatalog/screener 那層。
+總體經濟指標，跟 pitMetrics「每支證券一份數值」是不同的資料形狀，回應直接就是 HTTP
+輸出本身，沒有中間的 filterCatalog/screener 那層。
 
 ## API 結構
 

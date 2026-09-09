@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getRankingQuerySchema } from './controller';
-import { rankingResultSchema } from '@/domainMetrics/ranking';
+import { rankingResultSchema } from './calculateRanking';
 
 export const registerValuationRankingOpenApi = (): void => {
   registry.registerPath({
