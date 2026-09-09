@@ -13,8 +13,16 @@
 // 如果之後要重啟這個方向，可以參考這次的設計（sync 協定見已刪除的 src/shared/sync/，git
 // 歷史裡找得到）。
 //
-// 異動這裡的 model 後，用 `pnpm prisma:analysis:migrate` 產生/套用 migration（不要對
-// ../schema.prisma 那份跑 migrate，那份永遠只用 db pull 內省）。
+// 異動這裡的 model 後，migration 一律用：`npx prisma migrate diff
+// --from-config-datasource --to-schema=prisma/analysis/schema.prisma --script`
+// 產考 → 手寫成安全的多階段 migration.sql → `npx prisma migrate deploy
+// --schema=prisma/analysis/schema.prisma` → `npx prisma generate`。**不要用
+// `prisma migrate dev`**——這張 schema 有好幾個手寫進 migration.sql、Prisma schema
+// DSL 表達不出來的 CHECK 約束（見 MetricValue/MetricDailyCadenceValue 兩個 model 的
+// 說明），`migrate dev` 的 shadow-DB 比對機制會把它們當成 drift 而產生 DROP
+// CONSTRAINT。這個腳本原本叫 `pnpm prisma:analysis:migrate`，2026-09-09 已經從
+// package.json 移除（不留一個看起來安全、實際上會搞壞 DB 的指令）。
+// ../schema.prisma 那份永遠只用 db pull 內省，不要對它跑 migrate。
 //
 // 表名（@@map）命名規則：`<分類>_<指標>`，跟 src/domains 底下的分類資料夾一一對應（例如
 // guru/ncav/ 對應 guru_ncav），不要加 `_result` 這種沒有識別意義的字尾。2026-08-20 從舊的
@@ -222,8 +230,9 @@ model MetricValue {
 // 剛好一組是真實值。**這條 CHECK 約束不會出現在這份 schema.prisma 裡**——理由跟
 // metric_values_coordinate_kind_check 當初的說明一致，`prisma migrate dev`
 // （= `pnpm prisma:analysis:migrate`）如果被執行，會把它當成 schema.prisma 沒宣告
-// 的物件而產生 DROP CONSTRAINT，千萬不要跑；一律用 `prisma migrate diff` 產考
-// + 手寫 migration.sql + `prisma migrate deploy` 的既有流程。
+// 的物件而產生 DROP CONSTRAINT，千萬不要跑（這個指令 2026-09-09 已經從 package.json
+// 移除，不留一個看起來安全、實際上會搞壞 DB 的指令）；一律用 `prisma migrate diff`
+// 產考 + 手寫 migration.sql + `prisma migrate deploy` 的既有流程。
 model MetricDailyCadenceValue {
   id BigInt @id @default(autoincrement())
 

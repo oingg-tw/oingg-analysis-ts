@@ -32,8 +32,11 @@ pnpm test             # vitest，會連真的開發資料庫
 
 跟很早期的設計不同（如果你在舊 commit 或文件裡看到「唯讀鏡像」、「跟 mops-ts 共用資料庫」
 這類描述，那些已經不是現況）：本服務**自己擁有並管理**一個 Postgres 資料庫（Neon 專案
-`oingg-analysis`，`prisma/analysis/schema.prisma`，唯一會跑 `pnpm prisma:analysis:migrate`
-的 schema），存的是算完的指標結果；另外用 `etl_reader`（唯讀）角色連五個上游服務各自的
+`oingg-analysis`，`prisma/analysis/schema.prisma`，唯一會實際套用 migration 的
+schema——流程是 `prisma migrate diff --from-config-datasource --script` 產考 +
+手寫 migration.sql + `prisma migrate deploy`，不要用 `prisma migrate dev`，這張
+schema 有幾個 DSL 表達不出來的 CHECK 約束，`migrate dev` 會誤判成 drift），存的是
+算完的指標結果；另外用 `etl_reader`（唯讀）角色連五個上游服務各自的
 `export` schema 取得原始資料，**只讀，不落地存副本**（2026-09-03 起明確決定：curated
 中台鏡像層現階段太早，一律即時查詢）：
 

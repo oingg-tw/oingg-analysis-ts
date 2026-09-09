@@ -15,7 +15,6 @@
     "batch:compute": "tsx scripts/batchComputeIndicators.ts",
     "batch:types": "tsc --noEmit -p scripts/tsconfig.json",
     "postinstall": "prisma generate --schema=prisma/analysis/schema.prisma && prisma generate --schema=prisma/mopsExport/schema.prisma && prisma generate --schema=prisma/govExport/schema.prisma && prisma generate --schema=prisma/tpexExport/schema.prisma && prisma generate --schema=prisma/sitcaExport/schema.prisma && prisma generate --schema=prisma/twseExport/schema.prisma",
-    "prisma:analysis:migrate": "prisma migrate dev --schema=prisma/analysis/schema.prisma",
     "prisma:analysis:studio": "prisma studio --schema=prisma/analysis/schema.prisma",
     "prisma:mopsExport:pull": "prisma db pull --schema=prisma/mopsExport/schema.prisma",
     "prisma:mopsExport:studio": "prisma studio --schema=prisma/mopsExport/schema.prisma",
