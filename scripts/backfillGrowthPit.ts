@@ -8,6 +8,7 @@ import { computeAndWriteEpsGrowthRatePit } from '../src/domainPitMetrics/growth/
 import { computeAndWriteNetIncomeGrowthRatePit } from '../src/domainPitMetrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit';
 import { computeAndWriteOperatingIncomeGrowthRatePit } from '../src/domainPitMetrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit';
 import { computeAndWriteEquityGrowthRatePit } from '../src/domainPitMetrics/growth/equityGrowthRate/computeEquityGrowthRatePit';
+import { computeAndWriteBvpsGrowthRatePit } from '../src/domainPitMetrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
@@ -16,7 +17,7 @@ const SYMBOLS = ['2330'];
 
 const main = async () => {
   await Promise.all(
-    ['revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate'].map((code) =>
+    ['revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate'].map((code) =>
       upsertMetricDefinition(metricDefinitionRegistry[code]!)
     )
   );
@@ -29,6 +30,7 @@ const main = async () => {
     console.log(`[net-income-growth-rate-pit] ${symbol}: ${JSON.stringify(await computeAndWriteNetIncomeGrowthRatePit(query))}`);
     console.log(`[operating-income-growth-rate-pit] ${symbol}: ${JSON.stringify(await computeAndWriteOperatingIncomeGrowthRatePit(query))}`);
     console.log(`[equity-growth-rate-pit] ${symbol}: ${JSON.stringify(await computeAndWriteEquityGrowthRatePit(query))}`);
+    console.log(`[bvps-growth-rate-pit] ${symbol}: ${JSON.stringify(await computeAndWriteBvpsGrowthRatePit(query))}`);
   }
 };
 

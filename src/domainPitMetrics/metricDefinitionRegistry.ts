@@ -27,6 +27,7 @@ import { epsGrowthRateDefinition } from '@/domainPitMetrics/growth/epsGrowthRate
 import { netIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/netIncomeGrowthRate/netIncomeGrowthRateDefinition';
 import { operatingIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/operatingIncomeGrowthRate/operatingIncomeGrowthRateDefinition';
 import { equityGrowthRateDefinition } from '@/domainPitMetrics/growth/equityGrowthRate/equityGrowthRateDefinition';
+import { bvpsGrowthRateDefinition } from '@/domainPitMetrics/growth/bvpsGrowthRate/bvpsGrowthRateDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
@@ -113,6 +114,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   netIncomeGrowthRate: netIncomeGrowthRateDefinition,
   operatingIncomeGrowthRate: operatingIncomeGrowthRateDefinition,
   equityGrowthRate: equityGrowthRateDefinition,
+  bvpsGrowthRate: bvpsGrowthRateDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
