@@ -12,6 +12,7 @@ export const peRatioDefinition: MetricDefinitionSpec = {
     '= 股價(knowledge_date當天或之前最近一筆收盤價) / EPS(TTM，近四季淨利加總*1000/流通股數)。' +
     '只有 TTM 一種 basis——台股慣例的本益比就是用近四季 EPS。EPS_TTM 剛好等於 0 才是 null' +
     '（zero_or_negative_denominator），為負仍計算出真實但為負的本益比，不隱藏。',
+  formulaLatex: '\\mathrm{PE} = \\frac{\\mathrm{Price}}{\\mathrm{EPS}_{\\mathrm{TTM}}}',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

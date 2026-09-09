@@ -10,6 +10,16 @@ interface MetricDefinitionSpecBase {
   displayName: string;
   unit: string;
   formulaNote: string;
+  // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種
+  // 自然語言說明）由這裡儲存，前端忠實顯示，不要各自維護一份、算式跟後端實際公式對不上。
+  // 存 LaTeX 字串（用 \mathrm{} 包多字元識別碼，例如 \mathrm{NetIncome}，避免被當成
+  // 連續單字元符號相乘），用 @cortex-js/compute-engine 的 ce.parse(latex).json 驗證過
+  // 語法正確、能還原成乾淨的 MathJSON，前端建議用同一個套件家族的 mathlive（唯讀模式）
+  // 或純 KaTeX 渲染，不需要自己刻一份 LaTeX 字串。這是純顯示用途，不是要前端真的用
+  // compute-engine 重新計算數值（財務數字用 bigint 算，compute-engine 走浮點數，
+  // 精度語意跟我們的計算不一樣，不能拿來取代實際計算）。選填——先在少數指標試點，
+  // 還沒補上的指標維持只有 formulaNote 這種自然語言說明。
+  formulaLatex?: string;
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

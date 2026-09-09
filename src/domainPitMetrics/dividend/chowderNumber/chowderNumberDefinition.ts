@@ -11,6 +11,7 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
     '股利五年成長率沿用 dividendGrowthRate5y 同一套現金流量近似邏輯（variant_of，不是精確' +
     '宣告股利，見 dividendGrowthRateDefinition.ts 的說明）。兩者都獨立重新計算，不依賴' +
     '已寫入的值。任一成分缺漏，整體視為缺漏，不補 0。只有 FY 一種 basis。',
+  formulaLatex: '\\mathrm{Chowder} = \\mathrm{DividendYield} + \\mathrm{DividendGrowthRate}_{5y}',
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'paidInShares'],

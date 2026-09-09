@@ -52,6 +52,13 @@ export interface MetricFolderCatalogEntry {
   // 回應形狀，只留這個唯一該信任的合法 token 清單。呼叫端（screener field 的 "."
   // 後半段、companies 端點的 token query 參數）直接拿來當選單使用。
   validTokens: string[];
+  // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身由後端儲存，前端忠實顯示，
+  // 不要各自維護一份跟後端實際計算對不上的算式。LaTeX 字串，用 @cortex-js/compute-engine
+  // 驗證過語法（見 scripts/validateFormulaLatex.ts），建議前端用同一個套件家族的
+  // mathlive（唯讀模式）或純 KaTeX 渲染。目前只在少數指標試點，還沒補上的是 undefined
+  // （不是空字串），前端要處理「這支指標還沒有公式可顯示」的情況，繼續 fallback 顯示
+  // displayName 就好。
+  formulaLatex?: string;
 }
 
 export interface MetricFolderCatalogCategory {
@@ -82,6 +89,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           displayName: definition.displayName,
           unit: definition.unit,
           validTokens: validTokensForMetric(metricCode),
+          formulaLatex: definition.formulaLatex,
         };
       });
     return { categoryKey, categoryDisplayName, metrics };

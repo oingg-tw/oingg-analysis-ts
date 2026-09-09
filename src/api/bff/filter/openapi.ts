@@ -21,6 +21,12 @@ const metricFolderCatalogEntrySchema = z.object({
     .meta({
       description: '這個 metricCode 實際可查詢的 token 清單（screener field ".token" 後半段/companies 端點的 token 參數直接用這個值），組欄位選單請直接用這個陣列。',
     }),
+  formulaLatex: z.string().optional().meta({
+    description:
+      '2026-09-10 新增：公式的 LaTeX 字串，前後端統一算式顯示用——後端儲存、前端忠實顯示，不要各自維護一份。' +
+      '目前只在少數指標試點，還沒補上的是 undefined（不是空字串），前端請處理「這支指標還沒有公式可顯示」的情況，' +
+      '繼續 fallback 顯示 displayName 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
+  }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
@@ -44,7 +50,8 @@ export const registerFiltersOpenApi = (): void => {
       '每個分類同時帶 categoryDisplayName（中文名稱），前端不用自己維護一份分類對照表。' +
       '每個 metric 有 metricCode/displayName（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
-      'GET /companies/metrics-history 查歷史數值。',
+      'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
+      '目前只在少數指標試點）。',
     tags: ['System'],
     responses: {
       200: {

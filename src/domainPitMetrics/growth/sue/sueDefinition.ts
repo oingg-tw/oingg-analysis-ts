@@ -11,6 +11,10 @@ export const sueDefinition: MetricDefinitionSpec = {
     '深度足夠（至少連續回溯到 108Q3，28 季無缺口）。少於 20 期 UE 可估計視為' +
     ' insufficient_history，不用更少期數頂替（不自訂較短視窗）。只有 Q 一種 basis——本質是' +
     '單季盈餘意外，沒有 TTM 概念。',
+  // \sigma(\mathrm{UE})（函式呼叫寫法）會被 compute-engine 剖析成「\sigma 乘以 UE」，
+  // 不是「UE 的標準差」——2026-09-10 實測驗證過。改用下標寫法 \sigma_{\mathrm{UE}}，
+  // 還原成單一符號 sigma_UE，不會被拆成乘法。
+  formulaLatex: '\\mathrm{SUE}_t = \\frac{\\mathrm{UE}_t}{\\sigma_{\\mathrm{UE}}},\\quad \\mathrm{UE}_i = \\mathrm{EPS}_i - \\mathrm{EPS}_{i-4}',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
