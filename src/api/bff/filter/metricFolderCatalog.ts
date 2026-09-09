@@ -1,15 +1,12 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { metricDefinitionRegistry, legacyAllowedArrays } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
-import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/pitMetrics/metricBasis';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 pitMetrics 完全脫節）
 // ——這份改成直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08 那批拆分之後，
 // 每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），比對
-// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的四組 basis 相關欄位值
-// （periodType/lookbackRange/samplingInterval/snapshotCadence，見 metricBasis.ts 的
-// 完整說明），組出分類清單。
+// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 token 清單，組出分類清單。
 //
 // 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts（已退場）
 // 當初的說明一致：正式環境 build 產物是 CommonJS，import.meta 在那個模式下是編譯期錯誤；
@@ -30,19 +27,16 @@ const CATEGORY_DIR_NAMES = ['dividend', 'efficiency', 'growth', 'profitability',
 export interface MetricFolderCatalogEntry {
   metricCode: string;
   // 2026-09-09 新增：給前端顯示用的中文名稱/單位，來源是 metricDefinitionRegistry.ts
-  // 每個 metricCode 宣告的 displayName/unit——之前這支端點只有 metricCode 跟四個
-  // allowedXxx 陣列，前端組欄位選單時沒有可讀文案可以用。
+  // 每個 metricCode 宣告的 displayName/unit。
   displayName: string;
   unit: string;
-  allowedPeriodTypes: PeriodType[];
-  allowedLookbackRanges: LookbackRange[];
-  allowedSamplingIntervals: SamplingInterval[];
-  allowedSnapshotCadences: SnapshotCadence[];
-  // 2026-09-08 bff-ts 回報：上面 allowedLookbackRanges x allowedSamplingIntervals 不是自由
-  // 交叉組合（beta 9 種組合只有 3 種真的有資料），直接拿兩個陣列做笛卡兒積會做出「選了也
-  // 永遠查不到資料」的假選項。這個欄位是唯一該信任的合法 token 清單，呼叫端（screener
-  // field 的 "." 後半段、companies 端點的 token query 參數）直接拿來當選單使用，不用自己
-  // 組合、不用知道背後是哪一組（periodType/滾動統計量/snapshotCadence）。
+  // 2026-09-08 新增，2026-09-09 起是這個端點唯一曝露的 token 相關欄位——原本還有四個
+  // allowedXxx 陣列並排（allowedPeriodTypes/allowedLookbackRanges/
+  // allowedSamplingIntervals/allowedSnapshotCadences），但 bff-ts 早在拿到 validTokens
+  // 之後就已經完全改讀這個欄位、不再碰那四個陣列（笛卡兒積會做出查不到資料的假選項，
+  // 見 fieldResolver.ts 的說明）——既然沒有任何消費端還在用，直接移除四陣列並排的外部
+  // 回應形狀，只留這個唯一該信任的合法 token 清單。呼叫端（screener field 的 "."
+  // 後半段、companies 端點的 token query 參數）直接拿來當選單使用。
   validTokens: string[];
 }
 
@@ -68,19 +62,10 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
       .sort()
       .map((metricCode): MetricFolderCatalogEntry => {
         const definition = metricDefinitionRegistry[metricCode]!;
-        // legacyAllowedArrays() 也回傳 allowedRollingWindowTokens（registry 內部用的
-        // token 白名單），刻意只解構外部回應形狀本來就有的四個欄位，不要整包 spread
-        // 進去——這個外部回應形狀從 2026-09-08 起就不含 allowedRollingWindowTokens，
-        // 拆 discriminated union 那次曾經不小心把它 spread 漏進來，已修正。
-        const { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences } = legacyAllowedArrays(definition);
         return {
           metricCode,
           displayName: definition.displayName,
           unit: definition.unit,
-          allowedPeriodTypes,
-          allowedLookbackRanges,
-          allowedSamplingIntervals,
-          allowedSnapshotCadences,
           validTokens: validTokensForMetric(metricCode),
         };
       });
