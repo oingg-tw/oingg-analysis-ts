@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getStockQuote, getStockPrices, getExDividendNotices, getExDividendCalendar, getForeignShareholdingHistory } from './service';
+import { getStockQuote, getStockPrices, getExDividendNotices, getExDividendCalendar, getForeignShareholdingHistory, getDailyPriceHistory } from './service';
 import { logger } from '@/shared/logger';
 
 export const getQuoteParamsSchema = z.object({
@@ -125,6 +125,34 @@ export const getForeignShareholdingHistoryHandler = async (req: Request, res: Re
     res.status(200).json(result);
   } catch (error) {
     logger.error({ err: error }, 'Foreign shareholding history lookup failed:');
+    next(error);
+  }
+};
+
+// 2026-09-10 web-nuxt 轉達使用者需求：個股頁面逐日股價線圖。2330 目前累積約 1423 筆
+// （2020-11~2026-09，約 5 年），上限留一點餘裕，跟 MAX_FOREIGN_SHAREHOLDING_LIMIT 同一種
+// 「取最近幾個交易日」慣例，不是日期區間參數。
+const MAX_DAILY_PRICE_HISTORY_LIMIT = 2000;
+export const getDailyPriceHistoryParamsSchema = getQuoteParamsSchema;
+export const getDailyPriceHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(MAX_DAILY_PRICE_HISTORY_LIMIT).default(250).meta({ description: `取最近幾個交易日，預設 250（約 1 年），上限 ${MAX_DAILY_PRICE_HISTORY_LIMIT}。` }),
+});
+
+export const getDailyPriceHistoryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paramsResult = getDailyPriceHistoryParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return res.status(400).json({ message: 'Invalid path parameters.', errors: paramsResult.error.format() });
+    }
+    const queryResult = getDailyPriceHistoryQuerySchema.safeParse(req.query);
+    if (!queryResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: queryResult.error.format() });
+    }
+
+    const result = await getDailyPriceHistory(paramsResult.data.symbol, queryResult.data.limit);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error({ err: error }, 'Daily price history lookup failed:');
     next(error);
   }
 };

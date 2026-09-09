@@ -1,10 +1,10 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { companyExists } from '@/shared/sourceData/companyProfile';
-import { getLatestDailyPrice, getLatestDailyPricesBatch } from '@/shared/sourceData/twseMarketData';
+import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/shared/sourceData/twseMarketData';
 import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/shared/sourceData/exDividendNotice';
 import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ExDividendCalendarResult, ForeignShareholdingHistoryResult } from './types';
+import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ExDividendCalendarResult, ForeignShareholdingHistoryResult, DailyPriceHistoryResult } from './types';
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -101,5 +101,14 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
 // 是前端自己的降級處理，這支不需要特別區分「查無資料」跟「這家公司真的沒有外資持股」。
 export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingHistoryResult> => {
   const entries = await getForeignShareholdingHistoryFromSource(symbol, limit);
+  return { symbol, entries };
+};
+
+// 2026-09-10 web-nuxt 轉達使用者需求：個股頁面「市場評價」分頁要一張真正的逐日股價線圖——
+// 既有 PE/PB 河流圖裡的 stockPrice metricCode 是季報型（每季一個點），不是逐日。這支直接查
+// twse-ts/tpex-ts 的 daily_price，不經過 pitMetrics（那套架構是給「隨財報更新知識時點」的
+// 指標用，逐日股價沒有這個概念，直接查表就好，不需要 knowledgeDate 解析）。
+export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<DailyPriceHistoryResult> => {
+  const entries = await getDailyPriceHistoryFromSource(symbol, limit);
   return { symbol, entries };
 };

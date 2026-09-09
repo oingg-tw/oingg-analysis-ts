@@ -49,3 +49,19 @@ export const foreignShareholdingHistoryResultSchema = z.object({
   entries: z.array(foreignShareholdingEntrySchema).meta({ description: '依日期新到舊排序' }),
 });
 export type ForeignShareholdingHistoryResult = z.infer<typeof foreignShareholdingHistoryResultSchema>;
+
+export const dailyPriceHistoryEntrySchema = z.object({
+  tradeDate: z.string().meta({ description: '"YYYY-MM-DD"' }),
+  open: z.number().nullable(),
+  high: z.number().nullable(),
+  low: z.number().nullable(),
+  close: z.number().nullable(),
+  volume: z.number().nullable(),
+});
+export type DailyPriceHistoryEntry = z.infer<typeof dailyPriceHistoryEntrySchema>;
+
+export const dailyPriceHistoryResultSchema = z.object({
+  symbol: z.string(),
+  entries: z.array(dailyPriceHistoryEntrySchema).meta({ description: '依交易日由舊到新排序（畫線圖方便直接照順序畫，不用前端自己反轉）' }),
+});
+export type DailyPriceHistoryResult = z.infer<typeof dailyPriceHistoryResultSchema>;

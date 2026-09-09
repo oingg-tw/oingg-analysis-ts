@@ -99,6 +99,56 @@ export const getLatestDailyPrice = async (symbol: string): Promise<DailyPriceAsO
   return { tradeDate: tpexRecord.trade_date, close: toNullableNumber(tpexRecord.close) };
 };
 
+export interface DailyPriceHistoryEntry {
+  tradeDate: string; // "YYYY-MM-DD"
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+interface RawDailyPriceHistoryRow {
+  trade_date: Date;
+  open: unknown;
+  high: unknown;
+  low: unknown;
+  close: unknown;
+  volume: unknown;
+}
+
+// 2026-09-10 web-nuxt 轉達使用者需求：個股頁面「市場評價」分頁要一張真正的逐日股價線圖
+// （不是既有 PE/PB 河流圖裡用的季報型 stockPrice metricCode，那是每季一個點，不是逐日）。
+// 一家公司只會在 TWSE 或 TPEx 其中一邊掛牌，先查 TWSE、查無資料再查 TPEx 就夠，跟
+// getLatestDailyPrice 同一種判斷。依交易日新到舊排序、取最近 limit 筆——跟
+// getForeignShareholdingHistory 同一種「limit=最近幾筆」慣例，不是日期區間參數，呼叫端
+// 不用自己換算日期。
+export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<DailyPriceHistoryEntry[]> => {
+  const toEntries = (rows: RawDailyPriceHistoryRow[]): DailyPriceHistoryEntry[] =>
+    rows.map((row) => ({
+      tradeDate: row.trade_date.toISOString().slice(0, 10),
+      open: toNullableNumber(row.open),
+      high: toNullableNumber(row.high),
+      low: toNullableNumber(row.low),
+      close: toNullableNumber(row.close),
+      volume: toNullableNumber(row.volume),
+    }));
+
+  const twseRows = await twseExportPrisma.$queryRaw<RawDailyPriceHistoryRow[]>`
+    SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
+    WHERE symbol = ${symbol}
+    ORDER BY trade_date DESC LIMIT ${limit}
+  `;
+  if (twseRows.length > 0) return toEntries(twseRows).reverse();
+
+  const tpexRows = await tpexExportPrisma.$queryRaw<RawDailyPriceHistoryRow[]>`
+    SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
+    WHERE symbol = ${symbol}
+    ORDER BY trade_date DESC LIMIT ${limit}
+  `;
+  return toEntries(tpexRows).reverse();
+};
+
 // 一次查多家公司的最新股價（GET /stocks/prices?symbols=... 用）——不知道每個 symbol 掛在哪個
 // 市場，所以兩邊都查，各自取每家公司最新一筆，不逐一查詢避免 N+1。2026-09-03 起 TWSE/TPEx
 // 都走 export schema、都沒有 model 存取子，統一用 SQL 的 DISTINCT ON 達到同樣效果。

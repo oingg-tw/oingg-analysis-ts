@@ -1,6 +1,21 @@
 import { registry } from '@/adapters/swagger/registry';
-import { getQuoteParamsSchema, symbolsQuerySchema, getExDividendCalendarQuerySchema, getForeignShareholdingHistoryParamsSchema, getForeignShareholdingHistoryQuerySchema } from './controller';
-import { stockQuoteResultSchema, stockPricesResultSchema, exDividendNoticesResultSchema, exDividendCalendarResultSchema, foreignShareholdingHistoryResultSchema } from './types';
+import {
+  getQuoteParamsSchema,
+  symbolsQuerySchema,
+  getExDividendCalendarQuerySchema,
+  getForeignShareholdingHistoryParamsSchema,
+  getForeignShareholdingHistoryQuerySchema,
+  getDailyPriceHistoryParamsSchema,
+  getDailyPriceHistoryQuerySchema,
+} from './controller';
+import {
+  stockQuoteResultSchema,
+  stockPricesResultSchema,
+  exDividendNoticesResultSchema,
+  exDividendCalendarResultSchema,
+  foreignShareholdingHistoryResultSchema,
+  dailyPriceHistoryResultSchema,
+} from './types';
 
 export const registerStocksOpenApi = (): void => {
   registry.registerPath({
@@ -93,6 +108,26 @@ export const registerStocksOpenApi = (): void => {
     request: { params: getForeignShareholdingHistoryParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
     responses: {
       200: { description: '依日期新到舊排序的外資持股歷史，查無資料的公司 entries 是空陣列。', content: { 'application/json': { schema: foreignShareholdingHistoryResultSchema } } },
+      400: { description: '請求的參數格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/stocks/{symbol}/daily-price-history',
+    summary: '查詢單一公司的逐日股價（開高低收量）',
+    description:
+      '2026-09-10 新增，給個股頁面「市場評價」分頁的逐日股價線圖用——跟既有 PE/PB 河流圖用的' +
+      'stockPrice metricCode（季報型，每季一個點）不同，這支是真正的逐日資料，直接查' +
+      'twse-ts/tpex-ts 的 export.daily_price，不經過 pitMetrics 架構（逐日股價沒有' +
+      '「隨財報更新知識時點」的概念，不需要 knowledgeDate 解析）。一家公司只會在 TWSE/TPEx' +
+      '其中一邊掛牌，本服務內部自己判斷、查兩邊，呼叫端不用先知道是上市還是上櫃。依交易日' +
+      '由舊到新排序（畫線圖方便直接照順序畫）。查無資料（例如代號不存在）entries 是空陣列，' +
+      '不是 404。',
+    tags: ['Stocks'],
+    request: { params: getDailyPriceHistoryParamsSchema, query: getDailyPriceHistoryQuerySchema },
+    responses: {
+      200: { description: '依交易日由舊到新排序的逐日股價，查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dailyPriceHistoryResultSchema } } },
       400: { description: '請求的參數格式錯誤。' },
     },
   });

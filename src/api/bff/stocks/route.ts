@@ -1,5 +1,12 @@
 import { Router } from 'ultimate-express';
-import { getQuote, getPrices, getExDividendNoticesHandler, getExDividendCalendarHandler, getForeignShareholdingHistoryHandler } from './controller';
+import {
+  getQuote,
+  getPrices,
+  getExDividendNoticesHandler,
+  getExDividendCalendarHandler,
+  getForeignShareholdingHistoryHandler,
+  getDailyPriceHistoryHandler,
+} from './controller';
 
 const router = Router();
 
@@ -8,5 +15,6 @@ router.get('/stocks/prices', getPrices);
 router.get('/stocks/ex-dividend-notices', getExDividendNoticesHandler);
 router.get('/stocks/ex-dividend-calendar', getExDividendCalendarHandler);
 router.get('/stocks/:symbol/foreign-shareholding-history', getForeignShareholdingHistoryHandler);
+router.get('/stocks/:symbol/daily-price-history', getDailyPriceHistoryHandler);
 
 export default router;
