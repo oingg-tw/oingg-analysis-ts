@@ -1,7 +1,7 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from './metricBasis';
 
-export interface MetricDefinitionSpec {
+interface MetricDefinitionSpecBase {
   metricCode: string;
   // 2026-09-09：給前端顯示用的中文名稱/單位——GET /filters 之前只有 metricCode 跟四個
   // allowedXxx 陣列，沒有使用者可讀文案，前端沒辦法直接拿來組欄位選單。displayName 是
@@ -11,21 +11,6 @@ export interface MetricDefinitionSpec {
   displayName: string;
   unit: string;
   formulaNote: string;
-  // 2026-09-08：原本是單一 allowedBases，拆成四個獨立陣列（見 metricBasis.ts 的完整
-  // 說明）——每個 metricCode 只會落在其中一組，非本組固定 ['N/A']（sentinel，不是空陣列）。
-  allowedPeriodTypes: PeriodType[];
-  allowedLookbackRanges: LookbackRange[];
-  allowedSamplingIntervals: SamplingInterval[];
-  allowedSnapshotCadences: SnapshotCadence[];
-  // 2026-09-08 補：allowedLookbackRanges x allowedSamplingIntervals **不是自由交叉組合**——
-  // bff-ts 拿 beta 實測發現 3x3=9 種組合裡只有 3 種（1Y_1D/2Y_1W/5Y_1M）真的有資料，其餘
-  // 6 種雖然通過舊版 fieldResolver 的獨立欄位驗證（各自都在允許清單內），實際查詢永遠是
-  // total:0 的假選項（不是 400，是「查得到但沒資料」，前端會做出誤導使用者的欄位選單）。
-  // 這個欄位是滾動統計量組（lookbackRange 這組）metricCode 的唯一正確合法組合來源，
-  // token 格式跟 fieldResolver.ts 的 "<lookbackRange>_<samplingInterval>" 一致（例如
-  // "2Y_1W"）——resolveTokenForMetric 對這組的驗證要看這個陣列，不能各自檢查兩個獨立
-  // 陣列的 includes()。非本組 metricCode（periodType/snapshotCadence 組）固定空陣列。
-  allowedRollingWindowTokens: string[];
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，
@@ -37,6 +22,51 @@ export interface MetricDefinitionSpec {
   dependsOn: string[];
   currentFormulaVersion: number;
 }
+
+// 2026-09-09：原本是 4 個並排陣列（allowedPeriodTypes/allowedLookbackRanges/
+// allowedSamplingIntervals/allowedSnapshotCadences）+ allowedRollingWindowTokens，
+// 每個 metricCode 只用得到其中一組，其餘固定填 ['N/A']——這個形狀是 2026-09-08
+// metric_values 還沒拆表、三種指標共用一張表時的設計（DB 欄位本身就是這樣的 NOT NULL +
+// sentinel 形狀）。2026-09-09 拆成 metric_values（純季報型）/
+// metric_daily_cadence_values（逐日型）兩張表之後，「四陣列並排」在 DB 層面已經不對應
+// 任何真實欄位了（例如 roe 宣告 allowedLookbackRanges: ['N/A']，但 roe 寫進的
+// metric_values 表根本沒有 lookback_range 這個欄位）——改成 discriminated union，
+// 每個 metricCode 只宣告它真正用得到的欄位。'period'（季報型，寫進 metric_values）/
+// 'rollingWindow'（Beta 這類滾動統計量）/'snapshot'（純市場快照），後兩者都寫進
+// metric_daily_cadence_values。外部 GET /filters 回應形狀（四個 allowedXxx 陣列 +
+// validTokens）維持不變，見 legacyAllowedArrays()。
+export type MetricDefinitionSpec =
+  | (MetricDefinitionSpecBase & { group: 'period'; allowedPeriodTypes: PeriodType[] })
+  | (MetricDefinitionSpecBase & {
+      group: 'rollingWindow';
+      allowedLookbackRanges: LookbackRange[];
+      allowedSamplingIntervals: SamplingInterval[];
+      // 2026-09-08 補：allowedLookbackRanges x allowedSamplingIntervals **不是自由交叉
+      // 組合**——bff-ts 拿 beta 實測發現 3x3=9 種組合裡只有 3 種（1Y_1D/2Y_1W/5Y_1M）
+      // 真的有資料，其餘 6 種雖然通過舊版 fieldResolver 的獨立欄位驗證（各自都在允許
+      // 清單內），實際查詢永遠是 total:0 的假選項。這個欄位是唯一正確合法組合來源，
+      // token 格式跟 fieldResolver.ts 的 "<lookbackRange>_<samplingInterval>" 一致
+      // （例如 "2Y_1W"）——resolveTokenForMetric 對這組的驗證要看這個陣列，不能各自
+      // 檢查兩個獨立陣列的 includes()。
+      allowedRollingWindowTokens: string[];
+    })
+  | (MetricDefinitionSpecBase & { group: 'snapshot'; allowedSnapshotCadences: SnapshotCadence[] });
+
+// 給仍然需要「四陣列並排」外部形狀的消費端用（GET /filters 回應、metric_definitions
+// 表的 upsert、既有測試斷言）——不用各自重寫一次 switch，維持外部契約不變的同時，
+// 內部型別可以只宣告真正相關的欄位。
+export const legacyAllowedArrays = (
+  spec: MetricDefinitionSpec,
+): { allowedPeriodTypes: PeriodType[]; allowedLookbackRanges: LookbackRange[]; allowedSamplingIntervals: SamplingInterval[]; allowedSnapshotCadences: SnapshotCadence[]; allowedRollingWindowTokens: string[] } => {
+  switch (spec.group) {
+    case 'period':
+      return { allowedPeriodTypes: spec.allowedPeriodTypes, allowedLookbackRanges: ['N/A'], allowedSamplingIntervals: ['N/A'], allowedSnapshotCadences: ['N/A'], allowedRollingWindowTokens: [] };
+    case 'rollingWindow':
+      return { allowedPeriodTypes: ['N/A'], allowedLookbackRanges: spec.allowedLookbackRanges, allowedSamplingIntervals: spec.allowedSamplingIntervals, allowedSnapshotCadences: ['N/A'], allowedRollingWindowTokens: spec.allowedRollingWindowTokens };
+    case 'snapshot':
+      return { allowedPeriodTypes: ['N/A'], allowedLookbackRanges: ['N/A'], allowedSamplingIntervals: ['N/A'], allowedSnapshotCadences: spec.allowedSnapshotCadences, allowedRollingWindowTokens: [] };
+  }
+};
 
 // 程式碼中的宣告式 registry（docs/analysis-ts-spec-v0.2.md §6.3）；DB 的 metric_definitions
 // 一列從這裡 upsert 出去，避免兩邊各自維護一份定義而漂移。命名避開裸的 `registry`——
@@ -68,11 +98,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q_ANN = Q*4（簡易年化，非複利）；TTM = 近四季（含本季）淨利加總/本季期末權益*100，' +
       '四季不齊為 null（null_reason=insufficient_history）。這是獨立於 src/domainMetrics/roe.ts ' +
       '的重新實作（src/pitMetrics/profitability/roe/computeRoePit.ts），兩者理論上算出相同數字，差異即代表其中一份有 bug。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
@@ -89,11 +116,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季淨利/本季期末總資產*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'Q_ANN = Q*4（簡易年化）；TTM = 近四季（含本季）淨利加總/本季期末總資產*100，四季不齊為 null。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'assets'],
     currentFormulaVersion: 1,
   },
@@ -105,11 +129,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = 本季淨利/本季營收*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
       'TTM = 近四季（含本季）淨利加總/近四季營收加總*100，四季不齊為 null。' +
       '沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 src/domainMetrics/margins.ts 現有規則一致）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue'],
     currentFormulaVersion: 1,
   },
@@ -120,11 +141,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營收/本季期末總資產（次）；Q_ANN = Q*4（簡易年化）；' +
       'TTM = 近四季（含本季）營收加總/本季期末總資產，四季不齊為 null。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'assets'],
     currentFormulaVersion: 1,
   },
@@ -135,11 +153,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '= 本季期末總資產/本季期末權益，權益優先採歸屬於母公司口徑，缺漏退回整體口徑。純資產負債表' +
       '時點快照，只有 Q 一種 basis——跟 ROE 的權益一樣沒有 TTM/年化概念。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['assets', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
@@ -153,11 +168,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '跟 src/domainMetrics/dupont.ts 的 decomposedRoeTtmPct 邏輯一致）。三個因子任一為 null，' +
       '不管原因為何，一律回報 null_reason=missing_input——各因子自己缺漏的細節記在各自的 metric_value 列上。' +
       '沒有 Q_ANN——舊架構本來就沒有這個變體。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
@@ -173,11 +185,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '稅務負擔',
     unit: '%',
     formulaNote: 'Q(單季) = 本季淨利/本季稅前淨利*100；TTM = 近四季淨利加總/近四季稅前淨利加總*100。淨利優先採歸屬母公司口徑，缺漏退回整體口徑。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax'],
     currentFormulaVersion: 1,
   },
@@ -186,11 +195,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '利息負擔',
     unit: '%',
     formulaNote: 'Q(單季) = 本季稅前淨利/本季EBIT*100（EBIT=稅前淨利+財務費用）；TTM = 近四季稅前淨利加總/近四季EBIT加總*100。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_before_tax', 'finance_costs'],
     currentFormulaVersion: 1,
   },
@@ -199,11 +205,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: 'EBIT 利潤率',
     unit: '%',
     formulaNote: 'Q(單季) = 本季EBIT/本季營收*100（EBIT=稅前淨利+財務費用）；TTM = 近四季EBIT加總/近四季營收加總*100。跟既有 operatingMargin（=operatingIncome/營收）是不同的數字，operatingIncome 嚴格排除非營業損益，這裡的 EBIT 只加回財務費用。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_before_tax', 'finance_costs', 'revenue'],
     currentFormulaVersion: 1,
   },
@@ -214,11 +217,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '五因子相乘 = dupontTaxBurden x dupontInterestBurden x dupontEbitMargin x assetTurnover x equityMultiplier（三個百分比因子跟兩個原始比率因子相乘後除以 10000 校正尺度）。' +
       '五個因子任一為 null，一律回報 null_reason=missing_input，細節記在各自的 metric_value 列上。理論上等於 dupontDecomposedRoe（已用真實資料驗證過一致）。沒有 Q_ANN。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax', 'finance_costs', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
@@ -237,11 +237,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = 本季淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆），淨利優先採歸屬' +
       '母公司口徑，缺漏退回整體口徑；Q_ANN = Q*4；TTM = 近四季（含本季）淨利加總*1000/流通股數，' +
       '四季不齊為 null。流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -252,11 +249,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '= 本季期末權益*1000/流通股數，權益優先採歸屬母公司口徑，缺漏退回整體口徑。純資產負債表' +
       '時點快照，只有 Q 一種 basis——跟 equityMultiplier 同一種形狀，沒有 TTM/年化概念。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -272,11 +266,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '= 股價(knowledge_date當天或之前最近一筆收盤價) / EPS(TTM，近四季淨利加總*1000/流通股數)。' +
       '只有 TTM 一種 basis——台股慣例的本益比就是用近四季 EPS。EPS_TTM 剛好等於 0 才是 null' +
       '（zero_or_negative_denominator），為負仍計算出真實但為負的本益比，不隱藏。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -288,11 +279,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '= 股價(knowledge_date當天或之前最近一筆收盤價) / BVPS(本季期末權益*1000/流通股數)。只有 Q' +
       ' 一種 basis——跟 bvps 自己一樣是資產負債表時點快照，沒有 TTM/年化概念。BVPS 剛好等於 0' +
       ' 才是 null（zero_or_negative_denominator），為負（資不抵債）仍計算出真實但為負的本淨比。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -305,11 +293,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '股價',
     unit: '元',
     formulaNote: '= knowledge_date 當天或之前最近一筆收盤價（新台幣元）。查無股價資料時為 null（missing_input）。knowledge_date 解析只用資產負債表，不查損益表。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [],
     currentFormulaVersion: 1,
   },
@@ -320,11 +305,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營收*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總*1000/流通' +
       '股數，四季不齊為 null。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -336,11 +318,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'TTM = |近四季（含本季）股利發放加總| / 近四季淨利加總 * 100，淨利優先採歸屬母公司口徑，' +
       '淨利須為正才有意義（≤0 視為 zero_or_negative_denominator）。沒有 Q/Q_ANN——股利通常一年' +
       '發放 1-2 次，單季配息率會嚴重失真（跟 src/domainMetrics/dividendPayoutRatio.ts 現有規則一致）。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'dividendsPaid'],
     currentFormulaVersion: 1,
   },
@@ -353,11 +332,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '（不依賴 roe/dividendPayoutRatio 這兩個 metric_code 已寫入的值），只有 TTM 一種 basis，' +
       '跟 src/domainMetrics/sgr.ts 只有 sgrTtm 一致。任一子計算因四季不齊而為 null 時回報' +
       'insufficient_history；子計算本身可算但值為 null（例如配息率分母≤0）時回報 missing_input。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_attributable_to_owners_of_parent',
       'profit_loss',
@@ -374,11 +350,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營業活動現金流*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營業活動' +
       '現金流加總*1000/流通股數，四季不齊為 null。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['netCashFromOperatingActivities', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -390,11 +363,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'FCF = 營業活動現金流 + 資本支出（資本支出在來源資料是負值/流出，用加法，不是減法）；' +
       'Q(單季) = 本季 FCF*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）FCF 加總*1000/流通' +
       '股數，四季不齊為 null。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -406,11 +376,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = 本季營業活動現金流/本季淨利（倍，不是百分比）；TTM = 近四季（含本季）營業活動' +
       '現金流加總/近四季淨利加總。沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 netProfitMargin 同' +
       '一種規則）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'netCashFromOperatingActivities'],
     currentFormulaVersion: 1,
   },
@@ -422,11 +389,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = (本季淨利 − 本季營業活動現金流 − 本季投資活動現金流) / 本季期末總資產 * 100；' +
       'Q_ANN = Q*4；TTM 分子改用近四季（含本季）加總，分母仍固定用本季期末總資產（不平均、不' +
       '加總，跟 ROE/ROA 用期末值同一種簡化）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_attributable_to_owners_of_parent',
       'profit_loss',
@@ -450,11 +414,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '負債比率',
     unit: '%',
     formulaNote: '= 本季期末總負債/本季期末總資產*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['liabilities', 'assets'],
     currentFormulaVersion: 1,
   },
@@ -463,11 +424,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '流動比率',
     unit: '%',
     formulaNote: '= 本季期末流動資產/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['current_assets', 'current_liabilities'],
     currentFormulaVersion: 1,
   },
@@ -476,11 +434,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '速動比率',
     unit: '%',
     formulaNote: '= (本季期末流動資產-存貨)/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['current_assets', 'current_liabilities', 'inventories'],
     currentFormulaVersion: 1,
   },
@@ -489,11 +444,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '現金比率',
     unit: '%',
     formulaNote: '= 本季期末現金及約當現金/本季期末流動負債*100。純資產負債表時點快照，只有 Q 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['cash_and_cash_equivalents', 'current_liabilities'],
     currentFormulaVersion: 1,
   },
@@ -504,11 +456,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '= 有息負債(短期借款+應付公司債+長期借款)/本季期末權益*100，權益優先採歸屬母公司口徑，' +
       '缺漏退回整體口徑。純資產負債表時點快照，只有 Q 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'equity_attributable_to_owners_of_parent', 'equity'],
     currentFormulaVersion: 1,
   },
@@ -519,11 +468,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'EBIT = 稅前淨利+利息費用；Q(單季) = EBIT/利息費用（倍）；TTM = 近四季（含本季）EBIT 加總/' +
       '近四季利息費用加總。沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_before_tax', 'finance_costs'],
     currentFormulaVersion: 1,
   },
@@ -536,11 +482,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '+折舊+攤銷；Q_ANN = 淨負債/(本季 EBITDA*4)；TTM = 淨負債/近四季（含本季）EBITDA 加總。' +
       '只有 Q_ANN/TTM 兩種 basis——跟舊架構一致，taxonomy 只支援這兩種（store/flow 比率），沒有' +
       '單季非年化版本。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'shortTermBorrowings',
       'bondsPayable',
@@ -560,11 +503,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = |資本支出|/本季營收*100；TTM = |近四季（含本季）資本支出加總|/近四季營收加總*100。' +
       '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'capitalExpenditures'],
     currentFormulaVersion: 1,
   },
@@ -577,11 +517,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'knowledge_date 當天（或之前最近一筆交易日）市值——跟財報公告日共用同一個 knowledge_date。' +
       '獨立重新計算營收（不依賴 revenuePerShare 這個 metric_code 已寫入的值）。沒有單季非年化版本' +
       '（store/flow 比率）。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue'],
     currentFormulaVersion: 1,
   },
@@ -594,11 +531,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '(本季自由現金流*4*1000)；TTM = 市值/(近四季自由現金流加總*1000)。股價/市值查詢邏輯同 psr。' +
       '獨立重新計算自由現金流（不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。' +
       '沒有單季非年化版本。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures'],
     currentFormulaVersion: 1,
   },
@@ -612,11 +546,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'netDebtToEbitda 這個 metric_code 已寫入的值，公式在兩個檔案各自重複一次，延續舊架構本身' +
       '在 interestCoverage/netDebtToEbitda/roic/roce 四個檔案各自重複定義 EBIT 的既有慣例）。' +
       '沒有單季非年化版本。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'shortTermBorrowings',
       'bondsPayable',
@@ -639,11 +570,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '現金及約當現金，權益優先採歸屬母公司口徑；Q(單季) = NOPAT/投入資本*100；Q_ANN = Q*4；' +
       'TTM = 近四季（含本季）NOPAT 加總/本季期末投入資本*100（分母固定用本季，不平均不加總，跟' +
       'ROE/ROA 用期末值同一種簡化）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_before_tax',
       'finance_costs',
@@ -665,11 +593,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'EBIT = 稅前淨利+利息費用；使用資本(Capital Employed) = 本季期末總資產-本季期末流動負債；' +
       'Q(單季) = EBIT/使用資本*100；Q_ANN = Q*4；TTM = 近四季（含本季）EBIT 加總/本季期末使用' +
       '資本*100（分母固定用本季，同 roic）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['assets', 'current_liabilities', 'profit_loss_before_tax', 'finance_costs'],
     currentFormulaVersion: 1,
   },
@@ -688,11 +613,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季毛利/本季營收*100；TTM = 近四季（含本季）毛利加總/近四季營收加總*100。' +
       '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['gross_profit', 'revenue'],
     currentFormulaVersion: 1,
   },
@@ -703,11 +625,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營業利益/本季營收*100；TTM = 近四季（含本季）營業利益加總/近四季營收加總*100。' +
       '沒有 Q_ANN。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operatingIncome', 'revenue'],
     currentFormulaVersion: 1,
   },
@@ -718,11 +637,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營業成本/本季期末存貨（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
       '加總/本季期末存貨。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operating_costs', 'inventories'],
     currentFormulaVersion: 1,
   },
@@ -733,11 +649,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營收/本季期末應收帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總/' +
       '本季期末應收帳款。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'accountsReceivable'],
     currentFormulaVersion: 1,
   },
@@ -748,11 +661,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營收/本季期末不動產、廠房及設備（次）；Q_ANN = Q*4；TTM = 近四季（含本季）' +
       '營收加總/本季期末不動產、廠房及設備。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'property_plant_and_equipment'],
     currentFormulaVersion: 1,
   },
@@ -763,11 +673,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'Q(單季) = 本季營業成本/本季期末應付帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
       '加總/本季期末應付帳款。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operating_costs', 'accountsPayable'],
     currentFormulaVersion: 1,
   },
@@ -778,11 +685,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       'DIO = 365/存貨周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis——365/單季周轉率算出來是' +
       '「一季裡的天數」，不是有意義的週轉天數，週轉天數的定義本來就以一年為基準。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operating_costs', 'inventories'],
     currentFormulaVersion: 1,
   },
@@ -791,11 +695,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '應收帳款收現天數 (DSO)',
     unit: '天',
     formulaNote: 'DSO = 365/應收帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['revenue', 'accountsReceivable'],
     currentFormulaVersion: 1,
   },
@@ -804,11 +705,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '應付帳款付現天數 (DPO)',
     unit: '天',
     formulaNote: 'DPO = 365/應付帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operating_costs', 'accountsPayable'],
     currentFormulaVersion: 1,
   },
@@ -820,11 +718,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'CCC = DIO + DSO − DPO。只有 Q_ANN/TTM 兩種 basis（跟三個組成天數一致）。三個組成任一為' +
       'null，不管原因為何，一律回報 missing_input——除非是因為 TTM 四季不齊，這種情況回報' +
       'insufficient_history（跟 Dupont 家族的複合值傳染判斷一致）。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['operating_costs', 'inventories', 'revenue', 'accountsReceivable', 'accountsPayable'],
     currentFormulaVersion: 1,
   },
@@ -844,11 +739,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '= sqrt(22.5 x EPS(TTM) x BVPS)，EPS(TTM)/BVPS 須為正才有意義。獨立重新計算 EPS(TTM)/' +
       'BVPS（不依賴 eps/bvps 這兩個 metric_code 已寫入的值）。只有 TTM 一種 basis——因為' +
       'EPS(TTM) 是否齊全決定整個公式算不算得出來。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -859,11 +751,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '= (本季期末流動資產 − 總負債 − 特別股股本)/流通股數。純資產負債表時點快照，只有 Q 一種' +
       'basis。marginOfSafetyPrice（= ncav x 2/3）不獨立遷移，是純線性換算，呼叫端自己乘 2/3 即可。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['current_assets', 'liabilities', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -875,11 +764,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '每股股東盈餘 = (本季淨利+折舊+攤銷+資本支出)/流通股數（資本支出來源資料是負值/流出，' +
       '用加法）。Q(單季)/Q_ANN(=Q*4)/TTM（近四季各分項各自加總再除以流通股數），跟 eps/' +
       'revenuePerShare 同形狀。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_attributable_to_owners_of_parent',
       'profit_loss',
@@ -903,11 +789,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '都需要 TTM 資料才算得出來。原始版模型用上市製造業樣本校準，對非製造業（尤其金融/服務/' +
       '營建）適用性有限，這個警語只在舊架構的 warnings 呈現，PIT 版本不重複記錄使用限制文字' +
       '（metric_value 沒有 warnings 欄位）。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'current_assets',
       'current_liabilities',
@@ -930,11 +813,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '同季提升）通過數加總（0-9）。9 訊號需全部可判斷才有分數，任一無法判斷則整體為 null。' +
       '只有 Q 一種 basis——純粹本季 vs 去年同季的單點比較，沒有 TTM/年化概念。去年同季用' +
       'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_attributable_to_owners_of_parent',
       'profit_loss',
@@ -957,11 +837,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '8 變量迴歸式：M=-4.84+0.92*DSRI+0.528*GMI+0.404*AQI+0.892*SGI+0.115*DEPI-0.172*SGAI' +
       '+4.037*TATA+0.0327*LVGI，除 TATA（單期指標）外，其餘 7 個變量都是本季 vs 去年同季的' +
       '比較。只有 Q 一種 basis，去年同季取法同 piotroskiFScore。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'accountsReceivable',
       'revenue',
@@ -988,11 +865,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'Q(單季) = NOPAT/NOA*100；Q_ANN = Q*4；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
       '（分母固定用本季，同 ROIC）。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
       '（沒有獨立查詢價值，範圍刻意限縮）。',
+    group: 'period',
     allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'operatingIncome',
       'profit_loss_before_tax',
@@ -1014,11 +888,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'X = -4.3-4.5*(淨利TTM/總資產)+5.7*(總負債/總資產)-0.004*(流動資產/流動負債)。淨利用' +
       'TTM（原始模型用年度財報校準，TTM 是最接近的替代口徑，跟 ROE/ROA 邏輯一致），其餘皆為' +
       '本季資產負債表快照。沒有 YoY，只有 TTM 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'profit_loss_attributable_to_owners_of_parent',
       'profit_loss',
@@ -1040,11 +911,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'CHIN=(今年TTM淨利-去年TTM淨利)/(|今年|+|去年|)。INTWO/CHIN 需要「今年 TTM vs 去年同季' +
       'TTM」比較——去年同季 TTM 窗口用 getPastNQuarters n=5 取錨點、再從錨點往前抓 4 季建窗口，' +
       '不是新機制。只有 TTM 一種 basis。',
+    group: 'period',
     allowedPeriodTypes: ['TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: [
       'assets',
       'liabilities',
@@ -1066,11 +934,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'knowledge_date，不是另外設計一套「股價要取哪一天」的機制。獨立重新計算每股 FCF（不依賴' +
       'ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。沒有單季非年化版本（跟舊架構' +
       '一致，是 P_FCF 估值倍數的倒數）。',
+    group: 'period',
     allowedPeriodTypes: ['Q_ANN', 'TTM'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],
     currentFormulaVersion: 1,
   },
@@ -1086,11 +951,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '全行逾放比，直接讀 mops-ts 的 bank_asset_quality_xbrl（category=\'TotalLoans\'）已經算好的' +
       'non_performing_loans_ratio，不用自己推公式。覆蓋約 19-20 檔銀行/金控股，每季都有資料；' +
       '非銀行公司一律優雅降級成 missing_input，不做前置的「這家公司是不是銀行」判斷。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['nonPerformingLoansRatio'],
     currentFormulaVersion: 1,
   },
@@ -1101,11 +963,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     formulaNote:
       '備抵呆帳覆蓋率，跟 bankNplRatio 同一列（bank_asset_quality_xbrl 的 TotalLoans）、' +
       '同一次查詢、同一組 knowledge_date，直接讀已經算好的 coverage_ratio。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['coverageRatio'],
     currentFormulaVersion: 1,
   },
@@ -1119,11 +978,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '只覆蓋 6-7 檔銀行/金控股，且只有 Q2/Q4 有真實值（監理揭露頻率本來就是半年一次，' +
       'Q1/Q3 一律 missing_input，不是資料缺漏）。不給 year/season 時的「最新一季」判斷刻意' +
       '排除值為 null 的季度，見 getLatestQuarterWithBankCapitalAdequacy 的說明。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['eligibleCapital', 'riskWeightedAssets'],
     currentFormulaVersion: 1,
   },
@@ -1132,11 +988,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '銀行普通股權益第一類資本比率 (CET1)',
     unit: '%',
     formulaNote: '普通股權益比率（CET1），直接讀 bank_capital_adequacy_detail_xbrl 已經算好的 ratio_ordinary_share_equity_to_rwa，覆蓋率/頻率限制同 bankCarRatio。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['ratioOrdinaryShareEquityToRwa'],
     currentFormulaVersion: 1,
   },
@@ -1145,11 +998,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
     displayName: '銀行第一類資本比率 (Tier 1)',
     unit: '%',
     formulaNote: '第一類資本比率（Tier1），直接讀已經算好的 ratio_tier_i_capital_to_rwa，跟 bankCarRatio/bankCet1Ratio 共用同一次查詢/同一組 knowledge_date，覆蓋率/頻率限制同 bankCarRatio。',
+    group: 'period',
     allowedPeriodTypes: ['Q'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
-    allowedSnapshotCadences: ['N/A'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['ratioTierICapitalToRwa'],
     currentFormulaVersion: 1,
   },
@@ -1167,11 +1017,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '本服務不自己重算，不知道交易所用的 EPS 是單季/TTM/年度哪種口徑——跟自己算的' +
       'pitMetrics peRatio（XBRL EPS TTM、季報知識時點更新）是不同用途、刻意並存的兩組數字，' +
       '不要混用或互相驗證。虧損等無法計算 PER 的情況為 null（missing_input）。',
-    allowedPeriodTypes: ['N/A'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
+    group: 'snapshot',
     allowedSnapshotCadences: ['EOD'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['daily_valuation.pe_ratio'],
     currentFormulaVersion: 1,
   },
@@ -1183,11 +1030,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'TWSE/TPEx 官方每日公布的股價淨值比，直接 passthrough export.daily_valuation.pb_ratio，' +
       '本服務不自己重算——跟自己算的 pitMetrics pbRatio（XBRL BVPS、季報知識時點更新）是' +
       '不同用途、刻意並存的兩組數字，不要混用或互相驗證。',
-    allowedPeriodTypes: ['N/A'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
+    group: 'snapshot',
     allowedSnapshotCadences: ['EOD'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['daily_valuation.pb_ratio'],
     currentFormulaVersion: 1,
   },
@@ -1199,11 +1043,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       'TWSE/TPEx 官方每日公布的殖利率，直接 passthrough export.daily_valuation.dividend_yield，' +
       '本服務不自己重算——沒有自算對應版本可比較，直接沿用交易所數字最貼近使用者查詢' +
       '「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。',
-    allowedPeriodTypes: ['N/A'],
-    allowedLookbackRanges: ['N/A'],
-    allowedSamplingIntervals: ['N/A'],
+    group: 'snapshot',
     allowedSnapshotCadences: ['EOD'],
-    allowedRollingWindowTokens: [],
     dependsOn: ['daily_valuation.dividend_yield'],
     currentFormulaVersion: 1,
   },
@@ -1227,10 +1068,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
       '「每個週期最後一個重疊交易日」代表。降頻後取樣點數 < 20 為 insufficient_history；' +
       '指數變異數為 0（理論上不會發生但防呆）為 zero_or_negative_denominator。基準日 =' +
       '個股股價與加權指數都有資料的最新重疊交易日。',
-    allowedPeriodTypes: ['N/A'],
+    group: 'rollingWindow',
     allowedLookbackRanges: ['1Y', '2Y', '5Y'],
     allowedSamplingIntervals: ['1D', '1W', '1M'],
-    allowedSnapshotCadences: ['N/A'],
     // allowedLookbackRanges x allowedSamplingIntervals 上面兩欄不是自由交叉組合（3x3=9），
     // 三個窗口各自綁定固定的取樣頻率（1Y 用日頻、2Y 用週頻、5Y 用月頻，理由見上面
     // formulaNote），只有這 3 種組合真的會寫入資料——這個陣列是外部消費端（GET /filters、
@@ -1242,26 +1082,27 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   },
 };
 
-// 冪等，backfill 腳本開跑前呼叫一次即可。
+// 冪等，backfill 腳本開跑前呼叫一次即可。metric_definitions 表的外部形狀（四陣列並排）
+// 維持不變，用 legacyAllowedArrays() 從 discriminated union 展開，不用另外重寫一次
+// switch。
 export const upsertMetricDefinition = async (spec: MetricDefinitionSpec): Promise<void> => {
+  // allowedRollingWindowTokens 特意不解構進去——那個欄位純粹是 registry 內部用的
+  // token 白名單，metric_definitions 表從來沒有對應欄位（DB 這張表本來就不是執行期
+  // 讀取路徑，見這個檔案上方 model 說明），只有四個 allowedXxx 陣列會實際寫進去。
+  const { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences } = legacyAllowedArrays(spec);
+  const allowed = { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences };
   await analysisPrisma.metricDefinition.upsert({
     where: { metricCode: spec.metricCode },
     create: {
       metricCode: spec.metricCode,
       formulaNote: spec.formulaNote,
-      allowedPeriodTypes: spec.allowedPeriodTypes,
-      allowedLookbackRanges: spec.allowedLookbackRanges,
-      allowedSamplingIntervals: spec.allowedSamplingIntervals,
-      allowedSnapshotCadences: spec.allowedSnapshotCadences,
+      ...allowed,
       dependsOn: spec.dependsOn,
       currentFormulaVersion: spec.currentFormulaVersion,
     },
     update: {
       formulaNote: spec.formulaNote,
-      allowedPeriodTypes: spec.allowedPeriodTypes,
-      allowedLookbackRanges: spec.allowedLookbackRanges,
-      allowedSamplingIntervals: spec.allowedSamplingIntervals,
-      allowedSnapshotCadences: spec.allowedSnapshotCadences,
+      ...allowed,
       dependsOn: spec.dependsOn,
       currentFormulaVersion: spec.currentFormulaVersion,
     },

@@ -110,38 +110,46 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
   if (!definition) {
     return { action: 'rejected', reason: `metric_code '${input.metricCode}' 未在 metricDefinitionRegistry 註冊。` };
   }
-  if (!definition.allowedPeriodTypes.includes(input.periodType)) {
-    return { action: 'rejected', reason: `periodType '${input.periodType}' 不在 metric_code '${input.metricCode}' 的 allowedPeriodTypes 內。` };
-  }
-  if (!definition.allowedLookbackRanges.includes(input.lookbackRange)) {
-    return { action: 'rejected', reason: `lookbackRange '${input.lookbackRange}' 不在 metric_code '${input.metricCode}' 的 allowedLookbackRanges 內。` };
-  }
-  if (!definition.allowedSamplingIntervals.includes(input.samplingInterval)) {
-    return { action: 'rejected', reason: `samplingInterval '${input.samplingInterval}' 不在 metric_code '${input.metricCode}' 的 allowedSamplingIntervals 內。` };
-  }
-  if (!definition.allowedSnapshotCadences.includes(input.snapshotCadence)) {
-    return { action: 'rejected', reason: `snapshotCadence '${input.snapshotCadence}' 不在 metric_code '${input.metricCode}' 的 allowedSnapshotCadences 內。` };
-  }
+  // 2026-09-09：definition.group（discriminated union）直接告訴我們這個 metricCode
+  // 該走哪張表，不用再靠「看哪個欄位不是 N/A」推導——但呼叫端傳進來的 input 仍然是
+  // 統一的四欄位形狀（見 MetricValueCoordinate 說明），所以還是要驗證呼叫端傳的值
+  // 跟這個 metricCode 實際所屬的 group 一致，防止呼叫端傳錯組（例如對一個
+  // periodType 指標傳了非 N/A 的 lookbackRange）。
   const lookbackIsSet = input.lookbackRange !== 'N/A';
   const samplingIsSet = input.samplingInterval !== 'N/A';
-  if (lookbackIsSet !== samplingIsSet) {
-    return {
-      action: 'rejected',
-      reason: `lookbackRange/samplingInterval 必須同時是 'N/A' 或同時是真實值（成對的正交維度），收到 lookbackRange='${input.lookbackRange}' samplingInterval='${input.samplingInterval}'。`,
-    };
-  }
   const snapshotCadenceIsSet = input.snapshotCadence !== 'N/A';
-  const isPeriod = periodTypeIsSet(input.periodType);
-  const isDailyCadence = lookbackIsSet || snapshotCadenceIsSet;
+  const isPeriod = definition.group === 'period';
 
-  // 「剛好一組是真實值」防禦深度檢查——理由跟拆表前完全一致，只是現在對應到「該走哪張表」
-  // 而不是 coordinateKind，見 metricValueWriter.ts 拆表前版本的同一段說明。
-  const realGroups = [isPeriod, isDailyCadence].filter(Boolean).length;
-  if (realGroups !== 1) {
-    return {
-      action: 'rejected',
-      reason: `periodType / (lookbackRange+samplingInterval 或 snapshotCadence) 這兩組座標欄位應該剛好有一組是真實值，實際偵測到 ${realGroups} 組——這代表 metricDefinitionRegistry 對 metric_code '${input.metricCode}' 的 allowedXxx 宣告本身有問題（同時允許多組或完全沒有允許任何一組）。`,
-    };
+  if (definition.group === 'period') {
+    if (!definition.allowedPeriodTypes.includes(input.periodType)) {
+      return { action: 'rejected', reason: `periodType '${input.periodType}' 不在 metric_code '${input.metricCode}' 的 allowedPeriodTypes 內。` };
+    }
+    if (lookbackIsSet || samplingIsSet || snapshotCadenceIsSet) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是季報型指標（group='period'），lookbackRange/samplingInterval/snapshotCadence 必須都是 'N/A'。` };
+    }
+  } else if (definition.group === 'rollingWindow') {
+    if (periodTypeIsSet(input.periodType) || snapshotCadenceIsSet) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是滾動統計量指標（group='rollingWindow'），periodType/snapshotCadence 必須都是 'N/A'。` };
+    }
+    if (lookbackIsSet !== samplingIsSet) {
+      return {
+        action: 'rejected',
+        reason: `lookbackRange/samplingInterval 必須同時是 'N/A' 或同時是真實值（成對的正交維度），收到 lookbackRange='${input.lookbackRange}' samplingInterval='${input.samplingInterval}'。`,
+      };
+    }
+    if (!definition.allowedLookbackRanges.includes(input.lookbackRange)) {
+      return { action: 'rejected', reason: `lookbackRange '${input.lookbackRange}' 不在 metric_code '${input.metricCode}' 的 allowedLookbackRanges 內。` };
+    }
+    if (!definition.allowedSamplingIntervals.includes(input.samplingInterval)) {
+      return { action: 'rejected', reason: `samplingInterval '${input.samplingInterval}' 不在 metric_code '${input.metricCode}' 的 allowedSamplingIntervals 內。` };
+    }
+  } else {
+    if (periodTypeIsSet(input.periodType) || lookbackIsSet || samplingIsSet) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是純市場快照指標（group='snapshot'），periodType/lookbackRange/samplingInterval 必須都是 'N/A'。` };
+    }
+    if (!definition.allowedSnapshotCadences.includes(input.snapshotCadence)) {
+      return { action: 'rejected', reason: `snapshotCadence '${input.snapshotCadence}' 不在 metric_code '${input.metricCode}' 的 allowedSnapshotCadences 內。` };
+    }
   }
 
   const formulaVersion = input.formulaVersion ?? 1;

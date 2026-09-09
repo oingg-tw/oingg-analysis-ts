@@ -54,7 +54,7 @@ export const checkJobCompleteness = async (job: IndicatorJob, companyIds: string
 
   try {
     const definition = metricDefinitionRegistry[job.name]!;
-    const isDailyCadence = definition.allowedPeriodTypes.length === 1 && definition.allowedPeriodTypes[0] === 'N/A';
+    const isDailyCadence = definition.group !== 'period';
     const written = isDailyCadence
       ? await analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } })
       : await analysisPrisma.metricValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } });

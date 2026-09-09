@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry, legacyAllowedArrays } from '@/pitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/pitMetrics/metricBasis';
 
@@ -68,14 +68,19 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
       .sort()
       .map((metricCode): MetricFolderCatalogEntry => {
         const definition = metricDefinitionRegistry[metricCode]!;
+        // legacyAllowedArrays() 也回傳 allowedRollingWindowTokens（registry 內部用的
+        // token 白名單），刻意只解構外部回應形狀本來就有的四個欄位，不要整包 spread
+        // 進去——這個外部回應形狀從 2026-09-08 起就不含 allowedRollingWindowTokens，
+        // 拆 discriminated union 那次曾經不小心把它 spread 漏進來，已修正。
+        const { allowedPeriodTypes, allowedLookbackRanges, allowedSamplingIntervals, allowedSnapshotCadences } = legacyAllowedArrays(definition);
         return {
           metricCode,
           displayName: definition.displayName,
           unit: definition.unit,
-          allowedPeriodTypes: definition.allowedPeriodTypes,
-          allowedLookbackRanges: definition.allowedLookbackRanges,
-          allowedSamplingIntervals: definition.allowedSamplingIntervals,
-          allowedSnapshotCadences: definition.allowedSnapshotCadences,
+          allowedPeriodTypes,
+          allowedLookbackRanges,
+          allowedSamplingIntervals,
+          allowedSnapshotCadences,
           validTokens: validTokensForMetric(metricCode),
         };
       });

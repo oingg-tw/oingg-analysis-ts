@@ -1,7 +1,7 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { scanMetricFolderCatalog } from '@/api/bff/filter/metricFolderCatalog';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry, legacyAllowedArrays } from '@/pitMetrics/metricDefinitionRegistry';
 
 // 2026-09-08：取代舊架構的 filterCatalog.csv（連同整套 filterCatalog/screener/
 // metricsService 機制一起退場，見 abstract-crafting-journal.md）——這支直接掃描
@@ -16,10 +16,11 @@ describe('scanMetricFolderCatalog', () => {
       for (const metric of category.metrics) {
         assert.ok(metric.metricCode in metricDefinitionRegistry, `"${metric.metricCode}"（分類 "${category.categoryKey}"）應該要在 metricDefinitionRegistry 裡`);
         const definition = metricDefinitionRegistry[metric.metricCode]!;
-        assert.deepEqual(metric.allowedPeriodTypes, definition.allowedPeriodTypes);
-        assert.deepEqual(metric.allowedLookbackRanges, definition.allowedLookbackRanges);
-        assert.deepEqual(metric.allowedSamplingIntervals, definition.allowedSamplingIntervals);
-        assert.deepEqual(metric.allowedSnapshotCadences, definition.allowedSnapshotCadences);
+        const expected = legacyAllowedArrays(definition);
+        assert.deepEqual(metric.allowedPeriodTypes, expected.allowedPeriodTypes);
+        assert.deepEqual(metric.allowedLookbackRanges, expected.allowedLookbackRanges);
+        assert.deepEqual(metric.allowedSamplingIntervals, expected.allowedSamplingIntervals);
+        assert.deepEqual(metric.allowedSnapshotCadences, expected.allowedSnapshotCadences);
       }
     }
   });

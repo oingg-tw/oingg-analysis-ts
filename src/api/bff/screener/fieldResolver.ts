@@ -32,21 +32,23 @@ export interface FieldRef {
   isDailyCadence: boolean;
 }
 
-const isRealGroup = (values: string[]): boolean => values.length > 0 && !(values.length === 1 && values[0] === 'N/A');
-
 // 2026-09-08 bff-ts 要做篩選/欄位選單，回報如果自己拿 allowedLookbackRanges x
 // allowedSamplingIntervals 做笛卡兒積會做出「選了也永遠查不到資料」的假選項（beta 9 種
 // 組合只有 3 種真的有效）——這支給 metricFolderCatalog.ts（GET /filters）用，回傳「這個
-// metricCode 實際可用的 token 清單」，呼叫端直接拿來當選單，不用自己組合、不用知道四組
-// 判斷邏輯。periodType/snapshotCadence 這兩組本來就是 1 token = 1 值，天生沒有這個問題；
-// 只有滾動統計量組（lookbackRange 這組）需要看 allowedRollingWindowTokens 而不是做交叉積。
+// metricCode 實際可用的 token 清單」，呼叫端直接拿來當選單，不用自己組合。2026-09-09
+// 起 metricDefinitionRegistry 改成 discriminated union，直接 switch definition.group
+// 即可，不用再靠 isRealGroup() 猜哪一組陣列是真實值。
 export const validTokensForMetric = (metricCode: string): string[] => {
   const definition = metricDefinitionRegistry[metricCode];
   if (!definition) return [];
-  if (isRealGroup(definition.allowedPeriodTypes)) return definition.allowedPeriodTypes;
-  if (isRealGroup(definition.allowedLookbackRanges)) return definition.allowedRollingWindowTokens;
-  if (isRealGroup(definition.allowedSnapshotCadences)) return definition.allowedSnapshotCadences;
-  return [];
+  switch (definition.group) {
+    case 'period':
+      return definition.allowedPeriodTypes;
+    case 'rollingWindow':
+      return definition.allowedRollingWindowTokens;
+    case 'snapshot':
+      return definition.allowedSnapshotCadences;
+  }
 };
 
 // 抽出來給 companies/controller.ts 的泛化 metric-history/metrics-history 端點共用——那兩支
@@ -60,35 +62,33 @@ export const resolveTokenForMetric = (metricCode: string, token: string, display
     throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——"${metricCode}" 不是已註冊的 metricCode，見 GET /filters 確認可用清單。`);
   }
 
-  if (isRealGroup(definition.allowedPeriodTypes)) {
-    if (!definition.allowedPeriodTypes.includes(token as PeriodType)) {
-      throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 periodType "${token}"，允許的值：${definition.allowedPeriodTypes.join(', ')}。`);
+  switch (definition.group) {
+    case 'period': {
+      if (!definition.allowedPeriodTypes.includes(token as PeriodType)) {
+        throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 periodType "${token}"，允許的值：${definition.allowedPeriodTypes.join(', ')}。`);
+      }
+      return { field: displayField, metricCode, isDailyCadence: false, ...periodTypeGroup(token as PeriodType) };
     }
-    return { field: displayField, metricCode, isDailyCadence: false, ...periodTypeGroup(token as PeriodType) };
-  }
-
-  if (isRealGroup(definition.allowedLookbackRanges)) {
-    // 2026-09-08 bff-ts 實測回報：allowedLookbackRanges x allowedSamplingIntervals 不是自由
-    // 交叉組合（beta 3x3=9 種裡只有 3 種真的有資料，其餘 6 種原本各自欄位驗證都會通過，
-    // 查詢卻永遠是空結果）——改成看 allowedRollingWindowTokens（唯一正確的合法組合清單，
-    // 見 metricDefinitionRegistry.ts 該欄位的說明），不是各自檢查兩個獨立陣列的 includes()。
-    if (!definition.allowedRollingWindowTokens.includes(token)) {
-      throw new ScreenerValidationError(
-        `"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 的 token 要是 "<lookbackRange>_<samplingInterval>" 格式，且必須是下列已知有資料的組合之一（不是 lookbackRange/samplingInterval 的自由交叉組合）：${definition.allowedRollingWindowTokens.join(', ')}。`,
-      );
+    case 'rollingWindow': {
+      // 2026-09-08 bff-ts 實測回報：allowedLookbackRanges x allowedSamplingIntervals 不是
+      // 自由交叉組合（beta 3x3=9 種裡只有 3 種真的有資料，其餘 6 種原本各自欄位驗證都會
+      // 通過，查詢卻永遠是空結果）——改成看 allowedRollingWindowTokens（唯一正確的合法
+      // 組合清單），不是各自檢查兩個獨立陣列的 includes()。
+      if (!definition.allowedRollingWindowTokens.includes(token)) {
+        throw new ScreenerValidationError(
+          `"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 的 token 要是 "<lookbackRange>_<samplingInterval>" 格式，且必須是下列已知有資料的組合之一（不是 lookbackRange/samplingInterval 的自由交叉組合）：${definition.allowedRollingWindowTokens.join(', ')}。`,
+        );
+      }
+      const [lookbackRange, samplingInterval] = token.split('_') as [LookbackRange, SamplingInterval];
+      return { field: displayField, metricCode, isDailyCadence: true, ...rollingWindowGroup(lookbackRange, samplingInterval) };
     }
-    const [lookbackRange, samplingInterval] = token.split('_') as [LookbackRange, SamplingInterval];
-    return { field: displayField, metricCode, isDailyCadence: true, ...rollingWindowGroup(lookbackRange, samplingInterval) };
-  }
-
-  if (isRealGroup(definition.allowedSnapshotCadences)) {
-    if (!definition.allowedSnapshotCadences.includes(token as SnapshotCadence)) {
-      throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${token}"，允許的值：${definition.allowedSnapshotCadences.join(', ')}。`);
+    case 'snapshot': {
+      if (!definition.allowedSnapshotCadences.includes(token as SnapshotCadence)) {
+        throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${token}"，允許的值：${definition.allowedSnapshotCadences.join(', ')}。`);
+      }
+      return { field: displayField, metricCode, isDailyCadence: true, ...snapshotCadenceGroup(token as SnapshotCadence) };
     }
-    return { field: displayField, metricCode, isDailyCadence: true, ...snapshotCadenceGroup(token as SnapshotCadence) };
   }
-
-  throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 在 metricDefinitionRegistry 裡沒有宣告任何允許的 basis 組合，這是註冊資料本身的問題。`);
 };
 
 export const resolveFieldOrThrow = (field: string): FieldRef => {
