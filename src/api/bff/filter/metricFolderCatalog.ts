@@ -29,10 +29,10 @@ const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domainPitMetrics');
 // categoryDisplayName，直接跟 CATEGORY_DIR_NAMES 用同一個物件宣告，避免兩份清單各自維護
 // 卻漏改其中一份的風險。
 const CATEGORIES: { key: string; displayName: string }[] = [
+  { key: 'valuation', displayName: '市場評價' },
   { key: 'dividend', displayName: '股東政策' },
   { key: 'resilience', displayName: '財務韌性' },
   { key: 'quality', displayName: '獲利品質' },
-  { key: 'valuation', displayName: '估值水準' },
   { key: 'profitability', displayName: '獲利能力' },
   { key: 'efficiency', displayName: '營運效率' },
   { key: 'growth', displayName: '成長動能' },
