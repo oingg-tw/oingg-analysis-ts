@@ -22,6 +22,11 @@ import { buybackYieldDefinition } from '@/domainPitMetrics/dividend/buybackYield
 import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
 import { shareCountChangeRateDefinition } from '@/domainPitMetrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
 import { sgrDefinition } from '@/domainPitMetrics/growth/sgr/sgrDefinition';
+import { revenueGrowthRateDefinition } from '@/domainPitMetrics/growth/revenueGrowthRate/revenueGrowthRateDefinition';
+import { epsGrowthRateDefinition } from '@/domainPitMetrics/growth/epsGrowthRate/epsGrowthRateDefinition';
+import { netIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/netIncomeGrowthRate/netIncomeGrowthRateDefinition';
+import { operatingIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/operatingIncomeGrowthRate/operatingIncomeGrowthRateDefinition';
+import { equityGrowthRateDefinition } from '@/domainPitMetrics/growth/equityGrowthRate/equityGrowthRateDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
@@ -103,6 +108,11 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   dividendCoverageRatio: dividendCoverageRatioDefinition,
   shareCountChangeRate: shareCountChangeRateDefinition,
   sgr: sgrDefinition,
+  revenueGrowthRate: revenueGrowthRateDefinition,
+  epsGrowthRate: epsGrowthRateDefinition,
+  netIncomeGrowthRate: netIncomeGrowthRateDefinition,
+  operatingIncomeGrowthRate: operatingIncomeGrowthRateDefinition,
+  equityGrowthRate: equityGrowthRateDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
