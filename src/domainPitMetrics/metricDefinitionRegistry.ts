@@ -19,6 +19,9 @@ import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/st
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
+import { dividendGrowthRateFamilyDefinitions } from '@/domainPitMetrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
+import { revenueCagrFamilyDefinitions } from '@/domainPitMetrics/growth/revenueCagr/revenueCagrDefinition';
+import { epsCagrFamilyDefinitions } from '@/domainPitMetrics/growth/epsCagr/epsCagrDefinition';
 import { buybackYieldDefinition } from '@/domainPitMetrics/dividend/buybackYield/buybackYieldDefinition';
 import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
 import { shareCountChangeRateDefinition } from '@/domainPitMetrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
@@ -115,6 +118,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
+  ...dividendGrowthRateFamilyDefinitions,
   buybackYield: buybackYieldDefinition,
   dividendCoverageRatio: dividendCoverageRatioDefinition,
   shareCountChangeRate: shareCountChangeRateDefinition,
@@ -127,6 +131,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   bvpsGrowthRate: bvpsGrowthRateDefinition,
   assetGrowth: assetGrowthDefinition,
   rdIntensity: rdIntensityDefinition,
+  ...revenueCagrFamilyDefinitions,
+  ...epsCagrFamilyDefinitions,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
