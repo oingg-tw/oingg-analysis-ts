@@ -1,9 +1,10 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { companyExists } from '@/shared/sourceData/companyProfile';
 import { getLatestDailyPrice, getLatestDailyPricesBatch } from '@/shared/sourceData/twseMarketData';
-import { getUpcomingExDividendNotices } from '@/shared/sourceData/exDividendNotice';
+import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/shared/sourceData/exDividendNotice';
 import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
-import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ForeignShareholdingHistoryResult } from './types';
+import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ExDividendCalendarResult, ForeignShareholdingHistoryResult } from './types';
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -83,6 +84,16 @@ export const getStockPrices = async (symbols: string[]): Promise<StockPricesResu
 export const getExDividendNotices = async (symbols: string[]): Promise<ExDividendNoticesResult> => {
   const notices = await getUpcomingExDividendNotices(symbols);
   return { notices };
+};
+
+// 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現），不是針對已知的
+// symbol 清單查——跟上面 getExDividendNotices 用同一份 export.ex_dividend_notice 資料源，
+// 差別是不帶 symbol 篩選、改用日期區間，並附上 companyName（月曆情境需要顯示公司名稱，
+// 不只是代號）。
+export const getExDividendCalendar = async (startDate: Date, endDate: Date): Promise<ExDividendCalendarResult> => {
+  const rows = await getExDividendCalendarFromSource(startDate, endDate);
+  const nameMap = await getCompanyNamesForSymbols(rows.map((r) => r.symbol));
+  return { entries: rows.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null })) };
 };
 
 // 2026-09-08 web-nuxt 轉達使用者需求：個股頁面外資持股卡片。目前只有 2330 有真實資料

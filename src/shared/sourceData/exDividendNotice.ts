@@ -73,3 +73,37 @@ export const getUpcomingExDividendNotices = async (symbols: string[]): Promise<R
   }
   return result;
 };
+
+export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend({ symbol: z.string() });
+export type ExDividendCalendarEntry = z.infer<typeof exDividendCalendarEntrySchema>;
+
+// 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現，不是針對某個
+// 使用者的觀察清單），既有的 getUpcomingExDividendNotices 要求先給 symbols 清單，
+// 無法回答「這個月全市場會發生什麼事」——這支不帶 symbol 篩選，直接查整個時間區間。
+// 不篩「只看未來」（跟 getUpcomingExDividendNotices 不同）——月曆情境本身就是呼叫端
+// 自己決定要看哪個月，可能是本月已經過去一半的事件，也是合理的查詢。
+export const getExDividendCalendar = async (startDate: Date, endDate: Date): Promise<ExDividendCalendarEntry[]> => {
+  const rows = await twseExportPrisma.$queryRaw<RawExDividendNoticeRow[]>`
+    SELECT symbol, ex_date, ex_type, stock_dividend_ratio, subscription_ratio, subscription_price_per_share,
+      cash_dividend, shares_offered, shares_emp_owner, sharesholder_owner, stock_holding_ratio
+    FROM "export"."ex_dividend_notice"
+    WHERE ex_date >= ${startDate} AND ex_date <= ${endDate}
+    ORDER BY ex_date ASC, symbol ASC
+  `;
+
+  const toNumber = (value: string | null): number | null => (value === null ? null : Number(value));
+
+  return rows.map((row) => ({
+    symbol: row.symbol,
+    exDate: row.ex_date.toISOString().slice(0, 10),
+    exType: row.ex_type as ExDividendNoticeEntry['exType'],
+    stockDividendRatio: toNumber(row.stock_dividend_ratio),
+    subscriptionRatio: toNumber(row.subscription_ratio),
+    subscriptionPricePerShare: toNumber(row.subscription_price_per_share),
+    cashDividend: toNumber(row.cash_dividend),
+    sharesOffered: toNumber(row.shares_offered),
+    sharesEmpOwner: toNumber(row.shares_emp_owner),
+    sharesholderOwner: toNumber(row.sharesholder_owner),
+    stockHoldingRatio: toNumber(row.stock_holding_ratio),
+  }));
+};

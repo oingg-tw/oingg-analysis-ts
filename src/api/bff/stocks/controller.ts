@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from './service';
+import { getStockQuote, getStockPrices, getExDividendNotices, getExDividendCalendar, getForeignShareholdingHistory } from './service';
 import { logger } from '@/shared/logger';
 
 export const getQuoteParamsSchema = z.object({
@@ -67,6 +67,36 @@ export const getExDividendNoticesHandler = async (req: Request, res: Response, n
     res.status(200).json(result);
   } catch (error) {
     logger.error({ err: error }, 'Ex-dividend notices lookup failed:');
+    next(error);
+  }
+};
+
+// 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現）。month="YYYY-MM"
+// 而不是 startDate/endDate 兩個參數——呼叫端本來就是月曆 UI 在一格一格選月份，直接傳月份
+// 字串比自己算月初/月底日期再傳兩個日期參數更貼近使用情境，跟 fund_expense_ratio_annual
+// 用整數年份（不是日期區間）當參數是同一種「參數形狀貼近呼叫端實際擁有的資料」的設計判斷。
+export const getExDividendCalendarQuerySchema = z.object({
+  month: z
+    .string({ error: 'month is required.' })
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, { error: 'month 格式要是 "YYYY-MM"，例如 "2026-09"。' })
+    .meta({ description: '要查詢的月份，"YYYY-MM"', example: '2026-09' }),
+});
+
+export const getExDividendCalendarHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getExDividendCalendarQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const [year, month] = validationResult.data.month.split('-').map(Number) as [number, number];
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 0)); // 該月最後一天（下個月第 0 天 = 這個月最後一天）
+
+    const result = await getExDividendCalendar(startDate, endDate);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error({ err: error }, 'Ex-dividend calendar lookup failed:');
     next(error);
   }
 };

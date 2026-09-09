@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
-import { getQuoteParamsSchema, symbolsQuerySchema, getForeignShareholdingHistoryParamsSchema, getForeignShareholdingHistoryQuerySchema } from './controller';
-import { stockQuoteResultSchema, stockPricesResultSchema, exDividendNoticesResultSchema, foreignShareholdingHistoryResultSchema } from './types';
+import { getQuoteParamsSchema, symbolsQuerySchema, getExDividendCalendarQuerySchema, getForeignShareholdingHistoryParamsSchema, getForeignShareholdingHistoryQuerySchema } from './controller';
+import { stockQuoteResultSchema, stockPricesResultSchema, exDividendNoticesResultSchema, exDividendCalendarResultSchema, foreignShareholdingHistoryResultSchema } from './types';
 
 export const registerStocksOpenApi = (): void => {
   registry.registerPath({
@@ -56,6 +56,25 @@ export const registerStocksOpenApi = (): void => {
         content: { 'application/json': { schema: exDividendNoticesResultSchema } },
       },
       400: { description: '請求的參數格式錯誤，或 symbols 超過一次上限。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/stocks/ex-dividend-calendar',
+    summary: '全市場除權息日曆（月曆格狀呈現用，不需要先知道 symbol 清單）',
+    description:
+      '跟 GET /stocks/ex-dividend-notices 同一份資料源（twse-ts 的 export.ex_dividend_notice），差別是這支不用先給' +
+      'symbol 清單——傳一個月份（month="YYYY-MM"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」' +
+      '這種日曆瀏覽情境，不是「我關心的這幾檔怎麼樣」。不像 ex-dividend-notices 只回傳未來事件，這支不篩選' +
+      '「只看未來」——查哪個月的事件完全由呼叫端決定，可能是已經過去一半的當月。只有 TWSE 上市有這份資料，' +
+      '也包含 ETF，不是只有一般股票。每筆都帶 symbol/companyName，依除權息基準日排序。exType/cashDividend 等' +
+      '欄位語意跟 ex-dividend-notices 完全一致。',
+    tags: ['Stocks'],
+    request: { query: getExDividendCalendarQuerySchema },
+    responses: {
+      200: { description: '該月全市場除權息事件清單，依日期排序。', content: { 'application/json': { schema: exDividendCalendarResultSchema } } },
+      400: { description: 'month 格式錯誤。' },
     },
   });
 

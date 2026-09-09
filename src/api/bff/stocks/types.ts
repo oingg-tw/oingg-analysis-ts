@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { exDividendNoticeEntrySchema } from '@/shared/sourceData/exDividendNotice';
+import { exDividendNoticeEntrySchema, exDividendCalendarEntrySchema } from '@/shared/sourceData/exDividendNotice';
 import { foreignShareholdingEntrySchema } from '@/shared/sourceData/foreignShareholding';
 
 export const stockQuotePriceSchema = z.object({
@@ -36,6 +36,13 @@ export const exDividendNoticesResultSchema = z.object({
   }),
 });
 export type ExDividendNoticesResult = z.infer<typeof exDividendNoticesResultSchema>;
+
+export const exDividendCalendarResultSchema = z.object({
+  entries: exDividendCalendarEntrySchema.extend({ companyName: z.string().nullable() }).array().meta({
+    description: '依除權息基準日由舊到新排序（同一天有多筆時再依 symbol 排序），每一筆都帶 symbol/companyName',
+  }),
+});
+export type ExDividendCalendarResult = z.infer<typeof exDividendCalendarResultSchema>;
 
 export const foreignShareholdingHistoryResultSchema = z.object({
   symbol: z.string(),
