@@ -2,7 +2,7 @@
 // 本服務不負責抓取/回補資料，因此不需要 getLatestAvailableQuarter / getQuarterEndDate。
 export type Season = '1' | '2' | '3' | '4';
 
-// 2026-09-05 ROE spike 當時獨立開了 src/pitMetrics/rocYear.ts，理由是「不異動這支現有
+// 2026-09-05 ROE spike 當時獨立開了 src/domainPitMetrics/rocYear.ts，理由是「不異動這支現有
 // 36 支指標共用的檔案」——2026-09-07 因子分類整批搬動 pitMetrics/ 目錄結構時，這個
 // 「不異動」的理由已經不成立（本來就要重新檢視每一處相對 import），改併回這裡，跟
 // formatRocYearSeasonAsOfDate 共用同一份「民國年+1911=西元年」邏輯，不要兩處各自維護

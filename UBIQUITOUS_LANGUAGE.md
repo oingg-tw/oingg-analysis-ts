@@ -41,10 +41,10 @@ analysis-ts 實際程式碼現況的對應關係，區分「已經對齊」「�
 | 一、識別碼 | PERMNO/GVKEY 式永久 surrogate key + 帶生效期間的識別碼歷史表 | 全生態系已統一用 `symbol` 當唯一鍵（見下方一、已完成對齊表），台股 symbol 由主管機關配發、極少重用，不像美股 ticker 會被回收 | **刻意不適用**：symbol reuse 在台股市場不是真實痛點，加一層永久 surrogate key 是不必要的複雜度 |
 | 二、`close` vs `last` | 分開 `close_price`（EOD）與 `last_price`（即時 quote） | 全平台只有 `closePrice`（`getStockPriceAsOf` 等）——這個生態系永遠不會有盤中逐筆/分鐘資料 | **刻意不適用**：沒有即時報價來源，`last_price` 概念不存在，`close_price` 已經是唯一且明確的語意 |
 | 二、`adjusted` 的多義 | 拆成 `close_raw`/`close_split_adj`/`close_total_return_adj` | 全平台目前**沒有任何價格調整層**——PE/PB/Beta（規劃中）等所有拿股價當輸入的指標一律用原始收盤價，沒有除權息還原、沒有 total-return adjusted 序列 | **真正的落差，但目前刻意擱置**：`exDividendNotice.ts` 只有「未來除權息預告」，沒有「歷史除權息事件」可以拿來算調整因子；等真的需要還原股價（例如報酬率類指標要跨除權息日比較）才需要引入這套三欄位命名，現在硬加只是空殼 |
-| 三、`report date` 歧義（`datadate` vs `rdq`/filing date） | 拆成 `fiscal_period_end_date` 與 `filing_date`/`announcement_date` 兩個獨立欄位 | **已完全對齊**：`reportDate`（財報期末日，=`datadate`）與 `knowledgeDate`（實際公告日，=`rdq`）在 `src/pitMetrics/knowledgeDate.ts`/`src/shared/sourceData/reportAnnouncementDate.ts` 已經是兩個嚴格分開的欄位，`knowledgeDateIsFallback` 額外標記「查無真實公告日、退回用 reportDate 頂替」的 look-ahead bias 風險——這正是報告點名「最容易造成 bug 的三個陷阱」之一，本專案是目前唯一已經徹底解決的一項 | **已對齊**，命名雖不同（`reportDate`/`knowledgeDate` vs 報告建議的 `fiscal_period_end_date`/`filing_date`）但語意完全一致，不需要改名 |
-| 三、TTM vs LTM | 擇一當 canonical，建議 `ttm` | `pitMetrics` 的 `basis` 欄位已採用 `'TTM'`（`src/pitMetrics/metricBasis.ts`），全平台只用這個字，從未出現 `LTM` | **已對齊** |
+| 三、`report date` 歧義（`datadate` vs `rdq`/filing date） | 拆成 `fiscal_period_end_date` 與 `filing_date`/`announcement_date` 兩個獨立欄位 | **已完全對齊**：`reportDate`（財報期末日，=`datadate`）與 `knowledgeDate`（實際公告日，=`rdq`）在 `src/domainPitMetrics/knowledgeDate.ts`/`src/shared/sourceData/reportAnnouncementDate.ts` 已經是兩個嚴格分開的欄位，`knowledgeDateIsFallback` 額外標記「查無真實公告日、退回用 reportDate 頂替」的 look-ahead bias 風險——這正是報告點名「最容易造成 bug 的三個陷阱」之一，本專案是目前唯一已經徹底解決的一項 | **已對齊**，命名雖不同（`reportDate`/`knowledgeDate` vs 報告建議的 `fiscal_period_end_date`/`filing_date`）但語意完全一致，不需要改名 |
+| 三、TTM vs LTM | 擇一當 canonical，建議 `ttm` | `domainPitMetrics` 的 `basis` 欄位已採用 `'TTM'`（`src/domainPitMetrics/metricBasis.ts`），全平台只用這個字，從未出現 `LTM` | **已對齊** |
 | 四、PIT/版本化（bitemporal 設計） | `fiscal_period_end_date`/`filing_date`/`data_vintage`/`is_restated`/`source_version` | `metric_values`（`MetricValue` model）已經是 bitemporal 設計：`fiscalYear`+`fiscalQuarter`=valid time、`knowledgeDate`=transaction/knowledge time；`formulaVersion` 對應 `source_version`；沒有獨立的 `is_restated` 布林欄位，但 `writeMetricValue` 的 `updated_same_knowledge_date`/`inserted` 兩種寫入結果已經隱含「同一天重算覆蓋」vs「新公告日疊加新版本」的區分，效果等價 | **已對齊**，`is_restated` 用寫入結果分支表達而非獨立欄位，是刻意的實作選擇不是遺漏 |
-| 五、衍生指標標準命名 | `roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`ev`/`ebitda`/`fcf`/`beta`/`margin` | `pitMetrics` 的 `metricCode` 已經直接採用這些全球通用縮寫（`roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`evEbitda`/`fcfYield`，`beta` 目前只有 domainMetrics 舊架構版本，pitMetrics 版尚未實作，見本文件〈二、指標識別碼〉一節） | **已對齊** |
+| 五、衍生指標標準命名 | `roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`ev`/`ebitda`/`fcf`/`beta`/`margin` | `domainPitMetrics` 的 `metricCode` 已經直接採用這些全球通用縮寫（`roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`evEbitda`/`fcfYield`，`beta` 目前只有 domainMetrics 舊架構版本，pitMetrics 版尚未實作，見本文件〈二、指標識別碼〉一節） | **已對齊** |
 | 六、Fama-French 因子 | `mkt_rf`/`smb`/`hml`/`rmw`/`cma`/`umd`/`rf` | 平台沒有任何因子投資/多因子模型功能 | **不適用**，非本平台範圍 |
 | 七、WRDS CCM Linking | `GVKEY`↔`LPERMNO` 橋接 + 有效期間 | 沒有 CRSP/Compustat 概念；生態系內部的跨服務橋接鍵已經是 `symbol`（見一、已完成對齊）跟 `fund_tax_id`（見二、指標識別碼、ETF 相關 join），且都沒有帶生效期間——這是台股單一市場場景，橋接鍵本身穩定，不像 CCM 要處理兩個獨立資料庫的覆蓋範圍落差 | **不適用**，場景不對應 |
 | 八、籌碼資料（台灣概念對應） | `short_to_margin_ratio`/`margin_purchase_balance`/`short_sale_balance`/`foreign_net`（買賣超） | `marginShortRatioRanking` 的 `shortToMarginRatioPct` 已對齊報告建議的 `short_to_margin_ratio`；`marginTodayBalance`/`shortTodayBalance` 概念對應 `margin_purchase_balance`/`short_sale_balance`，但命名用「Today」而非報告建議的字面對應，語意仍清楚不算落差。外資「買賣超」（`foreign_net`，net buy/sell flow）目前完全沒做——2026-09-08 twse-ts 退役了唯一涵蓋「外資持股比例」（ownership level，跟買賣超是不同概念）的 `export.foreign_holding`，`foreignHoldingRanking` 這個排行功能（`src/api/bff/market/foreignHoldingRanking/`）已經整批移除，不再有任何外資相關籌碼指標 | **部分對齊**：往後如果真的要做外資「買賣超」，metricCode/欄位名稱要用 `foreignNet`（或類似字眼），跟已經移除的舊 `sharesHeldPercent`（持股比例）概念明確區分，不要都叫「外資」混在一起 |
@@ -72,15 +72,15 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
    「指標」的一員，是獨立的總經資料，但也已刪除），`filterCatalog.ts`/`filterCatalog.csv`/
    `metricTableRegistry.ts`/`columnPresets.ts`/`GET /companies/metrics`（compute-on-miss）/
    `POST /screener/values`/整個 `GET /screener` 系列全部刪除，不再存在。`GET /filters`
-   現在改成直接掃描 `src/pitMetrics/` 資料夾結構產生（見
+   現在改成直接掃描 `src/domainPitMetrics/` 資料夾結構產生（見
    `src/api/bff/filter/metricFolderCatalog.ts`），回應形狀也變了（只有
    `categoryKey`/`metricCode`/`allowedBases`，沒有這套系統原本的 `metricKey.fieldKey`
    camelCase 識別碼、也沒有使用者可讀的 name/description/unit 文案）。
-2. **`pitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
+2. **`domainPitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
    架構（`metric_values`/`metric_definitions`，見 ROE spike）用這套，例如
    `metric_code='roe'`、`basis='Q'`。
 3. **mops-ts XBRL account_code**（snake_case，`export.xbrl_three_statements_long` 的
-   `account_code` 欄位）——**2026-09-06 起 `pitMetrics` 的 `dependsOn` 改填這一套**（見下方
+   `account_code` 欄位）——**2026-09-06 起 `domainPitMetrics` 的 `dependsOn` 改填這一套**（見下方
    「已解決的落差」），例如 `profit_loss_attributable_to_owners_of_parent`、
    `equity_attributable_to_owners_of_parent`。這是 mops-ts 自己把原始 XBRL 標籤整理過的
    命名，不是 IFRS 原始 PascalCase 標籤，也不是 mops-ts 三大表（`quarterly_income_statement`/
@@ -114,7 +114,7 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 
 ### 已解決的落差（原「已知落差」，2026-09-06 更新）
 
-- **`pitMetrics` 的 `dependsOn` 曾經只能填 mops-ts 三大表的原始欄位名稱**——因為 XBRL
+- **`domainPitMetrics` 的 `dependsOn` 曾經只能填 mops-ts 三大表的原始欄位名稱**——因為 XBRL
   資料當時只涵蓋測試公司 1101，沒有真實公司可以驗證對應關係。**mops-ts 2026-09-06 補上
   2330（台積電）、2801（彰化銀行）兩家真實公司的 XBRL 資料後，這個落差已經解決**：
   `metricDefinitionRegistry.ts` 的 `dependsOn` 陣列已經全部改成驗證過的 XBRL
@@ -132,7 +132,7 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
   沒有的話才退回填三大表原始欄位名稱。
 - **2026-09-06 已解決**（原「意外發現，還沒評估細節」）：銀行業專屬指標（CAR/CET1/Tier1/
   逾放比/備抵呆帳覆蓋率）已經直接查 mops-ts export DB 驗證過並實作完成
-  （`src/pitMetrics/bankAssetQuality/`、`src/pitMetrics/bankCapitalAdequacy/`）。**原本這裡
+  （`src/domainPitMetrics/bankAssetQuality/`、`src/domainPitMetrics/bankCapitalAdequacy/`）。**原本這裡
   記錄的表名是錯的**：`non_performing_receivables_xbrl` 只有信用卡業務/應收帳款受讓業務
   兩個類別，不是全行放款逾放比；真正對的表是 `bank_asset_quality_xbrl`（`category=
   'TotalLoans'` 那一列才是全行加總，覆蓋約 19-20 檔銀行/金控股，每季都有真實值）。

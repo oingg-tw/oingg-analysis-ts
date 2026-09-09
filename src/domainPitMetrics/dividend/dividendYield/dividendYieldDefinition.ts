@@ -1,0 +1,15 @@
+import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
+
+export const dividendYieldDefinition: MetricDefinitionSpec = {
+  metricCode: 'dividendYield',
+  displayName: '殖利率（交易所公告）',
+  unit: '%',
+  formulaNote:
+    'TWSE/TPEx 官方每日公布的殖利率，直接 passthrough export.daily_valuation.dividend_yield，' +
+    '本服務不自己重算——沒有自算對應版本可比較，直接沿用交易所數字最貼近使用者查詢' +
+    '「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。',
+  group: 'snapshot',
+  allowedSnapshotCadences: ['EOD'],
+  dependsOn: ['daily_valuation.dividend_yield'],
+  currentFormulaVersion: 1,
+};

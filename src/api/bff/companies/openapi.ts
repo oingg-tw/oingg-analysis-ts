@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock';
-import { roeHistoryEntrySchema } from '@/pitMetrics/profitability/roe/queryRoeHistory';
-import { roaHistoryEntrySchema } from '@/pitMetrics/profitability/roa/queryRoaHistory';
-import { dupontHistoryEntrySchema } from '@/pitMetrics/shared/dupont/queryDupontHistory';
-import { metricHistoryEntrySchema } from '@/pitMetrics/queryMetricHistory';
-import { multiMetricHistoryEntrySchema } from '@/pitMetrics/queryMultiMetricHistory';
+import { roeHistoryEntrySchema } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
+import { roaHistoryEntrySchema } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
+import { dupontHistoryEntrySchema } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
+import { metricHistoryEntrySchema } from '@/domainPitMetrics/queryMetricHistory';
+import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,

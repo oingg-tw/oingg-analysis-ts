@@ -6,16 +6,16 @@
 // 用法：pnpm tsx scripts/backfillGuruPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts。
 
-import { computeAndWriteGrahamNumberPit } from '../src/pitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
-import { computeAndWriteNcavPit } from '../src/pitMetrics/valuation/ncav/computeNcavPit';
-import { computeAndWriteOwnerEarningsPit } from '../src/pitMetrics/quality/ownerEarnings/computeOwnerEarningsPit';
-import { computeAndWriteAltmanZScorePit } from '../src/pitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { computeAndWritePiotroskiFScorePit } from '../src/pitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/pitMetrics/quality/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteNissimPenmanRnoaPit } from '../src/pitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
-import { computeAndWriteZmijewskiScorePit } from '../src/pitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/pitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteGrahamNumberPit } from '../src/domainPitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
+import { computeAndWriteNcavPit } from '../src/domainPitMetrics/valuation/ncav/computeNcavPit';
+import { computeAndWriteOwnerEarningsPit } from '../src/domainPitMetrics/quality/ownerEarnings/computeOwnerEarningsPit';
+import { computeAndWriteAltmanZScorePit } from '../src/domainPitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
+import { computeAndWritePiotroskiFScorePit } from '../src/domainPitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
+import { computeAndWriteBeneishMScorePit } from '../src/domainPitMetrics/quality/beneishMScore/computeBeneishMScorePit';
+import { computeAndWriteNissimPenmanRnoaPit } from '../src/domainPitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
+import { computeAndWriteZmijewskiScorePit } from '../src/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
+import { computeAndWriteOhlsonOScorePit } from '../src/domainPitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';

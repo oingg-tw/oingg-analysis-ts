@@ -6,7 +6,7 @@
 // 2026-09-08 起清空：原本登記的 marketRatios/beta 兩支（domainMetrics/marketRatios.ts、
 // domainMetrics/beta.ts）已經整批退場——這兩支指標已經獨立遷入 pitMetrics
 // （exchangePeRatio/exchangePbRatio/dividendYield/beta，見
-// src/pitMetrics/shared/marketRatios/、src/pitMetrics/valuation/beta/），
+// src/domainPitMetrics/shared/marketRatios/、src/domainPitMetrics/valuation/beta/），
 // filterCatalog.csv 最後 6 列確認是開發環境假資料誤判、沒有真實功能依賴（跟 bff-ts
 // 多輪確認過），GET /stocks/:symbol/quote 也已經改讀 pitMetrics 版本，見
 // src/api/bff/stocks/service.ts 的 getStockQuote。

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDailyCadenceKnowledgeDate } from '@/pitMetrics/knowledgeDate';
+import { resolveDailyCadenceKnowledgeDate } from '@/domainPitMetrics/knowledgeDate';
 
 describe('resolveDailyCadenceKnowledgeDate', () => {
   it('knowledgeDate 直接等於 tradeDate，isFallback 恆為 false', () => {

@@ -1,12 +1,12 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
+import { getMultiMetricHistory } from '@/domainPitMetrics/queryMultiMetricHistory';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2026-09-07 使用者要「五年三率」（毛利率/營業利益率/淨利率）一次抓齊，新增泛化版
 // 多指標歷史查詢。用 2330 已知的三率真實資料交叉驗證：115Q2 三個值分別是
 // grossMargin=67.72、operatingMargin=60.34、netProfitMargin=55.62（跟
-// tests/pitMetrics/marginsFamilyPit.test.ts / dupontFamilyPit.test.ts 已驗證過的
+// tests/domainPitMetrics/marginsFamilyPit.test.ts / dupontFamilyPit.test.ts 已驗證過的
 // 基準值一致）。
 
 test('getMultiMetricHistory: 2330 三率(grossMargin/operatingMargin/netProfitMargin) 115Q2 應該精確等於各自單獨查詢的已知基準值', async () => {

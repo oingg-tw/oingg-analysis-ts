@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getDailyCadenceMetricHistory } from '@/pitMetrics/queryDailyCadenceMetricHistory';
+import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/queryDailyCadenceMetricHistory';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 2026-09-09 拆表要修的正是這個 bug 的 regression test：拆表前 getMetricHistory() 用

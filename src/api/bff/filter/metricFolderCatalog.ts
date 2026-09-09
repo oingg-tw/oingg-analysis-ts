@@ -1,10 +1,11 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 
-// 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 pitMetrics 完全脫節）
-// ——這份改成直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08 那批拆分之後，
+// 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
+// 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
+// 那批拆分之後，
 // 每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），比對
 // metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 token 清單，組出分類清單。
 //
@@ -21,7 +22,7 @@ import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 // 出現在 metricDefinitionRegistry 裡——這樣「一次查詢拆多個 metric_code」的編排資料夾
 // （turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/cashFlowPerShare/
 // liquidityRatio，資料夾名稱本身都不是 metricCode）會被自然濾掉，不用額外維護排除清單。
-const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'pitMetrics');
+const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domainPitMetrics');
 const CATEGORY_DIR_NAMES = ['dividend', 'efficiency', 'growth', 'profitability', 'quality', 'resilience', 'valuation'];
 
 export interface MetricFolderCatalogEntry {

@@ -19,11 +19,11 @@
 //
 // 用法：pnpm tsx scripts/backfillPeRatioAndPbRatioPit.ts
 
-import { computeAndWriteEpsPit } from '../src/pitMetrics/profitability/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/pitMetrics/valuation/bvps/computeBvpsPit';
-import { computeAndWritePeRatioPit } from '../src/pitMetrics/valuation/peRatio/computePeRatioPit';
-import { computeAndWritePbRatioPit } from '../src/pitMetrics/valuation/pbRatio/computePbRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteEpsPit } from '../src/domainPitMetrics/profitability/eps/computeEpsPit';
+import { computeAndWriteBvpsPit } from '../src/domainPitMetrics/valuation/bvps/computeBvpsPit';
+import { computeAndWritePeRatioPit } from '../src/domainPitMetrics/valuation/peRatio/computePeRatioPit';
+import { computeAndWritePbRatioPit } from '../src/domainPitMetrics/valuation/pbRatio/computePbRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

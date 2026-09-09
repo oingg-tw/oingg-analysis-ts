@@ -12,10 +12,10 @@
 //
 // 用法：pnpm tsx scripts/backfillRoeRoaDupont5YearPit.ts
 
-import { computeAndWriteRoePit } from '../src/pitMetrics/profitability/roe/computeRoePit';
-import { computeAndWriteRoaPit } from '../src/pitMetrics/profitability/roa/computeRoaPit';
-import { computeAndWriteDupontFamilyPit } from '../src/pitMetrics/shared/dupont/computeDupontFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRoePit } from '../src/domainPitMetrics/profitability/roe/computeRoePit';
+import { computeAndWriteRoaPit } from '../src/domainPitMetrics/profitability/roa/computeRoaPit';
+import { computeAndWriteDupontFamilyPit } from '../src/domainPitMetrics/shared/dupont/computeDupontFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';

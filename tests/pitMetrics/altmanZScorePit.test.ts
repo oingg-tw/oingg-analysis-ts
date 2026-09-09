@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteAltmanZScorePit } from '@/pitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteAltmanZScorePit } from '@/domainPitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 

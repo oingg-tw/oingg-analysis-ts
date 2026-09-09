@@ -7,9 +7,9 @@
 // 用法：pnpm tsx scripts/backfillMarginsAndTurnoverPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts。
 
-import { computeAndWriteMarginsFamilyPit } from '../src/pitMetrics/profitability/margins/computeMarginsFamilyPit';
-import { computeAndWriteTurnoverRatioFamilyPit } from '../src/pitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteMarginsFamilyPit } from '../src/domainPitMetrics/profitability/margins/computeMarginsFamilyPit';
+import { computeAndWriteTurnoverRatioFamilyPit } from '../src/domainPitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';

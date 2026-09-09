@@ -15,8 +15,8 @@
 // - 季度範圍：113Q3~115Q2 共 8 季/家。
 // - dataType 只做 '2'（合併報表）。
 
-import { computeAndWriteRoePit } from '../src/pitMetrics/profitability/roe/computeRoePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRoePit } from '../src/domainPitMetrics/profitability/roe/computeRoePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';

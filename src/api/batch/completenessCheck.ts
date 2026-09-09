@@ -27,7 +27,7 @@
 // coverageRatio 永遠 0，會誤判成「這支指標完全沒寫入」）。
 
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { logger } from '@/shared/logger';
 import type { IndicatorJob } from './indicatorJob';
 

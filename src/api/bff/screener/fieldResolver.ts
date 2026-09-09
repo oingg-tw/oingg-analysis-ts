@@ -1,6 +1,6 @@
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
-import { periodTypeGroup, rollingWindowGroup, snapshotCadenceGroup } from '@/pitMetrics/metricValueWriter';
-import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/pitMetrics/metricBasis';
+import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { periodTypeGroup, rollingWindowGroup, snapshotCadenceGroup } from '@/domainPitMetrics/metricValueWriter';
+import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from '@/domainPitMetrics/metricBasis';
 
 // 2026-09-08 重建：舊架構 screener 的 field 格式是 "metricKey.fieldKey"（fieldKey 對應
 // 某個舊架構表的欄位名稱，例如 "roe.roeQuarterlyPct"），靠 metricTableRegistry.ts 解析成

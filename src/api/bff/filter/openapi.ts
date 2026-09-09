@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
 
-// 2026-09-08 起改成直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構（見
+// 2026-09-08 起改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（見
 // metricFolderCatalog.ts 的說明），取代舊架構手動維護的 filterCatalog.csv。
 // 2026-09-09 補上 displayName/unit（使用者可讀的中文名稱/單位）——之前這支端點沒有這批
 // 文案，前端沒辦法直接拿來組欄位選單/顯示標籤，見 metricDefinitionRegistry.ts 每個
@@ -24,7 +24,7 @@ const metricFolderCatalogEntrySchema = z.object({
 });
 
 const metricFolderCatalogCategorySchema = z.object({
-  categoryKey: z.string().meta({ description: '對應 src/pitMetrics/<categoryKey>/ 資料夾名稱' }),
+  categoryKey: z.string().meta({ description: '對應 src/domainPitMetrics/<categoryKey>/ 資料夾名稱' }),
   metrics: z.array(metricFolderCatalogEntrySchema),
 });
 
@@ -38,7 +38,7 @@ export const registerFiltersOpenApi = (): void => {
     path: '/filters',
     summary: '列出目前 pitMetrics 底下已實作的指標，依因子分類分組',
     description:
-      '直接掃描 src/pitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。' +
+      '直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。' +
       '分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類。' +
       '每個 metric 有 metricCode/displayName（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +

@@ -1,14 +1,14 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteDupontFamilyPit } from '@/pitMetrics/shared/dupont/computeDupontFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteDupontFamilyPit } from '@/domainPitMetrics/shared/dupont/computeDupontFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 第二批遷移（Dupont 拆解家族）——src/pitMetrics/shared/dupont/computeDupontFamilyPit.ts 是
+// 第二批遷移（Dupont 拆解家族）——src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts 是
 // src/domainMetrics/margins.ts（僅 netProfitMargin）/turnoverRatio.ts（僅 assetTurnover）/
 // dupont.ts 三支舊架構檔案的獨立重新實作，這裡拿 tests/domains/metrics/dupont.test.ts 裡
-// 2330 115Q2 的既有基準數字交叉驗證，測試結構比照 tests/pitMetrics/roePit.test.ts。
+// 2330 115Q2 的既有基準數字交叉驗證，測試結構比照 tests/domainPitMetrics/roePit.test.ts。
 
 const findLatest = (symbol: string, metricCode: string, basis: string, fiscalYear: number, fiscalQuarter: number) =>
   analysisPrisma.metricValue.findFirst({

@@ -2,15 +2,15 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
 import { getCapitalStockHistory } from '@/shared/sourceData/capitalStock';
-import { getRoeHistory } from '@/pitMetrics/profitability/roe/queryRoeHistory';
-import { getRoaHistory } from '@/pitMetrics/profitability/roa/queryRoaHistory';
-import { getDupontHistory } from '@/pitMetrics/shared/dupont/queryDupontHistory';
-import { getMetricHistory } from '@/pitMetrics/queryMetricHistory';
-import { getDailyCadenceMetricHistory } from '@/pitMetrics/queryDailyCadenceMetricHistory';
-import { getMultiMetricHistory } from '@/pitMetrics/queryMultiMetricHistory';
+import { getRoeHistory } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
+import { getRoaHistory } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
+import { getDupontHistory } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
+import { getMetricHistory } from '@/domainPitMetrics/queryMetricHistory';
+import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/queryDailyCadenceMetricHistory';
+import { getMultiMetricHistory } from '@/domainPitMetrics/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
 import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
-import type { PeriodType } from '@/pitMetrics/metricBasis';
+import type { PeriodType } from '@/domainPitMetrics/metricBasis';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
 import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
@@ -100,7 +100,7 @@ export const getCompanyCapitalStockHistory = async (req: Request, res: Response,
   }
 };
 
-// ROE 這支指標目前允許的 periodType 只有這三種（見 src/pitMetrics/metricDefinitionRegistry.ts
+// ROE 這支指標目前允許的 periodType 只有這三種（見 src/domainPitMetrics/metricDefinitionRegistry.ts
 // 的 metricDefinitionRegistry.roe.allowedPeriodTypes），這裡刻意獨立宣告成 query 參數的合法值，
 // 不直接沿用通用的 periodTypeSchema（那個還有 YTD/FY，對 ROE 沒有意義）——兩邊要保持同步。
 // 2026-09-08：這個 query 參數原本叫 basis，改名 periodType 是這次「metric_values.basis 拆成
@@ -116,7 +116,7 @@ export const getCompanyRoeHistoryQuerySchema = z.object({
 });
 
 // 給前端畫「ROE 歷史時序」圖表用——第一支直接讀 metric_values（point-in-time 架構）而不是
-// profitability_roe 的對外端點，見 src/pitMetrics/profitability/roe/queryRoeHistory.ts 的說明。目前資料
+// profitability_roe 的對外端點，見 src/domainPitMetrics/profitability/roe/queryRoeHistory.ts 的說明。目前資料
 // 覆蓋率極低（只有 spike 手動 backfill 過的少數公司），查無資料回傳 entries: []，不是 404
 // 或錯誤——跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyRoeHistory = async (req: Request, res: Response, next: NextFunction) => {
@@ -135,7 +135,7 @@ export const getCompanyRoeHistory = async (req: Request, res: Response, next: Ne
 };
 
 // ROA 這支指標目前允許的 periodType 跟 ROE 一模一樣（見
-// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedPeriodTypes）。
+// src/domainPitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedPeriodTypes）。
 const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
 const MAX_ROA_HISTORY_LIMIT = 40;
 
@@ -163,7 +163,7 @@ export const getCompanyRoaHistory = async (req: Request, res: Response, next: Ne
 };
 
 // Dupont 拆解沒有 Q_ANN——dupontDecomposedRoe/equityMultiplier 都沒有這個變體（見
-// src/pitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.dupontDecomposedRoe/
+// src/domainPitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.dupontDecomposedRoe/
 // equityMultiplier.allowedPeriodTypes）。
 const DUPONT_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_DUPONT_HISTORY_LIMIT = 40;
@@ -176,7 +176,7 @@ export const getCompanyDupontHistoryQuerySchema = z.object({
 
 // 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
 // 權益乘數 + 組裝出來的 ROE），不是完整的毛利率/週轉率家族，見
-// src/pitMetrics/shared/dupont/queryDupontHistory.ts 的說明。periodType=TTM 時
+// src/domainPitMetrics/shared/dupont/queryDupontHistory.ts 的說明。periodType=TTM 時
 // equityMultiplier 恆為 null。查無資料回傳 entries: []，不是 404。
 export const getCompanyDupontHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {

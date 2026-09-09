@@ -46,7 +46,7 @@ datasource db {
 // 2026-09-08：MarketRatiosResult（PER/PBR/股利殖利率）、BetaResult（貝塔係數）已隨
 // filterCatalog.csv 最後 6 列一起退場並 DROP TABLE——兩者都已獨立遷入 pitMetrics
 // （exchangePeRatio/exchangePbRatio/dividendYield/beta，見
-// src/pitMetrics/shared/marketRatios/、src/pitMetrics/valuation/beta/），確認沒有真實
+// src/domainPitMetrics/shared/marketRatios/、src/domainPitMetrics/valuation/beta/），確認沒有真實
 // 功能依賴後刪除，見 abstract-crafting-journal.md「filterCatalog.ts 最後 6 列的退場」。
 
 // 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
@@ -96,13 +96,13 @@ model EquityRiskPremiumResult {
 // 2026-09-05 新增：ROE spike——point-in-time 事實層(metric_values)/定義層
 // (metric_definitions)，絞殺者模式第一步(docs/analysis-ts-spec-v0.2.md §10.2 步驟 2)。
 // 跟上方所有 XxxResult model 完全獨立並存：RoeResult/profitability_roe 不受影響，
-// 這次新增的管線(src/pitMetrics/)完全不寫 RoeResult。
+// 這次新增的管線(src/domainPitMetrics/)完全不寫 RoeResult。
 //
 // 命名決策(跟最初 DDL 草案不同的地方，是討論後的決定，不是隨意更動，見對話紀錄)：
 // - 主鍵欄位用 symbol，不是 stock_no——對齊本檔案上方所有 model 的既有慣例。
-// - fiscalYear 存西元年(民國+1911)，轉換只發生在 src/pitMetrics 邊界層，不滲透進
+// - fiscalYear 存西元年(民國+1911)，轉換只發生在 src/domainPitMetrics 邊界層，不滲透進
 //   QuarterlyMetricQuery 或現有 36 支指標(它們的 year 繼續是民國年字串)。
-// - basis/nullReason 用 String + zod(src/pitMetrics/metricBasis.ts)驗證，不用 Postgres
+// - basis/nullReason 用 String + zod(src/domainPitMetrics/metricBasis.ts)驗證，不用 Postgres
 //   enum——docs/analysis-ts-spec-v0.2.md §4.3 明講 basis 字彙要能「擴充不動 schema」，
 //   enum 加新值要跑 migration 違背這個設計目標。等字彙穩定、要進入多指標正式遷移(全市場
 //   backfill)之前，補一個 DB CHECK 約束是比較便宜的補強時機(比真正的 enum 轉型省掉整張表
@@ -121,7 +121,7 @@ model MetricDefinition {
   formulaNote String @map("formula_note")
 
   // 2026-09-08：原本是單一 allowedBases（塞了三組不同語意的值），拆成四個獨立陣列，
-  // 對應 src/pitMetrics/metricBasis.ts 的 periodType / lookbackRange / samplingInterval /
+  // 對應 src/domainPitMetrics/metricBasis.ts 的 periodType / lookbackRange / samplingInterval /
   // snapshotCadence——每個 metricCode 只會落在其中一組（lookbackRange + samplingInterval
   // 成對算一組），非本組的陣列固定是 ['N/A']（sentinel，不是空陣列，跟 MetricValue 那四個
   // 欄位的 sentinel 規則一致）。寫入前用來擋「存量指標被拿去算 TTM」這類錯誤(spec v0.2
@@ -175,7 +175,7 @@ model MetricValue {
   // periodType：季報型指標的期間聚合方式，唯一還留著的 basis 相關欄位（lookbackRange/
   // samplingInterval/snapshotCadence 三個逐日型專用欄位已經隨著拆表搬到
   // MetricDailyCadenceValue，這張表不再需要）。'Q' | 'YTD' | 'TTM' | 'Q_ANN' | 'FY'，
-  // 完整說明見 src/pitMetrics/metricBasis.ts。
+  // 完整說明見 src/domainPitMetrics/metricBasis.ts。
   periodType String @map("period_type")
 
   // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
@@ -255,7 +255,7 @@ model MetricDailyCadenceValue {
   nullReason String?  @map("null_reason")
 
   // 逐日型指標沒有公告延遲，knowledgeDate 恆等於 tradeDate，見
-  // src/pitMetrics/knowledgeDate.ts 的 resolveDailyCadenceKnowledgeDate 說明。
+  // src/domainPitMetrics/knowledgeDate.ts 的 resolveDailyCadenceKnowledgeDate 說明。
   knowledgeDate           DateTime @map("knowledge_date") @db.Date
   knowledgeDateIsFallback Boolean  @map("knowledge_date_is_fallback")
 

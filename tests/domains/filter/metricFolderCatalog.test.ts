@@ -1,12 +1,12 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { scanMetricFolderCatalog } from '@/api/bff/filter/metricFolderCatalog';
-import { metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 
 // 2026-09-08：取代舊架構的 filterCatalog.csv（連同整套 filterCatalog/screener/
 // metricsService 機制一起退場，見 abstract-crafting-journal.md）——這支直接掃描
-// src/pitMetrics/<分類>/<指標>/ 資料夾結構，不是手動維護的清單。
+// src/domainPitMetrics/<分類>/<指標>/ 資料夾結構，不是手動維護的清單。
 
 describe('scanMetricFolderCatalog', () => {
   test('每個分類底下的每個 metricCode，都必須是 metricDefinitionRegistry 裡真實註冊的 key（不是編排資料夾誤判成指標）', () => {

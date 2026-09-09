@@ -1,14 +1,14 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRoaPit } from '@/pitMetrics/profitability/roa/computeRoaPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/pitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRoaPit } from '@/domainPitMetrics/profitability/roa/computeRoaPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 第二批遷移（ROA）——src/pitMetrics/profitability/roa/computeRoaPit.ts 是 src/domainMetrics/roa.ts 的
+// 第二批遷移（ROA）——src/domainPitMetrics/profitability/roa/computeRoaPit.ts 是 src/domainMetrics/roa.ts 的
 // 獨立重新實作（不呼叫 calculateRoa()，見 computeRoaPit.ts 檔頭說明），這裡拿
 // tests/domains/metrics/roa.test.ts 裡 2330 115Q2 的既有基準數字交叉驗證，測試結構完全比照
-// tests/pitMetrics/roePit.test.ts。
+// tests/domainPitMetrics/roePit.test.ts。
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.roa!);
