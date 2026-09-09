@@ -4,6 +4,7 @@ import { roeDefinition } from '@/domainPitMetrics/profitability/roe/roeDefinitio
 import { roaDefinition } from '@/domainPitMetrics/profitability/roa/roaDefinition';
 import { netProfitMarginDefinition } from '@/domainPitMetrics/profitability/netProfitMargin/netProfitMarginDefinition';
 import { assetTurnoverDefinition } from '@/domainPitMetrics/efficiency/assetTurnover/assetTurnoverDefinition';
+import { operatingExpenseRatioDefinition } from '@/domainPitMetrics/efficiency/operatingExpenseRatio/operatingExpenseRatioDefinition';
 import { equityMultiplierDefinition } from '@/domainPitMetrics/resilience/equityMultiplier/equityMultiplierDefinition';
 import { dupontDecomposedRoeDefinition } from '@/domainPitMetrics/profitability/dupontDecomposedRoe/dupontDecomposedRoeDefinition';
 import { dupontTaxBurdenDefinition } from '@/domainPitMetrics/profitability/dupontTaxBurden/dupontTaxBurdenDefinition';
@@ -97,6 +98,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roa: roaDefinition,
   netProfitMargin: netProfitMarginDefinition,
   assetTurnover: assetTurnoverDefinition,
+  operatingExpenseRatio: operatingExpenseRatioDefinition,
   equityMultiplier: equityMultiplierDefinition,
   dupontDecomposedRoe: dupontDecomposedRoeDefinition,
   dupontTaxBurden: dupontTaxBurdenDefinition,
