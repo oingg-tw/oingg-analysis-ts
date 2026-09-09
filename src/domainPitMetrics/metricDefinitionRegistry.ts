@@ -30,6 +30,7 @@ import { operatingIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/o
 import { equityGrowthRateDefinition } from '@/domainPitMetrics/growth/equityGrowthRate/equityGrowthRateDefinition';
 import { bvpsGrowthRateDefinition } from '@/domainPitMetrics/growth/bvpsGrowthRate/bvpsGrowthRateDefinition';
 import { assetGrowthDefinition } from '@/domainPitMetrics/growth/assetGrowth/assetGrowthDefinition';
+import { rdIntensityDefinition } from '@/domainPitMetrics/growth/rdIntensity/rdIntensityDefinition';
 import { consecutiveProfitYearsDefinition } from '@/domainPitMetrics/profitability/consecutiveProfitYears/consecutiveProfitYearsDefinition';
 import { earningsYieldDefinition } from '@/domainPitMetrics/valuation/earningsYield/earningsYieldDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
@@ -125,6 +126,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   equityGrowthRate: equityGrowthRateDefinition,
   bvpsGrowthRate: bvpsGrowthRateDefinition,
   assetGrowth: assetGrowthDefinition,
+  rdIntensity: rdIntensityDefinition,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
