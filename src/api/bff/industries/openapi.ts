@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
-import { getIndustryTreeQuerySchema } from './controller';
-import { industryTreeNodeResultSchema, industryFlatResultSchema } from './types';
+import { getIndustryTreeQuerySchema, getValueChainQuerySchema } from './controller';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, valueChainNodeResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (): void => {
   registry.registerPath({
@@ -40,6 +40,31 @@ export const registerIndustriesOpenApi = (): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '全部已分類公司的 symbol/companyName/path 陣列。', content: { 'application/json': { schema: industryFlatResultSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/value-chain',
+    summary: '產業價值鏈分類瀏覽（TPEx 產業價值鏈資訊平台，展開/收合樹狀結構用）',
+    description:
+      '資料源是 tpex-ts 的 export.company_industry_chain，抓自 TPEx「產業價值鏈資訊平台」' +
+      '（ic.tpex.org.tw，見回應的 dataSource 欄位），跟 GET /industries/tree 的財政部稅籍分類是' +
+      '完全不同的分類體系，不要混用：這裡是 2 層（industry 一級產業 47 個 → subChain 次分類 422 個），' +
+      '一家公司可以對應多個 subChain（例如同時做 IC 設計又做封測），不是唯一分類；但涵蓋範圍是三個' +
+      '市場層級都有（上市/上櫃/興櫃，實測 1031+889+351=2271 家公司、6481 筆對應關係），' +
+      '不像 /industries/tree 只有 999 家 TWSE 上市公司。\n\n' +
+      '給一個 code（industry_code 或 sub_chain_code 皆可，sub_chain_code 全域唯一不會跨 industry ' +
+      '重複，不需要另外傳 level）或不給（回傳樹根/全部一級產業）。children 只在樹根/industry 層級' +
+      '有值（分別是一級產業清單/次分類清單），companies 只在 subChain 層級有值（因為一家公司可能同' +
+      '時屬於多個 subChain，不做「含子孫」的公司數加總，companyCount 只代表直屬這個節點的公司數）。\n\n' +
+      'found:false 代表帶了 code 但這個代碼查無資料；不帶 code（查樹根）恆為 found:true。' +
+      '資料是對 ic.tpex.org.tw 做 HTML scraping 取得，不是 TPEx 官方 API，快照表沒有更新時間概念。',
+    tags: ['Industries'],
+    request: { query: getValueChainQuerySchema },
+    responses: {
+      200: { description: '產業價值鏈節點的直屬子節點與精確對應的公司清單。', content: { 'application/json': { schema: valueChainNodeResultSchema } } },
+      400: { description: 'code 是空字串。' },
     },
   });
 };
