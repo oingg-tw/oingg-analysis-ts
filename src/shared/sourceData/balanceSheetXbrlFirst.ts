@@ -80,6 +80,19 @@ const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   preferredStockCapital: row.preference_share,
 });
 
+// 2026-09-10 新增：給 latestQuarter.ts 用——「列存在即算有資料」，不檢查個別欄位是否為
+// null（跟 xbrlCashFlowQuarterly.ts 的 getLatestQuarterWithXbrlCashFlowQuarterly 同一種
+// 判斷）。單獨查這張表最新一季，不含舊表 fallback——latestQuarter.ts 自己會把這個結果
+// 跟舊表的最新一季取較新的那個，不要在這裡預先決定。
+export const getLatestQuarterWithBalanceSheetXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
+  const rows = await mopsExportPrisma.$queryRaw<{ year: number; quarter: number }[]>`
+    SELECT year, quarter FROM "export"."quarterly_balance_sheet_xbrl"
+    WHERE symbol = ${symbol} AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
+    ORDER BY year DESC, quarter DESC LIMIT 1
+  `;
+  return rows[0] ?? null;
+};
+
 export const getBalanceSheetXbrlFirst = async (key: QuarterlyKey): Promise<BalanceSheetFields | null> => {
   const rows = await mopsExportPrisma.$queryRaw<RawBalanceSheetXbrlRow[]>`
     SELECT report_date, assets, liabilities, current_assets, current_liabilities, inventories,

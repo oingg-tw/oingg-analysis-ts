@@ -65,6 +65,16 @@ const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
   sellingExpenses: row.selling_expense,
 });
 
+// 2026-09-10 新增：理由同 balanceSheetXbrlFirst.ts 的 getLatestQuarterWithBalanceSheetXbrl。
+export const getLatestQuarterWithIncomeStatementXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
+  const rows = await mopsExportPrisma.$queryRaw<{ year: number; quarter: number }[]>`
+    SELECT year, quarter FROM "export"."quarterly_income_statement_xbrl"
+    WHERE symbol = ${symbol} AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
+    ORDER BY year DESC, quarter DESC LIMIT 1
+  `;
+  return rows[0] ?? null;
+};
+
 export const getIncomeStatementXbrlFirst = async (key: QuarterlyKey): Promise<IncomeStatementFields | null> => {
   const rows = await mopsExportPrisma.$queryRaw<RawIncomeStatementXbrlRow[]>`
     SELECT report_date, revenue, gross_profit, profit_loss_from_operating_activities, profit_loss_before_tax,
