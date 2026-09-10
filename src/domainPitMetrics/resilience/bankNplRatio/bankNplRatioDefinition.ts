@@ -12,6 +12,12 @@ export const bankNplRatioDefinition: MetricDefinitionSpec = {
     '全行逾放比，直接讀 mops-ts 的 bank_asset_quality_xbrl（category=\'TotalLoans\'）已經算好的' +
     'non_performing_loans_ratio，不用自己推公式。覆蓋約 19-20 檔銀行/金控股，每季都有資料；' +
     '非銀行公司一律優雅降級成 missing_input，不做前置的「這家公司是不是銀行」判斷。',
+  // NPL ratio 不是 Basel III 資本框架概念，是 IMF 官方定義的核心金融穩健指標（FSI）之一，
+  // 出處是 IMF Financial Soundness Indicators Compilation Guide (2019)。中文維基「不良貸款」
+  // 條目內容偏薄（只有一段定義，沒有公式），仍勉強夠格當 referenceUrl（主題明確相關，不是
+  // 湊數）。
+  academicSourceUrl: 'https://www.imf.org/-/media/files/data/2019/2019-fsi-guide.pdf',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E4%B8%8D%E8%89%AF%E8%B2%B8%E6%AC%BE',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['nonPerformingLoansRatio'],
