@@ -352,11 +352,18 @@ export const registerCompaniesOpenApi = (): void => {
       '呼叫端自行依 boolean 值加總即可。totalScore 跟 piotroskiFScore.Q 同一套全有全無邏輯——9 個' +
       '子訊號只要有一個評估不出來（例如缺去年同季資料），totalScore 跟該子訊號都是 null，不會拿其他' +
       '8 個湊分數。year/season 選填但要成對，不給就自動抓最新一季。查無資料（found:false）是正常情境，' +
-      '回 200 不是 404，跟 financial-statement/roe-history 同一種慣例。',
+      '回 200 不是 404，跟 financial-statement/roe-history 同一種慣例。groupMetadata（3 個子分組各自的' +
+      'name/nameEn/summary/detail/denominator）跟 signalLabels（9 個訊號 key 各自的中文顯示標籤）是' +
+      '2026-09-11 新增的純靜態文字，不隨 symbol/期別變化、found=false 時也會回傳——給前端 i18n 用，' +
+      '取代原本寫死在前端的文字，刻意不放進 GET /metrics 的 badge 欄位（那是 12 支 badge 共用的型別，' +
+      '只有 Piotroski 有「拆組」這個概念，不適合污染共用形狀）。',
     tags: ['System'],
     request: { query: getCompanyPiotroskiBreakdownQuerySchema },
     responses: {
-      200: { description: '9 個子訊號依 3 組回傳；查無資料時 found 為 false、totalScore/groups 為 null。', content: { 'application/json': { schema: piotroskiFScoreBreakdownResultSchema } } },
+      200: {
+        description: '9 個子訊號依 3 組回傳，附帶 groupMetadata/signalLabels 靜態文字；查無資料時 found 為 false、totalScore/groups 為 null（groupMetadata/signalLabels 仍會回傳）。',
+        content: { 'application/json': { schema: piotroskiFScoreBreakdownResultSchema } },
+      },
       400: { description: '缺少 symbol，或 year/season 只給了其中一個。' },
     },
   });

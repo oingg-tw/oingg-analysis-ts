@@ -140,6 +140,21 @@ export const piotroskiFScoreBreakdownResultSchema = z.object({
     })
     .nullable()
     .meta({ description: '依 Piotroski 原始論文分組：獲利能力(4)/財務槓桿與流動性(3)/營運效率(2)；found=false 時為 null' }),
+  groupMetadata: z
+    .array(
+      z.object({
+        key: z.enum(['profitability', 'leverageLiquidity', 'operatingEfficiency']),
+        name: z.string(),
+        nameEn: z.string(),
+        summary: z.string(),
+        detail: z.string(),
+        denominator: z.number(),
+      })
+    )
+    .meta({ description: '2026-09-11 新增：3 個子分組各自的 name/nameEn/summary/detail/denominator，純靜態文字，不隨 symbol/期別變化，found=false 時仍會回傳（給前端 i18n 用，取代原本寫死在前端的文字）' }),
+  signalLabels: z
+    .record(z.string(), z.string())
+    .meta({ description: '2026-09-11 新增：9 個訊號 key（positiveRoa/positiveCfo/...）各自的中文顯示標籤，純靜態文字，found=false 時仍會回傳' }),
 });
 export type PiotroskiFScoreBreakdownResult = z.infer<typeof piotroskiFScoreBreakdownResultSchema>;
 
