@@ -42,6 +42,7 @@ import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/oc
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
 import { accrualsRatioDefinition } from '@/domainPitMetrics/quality/accrualsRatio/accrualsRatioDefinition';
+import { abnormalCapexRatioDefinition } from '@/domainPitMetrics/quality/abnormalCapexRatio/abnormalCapexRatioDefinition';
 import { debtRatioDefinition } from '@/domainPitMetrics/resilience/debtRatio/debtRatioDefinition';
 import { currentRatioDefinition } from '@/domainPitMetrics/resilience/currentRatio/currentRatioDefinition';
 import { quickRatioDefinition } from '@/domainPitMetrics/resilience/quickRatio/quickRatioDefinition';
@@ -142,6 +143,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
   accrualsRatio: accrualsRatioDefinition,
+  abnormalCapexRatio: abnormalCapexRatioDefinition,
   debtRatio: debtRatioDefinition,
   currentRatio: currentRatioDefinition,
   quickRatio: quickRatioDefinition,
