@@ -1,7 +1,7 @@
 import { Router } from 'ultimate-express';
 import batchRouter from './api/batch/route';
 import rootRouter from './api/bff/system/root';
-import filtersRouter from './api/bff/filter/filters';
+import metricsRouter from './api/bff/metrics/route';
 import companiesRouter from './api/bff/companies/route';
 import preferredStockRouter from './api/bff/preferredStock/route';
 import industriesRouter from './api/bff/industries/route';
@@ -17,9 +17,9 @@ import materialAnnouncementsRouter from './api/bff/market/materialAnnouncements/
 import priceChangeRankingRouter from './api/bff/market/priceChangeRanking/route';
 import etfRankingRouter from './api/bff/market/etfRanking/route';
 import etfScreenerRouter from './api/bff/market/etfScreener/route';
-import rankingRouter from './api/bff/metrics/valuation/ranking/route';
-import equityRiskPremiumRouter from './api/bff/metrics/macro/equityRiskPremium/route';
-import govBondYield10yRouter from './api/bff/metrics/macro/govBondYield10y/route';
+import rankingRouter from './api/bff/ranking/route';
+import equityRiskPremiumRouter from './api/bff/macro/equityRiskPremium/route';
+import govBondYield10yRouter from './api/bff/macro/govBondYield10y/route';
 import { bffAuth } from './api/bff/bffAuth';
 
 const router = Router();
@@ -37,7 +37,7 @@ router.use(batchRouter);
 // --- 以下都是只給 bff-ts 呼叫的 api/bff，2026-09-05 起套用共用密鑰驗證 ---
 router.use(bffAuth);
 
-router.use(filtersRouter);
+router.use(metricsRouter);
 router.use(companiesRouter);
 router.use(preferredStockRouter);
 router.use(industriesRouter);
@@ -60,10 +60,14 @@ router.use(etfScreenerRouter);
 // 端點；當時底層計算邏輯（domainMetrics/**/service.ts）暫時保留給 api/batch 批次跟
 // companies/metrics 的 compute-on-miss 用，後續舊架構整批 DROP 時已經全數清空，見
 // abstract-crafting-journal.md 的退場記錄——domainMetrics/ 這個資料夾本身也已經在
-// 2026-09-09 完全刪除（唯一倖存的 ranking.ts 搬進 src/api/bff/metrics/valuation/ranking/
-// calculateRanking.ts，跟它唯一的呼叫端放在一起）。ranking/equityRiskPremium/
-// govBondYield10y 這三支語意不是「單一公司查詢」（見各自 route.ts 的說明），繼續保留
-// 獨立端點。
+// 2026-09-09 完全刪除（唯一倖存的 ranking.ts 搬進 src/api/bff/ranking/
+// calculateRanking.ts，跟它唯一的呼叫端放在一起；2026-09-10 ranking/macro 兩個模組
+// 直接掛在 src/api/bff/ 底下，跟 companies/screener/stocks 等其他 BFF 模組同一層——
+// 原本 metrics/valuation、metrics/macro、後來的 domains/ 這些巢狀資料夾都沒有實際
+// 分類價值，拿掉；原本的 filter/ 資料夾也順勢改名 metrics/，因為它裝的正是
+// GET /metrics 這支端點，跟現在已改名成 macro/ranking 的舊 metrics/ 資料夾不會再撞名）。
+// ranking/equityRiskPremium/govBondYield10y 這三支語意不是「單一公司查詢」（見各自
+// route.ts 的說明），繼續保留獨立端點。
 // /securities/symbols、/data-completeness 也一併刪除（前者使用者確認即使 mops-ts 有用也一併
 // 砍掉，後者是內部診斷工具，不是對外契約）。
 const apiRouter = Router();

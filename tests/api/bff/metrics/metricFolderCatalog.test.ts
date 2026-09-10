@@ -1,6 +1,6 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { scanMetricFolderCatalog } from '@/api/bff/filter/metricFolderCatalog';
+import { scanMetricFolderCatalog } from '@/api/bff/metrics/metricFolderCatalog';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
 

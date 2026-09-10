@@ -7,12 +7,12 @@ import { registerPreferredStockOpenApi } from '@/api/bff/preferredStock/openapi'
 import { registerIndustriesOpenApi } from '@/api/bff/industries/openapi';
 import { registerStocksOpenApi } from '@/api/bff/stocks/openapi';
 import { registerScreenerOpenApi } from '@/api/bff/screener/openapi';
-import { registerFiltersOpenApi } from '@/api/bff/filter/openapi';
+import { registerFiltersOpenApi } from '@/api/bff/metrics/openapi';
 import { registerSystemOpenApi } from '@/api/bff/system/openapi';
 import { registerBatchOpenApi } from '@/api/batch/openapi';
-import { registerValuationRankingOpenApi } from '@/api/bff/metrics/valuation/ranking/openapi';
-import { registerEquityRiskPremiumOpenApi } from '@/api/bff/metrics/macro/equityRiskPremium/openapi';
-import { registerGovBondYield10yOpenApi } from '@/api/bff/metrics/macro/govBondYield10y/openapi';
+import { registerValuationRankingOpenApi } from '@/api/bff/ranking/openapi';
+import { registerEquityRiskPremiumOpenApi } from '@/api/bff/macro/equityRiskPremium/openapi';
+import { registerGovBondYield10yOpenApi } from '@/api/bff/macro/govBondYield10y/openapi';
 import { registerAttentionStocksOpenApi } from '@/api/bff/market/attentionStocks/openapi';
 import { registerDisposedStocksOpenApi } from '@/api/bff/market/disposedStocks/openapi';
 import { registerEtfRankingOpenApi } from '@/api/bff/market/etfRanking/openapi';
