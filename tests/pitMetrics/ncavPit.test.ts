@@ -6,7 +6,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——純資產負債表時點快照，跟 tests/domains/metrics/ncav.test.ts
-// 的既有基準數字交叉驗證。marginOfSafetyPrice（= ncav x 2/3）不獨立遷移。
+// 的既有基準數字交叉驗證。
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.ncav!);

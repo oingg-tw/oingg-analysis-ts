@@ -9,7 +9,7 @@ import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/ncav.ts 的獨立重新實作。純資產負債表時點快照，只有 Q 一種
-// basis。marginOfSafetyPrice（= ncav x 2/3）不獨立遷移，是純線性換算。
+// basis。
 
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
