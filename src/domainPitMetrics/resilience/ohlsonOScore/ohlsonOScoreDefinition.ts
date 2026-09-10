@@ -13,6 +13,8 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
     '不是新機制。只有 TTM 一種 basis。',
   formulaLatex:
     '\\mathrm{O} = -1.32 - 0.407\\,\\mathrm{SIZE} + 6.03\\,\\mathrm{TLTA} - 1.43\\,\\mathrm{WCTA} + 0.0757\\,\\mathrm{CLCA} - 1.72\\,\\mathrm{OENEG} - 2.37\\,\\mathrm{NITA} - 1.83\\,\\mathrm{FUTL} + 0.285\\,\\mathrm{INTWO} - 0.521\\,\\mathrm{CHIN}',
+  academicSourceUrl: 'https://doi.org/10.2307/2490395',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Ohlson_O-score',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

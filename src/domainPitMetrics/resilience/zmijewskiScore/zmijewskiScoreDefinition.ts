@@ -10,6 +10,9 @@ export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
     '本季資產負債表快照。沒有 YoY，只有 TTM 一種 basis。',
   formulaLatex:
     '\\mathrm{X} = -4.3 - 4.5\\,\\frac{\\mathrm{NetIncome}}{\\mathrm{TotalAssets}} + 5.7\\,\\frac{\\mathrm{TotalLiabilities}}{\\mathrm{TotalAssets}} - 0.004\\,\\frac{\\mathrm{CurrentAssets}}{\\mathrm{CurrentLiabilities}}',
+  academicSourceUrl: 'https://doi.org/10.2307/2490859',
+  // 2026-09-10 查證過：沒有可靠的中文/英文維基百科專屬條目（只有第三方教學網站），
+  // referenceUrl 刻意留空，不要拿不夠權威的頁面充數。
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

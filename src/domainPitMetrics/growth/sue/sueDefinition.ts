@@ -15,6 +15,11 @@ export const sueDefinition: MetricDefinitionSpec = {
   // 不是「UE 的標準差」——2026-09-10 實測驗證過。改用下標寫法 \sigma_{\mathrm{UE}}，
   // 還原成單一符號 sigma_UE，不會被拆成乘法。
   formulaLatex: '\\mathrm{SUE}_t = \\frac{\\mathrm{UE}_t}{\\sigma_{\\mathrm{UE}}},\\quad \\mathrm{UE}_i = \\mathrm{EPS}_i - \\mathrm{EPS}_{i-4}',
+  // 兩篇論文都是這支指標的出處（見上面 formulaNote），academicSourceUrl 只能放一個連結，
+  // 選 Bernard & Thomas 1989——PEAD 文獻裡最常被引用的旗艦論文；Foster, Olsen & Shevlin
+  // 1984 的 DOI 是 https://doi.org/10.2308/tar-4483133，這裡不重複放第二個欄位。
+  academicSourceUrl: 'https://doi.org/10.2307/2491062',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Post%E2%80%93earnings-announcement_drift',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

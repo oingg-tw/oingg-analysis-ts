@@ -11,6 +11,8 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     '只有 Q 一種 basis——純粹本季 vs 去年同季的單點比較，沒有 TTM/年化概念。去年同季用' +
     'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。',
   formulaLatex: '\\mathrm{FScore} = \\sum_{i=1}^{9} \\mathrm{Signal}_i,\\quad \\mathrm{Signal}_i \\in \\{0,1\\}',
+  academicSourceUrl: 'https://doi.org/10.2307/2672906',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

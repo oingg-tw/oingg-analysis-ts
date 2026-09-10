@@ -14,6 +14,8 @@ export const altmanZScoreDefinition: MetricDefinitionSpec = {
     '營建）適用性有限，這個警語只在舊架構的 warnings 呈現，PIT 版本不重複記錄使用限制文字' +
     '（metric_value 沒有 warnings 欄位）。',
   formulaLatex: '\\mathrm{Z} = 1.2X_1 + 1.4X_2 + 3.3X_3 + 0.6X_4 + 0.999X_5',
+  academicSourceUrl: 'https://doi.org/10.1111/j.1540-6261.1968.tb00843.x',
+  referenceUrl: 'https://zh.wikipedia.org/wiki/Z-score%E6%A8%A1%E5%9E%8B',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

@@ -20,6 +20,22 @@ interface MetricDefinitionSpecBase {
   // 精度語意跟我們的計算不一樣，不能拿來取代實際計算）。選填——先在少數指標試點，
   // 還沒補上的指標維持只有 formulaNote 這種自然語言說明。
   formulaLatex?: string;
+  // 2026-09-10 新增：出處來源，維護者跟前端終端使用者都要能看——兩個都是超連結（公開可點
+  // 進去查證的 URL，不是內部服務/table 名稱，呼應既有「資料來源欄位要放公開 URL」的規則），
+  // 分成兩個獨立欄位是因為語意不同：
+  // - academicSourceUrl：這個公式/模型本身的學術出處（作者/年份/論文），只有真的有單一
+  //   可指名論文出處的大師模型/複合指標才填（Altman Z 系列、Piotroski F-Score、Beneish
+  //   M-Score、Ohlson O-Score、Zmijewski Score、Graham Number、Fama-French RMW、SUE 等）。
+  //   一般會計比率（ROE/流動比率/存貨週轉率這類教科書等級的通用比率）沒有單一論文出處，
+  //   這個欄位維持 undefined，不要硬掰一個出處。
+  // - referenceUrl：給終端使用者查證「這個指標的定義/算法」用的公開參考頁面（例如
+  //   Investopedia、Wikipedia 這類穩定、免費、不需要訂閱就能看的頁面），大師模型也可以
+  //   兩個欄位都填（referenceUrl 給一般讀者看的白話解釋，academicSourceUrl 給想找原始
+  //   論文的人）。兩者都選填——沒有時維持 undefined，不是空字串，前端要處理「這支指標
+  //   沒有出處連結」的情況。
+  // 兩者都是逐一手動核對過連結真的存在、指向正確內容才填，不是憑印象猜測網址。
+  academicSourceUrl?: string;
+  referenceUrl?: string;
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

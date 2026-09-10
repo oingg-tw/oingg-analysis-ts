@@ -30,6 +30,19 @@ const metricFolderCatalogEntrySchema = z.object({
       '目前只在少數指標試點，還沒補上的是 undefined（不是空字串），前端請處理「這支指標還沒有公式可顯示」的情況，' +
       '繼續 fallback 顯示 displayName 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
   }),
+  academicSourceUrl: z.string().optional().meta({
+    description:
+      '2026-09-10 新增：這個公式/模型本身的學術出處連結（作者/年份/論文），只有真的有單一可指名論文出處的' +
+      '大師模型/複合指標才有值（Altman Z 系列、Piotroski F-Score、Beneish M-Score、Ohlson O-Score、' +
+      'Zmijewski Score 等），一般會計比率（ROE/流動比率這類教科書等級的通用比率）沒有單一論文出處，這個' +
+      '欄位是 undefined，不是空字串。前端當作「查原始論文」的連結顯示。',
+  }),
+  referenceUrl: z.string().optional().meta({
+    description:
+      '2026-09-10 新增：給終端使用者查證「這個指標的定義/算法」用的公開參考頁面連結（例如維基百科），' +
+      '大師模型可能同時有 academicSourceUrl 跟 referenceUrl（一個給想找原始論文的人，一個給一般讀者看的' +
+      '白話解釋）。選填，還沒補上的是 undefined。',
+  }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
@@ -54,7 +67,8 @@ export const registerFiltersOpenApi = (): void => {
       '每個 metric 有 metricCode/displayName（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
-      '目前只在少數指標試點）。',
+      '目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的' +
+      '公開參考頁面，例如維基百科）。',
     tags: ['System'],
     responses: {
       200: {

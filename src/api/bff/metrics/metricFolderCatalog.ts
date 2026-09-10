@@ -59,6 +59,13 @@ export interface MetricFolderCatalogEntry {
   // （不是空字串），前端要處理「這支指標還沒有公式可顯示」的情況，繼續 fallback 顯示
   // displayName 就好。
   formulaLatex?: string;
+  // 2026-09-10 新增：出處來源，維護者跟前端終端使用者都要能看，都是公開可點的超連結
+  // （見 metricDefinitionSpec.ts 的完整說明）。academicSourceUrl 只有真的有單一可指名
+  // 論文出處的大師模型/複合指標才填，一般會計比率沒有這個欄位；referenceUrl 是給終端
+  // 使用者查證定義用的公開參考頁面（Investopedia/Wikipedia 這類），大師模型也可能兩個
+  // 都填。兩者都選填，還沒補上的是 undefined（不是空字串）。
+  academicSourceUrl?: string;
+  referenceUrl?: string;
 }
 
 export interface MetricFolderCatalogCategory {
@@ -90,6 +97,8 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           unit: definition.unit,
           validTokens: validTokensForMetric(metricCode),
           formulaLatex: definition.formulaLatex,
+          academicSourceUrl: definition.academicSourceUrl,
+          referenceUrl: definition.referenceUrl,
         };
       });
     return { categoryKey, categoryDisplayName, metrics };

@@ -11,6 +11,9 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
     '（沒有獨立查詢價值，範圍刻意限縮）。',
   formulaLatex:
     '\\mathrm{RNOA} = \\frac{\\mathrm{NOPAT}}{\\mathrm{NOA}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{OperatingIncome}\\times(1-\\mathrm{TaxRate}),\\quad \\mathrm{NOA} = \\mathrm{Equity} + \\mathrm{NFO}',
+  academicSourceUrl: 'https://doi.org/10.1023/A:1011338221623',
+  // 2026-09-10 查證過：沒有專屬的中文/英文維基百科條目（只有一般 ROA/ROE 條目，概念不同），
+  // referenceUrl 刻意留空，不要拿不相關的頁面充數。
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

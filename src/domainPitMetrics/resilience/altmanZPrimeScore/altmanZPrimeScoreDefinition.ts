@@ -12,6 +12,11 @@ export const altmanZPrimeScoreDefinition: MetricDefinitionSpec = {
     '不是原版係數乘比例。獨立重新計算，不依賴 altmanZScore 已寫入的值。只有 TTM 一種' +
     ' basis，理由跟 altmanZScore 一致。',
   formulaLatex: "\\mathrm{Z}' = 0.717X_1 + 0.847X_2 + 3.107X_3 + 0.42X_4 + 0.998X_5",
+  // Altman 1983 原始出處是專書《Corporate Financial Distress》，Altman 自己 2000 年的
+  // 回顧論文重新列出 Z'/Z'' 完整係數且免費公開，比書籍更容易查證，用這篇當 academicSourceUrl；
+  // NYU Stern 官網當下連線不穩（500），改用 Wayback Machine 存檔版本確保連結長期可用。
+  academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

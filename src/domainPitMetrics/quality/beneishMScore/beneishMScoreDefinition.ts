@@ -10,6 +10,8 @@ export const beneishMScoreDefinition: MetricDefinitionSpec = {
     '比較。只有 Q 一種 basis，去年同季取法同 piotroskiFScore。',
   formulaLatex:
     '\\mathrm{M} = -4.84 + 0.92\\,\\mathrm{DSRI} + 0.528\\,\\mathrm{GMI} + 0.404\\,\\mathrm{AQI} + 0.892\\,\\mathrm{SGI} + 0.115\\,\\mathrm{DEPI} - 0.172\\,\\mathrm{SGAI} + 4.037\\,\\mathrm{TATA} + 0.0327\\,\\mathrm{LVGI}',
+  academicSourceUrl: 'https://doi.org/10.2469/faj.v55.n5.2296',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Beneish_M-score',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [
