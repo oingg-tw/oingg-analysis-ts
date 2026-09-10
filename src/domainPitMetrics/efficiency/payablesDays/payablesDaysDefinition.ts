@@ -6,6 +6,7 @@ export const payablesDaysDefinition: MetricDefinitionSpec = {
   unit: '天',
   formulaNote: 'DPO = 365/應付帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
   formulaLatex: '\\mathrm{DPO} = \\frac{365}{\\mathrm{PayablesTurnover}}',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Days_payable_outstanding',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'accountsPayable'],

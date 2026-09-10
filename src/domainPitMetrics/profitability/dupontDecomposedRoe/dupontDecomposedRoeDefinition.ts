@@ -11,6 +11,7 @@ export const dupontDecomposedRoeDefinition: MetricDefinitionSpec = {
     '不管原因為何，一律回報 null_reason=missing_input——各因子自己缺漏的細節記在各自的 metric_value 列上。' +
     '沒有 Q_ANN——舊架構本來就沒有這個變體。',
   formulaLatex: '\\mathrm{ROE} = \\mathrm{NetProfitMargin} \\times \\mathrm{AssetTurnover} \\times \\mathrm{EquityMultiplier}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9D%9C%E9%82%A6%E5%88%86%E6%9E%90%E6%B3%95',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],

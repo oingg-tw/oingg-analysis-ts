@@ -9,6 +9,7 @@ export const dupontExtendedRoeDefinition: MetricDefinitionSpec = {
     '五個因子任一為 null，一律回報 null_reason=missing_input，細節記在各自的 metric_value 列上。理論上等於 dupontDecomposedRoe（已用真實資料驗證過一致）。沒有 Q_ANN。',
   formulaLatex:
     '\\mathrm{ROE} = \\mathrm{TaxBurden} \\times \\mathrm{InterestBurden} \\times \\mathrm{EbitMargin} \\times \\mathrm{AssetTurnover} \\times \\mathrm{EquityMultiplier}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9D%9C%E9%82%A6%E5%88%86%E6%9E%90%E6%B3%95',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax', 'finance_costs', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],

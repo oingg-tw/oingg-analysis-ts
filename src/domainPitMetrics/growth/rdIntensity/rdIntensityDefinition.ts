@@ -11,6 +11,7 @@ export const rdIntensityDefinition: MetricDefinitionSpec = {
     '回填」——跟 buybackYield 的 payments_to_acquire_treasury_shares 同一種判斷。G-Score' +
     '（Mohanram 2005）成分之一。沒有 Q_ANN，跟 grossMargin/operatingExpenseRatio 同一種設計。',
   formulaLatex: '\\mathrm{RdIntensity} = \\frac{\\mathrm{RdExpense}}{\\mathrm{Revenue}} \\times 100',
+  referenceUrl: 'https://en.wikipedia.org/wiki/R%26D_intensity',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['research_and_development_expense', 'revenue'],

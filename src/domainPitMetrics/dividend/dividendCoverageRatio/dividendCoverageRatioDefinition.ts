@@ -12,6 +12,7 @@ export const dividendCoverageRatioDefinition: MetricDefinitionSpec = {
     '（zero_or_negative_denominator），不是無限大或 0。只有 TTM 一種 basis——理由跟' +
     ' dividendPayoutRatio 一致，股利通常一年發放 1-2 次，單季會嚴重失真。',
   formulaLatex: '\\mathrm{DividendCoverageRatio} = \\frac{\\sum_{i=1}^{4}\\mathrm{FCF}_i}{\\left|\\sum_{i=1}^{4}\\mathrm{DividendsPaid}_i\\right|}',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Dividend_cover',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'dividendsPaid'],

@@ -13,6 +13,8 @@ export const dupontTaxBurdenDefinition: MetricDefinitionSpec = {
   unit: '%',
   formulaNote: 'Q(單季) = 本季淨利/本季稅前淨利*100；TTM = 近四季淨利加總/近四季稅前淨利加總*100。淨利優先採歸屬母公司口徑，缺漏退回整體口徑。',
   formulaLatex: '\\mathrm{TaxBurden} = \\frac{\\mathrm{NetIncome}}{\\mathrm{PretaxIncome}} \\times 100',
+  // 沒有專屬條目，英文 DuPont analysis 條目內文定義 Tax Burden = NI/EBT。
+  referenceUrl: 'https://en.wikipedia.org/wiki/DuPont_analysis',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax'],

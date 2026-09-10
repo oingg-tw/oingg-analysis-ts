@@ -10,6 +10,7 @@ export const roceDefinition: MetricDefinitionSpec = {
     '資本*100（分母固定用本季，同 roic）。',
   formulaLatex:
     '\\mathrm{ROCE} = \\frac{\\mathrm{EBIT}}{\\mathrm{CapitalEmployed}} \\times 100,\\quad \\mathrm{CapitalEmployed} = \\mathrm{TotalAssets} - \\mathrm{CurrentLiabilities}',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Return_on_capital_employed',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['assets', 'current_liabilities', 'profit_loss_before_tax', 'finance_costs'],

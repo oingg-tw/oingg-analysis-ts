@@ -16,6 +16,7 @@ export const epsDefinition: MetricDefinitionSpec = {
     '母公司口徑，缺漏退回整體口徑；Q_ANN = Q*4；TTM = 近四季（含本季）淨利加總*1000/流通股數，' +
     '四季不齊為 null。流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數。',
   formulaLatex: '\\mathrm{EPS} = \\frac{\\mathrm{NetIncome}}{\\mathrm{Shares}}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%8F%E8%82%A1%E7%9B%88%E9%A4%98',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

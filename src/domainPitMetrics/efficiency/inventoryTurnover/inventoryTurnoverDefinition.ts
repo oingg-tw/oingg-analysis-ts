@@ -8,6 +8,7 @@ export const inventoryTurnoverDefinition: MetricDefinitionSpec = {
     'Q(單季) = 本季營業成本/本季期末存貨（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
     '加總/本季期末存貨。',
   formulaLatex: '\\mathrm{InventoryTurnover} = \\frac{\\mathrm{COGS}}{\\mathrm{Inventory}}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E5%AD%98%E8%B2%A8%E9%80%B1%E8%BD%89',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'inventories'],
