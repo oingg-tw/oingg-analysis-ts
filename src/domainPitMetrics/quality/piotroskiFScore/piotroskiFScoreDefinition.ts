@@ -10,6 +10,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     '同季提升）通過數加總（0-9）。9 訊號需全部可判斷才有分數，任一無法判斷則整體為 null。' +
     '只有 Q 一種 basis——純粹本季 vs 去年同季的單點比較，沒有 TTM/年化概念。去年同季用' +
     'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。',
+  formulaLatex: '\\mathrm{FScore} = \\sum_{i=1}^{9} \\mathrm{Signal}_i,\\quad \\mathrm{Signal}_i \\in \\{0,1\\}',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

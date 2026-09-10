@@ -7,6 +7,7 @@ export const operatingMarginDefinition: MetricDefinitionSpec = {
   formulaNote:
     'Q(單季) = 本季營業利益/本季營收*100；TTM = 近四季（含本季）營業利益加總/近四季營收加總*100。' +
     '沒有 Q_ANN。',
+  formulaLatex: '\\mathrm{OperatingMargin} = \\frac{\\mathrm{OperatingIncome}}{\\mathrm{Revenue}} \\times 100',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['operatingIncome', 'revenue'],

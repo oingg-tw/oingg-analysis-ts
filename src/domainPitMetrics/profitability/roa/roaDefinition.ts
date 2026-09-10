@@ -13,6 +13,7 @@ export const roaDefinition: MetricDefinitionSpec = {
   formulaNote:
     'Q(單季) = 本季淨利/本季期末總資產*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
     'Q_ANN = Q*4（簡易年化）；TTM = 近四季（含本季）淨利加總/本季期末總資產*100，四季不齊為 null。',
+  formulaLatex: '\\mathrm{ROA} = \\frac{\\mathrm{NetIncome}}{\\mathrm{TotalAssets}} \\times 100',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'assets'],

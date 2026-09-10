@@ -10,6 +10,8 @@ export const roicDefinition: MetricDefinitionSpec = {
     '現金及約當現金，權益優先採歸屬母公司口徑；Q(單季) = NOPAT/投入資本*100；Q_ANN = Q*4；' +
     'TTM = 近四季（含本季）NOPAT 加總/本季期末投入資本*100（分母固定用本季，不平均不加總，跟' +
     'ROE/ROA 用期末值同一種簡化）。',
+  formulaLatex:
+    '\\mathrm{ROIC} = \\frac{\\mathrm{NOPAT}}{\\mathrm{InvestedCapital}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{EBIT}\\times(1-\\mathrm{TaxRate})',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

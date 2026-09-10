@@ -8,6 +8,8 @@ export const beneishMScoreDefinition: MetricDefinitionSpec = {
     '8 變量迴歸式：M=-4.84+0.92*DSRI+0.528*GMI+0.404*AQI+0.892*SGI+0.115*DEPI-0.172*SGAI' +
     '+4.037*TATA+0.0327*LVGI，除 TATA（單期指標）外，其餘 7 個變量都是本季 vs 去年同季的' +
     '比較。只有 Q 一種 basis，去年同季取法同 piotroskiFScore。',
+  formulaLatex:
+    '\\mathrm{M} = -4.84 + 0.92\\,\\mathrm{DSRI} + 0.528\\,\\mathrm{GMI} + 0.404\\,\\mathrm{AQI} + 0.892\\,\\mathrm{SGI} + 0.115\\,\\mathrm{DEPI} - 0.172\\,\\mathrm{SGAI} + 4.037\\,\\mathrm{TATA} + 0.0327\\,\\mathrm{LVGI}',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

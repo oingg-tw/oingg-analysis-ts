@@ -9,6 +9,8 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
     'Q(單季) = NOPAT/NOA*100；Q_ANN = Q*4；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
     '（分母固定用本季，同 ROIC）。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
     '（沒有獨立查詢價值，範圍刻意限縮）。',
+  formulaLatex:
+    '\\mathrm{RNOA} = \\frac{\\mathrm{NOPAT}}{\\mathrm{NOA}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{OperatingIncome}\\times(1-\\mathrm{TaxRate}),\\quad \\mathrm{NOA} = \\mathrm{Equity} + \\mathrm{NFO}',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

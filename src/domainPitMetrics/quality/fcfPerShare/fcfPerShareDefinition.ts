@@ -8,6 +8,7 @@ export const fcfPerShareDefinition: MetricDefinitionSpec = {
     'FCF = 營業活動現金流 + 資本支出（資本支出在來源資料是負值/流出，用加法，不是減法）；' +
     'Q(單季) = 本季 FCF*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）FCF 加總*1000/流通' +
     '股數，四季不齊為 null。',
+  formulaLatex: '\\mathrm{FcfPerShare} = \\frac{\\mathrm{CFO} + \\mathrm{Capex}}{\\mathrm{Shares}}',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],

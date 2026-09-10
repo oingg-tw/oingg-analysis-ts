@@ -7,6 +7,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   formulaNote:
     'Q(單季) = 本季營收*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總*1000/流通' +
     '股數，四季不齊為 null。',
+  formulaLatex: '\\mathrm{RevenuePerShare} = \\frac{\\mathrm{Revenue}}{\\mathrm{Shares}}',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'paidInShares'],
