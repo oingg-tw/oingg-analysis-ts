@@ -10,6 +10,7 @@ export const sgrDefinition: MetricDefinitionSpec = {
     '跟 src/domainMetrics/sgr.ts 只有 sgrTtm 一致。任一子計算因四季不齊而為 null 時回報' +
     'insufficient_history；子計算本身可算但值為 null（例如配息率分母≤0）時回報 missing_input。',
   formulaLatex: '\\mathrm{SGR} = \\mathrm{ROE} \\times \\left(1 - \\frac{\\mathrm{DividendPayoutRatio}}{100}\\right)',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Sustainable_growth_rate',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [
