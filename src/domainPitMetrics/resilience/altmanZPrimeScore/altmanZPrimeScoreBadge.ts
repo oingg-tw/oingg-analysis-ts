@@ -2,7 +2,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const altmanZPrimeScoreBadge: MetricBadge = {
   id: 'altman-z-prime-score',
-  name: "Altman Z′-Score（非上市公司版）",
+  name: "Altman Z'-Score",
   nameEn: "Altman Z'-Score",
   author: 'Edward Altman, 1983',
   summary: '結合 5 個財務比率的加權模型，是 Altman Z-Score 針對非上市公司調整過的版本。',

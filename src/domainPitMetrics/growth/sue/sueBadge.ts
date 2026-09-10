@@ -2,7 +2,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const sueBadge: MetricBadge = {
   id: 'sue',
-  name: '標準化未預期盈餘 (SUE)',
+  name: '標準化未預期盈餘',
   nameEn: 'Standardized Unexpected Earnings',
   author: 'Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989',
   summary: '本季盈餘意外程度的標準化分數，數值越高代表這季獲利遠超市場對「正常」的預期。',

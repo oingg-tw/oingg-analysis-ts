@@ -2,7 +2,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const accrualsRatioBadge: MetricBadge = {
   id: 'sloan-accrual-ratio',
-  name: '斯隆應計項目比率（Sloan Accrual Ratio）',
+  name: '斯隆應計項目比率',
   nameEn: 'Sloan Accrual Ratio',
   author: 'Richard Sloan, 1996',
   summary: '衡量盈餘中「應計項目」佔比，比重越高代表盈餘品質可能越低。',

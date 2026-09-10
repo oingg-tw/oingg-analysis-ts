@@ -6,6 +6,15 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 // 完整說明。
 export interface MetricBadge {
   id: string;
+  // 2026-09-10 補訂分工規則（先前沒訂，導致 13 筆各自混用「英文（中文）」/「中文（英文）」/
+  // 純英文三種寫法，已全部校正過一次）：name/nameEn 不互相夾雜對方語言插入括號——這才是
+  // 真正要擋的事，不是每個詞都被強制要求要有中文。法則本身如果在中文語境下已經有真實通用的
+  // 譯名（不是自己發明的描述），name 用該中文譯名（例如 NCAV→淨流動資產價值、Sloan Accrual
+  // Ratio→斯隆應計項目比率、Standardized Unexpected Earnings→標準化未預期盈餘）；如果沒有
+  // 真實通用譯名、或這個詞本身在中文語境下就是照英文原文稱呼（例如 Altman Z-Score、Chowder
+  // Rule），name 直接跟 nameEn 一樣整串保留英文，不要硬造一個沒人這樣叫的中文詞（Chowder
+  // Rule 曾經被塞過「存股評分」這種自創描述，已移除）。額外限定語（例如「非上市公司版」）
+  // 不要塞進 name 的括號，寫進 summary/detail 開頭說明即可。
   name: string;
   nameEn: string;
   // 法則/門檻的提出者或出處機構，正規化格式："<人名(s)>, <年份>"（例如 "Edward Altman,

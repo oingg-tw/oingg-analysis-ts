@@ -2,7 +2,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const chowderNumberBadge: MetricBadge = {
   id: 'chowder-number',
-  name: 'Chowder Number（存股評分）',
+  name: 'Chowder Rule',
   nameEn: 'Chowder Rule',
   author: 'Chowder, Seeking Alpha',
   summary: '現金殖利率加上股利五年成長率，越高代表股息「現在配得多」與「成長得快」兼具。',

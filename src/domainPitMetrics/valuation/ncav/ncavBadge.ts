@@ -2,7 +2,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const ncavBadge: MetricBadge = {
   id: 'ncav',
-  name: 'NCAV（淨流動資產價值）',
+  name: '淨流動資產價值',
   nameEn: 'Net Current Asset Value',
   author: 'Benjamin Graham, David Dodd, 1934',
   summary: '用「流動資產減總負債」估算的清算價值角度估值方法，又稱 Net-Net。',
