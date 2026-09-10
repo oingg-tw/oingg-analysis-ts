@@ -5,8 +5,9 @@ import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMet
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
-// 第四批（guru 分類）遷移——純資產負債表時點快照，跟 tests/domains/metrics/ncav.test.ts
-// 的既有基準數字交叉驗證。
+// 第四批（guru 分類）遷移——純資產負債表時點快照。2026-09-10 改回公司總額（不除以
+// 股數，跟 marketCap 比較用「總額 vs 總額」，見 ncavDefinition.ts 的說明），基準數字
+// 換成公司總額，不再跟舊的每股版本交叉驗證。
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.ncav!);
@@ -21,7 +22,7 @@ test('ncavPit: 2330 115Q2 合併報表（只有 Q 口徑），跟既有基準數
   });
 
   assert.ok(q, 'basis=Q 應該有寫入 metric_values');
-  assert.equal(Number(q!.value), 64.19);
+  assert.equal(Number(q!.value), 1664516996000);
   assert.equal(q!.nullReason, null);
 });
 

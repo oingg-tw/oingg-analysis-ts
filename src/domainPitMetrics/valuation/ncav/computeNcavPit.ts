@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -9,17 +8,12 @@ import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/ncav.ts 的獨立重新實作。純資產負債表時點快照，只有 Q 一種
-// basis。
+// basis。2026-09-10 改回公司總額（不除以股數），理由見 ncavDefinition.ts 的說明——跟
+// 新增的 marketCap 指標比較用「總額 vs 總額」，不需要股數這個中介變數，也因此不用再查
+// capitalStock。
 
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
+// 資產負債表欄位是千元（thousands），乘 1000 還原成新台幣元的公司總額。
+const toTotalValue = (valueInThousands: bigint): number => Math.round(Number(valueInThousands) * 1000 * 100) / 100;
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
 
@@ -54,13 +48,9 @@ export const computeAndWriteNcavPit = async (query: QuarterlyMetricQuery): Promi
   const preferredStockCapital = balanceSheet?.preferredStockCapital ?? 0n;
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const netCurrentAssetValue = currentAssets !== null && totalLiabilities !== null ? currentAssets - totalLiabilities - preferredStockCapital : null;
-
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
-
-  const ncav = netCurrentAssetValue !== null && sharesValue !== null ? toPerShare(netCurrentAssetValue, sharesValue) : null;
-  const nullReason: MetricNullReason | null = ncav === null ? determineNullReason(netCurrentAssetValue, sharesValue) : null;
+  const netCurrentAssetValueInThousands = currentAssets !== null && totalLiabilities !== null ? currentAssets - totalLiabilities - preferredStockCapital : null;
+  const ncav = netCurrentAssetValueInThousands !== null ? toTotalValue(netCurrentAssetValueInThousands) : null;
+  const nullReason: MetricNullReason | null = ncav === null ? 'missing_input' : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
