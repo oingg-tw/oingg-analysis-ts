@@ -13,6 +13,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{FScore} = \\sum_{i=1}^{9} \\mathrm{Signal}_i,\\quad \\mathrm{Signal}_i \\in \\{0,1\\}',
   academicSourceUrl: 'https://doi.org/10.2307/2672906',
   referenceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

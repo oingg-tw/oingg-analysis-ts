@@ -17,6 +17,7 @@ export const grossMarginDefinition: MetricDefinitionSpec = {
     '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
   formulaLatex: '\\mathrm{GrossMargin} = \\frac{\\mathrm{GrossProfit}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%9B%E5%88%A9%E7%8E%87',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['gross_profit', 'revenue'],

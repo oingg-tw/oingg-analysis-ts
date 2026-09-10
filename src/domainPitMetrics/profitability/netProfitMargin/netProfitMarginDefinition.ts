@@ -10,6 +10,7 @@ export const netProfitMarginDefinition: MetricDefinitionSpec = {
     '沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 src/domainMetrics/margins.ts 現有規則一致）。',
   formulaLatex: '\\mathrm{NetProfitMargin} = \\frac{\\mathrm{NetIncome}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%B7%A8%E5%88%A9%E7%8E%87',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue'],

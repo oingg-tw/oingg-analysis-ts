@@ -8,6 +8,7 @@ export const dupontInterestBurdenDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{InterestBurden} = \\frac{\\mathrm{PretaxIncome}}{\\mathrm{EBIT}} \\times 100',
   // 沒有專屬條目，英文 DuPont analysis 條目內文定義 Interest Burden = EBT/EBIT。
   referenceUrl: 'https://en.wikipedia.org/wiki/DuPont_analysis',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_before_tax', 'finance_costs'],

@@ -10,6 +10,7 @@ export const ownerEarningsDefinition: MetricDefinitionSpec = {
     'revenuePerShare 同形狀。',
   formulaLatex: '\\mathrm{OwnerEarnings} = \\frac{\\mathrm{NetIncome} + \\mathrm{Depreciation} + \\mathrm{Amortization} + \\mathrm{Capex}}{\\mathrm{Shares}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Owner_earnings',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

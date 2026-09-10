@@ -10,6 +10,7 @@ export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
     '完整就停止計數，跟 consecutiveDividendYears 同一套「逐年往回數」設計（見該檔案說明）。' +
     '只有 FY 一種 basis。value=0 代表「有資料、確定最近一個完整年度虧損」，null 代表' +
     '「連最近一年資料都拿不到」，兩者不同。',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss'],

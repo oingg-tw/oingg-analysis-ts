@@ -9,6 +9,7 @@ export const ocfToNetIncomeDefinition: MetricDefinitionSpec = {
     '現金流加總/近四季淨利加總。沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 netProfitMargin 同' +
     '一種規則）。',
   formulaLatex: '\\mathrm{OcfToNetIncome} = \\frac{\\mathrm{CFO}}{\\mathrm{NetIncome}}',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'netCashFromOperatingActivities'],

@@ -21,6 +21,7 @@ export const famaFrenchOperatingProfitabilityDefinition: MetricDefinitionSpec = 
   // 中文維基百科的「Fama-French三因子模型」條目只涵蓋三因子版本，沒有五因子/RMW 內容，
   // 改用英文維基百科（該頁有獨立的 Fama-French five-factor model 段落，涵蓋 RMW/CMA）。
   referenceUrl: 'https://en.wikipedia.org/wiki/Fama%E2%80%93French_three-factor_model',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['gross_profit', 'selling_expense', 'administrative_expense', 'finance_costs', 'equity_attributable_to_owners_of_parent', 'equity'],

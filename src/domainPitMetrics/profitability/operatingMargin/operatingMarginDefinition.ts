@@ -9,6 +9,7 @@ export const operatingMarginDefinition: MetricDefinitionSpec = {
     '沒有 Q_ANN。',
   formulaLatex: '\\mathrm{OperatingMargin} = \\frac{\\mathrm{OperatingIncome}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Operating_margin',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['operatingIncome', 'revenue'],

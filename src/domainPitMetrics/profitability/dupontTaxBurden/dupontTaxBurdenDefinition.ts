@@ -15,6 +15,7 @@ export const dupontTaxBurdenDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{TaxBurden} = \\frac{\\mathrm{NetIncome}}{\\mathrm{PretaxIncome}} \\times 100',
   // 沒有專屬條目，英文 DuPont analysis 條目內文定義 Tax Burden = NI/EBT。
   referenceUrl: 'https://en.wikipedia.org/wiki/DuPont_analysis',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax'],

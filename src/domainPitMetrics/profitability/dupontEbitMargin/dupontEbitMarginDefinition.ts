@@ -8,6 +8,7 @@ export const dupontEbitMarginDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DupontEbitMargin} = \\frac{\\mathrm{EBIT}}{\\mathrm{Revenue}} \\times 100,\\quad \\mathrm{EBIT} = \\mathrm{PretaxIncome} + \\mathrm{FinanceCosts}',
   // 沒有中文維基專屬條目，英文 Operating margin 條目明確把 "EBIT margin" 列為同義詞。
   referenceUrl: 'https://en.wikipedia.org/wiki/Operating_margin',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_before_tax', 'finance_costs', 'revenue'],

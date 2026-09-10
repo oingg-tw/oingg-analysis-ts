@@ -10,6 +10,7 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
     '加總，跟 ROE/ROA 用期末值同一種簡化）。',
   formulaLatex:
     '\\mathrm{AccrualsRatio} = \\frac{\\mathrm{NetIncome} - \\mathrm{CFO} - \\mathrm{CFI}}{\\mathrm{TotalAssets}} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

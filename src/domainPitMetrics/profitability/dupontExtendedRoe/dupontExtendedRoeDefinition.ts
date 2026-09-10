@@ -10,6 +10,7 @@ export const dupontExtendedRoeDefinition: MetricDefinitionSpec = {
   formulaLatex:
     '\\mathrm{ROE} = \\mathrm{TaxBurden} \\times \\mathrm{InterestBurden} \\times \\mathrm{EbitMargin} \\times \\mathrm{AssetTurnover} \\times \\mathrm{EquityMultiplier}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9D%9C%E9%82%A6%E5%88%86%E6%9E%90%E6%B3%95',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax', 'finance_costs', 'revenue', 'assets', 'equity_attributable_to_owners_of_parent', 'equity'],
