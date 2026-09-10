@@ -2,7 +2,7 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 
 interface MetricDefinitionSpecBase {
   metricCode: string;
-  // 2026-09-09：給前端顯示用的中文名稱/單位——GET /filters 之前只有 metricCode 跟四個
+  // 2026-09-09：給前端顯示用的中文名稱/單位——GET /metrics 之前只有 metricCode 跟四個
   // allowedXxx 陣列，沒有使用者可讀文案，前端沒辦法直接拿來組欄位選單。displayName 是
   // 精簡的中文指標名稱（常見英文縮寫視慣例保留，例如 ROE/EPS），unit 是這個數字的單位
   // （%、元、次、天、倍、分、無單位）——這兩個是給 UI 標籤用的最小可用集合，不是完整的
@@ -42,7 +42,7 @@ interface MetricDefinitionSpecBase {
 // metric_values 表根本沒有 lookback_range 這個欄位）——改成 discriminated union，
 // 每個 metricCode 只宣告它真正用得到的欄位。'period'（季報型，寫進 metric_values）/
 // 'rollingWindow'（Beta 這類滾動統計量）/'snapshot'（純市場快照），後兩者都寫進
-// metric_daily_cadence_values。外部 GET /filters 回應原本也維持四陣列並排形狀，但
+// metric_daily_cadence_values。外部 GET /metrics 回應原本也維持四陣列並排形狀，但
 // bff-ts 早就完全改讀 validTokens、不再碰那四個陣列，2026-09-09 已經把這個形狀從外部
 // 回應裡整個拿掉，metric_definitions 表也同一天改成單一 spec JSON 欄位直接存整個
 // MetricDefinitionSpec——原本用來在兩種形狀之間轉換的 legacyAllowedArrays() adapter

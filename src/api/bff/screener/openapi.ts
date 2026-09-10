@@ -3,7 +3,7 @@ import { registry } from '@/adapters/swagger/registry';
 import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema } from './controller';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如
-// "roe.TTM"），對應 GET /filters（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。
+// "roe.TTM"），對應 GET /metrics（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。
 // 查詢引擎直接讀 pitMetrics 共用的 metric_values 表，取「每個 symbol 最新一筆」（依
 // fiscal_year/fiscal_quarter/knowledge_date 三欄排序），不分季報型/逐日型，兩種指標都吃
 // 同一套邏輯。asOfDate 統一是 knowledge_date（YYYY-MM-DD），不再是舊架構的 ROC 年季字串。
@@ -40,7 +40,7 @@ export const registerScreenerOpenApi = (): void => {
     path: '/screener',
     summary: '多條件篩選（AND），分頁瀏覽',
     description:
-      '篩選條件之間是 AND，field 格式 "metricCode.basis"（例如 "roe.TTM"），可用組合見 GET /filters。' +
+      '篩選條件之間是 AND，field 格式 "metricCode.basis"（例如 "roe.TTM"），可用組合見 GET /metrics。' +
       '查詢引擎直接讀 pitMetrics 共用的 metric_values 表，取每個 symbol 目前已知的最新一筆值——' +
       '不是歷史查詢，只回傳「現在」，跟 GET /companies/metric-history（單一 symbol 的完整歷史時序）是不同用途。' +
       'exclude=false（預設）保留落在 [min,max] 內的值；exclude=true 保留落在 [min,max] 外的值，兩者 null 值一律排除。' +

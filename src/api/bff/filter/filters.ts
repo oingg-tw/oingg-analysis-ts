@@ -3,7 +3,7 @@ import { scanMetricFolderCatalog } from './metricFolderCatalog';
 
 const router = Router();
 
-router.get('/filters', (req: Request, res: Response) => {
+router.get('/metrics', (req: Request, res: Response) => {
   res.json({ categories: scanMetricFolderCatalog() });
 });
 

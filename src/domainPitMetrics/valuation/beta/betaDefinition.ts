@@ -26,7 +26,7 @@ export const betaDefinition: MetricDefinitionSpec = {
   allowedSamplingIntervals: ['1D', '1W', '1M'],
   // allowedLookbackRanges x allowedSamplingIntervals 上面兩欄不是自由交叉組合（3x3=9），
   // 三個窗口各自綁定固定的取樣頻率（1Y 用日頻、2Y 用週頻、5Y 用月頻，理由見上面
-  // formulaNote），只有這 3 種組合真的會寫入資料——這個陣列是外部消費端（GET /filters、
+  // formulaNote），只有這 3 種組合真的會寫入資料——這個陣列是外部消費端（GET /metrics、
   // screener/companies 端點的 token 驗證）唯一該信任的合法組合來源，2026-09-08 bff-ts
   // 拿真實資料實測 9 種組合才發現另外 6 種「查得到但永遠是空結果」，回報後補上。
   allowedRollingWindowTokens: ['1Y_1D', '2Y_1W', '5Y_1M'],

@@ -147,7 +147,7 @@ const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
   },
 };
 
-// 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /filters（股票那邊）同一種
+// 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /metrics（股票那邊）同一種
 // 精神。數字欄位沒有 values；類別欄位裡 market/isActive 選項固定已知，assetClass/
 // distributionFrequency 現查 distinct 值（不寫死，之後 sitca-ts 分類異動會直接反映，不用
 // 改程式碼）。

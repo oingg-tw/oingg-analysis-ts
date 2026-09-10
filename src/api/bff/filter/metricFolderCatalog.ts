@@ -72,7 +72,7 @@ const listSubdirectoryNames = (dir: string): string[] => {
     return readdirSync(dir).filter((name) => statSync(join(dir, name)).isDirectory());
   } catch {
     // 分類資料夾不存在（理論上不該發生，CATEGORY_DIR_NAMES 是硬寫死對照現有資料夾結構）——
-    // 優雅降級成空清單，不讓整個 GET /filters 因為單一分類的路徑問題而掛掉。
+    // 優雅降級成空清單，不讓整個 GET /metrics 因為單一分類的路徑問題而掛掉。
     return [];
   }
 };

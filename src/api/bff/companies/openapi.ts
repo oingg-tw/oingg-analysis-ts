@@ -221,7 +221,7 @@ export const registerCompaniesOpenApi = (): void => {
       `${Object.keys(metricDefinitionRegistry).join('、')}），之後新增指標會持續增加，這裡不逐一列出维護。` +
       'token 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，beta 只允許' +
       '"<lookbackRange>_<samplingInterval>" 例如 "2Y_1W"，exchangePeRatio 只允許 "EOD"），' +
-      '傳不允許的值會回 400 並附上這個 metricCode 實際允許的清單，完整組合見 GET /filters。' +
+      '傳不允許的值會回 400 並附上這個 metricCode 實際允許的清單，完整組合見 GET /metrics。' +
       'knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history 一致。' +
       '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
       '之後新增指標的曝露管道，不是要取代它們。（2026-09-08：這個 query 參數原本叫 basis，' +

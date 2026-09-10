@@ -71,7 +71,7 @@ export const swaggerSpec = generator.generateDocument({
     { name: 'System', description: '伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單、單一公司基本資料' },
     { name: 'Industries', description: '產業分類階層瀏覽（財政部稅籍五層分類 section/division/group/class/subclass）' },
     { name: 'Stocks', description: '單一公司/批次股價、除權息預告' },
-    { name: 'Screener', description: '多條件篩選、排行、指定股票批次查值（field 格式 "metricCode.basis"，見 GET /filters）' },
+    { name: 'Screener', description: '多條件篩選、排行、指定股票批次查值（field 格式 "metricCode.basis"，見 GET /metrics）' },
     { name: 'Market', description: '全市場排行榜與清單類——注意股/處置股、成交量前20、漲跌停幅度、月營收/ETF 排行、重大訊息' },
     { name: 'Valuation', description: '估值排行——PER、PBR、股利殖利率（直接採用 oingg-twse/tpex 現成數字，不是本服務自己算的）' },
     { name: 'Macro', description: '總體經濟——股權風險溢酬（ERP）、10 年期政府公債殖利率' },

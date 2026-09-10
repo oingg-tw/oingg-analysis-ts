@@ -204,7 +204,7 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
   token: z
     .string({ error: 'token is required.' })
     .min(1)
-    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /filters" }),
+    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
@@ -260,7 +260,7 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
   token: z
     .string({ error: 'token is required.' })
     .min(1)
-    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /filters" }),
+    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
@@ -485,7 +485,7 @@ export const getCompanyPeerGroupQuerySchema = z.object({
 // 應該自己再打 POST /screener/values（symbols + columns）查實際指標數值，這支端點跟
 // screener/values 是刻意分開的兩支，不重複做數值查詢那一層。2026-09-08：screener 這套
 // 查詢引擎已經重建成直接讀 pitMetrics 的 metric_values（field 格式改成
-// "metricCode.basis"，例如 "roe.TTM"，見 GET /filters 的可用清單），不是原本靠
+// "metricCode.basis"，例如 "roe.TTM"，見 GET /metrics 的可用清單），不是原本靠
 // metricTableRegistry 解析舊架構表的那套（那套已隨無真實依賴的 filterCatalog 一起退場）。
 // 用動態層級回退（子類→細類→小類→中類）找同業，見
 // src/shared/sourceData/industryClassification.ts 的說明。

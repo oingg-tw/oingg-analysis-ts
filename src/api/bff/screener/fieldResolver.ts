@@ -14,7 +14,7 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 //   - 純市場快照（snapshotCadence 這組）：token 是 EOD，例如 "exchangePeRatio.EOD"。
 // 呼叫端不需要知道自己在問哪一組——每個 metricCode 在 metricDefinitionRegistry 裡只會
 // 落在其中一組，這裡依 metricCode 自動判斷該用哪一組的解析規則，token 格式錯誤或不在
-// 允許清單內都會拒絕。可用的 metricCode/token 組合見 GET /filters。
+// 允許清單內都會拒絕。可用的 metricCode/token 組合見 GET /metrics。
 
 export class ScreenerValidationError extends Error {}
 
@@ -34,7 +34,7 @@ export interface FieldRef {
 
 // 2026-09-08 bff-ts 要做篩選/欄位選單，回報如果自己拿 allowedLookbackRanges x
 // allowedSamplingIntervals 做笛卡兒積會做出「選了也永遠查不到資料」的假選項（beta 9 種
-// 組合只有 3 種真的有效）——這支給 metricFolderCatalog.ts（GET /filters）用，回傳「這個
+// 組合只有 3 種真的有效）——這支給 metricFolderCatalog.ts（GET /metrics）用，回傳「這個
 // metricCode 實際可用的 token 清單」，呼叫端直接拿來當選單，不用自己組合。2026-09-09
 // 起 metricDefinitionRegistry 改成 discriminated union，直接 switch definition.group
 // 即可，不用再靠 isRealGroup() 猜哪一組陣列是真實值。
@@ -59,7 +59,7 @@ export const validTokensForMetric = (metricCode: string): string[] => {
 export const resolveTokenForMetric = (metricCode: string, token: string, displayField: string): FieldRef => {
   const definition = metricDefinitionRegistry[metricCode];
   if (!definition) {
-    throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——"${metricCode}" 不是已註冊的 metricCode，見 GET /filters 確認可用清單。`);
+    throw new ScreenerValidationError(`"${displayField}" 不是可查詢的欄位——"${metricCode}" 不是已註冊的 metricCode，見 GET /metrics 確認可用清單。`);
   }
 
   switch (definition.group) {
@@ -94,12 +94,12 @@ export const resolveTokenForMetric = (metricCode: string, token: string, display
 export const resolveFieldOrThrow = (field: string): FieldRef => {
   const firstDot = field.indexOf('.');
   if (firstDot === -1) {
-    throw new ScreenerValidationError(`"${field}" 格式錯誤，field 要是 "metricCode.token" 這種格式（例如 "roe.TTM"），可用的 metricCode/token 組合見 GET /filters。`);
+    throw new ScreenerValidationError(`"${field}" 格式錯誤，field 要是 "metricCode.token" 這種格式（例如 "roe.TTM"），可用的 metricCode/token 組合見 GET /metrics。`);
   }
   const metricCode = field.slice(0, firstDot);
   const token = field.slice(firstDot + 1);
   if (!metricCode || !token) {
-    throw new ScreenerValidationError(`"${field}" 格式錯誤，field 要是 "metricCode.token" 這種格式（例如 "roe.TTM"），可用的 metricCode/token 組合見 GET /filters。`);
+    throw new ScreenerValidationError(`"${field}" 格式錯誤，field 要是 "metricCode.token" 這種格式（例如 "roe.TTM"），可用的 metricCode/token 組合見 GET /metrics。`);
   }
 
   return resolveTokenForMetric(metricCode, token, field);

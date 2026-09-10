@@ -13,7 +13,7 @@ const filterSchema = z.object({
 const columnSchema = z.object({ field: z.string().min(1) });
 
 export const postScreenerBodySchema = z.object({
-  filters: z.array(filterSchema).default([]).meta({ description: '篩選條件之間是 AND，field 一定要能對到 GET /filters 裡的 "metricCode.basis"' }),
+  filters: z.array(filterSchema).default([]).meta({ description: '篩選條件之間是 AND，field 一定要能對到 GET /metrics 裡的 "metricCode.basis"' }),
   columns: z.array(columnSchema).default([]).meta({ description: '只影響回應要不要帶這個欄位，缺資料時是 null 但公司仍在結果裡' }),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(200).default(50),

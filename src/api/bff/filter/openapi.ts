@@ -3,6 +3,9 @@ import { registry } from '@/adapters/swagger/registry';
 
 // 2026-09-08 起改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（見
 // metricFolderCatalog.ts 的說明），取代舊架構手動維護的 filterCatalog.csv。
+// 2026-09-10 端點路徑從 GET /filters 改名 GET /metrics——使用者判斷這支端點回的是
+// 指標定義清單，不是篩選器本身，"filters" 這個名字跟實際內容不符，已通知 bff-ts/
+// web-nuxt 這是 breaking change（路徑改名，回應形狀不變）。
 // 2026-09-09 補上 displayName/unit（使用者可讀的中文名稱/單位）——之前這支端點沒有這批
 // 文案，前端沒辦法直接拿來組欄位選單/顯示標籤，見 metricDefinitionRegistry.ts 每個
 // metricCode 宣告的這兩個欄位。
@@ -42,7 +45,7 @@ const filtersResultSchema = z.object({
 export const registerFiltersOpenApi = (): void => {
   registry.registerPath({
     method: 'get',
-    path: '/filters',
+    path: '/metrics',
     summary: '列出目前 pitMetrics 底下已實作的指標，依因子分類分組',
     description:
       '直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。' +
