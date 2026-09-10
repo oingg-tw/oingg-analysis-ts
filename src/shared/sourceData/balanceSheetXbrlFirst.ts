@@ -1,5 +1,8 @@
-// 資產負債表依賴指標的 drop-in 替換查詢層——XBRL 寬表（export.quarterly_balance_sheet_xbrl）
-// 優先，查無資料才退回既有的 quarterly_balance_sheet（mopsQuarterlyStatements.ts）。
+// 資產負債表依賴指標的查詢層——2026-09-11 舊三大表（quarterly_balance_sheet，
+// mopsQuarterlyStatements.ts）已退役，改為單純查 XBRL 寬表（export.quarterly_balance_sheet_xbrl），
+// 不再有 fallback 分支。退役理由：開發階段接受資料缺口（3,477 組舊表獨有、XBRL 目前
+// 沒有的 (symbol, year, quarter) 組合直接查無資料），換取不用維護兩個資料源 coalesce
+// 邏輯的簡單度。已通知 mops-ts。
 // 2026-09-07 用 2330/2317/1301/2412/2887/1101/1312/1522/2002 115Q1/115Q2 逐欄位交叉驗證過
 // 16 個欄位跟舊表完全一致：
 // - accountsPayable 只對應 trade_payables_to_trade_suppliers，不含 trade_payables_to_related_parties。
@@ -8,19 +11,15 @@
 // - preferredStockCapital 對應 preference_share，用 1101/1312/1522/2002 四家驗證過。
 // - accountsReceivable 對應 accounts_receivable_net，儘管欄位名稱有 net 字尾，驗證案例完全一致。
 //
-// 31 支既有 computeXxxPit.ts 只透過 getQuarterlyBalanceSheet(key) 存取以下 16 個欄位 +
+// 31 支既有 computeXxxPit.ts 只透過 getBalanceSheetXbrlFirst(key) 存取以下 16 個欄位 +
 // reportDate（capitalStock 完全沒有任何檔案存取，這裡不處理——流通股數需求走獨立的
-// @/shared/sourceData/capitalStock.ts），這裡維持完全相同的函式簽章，呼叫端只需要換
-// import，公式/null_reason 判斷邏輯完全不用改。
+// @/shared/sourceData/capitalStock.ts）。
 
-import type { QuarterlyKey } from './mopsQuarterlyStatements';
-import { getQuarterlyBalanceSheet } from './mopsQuarterlyStatements';
+import type { QuarterlyKey } from './quarterlyKey';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export interface BalanceSheetFields {
   reportDate: Date;
-  // 2026-09-10 新增：理由同 incomeStatementXbrlFirst.ts 的 source 欄位說明。
-  source: 'xbrl' | 'legacy';
   totalAssets: bigint | null;
   totalLiabilities: bigint | null;
   currentAssets: bigint | null;
@@ -61,7 +60,6 @@ interface RawBalanceSheetXbrlRow {
 
 const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   reportDate: row.report_date,
-  source: 'xbrl',
   totalAssets: row.assets,
   totalLiabilities: row.liabilities,
   currentAssets: row.current_assets,
@@ -80,10 +78,6 @@ const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   preferredStockCapital: row.preference_share,
 });
 
-// 2026-09-10 新增：給 latestQuarter.ts 用——「列存在即算有資料」，不檢查個別欄位是否為
-// null（跟 xbrlCashFlowQuarterly.ts 的 getLatestQuarterWithXbrlCashFlowQuarterly 同一種
-// 判斷）。單獨查這張表最新一季，不含舊表 fallback——latestQuarter.ts 自己會把這個結果
-// 跟舊表的最新一季取較新的那個，不要在這裡預先決定。
 export const getLatestQuarterWithBalanceSheetXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
   const rows = await mopsExportPrisma.$queryRaw<{ year: number; quarter: number }[]>`
     SELECT year, quarter FROM "export"."quarterly_balance_sheet_xbrl"
@@ -105,29 +99,5 @@ export const getBalanceSheetXbrlFirst = async (key: QuarterlyKey): Promise<Balan
     LIMIT 1
   `;
 
-  if (rows[0]) return mapXbrlRow(rows[0]);
-
-  // 完全查無 XBRL 列——整批 fallback 既有三大表，不逐欄位混用兩個資料源。
-  const legacy = await getQuarterlyBalanceSheet(key);
-  if (!legacy) return null;
-  return {
-    reportDate: legacy.reportDate,
-    source: 'legacy',
-    totalAssets: legacy.totalAssets,
-    totalLiabilities: legacy.totalLiabilities,
-    currentAssets: legacy.currentAssets,
-    currentLiabilities: legacy.currentLiabilities,
-    inventory: legacy.inventory,
-    longTermBorrowings: legacy.longTermBorrowings,
-    propertyPlantEquipment: legacy.propertyPlantEquipment,
-    retainedEarnings: legacy.retainedEarnings,
-    cashAndEquivalents: legacy.cashAndEquivalents,
-    equityAttributableToParent: legacy.equityAttributableToParent,
-    totalEquity: legacy.totalEquity,
-    accountsPayable: legacy.accountsPayable,
-    accountsReceivable: legacy.accountsReceivable,
-    bondsPayable: legacy.bondsPayable,
-    shortTermBorrowings: legacy.shortTermBorrowings,
-    preferredStockCapital: legacy.preferredStockCapital,
-  };
+  return rows[0] ? mapXbrlRow(rows[0]) : null;
 };

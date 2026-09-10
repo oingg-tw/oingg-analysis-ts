@@ -13,29 +13,28 @@ import type { MetricNullReason } from '../../metricBasis';
 // profitability_roe 的 upsert 副作用。兩份實作理論上算出相同數字，tests/domainPitMetrics/roePit.test.ts
 // 拿 roe.test.ts 的既有基準數字交叉驗證，能抓到任一份實作的 bug，不是同一份邏輯繞一圈。
 //
-// 2026-09-10：抽出 resolveRoeQuarterData()，回傳原始欄位（附帶實際命中哪個 fieldKey/
-// 資料源）+ 完整計算過程，給 getRoeProvenance.ts（GET /companies/:symbol/metric-provenance
-// 的 roe 試點）共用，寫入路徑（computeAndWriteRoePit）本身行為完全不變，只是內部改呼叫
-// 這個 resolver。
+// 2026-09-10：抽出 resolveRoeQuarterData()，回傳原始欄位（附帶實際命中哪個 fieldKey）+
+// 完整計算過程，給 getRoeProvenance.ts（GET /companies/:symbol/metric-provenance 的
+// roe 試點）共用，寫入路徑（computeAndWriteRoePit）本身行為完全不變，只是內部改呼叫這個
+// resolver。2026-09-11：舊三大表已退役，PickedField 不再需要追蹤資料源（永遠是 XBRL）。
 
 interface PickedField {
   value: bigint | null;
   fieldKey: string | null;
-  source: 'xbrl' | 'legacy' | null;
 }
 
 const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null, source: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent', source: record.source };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss', source: record.source };
-  return { value: null, fieldKey: null, source: record.source };
+  if (!record) return { value: null, fieldKey: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
+  return { value: null, fieldKey: null };
 };
 
 const pickEquity = (record: BalanceSheetFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null, source: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent', source: record.source };
-  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity', source: record.source };
-  return { value: null, fieldKey: null, source: record.source };
+  if (!record) return { value: null, fieldKey: null };
+  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent' };
+  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
+  return { value: null, fieldKey: null };
 };
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {

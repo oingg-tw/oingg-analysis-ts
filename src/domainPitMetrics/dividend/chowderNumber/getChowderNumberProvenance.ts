@@ -22,30 +22,16 @@ const toEntryValue = (value: bigint | number | null): string | number | null => 
 };
 
 const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult, label: string): ProvenanceEntry[] =>
-  proxy.quarters.map((q) => {
-    if (q.source === 'legacy' || q.dividendsPaid === null) {
-      return {
-        role: `${label} 第 ${q.season} 季發放現金股利`,
-        fiscalYear: rocYearToGregorian(q.rocYear),
-        fiscalQuarter: q.season,
-        type: 'other',
-        statementType: null,
-        fieldKey: null,
-        sourceDescription: q.source === 'legacy' ? '舊表資料，非 XBRL' : null,
-        value: toEntryValue(q.dividendsPaid),
-      };
-    }
-    return {
-      role: `${label} 第 ${q.season} 季發放現金股利`,
-      fiscalYear: rocYearToGregorian(q.rocYear),
-      fiscalQuarter: q.season,
-      type: 'statementField',
-      statementType: 'cashFlowStatement',
-      fieldKey: 'dividends_paid_financing',
-      sourceDescription: null,
-      value: toEntryValue(q.dividendsPaid),
-    };
-  });
+  proxy.quarters.map((q) => ({
+    role: `${label} 第 ${q.season} 季發放現金股利`,
+    fiscalYear: rocYearToGregorian(q.rocYear),
+    fiscalQuarter: q.season,
+    type: 'statementField',
+    statementType: 'cashFlowStatement',
+    fieldKey: 'dividends_paid_financing',
+    sourceDescription: null,
+    value: toEntryValue(q.dividendsPaid),
+  }));
 
 export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

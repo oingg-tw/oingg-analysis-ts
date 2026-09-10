@@ -23,7 +23,7 @@
 // 檔案的模式上依樣畫葫蘆加金控業支援。
 
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import type { QuarterlyKey } from './mopsQuarterlyStatements';
+import type { QuarterlyKey } from './quarterlyKey';
 
 export interface InsuranceIncomeStatementFields {
   reportDate: Date;

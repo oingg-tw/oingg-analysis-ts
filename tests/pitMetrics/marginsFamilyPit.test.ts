@@ -60,24 +60,21 @@ test('marginsFamilyPit: 2851（中再保，legacy 表完全無資料）應該 fa
   assert.equal(grossQ!.nullReason, null);
 });
 
-// 2867（三商美邦人壽）legacy 表有列（能解析出最新一季），但 insurance_income_statement_
-// detail_xbrl 目前完全沒有這家公司的資料（不是 insurance_revenue_quarter 是 null，是
-// 整張表對這個 symbol 零列）——mops-ts 的保險業明細表回填還沒涵蓋到它。這代表兩層來源
-// 都查無可用的 revenue，正確結果應該是 missing_input，不是算得出來；跟 2851（保險
-// 替代科目確實有資料）不是同一種情境，這裡驗證的是「保險替代也查無資料時仍然優雅
-// 降級，不是誤判成 0 或拋錯」。
-test('marginsFamilyPit: 2867（三商美邦人壽，legacy/保險替代都缺 revenue）應該優雅降級為 missing_input', async () => {
+// 2026-09-11 舊三大表已退役後重新驗證過：2867（三商美邦人壽）合併報表（dataType='2'）
+// 一般 quarterly_income_statement_xbrl 完全零列，insurance_income_statement_detail_xbrl
+// 雖然對這家公司有列，但有 insurance_revenue_quarter 非 null 值的那幾列是 data_type='1'
+// （個體）不是 '2'（合併）——合併口徑兩層來源都連「最新一季」都解析不出來，不是「季度
+// 解析得出來、只是 revenue 欄位缺漏」，退役舊表前用舊表能解析出季度是巧合，不是這個
+// 案例真正該有的行為。跟 9999（完全查無資料的公司）同一種 skipped_no_quarter 優雅
+// 降級，不寫入任何列。
+test('marginsFamilyPit: 2867（三商美邦人壽，合併報表兩層來源都無法解析季度）應該優雅降級，不寫入', async () => {
   const outcome = await computeAndWriteMarginsFamilyPit({ symbol: '2867', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.notEqual(outcome.rocYear, null, 'legacy 表能解析出最新一季');
+  assert.equal(outcome.rocYear, null);
+  assert.deepEqual(outcome.grossMarginQ, { action: 'skipped_no_quarter' });
 
-  const grossQ = await analysisPrisma.metricValue.findFirst({
-    where: { symbol: '2867', metricCode: 'grossMargin', periodType: 'Q' },
-    orderBy: { knowledgeDate: 'desc' },
-  });
-  assert.ok(grossQ, '應該有寫入一列，只是 value 是 null');
-  assert.equal(grossQ!.value, null);
-  assert.equal(grossQ!.nullReason, 'missing_input');
+  const count = await analysisPrisma.metricValue.count({ where: { symbol: '2867', metricCode: { in: ['grossMargin', 'operatingMargin'] } } });
+  assert.equal(count, 0);
 });
 
 test('marginsFamilyPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {

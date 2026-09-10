@@ -42,7 +42,7 @@ export interface ChowderNumberPitOutcome {
 // 不變，只是多讀一個欄位（.dps）。
 export interface AnnualDividendPerShareProxyResult {
   dps: number | null;
-  quarters: { rocYear: number; season: number; dividendsPaid: bigint | null; source: 'xbrl' | 'legacy' | null }[];
+  quarters: { rocYear: number; season: number; dividendsPaid: bigint | null }[];
   shares: { reportDate: Date; paidInShares: bigint } | null;
 }
 
@@ -59,7 +59,6 @@ export const getAnnualDividendPerShareProxy = async (
     rocYear,
     season: i + 1,
     dividendsPaid: record?.dividendsPaid ?? null,
-    source: record?.source ?? null,
   }));
 
   if (quarterRecords.some((q) => q === null || q.dividendsPaid === null)) {

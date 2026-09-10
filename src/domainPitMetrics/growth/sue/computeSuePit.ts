@@ -30,14 +30,13 @@ const QUARTERS_OF_EPS_NEEDED = TARGET_UE_WINDOW + 4;
 interface PickedField {
   value: bigint | null;
   fieldKey: string | null;
-  source: 'xbrl' | 'legacy' | null;
 }
 
 const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null, source: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent', source: record.source };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss', source: record.source };
-  return { value: null, fieldKey: null, source: record.source };
+  if (!record) return { value: null, fieldKey: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
+  return { value: null, fieldKey: null };
 };
 
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {

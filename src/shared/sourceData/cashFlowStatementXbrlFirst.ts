@@ -1,24 +1,21 @@
-// 現金流量表依賴指標的 drop-in 替換查詢層——XBRL（export.xbrl_three_statements_long 的
-// statement_type='cash_flow_quarterly'，見 xbrlCashFlowQuarterly.ts）優先，查無資料才
-// 退回既有的 quarterly_cash_flow_statement（mopsQuarterlyStatements.ts）。2026-09-06/07
-// 用 2330 115Q1/115Q2 逐欄位交叉驗證過 5 個欄位（netCashFromOperatingActivities/
+// 現金流量表依賴指標的查詢層——2026-09-11 舊三大表（quarterly_cash_flow_statement，
+// mopsQuarterlyStatements.ts）已退役，改為單純查 XBRL（export.xbrl_three_statements_long
+// 的 statement_type='cash_flow_quarterly'，見 xbrlCashFlowQuarterly.ts），不再有
+// fallback 分支，理由見 balanceSheetXbrlFirst.ts 的說明。
+// 2026-09-06/07 用 2330 115Q1/115Q2 逐欄位交叉驗證過 5 個欄位（netCashFromOperatingActivities/
 // capitalExpenditures/depreciation/amortization/dividendsPaid）跟舊表完全一致；
 // netCashFromInvestingActivities 沒有對應的單一 XBRL account_code（investing activities
 // 沒有小計標籤，只有一堆個別項目、沒有保證窮舉的清單），改用會計恆等式反推：
 // 淨投資現金流 = 現金及約當現金淨增減 - CFO - CFF - 匯率影響，同樣驗證過完全一致。
 //
-// 14 支既有 computeXxxPit.ts 都只透過 getQuarterlyCashFlowStatement(key) 存取這 6 個
-// 欄位 + reportDate，這裡維持完全相同的函式簽章（key 一樣、回傳同樣 7 個欄位的物件或
-// null），呼叫端只需要換 import，公式/null_reason 判斷邏輯完全不用改。
+// 14 支既有 computeXxxPit.ts 都只透過 getCashFlowStatementXbrlFirst(key) 存取這 6 個
+// 欄位 + reportDate。
 
-import type { QuarterlyKey } from './mopsQuarterlyStatements';
-import { getQuarterlyCashFlowStatement } from './mopsQuarterlyStatements';
+import type { QuarterlyKey } from './quarterlyKey';
 import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
 
 export interface CashFlowFields {
   reportDate: Date;
-  // 2026-09-10 新增：理由同 incomeStatementXbrlFirst.ts 的 source 欄位說明。
-  source: 'xbrl' | 'legacy';
   netCashFromOperatingActivities: bigint | null;
   capitalExpenditures: bigint | null;
   depreciation: bigint | null;
@@ -42,33 +39,15 @@ const deriveNetCashFromInvestingActivities = (accounts: Record<string, bigint>):
 
 export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<CashFlowFields | null> => {
   const xbrl = await getXbrlCashFlowQuarterly(key);
-  if (xbrl) {
-    // 有查到 XBRL 這一列就全部 6 個欄位只吃這一列的資料，不逐欄位退回舊表——避免同一季
-    // 混用兩個資料源、兩種申報/重編時間點的欄位，造成內部不一致。單一 account_code 在
-    // 這一列裡沒有值（map 裡沒有這個 key）視為 null（缺漏）。
-    return {
-      reportDate: xbrl.reportDate,
-      source: 'xbrl',
-      netCashFromOperatingActivities: xbrl.accounts.cash_flows_from_used_in_operating_activities ?? null,
-      capitalExpenditures: xbrl.accounts.purchase_of_ppe_investing ?? null,
-      depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
-      amortization: xbrl.accounts.adj_amortisation_expense ?? null,
-      dividendsPaid: xbrl.accounts.dividends_paid_financing ?? null,
-      netCashFromInvestingActivities: deriveNetCashFromInvestingActivities(xbrl.accounts),
-    };
-  }
+  if (!xbrl) return null;
 
-  // 完全查無 XBRL 列——整批 fallback 既有三大表，同樣是「不要混用兩個資料源」的判斷。
-  const legacy = await getQuarterlyCashFlowStatement(key);
-  if (!legacy) return null;
   return {
-    reportDate: legacy.reportDate,
-    source: 'legacy',
-    netCashFromOperatingActivities: legacy.netCashFromOperatingActivities,
-    capitalExpenditures: legacy.capitalExpenditures,
-    depreciation: legacy.depreciation,
-    amortization: legacy.amortization,
-    dividendsPaid: legacy.dividendsPaid,
-    netCashFromInvestingActivities: legacy.netCashFromInvestingActivities,
+    reportDate: xbrl.reportDate,
+    netCashFromOperatingActivities: xbrl.accounts.cash_flows_from_used_in_operating_activities ?? null,
+    capitalExpenditures: xbrl.accounts.purchase_of_ppe_investing ?? null,
+    depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
+    amortization: xbrl.accounts.adj_amortisation_expense ?? null,
+    dividendsPaid: xbrl.accounts.dividends_paid_financing ?? null,
+    netCashFromInvestingActivities: deriveNetCashFromInvestingActivities(xbrl.accounts),
   };
 };

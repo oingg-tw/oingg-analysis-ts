@@ -29,19 +29,7 @@ test('getBalanceSheetXbrlFull: 2330 115Q2 應該包含 current_fin_assets_fvtpl 
   assert.equal(result.current_fin_assets_fvtpl, 226375n);
 });
 
-test('getBalanceSheetXbrlFull: 完全查無 XBRL 資料時應該 fallback 到舊三大表（camelCase，欄位較少但有資料）', async () => {
-  const xbrlRows = await mopsExportPrisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(*)::bigint as count FROM "export"."quarterly_balance_sheet_xbrl" WHERE symbol='1101' AND year=110 AND quarter=3`
-  );
-  assert.equal(xbrlRows[0]!.count, 0n, '前提假設：這個案例 XBRL 應該完全沒有資料，測試才有意義');
-
-  const result = (await getBalanceSheetXbrlFull({ symbol: '1101', year: 110, quarter: 3, dataType: '2', subsidiaryCompanyId: '' })) as Record<string, unknown>;
-  assert.ok(result, '應該 fallback 到舊表查到資料，不是回傳 null');
-  assert.ok('currentAssets' in result, 'fallback 到舊表時 key 應該是 camelCase，不是 snake_case');
-  assert.ok(!('current_assets' in result), '不應該混用兩種 key 風格');
-});
-
-test('getBalanceSheetXbrlFull: 查無任何資料（新舊都沒有）應該回傳 null，不拋錯', async () => {
+test('getBalanceSheetXbrlFull: 查無 XBRL 資料應該回傳 null，不拋錯（舊表已退役，不再 fallback）', async () => {
   const result = await getBalanceSheetXbrlFull({ symbol: '999999', year: 115, quarter: 2, dataType: '2', subsidiaryCompanyId: '' });
   assert.equal(result, null);
 });

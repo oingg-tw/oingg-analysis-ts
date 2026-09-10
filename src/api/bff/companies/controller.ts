@@ -13,7 +13,6 @@ import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screen
 import type { PeriodType } from '@/domainPitMetrics/metricBasis';
 import { findPeerGroup } from '@/shared/sourceData/industryClassification';
 import { getLatestAvailableQuarter, type StatementSource } from '@/shared/sourceData/latestQuarter';
-import { getQuarterlyCashFlowStatement } from '@/shared/sourceData/mopsQuarterlyStatements';
 import { getBalanceSheetXbrlFull } from '@/shared/sourceData/balanceSheetXbrlFull';
 import { getIncomeStatementXbrlFull } from '@/shared/sourceData/incomeStatementXbrlFull';
 import { getXbrlCashFlowQuarterly } from '@/shared/sourceData/xbrlCashFlowQuarterly';
@@ -382,8 +381,9 @@ type FinancialStatementRow = object;
 
 // 現金流量表沒有 XBRL 寬表，是長表格式（xbrl_three_statements_long），
 // getXbrlCashFlowQuarterly 回傳 { reportDate, accounts: Record<string, bigint> }——這裡
-// 把 accounts 攤平成跟 balanceSheet/incomeStatement 一致的扁平物件形狀，完全查無資料時
-// fallback 舊三大表（camelCase）。
+// 把 accounts 攤平成跟 balanceSheet/incomeStatement 一致的扁平物件形狀。2026-09-11
+// 舊三大表（quarterly_cash_flow_statement，mopsQuarterlyStatements.ts）已退役，查無
+// XBRL 資料直接回傳 null，不再 fallback。
 const getCashFlowStatementXbrlFull = async (key: {
   symbol: string;
   year: number;
@@ -392,8 +392,7 @@ const getCashFlowStatementXbrlFull = async (key: {
   subsidiaryCompanyId: string;
 }): Promise<FinancialStatementRow | null> => {
   const xbrl = await getXbrlCashFlowQuarterly(key);
-  if (xbrl) return { reportDate: xbrl.reportDate, ...xbrl.accounts };
-  return getQuarterlyCashFlowStatement(key);
+  return xbrl ? { reportDate: xbrl.reportDate, ...xbrl.accounts } : null;
 };
 
 const STATEMENT_FETCHERS: Record<
@@ -410,8 +409,8 @@ const STATEMENT_FETCHERS: Record<
 const STATEMENT_IDENTITY_FIELDS = new Set(['symbol', 'year', 'quarter', 'dataType', 'subsidiaryCompanyId', 'reportDate']);
 
 // 財報金額欄位都是 bigint，序列化成字串避免 JS 數字精度問題——跟 companyProfileDetailSchema
-// 的 paidInCapital 那批欄位同一個慣例。eps/epsDiluted 這兩個損益表欄位在查詢層已經是
-// string | null（見 mopsQuarterlyStatements.ts 的 toDecimalString），原樣透傳。
+// 的 paidInCapital 那批欄位同一個慣例。非 bigint 的欄位（例如 XBRL numeric 型別）原樣
+// 透傳，不強制轉型。
 const serializeStatementRow = (row: FinancialStatementRow): Record<string, string | null> => {
   const result: Record<string, string | null> = {};
   for (const [key, value] of Object.entries(row as Record<string, unknown>)) {

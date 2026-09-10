@@ -11,28 +11,16 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/p
 const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 const buildQuarterEntries = (detail: SueQuarterDetail, label: string): ProvenanceEntry[] => {
-  const netIncomeEntry: ProvenanceEntry =
-    detail.netIncome.source === 'legacy' || detail.netIncome.fieldKey === null
-      ? {
-          role: `${label}單季淨利（歸屬母公司）`,
-          fiscalYear: detail.fiscalYear,
-          fiscalQuarter: detail.season,
-          type: 'other',
-          statementType: null,
-          fieldKey: null,
-          sourceDescription: detail.netIncome.source === 'legacy' ? '舊表資料，非 XBRL' : null,
-          value: toEntryValue(detail.netIncome.value),
-        }
-      : {
-          role: `${label}單季淨利（歸屬母公司）`,
-          fiscalYear: detail.fiscalYear,
-          fiscalQuarter: detail.season,
-          type: 'statementField',
-          statementType: 'incomeStatement',
-          fieldKey: detail.netIncome.fieldKey,
-          sourceDescription: null,
-          value: toEntryValue(detail.netIncome.value),
-        };
+  const netIncomeEntry: ProvenanceEntry = {
+    role: `${label}單季淨利（歸屬母公司）`,
+    fiscalYear: detail.fiscalYear,
+    fiscalQuarter: detail.season,
+    type: 'statementField',
+    statementType: 'incomeStatement',
+    fieldKey: detail.netIncome.fieldKey,
+    sourceDescription: null,
+    value: toEntryValue(detail.netIncome.value),
+  };
 
   const sharesEntry: ProvenanceEntry = {
     role: `${label}流通股數（計算 EPS 用）`,
