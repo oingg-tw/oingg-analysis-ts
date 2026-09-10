@@ -9,6 +9,7 @@ export const fixedAssetTurnoverDefinition: MetricDefinitionSpec = {
     '營收加總/本季期末不動產、廠房及設備。',
   formulaLatex: '\\mathrm{FixedAssetTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{PPE}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Fixed_asset_turnover',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'property_plant_and_equipment'],

@@ -13,6 +13,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     '頂替、不產出變號扭曲值。只有 FY 一種 basis。',
   formulaLatex: `\\mathrm{RevenueCagr}_{${years}y} = \\left(\\frac{\\mathrm{Revenue}_t}{\\mathrm{Revenue}_{t-${years}}}\\right)^{1/${years}} - 1`,
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%A4%87%E5%90%88%E5%B9%B4%E5%9D%87%E5%A2%9E%E9%95%B7%E7%8E%87',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['revenue'],

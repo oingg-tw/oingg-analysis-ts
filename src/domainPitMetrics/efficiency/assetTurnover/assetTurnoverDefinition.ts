@@ -9,6 +9,7 @@ export const assetTurnoverDefinition: MetricDefinitionSpec = {
     'TTM = 近四季（含本季）營收加總/本季期末總資產，四季不齊為 null。',
   formulaLatex: '\\mathrm{AssetTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{TotalAssets}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Asset_turnover',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'assets'],

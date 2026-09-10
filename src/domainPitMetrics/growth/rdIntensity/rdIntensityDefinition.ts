@@ -12,6 +12,7 @@ export const rdIntensityDefinition: MetricDefinitionSpec = {
     '（Mohanram 2005）成分之一。沒有 Q_ANN，跟 grossMargin/operatingExpenseRatio 同一種設計。',
   formulaLatex: '\\mathrm{RdIntensity} = \\frac{\\mathrm{RdExpense}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/R%26D_intensity',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['research_and_development_expense', 'revenue'],

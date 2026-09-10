@@ -8,6 +8,7 @@ export const netIncomeGrowthRateDefinition: MetricDefinitionSpec = {
     '= (本季淨利 - 去年同季淨利) / |去年同季淨利| * 100。淨利優先採歸屬母公司口徑，缺漏退回' +
     '整體口徑（比照既有 pickNetIncome 規則）。只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{NetIncomeGrowthRate} = \\frac{\\mathrm{NetIncome}_t - \\mathrm{NetIncome}_{t-4}}{|\\mathrm{NetIncome}_{t-4}|} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss'],

@@ -43,6 +43,14 @@ const metricFolderCatalogEntrySchema = z.object({
       '大師模型可能同時有 academicSourceUrl 跟 referenceUrl（一個給想找原始論文的人，一個給一般讀者看的' +
       '白話解釋）。選填，還沒補上的是 undefined。',
   }),
+  tier: z.enum(['raw', 'derived', 'composite']).meta({
+    description:
+      '2026-09-10 新增：計算複雜度分層，跟 categoryKey（因子主題分類）正交，必填。"raw" = 完全不計算的' +
+      'passthrough（交易所公告數字、mops-ts 已經算好的銀行監理比率）；"derived" = 基本財報數字的單一比率' +
+      '（ROE/流動比率這類教科書等級的通用比率，即使背後有學術淵源也算這層，只要算式本身是單一比率）；' +
+      '"composite" = 多因子模型/統計方法論（Altman Z/Piotroski/Beneish/Ohlson/Zmijewski 這些大師評分模型、' +
+      'Graham Number/NCAV、DuPont 拆解版 ROE、SGR/Chowder Number、SUE、beta）。',
+  }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
@@ -68,7 +76,7 @@ export const registerFiltersOpenApi = (): void => {
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
       '目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的' +
-      '公開參考頁面，例如維基百科）。',
+      '公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）。',
     tags: ['System'],
     responses: {
       200: {

@@ -12,6 +12,7 @@ export const bvpsGrowthRateDefinition: MetricDefinitionSpec = {
     '股本變化率），判斷淨值增加是真的累積出來，還是被現金增資稀釋/減資買回墊高。只有 Q' +
     ' 一種 basis——資產負債表時點快照，沒有 TTM 概念（跟 bvps 自己一樣）。',
   formulaLatex: '\\mathrm{BvpsGrowthRate} = \\frac{\\mathrm{BVPS}_t - \\mathrm{BVPS}_{t-4}}{|\\mathrm{BVPS}_{t-4}|} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

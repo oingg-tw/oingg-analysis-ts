@@ -9,6 +9,7 @@ export const equityGrowthRateDefinition: MetricDefinitionSpec = {
     '口徑，缺漏退回整體口徑（比照既有 pickEquity 規則，見 computeRoePit.ts）。只有 Q 一種' +
     ' basis——資產負債表時點快照，沒有 TTM 概念（跟 bvps/stockPrice 同一種性質）。',
   formulaLatex: '\\mathrm{EquityGrowthRate} = \\frac{\\mathrm{Equity}_t - \\mathrm{Equity}_{t-4}}{|\\mathrm{Equity}_{t-4}|} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity'],

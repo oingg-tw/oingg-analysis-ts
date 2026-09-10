@@ -16,6 +16,7 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
   // 的作者頁（WebSearch 交叉驗證過確有其人、確實是這個規則的提出者），比隨便一篇二手部落格
   // 轉述更接近原始出處，放 referenceUrl；academicSourceUrl 仍留空，這不是一篇可指名的論文。
   referenceUrl: 'https://seekingalpha.com/author/chowder/analysis',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'paidInShares'],

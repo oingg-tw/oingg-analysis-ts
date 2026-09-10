@@ -20,6 +20,7 @@ export const sueDefinition: MetricDefinitionSpec = {
   // 1984 的 DOI 是 https://doi.org/10.2308/tar-4483133，這裡不重複放第二個欄位。
   academicSourceUrl: 'https://doi.org/10.2307/2491062',
   referenceUrl: 'https://en.wikipedia.org/wiki/Post%E2%80%93earnings-announcement_drift',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

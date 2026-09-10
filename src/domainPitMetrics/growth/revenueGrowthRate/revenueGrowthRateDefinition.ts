@@ -9,6 +9,7 @@ export const revenueGrowthRateDefinition: MetricDefinitionSpec = {
     '{rocYear,season},5)[0] 取得，跟 shareCountChangeRate/piotroskiFScore 既有慣例一致。只有' +
     ' Q 一種 basis——單季 vs 去年同季是最常見的呈現方式，不疊加 TTM 版本。',
   formulaLatex: '\\mathrm{RevenueGrowthRate} = \\frac{\\mathrm{Revenue}_t - \\mathrm{Revenue}_{t-4}}{|\\mathrm{Revenue}_{t-4}|} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['revenue'],

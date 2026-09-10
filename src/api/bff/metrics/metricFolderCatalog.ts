@@ -66,6 +66,10 @@ export interface MetricFolderCatalogEntry {
   // 都填。兩者都選填，還沒補上的是 undefined（不是空字串）。
   academicSourceUrl?: string;
   referenceUrl?: string;
+  // 2026-09-10 新增：三層計算複雜度分層（見 metricDefinitionSpec.ts 的完整說明），跟
+  // categoryKey（因子主題分類）正交——'raw' 是完全不計算的 passthrough、'derived' 是
+  // 基本財報數字的單一比率、'composite' 是多因子模型/統計方法論。必填，不會是 undefined。
+  tier: 'raw' | 'derived' | 'composite';
 }
 
 export interface MetricFolderCatalogCategory {
@@ -99,6 +103,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           formulaLatex: definition.formulaLatex,
           academicSourceUrl: definition.academicSourceUrl,
           referenceUrl: definition.referenceUrl,
+          tier: definition.tier,
         };
       });
     return { categoryKey, categoryDisplayName, metrics };

@@ -13,6 +13,7 @@ export const operatingExpenseRatioDefinition: MetricDefinitionSpec = {
   // 中文維基「經營比率」條目涵蓋營業費用/營收的概念，比較廣義（不是嚴格限定推銷+管理），
   // 但是查證過確實有定義營業費用率、是目前找得到最接近的中文條目。
   referenceUrl: 'https://zh.wikipedia.org/wiki/%E7%B6%93%E7%87%9F%E6%AF%94%E7%8E%87',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['selling_expense', 'administrative_expense', 'revenue'],

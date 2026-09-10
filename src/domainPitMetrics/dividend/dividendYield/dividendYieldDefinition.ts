@@ -9,6 +9,7 @@ export const dividendYieldDefinition: MetricDefinitionSpec = {
     '本服務不自己重算——沒有自算對應版本可比較，直接沿用交易所數字最貼近使用者查詢' +
     '「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%8F%BE%E9%87%91%E6%AE%96%E5%88%A9%E7%8E%87',
+  tier: 'raw',
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.dividend_yield'],

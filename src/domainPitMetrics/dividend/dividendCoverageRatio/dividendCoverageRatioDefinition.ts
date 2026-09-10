@@ -13,6 +13,7 @@ export const dividendCoverageRatioDefinition: MetricDefinitionSpec = {
     ' dividendPayoutRatio 一致，股利通常一年發放 1-2 次，單季會嚴重失真。',
   formulaLatex: '\\mathrm{DividendCoverageRatio} = \\frac{\\sum_{i=1}^{4}\\mathrm{FCF}_i}{\\left|\\sum_{i=1}^{4}\\mathrm{DividendsPaid}_i\\right|}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Dividend_cover',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'dividendsPaid'],

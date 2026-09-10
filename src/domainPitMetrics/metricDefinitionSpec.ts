@@ -36,6 +36,22 @@ interface MetricDefinitionSpecBase {
   // 兩者都是逐一手動核對過連結真的存在、指向正確內容才填，不是憑印象猜測網址。
   academicSourceUrl?: string;
   referenceUrl?: string;
+  // 2026-09-10 新增：使用者要求把指標分成三層，判斷依據是「這個數字是怎麼來的」，不是
+  // 因子分類（dividend/efficiency/growth/...那個是主題分類，這個是計算複雜度分層），
+  // 兩者正交：
+  // - 'raw'：直接讀來源資料，本服務完全不做計算的 passthrough（交易所公告的殖利率/
+  //   本益比/淨值比、股價本身、mops-ts 已經算好的銀行監理比率）。
+  // - 'derived'：從基本財報數字做一次（或簡單多步）加減乘除算出來的單一比率/數字，
+  //   本質是「很基本財報的數字加減乘除」——ROE/ROA/流動比率/毛利率/存貨週轉率這類
+  //   教科書等級的通用比率都屬這層，即使背後有學術淵源（例如 famaFrenchOperatingProfitability/
+  //   accrualsRatio），只要算式本身是單一比率就算 derived，不因為學術出處而升級成 composite。
+  // - 'composite'：由多個因子相乘/加總組成的複合模型，或統計方法論（回歸/迴歸係數/
+  //   共變異數估計），不是單一比率——Altman Z 系列/Piotroski/Beneish/Ohlson/Zmijewski
+  //   這些大師評分模型、Graham Number/NCAV 這類命名估值公式、DuPont 拆解版 ROE（相乘多個
+  //   因子）、SGR/Chowder Number（由兩個其他 derived 指標相加/相乘組成）、SUE（統計檢定量）、
+  //   beta（共變異數/變異數估計，不是財報數字四則運算）都屬這層。
+  // 必填——這是分類判斷，不像 academicSourceUrl/referenceUrl 那樣可能真的沒有東西可填。
+  tier: 'raw' | 'derived' | 'composite';
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，
