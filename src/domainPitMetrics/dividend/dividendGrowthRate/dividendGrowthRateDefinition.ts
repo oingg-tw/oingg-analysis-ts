@@ -16,6 +16,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     '任一年度 4 季 dividendsPaid 不齊（或該年度整個查不到）視為 insufficient_history，不用' +
     '更短視窗頂替。基期（N 年前）≤0（該年度沒配息）視為 zero_or_negative_denominator，不產出' +
     '變號扭曲值。只有 FY 一種 basis。',
+  formulaLatex: `\\mathrm{DividendGrowthRate}_{${years}y} = \\left(\\left(\\frac{\\mathrm{DPS}_t}{\\mathrm{DPS}_{t-${years}}}\\right)^{1/${years}} - 1\\right) \\times 100`,
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['dividendsPaid', 'paidInShares'],

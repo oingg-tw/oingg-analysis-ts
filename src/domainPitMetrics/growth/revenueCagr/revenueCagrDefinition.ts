@@ -11,6 +11,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     `跟「${years}年前的那個完整會計年度」，各自年度營收 = 4 季 operatingRevenue 加總（任一季` +
     '缺漏視為該年度不完整）。基期（N 年前）≤0 → zero_or_negative_denominator，不用更短視窗' +
     '頂替、不產出變號扭曲值。只有 FY 一種 basis。',
+  formulaLatex: `\\mathrm{RevenueCagr}_{${years}y} = \\left(\\frac{\\mathrm{Revenue}_t}{\\mathrm{Revenue}_{t-${years}}}\\right)^{1/${years}} - 1`,
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['revenue'],

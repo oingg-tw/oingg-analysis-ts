@@ -13,6 +13,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     '不產出變號扭曲值（負值開 N 次方根無意義）——跟原始定義「基期≤0 negative_denominator」' +
     '一致，但這裡額外把「本年為負」也擋下，理由是負值不只影響基期正確性，連 CAGR 公式本身' +
     '在數學上都無定義。只有 FY 一種 basis。',
+  formulaLatex: `\\mathrm{EpsCagr}_{${years}y} = \\left(\\frac{\\mathrm{EPS}_t}{\\mathrm{EPS}_{t-${years}}}\\right)^{1/${years}} - 1`,
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

@@ -10,6 +10,7 @@ export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
     'getPastNQuarters({rocYear,season},5)[0] 取得，跟 piotroskiFScore 既有慣例一致。只有 Q' +
     ' 一種 basis——流通股數是資產負債表時點快照（跟 bvps/stockPrice 同一種性質），沒有' +
     ' TTM/年化概念。',
+  formulaLatex: '\\mathrm{ShareCountChangeRate} = \\frac{\\mathrm{Shares}_t - \\mathrm{Shares}_{t-4}}{\\mathrm{Shares}_{t-4}} \\times 100',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['paidInShares'],

@@ -9,6 +9,7 @@ export const sgrDefinition: MetricDefinitionSpec = {
     '（不依賴 roe/dividendPayoutRatio 這兩個 metric_code 已寫入的值），只有 TTM 一種 basis，' +
     '跟 src/domainMetrics/sgr.ts 只有 sgrTtm 一致。任一子計算因四季不齊而為 null 時回報' +
     'insufficient_history；子計算本身可算但值為 null（例如配息率分母≤0）時回報 missing_input。',
+  formulaLatex: '\\mathrm{SGR} = \\mathrm{ROE} \\times \\left(1 - \\frac{\\mathrm{DividendPayoutRatio}}{100}\\right)',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

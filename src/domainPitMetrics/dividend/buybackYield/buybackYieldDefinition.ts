@@ -13,6 +13,7 @@ export const buybackYieldDefinition: MetricDefinitionSpec = {
     '刻意分開兩個獨立指標，不合併成單一「股東總回報率」——資料源/頻率本質不同，需要的話前端' +
     '自己把兩個值加起來即可。只有 TTM 一種 basis——庫藏股買回通常不定期不定額，單季數字會' +
     '嚴重失真。',
+  formulaLatex: '\\mathrm{BuybackYield} = \\frac{\\left|\\sum_{i=1}^{4}\\mathrm{BuybackCash}_i\\right|}{\\mathrm{Price}\\times\\mathrm{Shares}} \\times 100',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['payments_to_acquire_treasury_shares', 'daily_price.close', 'paidInShares'],
