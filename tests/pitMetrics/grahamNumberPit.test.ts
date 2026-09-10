@@ -6,14 +6,15 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——獨立重新計算 EPS(TTM)/BVPS（不依賴 eps/bvps 這兩個
-// metric_code 已寫入的值），跟 tests/domains/metrics/grahamNumber.test.ts 的既有基準
-// 數字交叉驗證。
+// metric_code 已寫入的值）。2026-09-10 公式改成 PER(TTM) × PBR（不再是
+// sqrt(22.5×EPS×BVPS)，理由見 computeGrahamNumberPit.ts 的說明），基準數字換成跟
+// peRatio.TTM × pbRatio.Q 交叉驗證（27.76 × 9.66 = 268.16）。
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.grahamNumber!);
 });
 
-test('grahamNumberPit: 2330 115Q2 合併報表（只有 TTM 口徑），跟既有基準數字交叉驗證', async () => {
+test('grahamNumberPit: 2330 115Q2 合併報表（只有 TTM 口徑），跟 peRatio×pbRatio 交叉驗證', async () => {
   await computeAndWriteGrahamNumberPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const ttm = await analysisPrisma.metricValue.findFirst({
@@ -22,7 +23,7 @@ test('grahamNumberPit: 2330 115Q2 合併報表（只有 TTM 口徑），跟既�
   });
 
   assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
-  assert.equal(Number(ttm!.value), 693.89);
+  assert.equal(Number(ttm!.value), 268.16);
   assert.equal(ttm!.nullReason, null);
 });
 

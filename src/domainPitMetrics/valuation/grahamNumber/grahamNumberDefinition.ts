@@ -12,18 +12,24 @@ import { grahamNumberBadge } from './grahamNumberBadge';
 export const grahamNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'grahamNumber',
   displayName: '葛拉漢數字',
-  unit: '元',
+  unit: '倍',
+  // 2026-09-10 使用者要求：公式改成 PER(TTM) × PBR，不要讓股價變成單獨要比較的變量——
+  // 原本 sqrt(22.5×EPS×BVPS) vs 股價的寫法，股價是拿來跟這支指標的結果比較用的額外
+  // 變量；改成 PER×PBR 之後股價已經內含在 PER/PBR 各自的比率裡，門檻直接是
+  // 「grahamNumber < 22.5」的常數比較。數學上完全等價：Price < sqrt(22.5×EPS×BVPS)
+  // ⟺ Price² < 22.5×EPS×BVPS ⟺ (Price/EPS)×(Price/BVPS) < 22.5 ⟺ PER×PBR < 22.5
+  // （EPS/BVPS/Price 皆為正時）。單位從「元」改成「倍」——不再是每股金額，是兩個比率
+  // 相乘的無因次數字。
   formulaNote:
-    '= sqrt(22.5 x EPS(TTM) x BVPS)，EPS(TTM)/BVPS 須為正才有意義。獨立重新計算 EPS(TTM)/' +
-    'BVPS（不依賴 eps/bvps 這兩個 metric_code 已寫入的值）。只有 TTM 一種 basis——因為' +
-    'EPS(TTM) 是否齊全決定整個公式算不算得出來。',
-  formulaLatex: '\\mathrm{GrahamNumber} = \\sqrt{22.5 \\times \\mathrm{EPS}_{\\mathrm{TTM}} \\times \\mathrm{BVPS}}',
+    '= PER(TTM，股價/EPS) × PBR（股價/BVPS）。PER/PBR 獨立重新計算，不依賴 peRatio/' +
+    'pbRatio 這兩個 metric_code 已寫入的值。只有 TTM 一種 basis——沿用 peRatio 的 TTM 基準。',
+  formulaLatex: '\\mathrm{GrahamNumber} = \\mathrm{PER}_{\\mathrm{TTM}} \\times \\mathrm{PBR}',
   // 出處是葛拉漢《The Intelligent Investor》(1949)，不是期刊論文——archive.org 上該書
   // 掃描本需要借閱帳號（access-restricted），沒有完全公開的版本，仍是合法可查證的出處連結。
   academicSourceUrl: 'https://archive.org/details/intelligentinves00grah_1',
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   tier: 'composite',
-  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   badge: grahamNumberBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

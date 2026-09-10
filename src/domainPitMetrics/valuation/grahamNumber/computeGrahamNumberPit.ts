@@ -2,6 +2,7 @@ import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -12,6 +13,15 @@ import type { MetricNullReason } from '../../metricBasis';
 // 這份檔案是 src/domainMetrics/grahamNumber.ts 的獨立重新實作——舊架構呼叫
 // calculateEps()+calculateBvps()，這裡不依賴 eps/bvps 這兩個 metric_code 已寫入的值，
 // 自己重新查資產負債表/損益表算 EPS(TTM)/BVPS。只有 TTM 一種 basis。
+//
+// 2026-09-10 使用者要求：公式改成 PER(TTM) × PBR，不要讓股價變成單獨要比較的變量——
+// 原本 sqrt(22.5 × EPS × BVPS) vs 股價 的寫法，股價是拿來跟這支指標的結果比較用的
+// 額外變量；改成 PER × PBR 之後，股價已經內含在 PER/PBR 各自的比率裡，門檻直接是
+// 「grahamNumber < 22.5」的常數比較，不需要再引用另一支指標的股價欄位。數學上完全
+// 等價：Price < sqrt(22.5×EPS×BVPS) ⟺ Price² < 22.5×EPS×BVPS ⟺ (Price/EPS)×
+// (Price/BVPS) < 22.5 ⟺ PER×PBR < 22.5（EPS/BVPS/Price 皆為正時）。PER/PBR 獨立
+// 重新計算，不依賴 peRatio/pbRatio 已寫入的值，算法直接複製自那兩支各自的 TTM/Q 邏輯，
+// 保持每支 PIT 檔案獨立、不互相依賴的既有原則。
 
 const pickNetIncome = (
   record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
@@ -32,6 +42,11 @@ const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEq
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
+};
+
+const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
+  if (denominator === 0) return null;
+  return Math.round((numerator / denominator) * 100) / 100;
 };
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
@@ -70,7 +85,11 @@ export const computeAndWriteGrahamNumberPit = async (query: QuarterlyMetricQuery
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
 
-  // EPS(TTM)：近四季（含本季）淨利加總。
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
+  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const pbRatio = bvps !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, bvps) : null;
+
+  // EPS(TTM)：近四季（含本季）淨利加總，算法跟 peRatio/eps 的 TTM 完全相同。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
@@ -88,18 +107,20 @@ export const computeAndWriteGrahamNumberPit = async (query: QuarterlyMetricQuery
   }
 
   const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(netIncomeTtmSum, sharesValue) : null;
+  const peRatioTtm = epsTtm !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, epsTtm) : null;
 
-  // 公式假設 EPS(TTM)/BVPS 皆為正（公司要有正的獲利跟正的淨值），任一非正視為 zero_or_negative_denominator
-  // （沿用既有 null_reason 詞彙，語意上最接近——不是真正的分母，是公式假設的前提條件）。
-  const grahamNumber = epsTtm !== null && bvps !== null && epsTtm > 0 && bvps > 0 ? Math.round(Math.sqrt(22.5 * epsTtm * bvps) * 100) / 100 : null;
+  // grahamNumber = PER × PBR，跟 peRatio/pbRatio 自己的 null_reason 判斷同一套哲學：
+  // 分母（EPS/BVPS）剛好等於 0 才是 zero_or_negative_denominator，為負仍然算出一個
+  // 真實但可能為負的比率，不隱藏成 null——虧損或資不抵債公司的 PER/PBR 為負是真實
+  // 資訊，相乘後的 grahamNumber 也應該如實反映，不用額外判斷正負。
+  const grahamNumber = peRatioTtm !== null && pbRatio !== null ? Math.round(peRatioTtm * pbRatio * 100) / 100 : null;
+
   let nullReason: MetricNullReason | null = null;
   if (grahamNumber === null) {
     if (!ttmComplete) nullReason = 'insufficient_history';
-    else if (epsTtm === null || bvps === null) nullReason = 'missing_input';
+    else if (epsTtm === null || bvps === null || stockPrice === null) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
   let ttm: BasisOutcome;
   if (!mainAnchor) {
