@@ -1,4 +1,5 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
+import { altmanZPrimeScoreBadge } from './altmanZPrimeScoreBadge';
 
 export const altmanZPrimeScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'altmanZPrimeScore',
@@ -18,6 +19,7 @@ export const altmanZPrimeScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   tier: 'composite',
+  badge: altmanZPrimeScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [
