@@ -67,8 +67,10 @@ const metricFolderCatalogEntrySchema = z.object({
       threshold: z.object({
         description: z.string().meta({ description: '人類可讀的門檻說明，直接給徽章卡片顯示' }),
         denominator: z.number().meta({ description: '目前全部是 1（單一比較）' }),
-        comparator: z.enum(['gt', 'lt', 'gte', 'abs_lt']).optional(),
-        value: z.number().optional().meta({ description: '固定常數比較時使用' }),
+        comparator: z.enum(['gt', 'lt', 'gte', 'abs_lt', 'in_range']).optional(),
+        value: z.number().optional().meta({ description: '固定常數比較時使用（comparator 不是 in_range 的情況）' }),
+        valueMin: z.number().optional().meta({ description: 'comparator 是 in_range 時的區間下限（例如 dividendPayoutRatio 是 40）' }),
+        valueMax: z.number().optional().meta({ description: 'comparator 是 in_range 時的區間上限（例如 dividendPayoutRatio 是 60）' }),
         compareAgainstFieldId: z.string().optional().meta({
           description: '格式 "metricCode.token"，語意是「這個欄位的值 {comparator} 這支指標自己的值」（例如 Graham Number 是「股價 < Graham Number」）',
         }),

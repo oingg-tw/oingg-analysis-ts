@@ -82,12 +82,18 @@ interface MetricDefinitionSpecBase {
       // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
       // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
       denominator: number;
-      // 跟 value（固定常數比較）或 compareAgainstFieldId（比較另一支指標的值，例如
-      // Graham Number/NCAV 是跟股價比較）兩者擇一使用；allPositiveFieldIds 是第三種
-      // 「多個欄位都要 > 0」的複合情境（S&P 500 獲利資格門檻），三選一時 comparator
-      // 可能不需要（allPositiveFieldIds 情境本身就是隱含的 gt 0，不需要額外宣告）。
-      comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt';
+      // 跟 value（固定常數比較）、valueMin/valueMax（'in_range' 時用的區間上下限）或
+      // compareAgainstFieldId（比較另一支指標的值，例如 Graham Number/NCAV 是跟股價比較）
+      // 三者擇一使用；allPositiveFieldIds 是第四種「多個欄位都要 > 0」的複合情境（S&P 500
+      // 獲利資格門檻），這幾種情境下 comparator 可能不需要（allPositiveFieldIds 情境本身
+      // 就是隱含的 gt 0，不需要額外宣告）。'in_range' 是 2026-09-10 補的——dividendPayoutRatio
+      // 的 Fidelity 出處原文講的是「40%–60% 最適區間」（過高過低都不理想），不是單邊「< 60%
+      // 安全上限」，原本用 lt/60 誤植了原文論點，改成 in_range 才能正確表達「落在區間內」
+      // 這個語意，不能硬套單邊比較詞彙（見 dividendPayoutRatioDefinition.ts 的更正說明）。
+      comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt' | 'in_range';
       value?: number;
+      valueMin?: number;
+      valueMax?: number;
       // 格式是 "metricCode.token"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
       // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
       // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
