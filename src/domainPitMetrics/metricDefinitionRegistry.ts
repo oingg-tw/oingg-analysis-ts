@@ -16,6 +16,7 @@ import { bvpsDefinition } from '@/domainPitMetrics/valuation/bvps/bvpsDefinition
 import { peRatioDefinition } from '@/domainPitMetrics/valuation/peRatio/peRatioDefinition';
 import { pbRatioDefinition } from '@/domainPitMetrics/valuation/pbRatio/pbRatioDefinition';
 import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/stockPriceDefinition';
+import { marketCapDefinition } from '@/domainPitMetrics/valuation/marketCap/marketCapDefinition';
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
@@ -119,6 +120,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   earningsYield: earningsYieldDefinition,
   pbRatio: pbRatioDefinition,
   stockPrice: stockPriceDefinition,
+  marketCap: marketCapDefinition,
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
