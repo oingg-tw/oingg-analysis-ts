@@ -23,6 +23,7 @@ export const betaDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{Beta} = \\frac{\\mathrm{Cov}_{\\mathrm{StockIndex}}}{\\mathrm{Var}_{\\mathrm{Index}}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B2%9D%E4%BB%96%E4%BF%82%E6%95%B8',
   tier: 'composite',
+  sources: ['證交所／櫃買中心每日收盤價', '加權股價指數（TAIEX）每日收盤價'],
   group: 'rollingWindow',
   allowedLookbackRanges: ['1Y', '2Y', '5Y'],
   allowedSamplingIntervals: ['1D', '1W', '1M'],

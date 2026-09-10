@@ -12,6 +12,7 @@ export const earningsYieldDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{EarningsYield} = \\frac{\\mathrm{EPS}_{\\mathrm{TTM}}}{\\mathrm{Price}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Earnings_yield',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares', 'daily_price.close'],

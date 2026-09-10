@@ -12,6 +12,7 @@ export const fcfYieldDefinition: MetricDefinitionSpec = {
     '一致，是 P_FCF 估值倍數的倒數）。',
   formulaLatex: '\\mathrm{FcfYield} = \\frac{\\mathrm{FcfPerShare}}{\\mathrm{Price}} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],

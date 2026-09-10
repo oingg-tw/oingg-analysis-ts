@@ -23,6 +23,7 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://archive.org/details/intelligentinves00grah_1',
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   badge: grahamNumberBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

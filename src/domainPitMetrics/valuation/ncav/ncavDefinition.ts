@@ -12,6 +12,7 @@ export const ncavDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://archive.org/details/dli.ernet.7983',
   referenceUrl: 'https://en.wikipedia.org/wiki/Net_current_asset_value',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報'],
   badge: ncavBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],

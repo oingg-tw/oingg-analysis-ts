@@ -11,6 +11,7 @@ export const pbRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{PB} = \\frac{\\mathrm{Price}}{\\mathrm{BVPS}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E6%B7%A8%E5%80%BC%E6%AF%94',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

@@ -11,6 +11,7 @@ export const pFcfDefinition: MetricDefinitionSpec = {
     '沒有單季非年化版本。',
   formulaLatex: '\\mathrm{PFcf} = \\frac{\\mathrm{MarketCap}}{\\mathrm{FCF}}',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures'],

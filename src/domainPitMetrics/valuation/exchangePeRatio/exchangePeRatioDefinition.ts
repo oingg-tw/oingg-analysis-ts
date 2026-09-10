@@ -16,6 +16,7 @@ export const exchangePeRatioDefinition: MetricDefinitionSpec = {
     '不要混用或互相驗證。虧損等無法計算 PER 的情況為 null（missing_input）。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9C%AC%E7%9B%8A%E6%AF%94',
   tier: 'raw',
+  sources: ['證交所／櫃買中心每日評價指標（本益比／股價淨值比／殖利率）'],
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.pe_ratio'],

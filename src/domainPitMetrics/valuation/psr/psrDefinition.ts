@@ -12,6 +12,7 @@ export const psrDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{PSR} = \\frac{\\mathrm{MarketCap}}{\\mathrm{Revenue}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E7%87%9F%E6%94%B6%E6%AF%94',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['revenue'],

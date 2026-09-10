@@ -15,6 +15,7 @@ export const peRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{PE} = \\frac{\\mathrm{Price}}{\\mathrm{EPS}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9C%AC%E7%9B%8A%E6%AF%94',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

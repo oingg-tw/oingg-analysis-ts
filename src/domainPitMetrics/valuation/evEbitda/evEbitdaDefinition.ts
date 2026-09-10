@@ -14,6 +14,7 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
     '\\mathrm{EvEbitda} = \\frac{\\mathrm{EV}}{\\mathrm{EBITDA}},\\quad \\mathrm{EV} = \\mathrm{MarketCap} + \\mathrm{NetDebt}',
   referenceUrl: 'https://en.wikipedia.org/wiki/EV/EBITDA',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: [

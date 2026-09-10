@@ -9,6 +9,7 @@ export const bvpsDefinition: MetricDefinitionSpec = {
     '時點快照，只有 Q 一種 basis——跟 equityMultiplier 同一種形狀，沒有 TTM/年化概念。',
   formulaLatex: '\\mathrm{BVPS} = \\frac{\\mathrm{Equity}}{\\mathrm{Shares}}',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

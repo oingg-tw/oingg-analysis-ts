@@ -10,6 +10,7 @@ export const exchangePbRatioDefinition: MetricDefinitionSpec = {
     '不同用途、刻意並存的兩組數字，不要混用或互相驗證。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E6%B7%A8%E5%80%BC%E6%AF%94',
   tier: 'raw',
+  sources: ['證交所／櫃買中心每日評價指標（本益比／股價淨值比／殖利率）'],
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.pb_ratio'],
