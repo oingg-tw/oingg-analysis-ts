@@ -51,6 +51,37 @@ const metricFolderCatalogEntrySchema = z.object({
       '"composite" = 多因子模型/統計方法論（Altman Z/Piotroski/Beneish/Ohlson/Zmijewski 這些大師評分模型、' +
       'Graham Number/NCAV、DuPont 拆解版 ROE、SGR/Chowder Number、SUE、beta）。',
   }),
+  badge: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      nameEn: z.string(),
+      author: z.string().meta({ description: '法則/門檻的提出者或出處機構，例如 "Edward Altman, 1968"' }),
+      summary: z.string(),
+      detail: z.string(),
+      token: z.string().optional().meta({
+        description:
+          '這支指標本身要用哪個 token 讀值來套用這個門檻（例如 "TTM"），是這支 metricCode 的 validTokens 之一。' +
+          'threshold.allPositiveFieldIds 情境下已經自帶完整 "metricCode.token" 字串，這個欄位留空。',
+      }),
+      threshold: z.object({
+        description: z.string().meta({ description: '人類可讀的門檻說明，直接給徽章卡片顯示' }),
+        denominator: z.number().meta({ description: '目前全部是 1（單一比較）' }),
+        comparator: z.enum(['gt', 'lt', 'gte', 'abs_lt']).optional(),
+        value: z.number().optional().meta({ description: '固定常數比較時使用' }),
+        compareAgainstFieldId: z.string().optional().meta({
+          description: '格式 "metricCode.token"，語意是「這個欄位的值 {comparator} 這支指標自己的值」（例如 Graham Number 是「股價 < Graham Number」）',
+        }),
+        allPositiveFieldIds: z.array(z.string()).optional().meta({ description: '格式同上，多個欄位，語意是「全部都要 > 0」' }),
+      }),
+    })
+    .optional()
+    .meta({
+      description:
+        '2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）搬過來，' +
+        '只有 11 支指標有（大師模型裡的 Piotroski F-Score 是唯一例外，門檻邏輯無法用這裡的通用比較詞彙' +
+        '表達，維持前端硬編碼），其餘指標這個欄位是 undefined。',
+    }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
@@ -76,7 +107,8 @@ export const registerFiltersOpenApi = (): void => {
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
       '目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的' +
-      '公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）。',
+      '公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）、badge（大師徽章資料，只有 11' +
+      '支指標有）。',
     tags: ['System'],
     responses: {
       200: {

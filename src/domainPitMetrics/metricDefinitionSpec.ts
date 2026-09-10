@@ -52,6 +52,50 @@ interface MetricDefinitionSpecBase {
   //   beta（共變異數/變異數估計，不是財報數字四則運算）都屬這層。
   // 必填——這是分類判斷，不像 academicSourceUrl/referenceUrl 那樣可能真的沒有東西可填。
   tier: 'raw' | 'derived' | 'composite';
+  // 2026-09-10 新增：web-nuxt 原本在前端 app/utils/guru-badges.ts 手工維護一份「大師徽章」
+  // 清單（12 支指標各自的命名法則/門檻/引用出處），因為當時 formulaLatex/referenceUrl 還沒
+  // 做出來才暫時放前端；現在後端已經有出處欄位的先例，使用者要求把徽章資料也搬過來，避免
+  // 兩邊repo各自維護一份、內容/門檻對不上。只有真的有「具名法則 + 明確門檻」的指標才填
+  // （目前 11 支，Piotroski F-Score 是唯一例外——它的門檻判斷是 clamp(round(value),0,9)>=8
+  // 這種「非完美 9/9 也算通過」的邏輯，下面 threshold 的比較詞彙表達不了，維持前端硬編碼，
+  // 不寫進這裡）。選填，其餘 73 支沒有徽章維持 undefined。
+  badge?: {
+    id: string;
+    name: string;
+    nameEn: string;
+    // 法則/門檻的提出者或出處機構（例如 "Edward Altman, 1968"、"S&P Dow Jones Indices"），
+    // 跟 academicSourceUrl/referenceUrl 是同一組事實的不同呈現方式（那兩個是連結，這個是
+    // 給徽章卡片直接顯示的文字），三者刻意不互相衍生，各自手動維護避免格式耦合。
+    author: string;
+    summary: string;
+    detail: string;
+    // 2026-09-10：這支指標本身要用哪個 token 讀值來套用這個門檻（例如 altmanZScore 用
+    // 'TTM'，sue 用 'Q'，chowderNumber 用 'FY'），必須是這支 metricCode 自己
+    // allowedPeriodTypes/allowedSnapshotCadences 陣列裡真的存在的值——前端不用自己猜
+    // 該讀哪個 basis。allPositiveFieldIds 已經自帶完整 "metricCode.token" 字串
+    // （例如 "eps.TTM"），token 語意已經內含在裡面，這種情況本欄位留空。
+    token?: string;
+    threshold: {
+      // 人類可讀的門檻說明，直接給徽章卡片顯示用（例如 "> 2.99（Altman 原始論文劃定的
+      // 安全區下限）"）。
+      description: string;
+      // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
+      // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
+      denominator: number;
+      // 跟 value（固定常數比較）或 compareAgainstFieldId（比較另一支指標的值，例如
+      // Graham Number/NCAV 是跟股價比較）兩者擇一使用；allPositiveFieldIds 是第三種
+      // 「多個欄位都要 > 0」的複合情境（S&P 500 獲利資格門檻），三選一時 comparator
+      // 可能不需要（allPositiveFieldIds 情境本身就是隱含的 gt 0，不需要額外宣告）。
+      comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt';
+      value?: number;
+      // 格式是 "metricCode.token"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
+      // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
+      // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
+      compareAgainstFieldId?: string;
+      // 格式同上，多個 "metricCode.token"，語意是「這些欄位全部都要 > 0」。
+      allPositiveFieldIds?: string[];
+    };
+  };
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

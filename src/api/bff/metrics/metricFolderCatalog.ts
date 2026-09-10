@@ -2,6 +2,11 @@ import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
+import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
+
+// 2026-09-10：web-nuxt 轉移過來的「大師徽章」型別，直接從 MetricDefinitionSpec 取，不要
+// 在這裡重複定義一份容易漂移的形狀。
+type MetricBadge = NonNullable<MetricDefinitionSpec['badge']>;
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
 // 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
@@ -70,6 +75,11 @@ export interface MetricFolderCatalogEntry {
   // categoryKey（因子主題分類）正交——'raw' 是完全不計算的 passthrough、'derived' 是
   // 基本財報數字的單一比率、'composite' 是多因子模型/統計方法論。必填，不會是 undefined。
   tier: 'raw' | 'derived' | 'composite';
+  // 2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）
+  // 搬過來，見 metricDefinitionSpec.ts 的完整說明。只有 11 支指標有（大師模型裡的 Piotroski
+  // F-Score 是唯一例外，門檻邏輯無法用這裡的通用比較詞彙表達，維持前端硬編碼），其餘 73 支
+  // 這個欄位是 undefined。
+  badge?: MetricBadge;
 }
 
 export interface MetricFolderCatalogCategory {
@@ -104,6 +114,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           academicSourceUrl: definition.academicSourceUrl,
           referenceUrl: definition.referenceUrl,
           tier: definition.tier,
+          badge: definition.badge,
         };
       });
     return { categoryKey, categoryDisplayName, metrics };
