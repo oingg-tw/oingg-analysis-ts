@@ -14,6 +14,7 @@ export const consecutiveDividendYearsDefinition: MetricDefinitionSpec = {
     '公司連續年數可能被資料缺口低估（保守停止計數，不會誤判成中斷），value=0 代表「有資料、' +
     '確定最近一個完整年度沒配息」，null 代表「連最近一個完整年度的資料都拿不到」，兩者不同。',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['dividendsPaid'],

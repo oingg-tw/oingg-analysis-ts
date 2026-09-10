@@ -10,6 +10,7 @@ export const inventoryTurnoverDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{InventoryTurnover} = \\frac{\\mathrm{COGS}}{\\mathrm{Inventory}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E5%AD%98%E8%B2%A8%E9%80%B1%E8%BD%89',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'inventories'],

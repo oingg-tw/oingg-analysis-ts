@@ -10,6 +10,7 @@ export const dividendYieldDefinition: MetricDefinitionSpec = {
     '「殖利率」時的預期（跟大盤/看盤軟體顯示的數字一致）。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%8F%BE%E9%87%91%E6%AE%96%E5%88%A9%E7%8E%87',
   tier: 'raw',
+  sources: ['證交所／櫃買中心每日評價指標（本益比／股價淨值比／殖利率）'],
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.dividend_yield'],

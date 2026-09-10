@@ -8,6 +8,7 @@ export const payablesDaysDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DPO} = \\frac{365}{\\mathrm{PayablesTurnover}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Days_payable_outstanding',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'accountsPayable'],

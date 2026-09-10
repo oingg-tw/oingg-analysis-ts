@@ -10,6 +10,7 @@ export const assetTurnoverDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{AssetTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{TotalAssets}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Asset_turnover',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'assets'],

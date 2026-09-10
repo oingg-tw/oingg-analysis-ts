@@ -10,6 +10,7 @@ export const inventoryDaysDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DIO} = \\frac{365}{\\mathrm{InventoryTurnover}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Days_in_inventory',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'inventories'],

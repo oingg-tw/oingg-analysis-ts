@@ -14,6 +14,7 @@ export const dividendCoverageRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DividendCoverageRatio} = \\frac{\\sum_{i=1}^{4}\\mathrm{FCF}_i}{\\left|\\sum_{i=1}^{4}\\mathrm{DividendsPaid}_i\\right|}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Dividend_cover',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'dividendsPaid'],

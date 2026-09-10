@@ -71,6 +71,11 @@ export interface MetricFolderCatalogEntry {
   // categoryKey（因子主題分類）正交——'raw' 是完全不計算的 passthrough、'derived' 是
   // 基本財報數字的單一比率、'composite' 是多因子模型/統計方法論。必填，不會是 undefined。
   tier: 'raw' | 'derived' | 'composite';
+  // 2026-09-10 新增：這支指標實際依賴的真實資料來源，見 metricDefinitionSpec.ts 的完整
+  // 說明（不是從 dependsOn 推導，那個欄位沒有執行期消費者、不受強制檢查）。必填，不會是
+  // undefined——每支指標一定有真實資料來源。web-nuxt 22 個前端元件原本各自手工維護 6 種
+  // 資料來源標籤文字，改讀這裡統一維護。
+  sources: string[];
   // 2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）
   // 搬過來，見 metricDefinitionSpec.ts 的完整說明。只有 11 支指標有（大師模型裡的 Piotroski
   // F-Score 是唯一例外，門檻邏輯無法用這裡的通用比較詞彙表達，維持前端硬編碼），其餘 73 支
@@ -110,6 +115,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           academicSourceUrl: definition.academicSourceUrl,
           referenceUrl: definition.referenceUrl,
           tier: definition.tier,
+          sources: definition.sources,
           badge: definition.badge,
         };
       });

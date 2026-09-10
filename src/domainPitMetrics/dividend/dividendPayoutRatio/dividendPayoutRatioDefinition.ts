@@ -12,6 +12,7 @@ export const dividendPayoutRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DividendPayoutRatio} = \\frac{\\left|\\sum_{i=1}^{4}\\mathrm{DividendsPaid}_i\\right|}{\\sum_{i=1}^{4}\\mathrm{NetIncome}_i} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Dividend_payout_ratio',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   // academicSourceUrl 出處/推導過程見 dividendPayoutRatioBadge.ts 的更正說明。
   academicSourceUrl:
     'https://www.fidelity.com/bin-public/060_www_fidelity_com/documents/Payout-Ratio-The-Most-Influential-Management-Decision-a-Company-Can-Make-retail.pdf',

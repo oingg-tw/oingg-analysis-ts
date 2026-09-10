@@ -10,6 +10,7 @@ export const fixedAssetTurnoverDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{FixedAssetTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{PPE}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Fixed_asset_turnover',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'property_plant_and_equipment'],

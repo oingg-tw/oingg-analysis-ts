@@ -18,6 +18,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     '變號扭曲值。只有 FY 一種 basis。',
   formulaLatex: `\\mathrm{DividendGrowthRate}_{${years}y} = \\left(\\left(\\frac{\\mathrm{DPS}_t}{\\mathrm{DPS}_{t-${years}}}\\right)^{1/${years}} - 1\\right) \\times 100`,
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['dividendsPaid', 'paidInShares'],

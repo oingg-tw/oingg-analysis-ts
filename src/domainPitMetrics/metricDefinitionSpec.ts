@@ -128,6 +128,19 @@ interface MetricDefinitionSpecBase {
   //   beta（共變異數/變異數估計，不是財報數字四則運算）都屬這層。
   // 必填——這是分類判斷，不像 academicSourceUrl/referenceUrl 那樣可能真的沒有東西可填。
   tier: 'raw' | 'derived' | 'composite';
+  // 2026-09-10 新增：這支指標實際依賴的真實資料來源，給終端使用者查證用（web-nuxt
+  // 前端 22 個元件原本各自手工維護 6 種資料來源標籤文字，改讀這裡統一維護）。刻意
+  // 「不」從 dependsOn 自動推導——dependsOn 在這個 repo 沒有任何執行期消費者（grep
+  // 驗證過），是完全不受強制檢查的文件性欄位，可能已經跟真實計算邏輯脫節，拿它當
+  // source 的依據不可靠。這裡的值是逐一追蹤每支指標「實際 compute 檔案」（很多指標
+  // 是共用 family orchestrator 檔案算出來的，不是自己資料夾裡那個檔案）真正 import
+  // 的 @/shared/sourceData/* 模組（或直接查詢的 DB 表）人工核對過的結果，不是從
+  // dependsOn 猜的。用固定的一組中文標籤（資產負債表/損益表/現金流量表/保險業損益
+  // 明細表/股本變動申報/交易所每日收盤價/加權指數/交易所每日評價指標/銀行監理揭露），
+  // 不要自創新標籤，也不要為了填欄位硬湊——只列真的餵進這支指標計算值的來源，純粹
+  // 拿來定位 knowledgeDate（例如 stockPrice 借用資產負債表的 reportDate 但實際數值
+  // 來自市場價）不算數。
+  sources: string[];
   // 2026-09-10 新增：web-nuxt 原本在前端 app/utils/guru-badges.ts 手工維護一份「大師徽章」
   // 清單（12 支指標各自的命名法則/門檻/引用出處），因為當時 formulaLatex/referenceUrl 還沒
   // 做出來才暫時放前端；現在後端已經有出處欄位的先例，使用者要求把徽章資料也搬過來，避免

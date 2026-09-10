@@ -12,6 +12,7 @@ export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
     ' TTM/年化概念。',
   formulaLatex: '\\mathrm{ShareCountChangeRate} = \\frac{\\mathrm{Shares}_t - \\mathrm{Shares}_{t-4}}{\\mathrm{Shares}_{t-4}} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['paidInShares'],

@@ -10,6 +10,7 @@ export const receivablesTurnoverDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{ReceivablesTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{AccountsReceivable}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%87%89%E6%94%B6%E5%B8%B3%E6%AC%BE%E9%80%B1%E8%BD%89%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'accountsReceivable'],

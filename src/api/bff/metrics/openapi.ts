@@ -51,6 +51,14 @@ const metricFolderCatalogEntrySchema = z.object({
       '"composite" = 多因子模型/統計方法論（Altman Z/Piotroski/Beneish/Ohlson/Zmijewski 這些大師評分模型、' +
       'Graham Number/NCAV、DuPont 拆解版 ROE、SGR/Chowder Number、SUE、beta）。',
   }),
+  sources: z.array(z.string()).meta({
+    description:
+      '2026-09-10 新增：這支指標實際依賴的真實資料來源（例如 "公開發行公司資產負債表（XBRL）"），必填，' +
+      '不會是 undefined。不是從 dependsOn 推導——dependsOn 沒有執行期消費者，只是文件性欄位，可能跟真實' +
+      '計算邏輯脫節；這裡的值是逐一追蹤每支指標實際計算檔案（很多指標是共用的 family orchestrator 算出來' +
+      '的，不是自己資料夾裡那個檔案）真正查詢的資料表人工核對過的結果。用固定的一組中文標籤，同一個標籤' +
+      '字串在不同指標間逐字重複使用，前端可以直接拿字串本身當分組/比對依據。',
+  }),
   badge: z
     .object({
       id: z.string(),

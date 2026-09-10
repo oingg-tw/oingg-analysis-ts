@@ -9,6 +9,7 @@ export const payablesTurnoverDefinition: MetricDefinitionSpec = {
     '加總/本季期末應付帳款。',
   formulaLatex: '\\mathrm{PayablesTurnover} = \\frac{\\mathrm{COGS}}{\\mathrm{AccountsPayable}}',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['operating_costs', 'accountsPayable'],

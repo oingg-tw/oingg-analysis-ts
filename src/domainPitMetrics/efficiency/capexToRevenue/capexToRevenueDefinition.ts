@@ -9,6 +9,7 @@ export const capexToRevenueDefinition: MetricDefinitionSpec = {
     '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
   formulaLatex: '\\mathrm{CapexToRevenue} = \\frac{|\\mathrm{Capex}|}{\\mathrm{Revenue}} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['revenue', 'capitalExpenditures'],

@@ -14,6 +14,7 @@ export const operatingExpenseRatioDefinition: MetricDefinitionSpec = {
   // 但是查證過確實有定義營業費用率、是目前找得到最接近的中文條目。
   referenceUrl: 'https://zh.wikipedia.org/wiki/%E7%B6%93%E7%87%9F%E6%AF%94%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['selling_expense', 'administrative_expense', 'revenue'],
