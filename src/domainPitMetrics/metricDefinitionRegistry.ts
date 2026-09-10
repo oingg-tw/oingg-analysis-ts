@@ -14,6 +14,7 @@ import { dupontExtendedRoeDefinition } from '@/domainPitMetrics/profitability/du
 import { epsDefinition } from '@/domainPitMetrics/profitability/eps/epsDefinition';
 import { bvpsDefinition } from '@/domainPitMetrics/valuation/bvps/bvpsDefinition';
 import { peRatioDefinition } from '@/domainPitMetrics/valuation/peRatio/peRatioDefinition';
+import { pegRatioDefinition } from '@/domainPitMetrics/valuation/pegRatio/pegRatioDefinition';
 import { pbRatioDefinition } from '@/domainPitMetrics/valuation/pbRatio/pbRatioDefinition';
 import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/stockPriceDefinition';
 import { marketCapDefinition } from '@/domainPitMetrics/valuation/marketCap/marketCapDefinition';
@@ -117,6 +118,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   eps: epsDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,
+  pegRatio: pegRatioDefinition,
   earningsYield: earningsYieldDefinition,
   pbRatio: pbRatioDefinition,
   stockPrice: stockPriceDefinition,
