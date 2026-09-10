@@ -3,8 +3,17 @@ import { companyExists } from '@/shared/sourceData/companyProfile';
 import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/shared/sourceData/twseMarketData';
 import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/shared/sourceData/exDividendNotice';
 import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
+import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/shared/sourceData/stockPledgeRatio';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import type { StockPricesResult, StockQuoteResult, ExDividendNoticesResult, ExDividendCalendarResult, ForeignShareholdingHistoryResult, DailyPriceHistoryResult } from './types';
+import type {
+  StockPricesResult,
+  StockQuoteResult,
+  ExDividendNoticesResult,
+  ExDividendCalendarResult,
+  ForeignShareholdingHistoryResult,
+  StockPledgeRatioHistoryResult,
+  DailyPriceHistoryResult,
+} from './types';
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -101,6 +110,14 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
 // 是前端自己的降級處理，這支不需要特別區分「查無資料」跟「這家公司真的沒有外資持股」。
 export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingHistoryResult> => {
   const entries = await getForeignShareholdingHistoryFromSource(symbol, limit);
+  return { symbol, entries };
+};
+
+// 2026-09-10 使用者要求：個股頁面董監事質押比例卡片，比照 getForeignShareholdingHistory
+// 同一種「回傳完整歷史陣列，查無資料就是空陣列」的模式——不進 pitMetrics，讓前端直接對照
+// TWSE 公告原始數字序列（見 stockPledgeRatio.ts 的說明）。
+export const getStockPledgeRatioHistory = async (symbol: string, limit: number): Promise<StockPledgeRatioHistoryResult> => {
+  const entries = await getStockPledgeRatioHistoryFromSource(symbol, limit);
   return { symbol, entries };
 };
 

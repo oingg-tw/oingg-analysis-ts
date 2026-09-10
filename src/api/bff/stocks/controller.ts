@@ -1,6 +1,14 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getStockQuote, getStockPrices, getExDividendNotices, getExDividendCalendar, getForeignShareholdingHistory, getDailyPriceHistory } from './service';
+import {
+  getStockQuote,
+  getStockPrices,
+  getExDividendNotices,
+  getExDividendCalendar,
+  getForeignShareholdingHistory,
+  getStockPledgeRatioHistory,
+  getDailyPriceHistory,
+} from './service';
 import { logger } from '@/shared/logger';
 
 export const getQuoteParamsSchema = z.object({
@@ -125,6 +133,35 @@ export const getForeignShareholdingHistoryHandler = async (req: Request, res: Re
     res.status(200).json(result);
   } catch (error) {
     logger.error({ err: error }, 'Foreign shareholding history lookup failed:');
+    next(error);
+  }
+};
+
+// 2026-09-10 使用者要求：個股頁面董監事質押比例卡片。twse-ts export.stock_pledge_ratio
+// 剛開放，report_date 不定期更新（不是每個交易日），目前只回填了少數幾檔驗證用資料，
+// 其他 symbol 一律回傳空陣列——覆蓋率限制，不是查詢失敗，跟 MAX_FOREIGN_SHAREHOLDING_LIMIT
+// 同一種「取最近幾筆」慣例，只是這裡的「筆」是不定期的公告次數，不是固定交易日數。
+const MAX_STOCK_PLEDGE_RATIO_LIMIT = 500;
+export const getStockPledgeRatioHistoryParamsSchema = getQuoteParamsSchema;
+export const getStockPledgeRatioHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(MAX_STOCK_PLEDGE_RATIO_LIMIT).default(100).meta({ description: `取最近幾筆公告，預設 100，上限 ${MAX_STOCK_PLEDGE_RATIO_LIMIT}。` }),
+});
+
+export const getStockPledgeRatioHistoryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paramsResult = getStockPledgeRatioHistoryParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return res.status(400).json({ message: 'Invalid path parameters.', errors: paramsResult.error.format() });
+    }
+    const queryResult = getStockPledgeRatioHistoryQuerySchema.safeParse(req.query);
+    if (!queryResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: queryResult.error.format() });
+    }
+
+    const result = await getStockPledgeRatioHistory(paramsResult.data.symbol, queryResult.data.limit);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error({ err: error }, 'Stock pledge ratio history lookup failed:');
     next(error);
   }
 };

@@ -5,6 +5,7 @@ import {
   getExDividendNoticesHandler,
   getExDividendCalendarHandler,
   getForeignShareholdingHistoryHandler,
+  getStockPledgeRatioHistoryHandler,
   getDailyPriceHistoryHandler,
 } from './controller';
 
@@ -15,6 +16,7 @@ router.get('/stocks/prices', getPrices);
 router.get('/stocks/ex-dividend-notices', getExDividendNoticesHandler);
 router.get('/stocks/ex-dividend-calendar', getExDividendCalendarHandler);
 router.get('/stocks/:symbol/foreign-shareholding-history', getForeignShareholdingHistoryHandler);
+router.get('/stocks/:symbol/pledge-ratio-history', getStockPledgeRatioHistoryHandler);
 router.get('/stocks/:symbol/daily-price-history', getDailyPriceHistoryHandler);
 
 export default router;

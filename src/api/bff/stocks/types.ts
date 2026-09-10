@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { exDividendNoticeEntrySchema, exDividendCalendarEntrySchema } from '@/shared/sourceData/exDividendNotice';
 import { foreignShareholdingEntrySchema } from '@/shared/sourceData/foreignShareholding';
+import { stockPledgeRatioEntrySchema } from '@/shared/sourceData/stockPledgeRatio';
 
 export const stockQuotePriceSchema = z.object({
   tradeDate: z.string(),
@@ -49,6 +50,12 @@ export const foreignShareholdingHistoryResultSchema = z.object({
   entries: z.array(foreignShareholdingEntrySchema).meta({ description: '依日期新到舊排序' }),
 });
 export type ForeignShareholdingHistoryResult = z.infer<typeof foreignShareholdingHistoryResultSchema>;
+
+export const stockPledgeRatioHistoryResultSchema = z.object({
+  symbol: z.string(),
+  entries: z.array(stockPledgeRatioEntrySchema).meta({ description: '依日期新到舊排序' }),
+});
+export type StockPledgeRatioHistoryResult = z.infer<typeof stockPledgeRatioHistoryResultSchema>;
 
 export const dailyPriceHistoryEntrySchema = z.object({
   tradeDate: z.string().meta({ description: '"YYYY-MM-DD"' }),

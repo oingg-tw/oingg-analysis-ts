@@ -5,6 +5,8 @@ import {
   getExDividendCalendarQuerySchema,
   getForeignShareholdingHistoryParamsSchema,
   getForeignShareholdingHistoryQuerySchema,
+  getStockPledgeRatioHistoryParamsSchema,
+  getStockPledgeRatioHistoryQuerySchema,
   getDailyPriceHistoryParamsSchema,
   getDailyPriceHistoryQuerySchema,
 } from './controller';
@@ -14,6 +16,7 @@ import {
   exDividendNoticesResultSchema,
   exDividendCalendarResultSchema,
   foreignShareholdingHistoryResultSchema,
+  stockPledgeRatioHistoryResultSchema,
   dailyPriceHistoryResultSchema,
 } from './types';
 
@@ -108,6 +111,28 @@ export const registerStocksOpenApi = (): void => {
     request: { params: getForeignShareholdingHistoryParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
     responses: {
       200: { description: '依日期新到舊排序的外資持股歷史，查無資料的公司 entries 是空陣列。', content: { 'application/json': { schema: foreignShareholdingHistoryResultSchema } } },
+      400: { description: '請求的參數格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/stocks/{symbol}/pledge-ratio-history',
+    summary: '查詢單一公司的董監事及大股東股權質押比例歷史',
+    description:
+      '2026-09-10 新增，給個股頁面董監事質押比例卡片用（質押比例偏高通常被視為公司治理/財務風險警訊）。' +
+      '資料來源是 twse-ts 的 export.stock_pledge_ratio（TWSE t187ap09_L），跟 foreign-shareholding-history' +
+      '同一套模式。report_date 是 TWSE 出表日期，不定期更新（不是每個交易日、也不綁季度末），呼叫端不能假設' +
+      '固定週期。刻意回傳完整歷史陣列（不是單一最新值/指標）——讓前端直接對照 TWSE 公告的原始數字序列，' +
+      '比包一層「指標」抽象更利於使用者核對來源。剛開放，目前只回填了少數幾檔驗證用資料，其他公司會回傳' +
+      '空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。',
+    tags: ['Stocks'],
+    request: { params: getStockPledgeRatioHistoryParamsSchema, query: getStockPledgeRatioHistoryQuerySchema },
+    responses: {
+      200: {
+        description: '依日期新到舊排序的董監事質押比例歷史，查無資料的公司 entries 是空陣列。',
+        content: { 'application/json': { schema: stockPledgeRatioHistoryResultSchema } },
+      },
       400: { description: '請求的參數格式錯誤。' },
     },
   });
