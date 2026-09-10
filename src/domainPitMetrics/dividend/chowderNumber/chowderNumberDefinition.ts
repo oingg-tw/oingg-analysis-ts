@@ -12,10 +12,10 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
     '宣告股利，見 dividendGrowthRateDefinition.ts 的說明）。兩者都獨立重新計算，不依賴' +
     '已寫入的值。任一成分缺漏，整體視為缺漏，不補 0。只有 FY 一種 basis。',
   formulaLatex: '\\mathrm{Chowder} = \\mathrm{DividendYield} + \\mathrm{DividendGrowthRate}_{5y}',
-  // 2026-09-10 查證過：這是 Seeking Alpha 一位暱稱「Chowder」的網友提出的非正式經驗法則，
-  // 不是學術論文，原始出處（他當年在 Seeking Alpha 留言區的發言）沒有穩定可考的存檔連結，
-  // 也沒有維基百科條目——academicSourceUrl/referenceUrl 都刻意留空，不要拿隨便一篇二手
-  // 部落格文章充當權威出處。
+  // 2026-09-10：不是學術論文，沒有維基百科條目，但使用者提供了 Chowder 本人在 Seeking Alpha
+  // 的作者頁（WebSearch 交叉驗證過確有其人、確實是這個規則的提出者），比隨便一篇二手部落格
+  // 轉述更接近原始出處，放 referenceUrl；academicSourceUrl 仍留空，這不是一篇可指名的論文。
+  referenceUrl: 'https://seekingalpha.com/author/chowder/analysis',
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'paidInShares'],
