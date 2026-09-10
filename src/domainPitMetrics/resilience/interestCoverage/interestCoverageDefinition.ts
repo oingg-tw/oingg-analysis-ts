@@ -7,6 +7,7 @@ export const interestCoverageDefinition: MetricDefinitionSpec = {
   formulaNote:
     'EBIT = 稅前淨利+利息費用；Q(單季) = EBIT/利息費用（倍）；TTM = 近四季（含本季）EBIT 加總/' +
     '近四季利息費用加總。沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+  formulaLatex: '\\mathrm{InterestCoverage} = \\frac{\\mathrm{EBIT}}{\\mathrm{InterestExpense}}',
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_before_tax', 'finance_costs'],

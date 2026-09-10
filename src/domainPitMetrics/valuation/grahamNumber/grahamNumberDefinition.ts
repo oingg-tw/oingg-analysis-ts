@@ -16,6 +16,7 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
     '= sqrt(22.5 x EPS(TTM) x BVPS)，EPS(TTM)/BVPS 須為正才有意義。獨立重新計算 EPS(TTM)/' +
     'BVPS（不依賴 eps/bvps 這兩個 metric_code 已寫入的值）。只有 TTM 一種 basis——因為' +
     'EPS(TTM) 是否齊全決定整個公式算不算得出來。',
+  formulaLatex: '\\mathrm{GrahamNumber} = \\sqrt{22.5 \\times \\mathrm{EPS}_{\\mathrm{TTM}} \\times \\mathrm{BVPS}}',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

@@ -11,6 +11,8 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
     'CHIN=(今年TTM淨利-去年TTM淨利)/(|今年|+|去年|)。INTWO/CHIN 需要「今年 TTM vs 去年同季' +
     'TTM」比較——去年同季 TTM 窗口用 getPastNQuarters n=5 取錨點、再從錨點往前抓 4 季建窗口，' +
     '不是新機制。只有 TTM 一種 basis。',
+  formulaLatex:
+    '\\mathrm{O} = -1.32 - 0.407\\,\\mathrm{SIZE} + 6.03\\,\\mathrm{TLTA} - 1.43\\,\\mathrm{WCTA} + 0.0757\\,\\mathrm{CLCA} - 1.72\\,\\mathrm{OENEG} - 2.37\\,\\mathrm{NITA} - 1.83\\,\\mathrm{FUTL} + 0.285\\,\\mathrm{INTWO} - 0.521\\,\\mathrm{CHIN}',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

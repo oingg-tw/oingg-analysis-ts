@@ -12,6 +12,7 @@ export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
     'X4 用市值）/altmanZPrimeScore（1983，五變數，X4 用帳面權益）是三個各自發表、獨立登錄' +
     '的模型，不是同一指標的變體。獨立重新計算，不依賴另外兩支已寫入的值。只有 TTM 一種' +
     ' basis。',
+  formulaLatex: "\\mathrm{Z}'' = 6.56X_1 + 3.26X_2 + 6.72X_3 + 1.05X_4",
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

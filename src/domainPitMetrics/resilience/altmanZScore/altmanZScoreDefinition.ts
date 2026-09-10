@@ -13,6 +13,7 @@ export const altmanZScoreDefinition: MetricDefinitionSpec = {
     '都需要 TTM 資料才算得出來。原始版模型用上市製造業樣本校準，對非製造業（尤其金融/服務/' +
     '營建）適用性有限，這個警語只在舊架構的 warnings 呈現，PIT 版本不重複記錄使用限制文字' +
     '（metric_value 沒有 warnings 欄位）。',
+  formulaLatex: '\\mathrm{Z} = 1.2X_1 + 1.4X_2 + 3.3X_3 + 0.6X_4 + 0.999X_5',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

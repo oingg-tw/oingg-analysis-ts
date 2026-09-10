@@ -11,6 +11,7 @@ export const altmanZPrimeScoreDefinition: MetricDefinitionSpec = {
     '各自發表的模型（Altman 1983），不是同一指標的變體——X4 換成帳面權益、係數整套換新，' +
     '不是原版係數乘比例。獨立重新計算，不依賴 altmanZScore 已寫入的值。只有 TTM 一種' +
     ' basis，理由跟 altmanZScore 一致。',
+  formulaLatex: "\\mathrm{Z}' = 0.717X_1 + 0.847X_2 + 3.107X_3 + 0.42X_4 + 0.998X_5",
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [
