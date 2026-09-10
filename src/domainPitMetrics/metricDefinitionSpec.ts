@@ -1,5 +1,58 @@
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from './metricBasis';
 
+// 2026-09-10：「大師徽章」型別本身（命名法則/門檻/引用出處），內容見各自
+// <metricCode>Badge.ts（跟 <metricCode>Definition.ts 同一個資料夾）——只有 11 支
+// 指標有，其餘指標的 MetricDefinitionSpec.badge 維持 undefined，見下方 badge 欄位的
+// 完整說明。
+export interface MetricBadge {
+  id: string;
+  name: string;
+  nameEn: string;
+  // 法則/門檻的提出者或出處機構，正規化格式："<人名(s)>, <年份>"（例如 "Edward Altman,
+  // 1968"、"Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989"）或機構型出處沒有
+  // 單一可指名年份時省略年份（例如 "S&P Dow Jones Indices"）——2026-09-10 統一過一次，
+  // 不要用括號夾帶額外說明（例如 "機構（作者群，年份）"）或引號包裹暱稱這類不一致的寫法，
+  // 那些補充資訊留給 detail 自然語言說明。跟 academicSourceUrl/referenceUrl 是同一組
+  // 事實的不同呈現方式（那兩個是連結，這個是給徽章卡片直接顯示的文字），三者刻意不互相
+  // 衍生，各自手動維護避免格式耦合。
+  author: string;
+  summary: string;
+  detail: string;
+  // 2026-09-10：這支指標本身要用哪個 token 讀值來套用這個門檻（例如 altmanZScore 用
+  // 'TTM'，sue 用 'Q'，chowderNumber 用 'FY'），必須是這支 metricCode 自己
+  // allowedPeriodTypes/allowedSnapshotCadences 陣列裡真的存在的值——前端不用自己猜
+  // 該讀哪個 basis。allPositiveFieldIds 已經自帶完整 "metricCode.token" 字串
+  // （例如 "eps.TTM"），token 語意已經內含在裡面，這種情況本欄位留空。
+  token?: string;
+  threshold: {
+    // 人類可讀的門檻說明，直接給徽章卡片顯示用（例如 "> 2.99（Altman 原始論文劃定的
+    // 安全區下限）"）。
+    description: string;
+    // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
+    // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
+    denominator: number;
+    // 跟 value（固定常數比較）、valueMin/valueMax（'in_range' 時用的區間上下限）或
+    // compareAgainstFieldId（比較另一支指標的值，例如 Graham Number/NCAV 是跟股價比較）
+    // 三者擇一使用；allPositiveFieldIds 是第四種「多個欄位都要 > 0」的複合情境（S&P 500
+    // 獲利資格門檻），這幾種情境下 comparator 可能不需要（allPositiveFieldIds 情境本身
+    // 就是隱含的 gt 0，不需要額外宣告）。'in_range' 是 2026-09-10 補的——dividendPayoutRatio
+    // 的 Fidelity 出處原文講的是「40%–60% 最適區間」（過高過低都不理想），不是單邊「< 60%
+    // 安全上限」，原本用 lt/60 誤植了原文論點，改成 in_range 才能正確表達「落在區間內」
+    // 這個語意，不能硬套單邊比較詞彙（見 dividendPayoutRatio/dividendPayoutRatioBadge.ts
+    // 的更正說明）。
+    comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt' | 'in_range';
+    value?: number;
+    valueMin?: number;
+    valueMax?: number;
+    // 格式是 "metricCode.token"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
+    // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
+    // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
+    compareAgainstFieldId?: string;
+    // 格式同上，多個 "metricCode.token"，語意是「這些欄位全部都要 > 0」。
+    allPositiveFieldIds?: string[];
+  };
+}
+
 interface MetricDefinitionSpecBase {
   metricCode: string;
   // 2026-09-09：給前端顯示用的中文名稱/單位——GET /metrics 之前只有 metricCode 跟四個
@@ -59,53 +112,13 @@ interface MetricDefinitionSpecBase {
   // （目前 11 支，Piotroski F-Score 是唯一例外——它的門檻判斷是 clamp(round(value),0,9)>=8
   // 這種「非完美 9/9 也算通過」的邏輯，下面 threshold 的比較詞彙表達不了，維持前端硬編碼，
   // 不寫進這裡）。選填，其餘 73 支沒有徽章維持 undefined。
-  badge?: {
-    id: string;
-    name: string;
-    nameEn: string;
-    // 法則/門檻的提出者或出處機構，正規化格式："<人名(s)>, <年份>"（例如 "Edward Altman,
-    // 1968"、"Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989"）或機構型出處沒有
-    // 單一可指名年份時省略年份（例如 "S&P Dow Jones Indices"）——2026-09-10 統一過一次，
-    // 不要用括號夾帶額外說明（例如 "機構（作者群，年份）"）或引號包裹暱稱這類不一致的寫法，
-    // 那些補充資訊留給 detail 自然語言說明。跟 academicSourceUrl/referenceUrl 是同一組
-    // 事實的不同呈現方式（那兩個是連結，這個是給徽章卡片直接顯示的文字），三者刻意不互相
-    // 衍生，各自手動維護避免格式耦合。
-    author: string;
-    summary: string;
-    detail: string;
-    // 2026-09-10：這支指標本身要用哪個 token 讀值來套用這個門檻（例如 altmanZScore 用
-    // 'TTM'，sue 用 'Q'，chowderNumber 用 'FY'），必須是這支 metricCode 自己
-    // allowedPeriodTypes/allowedSnapshotCadences 陣列裡真的存在的值——前端不用自己猜
-    // 該讀哪個 basis。allPositiveFieldIds 已經自帶完整 "metricCode.token" 字串
-    // （例如 "eps.TTM"），token 語意已經內含在裡面，這種情況本欄位留空。
-    token?: string;
-    threshold: {
-      // 人類可讀的門檻說明，直接給徽章卡片顯示用（例如 "> 2.99（Altman 原始論文劃定的
-      // 安全區下限）"）。
-      description: string;
-      // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
-      // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
-      denominator: number;
-      // 跟 value（固定常數比較）、valueMin/valueMax（'in_range' 時用的區間上下限）或
-      // compareAgainstFieldId（比較另一支指標的值，例如 Graham Number/NCAV 是跟股價比較）
-      // 三者擇一使用；allPositiveFieldIds 是第四種「多個欄位都要 > 0」的複合情境（S&P 500
-      // 獲利資格門檻），這幾種情境下 comparator 可能不需要（allPositiveFieldIds 情境本身
-      // 就是隱含的 gt 0，不需要額外宣告）。'in_range' 是 2026-09-10 補的——dividendPayoutRatio
-      // 的 Fidelity 出處原文講的是「40%–60% 最適區間」（過高過低都不理想），不是單邊「< 60%
-      // 安全上限」，原本用 lt/60 誤植了原文論點，改成 in_range 才能正確表達「落在區間內」
-      // 這個語意，不能硬套單邊比較詞彙（見 dividendPayoutRatioDefinition.ts 的更正說明）。
-      comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt' | 'in_range';
-      value?: number;
-      valueMin?: number;
-      valueMax?: number;
-      // 格式是 "metricCode.token"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
-      // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
-      // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
-      compareAgainstFieldId?: string;
-      // 格式同上，多個 "metricCode.token"，語意是「這些欄位全部都要 > 0」。
-      allPositiveFieldIds?: string[];
-    };
-  };
+  // 2026-09-10 拆檔：型別本身定義在這裡（MetricBadge，見下方），但每支指標的實際徽章
+  // 內容（一大段中文 detail prose + threshold）搬到各自資料夾的 <metricCode>Badge.ts，
+  // 跟 <metricCode>Definition.ts 分開——原因跟這個 session 稍早把 64 個 metricCode 定義
+  // 從單一大檔案拆成各自資料夾同一個邏輯：徽章內容是大段獨立文案，跟公式/dependsOn 這些
+  // 計算相關的宣告混在同一個物件字面值裡，會讓 Definition.ts 檔案變得很長、不好找兩種
+  // 完全不同性質的內容各自在哪裡。
+  badge?: MetricBadge;
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

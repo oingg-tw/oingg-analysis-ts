@@ -2,11 +2,7 @@ import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
-import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-
-// 2026-09-10：web-nuxt 轉移過來的「大師徽章」型別，直接從 MetricDefinitionSpec 取，不要
-// 在這裡重複定義一份容易漂移的形狀。
-type MetricBadge = NonNullable<MetricDefinitionSpec['badge']>;
+import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
 // 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
