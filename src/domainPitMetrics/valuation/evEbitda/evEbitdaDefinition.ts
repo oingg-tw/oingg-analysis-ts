@@ -12,6 +12,7 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
     '沒有單季非年化版本。',
   formulaLatex:
     '\\mathrm{EvEbitda} = \\frac{\\mathrm{EV}}{\\mathrm{EBITDA}},\\quad \\mathrm{EV} = \\mathrm{MarketCap} + \\mathrm{NetDebt}',
+  referenceUrl: 'https://en.wikipedia.org/wiki/EV/EBITDA',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: [

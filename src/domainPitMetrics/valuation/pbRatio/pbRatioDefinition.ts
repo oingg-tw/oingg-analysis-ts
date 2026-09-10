@@ -9,6 +9,7 @@ export const pbRatioDefinition: MetricDefinitionSpec = {
     ' 一種 basis——跟 bvps 自己一樣是資產負債表時點快照，沒有 TTM/年化概念。BVPS 剛好等於 0' +
     ' 才是 null（zero_or_negative_denominator），為負（資不抵債）仍計算出真實但為負的本淨比。',
   formulaLatex: '\\mathrm{PB} = \\frac{\\mathrm{Price}}{\\mathrm{BVPS}}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E6%B7%A8%E5%80%BC%E6%AF%94',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

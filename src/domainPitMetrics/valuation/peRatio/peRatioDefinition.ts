@@ -13,6 +13,7 @@ export const peRatioDefinition: MetricDefinitionSpec = {
     '只有 TTM 一種 basis——台股慣例的本益比就是用近四季 EPS。EPS_TTM 剛好等於 0 才是 null' +
     '（zero_or_negative_denominator），為負仍計算出真實但為負的本益比，不隱藏。',
   formulaLatex: '\\mathrm{PE} = \\frac{\\mathrm{Price}}{\\mathrm{EPS}_{\\mathrm{TTM}}}',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9C%AC%E7%9B%8A%E6%AF%94',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

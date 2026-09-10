@@ -14,6 +14,7 @@ export const exchangePeRatioDefinition: MetricDefinitionSpec = {
     '本服務不自己重算，不知道交易所用的 EPS 是單季/TTM/年度哪種口徑——跟自己算的' +
     'pitMetrics peRatio（XBRL EPS TTM、季報知識時點更新）是不同用途、刻意並存的兩組數字，' +
     '不要混用或互相驗證。虧損等無法計算 PER 的情況為 null（missing_input）。',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9C%AC%E7%9B%8A%E6%AF%94',
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.pe_ratio'],

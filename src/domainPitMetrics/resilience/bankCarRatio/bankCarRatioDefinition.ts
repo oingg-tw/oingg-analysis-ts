@@ -11,6 +11,7 @@ export const bankCarRatioDefinition: MetricDefinitionSpec = {
     'Q1/Q3 一律 missing_input，不是資料缺漏）。不給 year/season 時的「最新一季」判斷刻意' +
     '排除值為 null 的季度，見 getLatestQuarterWithBankCapitalAdequacy 的說明。',
   formulaLatex: '\\mathrm{CAR} = \\frac{\\mathrm{EligibleCapital}}{\\mathrm{RiskWeightedAssets}} \\times 100',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B3%87%E6%9C%AC%E9%81%A9%E8%B6%B3%E7%8E%87',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['eligibleCapital', 'riskWeightedAssets'],

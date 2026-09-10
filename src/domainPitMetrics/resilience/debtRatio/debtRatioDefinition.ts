@@ -15,6 +15,7 @@ export const debtRatioDefinition: MetricDefinitionSpec = {
   unit: '%',
   formulaNote: '= 本季期末總負債/本季期末總資產*100。純資產負債表時點快照，只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{DebtRatio} = \\frac{\\mathrm{TotalLiabilities}}{\\mathrm{TotalAssets}} \\times 100',
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B3%87%E7%94%A2%E8%B2%A0%E5%82%B5%E7%8E%87',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['liabilities', 'assets'],

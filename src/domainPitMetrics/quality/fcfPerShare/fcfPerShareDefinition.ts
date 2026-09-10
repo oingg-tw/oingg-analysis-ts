@@ -9,6 +9,8 @@ export const fcfPerShareDefinition: MetricDefinitionSpec = {
     'Q(單季) = 本季 FCF*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）FCF 加總*1000/流通' +
     '股數，四季不齊為 null。',
   formulaLatex: '\\mathrm{FcfPerShare} = \\frac{\\mathrm{CFO} + \\mathrm{Capex}}{\\mathrm{Shares}}',
+  // 沒有每股專屬條目，中文維基「自由現金流量」條目涵蓋 FCF 本體概念。
+  referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%87%AA%E7%94%B1%E7%8F%BE%E9%87%91%E6%B5%81%E9%87%8F',
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],
