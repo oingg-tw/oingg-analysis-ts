@@ -24,7 +24,8 @@ export const dividendPayoutRatioBadge: MetricBadge = {
     '區間建議。',
   token: 'TTM',
   threshold: {
-    description: '40%–60%（Fidelity 研究報告劃定的最適發放率區間，不是單邊安全上限）',
+    description: '40%–60%',
+    note: 'Fidelity 研究報告劃定的最適發放率區間，不是單邊安全上限',
     denominator: 1,
     comparator: 'in_range',
     valueMin: 40,

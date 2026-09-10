@@ -65,7 +65,8 @@ const metricFolderCatalogEntrySchema = z.object({
           'threshold.allPositiveFieldIds 情境下已經自帶完整 "metricCode.token" 字串，這個欄位留空。',
       }),
       threshold: z.object({
-        description: z.string().meta({ description: '人類可讀的門檻說明，直接給徽章卡片顯示' }),
+        description: z.string().meta({ description: '人類可讀的門檻說明（只有門檻本身，例如 "> 2.99"），不含括號附註，補充說明見 note' }),
+        note: z.string().optional().meta({ description: '門檻的出處/限制/跟原論文差異等補充說明，跟 description 分開存放；沒有補充說明時省略' }),
         denominator: z.number().meta({ description: '目前全部是 1（單一比較）' }),
         comparator: z.enum(['gt', 'lt', 'gte', 'abs_lt', 'in_range']).optional(),
         value: z.number().optional().meta({ description: '固定常數比較時使用（comparator 不是 in_range 的情況）' }),

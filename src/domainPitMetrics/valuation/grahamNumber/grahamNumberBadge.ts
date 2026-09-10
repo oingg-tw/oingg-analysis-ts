@@ -13,7 +13,8 @@ export const grahamNumberBadge: MetricBadge = {
     '股價偏低的公司，是 Graham 個人投資哲學下的簡化公式。',
   token: 'TTM',
   threshold: {
-    description: '股價 < Graham Number（Graham 本人的比較慣例）',
+    description: '股價 < Graham Number',
+    note: 'Graham 本人的比較慣例',
     denominator: 1,
     comparator: 'lt',
     compareAgainstFieldId: 'stockPrice.Q',

@@ -13,5 +13,5 @@ export const sueBadge: MetricBadge = {
     '報酬在接下來數季會持續同方向漂移，而不是財報公布當下就立刻完全反映。這是一個統計上的異常現象，反映' +
     '市場對盈餘意外的反應存在延遲，不代表未來報酬保證延續此模式。',
   token: 'Q',
-  threshold: { description: '> 2（PEAD 文獻常用的顯著正向盈餘意外門檻）', denominator: 1, comparator: 'gt', value: 2 },
+  threshold: { description: '> 2', note: 'PEAD 文獻常用的顯著正向盈餘意外門檻', denominator: 1, comparator: 'gt', value: 2 },
 };

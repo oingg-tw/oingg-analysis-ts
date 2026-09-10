@@ -34,9 +34,15 @@ export interface MetricBadge {
   // （例如 "eps.TTM"），token 語意已經內含在裡面，這種情況本欄位留空。
   token?: string;
   threshold: {
-    // 人類可讀的門檻說明，直接給徽章卡片顯示用（例如 "> 2.99（Altman 原始論文劃定的
-    // 安全區下限）"）。
+    // 人類可讀的門檻說明，只放門檻本身（例如 "> 2.99"），不要夾帶括號附註——2026-09-10
+    // 補訂跟 name/nameEn 同一個原則：括號裡不塞資訊，真的要補充說明另外用 note 欄位，
+    // 前端才能分開設計（例如門檻用大字強調、note 用小字附註），不用自己 parse 字串裡的
+    // 括號。
     description: string;
+    // 門檻本身的出處/限制/跟原論文差異這類補充說明（例如 "Altman 原始論文劃定的安全區
+    // 下限"、"實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法"），跟
+    // description 分開存放；沒有補充說明時留空，不要為了填欄位硬湊一句話。
+    note?: string;
     // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
     // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
     denominator: number;

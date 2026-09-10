@@ -15,7 +15,8 @@ export const accrualsRatioBadge: MetricBadge = {
     '固定門檻，非原論文精確數字。',
   token: 'TTM',
   threshold: {
-    description: '絕對值 < 10%（實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法）',
+    description: '絕對值 < 10%',
+    note: '實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法',
     denominator: 1,
     comparator: 'abs_lt',
     value: 10,

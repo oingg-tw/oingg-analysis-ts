@@ -13,7 +13,8 @@ export const epsBadge: MetricBadge = {
     '自己用來篩掉獲利不穩定、可能虧損公司的資格審查——用意是排除帳面上靠一次性收益撐場面、但本業實際上' +
     '正在虧損或獲利極不穩定的公司。',
   threshold: {
-    description: '近四季 EPS 合計為正，且最近一季 EPS 也為正（S&P 500 官方納入門檻）',
+    description: '近四季 EPS 合計為正，且最近一季 EPS 也為正',
+    note: 'S&P 500 官方納入門檻',
     denominator: 1,
     allPositiveFieldIds: ['eps.TTM', 'eps.Q'],
   },

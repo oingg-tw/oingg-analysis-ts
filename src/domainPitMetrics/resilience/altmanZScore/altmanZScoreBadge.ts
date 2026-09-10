@@ -14,5 +14,5 @@ export const altmanZScoreBadge: MetricBadge = {
     '財務比率各自加權後加總，得出一個綜合分數，分數越低代表模型認定的財務危機風險越高。這是一個統計模型，' +
     '反映的是歷史樣本歸納出的風險關聯性。',
   token: 'TTM',
-  threshold: { description: '> 2.99（Altman 原始論文劃定的安全區下限）', denominator: 1, comparator: 'gt', value: 2.99 },
+  threshold: { description: '> 2.99', note: 'Altman 原始論文劃定的安全區下限', denominator: 1, comparator: 'gt', value: 2.99 },
 };
