@@ -63,9 +63,13 @@ interface MetricDefinitionSpecBase {
     id: string;
     name: string;
     nameEn: string;
-    // 法則/門檻的提出者或出處機構（例如 "Edward Altman, 1968"、"S&P Dow Jones Indices"），
-    // 跟 academicSourceUrl/referenceUrl 是同一組事實的不同呈現方式（那兩個是連結，這個是
-    // 給徽章卡片直接顯示的文字），三者刻意不互相衍生，各自手動維護避免格式耦合。
+    // 法則/門檻的提出者或出處機構，正規化格式："<人名(s)>, <年份>"（例如 "Edward Altman,
+    // 1968"、"Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989"）或機構型出處沒有
+    // 單一可指名年份時省略年份（例如 "S&P Dow Jones Indices"）——2026-09-10 統一過一次，
+    // 不要用括號夾帶額外說明（例如 "機構（作者群，年份）"）或引號包裹暱稱這類不一致的寫法，
+    // 那些補充資訊留給 detail 自然語言說明。跟 academicSourceUrl/referenceUrl 是同一組
+    // 事實的不同呈現方式（那兩個是連結，這個是給徽章卡片直接顯示的文字），三者刻意不互相
+    // 衍生，各自手動維護避免格式耦合。
     author: string;
     summary: string;
     detail: string;

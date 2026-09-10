@@ -26,7 +26,7 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
     id: 'graham-number',
     name: 'Graham Number',
     nameEn: 'Graham Number',
-    author: 'Benjamin Graham',
+    author: 'Benjamin Graham, 1949',
     summary: '用每股盈餘與每股淨值估算的一個保守估值上限參考值。',
     detail:
       '價值投資之父 Benjamin Graham 在其著作中提出的簡化估值公式，計算方式為「每股盈餘 × 每股淨值 × 22.5」' +

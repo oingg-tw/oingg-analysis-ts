@@ -24,7 +24,7 @@ export const dividendPayoutRatioDefinition: MetricDefinitionSpec = {
     id: 'dividend-payout-ratio-safety',
     name: 'Fidelity 股利發放率最適區間',
     nameEn: 'Fidelity Optimal Payout Ratio Range',
-    author: 'Fidelity Investments（Fruhan, Morrow, Hebard, Rahman，2013）',
+    author: 'Fruhan, Morrow, Hebard, Rahman, 2013',
     summary: '股利發放率落在 Fidelity 研究報告劃定的最適區間，兼顧資本配置紀律與股利永續性。',
     detail:
       '出自 Fidelity Investments 2013 年發布的投資人教育文件《Payout Ratio: The Most Influential Management' +

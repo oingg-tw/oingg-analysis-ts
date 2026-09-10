@@ -21,7 +21,7 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
     id: 'chowder-number',
     name: 'Chowder Number（存股評分）',
     nameEn: 'Chowder Rule',
-    author: 'Seeking Alpha 社群（"Chowder" 用戶提出）',
+    author: 'Chowder, Seeking Alpha',
     summary: '現金殖利率加上股利五年成長率，越高代表股息「現在配得多」與「成長得快」兼具。',
     detail:
       'Chowder Number（Chowder Rule）源自 Seeking Alpha 一位暱稱為「Chowder」的資深存股社群用戶提出的簡易' +

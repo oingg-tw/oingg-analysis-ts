@@ -25,7 +25,7 @@ export const sueDefinition: MetricDefinitionSpec = {
     id: 'sue',
     name: '標準化未預期盈餘 (SUE)',
     nameEn: 'Standardized Unexpected Earnings',
-    author: 'Foster, Olsen & Shevlin, 1984；Bernard & Thomas, 1989',
+    author: 'Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989',
     summary: '本季盈餘意外程度的標準化分數，數值越高代表這季獲利遠超市場對「正常」的預期。',
     detail:
       'SUE 是「未預期盈餘」（UE，本季單季 EPS 減去去年同季單季 EPS）除以近 20 季 UE 的樣本標準差算出的' +

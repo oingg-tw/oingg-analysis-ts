@@ -22,7 +22,7 @@ export const epsDefinition: MetricDefinitionSpec = {
     id: 'sp500-earnings-eligibility',
     name: 'S&P 500 獲利資格門檻',
     nameEn: 'S&P 500 Earnings Eligibility Screen',
-    author: 'S&P Dow Jones Indices（S&P U.S. Indices Methodology）',
+    author: 'S&P Dow Jones Indices',
     summary: '近四季獲利合計為正、且最近一季也為正，S&P 500 官方採用的獲利穩定性資格審查。',
     detail:
       'S&P Dow Jones Indices 在其公開發布的《S&P U.S. Indices Methodology》裡，明訂公司要被納入 S&P 500' +

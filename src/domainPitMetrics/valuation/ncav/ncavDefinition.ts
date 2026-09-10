@@ -15,7 +15,7 @@ export const ncavDefinition: MetricDefinitionSpec = {
     id: 'ncav',
     name: 'NCAV（淨流動資產價值）',
     nameEn: 'Net Current Asset Value',
-    author: 'Benjamin Graham',
+    author: 'Benjamin Graham, David Dodd, 1934',
     summary: '用「流動資產減總負債」估算的清算價值角度估值方法，又稱 Net-Net。',
     detail:
       'Benjamin Graham 提出的另一個保守估值角度，計算方式為流動資產減去全部負債（不含流動資產以外的其他' +
