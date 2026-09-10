@@ -25,6 +25,7 @@ export const dividendPayoutRatioBadge: MetricBadge = {
   token: 'TTM',
   threshold: {
     description: '40%–60%',
+    thresholdLatex: '40 \\le \\mathrm{DividendPayoutRatio} \\le 60',
     note: 'Fidelity 研究報告劃定的最適發放率區間，不是單邊安全上限',
     denominator: 1,
     comparator: 'in_range',

@@ -16,6 +16,7 @@ export const accrualsRatioBadge: MetricBadge = {
   token: 'TTM',
   threshold: {
     description: '絕對值 < 10%',
+    thresholdLatex: '|\\mathrm{AccrualsRatio}| < 10',
     note: '實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法',
     denominator: 1,
     comparator: 'abs_lt',

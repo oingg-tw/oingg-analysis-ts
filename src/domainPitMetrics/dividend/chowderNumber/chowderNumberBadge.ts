@@ -14,5 +14,5 @@ export const chowderNumberBadge: MetricBadge = {
     '寬鬆門檻，故一律採一般門檻）。這是存股社群廣泛引用的經驗法則，不是學術論文，也不代表達標股票未來' +
     '股息保證持續成長。',
   token: 'FY',
-  threshold: { description: '≥ 12%', note: '社群慣例門檻，未對公用事業等產業做寬鬆調整', denominator: 1, comparator: 'gte', value: 12 },
+  threshold: { description: '≥ 12%', thresholdLatex: '\\mathrm{Chowder} \\ge 12', note: '社群慣例門檻，未對公用事業等產業做寬鬆調整', denominator: 1, comparator: 'gte', value: 12 },
 };

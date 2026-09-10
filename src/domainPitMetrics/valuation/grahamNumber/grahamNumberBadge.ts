@@ -14,6 +14,7 @@ export const grahamNumberBadge: MetricBadge = {
   token: 'TTM',
   threshold: {
     description: '股價 < Graham Number',
+    thresholdLatex: '\\mathrm{Price} < \\mathrm{GrahamNumber}',
     note: 'Graham 本人的比較慣例',
     denominator: 1,
     comparator: 'lt',

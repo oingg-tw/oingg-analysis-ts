@@ -12,5 +12,5 @@ export const ohlsonOScoreBadge: MetricBadge = {
     '規模、負債比、營運資金比率、流動比率、獲利能力、現金流量等 9 項財務因子代入模型，直接估計出一個' +
     '「陷入財務困境」的機率值。同樣是根據歷史樣本建立的統計模型，反映的是統計上的關聯性。',
   token: 'TTM',
-  threshold: { description: '< 0.5', note: '機率模型的標準判別界線', denominator: 1, comparator: 'lt', value: 0.5 },
+  threshold: { description: '< 0.5', thresholdLatex: '\\mathrm{O} < 0.5', note: '機率模型的標準判別界線', denominator: 1, comparator: 'lt', value: 0.5 },
 };

@@ -39,6 +39,14 @@ export interface MetricBadge {
     // 前端才能分開設計（例如門檻用大字強調、note 用小字附註），不用自己 parse 字串裡的
     // 括號。
     description: string;
+    // 門檻的 LaTeX 數學式呈現（例如 "\mathrm{Z} > 2.99"），跟 MetricDefinitionSpec.formulaLatex
+    // 同一套 @cortex-js/compute-engine 驗證機制（見 scripts/validateFormulaLatex.ts，這支腳本
+    // 2026-09-10 已經一併掃描這個欄位），符號盡量跟這支指標自己 formulaLatex 用的符號一致
+    // （例如 altmanZScore 用 \mathrm{Z}，跟它的 formulaLatex 定義符號同一個）；跨欄位比較
+    // （compareAgainstFieldId，例如股價）用 \mathrm{Price} 這個既有慣例符號（跟 peRatio
+    // 等既有 formulaLatex 用的符號一致）。description 是給不能/不需要渲染 LaTeX 的情境用的
+    // plain text 備援，兩者刻意分開維護，不互相衍生。
+    thresholdLatex: string;
     // 門檻本身的出處/限制/跟原論文差異這類補充說明（例如 "Altman 原始論文劃定的安全區
     // 下限"、"實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法"），跟
     // description 分開存放；沒有補充說明時留空，不要為了填欄位硬湊一句話。

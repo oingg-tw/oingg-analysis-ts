@@ -12,5 +12,5 @@ export const ncavBadge: MetricBadge = {
     '低於每股 NCAV 時，傳統上被視為股價相對於這個保守清算價值角度而言偏低，因此又被稱為 Net-Net 選股法。' +
     '這是一個特定角度的估值參考方法，不考慮公司未來獲利能力或成長性。',
   token: 'Q',
-  threshold: { description: '股價 < NCAV', denominator: 1, comparator: 'lt', compareAgainstFieldId: 'stockPrice.Q' },
+  threshold: { description: '股價 < NCAV', thresholdLatex: '\\mathrm{Price} < \\mathrm{NCAV}', denominator: 1, comparator: 'lt', compareAgainstFieldId: 'stockPrice.Q' },
 };

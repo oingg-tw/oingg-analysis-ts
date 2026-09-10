@@ -14,6 +14,7 @@ export const epsBadge: MetricBadge = {
     '正在虧損或獲利極不穩定的公司。',
   threshold: {
     description: '近四季 EPS 合計為正，且最近一季 EPS 也為正',
+    thresholdLatex: '\\mathrm{EPS}_{\\mathrm{TTM}} > 0,\\quad \\mathrm{EPS}_{\\mathrm{Q}} > 0',
     note: 'S&P 500 官方納入門檻',
     denominator: 1,
     allPositiveFieldIds: ['eps.TTM', 'eps.Q'],

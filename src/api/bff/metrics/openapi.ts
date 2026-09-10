@@ -66,6 +66,7 @@ const metricFolderCatalogEntrySchema = z.object({
       }),
       threshold: z.object({
         description: z.string().meta({ description: '人類可讀的門檻說明（只有門檻本身，例如 "> 2.99"），不含括號附註，補充說明見 note' }),
+        thresholdLatex: z.string().meta({ description: '門檻的 LaTeX 數學式呈現（例如 "\\mathrm{Z} > 2.99"），跟 formulaLatex 同一套 compute-engine 驗證機制，符號盡量跟該指標自己的 formulaLatex 一致' }),
         note: z.string().optional().meta({ description: '門檻的出處/限制/跟原論文差異等補充說明，跟 description 分開存放；沒有補充說明時省略' }),
         denominator: z.number().meta({ description: '目前全部是 1（單一比較）' }),
         comparator: z.enum(['gt', 'lt', 'gte', 'abs_lt', 'in_range']).optional(),
