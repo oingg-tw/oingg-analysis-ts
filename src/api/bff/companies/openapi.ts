@@ -20,6 +20,7 @@ import {
   getCompanyMonthlyRevenueHistoryQuerySchema,
   getCompanyFinancialStatementQuerySchema,
   getCompanyPeerGroupQuerySchema,
+  getCompanyPiotroskiBreakdownQuerySchema,
 } from './controller';
 import {
   companyProfileDetailSchema,
@@ -27,6 +28,7 @@ import {
   companiesCountOnlyResultSchema,
   companyPeerGroupResultSchema,
   financialStatementResultSchema,
+  piotroskiFScoreBreakdownResultSchema,
 } from './types';
 
 const capitalStockHistoryResultSchema = z.object({
@@ -332,6 +334,28 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '同業清單（含目標公司自己），查無分類資料時 found 為 false、peers 為空陣列。', content: { 'application/json': { schema: companyPeerGroupResultSchema } } },
       400: { description: '缺少 symbol，或 minPeers 格式錯誤。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/piotroski-breakdown',
+    summary: 'Piotroski F-Score 9 個子訊號分組明細',
+    description:
+      'piotroskiFScore.Q 只寫入最終 0-9 分（見 GET /metrics），9 個二元子訊號本身不是獨立可篩選的' +
+      'metric_code，這支端點現查現算，依 Piotroski (2000) 原始論文的分組回傳：獲利能力（4 訊號：' +
+      'positiveRoa/positiveCfo/roaImproved/accrualQuality）、財務槓桿與流動性（3 訊號：' +
+      'leverageDecreased/liquidityImproved/noDilution）、營運效率（2 訊號：' +
+      'grossMarginImproved/assetTurnoverImproved）。組內子分數（denominator 4/3/2）不在這裡計算，' +
+      '呼叫端自行依 boolean 值加總即可。totalScore 跟 piotroskiFScore.Q 同一套全有全無邏輯——9 個' +
+      '子訊號只要有一個評估不出來（例如缺去年同季資料），totalScore 跟該子訊號都是 null，不會拿其他' +
+      '8 個湊分數。year/season 選填但要成對，不給就自動抓最新一季。查無資料（found:false）是正常情境，' +
+      '回 200 不是 404，跟 financial-statement/roe-history 同一種慣例。',
+    tags: ['System'],
+    request: { query: getCompanyPiotroskiBreakdownQuerySchema },
+    responses: {
+      200: { description: '9 個子訊號依 3 組回傳；查無資料時 found 為 false、totalScore/groups 為 null。', content: { 'application/json': { schema: piotroskiFScoreBreakdownResultSchema } } },
+      400: { description: '缺少 symbol，或 year/season 只給了其中一個。' },
     },
   });
 };

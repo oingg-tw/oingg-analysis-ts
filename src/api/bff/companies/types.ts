@@ -107,3 +107,38 @@ export const financialStatementResultSchema = z.object({
     .meta({ description: '該表全部科目欄位（camelCase key），金額欄位皆序列化成字串避免 JS 數字精度問題；found=false 時為 null' }),
 });
 export type FinancialStatementResult = z.infer<typeof financialStatementResultSchema>;
+
+// 2026-09-10 web-nuxt 要求：piotroskiFScore 只寫入最終 0-9 分，9 個子訊號依 Piotroski
+// (2000) 原始論文分組現查現算回傳，不是新的 metric_code，見 controller.ts 的
+// getCompanyPiotroskiBreakdown。組內子分數（denominator 4/3/2）刻意不在這裡算，留給呼叫端
+// 自己依 boolean 值加總。
+export const piotroskiFScoreBreakdownResultSchema = z.object({
+  symbol: z.string(),
+  found: z.boolean().meta({ description: 'false 代表查無資料（或指定的 year/season 那一季查無資料），此時其餘欄位皆為 null' }),
+  fiscalYear: z.number().nullable(),
+  fiscalQuarter: z.number().nullable(),
+  knowledgeDate: z.string().nullable(),
+  knowledgeDateIsFallback: z.boolean().nullable(),
+  totalScore: z.number().nullable().meta({ description: '跟 piotroskiFScore.Q 同一套全有全無邏輯——9 個子訊號只要有一個評估不出來，整體就是 null，不是拿其他 8 個湊分數' }),
+  groups: z
+    .object({
+      profitability: z.object({
+        positiveRoa: z.boolean().nullable(),
+        positiveCfo: z.boolean().nullable(),
+        roaImproved: z.boolean().nullable(),
+        accrualQuality: z.boolean().nullable(),
+      }),
+      leverageLiquidity: z.object({
+        leverageDecreased: z.boolean().nullable(),
+        liquidityImproved: z.boolean().nullable(),
+        noDilution: z.boolean().nullable(),
+      }),
+      operatingEfficiency: z.object({
+        grossMarginImproved: z.boolean().nullable(),
+        assetTurnoverImproved: z.boolean().nullable(),
+      }),
+    })
+    .nullable()
+    .meta({ description: '依 Piotroski 原始論文分組：獲利能力(4)/財務槓桿與流動性(3)/營運效率(2)；found=false 時為 null' }),
+});
+export type PiotroskiFScoreBreakdownResult = z.infer<typeof piotroskiFScoreBreakdownResultSchema>;
