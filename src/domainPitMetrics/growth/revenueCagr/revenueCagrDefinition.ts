@@ -14,6 +14,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   formulaLatex: `\\mathrm{RevenueCagr}_{${years}y} = \\left(\\frac{\\mathrm{Revenue}_t}{\\mathrm{Revenue}_{t-${years}}}\\right)^{1/${years}} - 1`,
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%A4%87%E5%90%88%E5%B9%B4%E5%9D%87%E5%A2%9E%E9%95%B7%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['revenue'],

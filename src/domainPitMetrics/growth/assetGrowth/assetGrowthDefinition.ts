@@ -10,6 +10,7 @@ export const assetGrowthDefinition: MetricDefinitionSpec = {
     ' Q 一種 basis——資產負債表時點快照，沒有 TTM 概念。',
   formulaLatex: '\\mathrm{AssetGrowth} = \\frac{\\mathrm{Assets}_t - \\mathrm{Assets}_{t-4}}{|\\mathrm{Assets}_{t-4}|} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['assets'],

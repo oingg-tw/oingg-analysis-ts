@@ -13,6 +13,7 @@ export const bvpsGrowthRateDefinition: MetricDefinitionSpec = {
     ' 一種 basis——資產負債表時點快照，沒有 TTM 概念（跟 bvps 自己一樣）。',
   formulaLatex: '\\mathrm{BvpsGrowthRate} = \\frac{\\mathrm{BVPS}_t - \\mathrm{BVPS}_{t-4}}{|\\mathrm{BVPS}_{t-4}|} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

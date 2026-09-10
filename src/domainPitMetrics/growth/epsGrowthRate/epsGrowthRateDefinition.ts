@@ -10,6 +10,7 @@ export const epsGrowthRateDefinition: MetricDefinitionSpec = {
     '做法一致），流通股數各自用當下報告日對應的股本。只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{EpsGrowthRate} = \\frac{\\mathrm{EPS}_t - \\mathrm{EPS}_{t-4}}{|\\mathrm{EPS}_{t-4}|} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

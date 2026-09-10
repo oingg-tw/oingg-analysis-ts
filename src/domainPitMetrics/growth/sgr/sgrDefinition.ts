@@ -12,6 +12,7 @@ export const sgrDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{SGR} = \\mathrm{ROE} \\times \\left(1 - \\frac{\\mathrm{DividendPayoutRatio}}{100}\\right)',
   referenceUrl: 'https://en.wikipedia.org/wiki/Sustainable_growth_rate',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

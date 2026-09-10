@@ -9,6 +9,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
     '股數，四季不齊為 null。',
   formulaLatex: '\\mathrm{RevenuePerShare} = \\frac{\\mathrm{Revenue}}{\\mathrm{Shares}}',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['revenue', 'paidInShares'],

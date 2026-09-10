@@ -13,6 +13,7 @@ export const rdIntensityDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{RdIntensity} = \\frac{\\mathrm{RdExpense}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/R%26D_intensity',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['research_and_development_expense', 'revenue'],

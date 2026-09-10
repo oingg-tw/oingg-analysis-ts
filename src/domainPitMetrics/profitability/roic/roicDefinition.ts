@@ -14,6 +14,7 @@ export const roicDefinition: MetricDefinitionSpec = {
     '\\mathrm{ROIC} = \\frac{\\mathrm{NOPAT}}{\\mathrm{InvestedCapital}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{EBIT}\\times(1-\\mathrm{TaxRate})',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%8A%95%E5%85%A5%E8%B3%87%E6%9C%AC%E5%A0%B1%E9%85%AC%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

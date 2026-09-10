@@ -11,6 +11,7 @@ export const netProfitMarginDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{NetProfitMargin} = \\frac{\\mathrm{NetIncome}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%B7%A8%E5%88%A9%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue'],

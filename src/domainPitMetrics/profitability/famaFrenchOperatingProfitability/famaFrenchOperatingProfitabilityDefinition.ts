@@ -22,6 +22,7 @@ export const famaFrenchOperatingProfitabilityDefinition: MetricDefinitionSpec = 
   // 改用英文維基百科（該頁有獨立的 Fama-French five-factor model 段落，涵蓋 RMW/CMA）。
   referenceUrl: 'https://en.wikipedia.org/wiki/Fama%E2%80%93French_three-factor_model',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['gross_profit', 'selling_expense', 'administrative_expense', 'finance_costs', 'equity_attributable_to_owners_of_parent', 'equity'],

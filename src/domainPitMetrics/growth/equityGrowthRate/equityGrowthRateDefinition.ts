@@ -10,6 +10,7 @@ export const equityGrowthRateDefinition: MetricDefinitionSpec = {
     ' basis——資產負債表時點快照，沒有 TTM 概念（跟 bvps/stockPrice 同一種性質）。',
   formulaLatex: '\\mathrm{EquityGrowthRate} = \\frac{\\mathrm{Equity}_t - \\mathrm{Equity}_{t-4}}{|\\mathrm{Equity}_{t-4}|} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity'],

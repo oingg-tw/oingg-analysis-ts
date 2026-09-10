@@ -22,6 +22,7 @@ export const sueDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2307/2491062',
   referenceUrl: 'https://en.wikipedia.org/wiki/Post%E2%80%93earnings-announcement_drift',
   tier: 'composite',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   badge: sueBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],

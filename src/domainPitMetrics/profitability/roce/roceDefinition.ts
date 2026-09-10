@@ -12,6 +12,7 @@ export const roceDefinition: MetricDefinitionSpec = {
     '\\mathrm{ROCE} = \\frac{\\mathrm{EBIT}}{\\mathrm{CapitalEmployed}} \\times 100,\\quad \\mathrm{CapitalEmployed} = \\mathrm{TotalAssets} - \\mathrm{CurrentLiabilities}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Return_on_capital_employed',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['assets', 'current_liabilities', 'profit_loss_before_tax', 'finance_costs'],

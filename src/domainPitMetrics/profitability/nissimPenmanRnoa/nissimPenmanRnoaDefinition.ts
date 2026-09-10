@@ -15,6 +15,7 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   // 2026-09-10 查證過：沒有專屬的中文/英文維基百科條目（只有一般 ROA/ROE 條目，概念不同），
   // referenceUrl 刻意留空，不要拿不相關的頁面充數。
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

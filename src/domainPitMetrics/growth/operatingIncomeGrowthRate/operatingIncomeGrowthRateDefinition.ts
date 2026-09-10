@@ -7,6 +7,7 @@ export const operatingIncomeGrowthRateDefinition: MetricDefinitionSpec = {
   formulaNote: '= (本季營業利益 - 去年同季營業利益) / |去年同季營業利益| * 100。只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{OperatingIncomeGrowthRate} = \\frac{\\mathrm{OperatingIncome}_t - \\mathrm{OperatingIncome}_{t-4}}{|\\mathrm{OperatingIncome}_{t-4}|} \\times 100',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_from_operating_activities'],

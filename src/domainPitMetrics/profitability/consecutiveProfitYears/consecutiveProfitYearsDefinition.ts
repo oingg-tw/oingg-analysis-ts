@@ -11,6 +11,7 @@ export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
     '只有 FY 一種 basis。value=0 代表「有資料、確定最近一個完整年度虧損」，null 代表' +
     '「連最近一年資料都拿不到」，兩者不同。',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss'],

@@ -10,6 +10,7 @@ export const operatingMarginDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{OperatingMargin} = \\frac{\\mathrm{OperatingIncome}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Operating_margin',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '保險業損益明細表（XBRL，保險業適用）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['operatingIncome', 'revenue'],

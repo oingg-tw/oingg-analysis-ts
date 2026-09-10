@@ -16,6 +16,7 @@ export const dupontTaxBurdenDefinition: MetricDefinitionSpec = {
   // 沒有專屬條目，英文 DuPont analysis 條目內文定義 Tax Burden = NI/EBT。
   referenceUrl: 'https://en.wikipedia.org/wiki/DuPont_analysis',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_before_tax'],

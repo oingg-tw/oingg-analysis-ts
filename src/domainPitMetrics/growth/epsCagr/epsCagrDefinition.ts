@@ -16,6 +16,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   formulaLatex: `\\mathrm{EpsCagr}_{${years}y} = \\left(\\frac{\\mathrm{EPS}_t}{\\mathrm{EPS}_{t-${years}}}\\right)^{1/${years}} - 1`,
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%A4%87%E5%90%88%E5%B9%B4%E5%9D%87%E5%A2%9E%E9%95%B7%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

@@ -19,6 +19,7 @@ export const epsDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{EPS} = \\frac{\\mathrm{NetIncome}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%8F%E8%82%A1%E7%9B%88%E9%A4%98',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   badge: epsBadge,
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
