@@ -36,24 +36,43 @@ export interface ChowderNumberPitOutcome {
   fy: BasisOutcome;
 }
 
-const getAnnualDividendPerShareProxy = async (
+// 2026-09-10：dps 之外額外回傳逐季明細（原本算完就丟掉），給
+// getChowderNumberProvenance.ts（GET /companies/:symbol/metric-provenance 的
+// chowderNumber 試點）用；寫入路徑（computeAndWriteChowderNumberPit）本身行為
+// 不變，只是多讀一個欄位（.dps）。
+export interface AnnualDividendPerShareProxyResult {
+  dps: number | null;
+  quarters: { rocYear: number; season: number; dividendsPaid: bigint | null; source: 'xbrl' | 'legacy' | null }[];
+  shares: { reportDate: Date; paidInShares: bigint } | null;
+}
+
+export const getAnnualDividendPerShareProxy = async (
   symbol: string,
   rocYear: number,
   dataType: string,
   subsidiaryCompanyId: string
-): Promise<number | null> => {
-  const quarters = await Promise.all(
+): Promise<AnnualDividendPerShareProxyResult> => {
+  const quarterRecords = await Promise.all(
     [1, 2, 3, 4].map((quarter) => getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
-  if (quarters.some((q) => q === null || q.dividendsPaid === null)) return null;
+  const quarters = quarterRecords.map((record, i) => ({
+    rocYear,
+    season: i + 1,
+    dividendsPaid: record?.dividendsPaid ?? null,
+    source: record?.source ?? null,
+  }));
 
-  const yearSum = quarters.reduce((sum, q) => sum + q!.dividendsPaid!, 0n);
+  if (quarterRecords.some((q) => q === null || q.dividendsPaid === null)) {
+    return { dps: null, quarters, shares: null };
+  }
+
+  const yearSum = quarterRecords.reduce((sum, q) => sum + q!.dividendsPaid!, 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
-  const q4ReportDate = quarters[3]!.reportDate;
+  const q4ReportDate = quarterRecords[3]!.reportDate;
   const shares = await getPaidInSharesAsOf(symbol, q4ReportDate);
-  if (!shares) return null;
+  if (!shares) return { dps: null, quarters, shares: null };
 
-  return (Number(dividendsPaidAbs) * 1000) / Number(shares.paidInShares);
+  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.paidInShares), quarters, shares: { reportDate: q4ReportDate, paidInShares: shares.paidInShares } };
 };
 
 export const computeAndWriteChowderNumberPit = async (query: QuarterlyMetricQuery): Promise<ChowderNumberPitOutcome> => {
@@ -80,10 +99,12 @@ export const computeAndWriteChowderNumberPit = async (query: QuarterlyMetricQuer
   const dividendYieldPct = dailyValuation?.dividendYield ?? null;
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
-  const [currentDps, priorDps] = await Promise.all([
+  const [currentProxy, priorProxy] = await Promise.all([
     getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId),
     getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear - DIVIDEND_GROWTH_LOOKBACK_YEARS, dataType, subsidiaryCompanyId),
   ]);
+  const currentDps = currentProxy.dps;
+  const priorDps = priorProxy.dps;
 
   const dividendGrowthRatePct =
     currentDps !== null && priorDps !== null && priorDps > 0

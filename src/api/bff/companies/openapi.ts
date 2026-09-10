@@ -21,6 +21,7 @@ import {
   getCompanyFinancialStatementQuerySchema,
   getCompanyPeerGroupQuerySchema,
   getCompanyPiotroskiBreakdownQuerySchema,
+  getCompanyMetricProvenanceQuerySchema,
 } from './controller';
 import {
   companyProfileDetailSchema,
@@ -29,6 +30,7 @@ import {
   companyPeerGroupResultSchema,
   financialStatementResultSchema,
   piotroskiFScoreBreakdownResultSchema,
+  metricProvenanceResultSchema,
 } from './types';
 
 const capitalStockHistoryResultSchema = z.object({
@@ -356,6 +358,35 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '9 個子訊號依 3 組回傳；查無資料時 found 為 false、totalScore/groups 為 null。', content: { 'application/json': { schema: piotroskiFScoreBreakdownResultSchema } } },
       400: { description: '缺少 symbol，或 year/season 只給了其中一個。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/{symbol}/metric-provenance',
+    summary: '單一指標的原始計算來源明細（會計模式「點數字看來源」用，目前限 sue/chowderNumber/roe 三支試點）',
+    description:
+      '讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始財報欄位、各自的值，用來跳轉到' +
+      'GET /companies/financial-statement 對應的那一列——現查現算，不持久化，跟 GET ' +
+      '/companies/piotroski-breakdown 同一個模式。entries 是依公式使用順序排列的扁平清單，不是' +
+      '巢狀的推導樹；每一筆帶自己的 fiscalYear/fiscalQuarter，已經足夠表達「用了哪幾季」。type=' +
+      '"statementField" 的 fieldKey 是 snake_case，跟 GET /companies/financial-statement 回傳的' +
+      'XBRL key 完全一致，可直接連結；該筆命中舊表 fallback 時會降級成 type="other"、' +
+      'sourceDescription="舊表資料，非 XBRL"（因為舊表 fallback 情境下 financial-statement 回的是' +
+      'camelCase key，跟這裡的 snake_case fieldKey 對不上）。type="other" 是非財報欄位的來源（市場' +
+      '快照、股本變動申報等），只給 sourceDescription 文字說明，沒有可連結的 fieldKey。methodologyNote' +
+      '是部分指標的完整計算方法無法用單純欄位清單呈現時的補充說明——例如 sue 的標準差取自最近 20 期' +
+      '未預期盈餘樣本，entries 只列出構成本季 UE 的 2 期（本季/去年同季）原始欄位，20 期樣本本身不' +
+      '逐筆列出，methodologyNote 會講清楚這個取捨；其餘指標為 null。試點範圍刻意只有 sue/' +
+      'chowderNumber/roe 三支（metricCode 用 zod enum 驗證，其餘一律 400，不是隱性涵蓋所有指標）。' +
+      'roe 目前固定回傳 TTM basis 的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料' +
+      '（found:false）是正常情境，回 200 不是 404，跟 financial-statement/piotroski-breakdown 同一' +
+      '種慣例。symbol 是路徑參數，跟其餘 /companies/* 端點的 query 參數用法不同，這是刻意的設計。',
+    tags: ['System'],
+    request: { params: z.object({ symbol: z.string().meta({ description: '公司代號', example: '2330' }) }), query: getCompanyMetricProvenanceQuerySchema },
+    responses: {
+      200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResultSchema } } },
+      400: { description: '缺少 symbol，metricCode 不是 sue/chowderNumber/roe 之一，或 year/season 只給了其中一個。' },
     },
   });
 };

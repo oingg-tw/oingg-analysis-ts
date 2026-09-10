@@ -16,6 +16,11 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export interface IncomeStatementFields {
   reportDate: Date;
+  // 2026-09-10 新增：這筆資料實際命中 XBRL 寬表還是退回舊表，給 provenance 端點判斷
+  // 是否能吐出 snake_case fieldKey（舊表 fallback 情境下 GET /companies/financial-statement
+  // 回的是 camelCase key，snake_case fieldKey 對不上，provenance 端點要降級成
+  // type: 'other'）。純附加欄位，不影響既有 31 支呼叫端的行為。
+  source: 'xbrl' | 'legacy';
   operatingRevenue: bigint | null;
   grossProfit: bigint | null;
   operatingIncome: bigint | null;
@@ -46,6 +51,7 @@ interface RawIncomeStatementXbrlRow {
 
 const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
   reportDate: row.report_date,
+  source: 'xbrl',
   operatingRevenue: row.revenue,
   grossProfit: row.gross_profit,
   operatingIncome: row.profit_loss_from_operating_activities,
@@ -77,6 +83,7 @@ export const getIncomeStatementXbrlFirst = async (key: QuarterlyKey): Promise<In
   if (!legacy) return null;
   return {
     reportDate: legacy.reportDate,
+    source: 'legacy',
     operatingRevenue: legacy.operatingRevenue,
     grossProfit: legacy.grossProfit,
     operatingIncome: legacy.operatingIncome,

@@ -142,3 +142,10 @@ export const piotroskiFScoreBreakdownResultSchema = z.object({
     .meta({ description: '依 Piotroski 原始論文分組：獲利能力(4)/財務槓桿與流動性(3)/營運效率(2)；found=false 時為 null' }),
 });
 export type PiotroskiFScoreBreakdownResult = z.infer<typeof piotroskiFScoreBreakdownResultSchema>;
+
+// 2026-09-10：GET /companies/:symbol/metric-provenance 的回應 schema——跟寫入路徑
+// （resolveRoeQuarterData/getAnnualDividendPerShareProxy/resolveSueInputs 三個 resolver）
+// 都由 domainPitMetrics/provenance/provenanceTypes.ts 共用，schema 定義留在 domain 層、
+// 這裡只 re-export，避免跟 domainPitMetrics 之間產生循環依賴。
+export { metricProvenanceResultSchema, provenanceEntrySchema } from '@/domainPitMetrics/provenance/provenanceTypes';
+export type { MetricProvenanceResult, ProvenanceEntry } from '@/domainPitMetrics/provenance/provenanceTypes';

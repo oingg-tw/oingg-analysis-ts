@@ -12,6 +12,7 @@ import {
   getCompanyFinancialStatement,
   getCompanyPeerGroup,
   getCompanyPiotroskiBreakdown,
+  getCompanyMetricProvenance,
 } from './controller';
 
 const router = Router();
@@ -28,5 +29,6 @@ router.get('/companies/monthly-revenue-history', getCompanyMonthlyRevenueHistory
 router.get('/companies/financial-statement', getCompanyFinancialStatement);
 router.get('/companies/peer-group', getCompanyPeerGroup);
 router.get('/companies/piotroski-breakdown', getCompanyPiotroskiBreakdown);
+router.get('/companies/:symbol/metric-provenance', getCompanyMetricProvenance);
 
 export default router;

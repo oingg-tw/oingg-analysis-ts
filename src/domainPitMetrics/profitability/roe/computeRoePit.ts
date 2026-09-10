@@ -1,9 +1,9 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet, type BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
@@ -12,21 +12,30 @@ import type { MetricNullReason } from '../../metricBasis';
 // 私有函式，也不呼叫 calculateRoe() 本身——保持這條新管線對舊系統完全唯讀，不會觸發
 // profitability_roe 的 upsert 副作用。兩份實作理論上算出相同數字，tests/domainPitMetrics/roePit.test.ts
 // 拿 roe.test.ts 的既有基準數字交叉驗證，能抓到任一份實作的 bug，不是同一份邏輯繞一圈。
+//
+// 2026-09-10：抽出 resolveRoeQuarterData()，回傳原始欄位（附帶實際命中哪個 fieldKey/
+// 資料源）+ 完整計算過程，給 getRoeProvenance.ts（GET /companies/:symbol/metric-provenance
+// 的 roe 試點）共用，寫入路徑（computeAndWriteRoePit）本身行為完全不變，只是內部改呼叫
+// 這個 resolver。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
+interface PickedField {
+  value: bigint | null;
+  fieldKey: string | null;
+  source: 'xbrl' | 'legacy' | null;
+}
+
+const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null, source: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent', source: record.source };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss', source: record.source };
+  return { value: null, fieldKey: null, source: record.source };
 };
 
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
+const pickEquity = (record: BalanceSheetFields | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null, source: null };
+  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent', source: record.source };
+  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity', source: record.source };
+  return { value: null, fieldKey: null, source: record.source };
 };
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -41,18 +50,28 @@ const determineNullReason = (numerator: bigint | null, denominator: bigint | nul
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RoePitOutcome {
+export interface RoeQuarterResolution {
   symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  netIncome: PickedField;
+  equity: PickedField;
+  roeQuarterlyPct: number | null;
+  roeQuarterlyAnnualizedPct: number | null;
+  quarterlyNullReason: MetricNullReason | null;
+  mainAnchor: KnowledgeDateResolution | null;
+  ttmQuarters: { year: string; season: string }[];
+  ttmNetIncomes: PickedField[];
+  ttmComplete: boolean;
+  ttmSum: bigint;
+  roeTtmPct: number | null;
+  ttmNullReason: MetricNullReason | null;
+  ttmAnchor: KnowledgeDateResolution | null;
 }
 
-export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promise<RoePitOutcome> => {
+export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery): Promise<RoeQuarterResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -60,16 +79,7 @@ export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promis
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
 
-  if (!resolvedQuarter) {
-    return {
-      symbol,
-      rocYear: null,
-      season: null,
-      q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
-      ttm: { action: 'skipped_no_quarter' },
-    };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -89,14 +99,80 @@ export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promis
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
-  const coordinateBase = {
+  // TTM：近四季（含本季）淨利加總 / 本季期末權益。四季資料需全部存在且淨利欄位皆非 null，
+  // 否則視為不齊——不齊時寫一列 value=null/null_reason=insufficient_history，knowledge_date
+  // 沿用本季（Q/Q_ANN）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+  );
+
+  const ttmNetIncomes = ttmRecords.map((record) => pickNetIncome(record));
+  let ttmSum = 0n;
+  let ttmComplete = true;
+  for (const picked of ttmNetIncomes) {
+    if (picked.value === null) {
+      ttmComplete = false;
+    } else {
+      ttmSum += picked.value;
+    }
+  }
+
+  const roeTtmPct = ttmComplete && equity.value !== null ? toPct(ttmSum, equity.value) : null;
+  const ttmNullReason: MetricNullReason | null = roeTtmPct !== null ? null : ttmComplete ? determineNullReason(ttmSum, equity.value) : 'insufficient_history';
+
+  const ttmAnchor = ttmComplete
+    ? await resolveKnowledgeDate(
+        symbol,
+        ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null }))
+      )
+    : null;
+
+  return {
     symbol,
-    metricCode: 'roe',
+    rocYear: year,
+    season,
     fiscalYear,
     fiscalQuarter: seasonNum,
-    dataType,
-    subsidiaryCompanyId,
+    netIncome,
+    equity,
+    roeQuarterlyPct,
+    roeQuarterlyAnnualizedPct,
+    quarterlyNullReason,
+    mainAnchor,
+    ttmQuarters,
+    ttmNetIncomes,
+    ttmComplete,
+    ttmSum,
+    roeTtmPct,
+    ttmNullReason,
+    ttmAnchor,
   };
+};
+
+type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
+
+export interface RoePitOutcome {
+  symbol: string;
+  rocYear: string | null;
+  season: string | null;
+  q: BasisOutcome;
+  qAnn: BasisOutcome;
+  ttm: BasisOutcome;
+}
+
+export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promise<RoePitOutcome> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveRoeQuarterData(query);
+  if (!resolution) {
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+  }
+
+  const { rocYear, season, fiscalYear, fiscalQuarter, roeQuarterlyPct, roeQuarterlyAnnualizedPct, quarterlyNullReason, mainAnchor, ttmComplete, roeTtmPct, ttmNullReason, ttmAnchor } =
+    resolution;
+
+  const coordinateBase = { symbol, metricCode: 'roe', fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId };
 
   let q: BasisOutcome;
   let qAnn: BasisOutcome;
@@ -122,34 +198,8 @@ export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promis
     });
   }
 
-  // TTM：近四季（含本季）淨利加總 / 本季期末權益。四季資料需全部存在且淨利欄位皆非 null，
-  // 否則視為不齊——不齊時寫一列 value=null/null_reason=insufficient_history，knowledge_date
-  // 沿用本季（Q/Q_ANN）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
-
-  let ttmSum = 0n;
-  let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = pickNetIncome(record);
-    if (picked.value === null) {
-      ttmComplete = false;
-    } else {
-      ttmSum += picked.value;
-    }
-  }
-
-  const roeTtmPct = ttmComplete && equity.value !== null ? toPct(ttmSum, equity.value) : null;
-  const ttmNullReason: MetricNullReason | null = roeTtmPct !== null ? null : ttmComplete ? determineNullReason(ttmSum, equity.value) : 'insufficient_history';
-
   let ttm: BasisOutcome;
   if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null }))
-    );
     if (!ttmAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };
     } else {
@@ -175,5 +225,5 @@ export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promis
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear, season, q, qAnn, ttm };
 };

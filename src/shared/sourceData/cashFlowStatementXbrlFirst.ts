@@ -17,6 +17,8 @@ import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
 
 export interface CashFlowFields {
   reportDate: Date;
+  // 2026-09-10 新增：理由同 incomeStatementXbrlFirst.ts 的 source 欄位說明。
+  source: 'xbrl' | 'legacy';
   netCashFromOperatingActivities: bigint | null;
   capitalExpenditures: bigint | null;
   depreciation: bigint | null;
@@ -46,6 +48,7 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
     // 這一列裡沒有值（map 裡沒有這個 key）視為 null（缺漏）。
     return {
       reportDate: xbrl.reportDate,
+      source: 'xbrl',
       netCashFromOperatingActivities: xbrl.accounts.cash_flows_from_used_in_operating_activities ?? null,
       capitalExpenditures: xbrl.accounts.purchase_of_ppe_investing ?? null,
       depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
@@ -60,6 +63,7 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
   if (!legacy) return null;
   return {
     reportDate: legacy.reportDate,
+    source: 'legacy',
     netCashFromOperatingActivities: legacy.netCashFromOperatingActivities,
     capitalExpenditures: legacy.capitalExpenditures,
     depreciation: legacy.depreciation,

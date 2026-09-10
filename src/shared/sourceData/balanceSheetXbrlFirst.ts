@@ -19,6 +19,8 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export interface BalanceSheetFields {
   reportDate: Date;
+  // 2026-09-10 新增：理由同 incomeStatementXbrlFirst.ts 的 source 欄位說明。
+  source: 'xbrl' | 'legacy';
   totalAssets: bigint | null;
   totalLiabilities: bigint | null;
   currentAssets: bigint | null;
@@ -59,6 +61,7 @@ interface RawBalanceSheetXbrlRow {
 
 const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   reportDate: row.report_date,
+  source: 'xbrl',
   totalAssets: row.assets,
   totalLiabilities: row.liabilities,
   currentAssets: row.current_assets,
@@ -96,6 +99,7 @@ export const getBalanceSheetXbrlFirst = async (key: QuarterlyKey): Promise<Balan
   if (!legacy) return null;
   return {
     reportDate: legacy.reportDate,
+    source: 'legacy',
     totalAssets: legacy.totalAssets,
     totalLiabilities: legacy.totalLiabilities,
     currentAssets: legacy.currentAssets,

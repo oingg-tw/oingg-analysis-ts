@@ -18,6 +18,11 @@ import { getBalanceSheetXbrlFull } from '@/shared/sourceData/balanceSheetXbrlFul
 import { getIncomeStatementXbrlFull } from '@/shared/sourceData/incomeStatementXbrlFull';
 import { getXbrlCashFlowQuarterly } from '@/shared/sourceData/xbrlCashFlowQuarterly';
 import { getPiotroskiFScoreBreakdown } from '@/domainPitMetrics/quality/piotroskiFScore/getPiotroskiFScoreBreakdown';
+import { getRoeProvenance } from '@/domainPitMetrics/profitability/roe/getRoeProvenance';
+import { getChowderNumberProvenance } from '@/domainPitMetrics/dividend/chowderNumber/getChowderNumberProvenance';
+import { getSueProvenance } from '@/domainPitMetrics/growth/sue/getSueProvenance';
+import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/provenance/provenanceTypes';
+import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import type { Season } from '@/shared/rocQuarter';
 
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
@@ -564,6 +569,57 @@ export const getCompanyPiotroskiBreakdown = async (req: Request, res: Response, 
     const { symbol, year, season } = validationResult.data;
     const breakdown = await getPiotroskiFScoreBreakdown({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
     res.status(200).json(breakdown);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCompanyMetricProvenanceQuerySchema = z
+  .object({
+    metricCode: z.enum(PILOT_PROVENANCE_METRIC_CODES, { error: 'metricCode is required, 目前僅支援 sue/chowderNumber/roe。' }),
+    year: z
+      .string()
+      .regex(/^\d{2,3}$/, 'year 必須是民國年數字字串，例如 "115"。')
+      .optional()
+      .meta({ description: '民國年，例如 "115"；跟 season 要成對提供，不給就自動抓最新一季', example: '115' }),
+    season: z.enum(['1', '2', '3', '4']).optional().meta({ description: '季別 1-4；跟 year 要成對提供' }),
+  })
+  .refine((data) => (data.year === undefined) === (data.season === undefined), {
+    message: 'year 和 season 必須成對提供，只給其中一個是無效請求。',
+    path: ['season'],
+  });
+
+// metricCode → 對應 resolver 的 dispatch table——之後新增第 4/5 支試點指標，只需要在
+// PILOT_PROVENANCE_METRIC_CODES（provenanceTypes.ts）加一個值、寫一個對應的
+// get<Metric>Provenance.ts、在這裡的 dispatch table 加一行，不需要碰其餘 controller/
+// route/openapi/types 邏輯。roe 目前固定用 TTM basis（見 getRoeProvenance.ts 的說明）。
+const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number], (query: QuarterlyMetricQuery) => Promise<MetricProvenanceResult>> = {
+  roe: getRoeProvenance,
+  chowderNumber: getChowderNumberProvenance,
+  sue: getSueProvenance,
+};
+
+// 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
+// 財報欄位、各自的值，跳轉到會計模式（GET /companies/financial-statement）對應的那一列。
+// 現查現算，不持久化，跟 GET /companies/piotroski-breakdown 同一個模式。試點範圍刻意只有
+// 3 支指標（見 PILOT_PROVENANCE_METRIC_CODES 的說明）——metricCode 用 z.enum 驗證，不支援
+// 的指標直接被 zod 擋成 400，不是隱性涵蓋所有指標，吸取 dependsOn 的教訓。symbol 用路徑
+// 參數（不是 query），是這支端點跟其餘 /companies/* 端點刻意不同的地方，配合 web-nuxt
+// 提議的路徑格式。
+export const getCompanyMetricProvenance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyMetricProvenanceQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+    const symbol = req.params.symbol;
+    if (!symbol) {
+      return res.status(400).json({ message: 'symbol is required.' });
+    }
+
+    const { metricCode, year, season } = validationResult.data;
+    const result = await PROVENANCE_RESOLVERS[metricCode]({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

@@ -1,9 +1,9 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
@@ -15,6 +15,11 @@ import type { MetricNullReason } from '../../metricBasis';
 // 實測驗證過 2330 的 XBRL 損益表資料至少連續回溯到 108Q3（28 季全部有值，無缺口），資料
 // 深度足夠支撐完整的 20 季窗口，不需要退回較短的實務替代窗口。不足 20 期視為
 // insufficient_history，不用更少的期數頂替（跟文件「不自訂較短視窗」的原則一致）。
+//
+// 2026-09-10：抽出 resolveSueInputs()，回傳完整 24 期的逐季明細（原本算完 EPS 就丟掉
+// netIncome/shares 細節），給 getSueProvenance.ts（GET /companies/:symbol/metric-provenance
+// 的 sue 試點）共用；寫入路徑（computeAndWriteSuePit）本身行為不變，只是內部改呼叫這個
+// resolver。
 
 const TARGET_UE_WINDOW = 20;
 const MIN_UE_WINDOW = 20;
@@ -22,13 +27,17 @@ const MIN_UE_WINDOW = 20;
 // 20+4-1=23 期前，共 24 期 EPS。
 const QUARTERS_OF_EPS_NEEDED = TARGET_UE_WINDOW + 4;
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
+interface PickedField {
+  value: bigint | null;
+  fieldKey: string | null;
+  source: 'xbrl' | 'legacy' | null;
+}
+
+const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null, source: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent', source: record.source };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss', source: record.source };
+  return { value: null, fieldKey: null, source: record.source };
 };
 
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
@@ -43,16 +52,32 @@ const sampleStdDev = (values: number[]): number | null => {
   return Math.sqrt(variance);
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface SuePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
+export interface SueQuarterDetail {
+  rocYear: number;
+  season: number;
+  fiscalYear: number;
+  netIncome: PickedField;
+  shares: bigint | null;
+  eps: number | null;
 }
 
-export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promise<SuePitOutcome> => {
+export interface SueResolution {
+  symbol: string;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  quarterDetails: SueQuarterDetail[];
+  lastIndex: number;
+  ueValues: (number | null)[];
+  currentUe: number | null;
+  stdDev: number | null;
+  sueValue: number | null;
+  nullReason: MetricNullReason | null;
+  mainAnchor: KnowledgeDateResolution | null;
+}
+
+export const resolveSueInputs = async (query: QuarterlyMetricQuery): Promise<SueResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -60,26 +85,31 @@ export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promis
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
 
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  // 12 期 EPS，舊到新排列，最後一筆就是本季。
+  // 24 期 EPS，舊到新排列，最後一筆就是本季。
   const epsQuarters = getPastNQuarters({ rocYear, season: season as Season }, QUARTERS_OF_EPS_NEEDED);
   const epsRecords = await Promise.all(
     epsQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
-  const epsValues = await Promise.all(
-    epsRecords.map(async (record) => {
-      if (!record) return null;
-      const netIncome = pickNetIncome(record).value;
-      const shares = await getPaidInSharesAsOf(symbol, record.reportDate);
-      return toEps(netIncome, shares?.paidInShares ?? null);
+  const quarterDetails: SueQuarterDetail[] = await Promise.all(
+    epsQuarters.map(async (tq, i) => {
+      const record = epsRecords[i]!;
+      const netIncome = pickNetIncome(record);
+      const shares = record ? (await getPaidInSharesAsOf(symbol, record.reportDate))?.paidInShares ?? null : null;
+      return {
+        rocYear: Number(tq.year),
+        season: Number(tq.season),
+        fiscalYear: rocYearToGregorian(Number(tq.year)),
+        netIncome,
+        shares,
+        eps: toEps(netIncome.value, shares),
+      };
     })
   );
 
@@ -88,7 +118,7 @@ export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promis
 
   // 索引 QUARTERS_OF_EPS_NEEDED-1 是本季（最新），往前數第 4 筆是去年同季。
   // k=0 是本季 UE，k=1..TARGET_UE_WINDOW-1 是更早的 UE，用來估計標準差（含 k=0 本身）。
-  const lastIndex = epsValues.length - 1;
+  const lastIndex = quarterDetails.length - 1;
   const ueValues: (number | null)[] = [];
   for (let k = 0; k < TARGET_UE_WINDOW; k++) {
     const currentIdx = lastIndex - k;
@@ -97,8 +127,8 @@ export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promis
       ueValues.push(null);
       continue;
     }
-    const current = epsValues[currentIdx] ?? null;
-    const priorYear = epsValues[priorYearIdx] ?? null;
+    const current = quarterDetails[currentIdx]!.eps;
+    const priorYear = quarterDetails[priorYearIdx]!.eps;
     ueValues.push(current !== null && priorYear !== null ? current - priorYear : null);
   }
 
@@ -113,7 +143,26 @@ export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promis
     nullReason = currentUe === null || stdDev === null ? 'insufficient_history' : 'zero_or_negative_denominator';
   }
 
-  const coordinateBase = { symbol, metricCode: 'sue', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, quarterDetails, lastIndex, ueValues, currentUe, stdDev, sueValue, nullReason, mainAnchor };
+};
+
+type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
+
+export interface SuePitOutcome {
+  symbol: string;
+  rocYear: string | null;
+  season: string | null;
+  q: BasisOutcome;
+}
+
+export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promise<SuePitOutcome> => {
+  const resolution = await resolveSueInputs(query);
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
+  }
+
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, sueValue, nullReason, mainAnchor } = resolution;
+  const coordinateBase = { symbol, metricCode: 'sue', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
   let q: BasisOutcome;
   if (!mainAnchor) {
@@ -129,5 +178,5 @@ export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promis
     });
   }
 
-  return { symbol, rocYear: year, season, q };
+  return { symbol, rocYear, season, q };
 };
