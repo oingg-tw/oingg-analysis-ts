@@ -14,6 +14,7 @@ export const beneishMScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2469/faj.v55.n5.2296',
   referenceUrl: 'https://en.wikipedia.org/wiki/Beneish_M-score',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   badge: beneishMScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],

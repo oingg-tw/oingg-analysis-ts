@@ -8,6 +8,7 @@ export const quickRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{QuickRatio} = \\frac{\\mathrm{CurrentAssets} - \\mathrm{Inventory}}{\\mathrm{CurrentLiabilities}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E9%80%9F%E5%8B%95%E6%AF%94%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['current_assets', 'current_liabilities', 'inventories'],

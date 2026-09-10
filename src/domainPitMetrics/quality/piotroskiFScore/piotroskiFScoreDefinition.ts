@@ -14,6 +14,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2307/2672906',
   referenceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

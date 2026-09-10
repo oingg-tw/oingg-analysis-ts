@@ -10,6 +10,7 @@ export const ocfToNetIncomeDefinition: MetricDefinitionSpec = {
     '一種規則）。',
   formulaLatex: '\\mathrm{OcfToNetIncome} = \\frac{\\mathrm{CFO}}{\\mathrm{NetIncome}}',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'netCashFromOperatingActivities'],

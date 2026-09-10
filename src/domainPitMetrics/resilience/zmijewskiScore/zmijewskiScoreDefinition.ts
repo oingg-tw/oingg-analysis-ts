@@ -15,6 +15,7 @@ export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
   // 2026-09-10 查證過：沒有可靠的中文/英文維基百科專屬條目（只有第三方教學網站），
   // referenceUrl 刻意留空，不要拿不夠權威的頁面充數。
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   badge: zmijewskiScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

@@ -8,6 +8,7 @@ export const bankTier1RatioDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://www.bis.org/publ/bcbs189.htm',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%AC%AC%E4%B8%80%E9%A1%9E%E8%B3%87%E6%9C%AC',
   tier: 'raw',
+  sources: ['銀行監理財務資訊揭露（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['ratioTierICapitalToRwa'],

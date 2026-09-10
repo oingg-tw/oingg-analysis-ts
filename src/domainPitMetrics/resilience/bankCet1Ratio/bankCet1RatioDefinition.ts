@@ -10,6 +10,7 @@ export const bankCet1RatioDefinition: MetricDefinitionSpec = {
   // 專屬條目（Tier 1 capital 條目只有一句話提到，內容太薄不足以當 referenceUrl）。
   academicSourceUrl: 'https://www.bis.org/publ/bcbs189.htm',
   tier: 'raw',
+  sources: ['銀行監理財務資訊揭露（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['ratioOrdinaryShareEquityToRwa'],

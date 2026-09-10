@@ -16,6 +16,7 @@ export const bankCarRatioDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://www.bis.org/publ/bcbs189.htm',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B3%87%E6%9C%AC%E9%81%A9%E8%B6%B3%E7%8E%87',
   tier: 'derived',
+  sources: ['銀行監理財務資訊揭露（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['eligibleCapital', 'riskWeightedAssets'],

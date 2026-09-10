@@ -15,6 +15,7 @@ export const abnormalCapexRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{CI} = \\frac{\\mathrm{Capex}_t}{\\frac{1}{3}\\left(\\mathrm{Capex}_{t-1}+\\mathrm{Capex}_{t-2}+\\mathrm{Capex}_{t-3}\\right)} - 1',
   academicSourceUrl: 'https://doi.org/10.1017/S0022109000003173',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['capitalExpenditures'],

@@ -19,6 +19,7 @@ export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   badge: altmanZDoublePrimeScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

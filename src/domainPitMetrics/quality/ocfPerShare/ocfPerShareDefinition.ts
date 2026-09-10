@@ -11,6 +11,7 @@ export const ocfPerShareDefinition: MetricDefinitionSpec = {
   // 沒有每股專屬條目，中文維基「現金流量表」條目涵蓋營業活動現金流概念。
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%8F%BE%E9%87%91%E6%B5%81%E9%87%8F%E8%A1%A8',
   tier: 'derived',
+  sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'paidInShares'],

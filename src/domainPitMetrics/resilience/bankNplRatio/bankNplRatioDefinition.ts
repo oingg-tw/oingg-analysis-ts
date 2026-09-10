@@ -19,6 +19,7 @@ export const bankNplRatioDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://www.imf.org/-/media/files/data/2019/2019-fsi-guide.pdf',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E4%B8%8D%E8%89%AF%E8%B2%B8%E6%AC%BE',
   tier: 'raw',
+  sources: ['銀行監理財務資訊揭露（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['nonPerformingLoansRatio'],

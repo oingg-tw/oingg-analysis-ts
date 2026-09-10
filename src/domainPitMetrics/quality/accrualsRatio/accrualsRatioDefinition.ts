@@ -16,6 +16,7 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
   // 是 web-nuxt 轉來的 badge 資料附帶查到的引用，一併補上。
   academicSourceUrl: 'https://doi.org/10.2308/TAR-9608042309',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   badge: accrualsRatioBadge,
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],

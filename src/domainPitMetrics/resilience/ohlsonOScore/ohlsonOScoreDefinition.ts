@@ -17,6 +17,7 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2307/2490395',
   referenceUrl: 'https://en.wikipedia.org/wiki/Ohlson_O-score',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   badge: ohlsonOScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

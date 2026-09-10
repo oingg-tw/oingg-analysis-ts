@@ -17,6 +17,7 @@ export const debtRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DebtRatio} = \\frac{\\mathrm{TotalLiabilities}}{\\mathrm{TotalAssets}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B3%87%E7%94%A2%E8%B2%A0%E5%82%B5%E7%8E%87',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['liabilities', 'assets'],

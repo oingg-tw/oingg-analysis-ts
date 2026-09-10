@@ -11,6 +11,7 @@ export const ownerEarningsDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{OwnerEarnings} = \\frac{\\mathrm{NetIncome} + \\mathrm{Depreciation} + \\mathrm{Amortization} + \\mathrm{Capex}}{\\mathrm{Shares}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Owner_earnings',
   tier: 'derived',
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
   dependsOn: [

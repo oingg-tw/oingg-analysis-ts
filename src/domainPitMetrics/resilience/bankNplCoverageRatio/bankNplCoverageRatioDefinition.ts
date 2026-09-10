@@ -11,6 +11,7 @@ export const bankNplCoverageRatioDefinition: MetricDefinitionSpec = {
   // 沒有專屬維基條目（不良貸款條目沒有涵蓋覆蓋率公式），referenceUrl 刻意留空。
   academicSourceUrl: 'https://www.imf.org/-/media/files/data/2019/2019-fsi-guide.pdf',
   tier: 'raw',
+  sources: ['銀行監理財務資訊揭露（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['coverageRatio'],

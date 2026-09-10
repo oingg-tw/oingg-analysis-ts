@@ -18,6 +18,7 @@ export const altmanZScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.1111/j.1540-6261.1968.tb00843.x',
   referenceUrl: 'https://zh.wikipedia.org/wiki/Z-score%E6%A8%A1%E5%9E%8B',
   tier: 'composite',
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '證交所／櫃買中心每日收盤價'],
   badge: altmanZScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],

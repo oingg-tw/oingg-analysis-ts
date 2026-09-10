@@ -8,6 +8,7 @@ export const cashRatioDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{CashRatio} = \\frac{\\mathrm{Cash}}{\\mathrm{CurrentLiabilities}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Cash_ratio',
   tier: 'derived',
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['cash_and_cash_equivalents', 'current_liabilities'],
