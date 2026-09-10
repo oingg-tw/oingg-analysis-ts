@@ -11,6 +11,7 @@ export const fcfYieldDefinition: MetricDefinitionSpec = {
     'ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。沒有單季非年化版本（跟舊架構' +
     '一致，是 P_FCF 估值倍數的倒數）。',
   formulaLatex: '\\mathrm{FcfYield} = \\frac{\\mathrm{FcfPerShare}}{\\mathrm{Price}} \\times 100',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures', 'paidInShares'],

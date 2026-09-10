@@ -10,6 +10,7 @@ export const stockPriceDefinition: MetricDefinitionSpec = {
   unit: '元',
   formulaNote: '= knowledge_date 當天或之前最近一筆收盤價（新台幣元）。查無股價資料時為 null（missing_input）。knowledge_date 解析只用資產負債表，不查損益表。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9',
+  tier: 'raw',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [],

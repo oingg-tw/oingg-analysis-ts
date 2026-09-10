@@ -17,6 +17,7 @@ export const altmanZPrimeScoreDefinition: MetricDefinitionSpec = {
   // NYU Stern 官網當下連線不穩（500），改用 Wayback Machine 存檔版本確保連結長期可用。
   academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

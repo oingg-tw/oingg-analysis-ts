@@ -16,6 +16,7 @@ export const altmanZScoreDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{Z} = 1.2X_1 + 1.4X_2 + 3.3X_3 + 0.6X_4 + 0.999X_5',
   academicSourceUrl: 'https://doi.org/10.1111/j.1540-6261.1968.tb00843.x',
   referenceUrl: 'https://zh.wikipedia.org/wiki/Z-score%E6%A8%A1%E5%9E%8B',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

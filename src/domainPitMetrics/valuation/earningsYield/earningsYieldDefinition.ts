@@ -11,6 +11,7 @@ export const earningsYieldDefinition: MetricDefinitionSpec = {
     '本益比為負同一個判斷）。只有 TTM 一種 basis，跟 peRatio 一致。',
   formulaLatex: '\\mathrm{EarningsYield} = \\frac{\\mathrm{EPS}_{\\mathrm{TTM}}}{\\mathrm{Price}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Earnings_yield',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares', 'daily_price.close'],

@@ -9,6 +9,7 @@ export const exchangePbRatioDefinition: MetricDefinitionSpec = {
     '本服務不自己重算——跟自己算的 pitMetrics pbRatio（XBRL BVPS、季報知識時點更新）是' +
     '不同用途、刻意並存的兩組數字，不要混用或互相驗證。',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E6%B7%A8%E5%80%BC%E6%AF%94',
+  tier: 'raw',
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['daily_valuation.pb_ratio'],

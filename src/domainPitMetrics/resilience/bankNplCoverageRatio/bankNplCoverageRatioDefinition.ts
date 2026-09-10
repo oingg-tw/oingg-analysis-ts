@@ -10,6 +10,7 @@ export const bankNplCoverageRatioDefinition: MetricDefinitionSpec = {
   // 跟 bankNplRatio 同一份 IMF FSI Guide（「備抵呆帳/不良貸款」是文件裡的相關核心指標），
   // 沒有專屬維基條目（不良貸款條目沒有涵蓋覆蓋率公式），referenceUrl 刻意留空。
   academicSourceUrl: 'https://www.imf.org/-/media/files/data/2019/2019-fsi-guide.pdf',
+  tier: 'raw',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['coverageRatio'],

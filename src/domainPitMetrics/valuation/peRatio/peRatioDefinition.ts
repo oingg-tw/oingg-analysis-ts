@@ -14,6 +14,7 @@ export const peRatioDefinition: MetricDefinitionSpec = {
     '（zero_or_negative_denominator），為負仍計算出真實但為負的本益比，不隱藏。',
   formulaLatex: '\\mathrm{PE} = \\frac{\\mathrm{Price}}{\\mathrm{EPS}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%9C%AC%E7%9B%8A%E6%AF%94',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

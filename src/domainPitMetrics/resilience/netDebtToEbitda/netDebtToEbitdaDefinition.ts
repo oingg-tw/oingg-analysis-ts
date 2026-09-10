@@ -11,6 +11,7 @@ export const netDebtToEbitdaDefinition: MetricDefinitionSpec = {
     '單季非年化版本。',
   formulaLatex:
     '\\mathrm{NetDebtToEbitda} = \\frac{\\mathrm{NetDebt}}{\\mathrm{EBITDA}},\\quad \\mathrm{NetDebt} = \\mathrm{InterestBearingDebt} - \\mathrm{Cash}',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: [

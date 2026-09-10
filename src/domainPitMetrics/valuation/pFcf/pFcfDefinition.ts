@@ -10,6 +10,7 @@ export const pFcfDefinition: MetricDefinitionSpec = {
     '獨立重新計算自由現金流（不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。' +
     '沒有單季非年化版本。',
   formulaLatex: '\\mathrm{PFcf} = \\frac{\\mathrm{MarketCap}}{\\mathrm{FCF}}',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures'],

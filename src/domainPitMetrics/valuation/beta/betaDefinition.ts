@@ -22,6 +22,7 @@ export const betaDefinition: MetricDefinitionSpec = {
     '個股股價與加權指數都有資料的最新重疊交易日。',
   formulaLatex: '\\mathrm{Beta} = \\frac{\\mathrm{Cov}_{\\mathrm{StockIndex}}}{\\mathrm{Var}_{\\mathrm{Index}}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B2%9D%E4%BB%96%E4%BF%82%E6%95%B8',
+  tier: 'composite',
   group: 'rollingWindow',
   allowedLookbackRanges: ['1Y', '2Y', '5Y'],
   allowedSamplingIntervals: ['1D', '1W', '1M'],

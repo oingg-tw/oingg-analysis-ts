@@ -21,6 +21,7 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   // 掃描本需要借閱帳號（access-restricted），沒有完全公開的版本，仍是合法可查證的出處連結。
   academicSourceUrl: 'https://archive.org/details/intelligentinves00grah_1',
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],

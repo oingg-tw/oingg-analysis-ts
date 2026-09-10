@@ -17,6 +17,7 @@ export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
   // 付費的 1983/1995 原始出處，NYU Stern 官網當下連線不穩，用 Wayback Machine 存檔版本。
   academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

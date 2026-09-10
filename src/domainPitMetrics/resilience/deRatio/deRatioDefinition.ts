@@ -9,6 +9,7 @@ export const deRatioDefinition: MetricDefinitionSpec = {
     '缺漏退回整體口徑。純資產負債表時點快照，只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{DeRatio} = \\frac{\\mathrm{InterestBearingDebt}}{\\mathrm{Equity}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%94%A2%E6%AC%8A%E6%AF%94%E7%8E%87',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'equity_attributable_to_owners_of_parent', 'equity'],

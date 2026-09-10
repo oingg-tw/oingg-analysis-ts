@@ -11,6 +11,7 @@ export const psrDefinition: MetricDefinitionSpec = {
     '（store/flow 比率）。',
   formulaLatex: '\\mathrm{PSR} = \\frac{\\mathrm{MarketCap}}{\\mathrm{Revenue}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%82%A1%E5%83%B9%E7%87%9F%E6%94%B6%E6%AF%94',
+  tier: 'derived',
   group: 'period',
   allowedPeriodTypes: ['Q_ANN', 'TTM'],
   dependsOn: ['revenue'],

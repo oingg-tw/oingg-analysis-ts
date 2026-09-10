@@ -13,6 +13,7 @@ export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2307/2490859',
   // 2026-09-10 查證過：沒有可靠的中文/英文維基百科專屬條目（只有第三方教學網站），
   // referenceUrl 刻意留空，不要拿不夠權威的頁面充數。
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

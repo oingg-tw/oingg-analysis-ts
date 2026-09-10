@@ -12,6 +12,7 @@ export const ncavDefinition: MetricDefinitionSpec = {
   // 掃描本完全公開免費，不需要借閱帳號。
   academicSourceUrl: 'https://archive.org/details/dli.ernet.7983',
   referenceUrl: 'https://en.wikipedia.org/wiki/Net_current_asset_value',
+  tier: 'composite',
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['current_assets', 'liabilities', 'paidInShares'],
