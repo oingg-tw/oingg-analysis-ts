@@ -1,6 +1,9 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { pegRatioBadge } from './pegRatioBadge';
 
+// 2026-09-11 使用者要求：徽章（門檻/篩選指標）保留每日更新的版本就好——計算應以「今天」的
+// 即時市場價格搭配「最新公布財報」的基本面數據，不要用凍結在財報公告當天的季報快照。
+// 徽章移到 livePegRatio（見該資料夾），這支季報型 pegRatio 保留純數字查詢用途，不再掛
+// badge。
 export const pegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'pegRatio',
   displayName: 'PEG',
@@ -13,7 +16,6 @@ export const pegRatioDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/PEG_ratio',
   tier: 'composite',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
-  badge: pegRatioBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

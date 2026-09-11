@@ -1,6 +1,9 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { grahamNumberBadge } from './grahamNumberBadge';
 
+  // 2026-09-11 使用者要求：徽章（門檻/篩選指標）保留每日更新的版本就好——股價/市值這類
+  // 徽章比較應該用「今天」的即時市場價格搭配「最新公布財報」的基本面數據，不要用凍結在
+  // 財報公告當天的季報快照。徽章移到 liveGrahamNumber（見該資料夾），這支季報型
+  // grahamNumber 保留純數字查詢用途，不再掛 badge。
   // 第六批遷移（第三層：guru 分類 9 支重型多因子模型）：範圍刻意限縮成只遷移「最終分數/
   // 輸出」，不拆分內部子變量成獨立 metric_code（Piotroski 的 9 訊號、Beneish 的 8 變量、
   // Ohlson 的 9 變量、Altman 的 X1-X5、Nissim-Penman 的 FLEV/NBC/SPREAD 都是模型內部
@@ -30,7 +33,6 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
-  badge: grahamNumberBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
