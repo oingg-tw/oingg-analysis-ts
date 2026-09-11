@@ -91,6 +91,9 @@ import { bankTier1RatioDefinition } from '@/domainPitMetrics/resilience/bankTier
 import { exchangePeRatioDefinition } from '@/domainPitMetrics/valuation/exchangePeRatio/exchangePeRatioDefinition';
 import { exchangePbRatioDefinition } from '@/domainPitMetrics/valuation/exchangePbRatio/exchangePbRatioDefinition';
 import { dividendYieldDefinition } from '@/domainPitMetrics/dividend/dividendYield/dividendYieldDefinition';
+import { liveGrahamNumberDefinition } from '@/domainPitMetrics/valuation/liveGrahamNumber/liveGrahamNumberDefinition';
+import { livePegRatioDefinition } from '@/domainPitMetrics/valuation/livePegRatio/livePegRatioDefinition';
+import { liveMarketCapDefinition } from '@/domainPitMetrics/valuation/liveMarketCap/liveMarketCapDefinition';
 import { betaDefinition } from '@/domainPitMetrics/valuation/beta/betaDefinition';
 import { famaFrenchOperatingProfitabilityDefinition } from '@/domainPitMetrics/profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityDefinition';
 
@@ -197,6 +200,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   exchangePeRatio: exchangePeRatioDefinition,
   exchangePbRatio: exchangePbRatioDefinition,
   dividendYield: dividendYieldDefinition,
+  liveGrahamNumber: liveGrahamNumberDefinition,
+  livePegRatio: livePegRatioDefinition,
+  liveMarketCap: liveMarketCapDefinition,
   beta: betaDefinition,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityDefinition,
 };
