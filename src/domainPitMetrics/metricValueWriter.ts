@@ -171,17 +171,33 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     const decision = decideWrite(existing, input);
 
     if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
-    if (decision.action === 'update_same_knowledge_date') {
-      await analysisPrisma.metricValue.update({
-        where: { id: existing!.id },
-        data: { value: input.value, nullReason: input.nullReason, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
-      });
-      return { action: 'updated_same_knowledge_date' };
-    }
-    await analysisPrisma.metricValue.create({
-      data: { ...coordinateWhere, value: input.value, nullReason: input.nullReason, knowledgeDate: input.knowledgeDate, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
+
+    // 2026-09-11：「update_same_knowledge_date」跟「insert」兩個分支收斂成一次原子的
+    // upsert（鍵是完整的 identity 唯一鍵，含 knowledgeDate）——原本這裡是先 findFirst
+    // 查有沒有既有列，查無資料才 create，兩個併發呼叫（例如全市場 backfill 平行化後
+    // 同一個 knowledgeDate 被重算兩次）可能同時查到「沒有」、同時嘗試 create，第二個會
+    // 撞 metric_values_identity_key 唯一鍵拋出 UniqueConstraintViolation——2026-09-11
+    // 全市場 backfill 真實發生過一次（見 tmp/backfill-failures-general.json 的
+    // revenuePerShare/2104）。改用 upsert 讓 Postgres 自己原子地決定 insert 還是
+    // update，不管有幾個 instance/幾條併發請求都不會再噴這個例外，這也是 Cloud Run
+    // 多 instance/多併發部署後這個服務要安全的必要條件，不是本機限定的問題。
+    await analysisPrisma.metricValue.upsert({
+      where: {
+        symbol_metricCode_periodType_fiscalYear_fiscalQuarter_dataType_subsidiaryCompanyId_knowledgeDate: {
+          symbol: input.symbol,
+          metricCode: input.metricCode,
+          periodType: input.periodType,
+          fiscalYear: input.fiscalYear,
+          fiscalQuarter: input.fiscalQuarter,
+          dataType: input.dataType,
+          subsidiaryCompanyId: input.subsidiaryCompanyId,
+          knowledgeDate: input.knowledgeDate,
+        },
+      },
+      create: { ...coordinateWhere, value: input.value, nullReason: input.nullReason, knowledgeDate: input.knowledgeDate, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
+      update: { value: input.value, nullReason: input.nullReason, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
     });
-    return { action: 'inserted' };
+    return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
   }
 
   // 逐日型（lookbackRange+samplingInterval 或 snapshotCadence 這組）——寫進
@@ -203,15 +219,25 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
   const decision = decideWrite(existing, input);
 
   if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
-  if (decision.action === 'update_same_knowledge_date') {
-    await analysisPrisma.metricDailyCadenceValue.update({
-      where: { id: existing!.id },
-      data: { value: input.value, nullReason: input.nullReason, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
-    });
-    return { action: 'updated_same_knowledge_date' };
-  }
-  await analysisPrisma.metricDailyCadenceValue.create({
-    data: { ...dailyCoordinateWhere, value: input.value, nullReason: input.nullReason, knowledgeDate: input.knowledgeDate, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
+
+  // 同上（季報型路徑）的原子 upsert 理由——這張表的併發寫入場景更常見，因為逐日型指標
+  // 本來就是每天重算，兩個 instance 剛好同一天都跑到同一支逐日指標時風險一樣存在。
+  await analysisPrisma.metricDailyCadenceValue.upsert({
+    where: {
+      symbol_metricCode_lookbackRange_samplingInterval_snapshotCadence_dataType_subsidiaryCompanyId_tradeDate_knowledgeDate: {
+        symbol: input.symbol,
+        metricCode: input.metricCode,
+        lookbackRange: input.lookbackRange,
+        samplingInterval: input.samplingInterval,
+        snapshotCadence: input.snapshotCadence,
+        dataType: input.dataType,
+        subsidiaryCompanyId: input.subsidiaryCompanyId,
+        tradeDate: input.tradeDate,
+        knowledgeDate: input.knowledgeDate,
+      },
+    },
+    create: { ...dailyCoordinateWhere, value: input.value, nullReason: input.nullReason, knowledgeDate: input.knowledgeDate, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
+    update: { value: input.value, nullReason: input.nullReason, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
   });
-  return { action: 'inserted' };
+  return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
 };
