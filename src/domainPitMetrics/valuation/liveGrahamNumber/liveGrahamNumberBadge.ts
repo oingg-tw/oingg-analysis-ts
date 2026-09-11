@@ -1,19 +1,22 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
-// 沿用 grahamNumberBadge 的門檻/說明文字（同一個公式、同一個 22.5 常數），差別只在
-// token 是 'EOD'（逐日）不是 'TTM'（季報型 token）——badge 本身描述的是公式跟門檻，
-// 跟股價來源（即時 vs 財報公告日）無關，不需要另外改寫 detail。
+// 2026-09-11 使用者要求：前端目前只會顯示這一個徽章（季報型 grahamNumber 已經不掛
+// badge），detail/summary 不要再用「跟季報型 grahamNumber 比較」這種對照寫法——使用者
+// 只看得到這一個徽章，提另一個看不到的版本只會造成混淆。改成直接、獨立地說明這支指標
+// 本身：公式沿用 Graham Number 原始定義，計算基礎明講是「今天」的即時股價 + 最新公布
+// 財報的基本面數據。
 export const liveGrahamNumberBadge: MetricBadge = {
   id: 'live-graham-number',
   name: 'Graham Number',
   nameEn: 'Graham Number',
   author: 'Benjamin Graham, 1949',
-  summary: '本益比 × 股價淨值比的即時版本，基本面用最新已申報財報，股價用當下最新收盤價，每個交易日更新。',
+  summary: '本益比 × 股價淨值比，用今天的即時股價搭配最新公布財報的基本面數據計算，每個交易日更新。',
   detail:
-    '跟季報型 grahamNumber 是同一個公式（PER×PBR，22.5 常數見 grahamNumber 說明），差別在股價來源：' +
-    'grahamNumber 的股價凍結在財報公告當天，liveGrahamNumber 改用當下最新收盤價，基本面（EPS/BVPS）仍是' +
-    '最新已申報的財報資料，只有股價會隨每個交易日變動。適合用來看「以現在的股價」重新評估這個估值角度，' +
-    '跟 grahamNumber 是刻意並存、互不影響的兩支獨立指標，不要混用或互相驗證。',
+    '價值投資之父 Benjamin Graham 在其著作中提出的簡化估值公式，原始構想是為每股盈餘與每股淨值設定' +
+    '一組保守上限。22.5 這個常數來自 Graham 自己設定的兩個上限：本益比不超過 15 倍、股價淨值比不超過' +
+    ' 1.5 倍（15 × 1.5 = 22.5）。這裡直接計算「本益比 × 股價淨值比」，跟 22.5 這個門檻比較，是數學上' +
+    '等價、但不需要額外比較變量的寫法。計算基礎是「今天」的即時收盤價，搭配公司最新公布財報的 EPS/' +
+    '每股淨值，每個交易日都會隨股價變動更新，反映以當下價格重新評估的結果。',
   token: 'EOD',
   threshold: {
     description: '< 22.5',
