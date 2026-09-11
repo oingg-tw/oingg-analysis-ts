@@ -3,6 +3,7 @@ import swaggerUi from 'swagger-ui-express';
 import { config } from '@/shared/config';
 import { registry } from './registry';
 import { registerCompaniesOpenApi } from '@/api/bff/companies/openapi';
+import { registerSecuritiesOpenApi } from '@/api/bff/securities/openapi';
 import { registerPreferredStockOpenApi } from '@/api/bff/preferredStock/openapi';
 import { registerIndustriesOpenApi } from '@/api/bff/industries/openapi';
 import { registerStocksOpenApi } from '@/api/bff/stocks/openapi';
@@ -30,6 +31,7 @@ import { registerVolumeTop20OpenApi } from '@/api/bff/market/volumeTop20/openapi
 registerSystemOpenApi();
 registerFiltersOpenApi();
 registerCompaniesOpenApi();
+registerSecuritiesOpenApi();
 registerPreferredStockOpenApi();
 registerIndustriesOpenApi();
 registerStocksOpenApi();

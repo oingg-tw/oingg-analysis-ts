@@ -1,8 +1,9 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { listAllCompanyNames, countAllCompanyNames } from '@/shared/sourceData/companyProfile';
+import { listAllCompanyNames, countAllCompanyNames, listAllSecurityNames, countAllSecurityNames } from '@/shared/sourceData/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
 
 // 2026-09-01 bff-ts 實測抓到 GET /companies 回應裡 7914/7932 這兩檔公司各自出現兩次（TWSE、
 // TPEx 的 company_profile 剛好都有登記，資料內容一樣），害他們那邊 upsert 撞到「ON CONFLICT
@@ -43,7 +44,59 @@ test('countAllCompanyNames 應該跟 listAllCompanyNames 回傳的 count 一致'
   assert.equal(count, countFromList);
 });
 
+// 2026-09-11 應 web-nuxt 要求新增——GET /securities（listAllSecurityNames），跟
+// GET /companies（listAllCompanyNames）刻意分開的「證券」範疇，重用 getAllSecurityRows，
+// 主要差異是要真的涵蓋特別股（company_profile 結構性不含）。
+
+test('listAllSecurityNames: 涵蓋特別股（2891B/1101B），listAllCompanyNames 不涵蓋', async () => {
+  const { entries } = await listAllSecurityNames(5000, 0);
+  const symbols = new Set(entries.map((e) => e.symbol));
+  assert.ok(symbols.has('2891B'), '2891B（中信金乙特）應該出現在證券清單裡');
+  assert.ok(symbols.has('1101B'), '1101B（台泥乙特）應該出現在證券清單裡');
+
+  const { entries: companyEntries } = await listAllCompanyNames(5000, 0);
+  const companySymbols = new Set(companyEntries.map((e) => e.symbol));
+  assert.ok(!companySymbols.has('2891B'), '2891B 不應該出現在 GET /companies 的公司清單裡（company_profile 結構性不含特別股）');
+});
+
+test('listAllSecurityNames: 涵蓋 ETF（00919），listAllCompanyNames 不涵蓋', async () => {
+  const { entries } = await listAllSecurityNames(5000, 0);
+  const entry = entries.find((e) => e.symbol === '00919');
+  assert.ok(entry, '00919（群益台灣精選高息）應該出現在證券清單裡');
+  assert.ok(entry!.companyName, 'ETF 應該要有名稱，不是 null');
+
+  const { entries: companyEntries } = await listAllCompanyNames(5000, 0);
+  const companySymbols = new Set(companyEntries.map((e) => e.symbol));
+  assert.ok(!companySymbols.has('00919'), '00919 不應該出現在 GET /companies 的公司清單裡（ETF 是 sitca-ts 的基金產品，不是 company_profile 範疇）');
+});
+
+test('listAllSecurityNames: 去重後同一個 symbol 不會出現第二次', async () => {
+  const { entries } = await listAllSecurityNames(5000, 0);
+  const symbolCounts = new Map<string, number>();
+  for (const entry of entries) {
+    symbolCounts.set(entry.symbol, (symbolCounts.get(entry.symbol) ?? 0) + 1);
+  }
+  const duplicated = [...symbolCounts.entries()].filter(([, count]) => count > 1);
+  assert.deepEqual(duplicated, [], `不應該有重複的 symbol：${JSON.stringify(duplicated)}`);
+});
+
+test('countAllSecurityNames 應該跟 listAllSecurityNames 回傳的 count 一致', async () => {
+  const [count, { count: countFromList }] = await Promise.all([countAllSecurityNames(), listAllSecurityNames(1, 0)]);
+  assert.equal(count, countFromList);
+});
+
+test('listAllSecurityNames: limit/offset 正確切頁，不重複不遺漏', async () => {
+  const page1 = await listAllSecurityNames(10, 0);
+  const page2 = await listAllSecurityNames(10, 10);
+  const page1Ids = page1.entries.map((e) => e.symbol);
+  const page2Ids = page2.entries.map((e) => e.symbol);
+  assert.equal(page1.entries.length, 10);
+  assert.equal(page2.entries.length, 10);
+  assert.deepEqual(page1Ids.filter((id) => page2Ids.includes(id)), [], '兩頁不應該有重複的 symbol');
+});
+
 afterAll(async () => {
   await twseExportPrisma.$disconnect();
   await tpexExportPrisma.$disconnect();
+  await sitcaExportPrisma.$disconnect();
 });

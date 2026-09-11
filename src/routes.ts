@@ -3,6 +3,7 @@ import batchRouter from './api/batch/route';
 import rootRouter from './api/bff/system/root';
 import metricsRouter from './api/bff/metrics/route';
 import companiesRouter from './api/bff/companies/route';
+import securitiesRouter from './api/bff/securities/route';
 import preferredStockRouter from './api/bff/preferredStock/route';
 import industriesRouter from './api/bff/industries/route';
 import stocksRouter from './api/bff/stocks/route';
@@ -39,6 +40,7 @@ router.use(bffAuth);
 
 router.use(metricsRouter);
 router.use(companiesRouter);
+router.use(securitiesRouter);
 router.use(preferredStockRouter);
 router.use(industriesRouter);
 router.use(stocksRouter);
@@ -68,8 +70,12 @@ router.use(etfScreenerRouter);
 // GET /metrics 這支端點，跟現在已改名成 macro/ranking 的舊 metrics/ 資料夾不會再撞名）。
 // ranking/equityRiskPremium/govBondYield10y 這三支語意不是「單一公司查詢」（見各自
 // route.ts 的說明），繼續保留獨立端點。
-// /securities/symbols、/data-completeness 也一併刪除（前者使用者確認即使 mops-ts 有用也一併
-// 砍掉，後者是內部診斷工具，不是對外契約）。
+// /securities/symbols（symbols-only 陣列，給 mops-ts 用）、/data-completeness（內部診斷
+// 工具，不是對外契約）當時一併刪除。2026-09-11 應 web-nuxt 要求復活 /securities 命名空間，
+// 但是完全不同的形狀（GET /securities，{symbol, companyName} 配對，分頁，見
+// src/api/bff/securities/route.ts）——不是恢復舊的 symbols-only 版本，是给 searchbar 這類
+// 需要涵蓋特別股的「證券」（跟「公司」是刻意分開的概念，見 companyProfile.ts 的
+// listAllSecurityNames 說明）搜尋情境用的新端點。
 const apiRouter = Router();
 apiRouter.use('/valuation', rankingRouter);
 apiRouter.use('/macro', equityRiskPremiumRouter, govBondYield10yRouter);

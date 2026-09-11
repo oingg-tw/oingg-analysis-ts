@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/api/bff/companies/types';
 
 interface RawTpexCompanyProfileRow {
@@ -455,4 +456,31 @@ export const countAllCompanyNames = async (): Promise<number> => {
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
+};
+
+// 2026-09-11 應 web-nuxt 要求新增——GET /companies 的搜尋索引查不到特別股（company_profile
+// 結構性不含），web-nuxt 的 searchbar 需要「代碼+名稱」涵蓋真正能交易的證券（含特別股、
+// ETF）。使用者明確拍板：「公司是公司，證券是證券」，不把特別股/ETF 塞進 GET /companies
+// （語意錯誤），改成獨立的 GET /securities，重用 getAllSecurityRows（已經在 UNION
+// isin_securities 取得特別股，見上方說明）+ 額外 UNION sitca-ts 的 export.etf_basic_info
+// 取得 ETF（一般股票/特別股是 twse-ts/tpex-ts 的資料，ETF 是完全不同服務的資料，見
+// etfScreener/queryBuilder.ts 既有的查詢慣例）。預設 filter 給空物件——不排除興櫃（真正
+// 公司）、不排除 KY、不排除特別股、不排除全額交割股，是「這個市場上所有能交易的證券」
+// 最大範圍，跟 GET /securities/symbols（2026-09-02，已於後續版本移除）當初的預設語意一致。
+const getEtfRows = async (): Promise<{ symbol: string; shortName: string | null }[]> => {
+  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
+    SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."etf_basic_info"
+  `;
+  return rows.map((r) => ({ symbol: r.symbol, shortName: r.short_name }));
+};
+
+export const listAllSecurityNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
+  const [securityRows, etfRows] = await Promise.all([getAllSecurityRows({}), getEtfRows()]);
+  const all = dedupeBySymbol([...securityRows, ...etfRows]); // 一般股票/特別股排在前面，去重時優先保留
+  return { count: all.length, entries: all.slice(offset, offset + limit) };
+};
+
+export const countAllSecurityNames = async (): Promise<number> => {
+  const [securityRows, etfRows] = await Promise.all([getAllSecurityRows({}), getEtfRows()]);
+  return new Set([...securityRows.map((r) => r.symbol), ...etfRows.map((r) => r.symbol)]).size;
 };
