@@ -71,6 +71,23 @@ import { inventoryDaysDefinition } from '@/domainPitMetrics/efficiency/inventory
 import { receivablesDaysDefinition } from '@/domainPitMetrics/efficiency/receivablesDays/receivablesDaysDefinition';
 import { payablesDaysDefinition } from '@/domainPitMetrics/efficiency/payablesDays/payablesDaysDefinition';
 import { cashConversionCycleDefinition } from '@/domainPitMetrics/efficiency/cashConversionCycle/cashConversionCycleDefinition';
+import { operatingCycleDefinition } from '@/domainPitMetrics/efficiency/operatingCycle/operatingCycleDefinition';
+import { netWorkingCapitalTurnoverDefinition } from '@/domainPitMetrics/efficiency/netWorkingCapitalTurnover/netWorkingCapitalTurnoverDefinition';
+import { inventoryToRevenueRatioDefinition } from '@/domainPitMetrics/efficiency/inventoryToRevenueRatio/inventoryToRevenueRatioDefinition';
+import { receivablesToRevenueRatioDefinition } from '@/domainPitMetrics/efficiency/receivablesToRevenueRatio/receivablesToRevenueRatioDefinition';
+import { capexToOcfRatioDefinition } from '@/domainPitMetrics/efficiency/capexToOcfRatio/capexToOcfRatioDefinition';
+import { evToOcfDefinition } from '@/domainPitMetrics/valuation/evToOcf/evToOcfDefinition';
+import { evToSalesDefinition } from '@/domainPitMetrics/valuation/evToSales/evToSalesDefinition';
+import { priceToOcfDefinition } from '@/domainPitMetrics/valuation/priceToOcf/priceToOcfDefinition';
+import { debtToFcfDefinition } from '@/domainPitMetrics/resilience/debtToFcf/debtToFcfDefinition';
+import { croicDefinition } from '@/domainPitMetrics/profitability/croic/croicDefinition';
+import { ocfMarginDefinition } from '@/domainPitMetrics/quality/ocfMargin/ocfMarginDefinition';
+import { fcfConversionRateDefinition } from '@/domainPitMetrics/quality/fcfConversionRate/fcfConversionRateDefinition';
+import { financialLeverageDegreeDefinition } from '@/domainPitMetrics/resilience/financialLeverageDegree/financialLeverageDegreeDefinition';
+import { totalLeverageDegreeDefinition } from '@/domainPitMetrics/resilience/totalLeverageDegree/totalLeverageDegreeDefinition';
+import { nonOperatingIncomeRatioDefinition } from '@/domainPitMetrics/profitability/nonOperatingIncomeRatio/nonOperatingIncomeRatioDefinition';
+import { equityRatioDefinition } from '@/domainPitMetrics/resilience/equityRatio/equityRatioDefinition';
+import { cashToAssetsRatioDefinition } from '@/domainPitMetrics/resilience/cashToAssetsRatio/cashToAssetsRatioDefinition';
 import { grahamNumberDefinition } from '@/domainPitMetrics/valuation/grahamNumber/grahamNumberDefinition';
 import { ncavDefinition } from '@/domainPitMetrics/valuation/ncav/ncavDefinition';
 import { ownerEarningsDefinition } from '@/domainPitMetrics/quality/ownerEarnings/ownerEarningsDefinition';
@@ -180,6 +197,23 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   receivablesDays: receivablesDaysDefinition,
   payablesDays: payablesDaysDefinition,
   cashConversionCycle: cashConversionCycleDefinition,
+  operatingCycle: operatingCycleDefinition,
+  netWorkingCapitalTurnover: netWorkingCapitalTurnoverDefinition,
+  inventoryToRevenueRatio: inventoryToRevenueRatioDefinition,
+  receivablesToRevenueRatio: receivablesToRevenueRatioDefinition,
+  capexToOcfRatio: capexToOcfRatioDefinition,
+  evToOcf: evToOcfDefinition,
+  evToSales: evToSalesDefinition,
+  priceToOcf: priceToOcfDefinition,
+  debtToFcf: debtToFcfDefinition,
+  croic: croicDefinition,
+  ocfMargin: ocfMarginDefinition,
+  fcfConversionRate: fcfConversionRateDefinition,
+  financialLeverageDegree: financialLeverageDegreeDefinition,
+  totalLeverageDegree: totalLeverageDegreeDefinition,
+  nonOperatingIncomeRatio: nonOperatingIncomeRatioDefinition,
+  equityRatio: equityRatioDefinition,
+  cashToAssetsRatio: cashToAssetsRatioDefinition,
   grahamNumber: grahamNumberDefinition,
   ncav: ncavDefinition,
   ownerEarnings: ownerEarningsDefinition,

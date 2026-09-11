@@ -17,6 +17,10 @@ const METRIC_CODES = [
   'receivablesDays',
   'payablesDays',
   'cashConversionCycle',
+  'operatingCycle',
+  'netWorkingCapitalTurnover',
+  'inventoryToRevenueRatio',
+  'receivablesToRevenueRatio',
 ];
 
 beforeAll(async () => {
@@ -82,6 +86,21 @@ test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交
   const cccTtm = await findLatest('cashConversionCycle', 'TTM');
   assert.equal(Number(cccQAnn!.value), 93.13);
   assert.equal(Number(cccTtm!.value), 99.39);
+
+  // 2026-09-11 新增（「全市場六季財報深度解鎖的指標」批次）——operatingCycle = DIO+DSO
+  // （不扣 DPO），跟上面已驗證過的 dio/dso 數字直接加總對得上：
+  // Q_ANN 86.08+31.25=117.33、TTM 88.59+35.82=124.41。
+  const operatingCycleQAnn = await findLatest('operatingCycle', 'Q_ANN');
+  const operatingCycleTtm = await findLatest('operatingCycle', 'TTM');
+  assert.equal(Number(operatingCycleQAnn!.value), 117.33);
+  assert.equal(Number(operatingCycleTtm!.value), 124.41);
+
+  const netWorkingCapitalTurnoverTtm = await findLatest('netWorkingCapitalTurnover', 'TTM');
+  const inventoryToRevenueRatioTtm = await findLatest('inventoryToRevenueRatio', 'TTM');
+  const receivablesToRevenueRatioTtm = await findLatest('receivablesToRevenueRatio', 'TTM');
+  assert.ok(netWorkingCapitalTurnoverTtm!.value !== null);
+  assert.ok(inventoryToRevenueRatioTtm!.value !== null);
+  assert.ok(receivablesToRevenueRatioTtm!.value !== null);
 }, 20000);
 
 test('turnoverRatioFamilyPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {
