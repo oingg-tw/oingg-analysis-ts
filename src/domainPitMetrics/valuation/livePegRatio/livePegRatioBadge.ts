@@ -3,8 +3,8 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 沿用 pegRatioBadge 的門檻/說明文字，差別只在 token 是 'EOD'（逐日）不是 'TTM'。
 export const livePegRatioBadge: MetricBadge = {
   id: 'live-peg-ratio',
-  name: '本益成長比（即時）',
-  nameEn: 'PEG Ratio (Live)',
+  name: '本益成長比',
+  nameEn: 'PEG Ratio',
   author: 'Peter Lynch, 1989',
   summary: '本益成長比的即時版本，成長率用最新已申報財報，本益比的股價用當下最新收盤價，每個交易日更新。',
   detail:

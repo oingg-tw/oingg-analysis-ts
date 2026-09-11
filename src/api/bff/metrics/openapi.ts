@@ -18,6 +18,12 @@ import { registry } from '@/adapters/swagger/registry';
 const metricFolderCatalogEntrySchema = z.object({
   metricCode: z.string().meta({ description: '對應 metricDefinitionRegistry.ts 的 key，也是 GET /companies/metric-history 等端點的 metricCode 參數值' }),
   displayName: z.string().meta({ description: '中文名稱，給前端直接顯示用（例如 "股東權益報酬率 (ROE)"）' }),
+  displayNameSuffix: z.string().optional().meta({
+    description:
+      '2026-09-11 新增：跟 displayName 平行的補充資訊（例如「即時」，標示 liveGrahamNumber 這類逐日型指標' +
+      '跟同名季報型指標的差異），前端可以用小字/副標籤另外呈現，不會被塞進 displayName 本身的括號附註。' +
+      '選填，沒有補充資訊時是 undefined（不是空字串）。',
+  }),
   unit: z.string().meta({ description: '單位（%、元、次、天、倍、分、無單位）' }),
   validTokens: z
     .array(z.string())

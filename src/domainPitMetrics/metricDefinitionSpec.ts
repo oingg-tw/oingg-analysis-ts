@@ -84,6 +84,12 @@ interface MetricDefinitionSpecBase {
   // （%、元、次、天、倍、分、無單位）——這兩個是給 UI 標籤用的最小可用集合，不是完整的
   // 公式/計算邏輯說明（那個看 formulaNote，太技術性不適合直接顯示給終端使用者）。
   displayName: string;
+  // 2026-09-11 新增：跟 displayName 平行的補充資訊欄位（例如「即時」），給前端決定要不要
+  // 用小字/副標籤另外呈現，不要塞進 displayName 本身的括號附註——這是跟 MetricBadge.name/
+  // threshold.description 同一批「補充資訊不要夾帶在主要文字的括號裡」規則的延伸，這次是
+  // 使用者直接在程式碼裡加了這個欄位定案，不是再用文字判斷要不要拆。選填，沒有補充資訊時
+  // 維持 undefined（=displayName 本身已經是完整名稱，不是被省略了什麼）。
+  displayNameSuffix?: string;
   unit: string;
   formulaNote: string;
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種

@@ -44,6 +44,10 @@ export interface MetricFolderCatalogEntry {
   // 2026-09-09 新增：給前端顯示用的中文名稱/單位，來源是 metricDefinitionRegistry.ts
   // 每個 metricCode 宣告的 displayName/unit。
   displayName: string;
+  // 2026-09-11 新增：跟 displayName 平行的補充資訊（例如「即時」），不要塞進 displayName
+  // 本身的括號附註——見 metricDefinitionSpec.ts 的完整說明。選填，沒有補充資訊時是
+  // undefined。
+  displayNameSuffix?: string;
   unit: string;
   // 2026-09-08 新增，2026-09-09 起是這個端點唯一曝露的 token 相關欄位——原本還有四個
   // allowedXxx 陣列並排（allowedPeriodTypes/allowedLookbackRanges/
@@ -109,6 +113,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
         return {
           metricCode,
           displayName: definition.displayName,
+          displayNameSuffix: definition.displayNameSuffix,
           unit: definition.unit,
           validTokens: validTokensForMetric(metricCode),
           formulaLatex: definition.formulaLatex,
