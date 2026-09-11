@@ -1,5 +1,15 @@
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
-import { NUMERIC_FIELDS, CATEGORICAL_FIELDS, DATE_FIELDS, resolveEtfField, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './fieldRegistry';
+import {
+  NUMERIC_FIELDS,
+  CATEGORICAL_FIELDS,
+  DATE_FIELDS,
+  ETF_CATEGORIES,
+  resolveEtfField,
+  type EtfFieldDefinition,
+  type NumericFieldDefinition,
+  type CategoricalFieldDefinition,
+  type DateFieldDefinition,
+} from './fieldRegistry';
 import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from './queryBuilder';
 import type { EtfFilterInput, EtfColumnInput, EtfScreenerResponse, EtfScreenerRow, EtfFilterCatalogResponse, EtfFilterFieldCatalogEntry } from './types';
 
@@ -148,27 +158,37 @@ const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
 };
 
 // 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /metrics（股票那邊）同一種
-// 精神。數字欄位沒有 values；類別欄位裡 market/isActive 選項固定已知，assetClass/
+// 精神。2026-09-11 改成比照股票 GET /filters 的巢狀分類（categoryKey +
+// categoryDisplayName + fields[]），不再是扁平陣列——breaking change，已通知 web-nuxt。
+// 數字欄位額外帶 unit；類別欄位裡 market/isActive 選項固定已知，assetClass/
 // distributionFrequency 現查 distinct 值（不寫死，之後 sitca-ts 分類異動會直接反映，不用
 // 改程式碼）。
+const buildFieldCatalogEntry = async (def: EtfFieldDefinition): Promise<EtfFilterFieldCatalogEntry> => {
+  if (def.kind === 'numeric') {
+    return { field: def.field, label: def.label, unit: def.unit, kind: 'numeric' };
+  }
+  if (def.kind === 'date') {
+    return { field: def.field, label: def.label, kind: 'date' };
+  }
+  if (def.staticValues) {
+    return { field: def.field, label: def.label, kind: 'categorical', values: def.staticValues };
+  }
+  const getValues = CATEGORICAL_DISTINCT_VALUES[def.field];
+  if (!getValues) {
+    throw new Error(`getEtfFilterCatalog: 類別欄位 "${def.field}" 沒有 staticValues 也沒有登記 distinct 值查詢方式，忘記在 CATEGORICAL_DISTINCT_VALUES 補上了。`);
+  }
+  return { field: def.field, label: def.label, kind: 'categorical', values: await getValues() };
+};
+
 export const getEtfFilterCatalog = async (): Promise<EtfFilterCatalogResponse> => {
-  const fields: EtfFilterFieldCatalogEntry[] = Object.values(NUMERIC_FIELDS).map((def) => ({ field: def.field, label: def.label, kind: 'numeric' as const }));
+  const allDefinitions: EtfFieldDefinition[] = [...Object.values(NUMERIC_FIELDS), ...Object.values(CATEGORICAL_FIELDS), ...Object.values(DATE_FIELDS)];
 
-  for (const def of Object.values(DATE_FIELDS)) {
-    fields.push({ field: def.field, label: def.label, kind: 'date' });
-  }
+  const categories = await Promise.all(
+    ETF_CATEGORIES.map(async ({ key: categoryKey, displayName: categoryDisplayName }) => {
+      const fields = await Promise.all(allDefinitions.filter((def) => def.categoryKey === categoryKey).map(buildFieldCatalogEntry));
+      return { categoryKey, categoryDisplayName, fields };
+    })
+  );
 
-  for (const def of Object.values(CATEGORICAL_FIELDS)) {
-    if (def.staticValues) {
-      fields.push({ field: def.field, label: def.label, kind: 'categorical', values: def.staticValues });
-      continue;
-    }
-    const getValues = CATEGORICAL_DISTINCT_VALUES[def.field];
-    if (!getValues) {
-      throw new Error(`getEtfFilterCatalog: 類別欄位 "${def.field}" 沒有 staticValues 也沒有登記 distinct 值查詢方式，忘記在 CATEGORICAL_DISTINCT_VALUES 補上了。`);
-    }
-    fields.push({ field: def.field, label: def.label, kind: 'categorical', values: await getValues() });
-  }
-
-  return { fields };
+  return { categories: categories.filter((category) => category.fields.length > 0) };
 };

@@ -64,12 +64,23 @@ export type EtfScreenerResponse = z.infer<typeof etfScreenerResponseSchema>;
 export const etfFilterFieldCatalogEntrySchema = z.object({
   field: z.string(),
   label: z.string(),
+  unit: z.string().optional().meta({ description: '只有 numeric 欄位才有，例如 "元"/"%"/"人"' }),
   kind: z.enum(['numeric', 'categorical', 'date']),
   values: z.array(z.string()).optional().meta({ description: '只有 categorical 欄位才有' }),
 });
 export type EtfFilterFieldCatalogEntry = z.infer<typeof etfFilterFieldCatalogEntrySchema>;
 
-export const etfFilterCatalogResponseSchema = z.object({
+// 2026-09-11 使用者要求比照股票 GET /filters 的巢狀分類建立指標選單——原本是扁平
+// fields 陣列，改成跟股票端同一種 { categoryKey, categoryDisplayName, fields[] } 形狀，
+// 是 breaking change，已通知 web-nuxt。
+export const etfFilterCategorySchema = z.object({
+  categoryKey: z.enum(['identity', 'sizeAndFlow', 'navAndPrice', 'performance', 'cost']),
+  categoryDisplayName: z.string(),
   fields: z.array(etfFilterFieldCatalogEntrySchema),
+});
+export type EtfFilterCategory = z.infer<typeof etfFilterCategorySchema>;
+
+export const etfFilterCatalogResponseSchema = z.object({
+  categories: z.array(etfFilterCategorySchema),
 });
 export type EtfFilterCatalogResponse = z.infer<typeof etfFilterCatalogResponseSchema>;

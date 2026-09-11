@@ -6,12 +6,14 @@ export const registerEtfScreenerOpenApi = (): void => {
   registry.registerPath({
     method: 'get',
     path: '/etf-screener/filters',
-    summary: 'ETF screener 可篩選/顯示欄位目錄',
+    summary: 'ETF screener 可篩選/顯示欄位目錄（指標選單）',
     description:
-      '給前端動態畫篩選 UI 用，不用寫死欄位清單。kind: "numeric" 的欄位畫成最小值~最大值區間輸入；kind: "date"（2026-09-08 新增，' +
-      '目前只有 establishedDate）畫成日期範圍輸入，min/max 是 "YYYY-MM-DD" 字串；kind: "categorical" 的欄位畫成勾選清單，' +
-      '選項直接來自 values——market/isActive/belowStatutoryThreshold 選項固定已知，assetClass/distributionFrequency 是現查資料庫的 distinct 值，' +
-      '之後 sitca-ts 分類異動會直接反映在這支端點，不用改程式碼。',
+      '給前端動態畫篩選 UI 用，不用寫死欄位清單。2026-09-11 起比照股票 GET /filters，回應是巢狀分類' +
+      '（categories: [{categoryKey, categoryDisplayName, fields: [...]}]）——身分分類/規模與資金/淨值與市價/績效表現/成本費用共 5 組，' +
+      '不再是扁平陣列（breaking change）。每個 field 帶 unit（只有 numeric 才有，例如 "元"/"%"/"人"）。' +
+      'kind: "numeric" 的欄位畫成最小值~最大值區間輸入；kind: "date"（目前只有 establishedDate）畫成日期範圍輸入，min/max 是 "YYYY-MM-DD" 字串；' +
+      'kind: "categorical" 的欄位畫成勾選清單，選項直接來自 values——market/isActive/belowStatutoryThreshold 選項固定已知，' +
+      'assetClass/distributionFrequency 是現查資料庫的 distinct 值，之後 sitca-ts 分類異動會直接反映在這支端點，不用改程式碼。',
     tags: ['Market'],
     responses: {
       200: { description: '欄位目錄。', content: { 'application/json': { schema: etfFilterCatalogResponseSchema } } },

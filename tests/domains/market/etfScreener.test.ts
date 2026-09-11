@@ -47,9 +47,30 @@ test('runEtfScreener: distributionFrequency 的值不應該還帶著括號（正
   }
 });
 
+// 2026-09-11 使用者要求比照股票 GET /filters 的巢狀分類建立指標選單——breaking change，
+// 原本扁平的 fields 陣列改成 { categoryKey, categoryDisplayName, fields[] } 五組。
+test('getEtfFilterCatalog: 應該回傳五個非空分類，每個欄位都恰好歸類在一個分類裡', async () => {
+  const catalog = await getEtfFilterCatalog();
+  const expectedCategoryKeys = ['identity', 'sizeAndFlow', 'navAndPrice', 'performance', 'cost'];
+  assert.deepEqual(
+    catalog.categories.map((c) => c.categoryKey),
+    expectedCategoryKeys
+  );
+  for (const category of catalog.categories) {
+    assert.ok(category.fields.length > 0, `${category.categoryKey} 不應該是空分類`);
+    assert.ok(category.categoryDisplayName.length > 0);
+  }
+  const allFields = catalog.categories.flatMap((c) => c.fields);
+  const fieldNames = allFields.map((f) => f.field);
+  assert.equal(new Set(fieldNames).size, fieldNames.length, '同一個 field 不應該出現在兩個分類裡');
+  const numericField = allFields.find((f) => f.field === 'aum');
+  assert.ok(numericField);
+  assert.equal(numericField!.unit, '元');
+});
+
 test('getEtfFilterCatalog: distributionFrequency 的 values 不應該帶括號', async () => {
   const catalog = await getEtfFilterCatalog();
-  const field = catalog.fields.find((f) => f.field === 'distributionFrequency');
+  const field = catalog.categories.flatMap((c) => c.fields).find((f) => f.field === 'distributionFrequency');
   assert.ok(field);
   for (const value of field!.values ?? []) {
     assert.ok(!value.includes('('), `"${value}" 不應該包含括號`);
@@ -101,7 +122,7 @@ test('runEtfScreener: 分頁應該正確切頁不重複', async () => {
 
 test('getEtfFilterCatalog: assetClass 的 values 應該是現查的 distinct 值，不是空陣列', async () => {
   const catalog = await getEtfFilterCatalog();
-  const assetClass = catalog.fields.find((f) => f.field === 'assetClass');
+  const assetClass = catalog.categories.flatMap((c) => c.fields).find((f) => f.field === 'assetClass');
   assert.ok(assetClass);
   assert.equal(assetClass!.kind, 'categorical');
   assert.ok(assetClass!.values && assetClass!.values.length > 0);
@@ -163,7 +184,7 @@ test('runEtfScreener: 太早的年度（例如 2001，該基金那年還沒成�
 test('getEtfFilterCatalog: expenseRatio<year> 系列欄位應該全部出現（2001~2026 共 26 個）', async () => {
   const catalog = await getEtfFilterCatalog();
   for (let year = 2001; year <= 2026; year++) {
-    const field = catalog.fields.find((f) => f.field === `expenseRatio${year}`);
+    const field = catalog.categories.flatMap((c) => c.fields).find((f) => f.field === `expenseRatio${year}`);
     assert.ok(field, `expenseRatio${year} 應該出現在 filter catalog 裡`);
     assert.equal(field!.kind, 'numeric');
   }
@@ -171,7 +192,7 @@ test('getEtfFilterCatalog: expenseRatio<year> 系列欄位應該全部出現（2
 
 test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
   return getEtfFilterCatalog().then((catalog) => {
-    for (const field of catalog.fields) {
+    for (const field of catalog.categories.flatMap((c) => c.fields)) {
       if (field.kind === 'numeric') assert.equal(field.values, undefined);
     }
   });
@@ -181,7 +202,7 @@ test('getEtfFilterCatalog: 每個數字欄位都不應該有 values', () => {
 // 細項拆分）兩組，使用者確認要做的部分。
 test('getEtfFilterCatalog: establishedDate 應該以 kind=date 出現在目錄裡', async () => {
   const catalog = await getEtfFilterCatalog();
-  const field = catalog.fields.find((f) => f.field === 'establishedDate');
+  const field = catalog.categories.flatMap((c) => c.fields).find((f) => f.field === 'establishedDate');
   assert.ok(field, 'establishedDate 應該出現在 filter catalog 裡');
   assert.equal(field!.kind, 'date');
   assert.equal(field!.values, undefined);
