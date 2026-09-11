@@ -21,6 +21,7 @@ export const betaDefinition: MetricDefinitionSpec = {
     '指數變異數為 0（理論上不會發生但防呆）為 zero_or_negative_denominator。基準日 =' +
     '個股股價與加權指數都有資料的最新重疊交易日。',
   formulaLatex: '\\mathrm{Beta} = \\frac{\\mathrm{Cov}_{\\mathrm{StockIndex}}}{\\mathrm{Var}_{\\mathrm{Index}}}',
+  academicSourceUrl: 'https://onlinelibrary.wiley.com/doi/10.1111/j.1540-6261.1964.tb02865.x',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B2%9D%E4%BB%96%E4%BF%82%E6%95%B8',
   tier: 'composite',
   sources: ['證交所／櫃買中心每日收盤價', '加權股價指數（TAIEX）每日收盤價'],

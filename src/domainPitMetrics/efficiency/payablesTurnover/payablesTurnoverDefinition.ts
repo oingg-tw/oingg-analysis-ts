@@ -8,6 +8,7 @@ export const payablesTurnoverDefinition: MetricDefinitionSpec = {
     'Q(單季) = 本季營業成本/本季期末應付帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營業成本' +
     '加總/本季期末應付帳款。',
   formulaLatex: '\\mathrm{PayablesTurnover} = \\frac{\\mathrm{COGS}}{\\mathrm{AccountsPayable}}',
+  referenceUrl: 'https://corporatefinanceinstitute.com/resources/accounting/accounts-payable-turnover-ratio',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',

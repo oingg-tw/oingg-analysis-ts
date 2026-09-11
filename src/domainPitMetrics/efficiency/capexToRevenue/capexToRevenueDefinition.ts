@@ -8,6 +8,7 @@ export const capexToRevenueDefinition: MetricDefinitionSpec = {
     'Q(單季) = |資本支出|/本季營收*100；TTM = |近四季（含本季）資本支出加總|/近四季營收加總*100。' +
     '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
   formulaLatex: '\\mathrm{CapexToRevenue} = \\frac{|\\mathrm{Capex}|}{\\mathrm{Revenue}} \\times 100',
+  referenceUrl: 'https://kpidepot.com/kpi/capex-revenue-ratio',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',

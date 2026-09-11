@@ -13,6 +13,7 @@ export const consecutiveDividendYearsDefinition: MetricDefinitionSpec = {
     '通過的股利政策（沒有這個資料源）。資料完整度依賴 XBRL 現金流量表回填範圍，回填範圍較短的' +
     '公司連續年數可能被資料缺口低估（保守停止計數，不會誤判成中斷），value=0 代表「有資料、' +
     '確定最近一個完整年度沒配息」，null 代表「連最近一個完整年度的資料都拿不到」，兩者不同。',
+  referenceUrl: 'https://en.wikipedia.org/wiki/Dividend_aristocrat',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）'],
   group: 'period',

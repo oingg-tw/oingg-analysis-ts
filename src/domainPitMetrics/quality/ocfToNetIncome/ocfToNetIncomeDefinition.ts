@@ -9,6 +9,7 @@ export const ocfToNetIncomeDefinition: MetricDefinitionSpec = {
     '現金流加總/近四季淨利加總。沒有 Q_ANN——flow/flow 比率年化沒有意義（跟 netProfitMargin 同' +
     '一種規則）。',
   formulaLatex: '\\mathrm{OcfToNetIncome} = \\frac{\\mathrm{CFO}}{\\mathrm{NetIncome}}',
+  referenceUrl: 'https://fffinstill.com/learning/concepts/operating-cash-flow-net-income-earnings-quality',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',

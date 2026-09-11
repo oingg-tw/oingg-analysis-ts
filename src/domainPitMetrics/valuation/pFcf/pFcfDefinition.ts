@@ -10,6 +10,7 @@ export const pFcfDefinition: MetricDefinitionSpec = {
     '獨立重新計算自由現金流（不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。' +
     '沒有單季非年化版本。',
   formulaLatex: '\\mathrm{PFcf} = \\frac{\\mathrm{MarketCap}}{\\mathrm{FCF}}',
+  referenceUrl: 'https://corporatefinanceinstitute.com/resources/valuation/price-to-free-cash-flow-multiple/',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',

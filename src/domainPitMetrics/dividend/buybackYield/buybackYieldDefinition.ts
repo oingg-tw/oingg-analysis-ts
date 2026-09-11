@@ -14,6 +14,7 @@ export const buybackYieldDefinition: MetricDefinitionSpec = {
     '自己把兩個值加起來即可。只有 TTM 一種 basis——庫藏股買回通常不定期不定額，單季數字會' +
     '嚴重失真。',
   formulaLatex: '\\mathrm{BuybackYield} = \\frac{\\left|\\sum_{i=1}^{4}\\mathrm{BuybackCash}_i\\right|}{\\mathrm{Price}\\times\\mathrm{Shares}} \\times 100',
+  referenceUrl: 'https://www.wallstreetprep.com/knowledge/buyback-yield/',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',

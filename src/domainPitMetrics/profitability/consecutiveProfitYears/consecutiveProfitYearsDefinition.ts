@@ -10,6 +10,7 @@ export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
     '完整就停止計數，跟 consecutiveDividendYears 同一套「逐年往回數」設計（見該檔案說明）。' +
     '只有 FY 一種 basis。value=0 代表「有資料、確定最近一個完整年度虧損」，null 代表' +
     '「連最近一年資料都拿不到」，兩者不同。',
+  referenceUrl: 'https://www.stockopedia.com/ratios/no-of-years-consecutive-positive-earnings-per-share-751/',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
