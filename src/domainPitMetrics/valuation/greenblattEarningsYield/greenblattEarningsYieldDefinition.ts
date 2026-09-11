@@ -2,7 +2,8 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const greenblattEarningsYieldDefinition: MetricDefinitionSpec = {
   metricCode: 'greenblattEarningsYield',
-  displayName: 'Greenblatt 盈餘收益率',
+  displayName: '盈餘收益率',
+  displayNameSuffix: 'Greenblatt',
   unit: '%',
   formulaNote:
     '= EBIT(TTM) / 企業價值(EV) * 100。EBIT(TTM) = 近四季（含本季）稅前淨利+利息費用加總；' +

@@ -7,7 +7,8 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // account_code——這是本 registry 第一批「依賴市場資料而非財報資料」的 metricCode。
 export const exchangePeRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'exchangePeRatio',
-  displayName: '交易所 PER',
+  displayName: 'PER',
+  displayNameSuffix: '交易所',
   unit: '倍',
   formulaNote:
     'TWSE/TPEx 官方每日公布的本益比，直接 passthrough export.daily_valuation.pe_ratio，' +
