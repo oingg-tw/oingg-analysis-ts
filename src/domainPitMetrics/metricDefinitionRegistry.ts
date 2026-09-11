@@ -19,6 +19,8 @@ import { pbRatioDefinition } from '@/domainPitMetrics/valuation/pbRatio/pbRatioD
 import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/stockPriceDefinition';
 import { marketCapDefinition } from '@/domainPitMetrics/valuation/marketCap/marketCapDefinition';
 import { tobinsQDefinition } from '@/domainPitMetrics/valuation/tobinsQ/tobinsQDefinition';
+import { greenblattEarningsYieldDefinition } from '@/domainPitMetrics/valuation/greenblattEarningsYield/greenblattEarningsYieldDefinition';
+import { greenblattRocDefinition } from '@/domainPitMetrics/profitability/greenblattRoc/greenblattRocDefinition';
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
@@ -125,6 +127,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   stockPrice: stockPriceDefinition,
   marketCap: marketCapDefinition,
   tobinsQ: tobinsQDefinition,
+  greenblattEarningsYield: greenblattEarningsYieldDefinition,
+  greenblattRoc: greenblattRocDefinition,
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
