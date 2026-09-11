@@ -7,15 +7,22 @@
 
 ## 資料覆蓋率（最大宗，貫穿整個 pitMetrics 架構）
 
-- **今天（2026-09-09）新增的股東政策/成長動能指標只回補了 2330**——`buybackYield`/
-  `dividendCoverageRatio`/`shareCountChangeRate`/`revenueGrowthRate`/`epsGrowthRate`/
-  `netIncomeGrowthRate`/`operatingIncomeGrowthRate`/`equityGrowthRate`/
-  `bvpsGrowthRate`/`consecutiveDividendYears` 這 10 支都是「先做邏輯，資料不用全面」
-  刻意的範圍限縮，只有 109Q4~115Q2（前 9 支）或最新一期（`consecutiveDividendYears`）。
-  要變成真正能用的篩選/排行功能，需要全市場批次回填，目前完全沒有排期。
-- **舊架構同樣問題更普遍**：多數 pitMetrics 只回填 3~6 家測試公司，全市場批次回填
-  基礎設施不存在（見已結案的 `project_pit_migration_status` 記憶裡的評估：screener
-  版替代方案曾評估過，結論是「查詢層架構可以做，但資料覆蓋率是更大的瓶頸，先不建」）。
+- **2026-09-11 更新：絕大多數季報型指標已經全市場回填**（`GENERAL_METRIC_CODES`/
+  `BANK_METRIC_CODES`，~90 支 metricCode，2,058 家公司，0 錯誤，見
+  `scripts/backfillAllMetricsLatestFullMarketPit.ts`）——含 Beta/MarketRatios
+  （`exchangePeRatio`/`exchangePbRatio`/`dividendYield`）、2026-09-09 那批股東政策/
+  成長動能指標、marketCap/ncav/grahamNumber/pegRatio、今天新增的即時版三支
+  （`liveGrahamNumber`/`livePegRatio`/`liveMarketCap`）、「六季財報深度解鎖」17 支
+  新指標，全部都已經是全市場覆蓋，不再是「只有 2330」的狀態。以下這條舊記錄已解決，
+  不用再提。
+- **真正的資料覆蓋率缺口，改成結構性的「深度不夠」而不是「範圍沒做」**：
+  `chowderNumber`/`pegRatio`/`livePegRatio`/`epsCagr3y`/`epsCagr5y`/`epsCagr8y`/
+  `revenueCagr3y`/`revenueCagr5y`/`revenueCagr8y`/`dividendGrowthRate3y`/
+  `dividendGrowthRate5y`/`dividendGrowthRate8y` 這批需要 ≥3 年（≥12 季）歷史回溯的
+  指標，全市場已回填但實測非 null 比例只有 1~2/2058——mops-ts 的 XBRL 全市場覆蓋
+  實際是從 114Q1（2025）才開始鋪開（113 年以前只有 1~169 家），現在全市場深度只有
+  6 季（114Q1~115Q2），連最短的 3 年版本都不夠。不是誰的 bug，純粹是上游資料庫歷史
+  深度還沒累積到，沒有排期，等 mops-ts 之後往回補歷史年度的 XBRL 才會自然解決。
 
 ## 卡在其他微服務，等對方排期
 
@@ -42,26 +49,17 @@
   `premiumDiscountPct` 欄位（commit `d0df562`）。市價 push 仍在持續回填中（目前 331 檔
   ETF 裡 214 檔有值），且回溯深度比淨值淺（上市 2020-11 起、上櫃 2021-09 起）——這不是
   待辦事項，是這個欄位本身的資料特性，null 值代表「市價還沒回填到」，不是查詢失敗。
+- **bff-ts `/stocks/:symbol/metrics-history` 疑似脆弱點**：2026-09-11 bff-ts 查證回覆，
+  原本懷疑的「陣列位置對位合併」根本不存在——bff-ts 沒有自己的跨指標合併邏輯，
+  `GET /companies/metrics-history` 回傳的就已經是合併好、用 `metricCode` 當 key、
+  缺資料用 `null` 標記的單一陣列，bff-ts 只逐筆正規化欄位格式。之前 2026-09-09/10
+  真正修的 500 是另一個問題（某 metricCode 某期完全無資料時回傳純 `null` 不是物件，
+  bff-ts 對 `null` 取 `.value` 炸掉，commit `91e2bca` 已修好），跟陣列對位無關。已用
+  2330 的 shareCountChangeRate/netIncomeGrowthRate 兩支成長型指標實測 23 期全部
+  正常，無 500，結案。
 
 ## 已知但非本服務造成的上游 bug
 
 - **mops 季度資料越界問題**：查一季卻回兩季資料，已確認是 mops-ts 端的問題，已回報
   等對方查，見 [[project_mops_quarter_boundary_bug]]。
 
-## 疑似脆弱點（今天發現，尚未證實/尚未修）
-
-- **bff-ts `/stocks/:symbol/metrics-history` 的多指標合併邏輯疑似用陣列位置對位**，
-  不是照 `metricCode` key 對應——2026-09-09 web-nuxt 回報不同指標回填進度不同步時
-  （例如 `shareCountChangeRate` 只有 1 期、其他有 23 期）該端點 500。已直接測試過
-  analysis-ts 自己的 `GET /companies/metrics-history` 在同樣長度不一致的情況下全部
-  正常回 200（用 `null` 標記缺資料的期數），問題不在這裡。已請 bff-ts 查證他們自己
-  的合併邏輯，這裡先記錄著——即使這次的具體案例已經靠回補資料繞過，類似的長度不一致
-  情況以後還會發生，bff-ts 那邊的合併邏輯應該要加防護，不能假設所有 metricCode 回應
-  長度一致。
-
-## 文件本身的債
-
-- `UBIQUITOUS_LANGUAGE.md` 「尚未解決的落差」那節提到 `metricKey`（filterCatalog）
-  跟 `metric_code`（pitMetrics）曾經只是碰巧同名——filterCatalog 已經在 2026-09-08
-  整套刪除（見 [[project_filtercatalog_sunset_plan]]），這條落差現在應該已經不存在，
-  但那份文件沒有跟著更新。下次動 `UBIQUITOUS_LANGUAGE.md` 時應該一併移除或標記已結案。
