@@ -6,8 +6,10 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/p
 // metric-provenance 的 accrualsRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）
 // 需要 4 季 × (淨利 + OCF + ICF) = 12 筆 + 1 筆本季期末總資產（分母，不隨 TTM 加總）= 13 筆，
 // 每一筆都是真實可對照的原始欄位（不是統計估計值），不像 sue 需要截斷，全部列出。ICF
-// （netCashFromInvestingActivities）是會計恆等式反推出來的（現金淨增減－CFO－CFF－匯率
-// 影響），沒有對應的單一 XBRL 欄位，標記成 type:'other'，不是 statementField。
+// （netCashFromInvestingActivities）原本誤判成沒有對應的單一 XBRL 欄位、標記成
+// type:'other' 反推值——mops-ts 2026-09-11 澄清 `net_cash_flows_from_used_in_investing_activities`
+// 本來就是原生申報欄位，`getCashFlowStatementXbrlFirst` 已改成優先採原生值，這裡對應改回
+// statementField，只有極少數原生欄位仍缺漏、退回會計恆等式反推的情況才標記 type:'other'。
 
 const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
@@ -46,10 +48,10 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): P
       role: `${label}投資活動現金流`,
       fiscalYear: detail.fiscalYear,
       fiscalQuarter: detail.season,
-      type: 'other',
-      statementType: null,
-      fieldKey: null,
-      sourceDescription: '會計恆等式反推（現金及約當現金淨增減－營業活動現金流－籌資活動現金流－匯率影響），沒有對應的單一 XBRL 揭露欄位',
+      type: 'statementField',
+      statementType: 'cashFlowStatement',
+      fieldKey: 'net_cash_flows_from_used_in_investing_activities',
+      sourceDescription: null,
       value: toEntryValue(detail.cashFlow?.netCashFromInvestingActivities ?? null),
     };
     return [netIncomeEntry, ocfEntry, icfEntry];

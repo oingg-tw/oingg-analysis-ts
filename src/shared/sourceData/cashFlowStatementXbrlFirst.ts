@@ -3,10 +3,16 @@
 // 的 statement_type='cash_flow_quarterly'，見 xbrlCashFlowQuarterly.ts），不再有
 // fallback 分支，理由見 balanceSheetXbrlFirst.ts 的說明。
 // 2026-09-06/07 用 2330 115Q1/115Q2 逐欄位交叉驗證過 5 個欄位（netCashFromOperatingActivities/
-// capitalExpenditures/depreciation/amortization/dividendsPaid）跟舊表完全一致；
-// netCashFromInvestingActivities 沒有對應的單一 XBRL account_code（investing activities
-// 沒有小計標籤，只有一堆個別項目、沒有保證窮舉的清單），改用會計恆等式反推：
-// 淨投資現金流 = 現金及約當現金淨增減 - CFO - CFF - 匯率影響，同樣驗證過完全一致。
+// capitalExpenditures/depreciation/amortization/dividendsPaid）跟舊表完全一致。
+//
+// netCashFromInvestingActivities：mops-ts 2026-09-11 澄清原本以為沒有對應單一 XBRL
+// account_code 是誤判——`net_cash_flows_from_used_in_investing_activities`
+//（tifrs-SCF:NetCashFlowsFromUsedInInvestingActivities）本來就是原生申報欄位，長表
+// 一直都有，只是兩張寬表（quarterly/cumulative_cash_flow_statement_xbrl）漏了這欄，
+// mops-ts 已補上。改為優先採原生欄位；只有原生欄位缺漏時才退回會計恆等式反推
+// （淨投資現金流 = 現金及約當現金淨增減 - CFO - CFF - 匯率影響，缺任一項就回傳 null，
+// 匯率影響缺漏視為 0）——用 2330 115Q2 真實資料驗證過兩者算出來的數字完全一致
+// （-492,810,418），保留 fallback 是為了涵蓋原生欄位還沒補齊的舊季度。
 //
 // 14 支既有 computeXxxPit.ts 都只透過 getCashFlowStatementXbrlFirst(key) 存取這 6 個
 // 欄位 + reportDate。
@@ -24,10 +30,6 @@ export interface CashFlowFields {
   netCashFromInvestingActivities: bigint | null;
 }
 
-// 淨投資現金流 = 現金及約當現金淨增減 - CFO - CFF - 匯率影響（會計恆等式，不是猜哪些
-// investing 個別項目要加總）。前三項（淨增減/CFO/CFF）是每家公司都會揭露的小計，缺任一項
-// 就直接回傳 null，不勉強；匯率影響缺漏視為 0（沒有這個 XBRL 標籤，合理解讀成沒有匯率
-// 影響，比照 bankCapitalAdequacy 對「沒有借那種負債」欄位的判斷精神）。
 const deriveNetCashFromInvestingActivities = (accounts: Record<string, bigint>): bigint | null => {
   const netChangeInCash = accounts.increase_decrease_in_cash_and_cash_equivalents;
   const cfo = accounts.cash_flows_from_used_in_operating_activities;
@@ -48,6 +50,7 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
     depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
     amortization: xbrl.accounts.adj_amortisation_expense ?? null,
     dividendsPaid: xbrl.accounts.dividends_paid_financing ?? null,
-    netCashFromInvestingActivities: deriveNetCashFromInvestingActivities(xbrl.accounts),
+    netCashFromInvestingActivities:
+      xbrl.accounts.net_cash_flows_from_used_in_investing_activities ?? deriveNetCashFromInvestingActivities(xbrl.accounts),
   };
 };
