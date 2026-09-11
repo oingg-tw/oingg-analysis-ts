@@ -467,16 +467,48 @@ export const countAllCompanyNames = async (): Promise<number> => {
 // etfScreener/queryBuilder.ts 既有的查詢慣例）。預設 filter 給空物件——不排除興櫃（真正
 // 公司）、不排除 KY、不排除特別股、不排除全額交割股，是「這個市場上所有能交易的證券」
 // 最大範圍，跟 GET /securities/symbols（2026-09-02，已於後續版本移除）當初的預設語意一致。
-const getEtfRows = async (): Promise<{ symbol: string; shortName: string | null }[]> => {
+export const securityTypeSchema = z.enum(['COMMON', 'PREFERRED', 'ETF']);
+export type SecurityType = z.infer<typeof securityTypeSchema>;
+
+// 2026-09-11 應 bff-ts 要求新增 type 欄位——web-nuxt 要靠這個做導頁判斷（普通股/特別股/ETF
+// 三種詳情頁路由不同），不想靠 symbol 格式猜（怕誤判）。跟 companyNameEntrySchema（GET
+// /companies 用，沒有 type 概念）刻意分開一組 schema，不要為了共用把 type 塞成 optional
+// 污染 companies 那邊的形狀。
+export const securityEntrySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+  type: securityTypeSchema,
+});
+export type SecurityEntry = z.infer<typeof securityEntrySchema>;
+
+interface RawTypedSecurityRow {
+  symbol: string;
+  shortName: string | null;
+  type: SecurityType;
+}
+
+const getEtfRows = async (): Promise<RawTypedSecurityRow[]> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
     SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."etf_basic_info"
   `;
-  return rows.map((r) => ({ symbol: r.symbol, shortName: r.short_name }));
+  return rows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, type: 'ETF' as const }));
 };
 
-export const listAllSecurityNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
+// dedupeBySymbol 是 {symbol,companyName} 兩欄位，這裡需要多帶一個 type，且 type 也要跟著
+// 「先出現的優先保留」同一個去重規則（不會有同一個 symbol 橫跨兩種 type 的真實案例，但
+// 邏輯上跟名稱去重一致比較不會出意外）。
+const dedupeTypedSecurities = (rows: RawTypedSecurityRow[]): SecurityEntry[] => {
+  const bySymbol = new Map<string, { companyName: string | null; type: SecurityType }>();
+  for (const row of rows) {
+    if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, { companyName: row.shortName, type: row.type });
+  }
+  return [...bySymbol].map(([symbol, { companyName, type }]) => ({ symbol, companyName, type }));
+};
+
+export const listAllSecurityNames = async (limit: number, offset: number): Promise<{ count: number; entries: SecurityEntry[] }> => {
   const [securityRows, etfRows] = await Promise.all([getAllSecurityRows({}), getEtfRows()]);
-  const all = dedupeBySymbol([...securityRows, ...etfRows]); // 一般股票/特別股排在前面，去重時優先保留
+  const typedSecurityRows: RawTypedSecurityRow[] = securityRows.map((r) => ({ symbol: r.symbol, shortName: r.shortName, type: r.isPreferredStock ? 'PREFERRED' : 'COMMON' }));
+  const all = dedupeTypedSecurities([...typedSecurityRows, ...etfRows]); // 一般股票/特別股排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };
 

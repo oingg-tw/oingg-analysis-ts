@@ -48,26 +48,34 @@ test('countAllCompanyNames 應該跟 listAllCompanyNames 回傳的 count 一致'
 // GET /companies（listAllCompanyNames）刻意分開的「證券」範疇，重用 getAllSecurityRows，
 // 主要差異是要真的涵蓋特別股（company_profile 結構性不含）。
 
-test('listAllSecurityNames: 涵蓋特別股（2891B/1101B），listAllCompanyNames 不涵蓋', async () => {
+test('listAllSecurityNames: 涵蓋特別股（2891B/1101B），type=PREFERRED，listAllCompanyNames 不涵蓋', async () => {
   const { entries } = await listAllSecurityNames(5000, 0);
-  const symbols = new Set(entries.map((e) => e.symbol));
-  assert.ok(symbols.has('2891B'), '2891B（中信金乙特）應該出現在證券清單裡');
-  assert.ok(symbols.has('1101B'), '1101B（台泥乙特）應該出現在證券清單裡');
+  const bySymbol = new Map(entries.map((e) => [e.symbol, e]));
+  assert.equal(bySymbol.get('2891B')?.type, 'PREFERRED', '2891B（中信金乙特）type 應該是 PREFERRED');
+  assert.equal(bySymbol.get('1101B')?.type, 'PREFERRED', '1101B（台泥乙特）type 應該是 PREFERRED');
 
   const { entries: companyEntries } = await listAllCompanyNames(5000, 0);
   const companySymbols = new Set(companyEntries.map((e) => e.symbol));
   assert.ok(!companySymbols.has('2891B'), '2891B 不應該出現在 GET /companies 的公司清單裡（company_profile 結構性不含特別股）');
 });
 
-test('listAllSecurityNames: 涵蓋 ETF（00919），listAllCompanyNames 不涵蓋', async () => {
+test('listAllSecurityNames: 涵蓋 ETF（00919），type=ETF，listAllCompanyNames 不涵蓋', async () => {
   const { entries } = await listAllSecurityNames(5000, 0);
   const entry = entries.find((e) => e.symbol === '00919');
   assert.ok(entry, '00919（群益台灣精選高息）應該出現在證券清單裡');
   assert.ok(entry!.companyName, 'ETF 應該要有名稱，不是 null');
+  assert.equal(entry!.type, 'ETF');
 
   const { entries: companyEntries } = await listAllCompanyNames(5000, 0);
   const companySymbols = new Set(companyEntries.map((e) => e.symbol));
   assert.ok(!companySymbols.has('00919'), '00919 不應該出現在 GET /companies 的公司清單裡（ETF 是 sitca-ts 的基金產品，不是 company_profile 範疇）');
+});
+
+test('listAllSecurityNames: 一般股票（2330）type=COMMON', async () => {
+  const { entries } = await listAllSecurityNames(5000, 0);
+  const entry = entries.find((e) => e.symbol === '2330');
+  assert.ok(entry);
+  assert.equal(entry!.type, 'COMMON');
 });
 
 test('listAllSecurityNames: 去重後同一個 symbol 不會出現第二次', async () => {

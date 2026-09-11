@@ -14,8 +14,10 @@ export const registerSecuritiesOpenApi = (): void => {
       'ETF（例如 00919）的情境請改用這支，不要用 GET /companies。範圍涵蓋上市（TWSE）＋上櫃（TPEx）的' +
       '一般股票，加上 TWSE 的特別股（isin_securities，目前 TPEx 特別股查無資料，不是 bug），再加上' +
       'sitca-ts 的全部 ETF（etf_basic_info）。興櫃／KY 股／全額交割股都不排除（最大範圍），查不到' +
-      '簡稱的證券 companyName 會是 null。limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責' +
-      '上限（1000）；也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。',
+      '簡稱的證券 companyName 會是 null。每筆 entry 帶 type（COMMON/PREFERRED/ETF），給前端做' +
+      '導頁判斷用（不同類型詳情頁路由不同），不要用 symbol 格式自己猜。limit 這次要拿幾筆由呼叫端' +
+      '自己依業務邏輯決定，本服務只負責上限（1000）；也提供 countOnly=true 只回總筆數，不用先拉' +
+      '一批資料才知道總共幾筆。',
     tags: ['System'],
     request: { query: getSecuritiesQuerySchema },
     responses: {
