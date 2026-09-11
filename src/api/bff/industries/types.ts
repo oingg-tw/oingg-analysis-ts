@@ -50,36 +50,6 @@ export const industryTreeNodeResultSchema = z.object({
 });
 export type IndustryTreeNodeResult = z.infer<typeof industryTreeNodeResultSchema>;
 
-// 2026-09-09 新增——tpex-ts 開的產業價值鏈分類（ic.tpex.org.tw），跟上面財政部稅籍分類是
-// 完全不同的體系（2 層 industry/subChain，一家公司可對應多個 subChain，涵蓋上市/上櫃/興櫃
-// 三個市場），刻意獨立一組 schema，不跟 industryLevelSchema/industryTreeNodeResultSchema 共用。
-
-export const valueChainLevelSchema = z.enum(['industry', 'subChain']);
-
-export const valueChainChildSchema = z.object({
-  code: z.string(),
-  name: z.string().nullable(),
-  companyCount: z.number().meta({ description: '這個節點底下總共幾家公司（不重複計算 symbol）' }),
-});
-
-export const valueChainCompanyEntrySchema = z.object({
-  symbol: z.string(),
-  companyName: z.string().nullable(),
-  market: z.enum(['listed', 'otc', 'rotc']).meta({ description: '上市/上櫃/興櫃' }),
-});
-
-export const valueChainNodeResultSchema = z.object({
-  found: z.boolean().meta({ description: 'false 代表帶了 code 但查無此產業價值鏈代碼；不給 code（查樹根）恆為 true' }),
-  code: z.string().nullable().meta({ description: 'null 代表這是樹根（顯示全部一級產業）' }),
-  level: valueChainLevelSchema.nullable(),
-  name: z.string().nullable(),
-  children: z.array(valueChainChildSchema).meta({ description: '直屬子節點；subChain 層級這裡永遠是空陣列' }),
-  companies: z.array(valueChainCompanyEntrySchema).meta({
-    description: '精確對應在這個 code 的公司。只有 subChain 層級會有值，industry/樹根層級永遠是空陣列（一家公司可能同時屬於多個 subChain，不做加總去重的「含子孫」公司數，請直接展開到 subChain 層級查看）。',
-  }),
-  dataSource: z.string().meta({ description: '公開可查證的原始資料來源網址，不是內部服務/table 名稱' }),
-});
-export type ValueChainNodeResult = z.infer<typeof valueChainNodeResultSchema>;
 
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是

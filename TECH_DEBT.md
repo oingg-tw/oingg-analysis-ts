@@ -36,11 +36,6 @@
   輪詢，20 個 Cloud Scheduler job），但目前只有 10 個交易日歷史（2026-08-31 起才開始
   收），深度不夠做趨勢型指標（融資使用率、券資比、融資餘額變化率）。純粹等時間累積，
   不是誰的工作項。
-- **`GET /industries/value-chain` 已下線**：tpex-ts 的 `export.company_industry_chain`
-  資料源是 `ic.tpex.org.tw`，使用條款（disclaimer.php 第七條）要求轉載內容前需取得
-  TPEx/TWSE 書面同意，目前還沒取得授權。端點程式碼保留（controller/service/types
-  都不動，只關掉 route 註冊跟 OpenAPI 文件），等 tpex-ts 決定要不要爭取授權或放棄
-  這個資料源。
 
 ## 已結案
 
@@ -57,6 +52,12 @@
   bff-ts 對 `null` 取 `.value` 炸掉，commit `91e2bca` 已修好），跟陣列對位無關。已用
   2330 的 shareCountChangeRate/netIncomeGrowthRate 兩支成長型指標實測 23 期全部
   正常，無 500，結案。
+- **`GET /industries/value-chain`：已結案，放棄**——tpex-ts 2026-09-11 確認不爭取
+  `ic.tpex.org.tw` 的書面授權，資料源整個放棄，他們那邊已刪除 scraper/schema/表/
+  export view（prod 那張表從頭到尾是空的，沒有資料遺失問題）。analysis-ts 這邊同步
+  清掉所有相關程式碼（`src/shared/sourceData/industryValueChain.ts` 整支刪除，
+  `industries/controller.ts`/`route.ts`/`openapi.ts`/`types.ts` 的相關函式/schema/
+  註冊一併移除），不是繼續停用等待，是真的不存在了。
 
 ## 已知但非本服務造成的上游 bug
 

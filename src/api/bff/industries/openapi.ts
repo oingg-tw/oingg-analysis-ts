@@ -60,18 +60,4 @@ export const registerIndustriesOpenApi = (): void => {
     },
   });
 
-  // 2026-09-09 暫時關閉這支的 OpenAPI 文件（連同 route.ts 的實際路由一起）——ic.tpex.org.tw
-  // 使用條款要求事前書面同意才能轉載/重製內容，取得授權前不對外開放，見 route.ts 的說明。
-  // registry.registerPath({
-  //   method: 'get',
-  //   path: '/industries/value-chain',
-  //   summary: '產業價值鏈分類瀏覽（TPEx 產業價值鏈資訊平台，展開/收合樹狀結構用）',
-  //   description: '...',
-  //   tags: ['Industries'],
-  //   request: { query: getValueChainQuerySchema },
-  //   responses: {
-  //     200: { description: '產業價值鏈節點的直屬子節點與精確對應的公司清單。', content: { 'application/json': { schema: valueChainNodeResultSchema } } },
-  //     400: { description: 'code 是空字串。' },
-  //   },
-  // });
 };
