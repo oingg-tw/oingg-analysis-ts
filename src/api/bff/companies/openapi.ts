@@ -223,10 +223,12 @@ export const registerCompaniesOpenApi = (): void => {
       '（10 個新 metric_code）動工前新增，取代每遷一支指標就各自複製貼上一段端點樣板碼的模式。' +
       'metricCode 決定要查哪支指標，完整清單見程式碼裡的 metricDefinitionRegistry（目前已知：' +
       `${Object.keys(metricDefinitionRegistry).join('、')}），之後新增指標會持續增加，這裡不逐一列出维護。` +
-      'token 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，beta 只允許' +
-      '"<lookbackRange>_<samplingInterval>" 例如 "2Y_1W"，exchangePeRatio 只允許 "EOD"），' +
-      '傳不允許的值會回 400 並附上這個 metricCode 實際允許的清單，完整組合見 GET /metrics。' +
-      'knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history 一致。' +
+      'token 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，' +
+      'exchangePeRatio 只允許 "EOD"），傳不允許的值會回 400 並附上這個 metricCode 實際允許的' +
+      '清單，完整組合見 GET /metrics。knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history' +
+      '一致。**metricCode="beta" 不支援這支端點**（2026-09-11 使用者確認 beta 不畫河流圖，' +
+      '沒有查單一公司歷史/最新值的需求）——固定回 400，請改用 screener/ranking' +
+      '（field: "beta.1Y_1D" 等）。' +
       '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
       '之後新增指標的曝露管道，不是要取代它們。（2026-09-08：這個 query 參數原本叫 basis，' +
       '改名 token 並改成同時涵蓋四組概念（periodType/lookbackRange+samplingInterval/' +
@@ -235,7 +237,7 @@ export const registerCompaniesOpenApi = (): void => {
     request: { query: getCompanyMetricHistoryQuerySchema },
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
-      400: { description: '缺少 symbol/metricCode/token，或 metricCode 未知，或 token 不在該 metricCode 允許的清單內。' },
+      400: { description: '缺少 symbol/metricCode/token，或 metricCode 未知，或 metricCode="beta"，或 token 不在該 metricCode 允許的清單內。' },
     },
   });
 

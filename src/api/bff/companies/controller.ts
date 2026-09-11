@@ -235,6 +235,15 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
     }
 
     const { symbol, metricCode, token, limit } = validationResult.data;
+
+    // 2026-09-11 使用者要求：beta 不畫河流圖，沒有查詢單一公司歷史/最新值的需求，直接從
+    // 這支端點移除——beta 全市場只回填最新一筆快照（不像 exchangePeRatio/exchangePbRatio/
+    // dividendYield 那樣有完整歷史），真正需要 beta 的情境是排行/篩選（screener 的
+    // "beta.1Y_1D" 欄位），不是查單一公司的歷史時間序列，所以只擋這支端點，不影響 screener。
+    if (metricCode === 'beta') {
+      return res.status(400).json({ message: 'beta 不支援 GET /companies/metric-history 查詢，請改用 screener/ranking（field: "beta.1Y_1D" 等）。' });
+    }
+
     let fieldRef;
     try {
       fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
