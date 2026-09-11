@@ -87,7 +87,6 @@ import { financialLeverageDegreeDefinition } from '@/domainPitMetrics/resilience
 import { totalLeverageDegreeDefinition } from '@/domainPitMetrics/resilience/totalLeverageDegree/totalLeverageDegreeDefinition';
 import { nonOperatingIncomeRatioDefinition } from '@/domainPitMetrics/profitability/nonOperatingIncomeRatio/nonOperatingIncomeRatioDefinition';
 import { equityRatioDefinition } from '@/domainPitMetrics/resilience/equityRatio/equityRatioDefinition';
-import { auditOpinionRiskDefinition } from '@/domainPitMetrics/resilience/auditOpinionRisk/auditOpinionRiskDefinition';
 import { cashToAssetsRatioDefinition } from '@/domainPitMetrics/resilience/cashToAssetsRatio/cashToAssetsRatioDefinition';
 import { grahamNumberDefinition } from '@/domainPitMetrics/valuation/grahamNumber/grahamNumberDefinition';
 import { ncavDefinition } from '@/domainPitMetrics/valuation/ncav/ncavDefinition';
@@ -214,7 +213,6 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   totalLeverageDegree: totalLeverageDegreeDefinition,
   nonOperatingIncomeRatio: nonOperatingIncomeRatioDefinition,
   equityRatio: equityRatioDefinition,
-  auditOpinionRisk: auditOpinionRiskDefinition,
   cashToAssetsRatio: cashToAssetsRatioDefinition,
   grahamNumber: grahamNumberDefinition,
   ncav: ncavDefinition,

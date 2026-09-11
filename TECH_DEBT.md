@@ -5,17 +5,6 @@
 訊息說明，新發現的項目隨時補進來。放在 repo 根目錄是同一個理由：跨服務協調時常常需要
 引用，需要比 `docs/` 隨手筆記更高的持久性保證。
 
-## 上游資料異常，等 mops-ts 查證
-
-- **`export.audit_scope_xbrl` 的 `qualified_opinion` 旗標在季報比例明顯異常**：
-  115Q1/Q2 分別有 51.5%/47.0% 的公司顯示 `qualified_opinion='Y'`（保留意見），但
-  114Q4（年報，真正查核）是 0%——1101（台泥）等藍籌股顯示保留意見不合理。懷疑季報
-  （核閱）跟年報（查核）在 XBRL 裡是不同科目，parser 誤把兩者映射到同一組旗標。已
-  回報 mops-ts（2026-09-11），還沒回覆。`GET /companies/profile` 的
-  `auditOpinionType`/`auditOpinionReportDate` 欄位跟 pitMetrics 的 `auditOpinionRisk`
-  指標已經上線並全市場回填，但已通知 web-nuxt/bff-ts 先不要當可信數字串接，見
-  [[project_audit_opinion_data_quality_doubt]]。
-
 ## 資料覆蓋率（最大宗，貫穿整個 pitMetrics 架構）
 
 - **2026-09-11 更新：絕大多數季報型指標已經全市場回填**（`GENERAL_METRIC_CODES`/
@@ -69,6 +58,13 @@
   清掉所有相關程式碼（`src/shared/sourceData/industryValueChain.ts` 整支刪除，
   `industries/controller.ts`/`route.ts`/`openapi.ts`/`types.ts` 的相關函式/schema/
   註冊一併移除），不是繼續停用等待，是真的不存在了。
+- **查核意見類型（`auditOpinionRisk`/`GET /companies/profile` 的欄位）：已結案，放棄**
+  ——2026-09-11 全市場回填後發現季報（Q1/Q2）`qualified_opinion='Y'`（保留意見）比例
+  高達 47~51.5%，年報是 0%，1101 等藍籌股顯示保留意見不合理。mops-ts 查證：不是
+  parser bug，是核閱準則規定子公司範圍未個別核閱就要列保留結論（99.9% 相符
+  `nonmajor_subsidiary_unaudited_flag`），是良性的程序性事項不是財報疑慮。使用者拍板
+  整批放棄不修正，程式碼/已回填資料/metric_definitions 都已回滾清除，見
+  [[project_audit_opinion_data_quality_doubt]]。
 
 ## 已知但非本服務造成的上游 bug
 
