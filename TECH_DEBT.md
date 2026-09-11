@@ -5,6 +5,17 @@
 訊息說明，新發現的項目隨時補進來。放在 repo 根目錄是同一個理由：跨服務協調時常常需要
 引用，需要比 `docs/` 隨手筆記更高的持久性保證。
 
+## 上游資料異常，等 mops-ts 查證
+
+- **`export.audit_scope_xbrl` 的 `qualified_opinion` 旗標在季報比例明顯異常**：
+  115Q1/Q2 分別有 51.5%/47.0% 的公司顯示 `qualified_opinion='Y'`（保留意見），但
+  114Q4（年報，真正查核）是 0%——1101（台泥）等藍籌股顯示保留意見不合理。懷疑季報
+  （核閱）跟年報（查核）在 XBRL 裡是不同科目，parser 誤把兩者映射到同一組旗標。已
+  回報 mops-ts（2026-09-11），還沒回覆。`GET /companies/profile` 的
+  `auditOpinionType`/`auditOpinionReportDate` 欄位跟 pitMetrics 的 `auditOpinionRisk`
+  指標已經上線並全市場回填，但已通知 web-nuxt/bff-ts 先不要當可信數字串接，見
+  [[project_audit_opinion_data_quality_doubt]]。
+
 ## 資料覆蓋率（最大宗，貫穿整個 pitMetrics 架構）
 
 - **2026-09-11 更新：絕大多數季報型指標已經全市場回填**（`GENERAL_METRIC_CODES`/
