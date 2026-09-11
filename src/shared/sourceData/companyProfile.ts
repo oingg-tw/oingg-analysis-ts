@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
+import { getLatestAuditOpinion } from './auditOpinionXbrl';
 import type { CompanyProfileDetail } from '@/api/bff/companies/types';
 
 interface RawTpexCompanyProfileRow {
@@ -293,10 +294,13 @@ const normalizeWebsiteDomain = (website: string | null): string | null => {
 // 不是「排除幽靈代號」那種清單情境（見 getAllSecurityRows 的說明），就算是
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
 export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyProfileDetail | null> => {
-  const twseRows = await twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
-    `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
-    symbol
-  );
+  const [twseRows, auditOpinion] = await Promise.all([
+    twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
+      `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
+      symbol
+    ),
+    getLatestAuditOpinion(symbol),
+  ]);
   const twseRow = twseRows[0];
   if (twseRow) {
     return {
@@ -336,6 +340,8 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyPr
       email: twseRow.email,
       website: normalizeWebsiteDomain(twseRow.website),
       issuedShares: twseRow.issued_shares?.toString() ?? null,
+      auditOpinionType: auditOpinion?.label ?? null,
+      auditOpinionReportDate: auditOpinion?.reportDate.toISOString().slice(0, 10) ?? null,
     };
   }
 
@@ -388,6 +394,8 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyPr
     email: tpexRow.email,
     website: normalizeWebsiteDomain(tpexRow.website),
     issuedShares: tpexRow.issued_shares?.toString() ?? null,
+    auditOpinionType: auditOpinion?.label ?? null,
+    auditOpinionReportDate: auditOpinion?.reportDate.toISOString().slice(0, 10) ?? null,
   };
 };
 

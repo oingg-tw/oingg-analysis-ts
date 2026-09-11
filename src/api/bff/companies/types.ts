@@ -55,6 +55,12 @@ export const companyProfileDetailSchema = z.object({
   email: z.string().nullable(),
   website: z.string().nullable().meta({ description: '2026-09-04 起已正規化成裸網域（去 scheme/尾斜線/www. 前綴），方便直接接 logo 服務' }),
   issuedShares: z.string().nullable(),
+  // 2026-09-11 應 web-nuxt/bff-ts 要求新增——auditingFirm/auditor1/auditor2 是「誰查核」，
+  // 這兩個欄位是「查核意見結果」，來源是 mops-ts export.audit_scope_xbrl 最新一筆（合併
+  // 報表），跟 pitMetrics 的 auditOpinionRisk（同一份資料編碼成 0~4 風險分數）共用同一組
+  // 對照表，見 @/shared/sourceData/auditOpinionXbrl.ts。查無資料時兩者皆為 null。
+  auditOpinionType: z.string().nullable().meta({ description: '查核意見類型（例如「無保留意見」「保留意見」），查無資料為 null' }),
+  auditOpinionReportDate: z.string().nullable().meta({ description: '這筆查核意見對應的財報公告日（YYYY-MM-DD），查無資料為 null' }),
 });
 export type CompanyProfileDetail = z.infer<typeof companyProfileDetailSchema>;
 
