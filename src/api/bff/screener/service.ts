@@ -1,5 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/shared/sourceData/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';
 import { buildScreenerSql, buildRankingSql, buildValuesSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
 import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue } from './types';
@@ -46,6 +47,22 @@ const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | 
   return { field: sortField, order: sortOrder };
 };
 
+// 2026-09-11 新增：類股篩選（sectorCodes）resolve 成候選 symbol 陣列——用的是證交所類股
+// 分類（twse-ts/tpex-ts company_profile.industry，例如「24」半導體業），不是財政部稅籍
+// 分類，這是投資人習慣、可以對應「半導體業」「電子零組件業」這類熟悉類股名稱的那一套。任一
+// 代碼不合法就直接 400，不是靜默忽略打錯的代碼（比照 fieldResolver 對未知 metricCode 一律
+// 400 的既有慣例）。sectorCodes 沒給或空陣列回傳 null，buildScreenerSql/buildRankingSql
+// 收到 null 就不多加這個 WHERE 條件，行為完全不變。
+const resolveSectorCandidateSymbols = async (sectorCodes: string[] | undefined): Promise<string[] | null> => {
+  if (!sectorCodes || sectorCodes.length === 0) return null;
+  for (const code of sectorCodes) {
+    if (!isValidSecuritiesSectorCode(code)) {
+      throw new ScreenerValidationError(`sectorCodes 裡的 "${code}" 不是合法的證券類股代碼，請查 GET /industries/securities-sectors 取得合法代碼。`);
+    }
+  }
+  return [...(await listCompaniesBySectorCodes(sectorCodes))];
+};
+
 export const runScreener = async (request: {
   filters: ScreenerFilterInput[];
   columns: ScreenerColumnInput[];
@@ -53,18 +70,20 @@ export const runScreener = async (request: {
   pageSize: number;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
+  sectorCodes?: string[];
 }): Promise<ScreenerResponse> => {
   const { filters: filterInputs, columns: columnInputs, page, pageSize } = request;
 
   const filters: FilterCondition[] = filterInputs.map((f) => ({ ...resolveFieldOrThrow(f.field), min: f.min, max: f.max, exclude: f.exclude ?? false }));
   const columns: FieldRef[] = columnInputs.map((c) => resolveFieldOrThrow(c.field));
   const sort = resolveSort(request.sortField, request.sortOrder, columns);
+  const candidateSymbols = await resolveSectorCandidateSymbols(request.sectorCodes);
 
   if (filters.length === 0 && columns.length === 0) {
     throw new ScreenerValidationError('filters 跟 columns 至少要提供一個。');
   }
 
-  const sql = buildScreenerSql(filters, columns, page, pageSize, sort);
+  const sql = buildScreenerSql(filters, columns, page, pageSize, sort, candidateSymbols);
   const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
 
   const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
@@ -74,11 +93,18 @@ export const runScreener = async (request: {
   return { count, page, pageSize, totalPages: count === 0 ? 0 : Math.ceil(count / pageSize), results };
 };
 
-export const runScreenerRanking = async (request: { field: string; direction: 'asc' | 'desc'; limit: number; columns: string[] }): Promise<ScreenerRankingResponse> => {
+export const runScreenerRanking = async (request: {
+  field: string;
+  direction: 'asc' | 'desc';
+  limit: number;
+  columns: string[];
+  sectorCodes?: string[];
+}): Promise<ScreenerRankingResponse> => {
   const rankedField = resolveFieldOrThrow(request.field);
   const columns = request.columns.map((field) => resolveFieldOrThrow(field));
+  const candidateSymbols = await resolveSectorCandidateSymbols(request.sectorCodes);
 
-  const sql = buildRankingSql(rankedField, request.direction, request.limit, columns);
+  const sql = buildRankingSql(rankedField, request.direction, request.limit, columns, candidateSymbols);
   const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
 
   const combinedFields: IndexedField[] = [rankedField, ...columns].map((c, index) => ({ ...c, index }));

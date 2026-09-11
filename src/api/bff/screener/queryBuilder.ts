@@ -171,7 +171,17 @@ export interface SortSpec {
   order: 'asc' | 'desc';
 }
 
-export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: SortSpec | null): Prisma.Sql => {
+// candidateSymbols：2026-09-11 新增，類股篩選（sectorCodes）resolve 出來的候選公司
+// 集合，null 代表沒有類股篩選、不多加這個條件（行為跟改動前完全一樣）。注入方式比照
+// buildValuesSql 既有的 unnest($1::text[]) pattern，一樣是參數化模板，不是字串拼接。
+export const buildScreenerSql = (
+  filters: FilterCondition[],
+  columns: FieldRef[],
+  page: number,
+  pageSize: number,
+  sort: SortSpec | null,
+  candidateSymbols: string[] | null = null
+): Prisma.Sql => {
   const filterCteRefs = dedupCtes(filters);
   const columnCteRefs = dedupCtes(columns);
   const columnOnlyCteRefs = [...columnCteRefs.entries()].filter(([key]) => !filterCteRefs.has(key)).map(([, v]) => v);
@@ -186,6 +196,9 @@ export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[]
   const selectList = [Prisma.sql`${symbolExpr} AS symbol`, ...selectCols, Prisma.sql`COUNT(*) OVER() AS total_count`];
 
   const whereConditions = filters.map((f) => buildFilterCondition(f, allCteRefs));
+  if (candidateSymbols !== null) {
+    whereConditions.push(Prisma.sql`${symbolExpr} = ANY(${candidateSymbols}::text[])`);
+  }
   const whereSql = whereConditions.length > 0 ? Prisma.join(whereConditions, ' AND ') : Prisma.sql`TRUE`;
 
   const offset = (page - 1) * pageSize;
@@ -217,7 +230,13 @@ export const buildScreenerSql = (filters: FilterCondition[], columns: FieldRef[]
 // 排序欄位當作「唯一的 filter CTE」處理（INNER JOIN，null 值額外用 WHERE 排除——JOIN 本身
 // 只保證這個 CTE 有一列，不保證 value 欄位不是 null），額外的 columns 一樣是 LEFT JOIN。
 // 排序欄位本身永遠會出現在 values 裡（不管有沒有列進 columns）。
-export const buildRankingSql = (rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[]): Prisma.Sql => {
+export const buildRankingSql = (
+  rankedField: FieldRef,
+  direction: 'asc' | 'desc',
+  limit: number,
+  columns: FieldRef[],
+  candidateSymbols: string[] | null = null
+): Prisma.Sql => {
   const combinedFields = [rankedField, ...columns];
   const filterCteRefs = dedupCtes([rankedField]);
   const columnCteRefs = dedupCtes(combinedFields);
@@ -236,11 +255,16 @@ export const buildRankingSql = (rankedField: FieldRef, direction: 'asc' | 'desc'
 
   const directionSql = direction === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
 
+  const whereConditions = [Prisma.sql`${rankedCol} IS NOT NULL`];
+  if (candidateSymbols !== null) {
+    whereConditions.push(Prisma.sql`${rankedAlias}.${q('symbol')} = ANY(${candidateSymbols}::text[])`);
+  }
+
   return Prisma.sql`
     WITH ${Prisma.join(ctes, ', ')}
     SELECT ${Prisma.join(selectList, ', ')}
     ${fromSql}
-    WHERE ${rankedCol} IS NOT NULL
+    WHERE ${Prisma.join(whereConditions, ' AND ')}
     ORDER BY ${rankedCol} ${directionSql}
     LIMIT ${limit}
   `;

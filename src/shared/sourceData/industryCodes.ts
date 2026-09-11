@@ -2,8 +2,10 @@ import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { logger } from '@/shared/logger';
 
-// 產業代碼對照表——之後做 Mohanram_G_Score/Greenblatt_Magic_Formula 這類需要「跟同產業其他公司比較」
-// 的指標時會用到，目前只負責在伺服器啟動時抓下來放記憶體，還沒有任何指標真的在用。
+// 證交所類股代碼對照表——2026-09-11 起已被 securitiesIndustry.ts 使用（screener 的
+// industryCodes 產業篩選、GET /industries/securities-sectors 瀏覽），伺服器啟動時抓下來
+// 放記憶體常駐。之後 Mohanram_G_Score/Greenblatt_Magic_Formula 這類需要「跟同產業其他公司
+// 比較」的指標也會用到同一份對照表。
 //
 // 2026-09-04 改用 twse-ts 的 export.industry_code view（兩碼產業代碼 -> 中文產業名稱，
 // 40 筆，已實測確認 dev/prod 都有資料）取代原本 localhost:8081 + TASK_SECRET 的 dev-only
@@ -87,5 +89,4 @@ export const loadIndustryCodes = async (): Promise<void> => {
   logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，DB 裡也沒有上次存的備援資料，放棄抓取，不影響伺服器啟動（之後也不會自動再重試，除非重啟伺服器）。`);
 };
 
-// 目前沒有任何指標在讀這個——先把資料抓下來放著，等真的要做 Mohanram_G_Score 之類的指標時再接上。
 export const getIndustryCodes = (): IndustryCodeMap | null => industryCodes;

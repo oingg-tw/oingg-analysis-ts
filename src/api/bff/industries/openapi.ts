@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getIndustryTreeQuerySchema } from './controller';
-import { industryTreeNodeResultSchema, industryFlatResultSchema } from './types';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (): void => {
   registry.registerPath({
@@ -40,6 +40,23 @@ export const registerIndustriesOpenApi = (): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '全部已分類公司的 symbol/companyName/path 陣列。', content: { 'application/json': { schema: industryFlatResultSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/securities-sectors',
+    summary: '證交所類股分類清單（投資人習慣的「半導體業」等類股，非財政部稅籍分類）',
+    description:
+      '資料源是 twse-ts/tpex-ts 的 company_profile.industry 欄位（證交所公告的類股分類，兩碼代碼），' +
+      '跟 GET /industries/tree（財政部稅籍五層分類）是完全不同的分類體系，刻意不合併——這支才是「半導體業」' +
+      '「電子零組件業」這類投資人熟悉的類股名稱。只有單一層級，扁平回傳全部合法代碼（目前 40 個，排除' +
+      '證券商/期貨商/第一上市外國公司身份別/舊產業代碼殘留這幾個非真正產業分類的代碼），companyCount 是' +
+      'TWSE+TPEx 兩個市場加總。screener 的 POST /screener、GET /screener/ranking 的 industryCodes 參數' +
+      '用的就是這支端點回傳的代碼。',
+    tags: ['Industries'],
+    responses: {
+      200: { description: '全部合法證交所類股代碼清單。', content: { 'application/json': { schema: securitiesIndustrySectorsResultSchema } } },
     },
   });
 

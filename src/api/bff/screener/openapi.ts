@@ -44,12 +44,16 @@ export const registerScreenerOpenApi = (): void => {
       '查詢引擎直接讀 pitMetrics 共用的 metric_values 表，取每個 symbol 目前已知的最新一筆值——' +
       '不是歷史查詢，只回傳「現在」，跟 GET /companies/metric-history（單一 symbol 的完整歷史時序）是不同用途。' +
       'exclude=false（預設）保留落在 [min,max] 內的值；exclude=true 保留落在 [min,max] 外的值，兩者 null 值一律排除。' +
-      'columns 只影響回應要不要帶這個欄位，不影響篩選結果的 symbol 集合。sortField 是 "symbol" 或已列在 columns 裡的欄位。',
+      'columns 只影響回應要不要帶這個欄位，不影響篩選結果的 symbol 集合。sortField 是 "symbol" 或已列在 columns 裡的欄位。' +
+      '2026-09-11 新增 sectorCodes（選填）：證交所類股代碼（twse-ts/tpex-ts company_profile.industry，' +
+      '兩碼，例如「24」半導體業，不是財政部稅籍分類），多個代碼是聯集，跟 filters 是 AND 關係，用來先縮小候選' +
+      '公司範圍再套用數字篩選（例如「半導體業 + ROE > 15%」）。合法代碼請查 GET /industries/securities-sectors，' +
+      '未分類的公司用類股篩選時會被排除，不是 bug，是資料源本身的已知限制。',
     tags: ['Screener'],
     request: { body: { content: { 'application/json': { schema: postScreenerBodySchema } } } },
     responses: {
       200: { description: '分頁後的篩選結果。', content: { 'application/json': { schema: screenerResultSchema } } },
-      400: { description: 'filters/columns 都是空的、field 格式錯誤或查不到、sortField 不合法。' },
+      400: { description: 'filters/columns 都是空的、field 格式錯誤或查不到、sortField 不合法、sectorCodes 有不合法的代碼。' },
     },
   });
 
@@ -57,12 +61,14 @@ export const registerScreenerOpenApi = (): void => {
     method: 'get',
     path: '/screener/ranking',
     summary: '單一欄位排序取前 N 名',
-    description: '排序欄位本身一定會出現在 values 裡（不管有沒有另外列進 columns），且保證非 null（WHERE value IS NOT NULL）。',
+    description:
+      '排序欄位本身一定會出現在 values 裡（不管有沒有另外列進 columns），且保證非 null（WHERE value IS NOT NULL）。' +
+      'sectorCodes（選填，逗號分隔）比照 POST /screener 同一套證交所類股篩選語意，先縮小候選公司範圍再排序。',
     tags: ['Screener'],
     request: { query: getScreenerRankingQuerySchema },
     responses: {
       200: { description: '依 field 排序的前 N 筆結果。', content: { 'application/json': { schema: screenerRankingResultSchema } } },
-      400: { description: 'field 格式錯誤或查不到。' },
+      400: { description: 'field 格式錯誤或查不到、sectorCodes 有不合法的代碼。' },
     },
   });
 

@@ -80,3 +80,18 @@ export const valueChainNodeResultSchema = z.object({
   dataSource: z.string().meta({ description: '公開可查證的原始資料來源網址，不是內部服務/table 名稱' }),
 });
 export type ValueChainNodeResult = z.infer<typeof valueChainNodeResultSchema>;
+
+// 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
+// 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是
+// 完全不同的體系：只有單一層級（不是樹狀），40 個代碼扁平列出，刻意獨立一組 schema。
+
+export const securitiesIndustrySectorSchema = z.object({
+  code: z.string().meta({ description: '兩碼證交所類股代碼，例如 "24"' }),
+  name: z.string().meta({ description: '中文類股名稱，例如「半導體業」' }),
+  companyCount: z.number().meta({ description: '這個類股底下總共幾家公司（TWSE+TPEx 加總）' }),
+});
+
+export const securitiesIndustrySectorsResultSchema = z.object({
+  sectors: z.array(securitiesIndustrySectorSchema),
+});
+export type SecuritiesIndustrySectorsResult = z.infer<typeof securitiesIndustrySectorsResultSchema>;

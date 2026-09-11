@@ -1,7 +1,17 @@
-import { test, describe, afterAll } from 'vitest';
+import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/api/bff/screener/service';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { loadIndustryCodes } from '@/shared/sourceData/industryCodes';
+
+// sectorCodes 篩選（resolveIndustryCandidateSymbols）依賴模組層級的 sectorCodes 快取，
+// 跟正式環境靠 src/index.ts 在伺服器啟動時載入一次不同，測試檔案各自獨立的模組實例需要自己
+// 觸發一次載入，否則 isValidSecuritiesIndustryCode 一律查無資料、sectorCodes 測試會全部
+// 誤判成無效代碼。用的是證交所類股代碼（twse-ts/tpex-ts company_profile.industry），不是
+// 財政部稅籍分類——2330（台積電）實測屬於 24 半導體業，2317（鴻海）屬於 31 其他電子業。
+beforeAll(async () => {
+  await loadIndustryCodes();
+});
 
 // 2026-09-08 重建：舊架構的 screener（靠 metricTableRegistry 解析「一指標一表」）已經隨
 // filterCatalog 一起退場（見 abstract-crafting-journal.md「filterCatalog/screener 整套
@@ -63,6 +73,9 @@ describe('runScreener', () => {
   });
 
   test('sortField 是 columns 裡的 metric 欄位時，2330 的 roe.TTM 應該排在 2317 前面（desc）', async () => {
+    // 2026-09-11 全市場回填完成後 roe.TTM 已涵蓋近 2000 家公司，單純 desc + pageSize:200
+    // 不再保證 2330/2317 都落在前 200 名內——用 sectorCodes（各自所屬的證交所類股）縮小
+    // 候選範圍，確保兩者都在結果集合裡，這是這次新功能剛好能用得上的地方，不是繞路。
     const result = await runScreener({
       ...baseRequest,
       filters: [{ field: 'roe.TTM', min: -999, max: null }],
@@ -70,6 +83,7 @@ describe('runScreener', () => {
       sortField: 'roe.TTM',
       sortOrder: 'desc',
       pageSize: 200,
+      sectorCodes: ['24', '31'],
     });
     const symbolOrder = result.results.map((r) => r.symbol);
     const index2330 = symbolOrder.indexOf('2330');
@@ -106,6 +120,43 @@ describe('runScreener', () => {
   });
 });
 
+// 2026-09-11 新增：sectorCodes 產業篩選（先用候選 symbol 集合縮小範圍，再套用既有的
+// metricCode 查詢管線）。用的是證交所類股代碼——2330（台積電）實測屬於 24 半導體業，
+// 2317（鴻海）屬於 31 其他電子業，用來驗證篩選真的有排除不屬於該類股的公司，不是誤判
+// 成全部通過。
+describe('runScreener with sectorCodes', () => {
+  test('只給 sectorCodes（不搭配數字篩選），回傳的公司都屬於該產業', async () => {
+    const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 });
+    assert.ok(result.results.some((r) => r.symbol === '2330'), '2330 屬於 24，應該出現在結果裡');
+    assert.ok(!result.results.some((r) => r.symbol === '2317'), '2317 不屬於 24，不應該出現在結果裡');
+  });
+
+  test('sectorCodes + 數字篩選（roe.TTM）組合，交集正確：candidate 但不滿足數字條件的公司應該被排除', async () => {
+    const withoutFilter = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 });
+    const withFilter = await runScreener({
+      ...baseRequest,
+      filters: [{ field: 'roe.TTM', min: 0, max: null }],
+      columns: [{ field: 'roe.TTM' }],
+      sectorCodes: ['24'],
+      pageSize: 200,
+    });
+    assert.ok(withFilter.results.length <= withoutFilter.results.length, '加上數字篩選後結果不應該變多');
+    for (const row of withFilter.results) {
+      assert.ok(row.values['roe.TTM']!.value! >= 0, `${row.symbol} 應該同時滿足產業跟數字條件`);
+    }
+  });
+
+  test('給無效產業代碼應該拋 ScreenerValidationError', async () => {
+    await assert.rejects(() => runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['ZZ'] }), ScreenerValidationError);
+  });
+
+  test('不給 sectorCodes，行為跟現有測試完全一致（零回歸）：總筆數不受任何候選集合限制', async () => {
+    const withIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 1 });
+    const withoutIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], pageSize: 1 });
+    assert.ok(withoutIndustry.count > withIndustry.count, '不給 sectorCodes 時總筆數應該遠大於限定單一產業的總筆數（全市場已回填近 2000 家公司）');
+  });
+});
+
 describe('runScreenerRanking', () => {
   test('desc 排序，2330 應該排在 2317 前面，筆數不超過 limit', async () => {
     const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [] });
@@ -132,6 +183,15 @@ describe('runScreenerRanking', () => {
   test('asOfDate 是 YYYY-MM-DD 格式（knowledge_date）', async () => {
     const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 1, columns: [] });
     assert.match(result.results[0]!.values['roe.TTM']!.asOfDate!, /^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test('sectorCodes：排行結果只會出現該產業的公司（2317 不屬於 24，不應該出現）', async () => {
+    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 50, columns: [], sectorCodes: ['24'] });
+    assert.ok(!result.results.some((r) => r.symbol === '2317'));
+  });
+
+  test('sectorCodes 給無效代碼應該拋 ScreenerValidationError', async () => {
+    await assert.rejects(() => runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [], sectorCodes: ['ZZ'] }), ScreenerValidationError);
   });
 });
 

@@ -19,6 +19,15 @@ export const postScreenerBodySchema = z.object({
   pageSize: z.number().int().min(1).max(200).default(50),
   sortField: z.string().min(1).optional().meta({ description: '"symbol" 或已列在 columns 裡的欄位，兩者要嘛都給要嘛都不給，沒給預設用 symbol 排序' }),
   sortOrder: z.enum(['asc', 'desc']).optional(),
+  sectorCodes: z
+    .array(z.string().min(1))
+    .optional()
+    .meta({
+      description:
+        '選填。證交所類股代碼（twse-ts/tpex-ts company_profile.industry，兩碼，例如 "24" 半導體業，' +
+        '不是財政部稅籍分類），多個代碼是聯集（OR），跟 filters 是 AND 關係。合法代碼請查 ' +
+        'GET /industries/securities-sectors，未分類的公司用類股篩選時會被排除。',
+    }),
 });
 const bodySchema = postScreenerBodySchema;
 
@@ -44,10 +53,17 @@ export const getScreenerRankingQuerySchema = z.object({
   direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }),
   limit: z.coerce.number().int().min(1).max(50).default(10).meta({ description: '預設 10，上限 50。' }),
   columns: z.string().optional().meta({ description: '逗號分隔的額外顯示欄位（"metricCode.basis" 格式）。' }),
+  sectorCodes: z
+    .string()
+    .optional()
+    .meta({ description: '逗號分隔的證交所類股代碼（多個是聯集），比照 POST /screener 的 sectorCodes，合法代碼查 GET /industries/securities-sectors。' }),
 });
 
 const rankingQuerySchema = getScreenerRankingQuerySchema.extend({
   columns: getScreenerRankingQuerySchema.shape.columns.transform((value) => (value ? value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : [])),
+  sectorCodes: getScreenerRankingQuerySchema.shape.sectorCodes.transform((value) =>
+    value ? value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : undefined
+  ),
 });
 
 export const getScreenerRanking = async (req: Request, res: Response, next: NextFunction) => {
