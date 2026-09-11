@@ -9,101 +9,38 @@
 // 這張表每家公司都有列，只是非銀行業的銀行專屬欄位是 null，見 mops-ts 2026-09-11 的
 // 澄清），實測只有 11 家（1409/2801/2812/2834/2836/2838/2845/2849/2897/5863/5876）。
 //
+// 2026-09-11 第一版是完全序列（一家公司做完才做下一家、同一家公司內 61 支指標也依序
+// await），實測 2058 家預估要 22.9 小時，使用者問「有無可改善的地方」——診斷後發現
+// 完全沒有平行化，改成兩層平行：(1) 同一家公司內的 61 支指標大多互不依賴（各自獨立讀
+// 同一季資料算出來），改用 Promise.allSettled 平行送出，任一支失敗不影響其他支；
+// (2) 多家公司同時處理（SYMBOL_CONCURRENCY，見下方），用簡單的固定併發池，不是無上限
+// Promise.all 全部公司一次送出（避免瞬間打爆 Neon DB 連線數）。使用者明確要求「以後
+// 平行版本可以穩定，所以有問題就要停下來修」——先用小批次（PILOT_LIMIT 環境變數）驗證
+// 錯誤率/連線穩定性（30/100 家實測都是 0 錯誤，速度從序列版 ~40s/symbol 降到
+// ~4s/symbol），確認沒問題才跑全市場。
+//
 // 逐日型指標（beta/exchangePeRatio+exchangePbRatio+dividendYield）刻意只算「最新一筆」
 // （不傳 date，函式自己解析最新可用交易日），不是像 2330 那樣逐一歷史交易日重算——
 // 使用者確認排行只需要最新值，逐日全歷史回填成本高很多倍且非必要。
 //
+// 2026-09-11 使用者要求「有 error 的話希望有機制可以精準回補」——buildGeneralTasks/
+// buildBankTasks/runTasks/BackfillFailure 抽到 scripts/backfillTaskDefinitions.ts
+// （沒有 top-level 執行副作用的純模組），跟 scripts/retryBackfillFailuresPit.ts 共用
+// 同一份指標清單；runBatch 完成後把失敗的 (symbol, label) 組合寫進
+// tmp/backfill-failures-<slug>.json，retry 腳本讀這個檔案只重跑失敗的部分。
+//
 // 用法：pnpm tsx scripts/backfillAllMetricsLatestFullMarketPit.ts
+//      PILOT_LIMIT=30 pnpm tsx scripts/backfillAllMetricsLatestFullMarketPit.ts（小批次測試）
 
-import { computeAndWriteRoePit } from '../src/domainPitMetrics/profitability/roe/computeRoePit';
-import { computeAndWriteRoaPit } from '../src/domainPitMetrics/profitability/roa/computeRoaPit';
-import { computeAndWriteDupontFamilyPit } from '../src/domainPitMetrics/shared/dupont/computeDupontFamilyPit';
-import { computeAndWriteGrahamNumberPit } from '../src/domainPitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
-import { computeAndWriteOwnerEarningsPit } from '../src/domainPitMetrics/quality/ownerEarnings/computeOwnerEarningsPit';
-import { computeAndWriteAltmanZScorePit } from '../src/domainPitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { computeAndWritePiotroskiFScorePit } from '../src/domainPitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/domainPitMetrics/quality/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteNissimPenmanRnoaPit } from '../src/domainPitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
-import { computeAndWriteZmijewskiScorePit } from '../src/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/domainPitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
-import { computeAndWriteMarginsFamilyPit } from '../src/domainPitMetrics/profitability/margins/computeMarginsFamilyPit';
-import { computeAndWriteTurnoverRatioFamilyPit } from '../src/domainPitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
-import { computeAndWriteEpsPit } from '../src/domainPitMetrics/profitability/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/domainPitMetrics/valuation/bvps/computeBvpsPit';
-import { computeAndWriteRevenuePerSharePit } from '../src/domainPitMetrics/profitability/revenuePerShare/computeRevenuePerSharePit';
-import { computeAndWriteDividendPayoutRatioPit } from '../src/domainPitMetrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { computeAndWriteSgrPit } from '../src/domainPitMetrics/growth/sgr/computeSgrPit';
-import { computeAndWriteCashFlowPerSharePit } from '../src/domainPitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWriteOcfToNetIncomePit } from '../src/domainPitMetrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
-import { computeAndWriteAccrualsRatioPit } from '../src/domainPitMetrics/quality/accrualsRatio/computeAccrualsRatioPit';
-import { computeAndWriteFcfYieldPit } from '../src/domainPitMetrics/valuation/fcfYield/computeFcfYieldPit';
-import { computeAndWriteDebtRatioPit } from '../src/domainPitMetrics/resilience/debtRatio/computeDebtRatioPit';
-import { computeAndWriteLiquidityRatioPit } from '../src/domainPitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit';
-import { computeAndWriteDeRatioPit } from '../src/domainPitMetrics/resilience/deRatio/computeDeRatioPit';
-import { computeAndWriteInterestCoveragePit } from '../src/domainPitMetrics/resilience/interestCoverage/computeInterestCoveragePit';
-import { computeAndWriteNetDebtToEbitdaPit } from '../src/domainPitMetrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
-import { computeAndWriteCapexToRevenuePit } from '../src/domainPitMetrics/efficiency/capexToRevenue/computeCapexToRevenuePit';
-import { computeAndWritePsrPit } from '../src/domainPitMetrics/valuation/psr/computePsrPit';
-import { computeAndWritePFcfPit } from '../src/domainPitMetrics/valuation/pFcf/computePFcfPit';
-import { computeAndWriteEvEbitdaPit } from '../src/domainPitMetrics/valuation/evEbitda/computeEvEbitdaPit';
-import { computeAndWriteRoicPit } from '../src/domainPitMetrics/profitability/roic/computeRoicPit';
-import { computeAndWriteRocePit } from '../src/domainPitMetrics/profitability/roce/computeRocePit';
-import { computeAndWriteRevenueGrowthRatePit } from '../src/domainPitMetrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit';
-import { computeAndWriteEpsGrowthRatePit } from '../src/domainPitMetrics/growth/epsGrowthRate/computeEpsGrowthRatePit';
-import { computeAndWriteNetIncomeGrowthRatePit } from '../src/domainPitMetrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit';
-import { computeAndWriteOperatingIncomeGrowthRatePit } from '../src/domainPitMetrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit';
-import { computeAndWriteEquityGrowthRatePit } from '../src/domainPitMetrics/growth/equityGrowthRate/computeEquityGrowthRatePit';
-import { computeAndWriteBvpsGrowthRatePit } from '../src/domainPitMetrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit';
-import { computeAndWriteAssetGrowthPit } from '../src/domainPitMetrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/profitability/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
-import { computeAndWriteEarningsYieldPit } from '../src/domainPitMetrics/valuation/earningsYield/computeEarningsYieldPit';
-import { computeAndWriteBuybackYieldPit } from '../src/domainPitMetrics/dividend/buybackYield/computeBuybackYieldPit';
-import { computeAndWriteDividendCoverageRatioPit } from '../src/domainPitMetrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
-import { computeAndWriteShareCountChangeRatePit } from '../src/domainPitMetrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
-import { computeAndWriteStockPricePit } from '../src/domainPitMetrics/valuation/stockPrice/computeStockPricePit';
-import { computeAndWritePeRatioPit } from '../src/domainPitMetrics/valuation/peRatio/computePeRatioPit';
-import { computeAndWritePbRatioPit } from '../src/domainPitMetrics/valuation/pbRatio/computePbRatioPit';
-import { computeAndWriteAbnormalCapexRatioPit } from '../src/domainPitMetrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
-import { computeAndWriteAltmanZPrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZPrimeScore/computeAltmanZPrimeScorePit';
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
-import { computeAndWriteChowderNumberPit } from '../src/domainPitMetrics/dividend/chowderNumber/computeChowderNumberPit';
-import { computeAndWriteConsecutiveDividendYearsPit } from '../src/domainPitMetrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
-import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/domainPitMetrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
-import { computeAndWriteRdIntensityPit } from '../src/domainPitMetrics/growth/rdIntensity/computeRdIntensityPit';
-import { computeAndWriteSuePit } from '../src/domainPitMetrics/growth/sue/computeSuePit';
-import { computeAndWriteRevenueCagrFamilyPit } from '../src/domainPitMetrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
-import { computeAndWriteEpsCagrFamilyPit } from '../src/domainPitMetrics/growth/epsCagr/computeEpsCagrFamilyPit';
-import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/domainPitMetrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
-import { computeAndWriteOperatingExpenseRatioPit } from '../src/domainPitMetrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit';
-import { computeAndWriteBetaPit } from '../src/domainPitMetrics/valuation/beta/computeBetaPit';
-import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
-import { computeAndWriteBankAssetQualityFamilyPit } from '../src/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
-import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/domainPitMetrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit';
+import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { GENERAL_METRIC_CODES, BANK_METRIC_CODES, buildGeneralTasks, buildBankTasks, runTasks, type BackfillFailure } from './backfillTaskDefinitions';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 
 const PROGRESS_EVERY = 50;
-
-const GENERAL_METRIC_CODES = [
-  'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden',
-  'grahamNumber', 'ownerEarnings', 'altmanZScore', 'piotroskiFScore', 'beneishMScore', 'nissimPenmanRnoa', 'zmijewskiScore', 'ohlsonOScore',
-  'grossMargin', 'operatingMargin', 'assetTurnover', 'fixedAssetTurnover', 'inventoryDays', 'inventoryTurnover', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesTurnover', 'cashConversionCycle',
-  'eps', 'bvps', 'revenuePerShare', 'dividendPayoutRatio', 'sgr', 'ocfPerShare', 'fcfPerShare', 'ocfToNetIncome', 'accrualsRatio', 'fcfYield',
-  'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
-  'revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate',
-  'assetGrowth', 'consecutiveProfitYears', 'earningsYield',
-  'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate',
-  'stockPrice', 'peRatio', 'pbRatio',
-  'abnormalCapexRatio', 'altmanZPrimeScore', 'altmanZDoublePrimeScore',
-  'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
-  'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y',
-  'operatingExpenseRatio',
-  'beta', 'exchangePeRatio', 'exchangePbRatio', 'dividendYield',
-];
-
-const BANK_METRIC_CODES = ['bankNplRatio', 'bankNplCoverageRatio', 'bankCarRatio', 'bankCet1Ratio', 'bankTier1Ratio'];
 
 const getFullMarketSymbols = async (): Promise<string[]> => {
   const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
@@ -121,134 +58,93 @@ const getBankSymbols = async (): Promise<string[]> => {
   return rows.map((r) => r.symbol);
 };
 
-const computeGeneralSymbol = async (symbol: string): Promise<void> => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+const computeGeneralSymbol = (symbol: string): Promise<{ failures: { label: string; error: unknown }[] }> => runTasks(buildGeneralTasks(symbol));
 
-  await computeAndWriteRoePit(query);
-  await computeAndWriteRoaPit(query);
-  await computeAndWriteDupontFamilyPit(query);
+const computeBankSymbol = (symbol: string): Promise<{ failures: { label: string; error: unknown }[] }> => runTasks(buildBankTasks(symbol));
 
-  await computeAndWriteGrahamNumberPit(query);
-  await computeAndWriteOwnerEarningsPit(query);
-  await computeAndWriteAltmanZScorePit(query);
-  await computeAndWritePiotroskiFScorePit(query);
-  await computeAndWriteBeneishMScorePit(query);
-  await computeAndWriteNissimPenmanRnoaPit(query);
-  await computeAndWriteZmijewskiScorePit(query);
-  await computeAndWriteOhlsonOScorePit(query);
+// 固定併發池：同時處理 SYMBOL_CONCURRENCY 家公司，不是無上限一次送出全部——避免瞬間
+// 打爆 Neon DB 連線數（見檔頭 2026-09-11 平行化改動的說明）。
+const SYMBOL_CONCURRENCY = 8;
 
-  await computeAndWriteMarginsFamilyPit(query);
-  await computeAndWriteTurnoverRatioFamilyPit(query);
-
-  await computeAndWriteEpsPit(query);
-  await computeAndWriteBvpsPit(query);
-  await computeAndWriteRevenuePerSharePit(query);
-  await computeAndWriteDividendPayoutRatioPit(query);
-  await computeAndWriteSgrPit(query);
-  await computeAndWriteCashFlowPerSharePit(query);
-  await computeAndWriteOcfToNetIncomePit(query);
-  await computeAndWriteAccrualsRatioPit(query);
-  await computeAndWriteFcfYieldPit(query);
-
-  await computeAndWriteDebtRatioPit(query);
-  await computeAndWriteLiquidityRatioPit(query);
-  await computeAndWriteDeRatioPit(query);
-  await computeAndWriteInterestCoveragePit(query);
-  await computeAndWriteNetDebtToEbitdaPit(query);
-  await computeAndWriteCapexToRevenuePit(query);
-  await computeAndWritePsrPit(query);
-  await computeAndWritePFcfPit(query);
-  await computeAndWriteEvEbitdaPit(query);
-  await computeAndWriteRoicPit(query);
-  await computeAndWriteRocePit(query);
-
-  await computeAndWriteRevenueGrowthRatePit(query);
-  await computeAndWriteEpsGrowthRatePit(query);
-  await computeAndWriteNetIncomeGrowthRatePit(query);
-  await computeAndWriteOperatingIncomeGrowthRatePit(query);
-  await computeAndWriteEquityGrowthRatePit(query);
-  await computeAndWriteBvpsGrowthRatePit(query);
-
-  await computeAndWriteAssetGrowthPit(query);
-  await computeAndWriteConsecutiveProfitYearsPit(query);
-  await computeAndWriteEarningsYieldPit(query);
-
-  await computeAndWriteBuybackYieldPit(query);
-  await computeAndWriteDividendCoverageRatioPit(query);
-  await computeAndWriteShareCountChangeRatePit(query);
-
-  await computeAndWriteStockPricePit(query);
-  await computeAndWritePeRatioPit(query);
-  await computeAndWritePbRatioPit(query);
-
-  await computeAndWriteAbnormalCapexRatioPit(query);
-  await computeAndWriteAltmanZPrimeScorePit(query);
-  await computeAndWriteAltmanZDoublePrimeScorePit(query);
-
-  await computeAndWriteChowderNumberPit(query);
-  await computeAndWriteConsecutiveDividendYearsPit(query);
-  await computeAndWriteFamaFrenchOperatingProfitabilityPit(query);
-  await computeAndWriteRdIntensityPit(query);
-  await computeAndWriteSuePit(query);
-
-  await computeAndWriteRevenueCagrFamilyPit(query);
-  await computeAndWriteEpsCagrFamilyPit(query);
-  await computeAndWriteDividendGrowthRateFamilyPit(query);
-
-  await computeAndWriteOperatingExpenseRatioPit(query);
-
-  // 逐日型：不傳 date，函式自己解析「最新可用交易日」，只算一次不是每個歷史交易日都算。
-  await computeAndWriteBetaPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
-  await computeAndWriteMarketRatiosPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
+// 精準回補用——每筆失敗記錄 (symbol, label)，不是只記 symbol。使用者要求「有 error 的話
+// 希望有機制可以精準回補」：失敗清單寫成 JSON（tmp/backfill-failures-<slug>.json，
+// gitignore 排除，純執行期產物），scripts/retryBackfillFailuresPit.ts 讀這個檔案，
+// 只重跑清單裡列出的那幾個 (symbol, label) 組合，不用重新跑整批 61 支指標。
+const writeFailuresFile = (slug: string, failures: BackfillFailure[]): void => {
+  const dir = join(process.cwd(), 'tmp');
+  mkdirSync(dir, { recursive: true });
+  const filePath = join(dir, `backfill-failures-${slug}.json`);
+  if (failures.length === 0) {
+    if (existsSync(filePath)) rmSync(filePath);
+    return;
+  }
+  writeFileSync(filePath, JSON.stringify(failures, null, 2));
+  console.log(`[full-market-latest-pit] 失敗清單已寫入 ${filePath}（${failures.length} 筆），可用 scripts/retryBackfillFailuresPit.ts 精準回補`);
 };
 
-const computeBankSymbol = async (symbol: string): Promise<void> => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
-  await computeAndWriteBankAssetQualityFamilyPit(query);
-  await computeAndWriteBankCapitalAdequacyFamilyPit(query);
-};
-
-const runBatch = async (label: string, symbols: string[], fn: (symbol: string) => Promise<void>): Promise<void> => {
-  console.log(`[full-market-latest-pit] ${label}：共 ${symbols.length} 家`);
+const runBatch = async (
+  label: string,
+  slug: string,
+  symbols: string[],
+  fn: (symbol: string) => Promise<{ failures: { label: string; error: unknown }[] }>
+): Promise<void> => {
+  console.log(`[full-market-latest-pit] ${label}：共 ${symbols.length} 家，併發數 ${SYMBOL_CONCURRENCY}`);
   const t0 = Date.now();
   let done = 0;
-  const errors: { symbol: string; error: unknown }[] = [];
+  const errors: BackfillFailure[] = [];
 
-  for (const symbol of symbols) {
-    try {
-      await fn(symbol);
-    } catch (error) {
-      errors.push({ symbol, error });
-      console.error(`[full-market-latest-pit] ${label} ${symbol} 失敗：`, error);
-    }
-    done += 1;
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < symbols.length) {
+      const symbol = symbols[cursor]!;
+      cursor += 1;
+      try {
+        const { failures } = await fn(symbol);
+        for (const failure of failures) {
+          const message = failure.error instanceof Error ? failure.error.message : String(failure.error);
+          errors.push({ symbol, label: failure.label, message });
+          console.error(`[full-market-latest-pit] ${label} ${symbol} ${failure.label} 失敗：`, failure.error);
+        }
+      } catch (error) {
+        errors.push({ symbol, label: '(whole-symbol)', message: error instanceof Error ? error.message : String(error) });
+        console.error(`[full-market-latest-pit] ${label} ${symbol} 失敗：`, error);
+      }
+      done += 1;
 
-    if (done % PROGRESS_EVERY === 0 || done === symbols.length) {
-      const elapsedMs = Date.now() - t0;
-      const avgMsPerSymbol = elapsedMs / done;
-      const remaining = symbols.length - done;
-      const etaMs = avgMsPerSymbol * remaining;
-      console.log(
-        `[full-market-latest-pit] ${label} 進度 ${done}/${symbols.length}（${((done / symbols.length) * 100).toFixed(1)}%）` +
-          ` 已耗時 ${(elapsedMs / 60000).toFixed(1)} 分鐘，預估剩餘 ${(etaMs / 60000).toFixed(1)} 分鐘，錯誤 ${errors.length} 筆`
-      );
+      if (done % PROGRESS_EVERY === 0 || done === symbols.length) {
+        const elapsedMs = Date.now() - t0;
+        const avgMsPerSymbol = elapsedMs / done;
+        const remaining = symbols.length - done;
+        const etaMs = avgMsPerSymbol * remaining;
+        console.log(
+          `[full-market-latest-pit] ${label} 進度 ${done}/${symbols.length}（${((done / symbols.length) * 100).toFixed(1)}%）` +
+            ` 已耗時 ${(elapsedMs / 60000).toFixed(1)} 分鐘，預估剩餘 ${(etaMs / 60000).toFixed(1)} 分鐘，錯誤 ${errors.length} 筆`
+        );
+      }
     }
-  }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(SYMBOL_CONCURRENCY, symbols.length) }, () => worker()));
 
   console.log(`[full-market-latest-pit] ${label} 完成，共 ${symbols.length} 家，錯誤 ${errors.length} 筆，總耗時 ${((Date.now() - t0) / 60000).toFixed(1)} 分鐘`);
   if (errors.length > 0) {
-    console.log(`[full-market-latest-pit] ${label} 錯誤清單：`, errors.map((e) => e.symbol).join(','));
+    console.log(`[full-market-latest-pit] ${label} 錯誤清單：`, [...new Set(errors.map((e) => e.symbol))].join(','));
   }
+  writeFailuresFile(slug, errors);
 };
 
 const main = async () => {
   await Promise.all(GENERAL_METRIC_CODES.map((code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)));
   await Promise.all(BANK_METRIC_CODES.map((code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)));
 
-  const [generalSymbols, bankSymbols] = await Promise.all([getFullMarketSymbols(), getBankSymbols()]);
+  const [generalSymbolsFull, bankSymbolsFull] = await Promise.all([getFullMarketSymbols(), getBankSymbols()]);
+  // PILOT_LIMIT：暫時性測試開關，驗證平行版本穩定後移除（見 2026-09-11 稳定性驗證要求）。
+  const PILOT_LIMIT = process.env.PILOT_LIMIT ? Number(process.env.PILOT_LIMIT) : undefined;
+  const generalSymbols = PILOT_LIMIT ? generalSymbolsFull.slice(0, PILOT_LIMIT) : generalSymbolsFull;
+  const bankSymbols = PILOT_LIMIT ? bankSymbolsFull.slice(0, Math.min(PILOT_LIMIT, bankSymbolsFull.length)) : bankSymbolsFull;
 
-  await runBatch('一般指標（含逐日型最新快照）', generalSymbols, computeGeneralSymbol);
-  await runBatch('銀行監理指標', bankSymbols, computeBankSymbol);
+  await runBatch('一般指標（含逐日型最新快照）', 'general', generalSymbols, computeGeneralSymbol);
+  await runBatch('銀行監理指標', 'bank', bankSymbols, computeBankSymbol);
 };
 
 main()

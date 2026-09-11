@@ -13,3 +13,7 @@ generated
 # LibreOffice/OpenOffice lock files——filterCatalog.csv 是刻意設計給 Excel/LibreOffice
 # Calc 直接編輯的，開啟編輯時會自動產生這種鎖檔，不該進版控。
 .~lock.*#
+
+# 全市場 backfill 腳本的失敗清單（scripts/backfillAllMetricsLatestFullMarketPit.ts /
+# scripts/retryBackfillFailuresPit.ts），純執行期產物，不該進版控。
+tmp/
