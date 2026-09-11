@@ -1,10 +1,10 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getMarketCapAsOf, type MarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
@@ -16,22 +16,53 @@ import type { MetricNullReason } from '../../metricBasis';
 // knowledge_date，跟第四批 psr/pFcf/evEbitda 同一個套路。只有 TTM 一種 basis——X3/X5
 // 都需要 TTM 資料才算得出來。原始版模型的產業適用性限制（用上市製造業樣本校準）只在舊架構
 // warnings 呈現，metric_value 沒有 warnings 欄位，這裡不重複記錄。
+//
+// 2026-09-11：抽出 resolveAltmanZScoreInputs()，回傳 X1-X5 五個係數各自用到的原始欄位
+// （附帶 fieldKey），給 getAltmanZScoreProvenance.ts（GET /companies/:symbol/
+// metric-provenance 的 altmanZScore 試點）共用，寫入路徑（computeAndWriteAltmanZScorePit）
+// 本身行為完全不變，只是內部改呼叫這個 resolver。
 
 const toRatio4 = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
   return Math.round((Number(numerator) / Number(denominator)) * 10000) / 10000;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface AltmanZScorePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
+export interface AltmanZScoreTtmQuarterDetail {
+  rocYear: number;
+  season: number;
+  fiscalYear: number;
+  profitBeforeTax: bigint | null;
+  financeCosts: bigint | null;
+  operatingRevenue: bigint | null;
+  reportDate: Date | null;
 }
 
-export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery): Promise<AltmanZScorePitOutcome> => {
+export interface AltmanZScoreResolution {
+  symbol: string;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  totalAssets: bigint | null;
+  totalLiabilities: bigint | null;
+  currentAssets: bigint | null;
+  currentLiabilities: bigint | null;
+  retainedEarnings: bigint | null;
+  reportDate: Date | null;
+  x1: number | null;
+  x2: number | null;
+  marketCap: MarketCapAsOf | null;
+  x4: number | null;
+  ttmQuarterDetails: AltmanZScoreTtmQuarterDetail[];
+  ttmComplete: boolean;
+  x3: number | null;
+  x5: number | null;
+  zScore: number | null;
+  nullReason: MetricNullReason | null;
+  mainAnchor: KnowledgeDateResolution | null;
+}
+
+export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery): Promise<AltmanZScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -39,9 +70,7 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
 
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -66,19 +95,29 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
 
   // X3/X5：近四季（含本季）EBIT/營收各自加總，分母固定用本季期末總資產。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
+  const ttmRecords: (IncomeStatementFields | null)[] = await Promise.all(
     ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
+
+  const ttmQuarterDetails: AltmanZScoreTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
+    rocYear: Number(tq.year),
+    season: Number(tq.season),
+    fiscalYear: rocYearToGregorian(Number(tq.year)),
+    profitBeforeTax: ttmRecords[i]?.profitBeforeTax ?? null,
+    financeCosts: ttmRecords[i]?.financeCosts ?? null,
+    operatingRevenue: ttmRecords[i]?.operatingRevenue ?? null,
+    reportDate: ttmRecords[i]?.reportDate ?? null,
+  }));
 
   let ebitTtmSum = 0n;
   let revenueTtmSum = 0n;
   let ttmComplete = true;
-  for (const record of ttmRecords) {
-    if (record === null || record.profitBeforeTax === null || record.financeCosts === null || record.operatingRevenue === null) {
+  for (const detail of ttmQuarterDetails) {
+    if (detail.profitBeforeTax === null || detail.financeCosts === null || detail.operatingRevenue === null) {
       ttmComplete = false;
     } else {
-      ebitTtmSum += record.profitBeforeTax + record.financeCosts;
-      revenueTtmSum += record.operatingRevenue;
+      ebitTtmSum += detail.profitBeforeTax + detail.financeCosts;
+      revenueTtmSum += detail.operatingRevenue;
     }
   }
 
@@ -92,7 +131,49 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
     nullReason = !ttmComplete ? 'insufficient_history' : 'missing_input';
   }
 
-  const coordinateBase = { symbol, metricCode: 'altmanZScore', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+  return {
+    symbol,
+    rocYear: year,
+    season,
+    fiscalYear,
+    fiscalQuarter: seasonNum,
+    totalAssets,
+    totalLiabilities,
+    currentAssets,
+    currentLiabilities,
+    retainedEarnings,
+    reportDate,
+    x1,
+    x2,
+    marketCap,
+    x4,
+    ttmQuarterDetails,
+    ttmComplete,
+    x3,
+    x5,
+    zScore,
+    nullReason,
+    mainAnchor,
+  };
+};
+
+type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
+
+export interface AltmanZScorePitOutcome {
+  symbol: string;
+  rocYear: string | null;
+  season: string | null;
+  ttm: BasisOutcome;
+}
+
+export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery): Promise<AltmanZScorePitOutcome> => {
+  const resolution = await resolveAltmanZScoreInputs(query);
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
+  }
+
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, zScore, nullReason, ttmComplete, ttmQuarterDetails, mainAnchor } = resolution;
+  const coordinateBase = { symbol, metricCode: 'altmanZScore', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
   let ttm: BasisOutcome;
   if (!mainAnchor) {
@@ -100,7 +181,7 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
   } else if (ttmComplete) {
     const ttmAnchor = await resolveKnowledgeDate(
       symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null }))
+      ttmQuarterDetails.map((detail) => ({ rocYear: detail.rocYear, season: detail.season, reportDate: detail.reportDate }))
     );
     if (!ttmAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };
@@ -125,5 +206,5 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
     });
   }
 
-  return { symbol, rocYear: year, season, ttm };
+  return { symbol, rocYear, season, ttm };
 };

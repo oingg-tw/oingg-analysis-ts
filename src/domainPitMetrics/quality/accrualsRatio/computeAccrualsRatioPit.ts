@@ -1,24 +1,32 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement, type CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/accrualsRatio.ts 的獨立重新實作。分母固定用本季期末總資產
 // （不平均、不加總 TTM），跟 ROE/ROA 用期末值同一種簡化。
+//
+// 2026-09-11：抽出 resolveAccrualsRatioInputs()，回傳原始欄位（附帶實際命中哪個
+// fieldKey）+ 完整計算過程，給 getAccrualsRatioProvenance.ts（GET /companies/:symbol/
+// metric-provenance 的 accrualsRatio 試點）共用，寫入路徑（computeAndWriteAccrualsRatioPit）
+// 本身行為完全不變，只是內部改呼叫這個 resolver。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
+interface PickedField {
+  value: bigint | null;
+  fieldKey: string | null;
+}
+
+const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
+  return { value: null, fieldKey: null };
 };
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -31,18 +39,30 @@ const determineNullReason = (numerator: bigint | null, denominator: bigint | nul
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface AccrualsRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
+export interface AccrualsRatioTtmQuarterDetail {
+  rocYear: number;
+  season: number;
+  fiscalYear: number;
+  netIncome: PickedField;
+  cashFlow: CashFlowFields | null;
 }
 
-export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuery): Promise<AccrualsRatioPitOutcome> => {
+export interface AccrualsRatioResolution {
+  symbol: string;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  totalAssets: bigint | null;
+  ttmQuarterDetails: AccrualsRatioTtmQuarterDetail[];
+  ttmComplete: boolean;
+  ttmValue: number | null;
+  ttmNullReason: MetricNullReason | null;
+  mainAnchor: KnowledgeDateResolution | null;
+  ttmAnchor: KnowledgeDateResolution | null;
+}
+
+export const resolveAccrualsRatioInputs = async (query: QuarterlyMetricQuery): Promise<AccrualsRatioResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -50,16 +70,7 @@ export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuer
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
-  if (!resolvedQuarter) {
-    return {
-      symbol,
-      rocYear: null,
-      season: null,
-      q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
-      ttm: { action: 'skipped_no_quarter' },
-    };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -74,19 +85,87 @@ export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuer
   ]);
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
-  const netIncome = pickNetIncome(incomeStatement);
-  const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
-  const investingCashFlow = cashFlowStatement?.netCashFromInvestingActivities ?? null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
+  // TTM：近四季（含本季）淨利/OCF/ICF 各自加總，分母固定用本季期末總資產。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) =>
+      Promise.all([
+        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+      ])
+    )
+  );
+
+  const ttmQuarterDetails: AccrualsRatioTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
+    rocYear: Number(tq.year),
+    season: Number(tq.season),
+    fiscalYear: rocYearToGregorian(Number(tq.year)),
+    netIncome: pickNetIncome(ttmRecords[i]![0]),
+    cashFlow: ttmRecords[i]![1],
+  }));
+
+  let netIncomeTtmSum = 0n;
+  let ocfTtmSum = 0n;
+  let icfTtmSum = 0n;
+  let ttmComplete = true;
+  for (const detail of ttmQuarterDetails) {
+    const cashFlowRecord = detail.cashFlow;
+    if (detail.netIncome.value === null || cashFlowRecord === null || cashFlowRecord.netCashFromOperatingActivities === null || cashFlowRecord.netCashFromInvestingActivities === null) {
+      ttmComplete = false;
+    } else {
+      netIncomeTtmSum += detail.netIncome.value;
+      ocfTtmSum += cashFlowRecord.netCashFromOperatingActivities;
+      icfTtmSum += cashFlowRecord.netCashFromInvestingActivities;
+    }
+  }
+
+  const accrualsTtm = ttmComplete ? netIncomeTtmSum - ocfTtmSum - icfTtmSum : null;
+  const ttmValue = accrualsTtm !== null && totalAssets !== null ? toPct(accrualsTtm, totalAssets) : null;
+  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(accrualsTtm, totalAssets) : 'insufficient_history';
+
+  const ttmAnchor = ttmComplete
+    ? await resolveKnowledgeDate(
+        symbol,
+        ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
+      )
+    : null;
+
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
+};
+
+type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
+
+export interface AccrualsRatioPitOutcome {
+  symbol: string;
+  rocYear: string | null;
+  season: string | null;
+  q: BasisOutcome;
+  qAnn: BasisOutcome;
+  ttm: BasisOutcome;
+}
+
+export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuery): Promise<AccrualsRatioPitOutcome> => {
+  const resolution = await resolveAccrualsRatioInputs(query);
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+  }
+
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
+  const coordinateBase = { symbol, metricCode: 'accrualsRatio', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
+
+  // Q/Q_ANN 只用本季（TTM 明細裡的最後一筆就是本季）。
+  const currentQuarter = ttmQuarterDetails[ttmQuarterDetails.length - 1]!;
+  const currentCashFlow = currentQuarter.cashFlow;
   const accrualsQuarterly =
-    netIncome.value !== null && operatingCashFlow !== null && investingCashFlow !== null ? netIncome.value - operatingCashFlow - investingCashFlow : null;
+    currentQuarter.netIncome.value !== null && currentCashFlow?.netCashFromOperatingActivities != null && currentCashFlow?.netCashFromInvestingActivities != null
+      ? currentQuarter.netIncome.value - currentCashFlow.netCashFromOperatingActivities - currentCashFlow.netCashFromInvestingActivities
+      : null;
   const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssets !== null ? toPct(accrualsQuarterly, totalAssets) : null;
   const accrualsRatioQuarterlyAnnualized = accrualsRatioQuarterly !== null ? Math.round(accrualsRatioQuarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = accrualsRatioQuarterly === null ? determineNullReason(accrualsQuarterly, totalAssets) : null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const coordinateBase = { symbol, metricCode: 'accrualsRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   let q: BasisOutcome;
   let qAnn: BasisOutcome;
@@ -112,42 +191,8 @@ export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuer
     });
   }
 
-  // TTM：近四季（含本季）淨利/OCF/ICF 各自加總，分母固定用本季期末總資產。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
-
-  let netIncomeTtmSum = 0n;
-  let ocfTtmSum = 0n;
-  let icfTtmSum = 0n;
-  let ttmComplete = true;
-  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
-    const picked = pickNetIncome(incomeRecord);
-    if (picked.value === null || cashFlowRecord === null || cashFlowRecord.netCashFromOperatingActivities === null || cashFlowRecord.netCashFromInvestingActivities === null) {
-      ttmComplete = false;
-    } else {
-      netIncomeTtmSum += picked.value;
-      ocfTtmSum += cashFlowRecord.netCashFromOperatingActivities;
-      icfTtmSum += cashFlowRecord.netCashFromInvestingActivities;
-    }
-  }
-
-  const accrualsTtm = ttmComplete ? netIncomeTtmSum - ocfTtmSum - icfTtmSum : null;
-  const ttmValue = accrualsTtm !== null && totalAssets !== null ? toPct(accrualsTtm, totalAssets) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(accrualsTtm, totalAssets) : 'insufficient_history';
-
   let ttm: BasisOutcome;
   if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
-    );
     if (!ttmAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };
     } else {
@@ -173,5 +218,5 @@ export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuer
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear, season, q, qAnn, ttm };
 };

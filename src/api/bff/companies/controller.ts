@@ -20,6 +20,9 @@ import { getPiotroskiFScoreBreakdown } from '@/domainPitMetrics/quality/piotrosk
 import { getRoeProvenance } from '@/domainPitMetrics/profitability/roe/getRoeProvenance';
 import { getChowderNumberProvenance } from '@/domainPitMetrics/dividend/chowderNumber/getChowderNumberProvenance';
 import { getSueProvenance } from '@/domainPitMetrics/growth/sue/getSueProvenance';
+import { getAccrualsRatioProvenance } from '@/domainPitMetrics/quality/accrualsRatio/getAccrualsRatioProvenance';
+import { getDividendPayoutRatioProvenance } from '@/domainPitMetrics/dividend/dividendPayoutRatio/getDividendPayoutRatioProvenance';
+import { getAltmanZScoreProvenance } from '@/domainPitMetrics/resilience/altmanZScore/getAltmanZScoreProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/provenance/provenanceTypes';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import type { Season } from '@/shared/rocQuarter';
@@ -596,6 +599,9 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   roe: getRoeProvenance,
   chowderNumber: getChowderNumberProvenance,
   sue: getSueProvenance,
+  accrualsRatio: getAccrualsRatioProvenance,
+  dividendPayoutRatio: getDividendPayoutRatioProvenance,
+  altmanZScore: getAltmanZScoreProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始

@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
 // 2026-09-10：指標溯源（provenance）的共用型別。刻意「不」涵蓋全部 94 支 metricCode——
-// PILOT_PROVENANCE_METRIC_CODES 是明確維護的試點清單（目前 sue/chowderNumber/roe），
-// 之後要擴大範圍必須逐一加進這個清單 + 寫對應的 get<Metric>Provenance 函式，不會有
-// 「看起來支援但其實沒人測過」的隱性涵蓋，這是吸取 dependsOn（沒有執行期消費者、範圍
-// 廣但沒人維護）的教訓，見 GET /companies/piotroski-breakdown 同一天稍早的先例。
-export const PILOT_PROVENANCE_METRIC_CODES = ['sue', 'chowderNumber', 'roe'] as const;
+// PILOT_PROVENANCE_METRIC_CODES 是明確維護的試點清單，之後要擴大範圍必須逐一加進這個
+// 清單 + 寫對應的 get<Metric>Provenance 函式，不會有「看起來支援但其實沒人測過」的
+// 隱性涵蓋，這是吸取 dependsOn（沒有執行期消費者、範圍廣但沒人維護）的教訓，見
+// GET /companies/piotroski-breakdown 同一天稍早的先例。第一批試點（2026-09-10）：
+// sue/chowderNumber/roe。第二批試點（2026-09-11，web-nuxt 要求擴大到全部 16 支有
+// badge 的指標，先做 2-3 支）：accrualsRatio/dividendPayoutRatio/altmanZScore。
+export const PILOT_PROVENANCE_METRIC_CODES = ['sue', 'chowderNumber', 'roe', 'accrualsRatio', 'dividendPayoutRatio', 'altmanZScore'] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
 export const provenanceEntrySchema = z.object({

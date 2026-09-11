@@ -1,23 +1,31 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement, type CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/dividendPayoutRatio.ts 的獨立重新實作。只有 TTM 一種
 // basis——股利通常一年發放 1-2 次，單季配息率會嚴重失真，舊架構本來就沒有 Q/Q_ANN。
+//
+// 2026-09-11：抽出 resolveDividendPayoutRatioInputs()，回傳原始欄位（附帶實際命中哪個
+// fieldKey）+ 完整計算過程，給 getDividendPayoutRatioProvenance.ts（GET /companies/
+// :symbol/metric-provenance 的 dividendPayoutRatio 試點）共用，寫入路徑
+// （computeAndWriteDividendPayoutRatioPit）本身行為完全不變，只是內部改呼叫這個 resolver。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
+interface PickedField {
+  value: bigint | null;
+  fieldKey: string | null;
+}
+
+const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
+  return { value: null, fieldKey: null };
 };
 
 const toPct = (numerator: bigint, denominator: bigint): number | null => {
@@ -25,16 +33,29 @@ const toPct = (numerator: bigint, denominator: bigint): number | null => {
   return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface DividendPayoutRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
+export interface DividendPayoutRatioTtmQuarterDetail {
+  rocYear: number;
+  season: number;
+  fiscalYear: number;
+  netIncome: PickedField;
+  cashFlow: CashFlowFields | null;
 }
 
-export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetricQuery): Promise<DividendPayoutRatioPitOutcome> => {
+export interface DividendPayoutRatioResolution {
+  symbol: string;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  ttmQuarterDetails: DividendPayoutRatioTtmQuarterDetail[];
+  ttmComplete: boolean;
+  payoutRatioTtm: number | null;
+  ttmNullReason: MetricNullReason | null;
+  mainAnchor: KnowledgeDateResolution | null;
+  ttmAnchor: KnowledgeDateResolution | null;
+}
+
+export const resolveDividendPayoutRatioInputs = async (query: QuarterlyMetricQuery): Promise<DividendPayoutRatioResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -42,9 +63,7 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement', 'cashFlowStatement']);
 
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -54,7 +73,6 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const [incomeStatement, cashFlowStatement] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyCashFlowStatement(key)]);
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
-
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
   // TTM：近四季（含本季）淨利加總、股利發放加總——股利發放缺漏視為 0（大多數季度本來就沒發放，
@@ -69,16 +87,23 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
     )
   );
 
+  const ttmQuarterDetails: DividendPayoutRatioTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
+    rocYear: Number(tq.year),
+    season: Number(tq.season),
+    fiscalYear: rocYearToGregorian(Number(tq.year)),
+    netIncome: pickNetIncome(ttmRecords[i]![0]),
+    cashFlow: ttmRecords[i]![1],
+  }));
+
   let netIncomeTtmSum = 0n;
   let dividendsPaidTtmSum = 0n;
   let ttmComplete = true;
-  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
-    const picked = pickNetIncome(incomeRecord);
-    if (picked.value === null) {
+  for (const detail of ttmQuarterDetails) {
+    if (detail.netIncome.value === null) {
       ttmComplete = false;
     } else {
-      netIncomeTtmSum += picked.value;
-      dividendsPaidTtmSum += cashFlowRecord?.dividendsPaid ?? 0n;
+      netIncomeTtmSum += detail.netIncome.value;
+      dividendsPaidTtmSum += detail.cashFlow?.dividendsPaid ?? 0n;
     }
   }
 
@@ -86,14 +111,36 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
   const payoutRatioTtm = ttmComplete && netIncomeTtmSum > 0n ? toPct(dividendsPaidAbs, netIncomeTtmSum) : null;
   const ttmNullReason: MetricNullReason | null = payoutRatioTtm !== null ? null : ttmComplete ? 'zero_or_negative_denominator' : 'insufficient_history';
 
-  const coordinateBase = { symbol, metricCode: 'dividendPayoutRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+  const ttmAnchor = ttmComplete
+    ? await resolveKnowledgeDate(
+        symbol,
+        ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
+      )
+    : null;
+
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, ttmQuarterDetails, ttmComplete, payoutRatioTtm, ttmNullReason, mainAnchor, ttmAnchor };
+};
+
+type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
+
+export interface DividendPayoutRatioPitOutcome {
+  symbol: string;
+  rocYear: string | null;
+  season: string | null;
+  ttm: BasisOutcome;
+}
+
+export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetricQuery): Promise<DividendPayoutRatioPitOutcome> => {
+  const resolution = await resolveDividendPayoutRatioInputs(query);
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
+  }
+
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, ttmComplete, payoutRatioTtm, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
+  const coordinateBase = { symbol, metricCode: 'dividendPayoutRatio', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
   let ttm: BasisOutcome;
   if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
-    );
     if (!ttmAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };
     } else {
@@ -119,5 +166,5 @@ export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetr
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, ttm };
+  return { symbol, rocYear, season, ttm };
 };
