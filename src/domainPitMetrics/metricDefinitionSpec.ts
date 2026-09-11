@@ -155,6 +155,13 @@ interface MetricDefinitionSpecBase {
   // 計算相關的宣告混在同一個物件字面值裡，會讓 Definition.ts 檔案變得很長、不好找兩種
   // 完全不同性質的內容各自在哪裡。
   badge?: MetricBadge;
+  // 2026-09-11 使用者要求：dupontDecomposedRoe/dupontExtendedRoe 這類「拆解 ROE 用的中間
+  // 因子組合」不該出現在 GET /filters 的指標選單/screener 篩選欄位裡——使用者篩選/排行時
+  // 只需要 roe 本身，不需要看到「杜邦三因子拆解ROE」「杜邦五因子拆解ROE」這種對一般使用者
+  // 沒有篩選意義的變體佔選單版面。選填，true 代表 scanMetricFolderCatalog() 略過這支指標，
+  // 但指標本身照常計算/寫入 metric_values、GET /companies/dupont-history 等既有端點完全
+  // 不受影響——只是不出現在「指標選單」這一層。其餘指標維持 undefined（=false，正常出現）。
+  excludeFromFilterCatalog?: boolean;
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

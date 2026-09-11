@@ -3,7 +3,7 @@ import { zmijewskiScoreBadge } from './zmijewskiScoreBadge';
 
 export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'zmijewskiScore',
-  displayName: 'Zmijewski Score 財務危機預警分數',
+  displayName: 'Zmijewski Score 危機預警分數',
   unit: '分',
   formulaNote:
     'X = -4.3-4.5*(淨利TTM/總資產)+5.7*(總負債/總資產)-0.004*(流動資產/流動負債)。淨利用' +

@@ -102,7 +102,7 @@ const listSubdirectoryNames = (dir: string): string[] => {
 export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
   CATEGORIES.map(({ key: categoryKey, displayName: categoryDisplayName }) => {
     const metrics = listSubdirectoryNames(join(PIT_METRICS_ROOT, categoryKey))
-      .filter((folderName) => folderName in metricDefinitionRegistry)
+      .filter((folderName) => folderName in metricDefinitionRegistry && !metricDefinitionRegistry[folderName]!.excludeFromFilterCatalog)
       .sort()
       .map((metricCode): MetricFolderCatalogEntry => {
         const definition = metricDefinitionRegistry[metricCode]!;

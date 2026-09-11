@@ -3,7 +3,7 @@ import { ohlsonOScoreBadge } from './ohlsonOScoreBadge';
 
 export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'ohlsonOScore',
-  displayName: 'Ohlson O-Score 財務危機預警分數',
+  displayName: 'Ohlson O-Score 危機預警分數',
   unit: '分',
   formulaNote:
     '9 變量 Logit 模型：SIZE=ln(總資產)、TLTA=總負債/總資產、WCTA=(流動資產-流動負債)/總資產、' +

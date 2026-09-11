@@ -3,7 +3,7 @@ import { altmanZScoreBadge } from './altmanZScoreBadge';
 
 export const altmanZScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'altmanZScore',
-  displayName: 'Altman Z-Score 財務危機預警分數',
+  displayName: 'Altman Z-Score 危機預警分數',
   unit: '分',
   formulaNote:
     'Z = 1.2*X1+1.4*X2+3.3*X3+0.6*X4+0.999*X5，X1=(流動資產-流動負債)/總資產、' +

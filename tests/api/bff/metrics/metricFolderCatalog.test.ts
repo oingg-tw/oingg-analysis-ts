@@ -44,4 +44,11 @@ describe('scanMetricFolderCatalog', () => {
     assert.ok(findMetric('valuation', 'beta'), 'beta 應該出現在 valuation 分類');
     assert.ok(findMetric('resilience', 'bankNplRatio'), 'bankNplRatio 應該出現在 resilience 分類');
   });
+
+  test('excludeFromFilterCatalog=true 的指標（dupontDecomposedRoe/dupontExtendedRoe）不應該出現在選單裡', () => {
+    const categories = scanMetricFolderCatalog();
+    const allMetricCodes = categories.flatMap((c) => c.metrics.map((m) => m.metricCode));
+    assert.ok(!allMetricCodes.includes('dupontDecomposedRoe'), '使用者要求：有 roe 就夠了，杜邦拆解版不該佔選單版面');
+    assert.ok(!allMetricCodes.includes('dupontExtendedRoe'), '使用者要求：有 roe 就夠了，杜邦拆解版不該佔選單版面');
+  });
 });
