@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
   metricCode: 'shareCountChangeRate',
-  displayName: '股本變化率（年增）',
+  displayName: '股本變化年增率',
   unit: '%',
   formulaNote:
     '= (本季流通股數 - 去年同季流通股數) / 去年同季流通股數 * 100。正值代表股數增加（現金' +

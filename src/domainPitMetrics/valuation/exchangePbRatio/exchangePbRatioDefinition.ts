@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const exchangePbRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'exchangePbRatio',
-  displayName: '股價淨值比（交易所公告）',
+  displayName: '交易所 PBR',
   unit: '倍',
   formulaNote:
     'TWSE/TPEx 官方每日公布的股價淨值比，直接 passthrough export.daily_valuation.pb_ratio，' +

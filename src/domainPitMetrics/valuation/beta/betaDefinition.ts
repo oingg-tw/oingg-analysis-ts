@@ -10,7 +10,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // altmanZScore 是不同概念，2026-09-08 使用者確認：「beta 不反映經營風險」）。
 export const betaDefinition: MetricDefinitionSpec = {
   metricCode: 'beta',
-  displayName: '貝他係數 (Beta)',
+  displayName: 'Beta',
   unit: '無單位',
   formulaNote:
     'Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)，樣本共變異數/變異數' +

@@ -3,7 +3,7 @@ import { pegRatioBadge } from './pegRatioBadge';
 
 export const pegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'pegRatio',
-  displayName: '本益成長比 (PEG)',
+  displayName: 'PEG',
   unit: '倍',
   formulaNote:
     '= PER(TTM) / EPS 5年複合成長率(%)。PER 跟成長率各自獨立重新計算，不依賴 peRatio/' +

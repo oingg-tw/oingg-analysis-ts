@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const equityGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'equityGrowthRate',
-  displayName: '淨值成長率（年增）',
+  displayName: '淨值成長年增率',
   unit: '%',
   formulaNote:
     '= (本季期末淨值 - 去年同季期末淨值) / |去年同季期末淨值| * 100。淨值優先採歸屬母公司' +

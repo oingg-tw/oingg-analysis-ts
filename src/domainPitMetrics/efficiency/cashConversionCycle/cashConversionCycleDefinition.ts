@@ -3,7 +3,7 @@ import { cashConversionCycleBadge } from './cashConversionCycleBadge';
 
 export const cashConversionCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'cashConversionCycle',
-  displayName: '現金轉換循環 (CCC)',
+  displayName: '現金轉換循環',
   unit: '天',
   formulaNote:
     'CCC = DIO + DSO − DPO。只有 Q_ANN/TTM 兩種 basis（跟三個組成天數一致）。三個組成任一為' +

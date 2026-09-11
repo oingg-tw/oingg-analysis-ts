@@ -8,7 +8,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // 不呼叫任何 calculateXxx()、也不互相讀取彼此已寫入的 metric_value 列。
 export const roaDefinition: MetricDefinitionSpec = {
   metricCode: 'roa',
-  displayName: '資產報酬率 (ROA)',
+  displayName: 'ROA',
   unit: '%',
   formulaNote:
     'Q(單季) = 本季淨利/本季期末總資產*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +

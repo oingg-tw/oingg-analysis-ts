@@ -7,10 +7,17 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { roundToSignificantFigures } from '../../numericHelpers';
 
 // 市值 = 收盤價 × 流通股數，獨立立出 metric_code 的理由見 marketCapDefinition.ts 檔頭
 // 說明。knowledge_date 解析比照 stockPrice（只用資產負債表，不查損益表），保證跟
 // stockPrice/bvps/pbRatio/ncav 同步。只有 Q 一種 basis。
+//
+// 2026-09-11 使用者要求：個股篩選的市值欄位保留 4 位有效數字（不是小數位數）——市值
+// 動輒幾千億到幾兆，固定小數位數沒有意義，改用有效數字才是使用者真正想看到的精度。
+// 只影響這個 metricCode 寫入的值本身；altmanZScore/tobinsQ/greenblattEarningsYield
+// 等其他指標的市值輸入都是各自獨立呼叫 getMarketCapAsOf 拿到完整精度的原始值，不會
+// 讀這裡寫入的四捨五入後數字，不受影響。
 
 const determineNullReason = (): MetricNullReason => 'missing_input';
 
@@ -47,7 +54,7 @@ export const computeAndWriteMarketCapPit = async (query: QuarterlyMetricQuery): 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const marketCapAsOf = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
 
-  const marketCap = marketCapAsOf?.marketCap ?? null;
+  const marketCap = marketCapAsOf ? roundToSignificantFigures(marketCapAsOf.marketCap, 4) : null;
   const nullReason: MetricNullReason | null = marketCap === null ? determineNullReason() : null;
 
   let q: BasisOutcome;

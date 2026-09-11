@@ -3,7 +3,7 @@ import { chowderNumberBadge } from './chowderNumberBadge';
 
 export const chowderNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'chowderNumber',
-  displayName: 'Chowder Number（存股評分）',
+  displayName: 'Chowder Number',
   unit: '分',
   formulaNote:
     'Chowder Number（Seeking Alpha 社群規則）= 現金殖利率 + 股利五年成長率，門檻 ≥12%' +

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const inventoryDaysDefinition: MetricDefinitionSpec = {
   metricCode: 'inventoryDays',
-  displayName: '存貨週轉天數 (DIO)',
+  displayName: '存貨週轉天數',
   unit: '天',
   formulaNote:
     'DIO = 365/存貨周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis——365/單季周轉率算出來是' +

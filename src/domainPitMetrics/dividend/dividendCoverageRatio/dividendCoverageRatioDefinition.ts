@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const dividendCoverageRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'dividendCoverageRatio',
-  displayName: '股利保障倍數（現金流量）',
+  displayName: '現金流量股利保障倍數',
   unit: '倍',
   formulaNote:
     'TTM = 近四季自由現金流（FCF = 營業活動現金流 + 資本支出，資本支出來源資料是負值/流出）' +

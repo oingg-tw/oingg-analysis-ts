@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const payablesDaysDefinition: MetricDefinitionSpec = {
   metricCode: 'payablesDays',
-  displayName: '應付帳款付現天數 (DPO)',
+  displayName: '應付帳款付現天數',
   unit: '天',
   formulaNote: 'DPO = 365/應付帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
   formulaLatex: '\\mathrm{DPO} = \\frac{365}{\\mathrm{PayablesTurnover}}',

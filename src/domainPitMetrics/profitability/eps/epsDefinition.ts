@@ -10,7 +10,7 @@ import { epsBadge } from './epsBadge';
   // ocfPerShare/fcfPerShare 這些已寫入的 metric_value，維持每條 pipeline 獨立的原則。
 export const epsDefinition: MetricDefinitionSpec = {
   metricCode: 'eps',
-  displayName: '每股盈餘 (EPS)',
+  displayName: 'EPS',
   unit: '元',
   formulaNote:
     'Q(單季) = 本季淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆），淨利優先採歸屬' +

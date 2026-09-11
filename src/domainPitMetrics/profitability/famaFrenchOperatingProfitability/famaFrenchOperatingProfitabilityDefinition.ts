@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const famaFrenchOperatingProfitabilityDefinition: MetricDefinitionSpec = {
   metricCode: 'famaFrenchOperatingProfitability',
-  displayName: 'Fama-French 營業獲利力 (RMW 代理變數)',
+  displayName: 'Fama-French 營業獲利力',
   unit: '%',
   formulaNote:
     '(營收-銷貨成本-推銷費用-管理費用-利息費用)/帳面權益*100，即 Fama & French (2015) ' +

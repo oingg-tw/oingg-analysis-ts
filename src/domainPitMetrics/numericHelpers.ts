@@ -45,6 +45,17 @@ export const toPerShare = (numeratorInThousands: bigint, shares: bigint): number
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
 };
 
+// 有效數字（不是小數位數）——市值這類金額級距差很大的數字（幾億到幾兆都有），固定小數點
+// 後幾位沒有意義（幾兆的數字小數點後兩位毫無意義，幾千萬的數字小數點後兩位又太瑣碎），
+// 改用「保留 N 位有效數字」才是使用者真正想看到的精度。2026-09-11 使用者要求：個股篩選
+// 的市值欄位只需要 4 位有效數字（例如 62,108,026,310,465 顯示成 62,110,000,000,000）。
+export const roundToSignificantFigures = (value: number, sigFigs: number): number => {
+  if (value === 0) return 0;
+  const magnitude = Math.floor(Math.log10(Math.abs(value)));
+  const factor = Math.pow(10, sigFigs - 1 - magnitude);
+  return Math.round(value * factor) / factor;
+};
+
 // DIO/DSO/DPO = 365 ÷ 週轉率（年化或 TTM 版本）。周轉率為 0 時無法換算天數，回傳 null。
 export const toDays = (turnover: number | null): number | null => {
   if (turnover === null || turnover === 0) return null;
