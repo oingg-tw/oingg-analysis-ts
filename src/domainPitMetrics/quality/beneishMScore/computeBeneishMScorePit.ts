@@ -4,7 +4,7 @@ import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/sh
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
@@ -13,8 +13,11 @@ import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndust
 // 這份檔案是 src/domainMetrics/beneishMScore.ts 的獨立重新實作。8 個變量（DSRI/GMI/AQI/
 // SGI/DEPI/SGAI/TATA/LVGI）本季 vs 去年同季比較，去年同季座標比照 piotroskiFScore 用
 // getPastNQuarters({rocYear,season},5)[0]。TATA（應計項目）本質上是單期指標，不需要比較，
-// 其餘 7 個都是「本期比率 / 去年同期比率」的指數。只遷移最終 mScore，8 個變量本身不拆成
-// 獨立 metric_code。
+// 其餘 7 個都是「本期比率 / 去年同期比率」的指數。
+// 2026-09-13：抽出 resolveBeneishMScoreInputs()，回傳全部 8 個變量，供 beneishAqi/
+// beneishDsri 兩個新 metric_code（見各自資料夾）共用同一份計算——這兩個是量化選股盤點
+// 使用者要求曝露的既有中間變量，不是重新推導，寫入路徑（computeAndWriteBeneishMScorePit）
+// 本身行為完全不變，只是內部改呼叫這個 resolver。
 
 const pickNetIncome = (
   record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
@@ -103,7 +106,30 @@ export interface BeneishMScorePitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuery): Promise<BeneishMScorePitOutcome> => {
+export interface BeneishMScoreResolution {
+  symbol: string;
+  rocYear: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  dsri: number | null;
+  gmi: number | null;
+  aqi: number | null;
+  sgi: number | null;
+  depi: number | null;
+  sgai: number | null;
+  tata: number | null;
+  lvgi: number | null;
+  mScore: number | null;
+  prevAvailable: boolean;
+  mainAnchor: KnowledgeDateResolution | null;
+  isFinancial: boolean;
+}
+
+// 算出 8 個變量 + mScore 本身，不寫入——beneishMScore/beneishAqi/beneishDsri 三個
+// metric_code 的寫入路徑（下面三支 computeAndWriteXxxPit）都呼叫這支，各自只挑自己
+// 要的變量寫進 metric_value，避免重複查三次原始財報。
+export const resolveBeneishMScoreInputs = async (query: QuarterlyMetricQuery): Promise<BeneishMScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -111,9 +137,7 @@ export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuer
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -153,26 +177,57 @@ export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuer
 
   const variables = [dsri, gmi, aqi, sgi, depi, sgai, tata, lvgi];
   const allEvaluated = variables.every((v) => v !== null);
-  let mScore = allEvaluated
+  const mScore = allEvaluated
     ? Math.round((-4.84 + 0.92 * dsri! + 0.528 * gmi! + 0.404 * aqi! + 0.892 * sgi! + 0.115 * depi! - 0.172 * sgai! + 4.037 * tata! + 0.0327 * lvgi!) * 10000) / 10000
     : null;
-
-  let nullReason: MetricNullReason | null = null;
-  if (mScore === null) {
-    nullReason = !prev.available ? 'insufficient_history' : 'missing_input';
-  }
-
-  // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
-  // 蓋過原本算出來的結果，不是資料缺漏。
-  if (await isFinancialIndustryCompany(symbol)) {
-    mScore = null;
-    nullReason = 'not_applicable_industry';
-  }
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [
     { rocYear, season: seasonNum, reportDate: curr.reportDate },
     { rocYear: priorRocYear, season: priorSeasonNum, reportDate: prev.reportDate },
   ]);
+
+  const isFinancial = await isFinancialIndustryCompany(symbol);
+
+  return {
+    symbol,
+    rocYear: year,
+    season,
+    fiscalYear,
+    fiscalQuarter: seasonNum,
+    dsri,
+    gmi,
+    aqi,
+    sgi,
+    depi,
+    sgai,
+    tata,
+    lvgi,
+    mScore,
+    prevAvailable: prev.available,
+    mainAnchor,
+    isFinancial,
+  };
+};
+
+// 單一變量的 nullReason 判斷，三個 metric_code 共用同一套規則：模型不適用金融保險業
+// 一律 not_applicable_industry；其餘情況下該變量算不出來，去年同季資料整組缺席算
+// insufficient_history，否則算 missing_input——跟原本 mScore 的判斷邏輯一致，只是
+// 套用到單一變量而不是要求 8 個全部到齊。
+const resolveVariableNullReason = (value: number | null, resolution: BeneishMScoreResolution): MetricNullReason | null => {
+  if (resolution.isFinancial) return 'not_applicable_industry';
+  if (value !== null) return null;
+  return !resolution.prevAvailable ? 'insufficient_history' : 'missing_input';
+};
+
+export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuery): Promise<BeneishMScorePitOutcome> => {
+  const resolution = await resolveBeneishMScoreInputs(query);
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
+  }
+
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, mainAnchor } = resolution;
+  const mScore = resolution.isFinancial ? null : resolution.mScore;
+  const nullReason = resolveVariableNullReason(resolution.mScore, resolution);
 
   let q: BasisOutcome;
   if (!mainAnchor) {
@@ -182,9 +237,9 @@ export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuer
       symbol,
       metricCode: 'beneishMScore',
       fiscalYear,
-      fiscalQuarter: seasonNum,
-      dataType,
-      subsidiaryCompanyId,
+      fiscalQuarter,
+      dataType: query.dataType,
+      subsidiaryCompanyId: query.subsidiaryCompanyId,
       ...periodTypeGroup('Q'),
       value: mScore,
       nullReason,
@@ -193,5 +248,8 @@ export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuer
     });
   }
 
-  return { symbol, rocYear: year, season, q };
+  return { symbol, rocYear, season, q };
 };
+
+export { resolveVariableNullReason };
+export type { BasisOutcome };

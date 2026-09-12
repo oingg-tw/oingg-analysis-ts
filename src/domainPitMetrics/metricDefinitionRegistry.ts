@@ -1,6 +1,8 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import type { MetricDefinitionSpec } from './metricDefinitionSpec';
 import { roeDefinition } from '@/domainPitMetrics/profitability/roe/roeDefinition';
+import { novyMarxGpToAssetsDefinition } from '@/domainPitMetrics/profitability/novyMarxGpToAssets/novyMarxGpToAssetsDefinition';
+import { crociDefinition } from '@/domainPitMetrics/profitability/croci/crociDefinition';
 import { roaDefinition } from '@/domainPitMetrics/profitability/roa/roaDefinition';
 import { netProfitMarginDefinition } from '@/domainPitMetrics/profitability/netProfitMargin/netProfitMarginDefinition';
 import { assetTurnoverDefinition } from '@/domainPitMetrics/efficiency/assetTurnover/assetTurnoverDefinition';
@@ -47,8 +49,11 @@ import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/oc
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
 import { accrualsRatioDefinition } from '@/domainPitMetrics/quality/accrualsRatio/accrualsRatioDefinition';
+import { fcfMarginDefinition } from '@/domainPitMetrics/quality/fcfMargin/fcfMarginDefinition';
 import { abnormalCapexRatioDefinition } from '@/domainPitMetrics/quality/abnormalCapexRatio/abnormalCapexRatioDefinition';
 import { debtRatioDefinition } from '@/domainPitMetrics/resilience/debtRatio/debtRatioDefinition';
+import { netWorkingCapitalToAssetsDefinition } from '@/domainPitMetrics/resilience/netWorkingCapitalToAssets/netWorkingCapitalToAssetsDefinition';
+import { totalDebtToCapitalDefinition } from '@/domainPitMetrics/resilience/totalDebtToCapital/totalDebtToCapitalDefinition';
 import { currentRatioDefinition } from '@/domainPitMetrics/resilience/currentRatio/currentRatioDefinition';
 import { quickRatioDefinition } from '@/domainPitMetrics/resilience/quickRatio/quickRatioDefinition';
 import { cashRatioDefinition } from '@/domainPitMetrics/resilience/cashRatio/cashRatioDefinition';
@@ -59,6 +64,9 @@ import { capexToRevenueDefinition } from '@/domainPitMetrics/efficiency/capexToR
 import { psrDefinition } from '@/domainPitMetrics/valuation/psr/psrDefinition';
 import { pFcfDefinition } from '@/domainPitMetrics/valuation/pFcf/pFcfDefinition';
 import { evEbitdaDefinition } from '@/domainPitMetrics/valuation/evEbitda/evEbitdaDefinition';
+import { evToEbitDefinition } from '@/domainPitMetrics/valuation/evToEbit/evToEbitDefinition';
+import { evToFcfDefinition } from '@/domainPitMetrics/valuation/evToFcf/evToFcfDefinition';
+import { priceToResearchRatioDefinition } from '@/domainPitMetrics/valuation/priceToResearchRatio/priceToResearchRatioDefinition';
 import { roicDefinition } from '@/domainPitMetrics/profitability/roic/roicDefinition';
 import { roceDefinition } from '@/domainPitMetrics/profitability/roce/roceDefinition';
 import { grossMarginDefinition } from '@/domainPitMetrics/profitability/grossMargin/grossMarginDefinition';
@@ -95,6 +103,8 @@ import { altmanZScoreDefinition } from '@/domainPitMetrics/resilience/altmanZSco
 import { altmanZDoublePrimeScoreDefinition } from '@/domainPitMetrics/resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreDefinition';
 import { piotroskiFScoreDefinition } from '@/domainPitMetrics/quality/piotroskiFScore/piotroskiFScoreDefinition';
 import { beneishMScoreDefinition } from '@/domainPitMetrics/quality/beneishMScore/beneishMScoreDefinition';
+import { beneishAqiDefinition } from '@/domainPitMetrics/quality/beneishAqi/beneishAqiDefinition';
+import { beneishDsriDefinition } from '@/domainPitMetrics/quality/beneishDsri/beneishDsriDefinition';
 import { nissimPenmanRnoaDefinition } from '@/domainPitMetrics/profitability/nissimPenmanRnoa/nissimPenmanRnoaDefinition';
 import { zmijewskiScoreDefinition } from '@/domainPitMetrics/resilience/zmijewskiScore/zmijewskiScoreDefinition';
 import { ohlsonOScoreDefinition } from '@/domainPitMetrics/resilience/ohlsonOScore/ohlsonOScoreDefinition';
@@ -126,6 +136,8 @@ import { famaFrenchOperatingProfitabilityDefinition } from '@/domainPitMetrics/p
 // metricDefinitionSpec.ts，避免 64 個定義檔案 import 型別時形成循環依賴。
 export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   roe: roeDefinition,
+  novyMarxGpToAssets: novyMarxGpToAssetsDefinition,
+  croci: crociDefinition,
   consecutiveProfitYears: consecutiveProfitYearsDefinition,
   roa: roaDefinition,
   netProfitMargin: netProfitMarginDefinition,
@@ -172,8 +184,11 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   fcfPerShare: fcfPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
   accrualsRatio: accrualsRatioDefinition,
+  fcfMargin: fcfMarginDefinition,
   abnormalCapexRatio: abnormalCapexRatioDefinition,
   debtRatio: debtRatioDefinition,
+  netWorkingCapitalToAssets: netWorkingCapitalToAssetsDefinition,
+  totalDebtToCapital: totalDebtToCapitalDefinition,
   currentRatio: currentRatioDefinition,
   quickRatio: quickRatioDefinition,
   cashRatio: cashRatioDefinition,
@@ -184,6 +199,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   psr: psrDefinition,
   pFcf: pFcfDefinition,
   evEbitda: evEbitdaDefinition,
+  evToEbit: evToEbitDefinition,
+  evToFcf: evToFcfDefinition,
+  priceToResearchRatio: priceToResearchRatioDefinition,
   roic: roicDefinition,
   roce: roceDefinition,
   grossMargin: grossMarginDefinition,
@@ -220,6 +238,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreDefinition,
   piotroskiFScore: piotroskiFScoreDefinition,
   beneishMScore: beneishMScoreDefinition,
+  beneishAqi: beneishAqiDefinition,
+  beneishDsri: beneishDsriDefinition,
   nissimPenmanRnoa: nissimPenmanRnoaDefinition,
   zmijewskiScore: zmijewskiScoreDefinition,
   ohlsonOScore: ohlsonOScoreDefinition,
