@@ -14,7 +14,7 @@ export const famaFrenchOperatingProfitabilityDefinition: MetricDefinitionSpec = 
     '容易單獨計算的獲利力比率本身，不做因子建構跟迴歸。Q(單季) = 本季(毛利-推銷費用-' +
     '管理費用-利息費用)/本季期末帳面權益*100；TTM = 近四季(含本季)分子各自加總/本季期末' +
     '帳面權益*100，四季不齊為 null(insufficient_history)。帳面權益優先採歸屬於母公司口徑，' +
-    '缺漏退回整體口徑，跟既有 roe/altmanZPrimeScore 同一個 pickEquity 慣例。',
+    '缺漏退回整體口徑，跟既有 roe/altmanZDoublePrimeScore 同一個 pickEquity 慣例。',
   formulaLatex:
     '\\mathrm{RMW} = \\frac{\\mathrm{Revenue} - \\mathrm{COGS} - \\mathrm{SGA} - \\mathrm{Interest}}{\\mathrm{BookEquity}} \\times 100',
   academicSourceUrl: 'https://doi.org/10.1016/j.jfineco.2014.10.010',

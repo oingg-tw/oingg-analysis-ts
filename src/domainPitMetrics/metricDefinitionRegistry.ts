@@ -92,7 +92,6 @@ import { grahamNumberDefinition } from '@/domainPitMetrics/valuation/grahamNumbe
 import { ncavDefinition } from '@/domainPitMetrics/valuation/ncav/ncavDefinition';
 import { ownerEarningsDefinition } from '@/domainPitMetrics/quality/ownerEarnings/ownerEarningsDefinition';
 import { altmanZScoreDefinition } from '@/domainPitMetrics/resilience/altmanZScore/altmanZScoreDefinition';
-import { altmanZPrimeScoreDefinition } from '@/domainPitMetrics/resilience/altmanZPrimeScore/altmanZPrimeScoreDefinition';
 import { altmanZDoublePrimeScoreDefinition } from '@/domainPitMetrics/resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreDefinition';
 import { piotroskiFScoreDefinition } from '@/domainPitMetrics/quality/piotroskiFScore/piotroskiFScoreDefinition';
 import { beneishMScoreDefinition } from '@/domainPitMetrics/quality/beneishMScore/beneishMScoreDefinition';
@@ -218,7 +217,6 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   ncav: ncavDefinition,
   ownerEarnings: ownerEarningsDefinition,
   altmanZScore: altmanZScoreDefinition,
-  altmanZPrimeScore: altmanZPrimeScoreDefinition,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreDefinition,
   piotroskiFScore: piotroskiFScoreDefinition,
   beneishMScore: beneishMScoreDefinition,

@@ -15,8 +15,8 @@ export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
     '的模型，不是同一指標的變體。獨立重新計算，不依賴另外兩支已寫入的值。只有 TTM 一種' +
     ' basis。',
   formulaLatex: "\\mathrm{Z}'' = 6.56X_1 + 3.26X_2 + 6.72X_3 + 1.05X_4",
-  // 理由同 altmanZPrimeScore：用 Altman 2000 回顧論文（免費公開、完整列出 Z″ 係數）取代
-  // 付費的 1983/1995 原始出處，NYU Stern 官網當下連線不穩，用 Wayback Machine 存檔版本。
+  // 用 Altman 2000 回顧論文（免費公開、完整列出 Z″ 係數）取代付費的 1983/1995 原始出處，
+  // NYU Stern 官網當下連線不穩，用 Wayback Machine 存檔版本。
   academicSourceUrl: 'https://web.archive.org/web/20180418070236/http://pages.stern.nyu.edu/~ealtman/PredFnclDistr.pdf',
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   tier: 'composite',

@@ -54,7 +54,6 @@ import { computeAndWriteStockPricePit } from '../src/domainPitMetrics/valuation/
 import { computeAndWritePeRatioPit } from '../src/domainPitMetrics/valuation/peRatio/computePeRatioPit';
 import { computeAndWritePbRatioPit } from '../src/domainPitMetrics/valuation/pbRatio/computePbRatioPit';
 import { computeAndWriteAbnormalCapexRatioPit } from '../src/domainPitMetrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
-import { computeAndWriteAltmanZPrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZPrimeScore/computeAltmanZPrimeScorePit';
 import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
 import { computeAndWriteChowderNumberPit } from '../src/domainPitMetrics/dividend/chowderNumber/computeChowderNumberPit';
 import { computeAndWriteConsecutiveDividendYearsPit } from '../src/domainPitMetrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
@@ -80,7 +79,7 @@ export const GENERAL_METRIC_CODES = [
   'assetGrowth', 'consecutiveProfitYears', 'earningsYield',
   'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate',
   'stockPrice', 'peRatio', 'pbRatio',
-  'abnormalCapexRatio', 'altmanZPrimeScore', 'altmanZDoublePrimeScore',
+  'abnormalCapexRatio', 'altmanZDoublePrimeScore',
   'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
   'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y',
   'operatingExpenseRatio',
@@ -149,7 +148,6 @@ export const buildGeneralTasks = (symbol: string): BackfillTask[] => {
     ['peRatio', () => computeAndWritePeRatioPit(query)],
     ['pbRatio', () => computeAndWritePbRatioPit(query)],
     ['abnormalCapexRatio', () => computeAndWriteAbnormalCapexRatioPit(query)],
-    ['altmanZPrimeScore', () => computeAndWriteAltmanZPrimeScorePit(query)],
     ['altmanZDoublePrimeScore', () => computeAndWriteAltmanZDoublePrimeScorePit(query)],
     ['chowderNumber', () => computeAndWriteChowderNumberPit(query)],
     ['consecutiveDividendYears', () => computeAndWriteConsecutiveDividendYearsPit(query)],

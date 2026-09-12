@@ -11,7 +11,7 @@ import type { MetricNullReason } from '../../metricBasis';
 // Fama-French (2015) RMW 因子背後的單一公司營業獲利力比率——只做分子容易單獨計算的比率
 // 本身，不做完整五因子模型的橫斷面排序建構+個股迴歸（那需要全市場批次回填+迴歸引擎，
 // 見 famaFrenchOperatingProfitabilityDefinition.ts 的 formulaNote）。帳面權益優先採
-// 歸屬於母公司口徑，缺漏退回整體口徑，跟既有 altmanZPrimeScore 同一個 pickEquity 慣例。
+// 歸屬於母公司口徑，缺漏退回整體口徑，跟既有 altmanZDoublePrimeScore 同一個 pickEquity 慣例。
 const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): bigint | null => {
   if (!record) return null;
   if (record.equityAttributableToParent !== null) return record.equityAttributableToParent;
