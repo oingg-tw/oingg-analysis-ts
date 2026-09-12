@@ -1,11 +1,22 @@
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } from './metricBasis';
 
+// 2026-09-12：badge.name/nameEn 跟 MetricDefinitionSpec.displayName/displayNameSuffix
+// 是同一種「這個東西的人類可讀名稱」概念（只是一個描述法則、一個描述指標本身），原本各自
+// 宣告導致 <metricCode>Badge.ts 跟 <metricCode>Definition.ts 형狀高度重複——先抽出這組
+// 共用欄位，id 已確認跟 metricCode 純粹重複（沒有法則本身以外的語意），直接刪除、改用
+// MetricDefinitionSpec.metricCode。author/summary/detail/threshold/token 這些沒有
+// 對應的重複對象，暫不合併，未來如果出現新的重複欄位再繼續抽。
+export interface NamedEntity {
+  name: string;
+  nameSuffix?: string;
+  nameEn: string;
+}
+
 // 2026-09-10：「大師徽章」型別本身（命名法則/門檻/引用出處），內容見各自
-// <metricCode>Badge.ts（跟 <metricCode>Definition.ts 同一個資料夾）——只有 11 支
+// <metricCode>Badge.ts（跟 <metricCode>Definition.ts 同一個資料夾）——只有 15 支
 // 指標有，其餘指標的 MetricDefinitionSpec.badge 維持 undefined，見下方 badge 欄位的
 // 完整說明。
-export interface MetricBadge {
-  id: string;
+export interface MetricBadge extends NamedEntity {
   // 2026-09-10 補訂分工規則（先前沒訂，導致 13 筆各自混用「英文（中文）」/「中文（英文）」/
   // 純英文三種寫法，已全部校正過一次）：name/nameEn 不互相夾雜對方語言插入括號——這才是
   // 真正要擋的事，不是每個詞都被強制要求要有中文。法則本身如果在中文語境下已經有真實通用的
@@ -14,9 +25,8 @@ export interface MetricBadge {
   // 真實通用譯名、或這個詞本身在中文語境下就是照英文原文稱呼（例如 Altman Z-Score、Chowder
   // Rule），name 直接跟 nameEn 一樣整串保留英文，不要硬造一個沒人這樣叫的中文詞（Chowder
   // Rule 曾經被塞過「存股評分」這種自創描述，已移除）。額外限定語（例如「非上市公司版」）
-  // 不要塞進 name 的括號，寫進 summary/detail 開頭說明即可。
-  name: string;
-  nameEn: string;
+  // 不要塞進 name 的括號，寫進 summary/detail 開頭說明即可，nameSuffix 目前沒有徽章在用
+  // （繼承自 NamedEntity，保留給未來需要的情況）。
   // 法則/門檻的提出者或出處機構，正規化格式："<人名(s)>, <年份>"（例如 "Edward Altman,
   // 1968"、"Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989"）或機構型出處沒有
   // 單一可指名年份時省略年份（例如 "S&P Dow Jones Indices"）——2026-09-10 統一過一次，

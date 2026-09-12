@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const ncavBadge: MetricBadge = {
-  id: 'ncav',
   name: '淨流動資產價值',
   nameEn: 'Net Current Asset Value',
   author: 'Benjamin Graham, David Dodd, 1934',

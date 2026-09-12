@@ -6,7 +6,6 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 本身：公式沿用 PEG 原始定義，計算基礎明講是「今天」的即時股價 + 最新公布財報的
 // 基本面數據。
 export const livePegRatioBadge: MetricBadge = {
-  id: 'live-peg-ratio',
   name: '本益成長比',
   nameEn: 'PEG Ratio',
   author: 'Peter Lynch, 1989',

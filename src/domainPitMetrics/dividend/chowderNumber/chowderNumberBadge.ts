@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const chowderNumberBadge: MetricBadge = {
-  id: 'chowder-number',
   name: 'Chowder Rule',
   nameEn: 'Chowder Rule',
   author: 'Chowder, Seeking Alpha',

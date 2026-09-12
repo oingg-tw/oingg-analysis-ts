@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const cashConversionCycleBadge: MetricBadge = {
-  id: 'negative-cash-conversion-cycle',
   name: '負現金轉換循環',
   nameEn: 'Negative Cash Conversion Cycle',
   author: 'Michael Dell',

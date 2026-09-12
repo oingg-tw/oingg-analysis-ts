@@ -6,7 +6,6 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 本身：公式沿用 Graham Number 原始定義，計算基礎明講是「今天」的即時股價 + 最新公布
 // 財報的基本面數據。
 export const liveGrahamNumberBadge: MetricBadge = {
-  id: 'live-graham-number',
   name: 'Graham Number',
   nameEn: 'Graham Number',
   author: 'Benjamin Graham, 1949',

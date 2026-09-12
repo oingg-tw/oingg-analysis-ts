@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const beneishMScoreBadge: MetricBadge = {
-  id: 'beneish-m-score',
   name: 'Beneish M-Score',
   nameEn: 'Beneish M-Score',
   author: 'Messod Beneish, 1999',

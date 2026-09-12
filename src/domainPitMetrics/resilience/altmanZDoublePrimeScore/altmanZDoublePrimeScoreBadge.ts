@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const altmanZDoublePrimeScoreBadge: MetricBadge = {
-  id: 'altman-z-double-prime-score',
   name: "Altman Z''-Score",
   nameEn: "Altman Z''-Score",
   author: 'Edward Altman, 1983',

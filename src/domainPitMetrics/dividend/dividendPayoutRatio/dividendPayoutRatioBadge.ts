@@ -8,7 +8,6 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 成本，是一個雙邊區間論點，不是單邊安全上限。改用 'in_range' comparator（valueMin/
 // valueMax）正確表達，不能硬套 lt/60 這種單邊比較。
 export const dividendPayoutRatioBadge: MetricBadge = {
-  id: 'dividend-payout-ratio-safety',
   name: 'Fidelity 股利發放率最適區間',
   nameEn: 'Fidelity Optimal Payout Ratio Range',
   author: 'Fruhan, Morrow, Hebard, Rahman, 2013',

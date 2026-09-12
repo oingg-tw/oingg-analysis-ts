@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const ohlsonOScoreBadge: MetricBadge = {
-  id: 'ohlson-o-score',
   name: 'Ohlson O-Score',
   nameEn: 'Ohlson O-Score',
   author: 'James Ohlson, 1980',

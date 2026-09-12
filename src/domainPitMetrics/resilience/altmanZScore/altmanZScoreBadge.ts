@@ -3,7 +3,6 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 2026-09-10 web-nuxt 轉移過來的「大師徽章」資料，內容比照他們已合規審查過的版本，不是
 // 自己重新推導。
 export const altmanZScoreBadge: MetricBadge = {
-  id: 'altman-z-score',
   name: 'Altman Z-Score',
   nameEn: 'Altman Z-Score',
   author: 'Edward Altman, 1968',

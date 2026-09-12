@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const sueBadge: MetricBadge = {
-  id: 'sue',
   name: '標準化未預期盈餘',
   nameEn: 'Standardized Unexpected Earnings',
   author: 'Foster, Olsen & Shevlin, 1984, Bernard & Thomas, 1989',

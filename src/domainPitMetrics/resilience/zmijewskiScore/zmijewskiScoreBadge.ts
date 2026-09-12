@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const zmijewskiScoreBadge: MetricBadge = {
-  id: 'zmijewski-score',
   name: 'Zmijewski Score',
   nameEn: 'Zmijewski Score',
   author: 'Mark Zmijewski, 1984',

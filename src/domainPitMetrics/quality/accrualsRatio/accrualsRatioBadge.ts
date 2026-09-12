@@ -1,7 +1,6 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const accrualsRatioBadge: MetricBadge = {
-  id: 'sloan-accrual-ratio',
   name: '斯隆應計項目比率',
   nameEn: 'Sloan Accrual Ratio',
   author: 'Richard Sloan, 1996',

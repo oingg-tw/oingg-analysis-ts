@@ -67,8 +67,8 @@ const metricFolderCatalogEntrySchema = z.object({
   }),
   badge: z
     .object({
-      id: z.string(),
       name: z.string(),
+      nameSuffix: z.string().optional().meta({ description: '徽章名稱的補充限定語（例如「非上市公司版」），目前沒有任何徽章使用，保留給未來' }),
       nameEn: z.string(),
       author: z.string().meta({ description: '法則/門檻的提出者或出處機構，例如 "Edward Altman, 1968"' }),
       summary: z.string(),

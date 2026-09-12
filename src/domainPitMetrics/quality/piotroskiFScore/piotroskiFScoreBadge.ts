@@ -11,7 +11,6 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // comparator/value——沒有單一可以泛化表達的數值門檻，web-nuxt 自己算 3 組子分數，
 // 不吃這裡的門檻判定。
 export const piotroskiFScoreBadge: MetricBadge = {
-  id: 'piotroski-f-score',
   name: 'Piotroski F-Score',
   nameEn: 'Piotroski F-Score',
   author: 'Joseph Piotroski, 2000',
