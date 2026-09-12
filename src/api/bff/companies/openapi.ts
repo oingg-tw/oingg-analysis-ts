@@ -4,8 +4,8 @@ import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock
 import { roeHistoryEntrySchema } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
-import { metricHistoryEntrySchema } from '@/domainPitMetrics/queryMetricHistory';
-import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/queryMultiMetricHistory';
+import { metricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMetricHistory';
+import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import {
@@ -22,6 +22,7 @@ import {
   getCompanyPeerGroupQuerySchema,
   getCompanyPiotroskiBreakdownQuerySchema,
   getCompanyMetricProvenanceQuerySchema,
+  getCompanyBadgesQuerySchema,
 } from './controller';
 import {
   companyProfileDetailSchema,
@@ -31,6 +32,7 @@ import {
   financialStatementResultSchema,
   piotroskiFScoreBreakdownResultSchema,
   metricProvenanceResultSchema,
+  companyBadgesResultSchema,
 } from './types';
 
 const capitalStockHistoryResultSchema = z.object({
@@ -396,6 +398,34 @@ export const registerCompaniesOpenApi = (): void => {
     responses: {
       200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResultSchema } } },
       400: { description: '缺少 symbol，metricCode 不是 sue/chowderNumber/roe 之一，或 year/season 只給了其中一個。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/badges',
+    summary: '這家公司所有分類下、所有有 badge 的指標的達成結果（後端統一算好 passed，前端不用自己比較）',
+    description:
+      '2026-09-13 新增：前端原本拿 GET /metrics 的 badge.threshold（門檻 metadata）自己跟' +
+      'metric-history 的數值比較算「達成/未達成」，已證實會出錯（不同性質的指標混在同一組計數、' +
+      '沒處理產業排除等 null 情境）——這支端點統一由後端算好每支 badge 的 passed，依 GET /metrics' +
+      '既有的 categoryKey 分組回傳，前端只管呈現，不用再自己比較。範圍只涵蓋 15 支「有 badge」的' +
+      '指標（GET /metrics 的 badge 欄位非 undefined 的那些），沒有 badge 的其餘指標不在這支端點' +
+      '範圍內，那些指標的數值繼續走既有的 metric-history/metrics-history 端點。' +
+      'value 為 null 時 passed 一定也是 null（無法判定，不是「未達成」），nullReason 說明原因' +
+      '（例如金融保險業套用 Z-Score 這類模型時是 not_applicable_industry）。metricCode 可以直接' +
+      '拿去打 GET /companies/metric-history（查數值歷史）或 GET /companies/:symbol/metric-provenance' +
+      '（查原始計算來源，目前限 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/' +
+      'altmanZScore 試點範圍）。財務韌性三模型（Altman Z-Score/Beneish M-Score/Ohlson O-Score）' +
+      '的正式聚合計數（依 oingg-conductor-ts 文件庫《財務韌性三模型交叉驗證計算引擎》定義的' +
+      'zone/calibrationStatus/分母浮動邏輯）還在跟文件維護方確認落差，目前這支端點的三個模型' +
+      '都是各自獨立判定 passed，還沒有聚合計數欄位，等規格定案後再擴充，不會是 breaking change' +
+      '（只會新增欄位）。',
+    tags: ['System'],
+    request: { query: getCompanyBadgesQuerySchema },
+    responses: {
+      200: { description: '依分類分組的 badge 達成結果。', content: { 'application/json': { schema: companyBadgesResultSchema } } },
+      400: { description: '缺少 symbol。' },
     },
   });
 };

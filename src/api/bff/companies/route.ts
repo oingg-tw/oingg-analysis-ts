@@ -13,6 +13,7 @@ import {
   getCompanyPeerGroup,
   getCompanyPiotroskiBreakdown,
   getCompanyMetricProvenance,
+  getCompanyBadges,
 } from './controller';
 
 const router = Router();
@@ -30,5 +31,6 @@ router.get('/companies/financial-statement', getCompanyFinancialStatement);
 router.get('/companies/peer-group', getCompanyPeerGroup);
 router.get('/companies/piotroski-breakdown', getCompanyPiotroskiBreakdown);
 router.get('/companies/:symbol/metric-provenance', getCompanyMetricProvenance);
+router.get('/companies/badges', getCompanyBadges);
 
 export default router;
