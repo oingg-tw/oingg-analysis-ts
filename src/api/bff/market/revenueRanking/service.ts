@@ -1,7 +1,7 @@
 import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import type { RevenueRankingMetric, RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
+import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
 
 interface RawMonthlyRevenueRow {
   symbol: string;
@@ -15,10 +15,11 @@ interface EligibleRow extends RawMonthlyRevenueRow {
   market: 'TWSE' | 'TPEx';
 }
 
-// 月營收排行——2026-09-01 應使用者要求新增，metric 讓呼叫端指定要依哪個數字排序：
-// yoy（年增率，最常見的「營收爆發」選股指標，跟基期比、排除季節性因素干擾）、
-// mom（月增率，波動較大、容易受季節性因素影響，例如過年前後）、revenue（單季營收金額本身，
-// 偏向大型權值股，沒有「成長」的意涵）。三種都做，不猜哪個是使用者真正想要的。
+// 月營收排行——2026-09-01 應使用者要求新增，原本 metric 讓呼叫端在 yoy/mom/revenue 三者
+//間選要依哪個數字排序；2026-09-13 使用者要求拔掉 mom（月增率波動太大、容易受季節性因素
+// 干擾）跟 revenue（單純營收金額排行，偏向大型權值股，沒有「成長」意涵）——兩者都被判定
+// 沒有實際選股價值，只留 yoy（有基期趨近於零的統計失真排除規則，見下方）。momChangePercent/
+// currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來當排序依據。
 //
 // monthly_revenue 的範圍是「公開發行公司」，不是只有上市櫃（dev 樣本看過 000xxx 開頭的代號），
 // 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 src/shared/sourceData/companyProfile.ts
@@ -26,12 +27,7 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 //
 // 2026-09-01 tpex-ts 也開了自己的 monthly_revenue（欄位跟 TWSE 那份一致）——上市/上櫃各自
 // 查詢、依 symbol 去重（同一家公司理論上不會兩邊都有，去重只是防呆，優先保留 TWSE 那筆），
-// 合併後才依 metric 排序，不是只查 TWSE 那份，跟 /valuation/ranking 的合併邏輯同一種做法。
-const METRIC_COLUMN: Record<RevenueRankingMetric, keyof RawMonthlyRevenueRow> = {
-  yoy: 'yoy_change_percent',
-  mom: 'mom_change_percent',
-  revenue: 'current_month_revenue',
-};
+// 合併後才排序，不是只查 TWSE 那份，跟 /valuation/ranking 的合併邏輯同一種做法。
 
 // yoy_change_percent 超過 300% 直接排除——2026-09-02 應使用者要求，這是「基期趨近於零」造成
 // 的統計失真，不是真實的營運成長：分母（去年同月營收）趨近於零時，(今年-去年)/去年 會趨近
@@ -44,7 +40,8 @@ const METRIC_COLUMN: Record<RevenueRankingMetric, keyof RawMonthlyRevenueRow> = 
 // 0~50% 高/極高參考價值、50~100% 中等（警訊）、100~300% 低（高度統計失真）、>300% 完全無
 // 參考價值（偽指標）。文件建議更嚴謹的作法是比較「前期分母 vs 過去5年歷史中位數」，但
 // monthly_revenue 目前只有單一個月的鏡像資料，還沒有多年歷史可以算，300% 固定門檻是第一版
-// 簡化規則。只套用在 metric=yoy（這個問題是年增率基期特有的），不影響 mom/revenue 排行。
+// 簡化規則。這個問題是年增率基期特有的——2026-09-13 mom/revenue 排行已拔掉，這條規則
+// 現在唯一適用的 metric=yoy 情境。
 const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
 
 const getLatestYearMonth = async (): Promise<Date | null> => {
@@ -86,17 +83,16 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
   for (const row of twseRows) bySymbol.set(row.symbol, { ...row, market: 'TWSE' });
   for (const row of tpexRows) if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, { ...row, market: 'TPEx' });
 
-  const column = METRIC_COLUMN[metric];
   const eligible = [...bySymbol.values()].filter(
     (row) =>
       (twseSymbols.has(row.symbol) || tpexSymbols.has(row.symbol)) &&
-      row[column] !== null &&
-      !(metric === 'yoy' && row.yoy_change_percent !== null && row.yoy_change_percent > YOY_DISTORTION_THRESHOLD_PERCENT)
+      row.yoy_change_percent !== null &&
+      row.yoy_change_percent <= YOY_DISTORTION_THRESHOLD_PERCENT
   );
 
   const sorted = [...eligible]
     .sort((a, b) => {
-      const diff = Number(a[column]) - Number(b[column]);
+      const diff = a.yoy_change_percent! - b.yoy_change_percent!;
       return order === 'asc' ? diff : -diff;
     })
     .slice(0, limit);

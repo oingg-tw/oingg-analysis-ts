@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const revenueRankingMetricSchema = z.enum(['yoy', 'mom', 'revenue']);
+// 2026-09-13 使用者要求拔掉 mom/revenue 排行——月增率波動太大容易受季節性因素干擾、
+// 單純營收金額排行沒有「成長」意涵，兩者都被判定為沒有實際選股價值，只留 yoy（年增率，
+// 有基期趨近於零的統計失真排除規則，是三者裡唯一有實際使用價值的）。原本 metric 是
+// 三選一的列舉，現在只剩一個合法值，維持 z.enum 而不是拿掉這個欄位，是為了不破壞既有
+// 呼叫端已經在傳的 metric=yoy 這個參數形狀。
+export const revenueRankingMetricSchema = z.enum(['yoy']);
 export type RevenueRankingMetric = z.infer<typeof revenueRankingMetricSchema>;
 
 export const revenueRankingQuerySchema = z.object({

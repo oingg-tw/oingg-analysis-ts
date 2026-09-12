@@ -22,15 +22,8 @@ test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上�
   }
 });
 
-test('calculateRevenueRanking: mom asc 應該由低到高排序', async () => {
-  const result = await calculateRevenueRanking({ metric: 'mom', order: 'asc', limit: 10 });
-  for (let i = 1; i < result.rankings.length; i++) {
-    assert.ok(result.rankings[i - 1]!.momChangePercent! <= result.rankings[i]!.momChangePercent!, '應該由低到高排序');
-  }
-});
-
 test('calculateRevenueRanking: limit 應該限制回傳筆數', async () => {
-  const result = await calculateRevenueRanking({ metric: 'revenue', order: 'desc', limit: 3 });
+  const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 3 });
   assert.ok(result.rankings.length <= 3);
 });
 
@@ -44,13 +37,6 @@ test('calculateRevenueRanking: yoy 排行不應該出現超過 300% 的公司（
   for (const row of result.rankings) {
     assert.ok(row.yoyChangePercent! <= 300, `${row.symbol} 的 yoyChangePercent (${row.yoyChangePercent}) 應該已經被排除`);
   }
-});
-
-// mom/revenue 排行不受這個規則影響——這個問題是 yoy 基期特有的，不套用在其他 metric。
-test('calculateRevenueRanking: mom/revenue 排行不套用 300% 排除規則', async () => {
-  const momResult = await calculateRevenueRanking({ metric: 'mom', order: 'desc', limit: 50 });
-  const hasExtremeMom = momResult.rankings.some((row) => row.momChangePercent! > 300);
-  assert.ok(hasExtremeMom, 'mom 排行應該還是看得到超過 300% 的公司（規則不適用於 mom）');
 });
 
 afterAll(async () => {
