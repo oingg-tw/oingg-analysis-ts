@@ -118,7 +118,7 @@ import { famaFrenchOperatingProfitabilityDefinition } from '@/domainPitMetrics/p
 // 一列從這裡 upsert 出去，避免兩邊各自維護一份定義而漂移。命名避開裸的 `registry`——
 // src/adapters/swagger/registry.ts 已經有一個完全不同語意的 OpenAPIRegistry 實例叫這個名字。
 //
-// 2026-09-09 拆檔：每個 metricCode 的完整定義（displayName/unit/formulaNote/group/
+// 2026-09-09 拆檔：每個 metricCode 的完整定義（name/unit/formulaNote/group/
 // allowedXxx/dependsOn/currentFormulaVersion）已經搬到它自己的資料夾
 // （src/domainPitMetrics/<分類>/<metricCode>/<metricCode>Definition.ts），跟計算邏輯
 // （calculateXxx.ts/computeXxxPit.ts）放在一起——這個檔案縮成純彙整：import 全部

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const receivablesDaysDefinition: MetricDefinitionSpec = {
   metricCode: 'receivablesDays',
-  displayName: 'DSO',
+  name: 'DSO',
   unit: '天',
   formulaNote: 'DSO = 365/應收帳款周轉率（年化或 TTM）。只有 Q_ANN/TTM 兩種 basis，理由同 inventoryDays。',
   formulaLatex: '\\mathrm{DSO} = \\frac{365}{\\mathrm{ReceivablesTurnover}}',

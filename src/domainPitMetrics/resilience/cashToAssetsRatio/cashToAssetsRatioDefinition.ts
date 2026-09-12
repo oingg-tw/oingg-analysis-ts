@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeCashToAssetsRatioPit.ts 檔頭說明。只有 Q 一種 basis。
 export const cashToAssetsRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'cashToAssetsRatio',
-  displayName: '現金及約當現金占總資產比',
+  name: '現金及約當現金占總資產比',
   unit: '%',
   formulaNote: '= 現金及約當現金 ÷ 資產總額，衡量資產配置中流動性最高的部位占比。',
   formulaLatex: '\\mathrm{Cash/Assets} = \\dfrac{\\mathrm{Cash}}{\\mathrm{TotalAssets}}',

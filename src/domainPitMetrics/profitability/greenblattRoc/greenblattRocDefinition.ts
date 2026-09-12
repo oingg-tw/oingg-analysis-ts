@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const greenblattRocDefinition: MetricDefinitionSpec = {
   metricCode: 'greenblattRoc',
-  displayName: 'Greenblatt 資本報酬率',
+  name: 'Greenblatt 資本報酬率',
   unit: '%',
   formulaNote:
     '= EBIT(TTM) / (淨營運資金 + 淨固定資產) * 100。EBIT(TTM) = 近四季（含本季）稅前淨利+' +

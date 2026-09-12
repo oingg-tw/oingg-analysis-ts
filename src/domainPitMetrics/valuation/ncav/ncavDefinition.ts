@@ -3,7 +3,7 @@ import { ncavBadge } from './ncavBadge';
 
 export const ncavDefinition: MetricDefinitionSpec = {
   metricCode: 'ncav',
-  displayName: '淨流動資產價值',
+  name: '淨流動資產價值',
   unit: '元',
   // 2026-09-10 改回公司總額，不除以股數——跟維基百科 Net current asset value 條目定義
   // 的寫法一致（NCAV = Total Current Assets − Total Liabilities，MC = Shares × Price，

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const capexToRevenueDefinition: MetricDefinitionSpec = {
   metricCode: 'capexToRevenue',
-  displayName: '資本支出佔營收比',
+  name: '資本支出佔營收比',
   unit: '%',
   formulaNote:
     'Q(單季) = |資本支出|/本季營收*100；TTM = |近四季（含本季）資本支出加總|/近四季營收加總*100。' +

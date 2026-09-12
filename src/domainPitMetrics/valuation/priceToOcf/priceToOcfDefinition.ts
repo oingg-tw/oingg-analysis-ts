@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // （P/FCF）是姊妹指標，分母改用 OCF 不扣資本支出。只有 TTM 一種 basis。
 export const priceToOcfDefinition: MetricDefinitionSpec = {
   metricCode: 'priceToOcf',
-  displayName: 'P/OCF',
+  name: 'P/OCF',
   unit: '倍',
   formulaNote: '= 市值 ÷ 近四季營業活動現金流量加總。跟既有 pFcf（P/FCF）是姊妹指標，分母不扣資本支出。',
   formulaLatex: '\\mathrm{P/OCF} = \\dfrac{\\mathrm{MarketCap}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',

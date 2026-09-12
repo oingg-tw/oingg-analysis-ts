@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const assetGrowthDefinition: MetricDefinitionSpec = {
   metricCode: 'assetGrowth',
-  displayName: '總資產成長年增率',
+  name: '總資產成長年增率',
   unit: '%',
   formulaNote:
     '= (本季總資產 - 去年同季總資產) / |去年同季總資產| * 100。去年同季用 getPastNQuarters(' +

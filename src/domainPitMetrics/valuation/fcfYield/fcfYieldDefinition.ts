@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const fcfYieldDefinition: MetricDefinitionSpec = {
   metricCode: 'fcfYield',
-  displayName: '自由現金流殖利率',
+  name: '自由現金流殖利率',
   unit: '%',
   formulaNote:
     'Q_ANN = 每股 FCF 單季年化 / 股價 * 100；TTM = 每股 FCF(TTM) / 股價 * 100。股價取這個座標' +

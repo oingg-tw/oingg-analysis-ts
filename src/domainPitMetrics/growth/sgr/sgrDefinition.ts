@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const sgrDefinition: MetricDefinitionSpec = {
   metricCode: 'sgr',
-  displayName: '永續成長率',
+  name: '永續成長率',
   unit: '%',
   formulaNote:
     'TTM = ROE(TTM) x (1 - 配息率(TTM)/100)——獨立重新計算 ROE TTM 跟配息率 TTM 兩個子公式' +

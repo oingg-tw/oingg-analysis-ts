@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const equityMultiplierDefinition: MetricDefinitionSpec = {
   metricCode: 'equityMultiplier',
-  displayName: '權益乘數',
+  name: '權益乘數',
   unit: '倍',
   formulaNote:
     '= 本季期末總資產/本季期末權益，權益優先採歸屬於母公司口徑，缺漏退回整體口徑。純資產負債表' +

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const consecutiveDividendYearsDefinition: MetricDefinitionSpec = {
   metricCode: 'consecutiveDividendYears',
-  displayName: '連續配息年數',
+  name: '連續配息年數',
   unit: '年',
   formulaNote:
     '從最近一個資料完整（四季現金流量表皆有資料）的完整會計年度開始往回數，逐年檢查該年度' +

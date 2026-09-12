@@ -3,8 +3,8 @@ import { altmanZDoublePrimeScoreBadge } from './altmanZDoublePrimeScoreBadge';
 
 export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'altmanZDoublePrimeScore',
-  displayName: 'Altman Z″-Score 危機預警分數',
-  displayNameSuffix: '非製造業版',
+  name: 'Altman Z″-Score 危機預警分數',
+  nameSuffix: '非製造業版',
   unit: '分',
   formulaNote:
     "Z″ = 6.56*X1+3.26*X2+6.72*X3+1.05*X4，X1=(流動資產-流動負債)/總資產、X2=保留盈餘/" +

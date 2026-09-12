@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const bvpsDefinition: MetricDefinitionSpec = {
   metricCode: 'bvps',
-  displayName: '每股淨值',
+  name: '每股淨值',
   unit: '元',
   formulaNote:
     '= 本季期末權益*1000/流通股數，權益優先採歸屬母公司口徑，缺漏退回整體口徑。純資產負債表' +

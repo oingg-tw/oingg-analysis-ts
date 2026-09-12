@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const earningsYieldDefinition: MetricDefinitionSpec = {
   metricCode: 'earningsYield',
-  displayName: '盈餘收益率',
+  name: '盈餘收益率',
   unit: '%',
   formulaNote:
     '= EPS(TTM) / 股價(knowledge_date 當天或之前最近一筆收盤價) * 100，是本益比的倒數換算成' +

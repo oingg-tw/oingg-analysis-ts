@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const dividendYieldDefinition: MetricDefinitionSpec = {
   metricCode: 'dividendYield',
-  displayName: '殖利率',
+  name: '殖利率',
   unit: '%',
   formulaNote:
     'TWSE/TPEx 官方每日公布的殖利率，直接 passthrough export.daily_valuation.dividend_yield，' +

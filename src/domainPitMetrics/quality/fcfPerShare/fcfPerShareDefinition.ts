@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const fcfPerShareDefinition: MetricDefinitionSpec = {
   metricCode: 'fcfPerShare',
-  displayName: '每股自由現金流',
+  name: '每股自由現金流',
   unit: '元',
   formulaNote:
     'FCF = 營業活動現金流 + 資本支出（資本支出在來源資料是負值/流出，用加法，不是減法）；' +

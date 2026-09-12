@@ -5,8 +5,8 @@ import { livePegRatioBadge } from './livePegRatioBadge';
 // 檔頭說明。逐日型（snapshot），不是季報型。
 export const livePegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'livePegRatio',
-  displayName: 'PEG',
-  displayNameSuffix: '即時',
+  name: 'PEG',
+  nameSuffix: '即時',
   unit: '倍',
   formulaNote:
     '= PER(TTM，當下最新收盤價/最新已申報 EPS TTM) ÷ EPS 5 年複合成長率(%)。成長率跟 pegRatio 完全相同，' +

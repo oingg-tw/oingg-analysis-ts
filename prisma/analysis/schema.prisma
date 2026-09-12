@@ -124,7 +124,7 @@ model EquityRiskPremiumResult {
 // （metricDefinitionSpec.ts 的 legacyAllowedArrays()）純粹是白費工。改成單一 JSON 欄位
 // 直接存整個 MetricDefinitionSpec——upsertMetricDefinition() 不用再做任何形狀轉換，
 // legacyAllowedArrays() 也跟著整個刪除。要用 Prisma Studio 人工查閱時展開這個 JSON
-// 欄位即可看到完整內容（displayName/unit/formulaNote/group/allowedXxx/dependsOn/
+// 欄位即可看到完整內容（name/unit/formulaNote/group/allowedXxx/dependsOn/
 // currentFormulaVersion）。
 model MetricDefinition {
   metricCode String @id @map("metric_code")

@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // （衡量帳面獲利有多少比例真的轉換成自由現金流），不是另外兩種版本。只有 TTM 一種 basis。
 export const fcfConversionRateDefinition: MetricDefinitionSpec = {
   metricCode: 'fcfConversionRate',
-  displayName: 'FCF 轉換率',
+  name: 'FCF 轉換率',
   unit: '%',
   formulaNote:
     '= 近四季自由現金流（OCF-資本支出）加總 ÷ 近四季淨利加總，衡量帳面獲利有多少比例真的轉換成自由現金流。' +

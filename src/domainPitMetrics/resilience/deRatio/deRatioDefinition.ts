@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const deRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'deRatio',
-  displayName: '負債權益比',
+  name: '負債權益比',
   unit: '倍',
   formulaNote:
     '= 有息負債(短期借款+應付公司債+長期借款)/本季期末權益*100，權益優先採歸屬母公司口徑，' +

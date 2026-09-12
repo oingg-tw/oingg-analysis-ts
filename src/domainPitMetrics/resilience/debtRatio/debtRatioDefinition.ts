@@ -11,7 +11,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // 已寫入的 metric_value）。
 export const debtRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'debtRatio',
-  displayName: '負債比率',
+  name: '負債比率',
   unit: '%',
   formulaNote: '= 本季期末總負債/本季期末總資產*100。純資產負債表時點快照，只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{DebtRatio} = \\frac{\\mathrm{TotalLiabilities}}{\\mathrm{TotalAssets}} \\times 100',

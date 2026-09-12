@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const psrDefinition: MetricDefinitionSpec = {
   metricCode: 'psr',
-  displayName: '股價營收比',
+  name: '股價營收比',
   unit: '倍',
   formulaNote:
     'Q_ANN = 市值/(本季營收*4*1000)；TTM = 市值/(近四季營收加總*1000)。市值取這個座標解析出來的' +

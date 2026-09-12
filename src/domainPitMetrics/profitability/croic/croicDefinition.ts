@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // -現金），分子改用自由現金流而不是稅後淨營業利益（NOPAT）。只有 TTM 一種 basis。
 export const croicDefinition: MetricDefinitionSpec = {
   metricCode: 'croic',
-  displayName: 'CROIC',
+  name: 'CROIC',
   unit: '%',
   formulaNote: '= 近四季自由現金流（OCF-資本支出）加總 ÷ 投入資本（付息負債+股東權益-現金，跟既有 roic 同一套定義）。',
   formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}}',

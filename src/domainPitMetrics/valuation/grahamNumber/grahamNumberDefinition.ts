@@ -14,7 +14,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // 拿去年同季的 year/season，不是新機制。
 export const grahamNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'grahamNumber',
-  displayName: '葛拉漢數字',
+  name: '葛拉漢數字',
   unit: '倍',
   // 2026-09-10 使用者要求：公式改成 PER(TTM) × PBR，不要讓股價變成單獨要比較的變量——
   // 原本 sqrt(22.5×EPS×BVPS) vs 股價的寫法，股價是拿來跟這支指標的結果比較用的額外

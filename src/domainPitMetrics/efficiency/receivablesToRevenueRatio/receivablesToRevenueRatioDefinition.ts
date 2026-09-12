@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeTurnoverRatioFamilyPit.ts 的擴充說明，只有 TTM 一種 basis。
 export const receivablesToRevenueRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'receivablesToRevenueRatio',
-  displayName: '應收帳款占營收比',
+  name: '應收帳款占營收比',
   unit: '%',
   formulaNote: '= 本季期末應收帳款 ÷ 近四季營收加總，衡量應收帳款水位相對於營收規模是否偏高。',
   formulaLatex: '\\mathrm{Receivables/Revenue} = \\dfrac{\\mathrm{Receivables}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',

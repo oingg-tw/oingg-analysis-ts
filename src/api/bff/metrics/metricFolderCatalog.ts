@@ -41,13 +41,17 @@ const CATEGORIES: { key: string; displayName: string }[] = [
 
 export interface MetricFolderCatalogEntry {
   metricCode: string;
-  // 2026-09-09 新增：給前端顯示用的中文名稱/單位，來源是 metricDefinitionRegistry.ts
-  // 每個 metricCode 宣告的 displayName/unit。
-  displayName: string;
-  // 2026-09-11 新增：跟 displayName 平行的補充資訊（例如「即時」），不要塞進 displayName
-  // 本身的括號附註——見 metricDefinitionSpec.ts 的完整說明。選填，沒有補充資訊時是
-  // undefined。
-  displayNameSuffix?: string;
+  // 2026-09-09 新增，2026-09-12 改名（displayName→name）：給前端顯示用的中文名稱/單位，
+  // 來源是 metricDefinitionRegistry.ts 每個 metricCode 宣告的 name/unit，跟
+  // MetricBadge 共用同一組 NamedEntity 欄位命名，見 metricDefinitionSpec.ts 的說明。
+  name: string;
+  // 2026-09-11 新增，2026-09-12 改名（displayNameSuffix→nameSuffix）：跟 name 平行的
+  // 補充資訊（例如「即時」），不要塞進 name 本身的括號附註——見 metricDefinitionSpec.ts
+  // 的完整說明。選填，沒有補充資訊時是 undefined。
+  nameSuffix?: string;
+  // 2026-09-12 新增：英文名稱，目前只有原本 15 支大師徽章指標有值，其餘 79 支還沒補，
+  // 選填，沒有時是 undefined（不是空字串）。
+  nameEn?: string;
   unit: string;
   // 2026-09-08 新增，2026-09-09 起是這個端點唯一曝露的 token 相關欄位——原本還有四個
   // allowedXxx 陣列並排（allowedPeriodTypes/allowedLookbackRanges/
@@ -81,9 +85,8 @@ export interface MetricFolderCatalogEntry {
   // 資料來源標籤文字，改讀這裡統一維護。
   sources: string[];
   // 2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）
-  // 搬過來，見 metricDefinitionSpec.ts 的完整說明。只有 11 支指標有（大師模型裡的 Piotroski
-  // F-Score 是唯一例外，門檻邏輯無法用這裡的通用比較詞彙表達，維持前端硬編碼），其餘 73 支
-  // 這個欄位是 undefined。
+  // 搬過來，見 metricDefinitionSpec.ts 的完整說明。只有 15 支指標有，其餘指標這個欄位是
+  // undefined。
   badge?: MetricBadge;
 }
 
@@ -112,8 +115,9 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
         const definition = metricDefinitionRegistry[metricCode]!;
         return {
           metricCode,
-          displayName: definition.displayName,
-          displayNameSuffix: definition.displayNameSuffix,
+          name: definition.name,
+          nameSuffix: definition.nameSuffix,
+          nameEn: definition.nameEn,
           unit: definition.unit,
           validTokens: validTokensForMetric(metricCode),
           formulaLatex: definition.formulaLatex,

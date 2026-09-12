@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const buybackYieldDefinition: MetricDefinitionSpec = {
   metricCode: 'buybackYield',
-  displayName: '買回殖利率',
+  name: '買回殖利率',
   unit: '%',
   formulaNote:
     'TTM = |近四季（含本季）買回庫藏股支付現金加總| / 市值（收盤價 x 流通股數，以主要季度' +

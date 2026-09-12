@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 檔頭說明，只有 TTM 一種 basis。
 export const evToSalesDefinition: MetricDefinitionSpec = {
   metricCode: 'evToSales',
-  displayName: 'EV/Sales',
+  name: 'EV/Sales',
   unit: '倍',
   formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營收加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用營收。',
   formulaLatex: '\\mathrm{EV/Sales} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',

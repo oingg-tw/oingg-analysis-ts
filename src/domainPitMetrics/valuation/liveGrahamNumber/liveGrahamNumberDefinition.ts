@@ -6,8 +6,8 @@ import { liveGrahamNumberBadge } from './liveGrahamNumberBadge';
 // 的 group:'period' 不同。
 export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'liveGrahamNumber',
-  displayName: '葛拉漢數字',
-  displayNameSuffix: '即時',
+  name: '葛拉漢數字',
+  nameSuffix: '即時',
   unit: '倍',
   formulaNote:
     '= PER(TTM，當下最新收盤價/最新已申報 EPS TTM) × PBR（當下最新收盤價/最新已申報 BVPS）。基本面跟' +

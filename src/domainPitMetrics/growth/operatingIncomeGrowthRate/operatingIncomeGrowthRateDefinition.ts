@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const operatingIncomeGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingIncomeGrowthRate',
-  displayName: '營業利益成長年增率',
+  name: '營業利益成長年增率',
   unit: '%',
   formulaNote: '= (本季營業利益 - 去年同季營業利益) / |去年同季營業利益| * 100。只有 Q 一種 basis。',
   formulaLatex: '\\mathrm{OperatingIncomeGrowthRate} = \\frac{\\mathrm{OperatingIncome}_t - \\mathrm{OperatingIncome}_{t-4}}{|\\mathrm{OperatingIncome}_{t-4}|} \\times 100',

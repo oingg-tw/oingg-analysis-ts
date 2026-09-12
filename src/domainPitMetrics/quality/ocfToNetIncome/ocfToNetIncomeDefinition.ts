@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const ocfToNetIncomeDefinition: MetricDefinitionSpec = {
   metricCode: 'ocfToNetIncome',
-  displayName: '營業現金流對淨利比',
+  name: '營業現金流對淨利比',
   unit: '倍',
   formulaNote:
     'Q(單季) = 本季營業活動現金流/本季淨利（倍，不是百分比）；TTM = 近四季（含本季）營業活動' +

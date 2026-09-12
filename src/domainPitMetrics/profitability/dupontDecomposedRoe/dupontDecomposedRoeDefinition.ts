@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const dupontDecomposedRoeDefinition: MetricDefinitionSpec = {
   metricCode: 'dupontDecomposedRoe',
-  displayName: '杜邦三因子拆解 ROE',
+  name: '杜邦三因子拆解 ROE',
   unit: '%',
   formulaNote:
     'Q(單季) = netProfitMargin(Q) x assetTurnover(Q) x equityMultiplier；' +

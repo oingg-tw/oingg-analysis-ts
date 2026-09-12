@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const evEbitdaDefinition: MetricDefinitionSpec = {
   metricCode: 'evEbitda',
-  displayName: 'EV/EBITDA',
+  name: 'EV/EBITDA',
   unit: '倍',
   formulaNote:
     '企業價值 = 市值+淨負債*1000；Q_ANN = 企業價值/(本季 EBITDA*4*1000)；TTM = 企業價值/' +

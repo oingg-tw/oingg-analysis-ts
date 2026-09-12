@@ -7,8 +7,8 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 拿 marketCap.Q 做季報快照比較是同一個模式，只是換成即時的一邊。
 export const liveMarketCapDefinition: MetricDefinitionSpec = {
   metricCode: 'liveMarketCap',
-  displayName: '市值',
-  displayNameSuffix: '即時',
+  name: '市值',
+  nameSuffix: '即時',
   unit: '元',
   formulaNote:
     '= 當下最新收盤價 × 當下最新已申報流通股數（新台幣元）。跟 marketCap（凍結在財報公告當天的' +

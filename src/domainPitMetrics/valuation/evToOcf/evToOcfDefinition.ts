@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 檔頭說明，只有 TTM 一種 basis。
 export const evToOcfDefinition: MetricDefinitionSpec = {
   metricCode: 'evToOcf',
-  displayName: 'EV/OCF',
+  name: 'EV/OCF',
   unit: '倍',
   formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營業活動現金流量加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用 OCF。',
   formulaLatex: '\\mathrm{EV/OCF} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',

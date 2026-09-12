@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const bankCarRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'bankCarRatio',
-  displayName: '銀行資本適足率',
+  name: '銀行資本適足率',
   unit: '%',
   formulaNote:
     '資本適足率 = eligible_capital / risk_weighted_assets * 100——這批唯一自己做除法的' +

@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 現金流有多少比例被拿去做資本支出，只有 TTM 一種 basis。
 export const capexToOcfRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'capexToOcfRatio',
-  displayName: '資本支出占營業現金流比',
+  name: '資本支出占營業現金流比',
   unit: '%',
   formulaNote: '= 近四季資本支出（絕對值）加總 ÷ 近四季營業活動現金流量加總，衡量營業現金流有多少比例被拿去做資本支出。',
   formulaLatex: '\\mathrm{Capex/OCF} = \\dfrac{|\\mathrm{Capex}_{\\mathrm{TTM}}|}{\\mathrm{OCF}_{\\mathrm{TTM}}}',

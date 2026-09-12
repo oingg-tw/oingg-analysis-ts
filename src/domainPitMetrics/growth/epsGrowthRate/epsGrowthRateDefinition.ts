@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const epsGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'epsGrowthRate',
-  displayName: 'EPS 成長年增率',
+  name: 'EPS 成長年增率',
   unit: '%',
   formulaNote:
     '= (本季 EPS - 去年同季 EPS) / |去年同季 EPS| * 100——獨立重新計算本季/去年同季各自的' +

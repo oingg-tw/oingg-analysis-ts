@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const fixedAssetTurnoverDefinition: MetricDefinitionSpec = {
   metricCode: 'fixedAssetTurnover',
-  displayName: '固定資產週轉率',
+  name: '固定資產週轉率',
   unit: '次',
   formulaNote:
     'Q(單季) = 本季營收/本季期末不動產、廠房及設備（次）；Q_ANN = Q*4；TTM = 近四季（含本季）' +

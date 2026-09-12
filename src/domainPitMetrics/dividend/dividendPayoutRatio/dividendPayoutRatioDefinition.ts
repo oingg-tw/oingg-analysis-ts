@@ -3,7 +3,7 @@ import { dividendPayoutRatioBadge } from './dividendPayoutRatioBadge';
 
 export const dividendPayoutRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'dividendPayoutRatio',
-  displayName: '盈餘發放率',
+  name: '盈餘發放率',
   unit: '%',
   formulaNote:
     'TTM = |近四季（含本季）股利發放加總| / 近四季淨利加總 * 100，淨利優先採歸屬母公司口徑，' +

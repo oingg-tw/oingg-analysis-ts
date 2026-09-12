@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeLeverageDegreeFamilyPit.ts 檔頭說明。YoY（本季 vs 去年同季），只有 Q 一種 basis。
 export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   metricCode: 'financialLeverageDegree',
-  displayName: '財務槓桿度',
+  name: '財務槓桿度',
   unit: '倍',
   formulaNote: '= EPS 年增率(%) ÷ EBIT 年增率(%)（本季 vs 去年同季），衡量 EBIT 變動對每股盈餘變動的放大效果，數值越高代表財務槓桿（負債利息）對盈餘波動的放大程度越大。',
   formulaLatex: '\\mathrm{DFL} = \\dfrac{\\%\\Delta \\mathrm{EPS}}{\\%\\Delta \\mathrm{EBIT}}',

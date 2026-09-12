@@ -10,7 +10,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 沒有 TTM/年化概念。
 export const marketCapDefinition: MetricDefinitionSpec = {
   metricCode: 'marketCap',
-  displayName: '市值',
+  name: '市值',
   unit: '元',
   formulaNote: '= knowledge_date 當天或之前最近一筆收盤價 × 當時流通股數（新台幣元）。查無股價或股本資料時為 null（missing_input）。',
   formulaLatex: '\\mathrm{MarketCap} = \\mathrm{Price} \\times \\mathrm{SharesOutstanding}',

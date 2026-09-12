@@ -4,7 +4,7 @@ export const REVENUE_CAGR_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `revenueCagr${years}y`,
-  displayName: `營收${years}年複合成長率`,
+  name: `營收${years}年複合成長率`,
   unit: '%',
   formulaNote:
     `= (本年營收 / ${years}年前營收)^(1/${years}) - 1，取「最近一個資料完整的完整會計年度」` +

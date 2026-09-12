@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeNonOperatingIncomeRatioPit.ts 檔頭說明。只有 Q 一種 basis。
 export const nonOperatingIncomeRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'nonOperatingIncomeRatio',
-  displayName: '業外損益占稅前淨利比',
+  name: '業外損益占稅前淨利比',
   unit: '%',
   formulaNote: '= (稅前淨利 - 營業利益) ÷ 稅前淨利，數值越高代表獲利越依賴業外（非本業）活動。',
   formulaLatex: '\\mathrm{NonOpIncomeRatio} = \\dfrac{\\mathrm{PretaxIncome} - \\mathrm{OperatingIncome}}{\\mathrm{PretaxIncome}}',

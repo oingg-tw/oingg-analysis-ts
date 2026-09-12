@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const bankNplCoverageRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'bankNplCoverageRatio',
-  displayName: '銀行備抵呆帳覆蓋率',
+  name: '銀行備抵呆帳覆蓋率',
   unit: '%',
   formulaNote:
     '備抵呆帳覆蓋率，跟 bankNplRatio 同一列（bank_asset_quality_xbrl 的 TotalLoans）、' +

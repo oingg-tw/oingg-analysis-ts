@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeLeverageDegreeFamilyPit.ts 檔頭說明。YoY（本季 vs 去年同季），只有 Q 一種 basis。
 export const totalLeverageDegreeDefinition: MetricDefinitionSpec = {
   metricCode: 'totalLeverageDegree',
-  displayName: '總槓桿度',
+  name: '總槓桿度',
   unit: '倍',
   formulaNote: '= EPS 年增率(%) ÷ 營收年增率(%)（本季 vs 去年同季），衡量營收變動對每股盈餘變動的放大效果（營業槓桿+財務槓桿的複合效果）。',
   formulaLatex: '\\mathrm{DTL} = \\dfrac{\\%\\Delta \\mathrm{EPS}}{\\%\\Delta \\mathrm{Revenue}}',

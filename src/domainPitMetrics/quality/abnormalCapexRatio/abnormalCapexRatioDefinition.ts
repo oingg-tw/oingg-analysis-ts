@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const abnormalCapexRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'abnormalCapexRatio',
-  displayName: '異常資本投資比率',
+  name: '異常資本投資比率',
   unit: '%',
   formulaNote:
     'CI = 本年資本支出 / 前三年資本支出平均 - 1，Titman, Wei & Xie (2004) 提出的過度投資代理' +

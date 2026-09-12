@@ -4,7 +4,7 @@ export const DIVIDEND_GROWTH_RATE_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `dividendGrowthRate${years}y`,
-  displayName: `現金流量股利${years}年成長率`,
+  name: `現金流量股利${years}年成長率`,
   unit: '%',
   formulaNote:
     'variant_of：原始定義用精確的「每股宣告股利」N 年 CAGR，該資料源（mops-ts ' +

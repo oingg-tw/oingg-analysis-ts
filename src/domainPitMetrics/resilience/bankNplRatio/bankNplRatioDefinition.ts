@@ -6,7 +6,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
   // 名稱。都只有 Q 一種 basis（資產負債表時點快照，沒有 TTM/年化概念）。
 export const bankNplRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'bankNplRatio',
-  displayName: '銀行逾期放款比率',
+  name: '銀行逾期放款比率',
   unit: '%',
   formulaNote:
     '全行逾放比，直接讀 mops-ts 的 bank_asset_quality_xbrl（category=\'TotalLoans\'）已經算好的' +

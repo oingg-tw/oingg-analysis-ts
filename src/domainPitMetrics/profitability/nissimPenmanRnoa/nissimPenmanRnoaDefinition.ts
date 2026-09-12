@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   metricCode: 'nissimPenmanRnoa',
-  displayName: 'RNOA',
+  name: 'RNOA',
   unit: '%',
   formulaNote:
     'NOPAT = 營業利益*(1-有效稅率)；NOA(淨營業資產) = 權益+NFO(淨金融負債，= 有息負債-現金)；' +

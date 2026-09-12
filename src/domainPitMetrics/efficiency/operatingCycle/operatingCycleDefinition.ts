@@ -5,7 +5,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 同時寫入 Q_ANN/TTM 兩個 basis。
 export const operatingCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingCycle',
-  displayName: '營運週期',
+  name: '營運週期',
   unit: '天',
   formulaNote: '= 存貨週轉天數(DIO) + 應收帳款收現天數(DSO)，不扣應付帳款付現天數（DPO）——跟既有 cashConversionCycle（CCC=DIO+DSO-DPO）的差異是這支不考慮付款緩衝期。',
   formulaLatex: '\\mathrm{OperatingCycle} = \\mathrm{DIO} + \\mathrm{DSO}',

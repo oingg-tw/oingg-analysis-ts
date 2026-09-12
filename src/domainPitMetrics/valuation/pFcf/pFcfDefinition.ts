@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const pFcfDefinition: MetricDefinitionSpec = {
   metricCode: 'pFcf',
-  displayName: '股價自由現金流比',
+  name: '股價自由現金流比',
   unit: '倍',
   formulaNote:
     '自由現金流 = 營業活動現金流+資本支出（資本支出來源資料是負值/流出，用加法）；Q_ANN = 市值/' +

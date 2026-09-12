@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const receivablesTurnoverDefinition: MetricDefinitionSpec = {
   metricCode: 'receivablesTurnover',
-  displayName: '應收帳款週轉率',
+  name: '應收帳款週轉率',
   unit: '次',
   formulaNote:
     'Q(單季) = 本季營收/本季期末應收帳款（次）；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總/' +

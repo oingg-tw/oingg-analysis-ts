@@ -3,7 +3,7 @@ import { sueBadge } from './sueBadge';
 
 export const sueDefinition: MetricDefinitionSpec = {
   metricCode: 'sue',
-  displayName: 'SUE',
+  name: 'SUE',
   unit: '分',
   formulaNote:
     'SUE_t = UE_t / σ(UE)，UE_i = 單季 EPS_i − 去年同季單季 EPS_{i-4}（季節性隨機漫步版，' +

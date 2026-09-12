@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const ocfPerShareDefinition: MetricDefinitionSpec = {
   metricCode: 'ocfPerShare',
-  displayName: '每股營業現金流',
+  name: '每股營業現金流',
   unit: '元',
   formulaNote:
     'Q(單季) = 本季營業活動現金流*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營業活動' +

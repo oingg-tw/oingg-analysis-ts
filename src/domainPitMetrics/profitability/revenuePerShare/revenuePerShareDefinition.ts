@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const revenuePerShareDefinition: MetricDefinitionSpec = {
   metricCode: 'revenuePerShare',
-  displayName: '每股營收',
+  name: '每股營收',
   unit: '元',
   formulaNote:
     'Q(單季) = 本季營收*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營收加總*1000/流通' +

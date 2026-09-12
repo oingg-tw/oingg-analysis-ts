@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const bankTier1RatioDefinition: MetricDefinitionSpec = {
   metricCode: 'bankTier1Ratio',
-  displayName: '銀行第一類資本比率',
+  name: '銀行第一類資本比率',
   unit: '%',
   formulaNote: '第一類資本比率（Tier1），直接讀已經算好的 ratio_tier_i_capital_to_rwa，跟 bankCarRatio/bankCet1Ratio 共用同一次查詢/同一組 knowledge_date，覆蓋率/頻率限制同 bankCarRatio。',
   academicSourceUrl: 'https://www.bis.org/publ/bcbs189.htm',

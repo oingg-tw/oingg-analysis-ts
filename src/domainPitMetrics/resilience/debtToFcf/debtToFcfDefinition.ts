@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // 負債要用多少年的自由現金流償還，只有 TTM 一種 basis。
 export const debtToFcfDefinition: MetricDefinitionSpec = {
   metricCode: 'debtToFcf',
-  displayName: '負債對自由現金流比',
+  name: '負債對自由現金流比',
   unit: '倍',
   formulaNote: '= 付息負債（短期借款+應付公司債+長期借款） ÷ 近四季自由現金流（OCF-資本支出）加總，衡量現有付息負債要用多少年的自由現金流償還。',
   formulaLatex: '\\mathrm{Debt/FCF} = \\dfrac{\\mathrm{Debt}}{\\mathrm{FCF}_{\\mathrm{TTM}}}',

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const dupontExtendedRoeDefinition: MetricDefinitionSpec = {
   metricCode: 'dupontExtendedRoe',
-  displayName: '杜邦五因子拆解 ROE',
+  name: '杜邦五因子拆解 ROE',
   unit: '%',
   formulaNote:
     '五因子相乘 = dupontTaxBurden x dupontInterestBurden x dupontEbitMargin x assetTurnover x equityMultiplier（三個百分比因子跟兩個原始比率因子相乘後除以 10000 校正尺度）。' +

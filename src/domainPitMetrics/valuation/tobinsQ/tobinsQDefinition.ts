@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const tobinsQDefinition: MetricDefinitionSpec = {
   metricCode: 'tobinsQ',
-  displayName: '托賓Q值',
+  name: '托賓Q值',
   unit: '倍',
   formulaNote:
     '= (市值 + 總負債) / 總資產。市值 = 流通股數 × 股價（見 marketCap 指標，同一套查詢邏輯）；' +

@@ -6,7 +6,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // badge。
 export const pegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'pegRatio',
-  displayName: 'PEG',
+  name: 'PEG',
   unit: '倍',
   formulaNote:
     '= PER(TTM) / EPS 5年複合成長率(%)。PER 跟成長率各自獨立重新計算，不依賴 peRatio/' +

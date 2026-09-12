@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const netIncomeGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'netIncomeGrowthRate',
-  displayName: '淨利成長年增率',
+  name: '淨利成長年增率',
   unit: '%',
   formulaNote:
     '= (本季淨利 - 去年同季淨利) / |去年同季淨利| * 100。淨利優先採歸屬母公司口徑，缺漏退回' +

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const netProfitMarginDefinition: MetricDefinitionSpec = {
   metricCode: 'netProfitMargin',
-  displayName: '稅後淨利率',
+  name: '稅後淨利率',
   unit: '%',
   formulaNote:
     'Q(單季) = 本季淨利/本季營收*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +

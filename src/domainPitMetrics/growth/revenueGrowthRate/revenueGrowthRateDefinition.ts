@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const revenueGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'revenueGrowthRate',
-  displayName: '營收成長年增率',
+  name: '營收成長年增率',
   unit: '%',
   formulaNote:
     '= (本季營收 - 去年同季營收) / |去年同季營收| * 100。去年同季用 getPastNQuarters(' +

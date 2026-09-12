@@ -3,7 +3,7 @@ import { beneishMScoreBadge } from './beneishMScoreBadge';
 
 export const beneishMScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'beneishMScore',
-  displayName: 'Beneish M-Score 財報操縱偵測分數',
+  name: 'Beneish M-Score 財報操縱偵測分數',
   unit: '分',
   formulaNote:
     '8 變量迴歸式：M=-4.84+0.92*DSRI+0.528*GMI+0.404*AQI+0.892*SGI+0.115*DEPI-0.172*SGAI' +

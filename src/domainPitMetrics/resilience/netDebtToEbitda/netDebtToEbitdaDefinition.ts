@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const netDebtToEbitdaDefinition: MetricDefinitionSpec = {
   metricCode: 'netDebtToEbitda',
-  displayName: '淨負債對 EBITDA 比',
+  name: '淨負債對 EBITDA 比',
   unit: '倍',
   formulaNote:
     '淨負債 = 有息負債(短期借款+應付公司債+長期借款) - 現金及約當現金；EBITDA = 稅前淨利+利息費用' +

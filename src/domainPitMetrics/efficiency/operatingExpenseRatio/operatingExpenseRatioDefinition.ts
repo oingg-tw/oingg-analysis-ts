@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const operatingExpenseRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingExpenseRatio',
-  displayName: '營業費用率',
+  name: '營業費用率',
   unit: '%',
   formulaNote:
     'Q(單季) = 本季營業費用(推銷費用+管理費用)/本季營收*100；TTM = 近四季（含本季）加總/' +

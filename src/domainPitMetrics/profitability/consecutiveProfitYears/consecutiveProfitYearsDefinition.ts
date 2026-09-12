@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 
 export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
   metricCode: 'consecutiveProfitYears',
-  displayName: '連續獲利年數',
+  name: '連續獲利年數',
   unit: '年',
   formulaNote:
     '從最近一個資料完整（四季損益表皆有資料）的完整會計年度開始往回數，逐年檢查該年度' +

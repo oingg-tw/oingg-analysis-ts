@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSp
 // computeTurnoverRatioFamilyPit.ts 的擴充說明，只有 TTM 一種 basis。
 export const inventoryToRevenueRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'inventoryToRevenueRatio',
-  displayName: '存貨占營收比',
+  name: '存貨占營收比',
   unit: '%',
   formulaNote: '= 本季期末存貨 ÷ 近四季營收加總，衡量存貨水位相對於營收規模是否偏高。',
   formulaLatex: '\\mathrm{Inventory/Revenue} = \\dfrac{\\mathrm{Inventory}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',

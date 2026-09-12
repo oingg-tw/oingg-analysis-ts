@@ -3,7 +3,7 @@ import { accrualsRatioBadge } from './accrualsRatioBadge';
 
 export const accrualsRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'accrualsRatio',
-  displayName: '應計項目比率',
+  name: '應計項目比率',
   unit: '%',
   formulaNote:
     'Q(單季) = (本季淨利 − 本季營業活動現金流 − 本季投資活動現金流) / 本季期末總資產 * 100；' +

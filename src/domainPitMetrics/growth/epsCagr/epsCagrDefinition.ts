@@ -4,7 +4,7 @@ export const EPS_CAGR_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `epsCagr${years}y`,
-  displayName: `EPS ${years}年複合成長率`,
+  name: `EPS ${years}年複合成長率`,
   unit: '%',
   formulaNote:
     `= (本年 EPS / ${years}年前 EPS)^(1/${years}) - 1，取「最近一個資料完整的完整會計年度」` +

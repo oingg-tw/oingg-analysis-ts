@@ -6,10 +6,16 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 // 共用欄位，id 已確認跟 metricCode 純粹重複（沒有法則本身以外的語意），直接刪除、改用
 // MetricDefinitionSpec.metricCode。author/summary/detail/threshold/token 這些沒有
 // 對應的重複對象，暫不合併，未來如果出現新的重複欄位再繼續抽。
+//
+// 2026-09-12 追加：MetricDefinitionSpec 本身也改用這個共用型別（displayName/
+// displayNameSuffix 改名成 name/nameSuffix），94 支指標統一命名。nameEn 原本在
+// MetricBadge 是必填（15 支 badge 本來就都有英文名），但 94 支指標裡目前只有這 15 支
+// 有英文名，其餘 79 支還沒補，所以這裡改成選填——沒有英文名的指標維持 undefined，之後
+// 慢慢補齊，不強制一次到位。
 export interface NamedEntity {
   name: string;
   nameSuffix?: string;
-  nameEn: string;
+  nameEn?: string;
 }
 
 // 2026-09-10：「大師徽章」型別本身（命名法則/門檻/引用出處），內容見各自
@@ -73,6 +79,12 @@ export interface MetricBadge extends NamedEntity {
     // 安全上限」，原本用 lt/60 誤植了原文論點，改成 in_range 才能正確表達「落在區間內」
     // 這個語意，不能硬套單邊比較詞彙（見 dividendPayoutRatio/dividendPayoutRatioBadge.ts
     // 的更正說明）。
+    // 2026-09-13：曾經短暫改成 tiers（bronze/silver/gold/warn）分級設計，後來發現跟
+    // oingg-conductor-ts 文件庫「財務韌性三模型交叉驗證計算引擎.md」定義的金銀銅級（分級
+    // 對象是「三個模型裡通過幾個門檻」的聚合計數，不是單一指標自己的數值分級）是完全不同
+    // 的概念，且與該文件的方法論衝突（文件明確禁止「把單一模型的連續數值再切出更細的等級」，
+    // 見文件第2.1節），已整批廢案改回單一 value，正式的金銀銅設計會是另一個獨立於
+    // MetricBadge 的聚合端點，不會塞進這裡。
     comparator?: 'gt' | 'lt' | 'gte' | 'abs_lt' | 'in_range';
     value?: number;
     valueMin?: number;
@@ -86,20 +98,20 @@ export interface MetricBadge extends NamedEntity {
   };
 }
 
-interface MetricDefinitionSpecBase {
+interface MetricDefinitionSpecBase extends NamedEntity {
   metricCode: string;
   // 2026-09-09：給前端顯示用的中文名稱/單位——GET /metrics 之前只有 metricCode 跟四個
-  // allowedXxx 陣列，沒有使用者可讀文案，前端沒辦法直接拿來組欄位選單。displayName 是
-  // 精簡的中文指標名稱（常見英文縮寫視慣例保留，例如 ROE/EPS），unit 是這個數字的單位
+  // allowedXxx 陣列，沒有使用者可讀文案，前端沒辦法直接拿來組欄位選單。name 是精簡的
+  // 中文指標名稱（常見英文縮寫視慣例保留，例如 ROE/EPS），unit 是這個數字的單位
   // （%、元、次、天、倍、分、無單位）——這兩個是給 UI 標籤用的最小可用集合，不是完整的
   // 公式/計算邏輯說明（那個看 formulaNote，太技術性不適合直接顯示給終端使用者）。
-  displayName: string;
-  // 2026-09-11 新增：跟 displayName 平行的補充資訊欄位（例如「即時」），給前端決定要不要
-  // 用小字/副標籤另外呈現，不要塞進 displayName 本身的括號附註——這是跟 MetricBadge.name/
-  // threshold.description 同一批「補充資訊不要夾帶在主要文字的括號裡」規則的延伸，這次是
-  // 使用者直接在程式碼裡加了這個欄位定案，不是再用文字判斷要不要拆。選填，沒有補充資訊時
-  // 維持 undefined（=displayName 本身已經是完整名稱，不是被省略了什麼）。
-  displayNameSuffix?: string;
+  // 2026-09-11 新增、2026-09-12 改名：name 的補充資訊（例如「即時」）用 nameSuffix，
+  // 給前端決定要不要用小字/副標籤另外呈現，不要塞進 name 本身的括號附註——這是跟
+  // threshold.description 同一批「補充資訊不要夾帶在主要文字的括號裡」規則的延伸。
+  // 選填，沒有補充資訊時維持 undefined（=name 本身已經是完整名稱，不是被省略了什麼）。
+  // nameEn（英文名稱）目前只有原本 15 支 badge 指標有值，其餘 79 支還沒補，選填、
+  // 沒有時維持 undefined，不是空字串。三個欄位（name/nameSuffix/nameEn）都繼承自
+  // NamedEntity，跟 MetricBadge 共用同一組欄位名稱，不用各自維護一份。
   unit: string;
   formulaNote: string;
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種

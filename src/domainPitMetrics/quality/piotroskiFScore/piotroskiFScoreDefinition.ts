@@ -3,7 +3,7 @@ import { piotroskiFScoreBadge } from './piotroskiFScoreBadge';
 
 export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'piotroskiFScore',
-  displayName: 'Piotroski F-Score 財務體質評分',
+  name: 'Piotroski F-Score 財務體質評分',
   unit: '分',
   formulaNote:
     '9 個二元訊號（ROA 為正、CFO 為正、ROA 較去年同季提升、CFO>淨利、長期負債比率較去年同季' +

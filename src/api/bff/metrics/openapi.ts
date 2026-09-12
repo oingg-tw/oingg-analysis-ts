@@ -17,12 +17,15 @@ import { registry } from '@/adapters/swagger/registry';
 // 的外部形狀從回應裡拿掉，只留 validTokens 當唯一該信任的合法 token 清單。
 const metricFolderCatalogEntrySchema = z.object({
   metricCode: z.string().meta({ description: '對應 metricDefinitionRegistry.ts 的 key，也是 GET /companies/metric-history 等端點的 metricCode 參數值' }),
-  displayName: z.string().meta({ description: '中文名稱，給前端直接顯示用（例如 "股東權益報酬率 (ROE)"）' }),
-  displayNameSuffix: z.string().optional().meta({
+  name: z.string().meta({ description: '中文名稱，給前端直接顯示用（例如 "股東權益報酬率 (ROE)"）' }),
+  nameSuffix: z.string().optional().meta({
     description:
-      '2026-09-11 新增：跟 displayName 平行的補充資訊（例如「即時」，標示 liveGrahamNumber 這類逐日型指標' +
-      '跟同名季報型指標的差異），前端可以用小字/副標籤另外呈現，不會被塞進 displayName 本身的括號附註。' +
+      '2026-09-11 新增：跟 name 平行的補充資訊（例如「即時」，標示 liveGrahamNumber 這類逐日型指標' +
+      '跟同名季報型指標的差異），前端可以用小字/副標籤另外呈現，不會被塞進 name 本身的括號附註。' +
       '選填，沒有補充資訊時是 undefined（不是空字串）。',
+  }),
+  nameEn: z.string().optional().meta({
+    description: '2026-09-12 新增：英文名稱，目前只有原本 15 支大師徽章指標有值，其餘還沒補，選填，沒有時是 undefined（不是空字串）。',
   }),
   unit: z.string().meta({ description: '單位（%、元、次、天、倍、分、無單位）' }),
   validTokens: z
@@ -34,7 +37,7 @@ const metricFolderCatalogEntrySchema = z.object({
     description:
       '2026-09-10 新增：公式的 LaTeX 字串，前後端統一算式顯示用——後端儲存、前端忠實顯示，不要各自維護一份。' +
       '目前只在少數指標試點，還沒補上的是 undefined（不是空字串），前端請處理「這支指標還沒有公式可顯示」的情況，' +
-      '繼續 fallback 顯示 displayName 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
+      '繼續 fallback 顯示 name 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
   }),
   academicSourceUrl: z.string().optional().meta({
     description:
@@ -97,8 +100,7 @@ const metricFolderCatalogEntrySchema = z.object({
     .meta({
       description:
         '2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）搬過來，' +
-        '只有 11 支指標有（大師模型裡的 Piotroski F-Score 是唯一例外，門檻邏輯無法用這裡的通用比較詞彙' +
-        '表達，維持前端硬編碼），其餘指標這個欄位是 undefined。',
+        '只有 15 支指標有，其餘指標這個欄位是 undefined。',
     }),
 });
 
@@ -121,7 +123,7 @@ export const registerFiltersOpenApi = (): void => {
       '直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。' +
       '分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類，' +
       '每個分類同時帶 categoryDisplayName（中文名稱），前端不用自己維護一份分類對照表。' +
-      '每個 metric 有 metricCode/displayName（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
+      '每個 metric 有 metricCode/name（中文名稱）/unit（單位）/validTokens（這個 metricCode 實際可查詢的 token 清單，' +
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
       '目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的' +
