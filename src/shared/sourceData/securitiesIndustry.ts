@@ -18,6 +18,22 @@ export const isValidSecuritiesSectorCode = (code: string): boolean => {
   return codes !== null && code in codes && !NON_INDUSTRY_CODES.has(code);
 };
 
+// 2026-09-13 新增：Altman Z/Z′/Z″-Score、Beneish M-Score、Ohlson O-Score、Zmijewski
+// Score 這 6 個財務危機/操縱偵測模型，全部是用一般產業（製造業為主）樣本校準的迴歸/加權
+// 模型，對金融保險業（industry='17'，銀行、金控、保險）套用會系統性失真——這些模型用到的
+// 營運資金/總資產、市值/負債帳面值、應收帳款成長率等會計關係，在銀行的資產負債表結構下
+// （存款/放款/證券投資，高槓桿是產業常態不是危機訊號）完全不成立，不是「資料缺漏」而是
+// 「模型本身不適用」，見 metricBasis.ts 的 not_applicable_industry。只查 twse-ts/tpex-ts
+// company_profile.industry，不含 07/91/98/XX 這些非產業代碼（本來就不會等於 '17'）。
+export const isFinancialIndustryCompany = async (symbol: string): Promise<boolean> => {
+  const [twseRows, tpexRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+    tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+  ]);
+  const industry = twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
+  return industry === '17';
+};
+
 export interface SecuritiesIndustrySector {
   code: string;
   name: string;

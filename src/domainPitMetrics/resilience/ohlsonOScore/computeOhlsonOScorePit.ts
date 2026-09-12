@@ -8,6 +8,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/ohlsonOScore.ts 的獨立重新實作。Logit 財務危機預警模型：
 // O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG - 2.37*NITA
@@ -114,7 +115,7 @@ export const computeAndWriteOhlsonOScorePit = async (query: QuarterlyMetricQuery
       : null;
 
   const variables = [size, tlta, wcta, clca, oeneg, nita, futl, intwo, chin];
-  const oScore = variables.every((v) => v !== null)
+  let oScore = variables.every((v) => v !== null)
     ? round4(-1.32 - 0.407 * size! + 6.03 * tlta! - 1.43 * wcta! + 0.0757 * clca! - 1.72 * oeneg! - 2.37 * nita! - 1.83 * futl! + 0.285 * intwo! - 0.521 * chin!)
     : null;
 
@@ -125,6 +126,13 @@ export const computeAndWriteOhlsonOScorePit = async (query: QuarterlyMetricQuery
     if (!ttmComplete) nullReason = 'insufficient_history';
     else if (totalAssets === null || totalLiabilities === null || currentAssets === null || currentLiabilities === null) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
+  }
+
+  // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
+  // 蓋過原本算出來的結果，不是資料缺漏。
+  if (await isFinancialIndustryCompany(symbol)) {
+    oScore = null;
+    nullReason = 'not_applicable_industry';
   }
 
   const coordinateBase = { symbol, metricCode: 'ohlsonOScore', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -156,7 +164,9 @@ export const computeAndWriteOhlsonOScorePit = async (query: QuarterlyMetricQuery
         ...coordinateBase,
         ...periodTypeGroup('TTM'),
         value: null,
-        nullReason: 'insufficient_history',
+        // 沿用上面算好的 nullReason（金融保險業會是 not_applicable_industry），
+        // 不要重新硬寫死 insufficient_history。
+        nullReason,
         knowledgeDate: mainAnchor.knowledgeDate,
         knowledgeDateIsFallback: mainAnchor.isFallback,
       });

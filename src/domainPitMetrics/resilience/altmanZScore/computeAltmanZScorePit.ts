@@ -8,6 +8,7 @@ import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowle
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/altmanZScore.ts 的獨立重新實作——舊架構呼叫
 // calculateInterestCoverage()（取 EBIT-TTM）+ calculateTurnoverRatio()（取 assetTurnoverTtm
@@ -124,11 +125,18 @@ export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery): Pr
   const x3 = ttmComplete && totalAssets !== null ? toRatio4(ebitTtmSum, totalAssets) : null;
   const x5 = ttmComplete && totalAssets !== null ? toRatio4(revenueTtmSum, totalAssets) : null;
 
-  const zScore = x1 !== null && x2 !== null && x3 !== null && x4 !== null && x5 !== null ? Math.round((1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5) * 100) / 100 : null;
+  let zScore = x1 !== null && x2 !== null && x3 !== null && x4 !== null && x5 !== null ? Math.round((1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5) * 100) / 100 : null;
 
   let nullReason: MetricNullReason | null = null;
   if (zScore === null) {
     nullReason = !ttmComplete ? 'insufficient_history' : 'missing_input';
+  }
+
+  // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
+  // 蓋過原本算出來的結果，不是資料缺漏。
+  if (await isFinancialIndustryCompany(symbol)) {
+    zScore = null;
+    nullReason = 'not_applicable_industry';
   }
 
   return {
@@ -200,7 +208,11 @@ export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery
       ...coordinateBase,
       ...periodTypeGroup('TTM'),
       value: null,
-      nullReason: 'insufficient_history',
+      // 這個分支代表 ttmComplete 是 false，正常情況一律是 insufficient_history；
+      // 但金融保險業在 resolveAltmanZScoreInputs 已經把 nullReason 蓋成
+      // not_applicable_industry（模型本身不適用，優先權比資料缺漏高），這裡沿用
+      // resolution 算好的 nullReason，不要重新硬寫死 'insufficient_history'。
+      nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });

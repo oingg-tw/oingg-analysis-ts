@@ -8,6 +8,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/beneishMScore.ts 的獨立重新實作。8 個變量（DSRI/GMI/AQI/
 // SGI/DEPI/SGAI/TATA/LVGI）本季 vs 去年同季比較，去年同季座標比照 piotroskiFScore 用
@@ -152,13 +153,20 @@ export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuer
 
   const variables = [dsri, gmi, aqi, sgi, depi, sgai, tata, lvgi];
   const allEvaluated = variables.every((v) => v !== null);
-  const mScore = allEvaluated
+  let mScore = allEvaluated
     ? Math.round((-4.84 + 0.92 * dsri! + 0.528 * gmi! + 0.404 * aqi! + 0.892 * sgi! + 0.115 * depi! - 0.172 * sgai! + 4.037 * tata! + 0.0327 * lvgi!) * 10000) / 10000
     : null;
 
   let nullReason: MetricNullReason | null = null;
   if (mScore === null) {
     nullReason = !prev.available ? 'insufficient_history' : 'missing_input';
+  }
+
+  // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
+  // 蓋過原本算出來的結果，不是資料缺漏。
+  if (await isFinancialIndustryCompany(symbol)) {
+    mScore = null;
+    nullReason = 'not_applicable_industry';
   }
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [

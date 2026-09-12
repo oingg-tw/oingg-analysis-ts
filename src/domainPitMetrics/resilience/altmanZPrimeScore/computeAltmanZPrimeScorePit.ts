@@ -89,7 +89,7 @@ export const computeAndWriteAltmanZPrimeScorePit = async (query: QuarterlyMetric
   const x3 = ttmComplete && totalAssets !== null ? toRatio4(ebitTtmSum, totalAssets) : null;
   const x5 = ttmComplete && totalAssets !== null ? toRatio4(revenueTtmSum, totalAssets) : null;
 
-  const zPrimeScore =
+  let zPrimeScore =
     x1 !== null && x2 !== null && x3 !== null && x4 !== null && x5 !== null
       ? Math.round((0.717 * x1 + 0.847 * x2 + 3.107 * x3 + 0.42 * x4 + 0.998 * x5) * 100) / 100
       : null;
@@ -98,6 +98,15 @@ export const computeAndWriteAltmanZPrimeScorePit = async (query: QuarterlyMetric
   if (zPrimeScore === null) {
     nullReason = !ttmComplete ? 'insufficient_history' : 'missing_input';
   }
+
+  // 2026-09-13：Z′-Score（1983）是 Altman 專門為「沒有股價可用的非上市公司」設計的版本
+  // （X4 才會改用帳面權益取代市值）——本資料庫涵蓋的公司全部是 TWSE/TPEx 掛牌公司，沒有
+  // 一家符合這個前提，不是特定產業才不適用（不像金融業排除那樣需要逐一查 industry），
+  // 全面蓋成 not_applicable_industry。保留完整計算邏輯不刪，是因為公式本身沒有錯，只是
+  // 這個服務目前的資料集全部不符合它的設計前提——如果之後真的納入非上市公司資料，這裡才
+  // 需要改回條件式判斷。
+  zPrimeScore = null;
+  nullReason = 'not_applicable_industry';
 
   const coordinateBase = { symbol, metricCode: 'altmanZPrimeScore', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
@@ -126,7 +135,9 @@ export const computeAndWriteAltmanZPrimeScorePit = async (query: QuarterlyMetric
       ...coordinateBase,
       ...periodTypeGroup('TTM'),
       value: null,
-      nullReason: 'insufficient_history',
+      // 沿用上面算好的 nullReason（金融保險業會是 not_applicable_industry，優先權
+      // 比一般的 insufficient_history 高），不要重新硬寫死。
+      nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });

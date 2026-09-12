@@ -197,6 +197,20 @@ export interface PeerGroupResult {
 
 const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, peers: [] };
 
+// 2026-09-13 新增：給 computeAltmanZDoublePrimeScorePit.ts 判斷「是不是製造業」用——
+// Z″-Score（1995）是 Altman 專門排除 X5（資產週轉率）給非製造業公司用的版本，section='C'
+// 就是財政部稅籍分類的「製造業」（見檔頭的 19 個 section 說明）。刻意不吃
+// classificationCache（那個只在伺服器啟動時呼叫 loadIndustryClassification() 才會有值，
+// backfill 腳本是獨立執行的 process，不會經過伺服器啟動流程），改直接查一次 DB，跟
+// isFinancialIndustryCompany（securitiesIndustry.ts）同一種「不依賴快取，每次呼叫都
+// 查詢即時真相」的做法，用量遠低於全市場批次計算等級的頻率，不需要額外快取。
+export const getCompanySectionCode = async (symbol: string): Promise<string | null> => {
+  const rows = await govExportPrisma.$queryRaw<{ section_code: string | null }[]>`
+    SELECT section_code FROM "export"."company_industry_classification" WHERE symbol = ${symbol} AND rank = 0 LIMIT 1
+  `;
+  return rows[0]?.section_code ?? null;
+};
+
 // 動態層級回退：子類(subclass)→細類(class)→小類(group)→中類(division)，同業數（含自己）
 // 達到 minPeers 就停在該層；連 division 都不足門檻仍然停在 division（不繼續往 section
 // 爬），即使那樣同業數可能不足。純讀記憶體快取，同步函式，不用 await。

@@ -7,13 +7,20 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { getCompanySectionCode } from '@/shared/sourceData/industryClassification';
 
 // Altman Z″-Score（1983/1995，非製造業/新興市場版）——四變數，刻意拿掉 X5（資產週轉率），
 // 理由是原始論文認為週轉率在非製造業/新興市場產業間差異太大，會扭曲跨產業比較，跟
 // altmanZScore（1968 原版五變數）/altmanZPrimeScore（1983 非上市版五變數）是三個各自
 // 發表、獨立登錄的模型。X4 跟 Z′ 一樣用帳面權益（沒有市值可用時的版本，Z″ 論文延續 Z′
-// 的這個設計，不是又換一次）。獨立重新計算，不依賴另外兩支已寫入的值。排除金融保險業
-// 這件事目前不在本檔案處理（跟既有 altmanZScore 一致，範圍限制只在舊架構 warnings 呈現）。
+// 的這個設計，不是又換一次）。獨立重新計算，不依賴另外兩支已寫入的值。
+// 2026-09-13：這個版本是「非製造業」設計的，製造業公司（財政部稅籍分類 section='C'，
+// 見 industryClassification.ts）套用這個版本本身就不符合設計前提，標記
+// not_applicable_industry；金融保險業（twse-ts industry='17'）雖然也是非製造業，但
+// 銀行的資產負債表結構（存款/放款）本來就不適用一般會計比率型危機模型，理由跟
+// altmanZScore/beneishMScore/ohlsonOScore/zmijewskiScore 排除金融業一致，兩個條件
+// 任一成立就標記 not_applicable_industry。
 
 const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
   if (!record) return { value: null };
@@ -88,12 +95,21 @@ export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: Quarterly
 
   const x3 = ttmComplete && totalAssets !== null ? toRatio4(ebitTtmSum, totalAssets) : null;
 
-  const zDoublePrimeScore =
+  let zDoublePrimeScore =
     x1 !== null && x2 !== null && x3 !== null && x4 !== null ? Math.round((6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4) * 100) / 100 : null;
 
   let nullReason: MetricNullReason | null = null;
   if (zDoublePrimeScore === null) {
     nullReason = !ttmComplete ? 'insufficient_history' : 'missing_input';
+  }
+
+  const [isManufacturing, isFinancial] = await Promise.all([
+    getCompanySectionCode(symbol).then((section) => section === 'C'),
+    isFinancialIndustryCompany(symbol),
+  ]);
+  if (isManufacturing || isFinancial) {
+    zDoublePrimeScore = null;
+    nullReason = 'not_applicable_industry';
   }
 
   const coordinateBase = { symbol, metricCode: 'altmanZDoublePrimeScore', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -123,7 +139,9 @@ export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: Quarterly
       ...coordinateBase,
       ...periodTypeGroup('TTM'),
       value: null,
-      nullReason: 'insufficient_history',
+      // 沿用上面算好的 nullReason（製造業/金融業會是 not_applicable_industry），
+      // 不要重新硬寫死 insufficient_history。
+      nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
     });

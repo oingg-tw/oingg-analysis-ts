@@ -7,6 +7,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/zmijewskiScore.ts 的獨立重新實作。Probit 財務危機預警模型：
 // X = -4.3 - 4.5*(NI_TTM/總資產) + 5.7*(總負債/總資產) - 0.004*(流動資產/流動負債)。
@@ -89,6 +90,13 @@ export const computeAndWriteZmijewskiScorePit = async (query: QuarterlyMetricQue
     else nullReason = 'zero_or_negative_denominator';
   }
 
+  // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
+  // 蓋過原本算出來的結果，不是資料缺漏。
+  if (await isFinancialIndustryCompany(symbol)) {
+    xScore = null;
+    nullReason = 'not_applicable_industry';
+  }
+
   let ttm: BasisOutcome;
   if (ttmComplete) {
     const ttmAnchor = await resolveKnowledgeDate(
@@ -126,7 +134,9 @@ export const computeAndWriteZmijewskiScorePit = async (query: QuarterlyMetricQue
         subsidiaryCompanyId,
         ...periodTypeGroup('TTM'),
         value: null,
-        nullReason: 'insufficient_history',
+        // 沿用上面算好的 nullReason（金融保險業會是 not_applicable_industry），
+        // 不要重新硬寫死 insufficient_history。
+        nullReason,
         knowledgeDate: mainAnchor.knowledgeDate,
         knowledgeDateIsFallback: mainAnchor.isFallback,
       });
