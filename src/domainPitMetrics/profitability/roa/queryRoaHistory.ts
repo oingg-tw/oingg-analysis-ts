@@ -1,4 +1,4 @@
-import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryEntry, type MetricHistoryResult } from '../../queryMetricHistory';
+import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryEntry, type MetricHistoryResult } from '../../shared/queryMetricHistory';
 import type { PeriodType } from '../../metricBasis';
 
 // 比照 src/domainPitMetrics/profitability/roe/queryRoeHistory.ts 的薄包裝模式，重用通用的 getMetricHistory。

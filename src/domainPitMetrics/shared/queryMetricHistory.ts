@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import type { PeriodType } from './metricBasis';
+import type { PeriodType } from '../metricBasis';
 
 export const metricHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),

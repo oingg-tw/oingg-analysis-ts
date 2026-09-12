@@ -1,4 +1,4 @@
-import type { CalcResult } from '@/domainPitMetrics/numericHelpers';
+import type { CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // bankNplRatio（逾放比）——直接讀 mops-ts 已經算好的比率，本服務不用自己推公式（銀行監理
 // 揭露格式本來就要求申報比率，見

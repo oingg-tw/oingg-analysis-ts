@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // dupontTaxBurden = 淨利 ÷ 稅前淨利——五因子 Extended DuPont 把三因子的「淨利率」拆成
 // 稅務負擔×利息負擔×EBIT利潤率的第一項（見

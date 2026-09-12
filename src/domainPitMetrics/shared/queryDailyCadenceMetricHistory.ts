@@ -1,5 +1,5 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import type { LookbackRange, SamplingInterval, SnapshotCadence } from './metricBasis';
+import type { LookbackRange, SamplingInterval, SnapshotCadence } from '../metricBasis';
 import type { MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
 
 export interface DailyCadenceCoordinateGroup {

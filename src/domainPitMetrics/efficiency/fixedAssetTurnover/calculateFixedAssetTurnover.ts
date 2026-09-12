@@ -1,4 +1,4 @@
-import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // fixedAssetTurnover = 營收 ÷ 不動產廠房及設備——Q/TTM 共用同一條公式（見
 // pitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts 的編排邏輯），

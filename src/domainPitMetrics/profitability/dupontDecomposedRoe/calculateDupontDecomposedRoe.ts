@@ -1,4 +1,4 @@
-import { round2, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { round2, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // dupontDecomposedRoe = 淨利率(%) × 總資產週轉率 × 權益乘數——三因子杜邦拆解的組裝結果，理論上
 // 等於直接算出來的 ROE（見 pitMetrics/shared/dupont/computeDupontFamilyPit.ts 的編排邏輯）。

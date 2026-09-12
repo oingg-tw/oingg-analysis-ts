@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // currentRatio（流動比率）= 流動資產 ÷ 流動負債——純資產負債表時點快照，只有 Q 一種 basis
 // （見 pitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit.ts 的編排邏輯）。

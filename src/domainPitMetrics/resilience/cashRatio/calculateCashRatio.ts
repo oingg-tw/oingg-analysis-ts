@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // cashRatio（現金比率）= 現金及約當現金 ÷ 流動負債——純資產負債表時點快照，只有 Q 一種
 // basis（見 pitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit.ts 的編排邏輯）。

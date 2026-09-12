@@ -1,4 +1,4 @@
-import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // assetTurnover = 營收 ÷ 總資產——三因子杜邦拆解的第二項（見
 // pitMetrics/shared/dupont/computeDupontFamilyPit.ts 的編排邏輯）。分母固定沿用「本季期末

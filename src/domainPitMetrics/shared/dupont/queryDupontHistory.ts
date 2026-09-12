@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, type MetricHistoryResult } from '../../queryMetricHistory';
+import { getMetricHistory, type MetricHistoryResult } from '../queryMetricHistory';
 import type { PeriodType } from '../../metricBasis';
 
 const nullReasonSchema = z.enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history']).nullable();

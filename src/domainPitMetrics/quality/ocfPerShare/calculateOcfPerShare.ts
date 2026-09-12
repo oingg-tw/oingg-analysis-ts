@@ -1,4 +1,4 @@
-import { determineNullReason, toPerShare, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPerShare, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // ocfPerShare = 營業活動現金流 ÷ 流通股數——Q/TTM 共用同一條公式（見
 // pitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit.ts 的編排邏輯），差別只在

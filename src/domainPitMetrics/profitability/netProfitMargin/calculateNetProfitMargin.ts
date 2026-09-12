@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // netProfitMargin = 淨利 ÷ 營收 × 100%——三因子杜邦拆解的第一項（見
 // pitMetrics/shared/dupont/computeDupontFamilyPit.ts 的編排邏輯），Q/TTM 共用同一條公式，

@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // grossMargin = 毛利（或保險業替代科目 insurance_service_result）÷ 營收——Q/TTM 共用同一
 // 條公式（見 pitMetrics/profitability/margins/computeMarginsFamilyPit.ts 的編排邏輯），

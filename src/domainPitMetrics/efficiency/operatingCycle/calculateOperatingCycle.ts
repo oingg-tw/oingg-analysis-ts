@@ -1,4 +1,4 @@
-import { round2, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { round2, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——營運週期
 // = DIO + DSO（不扣 DPO，跟 cashConversionCycle 的差異是這支不考慮付款緩衝期，純衡量

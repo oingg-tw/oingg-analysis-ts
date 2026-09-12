@@ -5,7 +5,7 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult } from './computeChowderNumberPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 chowderNumber
 // 試點，現查現算不持久化。刻意不跟 computeAndWriteChowderNumberPit 共用一個 resolver——

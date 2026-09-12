@@ -4,7 +4,7 @@ import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, snapshotCadenceGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
-import { roundToSignificantFigures } from '../../numericHelpers';
+import { roundToSignificantFigures } from '../../shared/numericHelpers';
 
 // 2026-09-11 應 web-nuxt 要求新增——marketCap（季報快照，凍結在財報公告當天的
 // knowledge_date）的即時版本：用當下最新收盤價（getLatestDailyPrice）× 最新已申報流通

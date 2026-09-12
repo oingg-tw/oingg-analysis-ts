@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveAccrualsRatioInputs } from './computeAccrualsRatioPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點，見 pilot 擴大範圍的說明）：GET /companies/:symbol/
 // metric-provenance 的 accrualsRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）

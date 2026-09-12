@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getMetricHistory, metricHistoryEntrySchema } from './queryMetricHistory';
-import type { PeriodType } from './metricBasis';
+import type { PeriodType } from '../metricBasis';
 
 // 2026-09-07 使用者要「一次抓多個指標」（例如三率：grossMargin/operatingMargin/
 // netProfitMargin），本來只有 dupont-history 這種為特定家族寫死欄位名稱的組合端點——

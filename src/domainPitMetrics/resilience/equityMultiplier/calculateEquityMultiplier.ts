@@ -1,4 +1,4 @@
-import { determineNullReason, toRatio, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toRatio, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // equityMultiplier = 總資產 ÷ 股東權益——三因子杜邦拆解的第三項（見
 // pitMetrics/shared/dupont/computeDupontFamilyPit.ts 的編排邏輯），槓桿指標，只有一個 basis

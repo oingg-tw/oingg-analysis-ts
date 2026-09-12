@@ -1,5 +1,5 @@
 import type { MetricNullReason } from '@/domainPitMetrics/metricBasis';
-import { toDays, daysNullReason, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { toDays, daysNullReason, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // inventoryDays（DIO）= 365 ÷ 存貨周轉率（年化或 TTM 版本）——套用在哪個 basis 由呼叫端
 // 決定（見 pitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts 的編排邏輯：

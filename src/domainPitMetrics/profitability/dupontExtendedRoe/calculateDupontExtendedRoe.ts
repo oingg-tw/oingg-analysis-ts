@@ -1,4 +1,4 @@
-import { round2, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { round2, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // dupontExtendedRoe = 五因子相乘（稅務負擔×利息負擔×EBIT利潤率×總資產週轉率×權益乘數）
 // 的組裝結果，理論上等於 dupontDecomposedRoe（見

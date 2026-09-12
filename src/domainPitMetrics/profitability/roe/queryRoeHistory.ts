@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, type MetricHistoryResult } from '../../queryMetricHistory';
+import { getMetricHistory, type MetricHistoryResult } from '../../shared/queryMetricHistory';
 import type { PeriodType } from '../../metricBasis';
 
 export const roeHistoryEntrySchema = z.object({

@@ -1,4 +1,4 @@
-import type { CalcResult } from '@/domainPitMetrics/numericHelpers';
+import type { CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // bankNplCoverageRatio（備抵呆帳覆蓋率）——同 bankNplRatio，直接讀 mops-ts 已經算好的比率。
 export const calculateBankNplCoverageRatio = (coverageRatio: number | null | undefined): CalcResult => ({

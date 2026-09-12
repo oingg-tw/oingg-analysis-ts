@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // dupontEbitMargin = EBIT ÷ 營收——五因子 Extended DuPont 的第三項（見
 // pitMetrics/shared/dupont/computeDupontFamilyPit.ts 的編排邏輯）。注意這個「利潤率」

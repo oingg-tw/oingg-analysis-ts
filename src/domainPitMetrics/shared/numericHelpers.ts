@@ -1,4 +1,4 @@
-import type { MetricNullReason } from './metricBasis';
+import type { MetricNullReason } from '../metricBasis';
 
 // 通用數字工具，給拆出來的各支指標計算檔案（pitMetrics/<分類>/<指標>/calculateXxx.ts）共用
 // ——2026-09-08 從 dupont/turnoverRatio/margins/bankCapitalAdequacy/cashFlowPerShare 五個

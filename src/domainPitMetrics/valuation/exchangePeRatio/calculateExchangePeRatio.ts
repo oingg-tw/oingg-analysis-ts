@@ -1,4 +1,4 @@
-import type { CalcResult } from '@/domainPitMetrics/numericHelpers';
+import type { CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // exchangePeRatio——直接沿用 TWSE/TPEx 官方每日公布的本益比，不自己重算，見
 // pitMetrics/shared/marketRatios/computeMarketRatiosPit.ts 檔頭的方法論說明。這是外部黑盒

@@ -7,7 +7,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
-import { roundToSignificantFigures } from '../../numericHelpers';
+import { roundToSignificantFigures } from '../../shared/numericHelpers';
 
 // 市值 = 收盤價 × 流通股數，獨立立出 metric_code 的理由見 marketCapDefinition.ts 檔頭
 // 說明。knowledge_date 解析比照 stockPrice（只用資產負債表，不查損益表），保證跟

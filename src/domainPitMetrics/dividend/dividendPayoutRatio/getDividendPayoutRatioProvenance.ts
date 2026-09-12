@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveDividendPayoutRatioInputs } from './computeDividendPayoutRatioPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
 // dividendPayoutRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）需要 4 季 ×

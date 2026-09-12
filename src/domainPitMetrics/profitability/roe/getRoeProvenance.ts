@@ -1,7 +1,7 @@
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveRoeQuarterData } from './computeRoePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 roe 試點，
 // 現查現算不持久化，見 getPiotroskiFScoreBreakdown.ts 同一天稍早的先例。目前固定回傳

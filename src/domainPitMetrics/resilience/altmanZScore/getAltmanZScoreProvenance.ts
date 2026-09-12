@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveAltmanZScoreInputs } from './computeAltmanZScorePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
 // altmanZScore 試點，現查現算不持久化。這是三支裡工作量最大的一支——X1/X2 用本季資產負債表

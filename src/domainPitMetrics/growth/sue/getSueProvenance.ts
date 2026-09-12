@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveSueInputs, type SueQuarterDetail } from './computeSuePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../provenance/provenanceTypes';
+import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 sue 試點，
 // 現查現算不持久化。完整計算需要 24 季資料（估 20 期 UE 的樣本標準差），若每季都列成

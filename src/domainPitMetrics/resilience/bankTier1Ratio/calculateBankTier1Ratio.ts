@@ -1,4 +1,4 @@
-import type { CalcResult } from '@/domainPitMetrics/numericHelpers';
+import type { CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // bankTier1Ratio（第一類資本比率）——直接讀 mops-ts 已經算好的比率。
 export const calculateBankTier1Ratio = (ratioTierICapitalToRwa: number | null | undefined): CalcResult => ({

@@ -1,4 +1,4 @@
-import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toPercent, type CalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // bankCarRatio（總資本適足率）= 合格資本 ÷ 風險加權資產——這批唯一自己做除法的欄位，
 // 其餘（CET1/Tier1）都是直接讀 mops-ts 已經算好的比率。

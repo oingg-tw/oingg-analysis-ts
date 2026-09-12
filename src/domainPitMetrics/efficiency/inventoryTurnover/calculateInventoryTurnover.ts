@@ -1,4 +1,4 @@
-import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/numericHelpers';
+import { determineNullReason, toRatio, annualizeQuarterly, type AnnualizableCalcResult } from '@/domainPitMetrics/shared/numericHelpers';
 
 // inventoryTurnover = 營業成本 ÷ 存貨——Q/TTM 共用同一條公式（見
 // pitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts 的編排邏輯），差別
