@@ -20,8 +20,21 @@
 //   pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts
 //   PILOT_LIMIT=30 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（單一季小批次測試）
 //   PILOT_QUARTERS=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（只跑最舊的 N 季）
+//   FORCE_RESTART=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（忽略續跑進度檔，
+//     全部季度從頭重跑）
+//
+// 2026-09-13 使用者要求加上續跑機制——原本這支腳本被中斷（例如手動 kill、機器重開）就要
+// 從 113Q1 整個重跑，已經跑完的季度（可能好幾個小時）全部浪費掉，使用者形容「很恐怖」。
+// 現在每跑完一季（一般指標+銀行指標都完成）就把該季標記寫進 tmp/full-history-backfill-
+// progress.json，下次啟動時讀這個檔案跳過已完成的季度。用「整季」當續跑粒度而非逐一家
+// 公司，理由：(1) 每季耗時在 40~110 分鐘之間，中斷點落在季度中間時重跑該季本身損失有限；
+// (2) 逐家續跑要處理「這家公司在這季的哪些 metricCode 已經寫入、哪些沒有」這種更細的
+// 狀態，複雜度不成比例；(3) 每支 compute*Pit 都是 upsert，重跑已完成的季度不會有資料
+// 損壞風險，只是浪費時間——這正是要避免的事，但跳過已完成整季就已經解決大部分損失。
+// 進度檔只記錄「季度完成」不記錄錯誤數，重跑失敗的個別公司請用既有的
+// retryBackfillFailuresPit.ts（讀 tmp/backfill-failures-*.json）。
 
-import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GENERAL_METRIC_CODES, BANK_METRIC_CODES, buildGeneralTasks, buildBankTasks, runTasks, type BackfillFailure } from './backfillTaskDefinitions';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
@@ -59,6 +72,28 @@ const getBankSymbolsForQuarter = async (year: string, season: Season): Promise<s
     ORDER BY symbol
   `;
   return rows.map((r) => r.symbol);
+};
+
+const PROGRESS_FILE_PATH = join(process.cwd(), 'tmp', 'full-history-backfill-progress.json');
+
+const quarterKey = (year: string, season: Season): string => `${year}Q${season}`;
+
+const loadCompletedQuarters = (): Set<string> => {
+  if (process.env.FORCE_RESTART === '1') return new Set();
+  if (!existsSync(PROGRESS_FILE_PATH)) return new Set();
+  try {
+    const raw = JSON.parse(readFileSync(PROGRESS_FILE_PATH, 'utf-8')) as { completedQuarters?: string[] };
+    return new Set(raw.completedQuarters ?? []);
+  } catch {
+    // 進度檔損壞或格式不對——保守起見視為沒有進度，不要讓一個壞掉的檔案擋住整支腳本執行。
+    return new Set();
+  }
+};
+
+const markQuarterCompleted = (completed: Set<string>, key: string): void => {
+  completed.add(key);
+  mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
+  writeFileSync(PROGRESS_FILE_PATH, JSON.stringify({ completedQuarters: Array.from(completed) }, null, 2));
 };
 
 const writeFailuresFile = (slug: string, failures: BackfillFailure[]): void => {
@@ -145,8 +180,18 @@ const main = async () => {
 
   const allErrors: BackfillFailure[] = [];
   const t0 = Date.now();
+  const completedQuarters = loadCompletedQuarters();
+  if (completedQuarters.size > 0) {
+    console.log(`[full-history-pit] 讀到續跑進度檔，已完成 ${completedQuarters.size} 季：${Array.from(completedQuarters).join(', ')}`);
+  }
 
   for (const { year, season } of quarters) {
+    const key = quarterKey(year, season);
+    if (completedQuarters.has(key)) {
+      console.log(`\n[full-history-pit] ===== ${key} 已在續跑進度檔標記完成，跳過 =====`);
+      continue;
+    }
+
     console.log(`\n[full-history-pit] ===== ${year}Q${season} 開始 =====`);
     const [generalSymbolsFull, bankSymbolsFull] = await Promise.all([getGeneralSymbolsForQuarter(year, season), getBankSymbolsForQuarter(year, season)]);
     const generalSymbols = PILOT_LIMIT ? generalSymbolsFull.slice(0, PILOT_LIMIT) : generalSymbolsFull;
@@ -165,6 +210,10 @@ const main = async () => {
       (symbol) => runTasks(buildBankTasks(symbol, { year, season }))
     );
     allErrors.push(...generalErrors.map((e) => ({ ...e, label: `${year}Q${season}:${e.label}` })), ...bankErrors.map((e) => ({ ...e, label: `${year}Q${season}:${e.label}` })));
+
+    // 不管有沒有錯誤都標記完成——這支腳本的續跑粒度是「整季」，個別公司失敗有既有的
+    // retryBackfillFailuresPit.ts 處理，不需要靠重跑整季來補（見檔頭說明）。
+    markQuarterCompleted(completedQuarters, key);
   }
 
   console.log(
