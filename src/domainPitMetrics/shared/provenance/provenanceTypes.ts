@@ -57,6 +57,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'eps',
   'revenuePerShare',
   'roa',
+  'netProfitMargin',
+  'dupontEbitMargin',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

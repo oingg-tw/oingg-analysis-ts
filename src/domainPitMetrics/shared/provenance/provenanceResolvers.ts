@@ -42,6 +42,8 @@ import { getOhlsonOScoreProvenance } from '@/domainPitMetrics/resilience/ohlsonO
 import { getEpsProvenance } from '@/domainPitMetrics/profitability/eps/getEpsProvenance';
 import { getRevenuePerShareProvenance } from '@/domainPitMetrics/profitability/revenuePerShare/getRevenuePerShareProvenance';
 import { getRoaProvenance } from '@/domainPitMetrics/profitability/roa/getRoaProvenance';
+import { getNetProfitMarginProvenance } from '@/domainPitMetrics/profitability/netProfitMargin/getNetProfitMarginProvenance';
+import { getDupontEbitMarginProvenance } from '@/domainPitMetrics/profitability/dupontEbitMargin/getDupontEbitMarginProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -99,4 +101,6 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   eps: getEpsProvenance,
   revenuePerShare: getRevenuePerShareProvenance,
   roa: getRoaProvenance,
+  netProfitMargin: getNetProfitMarginProvenance,
+  dupontEbitMargin: getDupontEbitMarginProvenance,
 };
