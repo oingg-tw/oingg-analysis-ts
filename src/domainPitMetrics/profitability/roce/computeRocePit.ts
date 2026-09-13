@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -57,29 +57,8 @@ export const computeAndWriteRocePit = async (query: QuarterlyMetricQuery, statem
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'roce', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let q: BasisOutcome;
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: roceQuarterlyPct,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: roceQuarterlyAnnualizedPct,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', roceQuarterlyPct, quarterlyNullReason);
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', roceQuarterlyAnnualizedPct, quarterlyNullReason);
 
   // TTM：近四季（含本季）EBIT 加總，使用資本固定用本季期末值（不平均不加總）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

@@ -7,7 +7,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -141,29 +141,8 @@ export const computeAndWriteAccrualsRatioPit = async (
   const accrualsRatioQuarterlyAnnualized = accrualsRatioQuarterly !== null ? Math.round(accrualsRatioQuarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = accrualsRatioQuarterly === null ? determineNullReason(accrualsQuarterly, totalAssets) : null;
 
-  let q: BasisOutcome;
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: accrualsRatioQuarterly,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: accrualsRatioQuarterlyAnnualized,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', accrualsRatioQuarterly, quarterlyNullReason);
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', accrualsRatioQuarterlyAnnualized, quarterlyNullReason);
 
   let ttm: BasisOutcome;
   if (ttmComplete) {

@@ -1,12 +1,12 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -14,11 +14,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // calculateEps() 本身——保持這條新管線對舊系統唯讀，比照 computeRoaPit.ts 的既有模式。
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元。
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
-
 export type EpsPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter): Promise<EpsPitOutcome> => {
@@ -59,29 +54,8 @@ export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, stateme
 
   const coordinateBase = { symbol, metricCode: 'eps', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let q: BasisOutcome;
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: epsQuarterly,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: epsQuarterlyAnnualized,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', epsQuarterly, quarterlyNullReason);
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', epsQuarterlyAnnualized, quarterlyNullReason);
 
   // TTM：近四季（含本季）淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
   // knowledge_date 沿用本季（Q/Q_ANN）自己的，跟 computeRoePit.ts 的 TTM 處理一致。

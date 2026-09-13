@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -15,11 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 跟 peRatio 不同：peRatio 分母為 0 才是 null，這裡分母（股價）不太可能是 0，反而要留意
 // 股價缺漏；EPS_TTM 為負時 EY 一樣算出真實但為負的值，不隱藏成 null（跟 peRatio 虧損時
 // 本益比為負同一個判斷）。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export type EarningsYieldPitOutcome = StandardBasisPitOutcome;
 

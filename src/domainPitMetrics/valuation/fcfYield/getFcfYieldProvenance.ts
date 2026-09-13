@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
@@ -10,11 +11,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——fcfYield(TTM) = 每股 FCF(TTM，近四季 FCF 加總×1000
 // (千元換元)/流通股數) / 股價(本季知識時點) * 100。跟 computeFcfYieldPit.ts 一致。固定
 // 回傳 TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

@@ -1,10 +1,11 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -15,11 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // resolveKnowledgeDate 底層用的是同一支函式，不需要另外設計「股價要取哪一天」的新機制。
 // 跟舊架構一致：Q_ANN/TTM 的股價都用「本季」這組 knowledge_date 查一次，不是各自獨立解析。
 // 沒有單季非年化版本（P_FCF 估值倍數的倒數）。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 const toPctFromNumbers = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;
@@ -67,19 +63,7 @@ export const computeAndWriteFcfYieldPit = async (
 
   const coordinateBase = { symbol, metricCode: 'fcfYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: fcfYieldQuarterlyAnnualizedPct,
-      nullReason: qAnnNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', fcfYieldQuarterlyAnnualizedPct, qAnnNullReason);
 
   // TTM：近四季（含本季）FCF 加總 / 流通股數；股價沿用上面同一筆（本季 knowledge_date 查到的），
   // 不是另外用 TTM anchor 重查一次，跟 fcfYield.ts 的既有行為一致。

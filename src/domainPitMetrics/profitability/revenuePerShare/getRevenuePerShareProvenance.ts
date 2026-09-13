@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -8,11 +9,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——revenuePerShare(TTM) = 近四季營收加總×1000 / 流通股數。
 // 結構跟 getEpsProvenance.ts 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome
 // 那種欄位選擇邏輯）。固定回傳 TTM。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

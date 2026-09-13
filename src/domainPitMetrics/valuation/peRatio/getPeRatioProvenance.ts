@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -12,11 +13,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 淨利加總×1000(千元換元)/流通股數)。跟 computePeRatioPit.ts 一致，獨立重算 EPS 不依賴
 // eps 這個 metric_code 已寫入的值。股價用本季（不是 TTM 四季）解析出的知識時點查詢，
 // 跟既有寫入路徑一致。固定回傳 TTM。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export const getPeRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -21,11 +22,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // (Price/BVPS) < 22.5 ⟺ PER×PBR < 22.5（EPS/BVPS/Price 皆為正時）。PER/PBR 獨立
 // 重新計算，不依賴 peRatio/pbRatio 已寫入的值，算法直接複製自那兩支各自的 TTM/Q 邏輯，
 // 保持每支 PIT 檔案獨立、不互相依賴的既有原則。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;

@@ -5,8 +5,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // SUE（標準化未預期盈餘，Standardized Unexpected Earnings）——季節性隨機漫步版
@@ -148,19 +148,7 @@ export const computeAndWriteSuePit = async (
   const { symbol, rocYear, season, fiscalYear, fiscalQuarter, sueValue, nullReason, mainAnchor } = resolution;
   const coordinateBase = { symbol, metricCode: 'sue', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
-  let q: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: sueValue,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', sueValue, nullReason);
 
   return { symbol, rocYear, season, q };
 };

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -14,11 +15,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // peRatio/epsCagr5y 已寫入的值。成長率非正時 PEG 無意義回傳 null。固定回傳 TTM。
 
 const PEG_GROWTH_YEARS = 5;
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 interface AnnualEpsQuarterDetail {
   fiscalYear: number;

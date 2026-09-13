@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -9,11 +10,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——bvps = 本季期末淨值×1000(千元換元) / 流通股數。
 // 淨值優先採歸屬母公司口徑，缺漏退回整體口徑。跟 computeBvpsPit.ts 一致。只有 Q 一種
 // basis，沒有 TTM/年化概念（資產負債表時點快照）。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export const getBvpsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

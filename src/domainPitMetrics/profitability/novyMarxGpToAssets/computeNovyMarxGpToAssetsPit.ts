@@ -6,7 +6,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -42,29 +42,8 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'novyMarxGpToAssets', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let q: BasisOutcome;
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: quarterlyValue,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: quarterlyAnnualized,
-      nullReason: quarterlyNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterlyValue, quarterlyNullReason);
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', quarterlyAnnualized, quarterlyNullReason);
 
   // TTM：近四季（含本季）毛利加總，分母固定用本季期末總資產。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

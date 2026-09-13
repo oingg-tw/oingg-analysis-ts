@@ -1,6 +1,8 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { metricDefinitionRegistry } from './metricDefinitionRegistry';
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence, MetricNullReason } from './metricBasis';
+import type { KnowledgeDateResolution } from './knowledgeDate';
+import type { BasisOutcome } from './pitOutcome';
 
 export interface MetricValueCoordinate {
   symbol: string;
@@ -240,4 +242,26 @@ export const writeMetricValue = async (input: MetricValueInput): Promise<MetricV
     update: { value: input.value, nullReason: input.nullReason, knowledgeDateIsFallback: input.knowledgeDateIsFallback, formulaVersion },
   });
   return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
+};
+
+// 2026-09-13：季報型指標寫入路徑的最後一段幾乎全部長這樣——「anchor（knowledgeDate 解析
+// 結果）不存在就整個 skip，存在才呼叫 writeMetricValue()」，在近百支 compute*Pit.ts 裡
+// 各自重複同一段 if/else 樣板（唯一的差異是 periodType/value/nullReason 三個值）。
+// 統一抽出來，呼叫端只需要傳這三個會變動的值。
+export const writeOrSkip = async (
+  anchor: KnowledgeDateResolution | null,
+  coordinateBase: Omit<MetricValueCoordinate, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'>,
+  period: PeriodType,
+  value: number | null,
+  nullReason: MetricNullReason | null
+): Promise<BasisOutcome> => {
+  if (!anchor) return { action: 'skipped_no_knowledge_date' };
+  return writeMetricValue({
+    ...coordinateBase,
+    ...periodTypeGroup(period),
+    value,
+    nullReason,
+    knowledgeDate: anchor.knowledgeDate,
+    knowledgeDateIsFallback: anchor.isFallback,
+  });
 };

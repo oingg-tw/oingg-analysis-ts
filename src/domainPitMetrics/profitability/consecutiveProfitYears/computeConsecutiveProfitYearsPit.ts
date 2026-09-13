@@ -5,8 +5,8 @@ import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 跟 consecutiveDividendYears 同一套「逐年往回數」設計，換成看「這年淨利是不是正的」
@@ -61,19 +61,7 @@ export const computeAndWriteConsecutiveProfitYearsPit = async (query: QuarterlyM
 
   const coordinateBase = { symbol, metricCode: 'consecutiveProfitYears', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let fy: BasisOutcome;
-  if (!mainAnchor) {
-    fy = { action: 'skipped_no_knowledge_date' };
-  } else {
-    fy = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('FY'),
-      value,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const fy = await writeOrSkip(mainAnchor, coordinateBase, 'FY', value, nullReason);
 
   return { symbol, rocYear: year, season, fy };
 };

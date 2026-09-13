@@ -5,8 +5,8 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——股東權益比率，
@@ -41,19 +41,7 @@ export const computeAndWriteEquityRatioPit = async (query: QuarterlyMetricQuery,
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'equityRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let q: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q'),
-      value: ratio,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', ratio, nullReason);
 
   return { symbol, rocYear: year, season, q };
 };

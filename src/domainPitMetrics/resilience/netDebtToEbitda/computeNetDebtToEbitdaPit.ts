@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -61,19 +61,7 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'netDebtToEbitda', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: qAnnValue,
-      nullReason: qAnnNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', qAnnValue, qAnnNullReason);
 
   // TTM：近四季（含本季）EBITDA 加總，淨負債固定用本季期末值（不平均不加總）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

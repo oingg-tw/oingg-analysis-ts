@@ -4,8 +4,8 @@ import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 使用者要求「先做邏輯，資料不全面沒關係」——資料源是現金流量表的 dividendsPaid（跟
@@ -67,19 +67,7 @@ export const computeAndWriteConsecutiveDividendYearsPit = async (query: Quarterl
 
   const coordinateBase = { symbol, metricCode: 'consecutiveDividendYears', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let fy: BasisOutcome;
-  if (!mainAnchor) {
-    fy = { action: 'skipped_no_knowledge_date' };
-  } else {
-    fy = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('FY'),
-      value,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const fy = await writeOrSkip(mainAnchor, coordinateBase, 'FY', value, nullReason);
 
   return { symbol, rocYear: year, season, fy };
 };

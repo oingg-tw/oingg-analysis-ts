@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -20,11 +21,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 // null_reason 沿用 evEbitda/roe 已定案的判斷：BVPS 剛好等於 0 才是
 // zero_or_negative_denominator，BVPS 為負（資不抵債）仍然算出一個真實但為負的本淨比，
 // 不隱藏成 null。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;

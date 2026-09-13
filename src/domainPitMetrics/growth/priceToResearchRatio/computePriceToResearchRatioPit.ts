@@ -5,8 +5,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增。研發費用查法同 rdIntensity（只有 XBRL 寬表有這個欄位，
@@ -72,19 +72,7 @@ export const computeAndWritePriceToResearchRatioPit = async (
 
   const coordinateBase = { symbol, metricCode: 'priceToResearchRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let ttm: BasisOutcome;
-  if (!mainAnchor) {
-    ttm = { action: 'skipped_no_knowledge_date' };
-  } else {
-    ttm = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('TTM'),
-      value: ttmValue,
-      nullReason: ttmNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const ttm = await writeOrSkip(mainAnchor, coordinateBase, 'TTM', ttmValue, ttmNullReason);
 
   return { symbol, rocYear: year, season, ttm };
 };

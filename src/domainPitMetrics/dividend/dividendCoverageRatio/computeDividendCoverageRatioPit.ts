@@ -5,8 +5,8 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateFcf } from '@/domainPitMetrics/quality/cashFlowPerShare/fcf';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 export type DividendCoverageRatioPitOutcome = StandardBasisPitOutcome;
@@ -62,19 +62,7 @@ export const computeAndWriteDividendCoverageRatioPit = async (query: QuarterlyMe
 
   const coordinateBase = { symbol, metricCode: 'dividendCoverageRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let ttm: BasisOutcome;
-  if (!mainAnchor) {
-    ttm = { action: 'skipped_no_knowledge_date' };
-  } else {
-    ttm = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('TTM'),
-      value: coverageRatio,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const ttm = await writeOrSkip(mainAnchor, coordinateBase, 'TTM', coverageRatio, nullReason);
 
   return { symbol, rocYear: year, season, ttm };
 };

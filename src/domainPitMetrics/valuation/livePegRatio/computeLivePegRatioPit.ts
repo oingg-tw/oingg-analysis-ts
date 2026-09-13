@@ -1,4 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -16,11 +17,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // vs peRatio 的既有先例。逐日型（snapshotCadence='EOD'），knowledgeDate = 交易日本身。
 
 const PEG_GROWTH_YEARS = 5;
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;

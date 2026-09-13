@@ -5,8 +5,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 買回庫藏股金額（payments_to_acquire_treasury_shares）只存在 XBRL 現金流量表長表，舊表
@@ -80,19 +80,7 @@ export const computeAndWriteBuybackYieldPit = async (
 
   const coordinateBase = { symbol, metricCode: 'buybackYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let ttm: BasisOutcome;
-  if (!mainAnchor) {
-    ttm = { action: 'skipped_no_knowledge_date' };
-  } else {
-    ttm = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('TTM'),
-      value: buybackYieldTtm,
-      nullReason: ttmNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const ttm = await writeOrSkip(mainAnchor, coordinateBase, 'TTM', buybackYieldTtm, ttmNullReason);
 
   return { symbol, rocYear: year, season, ttm };
 };

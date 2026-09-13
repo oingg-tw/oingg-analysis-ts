@@ -4,7 +4,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -61,19 +61,7 @@ export const computeAndWriteEvToEbitPit = async (
 
   const coordinateBase = { symbol, metricCode: 'evToEbit', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let qAnn: BasisOutcome;
-  if (!mainAnchor) {
-    qAnn = { action: 'skipped_no_knowledge_date' };
-  } else {
-    qAnn = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('Q_ANN'),
-      value: qAnnValue,
-      nullReason: qAnnNullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', qAnnValue, qAnnNullReason);
 
   // TTM：近四季（含本季）EBIT 加總；企業價值沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

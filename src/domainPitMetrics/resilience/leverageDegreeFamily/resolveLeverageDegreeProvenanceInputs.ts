@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -9,11 +10,6 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 // 都是「本季 vs 去年同季」的 YoY 比較，且都需要先組出 EPS（淨利/流通股數）當分子，
 // 兩支共用完全同一組輸入，抽這支共用 resolver。淨利/EBIT(=營業利益)/營收各自需要本季+
 // 去年同季兩筆，流通股數是「非財報欄位」（公開發行公司股本變動申報），不是 statementField。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export const growthPct = (current: number | null, prior: number | null): number | null =>
   current !== null && prior !== null && prior !== 0 ? Math.round(((current - prior) / Math.abs(prior)) * 100 * 100) / 100 : null;

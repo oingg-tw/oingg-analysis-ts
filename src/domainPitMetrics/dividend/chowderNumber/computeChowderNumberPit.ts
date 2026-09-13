@@ -5,8 +5,8 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // Chowder Number（Seeking Alpha 社群規則）= 現金殖利率 + 股利五年成長率，門檻 ≥12%（公用
@@ -113,19 +113,7 @@ export const computeAndWriteChowderNumberPit = async (
 
   const coordinateBase = { symbol, metricCode: 'chowderNumber', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let fy: BasisOutcome;
-  if (!mainAnchor) {
-    fy = { action: 'skipped_no_knowledge_date' };
-  } else {
-    fy = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('FY'),
-      value: chowderNumber,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const fy = await writeOrSkip(mainAnchor, coordinateBase, 'FY', chowderNumber, nullReason);
 
   return { symbol, rocYear: year, season, fy };
 };

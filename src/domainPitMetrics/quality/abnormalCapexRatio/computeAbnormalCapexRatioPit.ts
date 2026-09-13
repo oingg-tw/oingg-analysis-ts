@@ -5,8 +5,8 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // Titman, Wei & Xie (2004) 異常資本投資比率——只有一個回溯窗口（前三年平均），跟
@@ -77,19 +77,7 @@ export const computeAndWriteAbnormalCapexRatioPit = async (query: QuarterlyMetri
 
   const coordinateBase = { symbol, metricCode: 'abnormalCapexRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
-  let fy: BasisOutcome;
-  if (!mainAnchor) {
-    fy = { action: 'skipped_no_knowledge_date' };
-  } else {
-    fy = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('FY'),
-      value: ciPct,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
+  const fy = await writeOrSkip(mainAnchor, coordinateBase, 'FY', ciPct, nullReason);
 
   return { symbol, rocYear: year, season, fy };
 };

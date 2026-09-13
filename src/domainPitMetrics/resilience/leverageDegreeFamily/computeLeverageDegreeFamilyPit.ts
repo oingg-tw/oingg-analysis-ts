@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -15,11 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // revenueGrowthRate/computeRevenueGrowthRatePit.ts 的既有慣例（去年同季用
 // getPastNQuarters({rocYear,season},5)[0]，分母為 0 時該項 %Δ 是 null）。只有 Q 一種
 // basis（YoY 比較本質上是單季對單季，不疊加 TTM）。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 const growthPct = (current: number | null, prior: number | null): number | null =>
   current !== null && prior !== null && prior !== 0 ? Math.round(((current - prior) / Math.abs(prior)) * 100 * 100) / 100 : null;

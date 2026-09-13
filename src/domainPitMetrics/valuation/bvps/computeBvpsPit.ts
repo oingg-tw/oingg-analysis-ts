@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -12,11 +12,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/bvps.ts 的獨立重新實作。BVPS 是資產負債表時點快照，跟
 // equityMultiplier 同一種形狀，只有 Q 一種 basis，沒有 TTM/年化概念。
-
-const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
-  if (shares === 0n) return null;
-  return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
 
 export type BvpsPitOutcome = StandardBasisPitOutcome;
 
