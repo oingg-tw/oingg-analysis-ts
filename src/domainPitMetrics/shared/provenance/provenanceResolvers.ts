@@ -92,6 +92,17 @@ import { getGreenblattEarningsYieldProvenance } from '@/domainPitMetrics/valuati
 import { getEarningsYieldProvenance } from '@/domainPitMetrics/valuation/earningsYield/getEarningsYieldProvenance';
 import { getTobinsQProvenance } from '@/domainPitMetrics/valuation/tobinsQ/getTobinsQProvenance';
 import { getPegRatioProvenance } from '@/domainPitMetrics/valuation/pegRatio/getPegRatioProvenance';
+import { getAbnormalCapexRatioProvenance } from '@/domainPitMetrics/quality/abnormalCapexRatio/getAbnormalCapexRatioProvenance';
+import { getBeneishAqiProvenance } from '@/domainPitMetrics/quality/beneishAqi/getBeneishAqiProvenance';
+import { getBeneishDsriProvenance } from '@/domainPitMetrics/quality/beneishDsri/getBeneishDsriProvenance';
+import { getBeneishMScoreProvenance } from '@/domainPitMetrics/quality/beneishMScore/getBeneishMScoreProvenance';
+import { getFcfConversionRateProvenance } from '@/domainPitMetrics/quality/fcfConversionRate/getFcfConversionRateProvenance';
+import { getFcfMarginProvenance } from '@/domainPitMetrics/quality/fcfMargin/getFcfMarginProvenance';
+import { getFcfPerShareProvenance } from '@/domainPitMetrics/quality/fcfPerShare/getFcfPerShareProvenance';
+import { getOcfMarginProvenance } from '@/domainPitMetrics/quality/ocfMargin/getOcfMarginProvenance';
+import { getOcfPerShareProvenance } from '@/domainPitMetrics/quality/ocfPerShare/getOcfPerShareProvenance';
+import { getOcfToNetIncomeProvenance } from '@/domainPitMetrics/quality/ocfToNetIncome/getOcfToNetIncomeProvenance';
+import { getOwnerEarningsProvenance } from '@/domainPitMetrics/quality/ownerEarnings/getOwnerEarningsProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -205,4 +216,15 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   earningsYield: getEarningsYieldProvenance,
   tobinsQ: getTobinsQProvenance,
   pegRatio: getPegRatioProvenance,
+  abnormalCapexRatio: getAbnormalCapexRatioProvenance,
+  beneishAqi: getBeneishAqiProvenance,
+  beneishDsri: getBeneishDsriProvenance,
+  beneishMScore: getBeneishMScoreProvenance,
+  fcfConversionRate: getFcfConversionRateProvenance,
+  fcfMargin: getFcfMarginProvenance,
+  fcfPerShare: getFcfPerShareProvenance,
+  ocfMargin: getOcfMarginProvenance,
+  ocfPerShare: getOcfPerShareProvenance,
+  ocfToNetIncome: getOcfToNetIncomeProvenance,
+  ownerEarnings: getOwnerEarningsProvenance,
 };

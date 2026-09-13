@@ -38,7 +38,7 @@ const divide = (numerator: number | null, denominator: number | null): number | 
   return numerator / denominator;
 };
 
-interface QuarterData {
+export interface QuarterData {
   accountsReceivable: bigint | null;
   operatingRevenue: bigint | null;
   grossProfit: bigint | null;
@@ -124,6 +124,10 @@ export interface BeneishMScoreResolution {
   prevAvailable: boolean;
   mainAnchor: KnowledgeDateResolution | null;
   isFinancial: boolean;
+  curr: QuarterData;
+  prev: QuarterData;
+  priorRocYear: number;
+  priorSeason: number;
 }
 
 // 算出 8 個變量 + mScore 本身，不寫入——beneishMScore/beneishAqi/beneishDsri 三個
@@ -206,6 +210,10 @@ export const resolveBeneishMScoreInputs = async (query: QuarterlyMetricQuery): P
     prevAvailable: prev.available,
     mainAnchor,
     isFinancial,
+    curr,
+    prev,
+    priorRocYear,
+    priorSeason: priorSeasonNum,
   };
 };
 

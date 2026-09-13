@@ -18,8 +18,11 @@ import { z } from 'zod';
 // 結構性不合，不是遺漏——同樣結構性不合的還有 exchangePeRatio/exchangePbRatio)、
 // 「市場評價」扣掉 beta/liveGrahamNumber/liveMarketCap/livePegRatio 後全部完成
 // (20/24，這 4 支用自訂 tradeDate query 不是 QuarterlyMetricQuery，跟 dividendYield
-// 同一種結構性不合)。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，count 是
-// `.length`，不用另外手動維護數字說明。之後有需要再逐一擴大到品質分類。
+// 同一種結構性不合)、「獲利品質」扣掉 piotroskiFScore 後全部完成(12/13，
+// piotroskiFScore 已有專屬的 GET /companies/piotroski-breakdown 端點做同樣的「秀出
+// 計算依據」用途，不重複做)。7 大分類至此全部完成，剩下的都是結構性不合或已有專屬
+// 端點的例外。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，count 是
+// `.length`，不用另外手動維護數字說明。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -120,6 +123,17 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'earningsYield',
   'tobinsQ',
   'pegRatio',
+  'abnormalCapexRatio',
+  'beneishAqi',
+  'beneishDsri',
+  'beneishMScore',
+  'fcfConversionRate',
+  'fcfMargin',
+  'fcfPerShare',
+  'ocfMargin',
+  'ocfPerShare',
+  'ocfToNetIncome',
+  'ownerEarnings',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
