@@ -17,7 +17,11 @@ import { z } from 'zod';
 // （2026-09-13，同一天延續擴大）：cashConversionCycle/operatingCycle——這 2 支是天數
 // 指標的二階衍生值（CCC = DIO+DSO−DPO，營運週期 = DIO+DSO），稽核鏈列出全部真正的原始
 // 欄位（TTM 營業成本/營收 + 本季期末存貨/應收/應付），methodologyNote 說明完整推導鏈。
-// 目前全系統 117 支指標裡只有這 17 支有稽核鏈，其餘 100 支還沒有，之後有需要再逐一擴大。
+// 第七批試點（2026-09-13，同一天延續擴大，補完「營運效率」分類剩下 3 支簡單比率）：
+// netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio——前者的
+// 分母淨營運資金 = 流動資產−流動負債（中繼值，稽核鏈分開列出兩筆原始欄位），後兩者是
+// 單純的資產負債表項目 / TTM 營收。目前全系統 117 支指標裡只有這 20 支有稽核鏈，其餘
+// 97 支還沒有，之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -36,6 +40,9 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'payablesDays',
   'cashConversionCycle',
   'operatingCycle',
+  'netWorkingCapitalTurnover',
+  'inventoryToRevenueRatio',
+  'receivablesToRevenueRatio',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

@@ -18,6 +18,10 @@ export interface TurnoverRatioProvenanceInputs {
   accountsReceivable: bigint | null;
   propertyPlantEquipment: bigint | null;
   accountsPayable: bigint | null;
+  // 2026-09-13 新增，給 netWorkingCapitalTurnover 用——currentAssets/currentLiabilities
+  // 本身也各自是完整的原始欄位，稽核鏈要分開列出兩筆，不是只列相減後的淨營運資金。
+  currentAssets: bigint | null;
+  currentLiabilities: bigint | null;
   ttmQuarters: { year: string; season: string }[];
   ttmOperatingCosts: (bigint | null)[];
   ttmOperatingRevenues: (bigint | null)[];
@@ -72,6 +76,8 @@ export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetri
     accountsReceivable: balanceSheet?.accountsReceivable ?? null,
     propertyPlantEquipment: balanceSheet?.propertyPlantEquipment ?? null,
     accountsPayable: balanceSheet?.accountsPayable ?? null,
+    currentAssets: balanceSheet?.currentAssets ?? null,
+    currentLiabilities: balanceSheet?.currentLiabilities ?? null,
     ttmQuarters,
     ttmOperatingCosts,
     ttmOperatingRevenues,
