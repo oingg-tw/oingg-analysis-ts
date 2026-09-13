@@ -1,0 +1,82 @@
+import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+
+// 2026-09-13 使用者要求擴大稽核鏈——priceToOcf(TTM) = 市值(本季知識時點，不是企業價值)
+// / 近四季營業活動現金流加總。跟 computeCashFlowValuationFamilyPit.ts 一致——這支用市值
+// 不是 EV（跟 evToOcf 不同），這裡只重新查這支自己真正的依賴。只有 TTM 一種 basis。
+
+export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'cashFlowStatement']);
+
+  if (!resolvedQuarter) {
+    return { symbol, metricCode: 'priceToOcf', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const [balanceSheet, mainIncomeStatement, mainCashFlowStatement] = await Promise.all([
+    getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+  ]);
+  const reportDate = balanceSheet?.reportDate ?? mainIncomeStatement?.reportDate ?? mainCashFlowStatement?.reportDate ?? null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
+  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+  );
+  const ocfs = ttmRecords.map((r) => r?.netCashFromOperatingActivities ?? null);
+
+  let ocfTtmSum = 0n;
+  let complete = true;
+  for (const ocf of ocfs) {
+    if (ocf === null) complete = false;
+    else ocfTtmSum += ocf;
+  }
+
+  const value = complete && marketCap !== null ? (Number(ocfTtmSum) * 1000 === 0 ? null : Math.round((marketCap.marketCap / (Number(ocfTtmSum) * 1000)) * 100) / 100) : null;
+
+  const entries: ProvenanceEntry[] = [
+    {
+      role: '市值（本季知識時點：收盤價 × 流通股數）',
+      fiscalYear,
+      fiscalQuarter: seasonNum,
+      type: 'other',
+      statementType: null,
+      fieldKey: null,
+      sourceDescription: marketCap ? `收盤價 ${marketCap.closePrice}（${marketCap.tradeDate}）× 流通股數 ${marketCap.paidInShares.toString()}` : null,
+      value: toProvenanceEntryValue(marketCap?.marketCap ?? null),
+    },
+    ...ttmQuarters.map(
+      (tq, i): ProvenanceEntry => ({
+        role: `TTM 營業活動現金流（第 ${i + 1}/4 季）`,
+        fiscalYear: rocYearToGregorian(Number(tq.year)),
+        fiscalQuarter: Number(tq.season),
+        type: 'statementField',
+        statementType: 'cashFlowStatement',
+        fieldKey: 'cash_flows_from_used_in_operating_activities',
+        sourceDescription: null,
+        value: toProvenanceEntryValue(ocfs[i]),
+      })
+    ),
+  ];
+
+  return { symbol, metricCode: 'priceToOcf', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote: null };
+};

@@ -72,6 +72,26 @@ import { getConsecutiveDividendYearsProvenance } from '@/domainPitMetrics/divide
 import { getDividendCoverageRatioProvenance } from '@/domainPitMetrics/dividend/dividendCoverageRatio/getDividendCoverageRatioProvenance';
 import { getDividendGrowthRateProvenanceForYears } from '@/domainPitMetrics/dividend/dividendGrowthRate/getDividendGrowthRateProvenance';
 import { getShareCountChangeRateProvenance } from '@/domainPitMetrics/dividend/shareCountChangeRate/getShareCountChangeRateProvenance';
+import { getStockPriceProvenance } from '@/domainPitMetrics/valuation/stockPrice/getStockPriceProvenance';
+import { getMarketCapProvenance } from '@/domainPitMetrics/valuation/marketCap/getMarketCapProvenance';
+import { getBvpsProvenance } from '@/domainPitMetrics/valuation/bvps/getBvpsProvenance';
+import { getPbRatioProvenance } from '@/domainPitMetrics/valuation/pbRatio/getPbRatioProvenance';
+import { getPeRatioProvenance } from '@/domainPitMetrics/valuation/peRatio/getPeRatioProvenance';
+import { getPsrProvenance } from '@/domainPitMetrics/valuation/psr/getPsrProvenance';
+import { getPFcfProvenance } from '@/domainPitMetrics/valuation/pFcf/getPFcfProvenance';
+import { getFcfYieldProvenance } from '@/domainPitMetrics/valuation/fcfYield/getFcfYieldProvenance';
+import { getNcavProvenance } from '@/domainPitMetrics/valuation/ncav/getNcavProvenance';
+import { getEvEbitdaProvenance } from '@/domainPitMetrics/valuation/evEbitda/getEvEbitdaProvenance';
+import { getEvToEbitProvenance } from '@/domainPitMetrics/valuation/evToEbit/getEvToEbitProvenance';
+import { getEvToFcfProvenance } from '@/domainPitMetrics/valuation/evToFcf/getEvToFcfProvenance';
+import { getEvToOcfProvenance } from '@/domainPitMetrics/valuation/evToOcf/getEvToOcfProvenance';
+import { getEvToSalesProvenance } from '@/domainPitMetrics/valuation/evToSales/getEvToSalesProvenance';
+import { getPriceToOcfProvenance } from '@/domainPitMetrics/valuation/priceToOcf/getPriceToOcfProvenance';
+import { getGrahamNumberProvenance } from '@/domainPitMetrics/valuation/grahamNumber/getGrahamNumberProvenance';
+import { getGreenblattEarningsYieldProvenance } from '@/domainPitMetrics/valuation/greenblattEarningsYield/getGreenblattEarningsYieldProvenance';
+import { getEarningsYieldProvenance } from '@/domainPitMetrics/valuation/earningsYield/getEarningsYieldProvenance';
+import { getTobinsQProvenance } from '@/domainPitMetrics/valuation/tobinsQ/getTobinsQProvenance';
+import { getPegRatioProvenance } from '@/domainPitMetrics/valuation/pegRatio/getPegRatioProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -165,4 +185,24 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   dividendGrowthRate5y: getDividendGrowthRateProvenanceForYears(5),
   dividendGrowthRate8y: getDividendGrowthRateProvenanceForYears(8),
   shareCountChangeRate: getShareCountChangeRateProvenance,
+  stockPrice: getStockPriceProvenance,
+  marketCap: getMarketCapProvenance,
+  bvps: getBvpsProvenance,
+  pbRatio: getPbRatioProvenance,
+  peRatio: getPeRatioProvenance,
+  psr: getPsrProvenance,
+  pFcf: getPFcfProvenance,
+  fcfYield: getFcfYieldProvenance,
+  ncav: getNcavProvenance,
+  evEbitda: getEvEbitdaProvenance,
+  evToEbit: getEvToEbitProvenance,
+  evToFcf: getEvToFcfProvenance,
+  evToOcf: getEvToOcfProvenance,
+  evToSales: getEvToSalesProvenance,
+  priceToOcf: getPriceToOcfProvenance,
+  grahamNumber: getGrahamNumberProvenance,
+  greenblattEarningsYield: getGreenblattEarningsYieldProvenance,
+  earningsYield: getEarningsYieldProvenance,
+  tobinsQ: getTobinsQProvenance,
+  pegRatio: getPegRatioProvenance,
 };

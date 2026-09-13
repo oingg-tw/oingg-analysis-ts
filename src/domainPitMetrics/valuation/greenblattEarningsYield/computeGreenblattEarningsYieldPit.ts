@@ -34,6 +34,7 @@ export interface GreenblattEarningsYieldResolution {
   season: string;
   fiscalYear: number;
   fiscalQuarter: number;
+  marketCap: number | null;
   totalDebt: bigint | null;
   cashAndEquivalents: bigint | null;
   ttmQuarterDetails: GreenblattEarningsYieldTtmQuarterDetail[];
@@ -101,7 +102,7 @@ export const resolveGreenblattEarningsYieldInputs = async (query: QuarterlyMetri
     ttmNullReason = !ttmComplete ? 'insufficient_history' : ev === null ? 'missing_input' : 'zero_or_negative_denominator';
   }
 
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalDebt, cashAndEquivalents, ttmQuarterDetails, ttmComplete, earningsYieldTtm, ttmNullReason, mainAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, marketCap, totalDebt, cashAndEquivalents, ttmQuarterDetails, ttmComplete, earningsYieldTtm, ttmNullReason, mainAnchor };
 };
 
 type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
