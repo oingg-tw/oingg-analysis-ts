@@ -8,8 +8,11 @@ import { z } from 'zod';
 // sue/chowderNumber/roe。第二批試點（2026-09-11，web-nuxt 要求擴大到全部 16 支有
 // badge 的指標，先做 2-3 支）：accrualsRatio/dividendPayoutRatio/altmanZScore。
 // 第三批試點（2026-09-13，使用者詢問利息負擔/稅務負擔怎麼算，順便補上稽核鏈）：
-// dupontTaxBurden/dupontInterestBurden——目前全系統 117 支指標裡只有這 8 支有稽核鏈，
-// 其餘 109 支還沒有，之後有需要再逐一擴大。
+// dupontTaxBurden/dupontInterestBurden。第四批試點（2026-09-13，使用者要求繼續擴大，
+// 挑「營運效率」分類裡公式最單純的一批）：inventoryTurnover/receivablesTurnover/
+// fixedAssetTurnover/payablesTurnover——這 4 支共用 resolveTurnoverRatioProvenanceInputs
+// 這個共用 resolver。目前全系統 117 支指標裡只有這 12 支有稽核鏈，其餘 105 支還沒有，
+// 之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -19,6 +22,10 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'altmanZScore',
   'dupontTaxBurden',
   'dupontInterestBurden',
+  'inventoryTurnover',
+  'receivablesTurnover',
+  'fixedAssetTurnover',
+  'payablesTurnover',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

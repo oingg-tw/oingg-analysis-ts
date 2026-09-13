@@ -25,6 +25,10 @@ import { getDividendPayoutRatioProvenance } from '@/domainPitMetrics/dividend/di
 import { getAltmanZScoreProvenance } from '@/domainPitMetrics/resilience/altmanZScore/getAltmanZScoreProvenance';
 import { getDupontTaxBurdenProvenance } from '@/domainPitMetrics/profitability/dupontTaxBurden/getDupontTaxBurdenProvenance';
 import { getDupontInterestBurdenProvenance } from '@/domainPitMetrics/profitability/dupontInterestBurden/getDupontInterestBurdenProvenance';
+import { getInventoryTurnoverProvenance } from '@/domainPitMetrics/efficiency/inventoryTurnover/getInventoryTurnoverProvenance';
+import { getReceivablesTurnoverProvenance } from '@/domainPitMetrics/efficiency/receivablesTurnover/getReceivablesTurnoverProvenance';
+import { getFixedAssetTurnoverProvenance } from '@/domainPitMetrics/efficiency/fixedAssetTurnover/getFixedAssetTurnoverProvenance';
+import { getPayablesTurnoverProvenance } from '@/domainPitMetrics/efficiency/payablesTurnover/getPayablesTurnoverProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -617,6 +621,10 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   altmanZScore: getAltmanZScoreProvenance,
   dupontTaxBurden: getDupontTaxBurdenProvenance,
   dupontInterestBurden: getDupontInterestBurdenProvenance,
+  inventoryTurnover: getInventoryTurnoverProvenance,
+  receivablesTurnover: getReceivablesTurnoverProvenance,
+  fixedAssetTurnover: getFixedAssetTurnoverProvenance,
+  payablesTurnover: getPayablesTurnoverProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
