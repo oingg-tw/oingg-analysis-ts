@@ -7,6 +7,8 @@
 
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { isUndefinedTableError } from './prismaErrors';
+import { logger } from '@/shared/logger';
 
 export interface PreferredStockSecurity {
   symbol: string;
@@ -82,14 +84,25 @@ const toDecimalNumber = (value: unknown): number | null => (value === null || va
 // 同一個 preferred_stock_code 會有多列（series_no 遞增）代表配息條件歷次修訂（例如發行後
 // 幾年重新訂價），取最新一次修訂的條款——不能假設一個 code 只有一列。
 export const getLatestPreferredStockRight = async (preferredStockCode: string): Promise<PreferredStockRight | null> => {
-  const rows = await mopsExportPrisma.$queryRaw<RawPreferredStockRightRow[]>`
-    SELECT issue_date, issue_price, dividend_rate, cumulative_dividend, participating_excess_dividend,
-      liquidation_preference, voting_rights, convertible, conversion_start_date, redeemable,
-      redemption_date, redemption_conditions, redemption_verified
-    FROM "export"."preferred_stock_right"
-    WHERE preferred_stock_code = ${preferredStockCode}
-    ORDER BY series_no DESC LIMIT 1
-  `;
+  let rows: RawPreferredStockRightRow[];
+  try {
+    rows = await mopsExportPrisma.$queryRaw<RawPreferredStockRightRow[]>`
+      SELECT issue_date, issue_price, dividend_rate, cumulative_dividend, participating_excess_dividend,
+        liquidation_preference, voting_rights, convertible, conversion_start_date, redeemable,
+        redemption_date, redemption_conditions, redemption_verified
+      FROM "export"."preferred_stock_right"
+      WHERE preferred_stock_code = ${preferredStockCode}
+      ORDER BY series_no DESC LIMIT 1
+    `;
+  } catch (error) {
+    // 2026-09-13：mops-ts 準備移除這張表（查無官方替代），見 prismaErrors.ts 的說明——
+    // 表被刪掉後優雅降級成查無發行條款（null），不是讓特別股端點跟著噴 500。
+    if (isUndefinedTableError(error)) {
+      logger.warn('[preferred-stock]: export.preferred_stock_right 表不存在（mops-ts 已移除），優雅降級為查無資料。');
+      return null;
+    }
+    throw error;
+  }
   const row = rows[0];
   if (!row) return null;
   return {

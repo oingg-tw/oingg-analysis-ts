@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { isUndefinedTableError } from './prismaErrors';
+import { logger } from '@/shared/logger';
 
 export interface PaidInSharesAsOf {
   paidInShares: bigint;
@@ -25,11 +27,23 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   const asOfYear = asOfDate.getUTCFullYear();
   const asOfMonth = asOfDate.getUTCMonth() + 1;
 
-  const rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
-    SELECT effective_year, effective_month, paid_in_shares FROM "export"."capital_stock_history"
-    WHERE symbol = ${symbol} AND (effective_year < ${asOfYear} OR (effective_year = ${asOfYear} AND effective_month <= ${asOfMonth}))
-    ORDER BY effective_year DESC, effective_month DESC LIMIT 1
-  `;
+  let rows: RawCapitalStockRow[];
+  try {
+    rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
+      SELECT effective_year, effective_month, paid_in_shares FROM "export"."capital_stock_history"
+      WHERE symbol = ${symbol} AND (effective_year < ${asOfYear} OR (effective_year = ${asOfYear} AND effective_month <= ${asOfMonth}))
+      ORDER BY effective_year DESC, effective_month DESC LIMIT 1
+    `;
+  } catch (error) {
+    // 2026-09-13：mops-ts 準備移除這張表（查無官方替代），見 prismaErrors.ts 的說明——
+    // 表被刪掉後優雅降級成查無資料（null），不是讓依賴這個函式的每股數字（BVPS 等）
+    // 跟著噴 500。真正的其他查詢失敗（連線問題等）仍然往上拋，不吞掉。
+    if (isUndefinedTableError(error)) {
+      logger.warn('[capital-stock]: export.capital_stock_history 表不存在（mops-ts 已移除），優雅降級為查無資料。');
+      return null;
+    }
+    throw error;
+  }
   const record = rows[0];
   if (!record || record.paid_in_shares === null) return null;
   return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
@@ -79,14 +93,23 @@ interface RawCapitalStockHistoryRow {
 // 排序，查無資料（mops 這批資料目前不是每家公司都有覆蓋）回傳空陣列，不拋錯、不是 404——
 // 呼叫端要把「查不到歷史」當成正常情境處理。
 export const getCapitalStockHistory = async (symbol: string): Promise<CapitalStockHistoryEntry[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<RawCapitalStockHistoryRow[]>`
-    SELECT effective_year, effective_month, paid_in_shares, paid_in_capital, source_cash_increase,
-      source_capital_reserve_transfer, source_retained_earnings_transfer, source_merger_increase,
-      source_capital_reduction, source_other, remarks
-    FROM "export"."capital_stock_history"
-    WHERE symbol = ${symbol} AND paid_in_shares IS NOT NULL
-    ORDER BY effective_year DESC, effective_month DESC
-  `;
+  let rows: RawCapitalStockHistoryRow[];
+  try {
+    rows = await mopsExportPrisma.$queryRaw<RawCapitalStockHistoryRow[]>`
+      SELECT effective_year, effective_month, paid_in_shares, paid_in_capital, source_cash_increase,
+        source_capital_reserve_transfer, source_retained_earnings_transfer, source_merger_increase,
+        source_capital_reduction, source_other, remarks
+      FROM "export"."capital_stock_history"
+      WHERE symbol = ${symbol} AND paid_in_shares IS NOT NULL
+      ORDER BY effective_year DESC, effective_month DESC
+    `;
+  } catch (error) {
+    if (isUndefinedTableError(error)) {
+      logger.warn('[capital-stock]: export.capital_stock_history 表不存在（mops-ts 已移除），優雅降級為空陣列。');
+      return [];
+    }
+    throw error;
+  }
 
   // rows 是新到舊排序，index+1 才是時間序列上「更早的前一筆」，用來算變動百分比。
   return rows.map((row, index) => {
