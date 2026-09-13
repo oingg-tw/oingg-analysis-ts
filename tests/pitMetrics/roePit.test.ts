@@ -1,6 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRoePit, resolveRoeQuarterData, type FinancialStatementPort } from '@/domainPitMetrics/profitability/roe/computeRoePit';
+import { computeAndWriteRoePit, resolveRoeQuarterData } from '@/domainPitMetrics/profitability/roe/computeRoePit';
+import type { IncomeStatementPort, BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
@@ -113,7 +114,7 @@ test('roePit: 9999（查無資料的公司）應該優雅降級，三個 periodT
 // 一家真實存在、有正常公告日覆蓋的公司（2330）當座標，只有「損益表/資產負債表回傳
 // 什麼數字」是假的，其餘查詢管線不變。
 test('roePit（DIP 示範）: 塞假的 FinancialStatementPort，驗證權益為負時仍算出真實負值不是 null', async () => {
-  const fakeStatements: FinancialStatementPort = {
+  const fakeStatements: IncomeStatementPort & BalanceSheetPort = {
     getIncomeStatement: async () => ({
       operatingRevenue: 1000n,
       operatingCost: null,

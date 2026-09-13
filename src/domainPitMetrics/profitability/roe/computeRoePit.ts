@@ -1,7 +1,7 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst, type BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import type { QuarterlyKey } from '@/shared/sourceData/quarterlyKey';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import type { BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -19,24 +19,13 @@ import type { MetricNullReason } from '../../metricBasis';
 // roe 試點）共用，寫入路徑（computeAndWriteRoePit）本身行為完全不變，只是內部改呼叫這個
 // resolver。2026-09-11：舊三大表已退役，PickedField 不再需要追蹤資料源（永遠是 XBRL）。
 //
-// 2026-09-13 依存反轉（DIP）示範：resolveRoeQuarterData 原本直接 import
+// 2026-09-13 依存反轉（DIP）：resolveRoeQuarterData 原本直接 import
 // getBalanceSheetXbrlFirst/getIncomeStatementXbrlFirst 兩個具體函式，高層的 ROE 業務
-// 邏輯直接依賴低層的「怎麼查 XBRL」細節。現在改成依賴 FinancialStatementPort 這個抽象
-// 介面，XBRL 查詢函式變成實作這個介面的一個 adapter（xbrlFinancialStatementAdapter），
-// 在呼叫端（第二個參數，預設值就是這個 adapter）注入——多數呼叫端不用改一行，因為
-// TypeScript 的預設參數本來就是既有慣例（跟其餘 pitMetrics 檔案的 query 參數形狀一致），
-// 只有想替換實作或測試時想塞假資料的呼叫端才需要明確傳第二個參數。這是全庫唯一一支
-// 套用這個模式的檔案，其餘 116 支 compute*Pit.ts 刻意維持原本直接 import 的寫法——這裡
-// 只是示範「如果要做，長什麼樣子」，還沒有全面鋪開的決定，見 2026-09-13 的討論。
-export interface FinancialStatementPort {
-  getIncomeStatement(key: QuarterlyKey): Promise<IncomeStatementFields | null>;
-  getBalanceSheet(key: QuarterlyKey): Promise<BalanceSheetFields | null>;
-}
-
-export const xbrlFinancialStatementAdapter: FinancialStatementPort = {
-  getIncomeStatement: getIncomeStatementXbrlFirst,
-  getBalanceSheet: getBalanceSheetXbrlFirst,
-};
+// 邏輯直接依賴低層的「怎麼查 XBRL」細節。現在改成依賴 shared/ports/financialDataPorts.ts
+// 的 IncomeStatementPort & BalanceSheetPort 抽象介面（這是全庫共用的 Port 定義，不是
+// 這支檔案自己重新定義一份），在呼叫端（第二個參數，預設值是 financialDataAdapter）
+// 注入——全部既有呼叫端一行都不用改。此模式已鋪開到全部 87 支 compute*Pit.ts，見
+// shared/ports/financialDataPorts.ts 的說明。
 
 interface PickedField {
   value: bigint | null;
@@ -92,7 +81,7 @@ export interface RoeQuarterResolution {
 
 export const resolveRoeQuarterData = async (
   query: QuarterlyMetricQuery,
-  statements: FinancialStatementPort = xbrlFinancialStatementAdapter
+  statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter
 ): Promise<RoeQuarterResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
@@ -185,7 +174,7 @@ export interface RoePitOutcome {
 
 export const computeAndWriteRoePit = async (
   query: QuarterlyMetricQuery,
-  statements: FinancialStatementPort = xbrlFinancialStatementAdapter
+  statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter
 ): Promise<RoePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
