@@ -29,6 +29,9 @@ import { getInventoryTurnoverProvenance } from '@/domainPitMetrics/efficiency/in
 import { getReceivablesTurnoverProvenance } from '@/domainPitMetrics/efficiency/receivablesTurnover/getReceivablesTurnoverProvenance';
 import { getFixedAssetTurnoverProvenance } from '@/domainPitMetrics/efficiency/fixedAssetTurnover/getFixedAssetTurnoverProvenance';
 import { getPayablesTurnoverProvenance } from '@/domainPitMetrics/efficiency/payablesTurnover/getPayablesTurnoverProvenance';
+import { getInventoryDaysProvenance } from '@/domainPitMetrics/efficiency/inventoryDays/getInventoryDaysProvenance';
+import { getReceivablesDaysProvenance } from '@/domainPitMetrics/efficiency/receivablesDays/getReceivablesDaysProvenance';
+import { getPayablesDaysProvenance } from '@/domainPitMetrics/efficiency/payablesDays/getPayablesDaysProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -625,6 +628,9 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   receivablesTurnover: getReceivablesTurnoverProvenance,
   fixedAssetTurnover: getFixedAssetTurnoverProvenance,
   payablesTurnover: getPayablesTurnoverProvenance,
+  inventoryDays: getInventoryDaysProvenance,
+  receivablesDays: getReceivablesDaysProvenance,
+  payablesDays: getPayablesDaysProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
