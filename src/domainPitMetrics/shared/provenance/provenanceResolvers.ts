@@ -56,6 +56,17 @@ import { getFamaFrenchOperatingProfitabilityProvenance } from '@/domainPitMetric
 import { getConsecutiveProfitYearsProvenance } from '@/domainPitMetrics/profitability/consecutiveProfitYears/getConsecutiveProfitYearsProvenance';
 import { getGrossMarginProvenance } from '@/domainPitMetrics/profitability/grossMargin/getGrossMarginProvenance';
 import { getOperatingMarginProvenance } from '@/domainPitMetrics/profitability/operatingMargin/getOperatingMarginProvenance';
+import { getAssetGrowthProvenance } from '@/domainPitMetrics/growth/assetGrowth/getAssetGrowthProvenance';
+import { getRevenueGrowthRateProvenance } from '@/domainPitMetrics/growth/revenueGrowthRate/getRevenueGrowthRateProvenance';
+import { getNetIncomeGrowthRateProvenance } from '@/domainPitMetrics/growth/netIncomeGrowthRate/getNetIncomeGrowthRateProvenance';
+import { getOperatingIncomeGrowthRateProvenance } from '@/domainPitMetrics/growth/operatingIncomeGrowthRate/getOperatingIncomeGrowthRateProvenance';
+import { getEquityGrowthRateProvenance } from '@/domainPitMetrics/growth/equityGrowthRate/getEquityGrowthRateProvenance';
+import { getBvpsGrowthRateProvenance } from '@/domainPitMetrics/growth/bvpsGrowthRate/getBvpsGrowthRateProvenance';
+import { getEpsGrowthRateProvenance } from '@/domainPitMetrics/growth/epsGrowthRate/getEpsGrowthRateProvenance';
+import { getRdIntensityProvenance } from '@/domainPitMetrics/growth/rdIntensity/getRdIntensityProvenance';
+import { getSgrProvenance } from '@/domainPitMetrics/growth/sgr/getSgrProvenance';
+import { getEpsCagrProvenanceForYears } from '@/domainPitMetrics/growth/epsCagr/getEpsCagrProvenance';
+import { getRevenueCagrProvenanceForYears } from '@/domainPitMetrics/growth/revenueCagr/getRevenueCagrProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -127,4 +138,19 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   consecutiveProfitYears: getConsecutiveProfitYearsProvenance,
   grossMargin: getGrossMarginProvenance,
   operatingMargin: getOperatingMarginProvenance,
+  assetGrowth: getAssetGrowthProvenance,
+  revenueGrowthRate: getRevenueGrowthRateProvenance,
+  netIncomeGrowthRate: getNetIncomeGrowthRateProvenance,
+  operatingIncomeGrowthRate: getOperatingIncomeGrowthRateProvenance,
+  equityGrowthRate: getEquityGrowthRateProvenance,
+  bvpsGrowthRate: getBvpsGrowthRateProvenance,
+  epsGrowthRate: getEpsGrowthRateProvenance,
+  rdIntensity: getRdIntensityProvenance,
+  sgr: getSgrProvenance,
+  epsCagr3y: getEpsCagrProvenanceForYears(3),
+  epsCagr5y: getEpsCagrProvenanceForYears(5),
+  epsCagr8y: getEpsCagrProvenanceForYears(8),
+  revenueCagr3y: getRevenueCagrProvenanceForYears(3),
+  revenueCagr5y: getRevenueCagrProvenanceForYears(5),
+  revenueCagr8y: getRevenueCagrProvenanceForYears(8),
 };

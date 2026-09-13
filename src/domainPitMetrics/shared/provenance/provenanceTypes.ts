@@ -11,9 +11,10 @@ import { z } from 'zod';
 // 跟原始 compute 檔案的關係），這裡重複記錄只會讓這個檔案跟著長胖，是吸取
 // companies/controller.ts 764 行巨石檔案（2026-09-13 拆分過）的教訓。已完成的分類：
 // 「營運效率」(16/16)、「財務韌性」扣掉 5 支銀行專屬指標後全部完成(19/19)、
-// 「獲利能力」全部完成(20/20)。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，
-// count 是 `.length`，不用另外手動維護數字說明。之後有需要再逐一擴大到成長性/股利/
-// 評價/品質四個分類。
+// 「獲利能力」全部完成(20/20)、「成長性」全部完成(15/15，epsCagr/revenueCagr 各自
+// 拆 3/5/8 年三個 metricCode)。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，
+// count 是 `.length`，不用另外手動維護數字說明。之後有需要再逐一擴大到股利/評價/
+// 品質三個分類。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -72,6 +73,21 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'consecutiveProfitYears',
   'grossMargin',
   'operatingMargin',
+  'assetGrowth',
+  'revenueGrowthRate',
+  'netIncomeGrowthRate',
+  'operatingIncomeGrowthRate',
+  'equityGrowthRate',
+  'bvpsGrowthRate',
+  'epsGrowthRate',
+  'rdIntensity',
+  'sgr',
+  'epsCagr3y',
+  'epsCagr5y',
+  'epsCagr8y',
+  'revenueCagr3y',
+  'revenueCagr5y',
+  'revenueCagr8y',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
