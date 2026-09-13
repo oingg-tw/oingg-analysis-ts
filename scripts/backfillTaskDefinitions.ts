@@ -68,6 +68,9 @@ import { computeAndWriteBetaPit } from '../src/domainPitMetrics/valuation/beta/c
 import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
 import { computeAndWriteBankAssetQualityFamilyPit } from '../src/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
 import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/domainPitMetrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit';
+import { computeAndWriteNcavPit } from '../src/domainPitMetrics/valuation/ncav/computeNcavPit';
+import { computeAndWriteMarketCapPit } from '../src/domainPitMetrics/valuation/marketCap/computeMarketCapPit';
+import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pegRatio/computePegRatioPit';
 
 export const GENERAL_METRIC_CODES = [
   'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden',
@@ -83,6 +86,7 @@ export const GENERAL_METRIC_CODES = [
   'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
   'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y',
   'operatingExpenseRatio',
+  'ncav', 'marketCap', 'pegRatio',
   'beta', 'exchangePeRatio', 'exchangePbRatio', 'dividendYield',
 ];
 
@@ -94,11 +98,20 @@ export type BackfillTask = [string, () => Promise<unknown>];
 // retryBackfillFailuresPit.ts 共用的單一事實來源——兩支腳本都從這裡 import 同一份指標
 // 清單，之後新增/移除指標只要改這裡一個地方，不會有兩份清單各自維護卻漏改其中一份的
 // 風險。retryBackfillFailuresPit.ts 靠這份清單依 label 篩出「只重跑失敗的那幾支」。
-export const buildGeneralTasks = (symbol: string): BackfillTask[] => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+// 2026-09-13 使用者要求全市場全歷史 backfill（見 scripts/backfillFullHistoryFullMarketPit.ts）
+// 新增可選的 quarter 參數——原本這裡固定不傳 year/season，每支 compute*Pit 函式都會走
+// 「省略時自動解析最新可用季度」的既有慣例（見 computeGrahamNumberPit.ts 的說明）；
+// 傳入 quarter 之後改成算「這一季」，讓同一份任務清單可以被歷史回填腳本重複呼叫、
+// 每次指定不同季度，不用另外維護一份幾乎一樣的清單。
+// 逐日型指標（beta/marketRatios，內部靠交易日快照解析、沒有「這一季」的概念）在指定
+// quarter 時刻意跳過，不是遺漏——beta 全市場歷史回填是另一個獨立問題（見
+// project_beta_pit_pending.md 的既有決策，逐日全歷史回填成本高很多倍且非必要），跟這批
+// 季報型指標的歷史回填不是同一件事，不要混著做。
+export const buildGeneralTasks = (symbol: string, quarter?: { year: string; season: '1' | '2' | '3' | '4' }): BackfillTask[] => {
+  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '', ...quarter };
   const dailyQuery = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
 
-  return [
+  const periodTasks: BackfillTask[] = [
     ['roe', () => computeAndWriteRoePit(query)],
     ['roa', () => computeAndWriteRoaPit(query)],
     ['dupont', () => computeAndWriteDupontFamilyPit(query)],
@@ -158,14 +171,23 @@ export const buildGeneralTasks = (symbol: string): BackfillTask[] => {
     ['epsCagrFamily', () => computeAndWriteEpsCagrFamilyPit(query)],
     ['dividendGrowthRateFamily', () => computeAndWriteDividendGrowthRateFamilyPit(query)],
     ['operatingExpenseRatio', () => computeAndWriteOperatingExpenseRatioPit(query)],
+    ['ncav', () => computeAndWriteNcavPit(query)],
+    ['marketCap', () => computeAndWriteMarketCapPit(query)],
+    ['pegRatio', () => computeAndWritePegRatioPit(query)],
+  ];
+
+  if (quarter) return periodTasks; // 逐日型指標沒有「這一季」的概念，指定 quarter 時跳過，見上方說明。
+
+  return [
+    ...periodTasks,
     // 逐日型：不傳 date，函式自己解析「最新可用交易日」，只算一次不是每個歷史交易日都算。
     ['beta', () => computeAndWriteBetaPit(dailyQuery)],
     ['marketRatios', () => computeAndWriteMarketRatiosPit(dailyQuery)],
   ];
 };
 
-export const buildBankTasks = (symbol: string): BackfillTask[] => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+export const buildBankTasks = (symbol: string, quarter?: { year: string; season: '1' | '2' | '3' | '4' }): BackfillTask[] => {
+  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '', ...quarter };
   return [
     ['bankAssetQuality', () => computeAndWriteBankAssetQualityFamilyPit(query)],
     ['bankCapitalAdequacy', () => computeAndWriteBankCapitalAdequacyFamilyPit(query)],
