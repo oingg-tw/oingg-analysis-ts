@@ -34,7 +34,11 @@ import { z } from 'zod';
 // deRatio/equityRatio/cashToAssetsRatio——都是純資產負債表時點快照、只有 Q 一種 basis，
 // 各自獨立一個檔案（不像 liquidityRatio 是同一個 family 編排檔案），沒有共用 resolver。
 // deRatio 的權益是「歸屬母公司優先，缺漏退回整體口徑」的 pick 邏輯，equityRatio 固定用
-// 整體權益，兩者刻意不同，稽核鏈各自反映實際用的 fieldKey。之後有需要再逐一擴大。
+// 整體權益，兩者刻意不同，稽核鏈各自反映實際用的 fieldKey。第十一批試點（2026-09-13，
+// 同一天延續「財務韌性」分類）：financialLeverageDegree(DFL)/totalLeverageDegree(DTL)——
+// 本季 vs 去年同季的 YoY 比較，都需要先組出 EPS(淨利/流通股數)當分子，共用
+// resolveLeverageDegreeProvenanceInputs 這個共用 resolver，流通股數是「非財報欄位」
+// （type='other'，公開發行公司股本變動申報），不是 statementField。之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -66,6 +70,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'deRatio',
   'equityRatio',
   'cashToAssetsRatio',
+  'financialLeverageDegree',
+  'totalLeverageDegree',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
