@@ -13,8 +13,11 @@ import { z } from 'zod';
 // fixedAssetTurnover/payablesTurnover——這 4 支共用 resolveTurnoverRatioProvenanceInputs
 // 這個共用 resolver。第五批試點（2026-09-13，同一天延續擴大）：inventoryDays/
 // receivablesDays/payablesDays——這 3 支是對應周轉率的衍生轉換（Days = 365/周轉率），
-// 稽核鏈列出的原始欄位跟對應周轉率完全一樣，methodologyNote 說明這層轉換。目前全系統
-// 117 支指標裡只有這 15 支有稽核鏈，其餘 102 支還沒有，之後有需要再逐一擴大。
+// 稽核鏈列出的原始欄位跟對應周轉率完全一樣，methodologyNote 說明這層轉換。第六批試點
+// （2026-09-13，同一天延續擴大）：cashConversionCycle/operatingCycle——這 2 支是天數
+// 指標的二階衍生值（CCC = DIO+DSO−DPO，營運週期 = DIO+DSO），稽核鏈列出全部真正的原始
+// 欄位（TTM 營業成本/營收 + 本季期末存貨/應收/應付），methodologyNote 說明完整推導鏈。
+// 目前全系統 117 支指標裡只有這 17 支有稽核鏈，其餘 100 支還沒有，之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -31,6 +34,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'inventoryDays',
   'receivablesDays',
   'payablesDays',
+  'cashConversionCycle',
+  'operatingCycle',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

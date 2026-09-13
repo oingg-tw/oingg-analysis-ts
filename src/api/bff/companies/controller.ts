@@ -32,6 +32,8 @@ import { getPayablesTurnoverProvenance } from '@/domainPitMetrics/efficiency/pay
 import { getInventoryDaysProvenance } from '@/domainPitMetrics/efficiency/inventoryDays/getInventoryDaysProvenance';
 import { getReceivablesDaysProvenance } from '@/domainPitMetrics/efficiency/receivablesDays/getReceivablesDaysProvenance';
 import { getPayablesDaysProvenance } from '@/domainPitMetrics/efficiency/payablesDays/getPayablesDaysProvenance';
+import { getCashConversionCycleProvenance } from '@/domainPitMetrics/efficiency/cashConversionCycle/getCashConversionCycleProvenance';
+import { getOperatingCycleProvenance } from '@/domainPitMetrics/efficiency/operatingCycle/getOperatingCycleProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -631,6 +633,8 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   inventoryDays: getInventoryDaysProvenance,
   receivablesDays: getReceivablesDaysProvenance,
   payablesDays: getPayablesDaysProvenance,
+  cashConversionCycle: getCashConversionCycleProvenance,
+  operatingCycle: getOperatingCycleProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
