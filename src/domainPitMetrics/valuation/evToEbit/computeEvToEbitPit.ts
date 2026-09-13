@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -10,12 +11,6 @@ import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增（Acquirer's Multiple）。跟 evEbitda 幾乎同一套邏輯，差別只在
 // EBIT 不加回折舊攤銷（不需要查現金流量表），公式獨立重新計算，不依賴 evEbitda 已寫入的值。
-
-const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 export type EvToEbitPitOutcome = StandardBasisPitOutcome;
 

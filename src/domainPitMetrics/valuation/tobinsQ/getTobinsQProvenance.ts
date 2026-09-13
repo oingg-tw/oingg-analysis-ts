@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toRatio4FromNumbers as toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
@@ -9,11 +10,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——tobinsQ = (市值 + 總負債) / 總資產（簡化版 Tobin's
 // Q，市場對負債的評價假設等於帳面值）。市值用本季知識時點，資產負債表欄位換算成元後
 // 相加。跟 computeTobinsQPit.ts 一致。只有 Q 一種 basis。
-
-const toRatio4 = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 10000) / 10000;
-};
 
 export const getTobinsQProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

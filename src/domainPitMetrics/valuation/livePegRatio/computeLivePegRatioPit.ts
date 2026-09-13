@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
+import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -17,11 +17,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // vs peRatio 的既有先例。逐日型（snapshotCadence='EOD'），knowledgeDate = 交易日本身。
 
 const PEG_GROWTH_YEARS = 5;
-
-const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 const getAnnualEps = async (
   cache: Map<number, number | null>,

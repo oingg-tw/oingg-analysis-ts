@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getMarketCapAsOf, type MarketCapAsOf } from '@/shared/sourceData/marketCap';
@@ -23,11 +24,6 @@ import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndust
 // （附帶 fieldKey），給 getAltmanZScoreProvenance.ts（GET /companies/:symbol/
 // metric-provenance 的 altmanZScore 試點）共用，寫入路徑（computeAndWriteAltmanZScorePit）
 // 本身行為完全不變，只是內部改呼叫這個 resolver。
-
-const toRatio4 = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 10000) / 10000;
-};
 
 export interface AltmanZScoreTtmQuarterDetail {
   rocYear: number;

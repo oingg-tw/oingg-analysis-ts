@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
+import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -19,11 +19,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // zero_or_negative_denominator 判斷一致。只有 TTM 一種 basis（沿用 peRatio 的基準）。
 
 const PEG_GROWTH_YEARS = 5;
-
-const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 // 年度 EPS = 4 季淨利加總（歸屬母公司優先，缺漏退回整體口徑）/ 當年 Q4 報告日流通股數，
 // 跟 epsCagr 家族同一套邏輯。

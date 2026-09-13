@@ -34,6 +34,37 @@ export const toRatio = (numerator: bigint, denominator: bigint): number | null =
 
 export const round2 = (x: number): number => Math.round(x * 100) / 100;
 
+// number 版 toRatio——跟 toRatio 公式完全對應，只是分子分母已經是 number（不是財報原始
+// bigint），grahamNumber/pbRatio/pegRatio/peRatio 這類混合 EV/市值/股價（number）跟財報
+// 金額（bigint，已先各自換算成 number）的估值指標共用。
+export const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
+  if (denominator === 0) return null;
+  return Math.round((numerator / denominator) * 100) / 100;
+};
+
+// 4 位小數版的 toRatio/toRatioFromNumbers——altmanZDoublePrimeScore/altmanZScore/tobinsQ
+// 這類財務危機/估值評分模型的係數需要比一般比率型指標更高的精度，2 位小數會讓組成分數的
+// 小尺度變量被無謂捨去。
+export const toRatio4 = (numerator: bigint, denominator: bigint): number | null => {
+  if (denominator === 0n) return null;
+  return Math.round((Number(numerator) / Number(denominator)) * 10000) / 10000;
+};
+
+export const toRatio4FromNumbers = (numerator: number, denominator: number): number | null => {
+  if (denominator === 0) return null;
+  return Math.round((numerator / denominator) * 10000) / 10000;
+};
+
+// EV/市值（number，單位元）除以財報原始金額（bigint，單位千元）的估值倍數——分母先換算
+// 成元再相除，四捨五入到小數 2 位。evEbitda/evToEbit/evToFcf/pFcf/psr/priceToResearchRatio/
+// cashFlowValuationFamily 這類「分子是估值層算出來的 number，分母是財報 bigint 金額」的
+// 指標共用。
+export const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
+  const denominator = Number(amountInThousands) * 1000;
+  if (denominator === 0) return null;
+  return Math.round((numerator / denominator) * 100) / 100;
+};
+
 // bigint 版絕對值——capexToRevenue/abnormalCapexRatio 這類「來源資料本身是負值（現金流出）
 // 取絕對值後再算比率」的指標共用。
 export const absBigint = (value: bigint): bigint => (value < 0n ? -value : value);

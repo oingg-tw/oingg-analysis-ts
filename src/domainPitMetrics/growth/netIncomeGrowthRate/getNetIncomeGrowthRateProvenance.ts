@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -32,10 +33,7 @@ export const getNetIncomeGrowthRateProvenance = async (query: QuarterlyMetricQue
   const priorIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorNetIncome = pickNetIncome(priorIncomeStatement);
 
-  const value =
-    currentNetIncome.value !== null && priorNetIncome.value !== null && priorNetIncome.value !== 0n
-      ? Math.round((Number(currentNetIncome.value - priorNetIncome.value) / Math.abs(Number(priorNetIncome.value))) * 100 * 100) / 100
-      : null;
+  const { value } = calculateYoyGrowthRateBigint(currentNetIncome.value, priorNetIncome.value);
 
   const entries: ProvenanceEntry[] = [
     { role: '本季淨利', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'incomeStatement', fieldKey: currentNetIncome.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(currentNetIncome.value) },

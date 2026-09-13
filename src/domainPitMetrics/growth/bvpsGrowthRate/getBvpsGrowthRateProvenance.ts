@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -45,10 +46,7 @@ export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): 
   const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorBvps = toBvps(priorEquity.value, priorShares);
 
-  const value =
-    currentBvps !== null && priorBvps !== null && priorBvps !== 0
-      ? Math.round(((currentBvps - priorBvps) / Math.abs(priorBvps)) * 100 * 100) / 100
-      : null;
+  const { value } = calculateYoyGrowthRate(currentBvps, priorBvps);
 
   const entries: ProvenanceEntry[] = [
     { role: '本季期末淨值', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: currentEquity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(currentEquity.value) },

@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
+import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -21,11 +21,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // null_reason 沿用 evEbitda/roe 已定案的判斷：EPS_TTM 剛好等於 0 才是
 // zero_or_negative_denominator，EPS_TTM 為負仍然算出一個真實但為負的本益比（虧損公司
 // 本益比為負是真實資訊，不是錯誤，不要隱藏成 null）。
-
-const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 export type PeRatioPitOutcome = StandardBasisPitOutcome;
 

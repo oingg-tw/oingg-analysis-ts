@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
@@ -23,11 +24,6 @@ import { getCompanySectionCode } from '@/shared/sourceData/industryClassificatio
 // 銀行的資產負債表結構（存款/放款）本來就不適用一般會計比率型危機模型，理由跟
 // altmanZScore/beneishMScore/ohlsonOScore/zmijewskiScore 排除金融業一致，兩個條件
 // 任一成立就標記 not_applicable_industry。
-
-const toRatio4 = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 10000) / 10000;
-};
 
 export type AltmanZDoublePrimeScorePitOutcome = StandardBasisPitOutcome;
 

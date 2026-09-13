@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -27,12 +28,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // fcfConversionRate 採用 FCF(TTM)/NetIncome(TTM) 這個定義（衡量帳面獲利有多少比例
 // 真的轉換成自由現金流），不是 FCF/OCF 或 FCF/EBITDA 版本——業界對「conversion rate」
 // 有多種定義，這裡明確記錄採用的是哪一種。
-
-const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 const toPctFromThousands = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
   if (denominatorInThousands === 0n) return null;

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -13,12 +14,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 直接複用 resolveKnowledgeDate 算出來的 knowledge_date 去查 getMarketCapAsOf——跟
 // fcfYield/computeFcfYieldPit.ts 發現的「股價/市值不需要另外設計 knowledge_date 機制」一致，
 // Q_ANN/TTM 共用同一次市值查詢結果，不分別重查。沒有單季非年化版本（store/flow 比率）。
-
-const toMultipleFromThousands = (marketCap: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((marketCap / denominator) * 100) / 100;
-};
 
 export type PsrPitOutcome = StandardBasisPitOutcome;
 

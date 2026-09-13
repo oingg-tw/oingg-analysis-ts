@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -45,10 +46,7 @@ export const getEpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): P
   const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorEps = toEps(priorNetIncome.value, priorShares);
 
-  const value =
-    currentEps !== null && priorEps !== null && priorEps !== 0
-      ? Math.round(((currentEps - priorEps) / Math.abs(priorEps)) * 100 * 100) / 100
-      : null;
+  const { value } = calculateYoyGrowthRate(currentEps, priorEps);
 
   const entries: ProvenanceEntry[] = [
     { role: '本季淨利', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'incomeStatement', fieldKey: currentNetIncome.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(currentNetIncome.value) },

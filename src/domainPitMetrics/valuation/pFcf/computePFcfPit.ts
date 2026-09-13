@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -11,12 +12,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 這份檔案是 src/domainMetrics/pFcf.ts 的獨立重新實作——舊架構呼叫 calculateCashFlowPerShare()，
 // 這裡不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值，自己重新查現金流量表算
 // 自由現金流。市值查詢邏輯跟 psr/computePsrPit.ts 完全一致。沒有單季非年化版本。
-
-const toMultipleFromThousands = (marketCap: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((marketCap / denominator) * 100) / 100;
-};
 
 export type PFcfPitOutcome = StandardBasisPitOutcome;
 

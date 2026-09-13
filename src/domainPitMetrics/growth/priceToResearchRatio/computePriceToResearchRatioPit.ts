@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -20,12 +21,6 @@ const getResearchAndDevelopmentExpense = async (key: { symbol: string; year: num
     LIMIT 1
   `;
   return rows[0]?.research_and_development_expense ?? null;
-};
-
-const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
 };
 
 export type PriceToResearchRatioPitOutcome = StandardBasisPitOutcome;

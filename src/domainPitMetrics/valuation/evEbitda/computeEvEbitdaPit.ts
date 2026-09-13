@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -13,12 +14,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 自己重新查三張表算淨負債+EBITDA（公式在 computeNetDebtToEbitdaPit.ts 跟這裡各自重複一次，
 // 延續舊架構本身在 interestCoverage/netDebtToEbitda/roic/roce 四個檔案各自重複定義 EBIT
 // 的既有慣例）。市值查詢邏輯跟 psr/pFcf 一致。沒有單季非年化版本。
-
-const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 export type EvEbitdaPitOutcome = StandardBasisPitOutcome;
 

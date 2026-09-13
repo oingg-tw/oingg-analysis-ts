@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -9,12 +10,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——pFcf(TTM) = 市值(本季知識時點) / 近四季自由現金流
 // (FCF=OCF+資本支出)加總。跟 computePFcfPit.ts 一致。固定回傳 TTM（該指標同時有
 // Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
-
-const toMultipleFromThousands = (marketCap: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((marketCap / denominator) * 100) / 100;
-};
 
 export const getPFcfProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

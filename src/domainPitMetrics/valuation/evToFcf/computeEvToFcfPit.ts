@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -10,12 +11,6 @@ import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增。跟 evEbitda/evToEbit 同一套企業價值查詢邏輯，分子換成
 // 自由現金流（OCF+投資性資本支出，同 fcfMargin 定義）。只有 TTM 一種 basis。
-
-const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 export type EvToFcfPitOutcome = StandardBasisPitOutcome;
 

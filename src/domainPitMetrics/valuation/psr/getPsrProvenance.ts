@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -9,12 +10,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 2026-09-13 使用者要求擴大稽核鏈——psr(TTM) = 市值(本季知識時點) / 近四季營收加總。跟
 // computePsrPit.ts 一致，市值沿用本季（不是 TTM 四季）解析出的知識時點查詢。固定回傳
 // TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
-
-const toMultipleFromThousands = (marketCap: number, amountInThousands: bigint): number | null => {
-  const denominator = Number(amountInThousands) * 1000;
-  if (denominator === 0) return null;
-  return Math.round((marketCap / denominator) * 100) / 100;
-};
 
 export const getPsrProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

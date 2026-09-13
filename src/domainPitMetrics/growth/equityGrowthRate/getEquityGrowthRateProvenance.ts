@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -32,10 +33,7 @@ export const getEquityGrowthRateProvenance = async (query: QuarterlyMetricQuery)
   const priorBalanceSheet = await getQuarterlyBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorEquity = pickEquity(priorBalanceSheet);
 
-  const value =
-    currentEquity.value !== null && priorEquity.value !== null && priorEquity.value !== 0n
-      ? Math.round((Number(currentEquity.value - priorEquity.value) / Math.abs(Number(priorEquity.value))) * 100 * 100) / 100
-      : null;
+  const { value } = calculateYoyGrowthRateBigint(currentEquity.value, priorEquity.value);
 
   const entries: ProvenanceEntry[] = [
     { role: '本季期末淨值', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: currentEquity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(currentEquity.value) },

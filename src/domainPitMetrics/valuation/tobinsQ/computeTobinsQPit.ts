@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toRatio4FromNumbers as toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -15,11 +16,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 // 市值查詢複用 getMarketCapAsOf，跟 marketCap/altmanZScore(X4) 同一套模式；資產負債表
 // 欄位是千元，換算成實際金額後才跟市值（元）相加，同 altmanZScore X4 的處理方式。只有
 // Q 一種 basis——資產負債表時點快照，沒有 TTM/年化概念，跟 ncav/bvps 同一種性質。
-
-const toRatio4 = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 10000) / 10000;
-};
 
 export type TobinsQPitOutcome = StandardBasisPitOutcome;
 

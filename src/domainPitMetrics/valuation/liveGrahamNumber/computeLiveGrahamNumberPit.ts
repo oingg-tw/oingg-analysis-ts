@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
+import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
@@ -22,11 +22,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 交易日本身（resolveDailyCadenceKnowledgeDate，isFallback 恆為 false）——跟
 // marketRatios（exchangePeRatio 等）同一套逐日型慣例，不是季報型的
 // resolveKnowledgeDate。
-
-const toRatioFromNumbers = (numerator: number, denominator: number): number | null => {
-  if (denominator === 0) return null;
-  return Math.round((numerator / denominator) * 100) / 100;
-};
 
 export interface LiveGrahamNumberPitQuery {
   symbol: string;

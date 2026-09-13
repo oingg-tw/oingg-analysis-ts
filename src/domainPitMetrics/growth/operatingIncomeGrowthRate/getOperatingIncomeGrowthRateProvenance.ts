@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -31,10 +32,7 @@ export const getOperatingIncomeGrowthRateProvenance = async (query: QuarterlyMet
   const priorIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorOperatingIncome = priorIncomeStatement?.operatingIncome ?? null;
 
-  const value =
-    currentOperatingIncome !== null && priorOperatingIncome !== null && priorOperatingIncome !== 0n
-      ? Math.round((Number(currentOperatingIncome - priorOperatingIncome) / Math.abs(Number(priorOperatingIncome))) * 100 * 100) / 100
-      : null;
+  const { value } = calculateYoyGrowthRateBigint(currentOperatingIncome, priorOperatingIncome);
 
   const entries: ProvenanceEntry[] = [
     { role: '本季營業利益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'incomeStatement', fieldKey: 'profit_loss_from_operating_activities', sourceDescription: null, value: toProvenanceEntryValue(currentOperatingIncome) },
