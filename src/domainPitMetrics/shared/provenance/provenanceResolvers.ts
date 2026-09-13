@@ -44,6 +44,16 @@ import { getRevenuePerShareProvenance } from '@/domainPitMetrics/profitability/r
 import { getRoaProvenance } from '@/domainPitMetrics/profitability/roa/getRoaProvenance';
 import { getNetProfitMarginProvenance } from '@/domainPitMetrics/profitability/netProfitMargin/getNetProfitMarginProvenance';
 import { getDupontEbitMarginProvenance } from '@/domainPitMetrics/profitability/dupontEbitMargin/getDupontEbitMarginProvenance';
+import { getNovyMarxGpToAssetsProvenance } from '@/domainPitMetrics/profitability/novyMarxGpToAssets/getNovyMarxGpToAssetsProvenance';
+import { getNonOperatingIncomeRatioProvenance } from '@/domainPitMetrics/profitability/nonOperatingIncomeRatio/getNonOperatingIncomeRatioProvenance';
+import { getCrociProvenance } from '@/domainPitMetrics/profitability/croci/getCrociProvenance';
+import { getCroicProvenance } from '@/domainPitMetrics/profitability/croic/getCroicProvenance';
+import { getRoicProvenance } from '@/domainPitMetrics/profitability/roic/getRoicProvenance';
+import { getRoceProvenance } from '@/domainPitMetrics/profitability/roce/getRoceProvenance';
+import { getGreenblattRocProvenance } from '@/domainPitMetrics/profitability/greenblattRoc/getGreenblattRocProvenance';
+import { getNissimPenmanRnoaProvenance } from '@/domainPitMetrics/profitability/nissimPenmanRnoa/getNissimPenmanRnoaProvenance';
+import { getFamaFrenchOperatingProfitabilityProvenance } from '@/domainPitMetrics/profitability/famaFrenchOperatingProfitability/getFamaFrenchOperatingProfitabilityProvenance';
+import { getConsecutiveProfitYearsProvenance } from '@/domainPitMetrics/profitability/consecutiveProfitYears/getConsecutiveProfitYearsProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -103,4 +113,14 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   roa: getRoaProvenance,
   netProfitMargin: getNetProfitMarginProvenance,
   dupontEbitMargin: getDupontEbitMarginProvenance,
+  novyMarxGpToAssets: getNovyMarxGpToAssetsProvenance,
+  nonOperatingIncomeRatio: getNonOperatingIncomeRatioProvenance,
+  croci: getCrociProvenance,
+  croic: getCroicProvenance,
+  roic: getRoicProvenance,
+  roce: getRoceProvenance,
+  greenblattRoc: getGreenblattRocProvenance,
+  nissimPenmanRnoa: getNissimPenmanRnoaProvenance,
+  famaFrenchOperatingProfitability: getFamaFrenchOperatingProfitabilityProvenance,
+  consecutiveProfitYears: getConsecutiveProfitYearsProvenance,
 };

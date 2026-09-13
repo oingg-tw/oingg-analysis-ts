@@ -59,6 +59,16 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'roa',
   'netProfitMargin',
   'dupontEbitMargin',
+  'novyMarxGpToAssets',
+  'nonOperatingIncomeRatio',
+  'croci',
+  'croic',
+  'roic',
+  'roce',
+  'greenblattRoc',
+  'nissimPenmanRnoa',
+  'famaFrenchOperatingProfitability',
+  'consecutiveProfitYears',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
