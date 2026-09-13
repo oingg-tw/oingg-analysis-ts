@@ -73,6 +73,12 @@ const writeFailuresFile = (slug: string, failures: BackfillFailure[]): void => {
   console.log(`[full-history-pit] 失敗清單已寫入 ${filePath}（${failures.length} 筆）`);
 };
 
+// ETA 用最近 ROLLING_WINDOW 筆完成時間算「目前」速度，不是從頭到現在的累積平均——
+// 累積平均會被跑最快的前段資料拖著跑，季度中後段如果變慢（連線池競爭、資料量變大等），
+// 累積平均要很久才會反應出來，滾動視窗能立刻反映目前實際速度。使用者發現這個問題後
+// 要求修正。
+const ROLLING_WINDOW = 30;
+
 const runQuarterBatch = async (
   label: string,
   slug: string,
@@ -83,6 +89,7 @@ const runQuarterBatch = async (
   const t0 = Date.now();
   let done = 0;
   const errors: BackfillFailure[] = [];
+  const recentCompletionTimes: number[] = [];
 
   let cursor = 0;
   const worker = async (): Promise<void> => {
@@ -101,15 +108,21 @@ const runQuarterBatch = async (
         console.error(`[full-history-pit] ${label} ${symbol} 失敗：`, error);
       }
       done += 1;
+      recentCompletionTimes.push(Date.now());
+      if (recentCompletionTimes.length > ROLLING_WINDOW) recentCompletionTimes.shift();
 
       if (done % PROGRESS_EVERY === 0 || done === symbols.length) {
         const elapsedMs = Date.now() - t0;
-        const avgMsPerSymbol = elapsedMs / done;
         const remaining = symbols.length - done;
+        // 樣本不足一個視窗時（季度剛開始）退回累積平均，避免除以太小的樣本數失真。
+        const avgMsPerSymbol =
+          recentCompletionTimes.length >= 2
+            ? (recentCompletionTimes[recentCompletionTimes.length - 1]! - recentCompletionTimes[0]!) / (recentCompletionTimes.length - 1)
+            : elapsedMs / done;
         const etaMs = avgMsPerSymbol * remaining;
         console.log(
           `[full-history-pit] ${label} 進度 ${done}/${symbols.length}（${((done / symbols.length) * 100).toFixed(1)}%）` +
-            ` 已耗時 ${(elapsedMs / 60000).toFixed(1)} 分鐘，預估剩餘 ${(etaMs / 60000).toFixed(1)} 分鐘，錯誤 ${errors.length} 筆`
+            ` 已耗時 ${(elapsedMs / 60000).toFixed(1)} 分鐘，預估剩餘 ${(etaMs / 60000).toFixed(1)} 分鐘（近 ${recentCompletionTimes.length} 筆速度），錯誤 ${errors.length} 筆`
         );
       }
     }
