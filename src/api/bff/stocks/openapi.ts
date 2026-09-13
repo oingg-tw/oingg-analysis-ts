@@ -12,6 +12,7 @@ import {
 } from './controller';
 import {
   stockQuoteResultSchema,
+  stockSummaryResultSchema,
   stockPricesResultSchema,
   exDividendNoticesResultSchema,
   exDividendCalendarResultSchema,
@@ -32,6 +33,29 @@ export const registerStocksOpenApi = (): void => {
     request: { params: getQuoteParamsSchema },
     responses: {
       200: { description: '最新報價，price/valuation 個別可能是 null。', content: { 'application/json': { schema: stockQuoteResultSchema } } },
+      404: { description: '公司代號在上市、上櫃都查無登記資料。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/stocks/{symbol}/summary',
+    summary: '個股頁組合端點：一次回傳股價/漲跌/成交量/PER/PBR/殖利率/市值',
+    description:
+      '2026-09-13 web-nuxt 回報：個股頁靠前端寫死的 20 檔權值股清單判斷「股票存不存在」，' +
+      '不在清單裡的股票（例如 2801）一律顯示查無資料——根本原因是誤把這個後端當成「要先撈' +
+      '全市場清單」的架構，實際上是按 symbol 現查，任何有效代號都查得到。這支端點把個股頁' +
+      '需要的 6 項組合成一次回傳，取代原本要串 GET /stocks/{symbol}/quote + ' +
+      'GET /stocks/{symbol}/daily-price-history + GET /companies/metric-history' +
+      '（metricCode=liveMarketCap）三支的做法。price/valuation/marketCap 三個區塊各自' +
+      '獨立查詢、各自有自己的 tradeDate——理論上同一交易日會同步，但不保證，不要假設三者' +
+      '一定同一天。change（漲跌）是用 daily_price 最近兩個交易日的收盤價算出來的，跟' +
+      'price/volume 同一次查詢、保證同一組交易日；查無前一個交易日資料（例如剛掛牌）時' +
+      'change 整體是 null。',
+    tags: ['Stocks'],
+    request: { params: getQuoteParamsSchema },
+    responses: {
+      200: { description: '個股頁摘要，price/valuation/marketCap 個別可能是 null。', content: { 'application/json': { schema: stockSummaryResultSchema } } },
       404: { description: '公司代號在上市、上櫃都查無登記資料。' },
     },
   });

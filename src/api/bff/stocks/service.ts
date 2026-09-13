@@ -8,6 +8,7 @@ import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import type {
   StockPricesResult,
   StockQuoteResult,
+  StockSummaryResult,
   ExDividendNoticesResult,
   ExDividendCalendarResult,
   ForeignShareholdingHistoryResult,
@@ -69,6 +70,52 @@ export const getStockQuote = async (symbol: string): Promise<StockQuoteResult | 
           dividendYield: dividendYieldRow?.value ?? null,
         }
       : null,
+  };
+};
+
+// 2026-09-13 web-nuxt 回報：個股頁靠前端寫死的 20 檔清單判斷「股票存不存在」，不在清單裡
+// 的股票（例如 2801）一律顯示查無資料——誤把這個後端當成「要先撈全市場清單」的架構，實際
+// 是按 symbol 現查。這支端點把個股頁需要的股價/漲跌/成交量/PER/PBR/殖利率/市值一次組給
+// 呼叫端，取代原本要串 quote + daily-price-history + metric-history 三支的做法，讓
+// web-nuxt 可以整個換掉那份寫死清單。
+// 漲跌用 daily_price 最近兩個交易日的收盤價自己算（limit=2），跟 price/volume 同一次查詢、
+// 保證同一組交易日，不會有「price 是今天、change 卻拿舊資料算」的不同步問題。
+export const getStockSummary = async (symbol: string): Promise<StockSummaryResult | null> => {
+  const [exists, priceEntries, peRatioRow, pbRatioRow, dividendYieldRow, marketCapRow] = await Promise.all([
+    companyExists(symbol),
+    getDailyPriceHistoryFromSource(symbol, 2),
+    getLatestMarketRatioValue(symbol, 'exchangePeRatio'),
+    getLatestMarketRatioValue(symbol, 'exchangePbRatio'),
+    getLatestMarketRatioValue(symbol, 'dividendYield'),
+    getLatestMarketRatioValue(symbol, 'liveMarketCap'),
+  ]);
+
+  if (!exists) return null;
+
+  const latest = priceEntries.at(-1) ?? null;
+  const previous = priceEntries.length >= 2 ? priceEntries.at(-2)! : null;
+  const change =
+    latest?.close !== null && latest?.close !== undefined && previous?.close !== null && previous?.close !== undefined
+      ? {
+          amount: Math.round((latest.close - previous.close) * 100) / 100,
+          percent: previous.close !== 0 ? Math.round(((latest.close - previous.close) / previous.close) * 10000) / 100 : null,
+        }
+      : null;
+
+  const representativeValuationDate = peRatioRow?.tradeDate ?? pbRatioRow?.tradeDate ?? dividendYieldRow?.tradeDate ?? null;
+
+  return {
+    symbol,
+    price: latest ? { tradeDate: latest.tradeDate, close: latest.close, volume: latest.volume, change } : null,
+    valuation: representativeValuationDate
+      ? {
+          tradeDate: representativeValuationDate.toISOString().slice(0, 10),
+          peRatio: peRatioRow?.value ?? null,
+          pbRatio: pbRatioRow?.value ?? null,
+          dividendYield: dividendYieldRow?.value ?? null,
+        }
+      : null,
+    marketCap: marketCapRow ? { tradeDate: marketCapRow.tradeDate.toISOString().slice(0, 10), value: marketCapRow.value } : null,
   };
 };
 

@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import {
   getStockQuote,
+  getStockSummary,
   getStockPrices,
   getExDividendNotices,
   getExDividendCalendar,
@@ -30,6 +31,26 @@ export const getQuote = async (req: Request, res: Response, next: NextFunction) 
     res.status(200).json(result);
   } catch (error) {
     logger.error({ err: error }, 'Stock quote lookup failed:');
+    next(error);
+  }
+};
+
+// 2026-09-13 新增：個股頁組合端點，見 service.ts 的 getStockSummary 說明。跟 getQuote
+// 共用同一組 params schema（都只需要 symbol 路徑參數），不用另外宣告一份一樣的 schema。
+export const getStockSummaryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = paramsSchema.safeParse(req.params);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid path parameters.', errors: validationResult.error.format() });
+    }
+
+    const result = await getStockSummary(validationResult.data.symbol);
+    if (!result) {
+      return res.status(404).json({ message: `查無公司代號 ${validationResult.data.symbol}（上市、上櫃都沒有登記資料）。` });
+    }
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error({ err: error }, 'Stock summary lookup failed:');
     next(error);
   }
 };

@@ -1,6 +1,7 @@
 import { Router } from 'ultimate-express';
 import {
   getQuote,
+  getStockSummaryHandler,
   getPrices,
   getExDividendNoticesHandler,
   getExDividendCalendarHandler,
@@ -12,6 +13,7 @@ import {
 const router = Router();
 
 router.get('/stocks/:symbol/quote', getQuote);
+router.get('/stocks/:symbol/summary', getStockSummaryHandler);
 router.get('/stocks/prices', getPrices);
 router.get('/stocks/ex-dividend-notices', getExDividendNoticesHandler);
 router.get('/stocks/ex-dividend-calendar', getExDividendCalendarHandler);
