@@ -12,9 +12,12 @@ import { z } from 'zod';
 // companies/controller.ts 764 行巨石檔案（2026-09-13 拆分過）的教訓。已完成的分類：
 // 「營運效率」(16/16)、「財務韌性」扣掉 5 支銀行專屬指標後全部完成(19/19)、
 // 「獲利能力」全部完成(20/20)、「成長性」全部完成(15/15，epsCagr/revenueCagr 各自
-// 拆 3/5/8 年三個 metricCode)。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，
-// count 是 `.length`，不用另外手動維護數字說明。之後有需要再逐一擴大到股利/評價/
-// 品質三個分類。
+// 拆 3/5/8 年三個 metricCode)、「股東政策」扣掉 dividendYield 後全部完成(7/8，
+// dividendYield 是交易所每日公告 passthrough，用 tradeDate 不是 year/season 定位、
+// 寫進獨立的 metric_daily_cadence_values，跟這支端點 QuarterlyMetricQuery 的查詢形狀
+// 結構性不合，不是遺漏——同樣結構性不合的還有 exchangePeRatio/exchangePbRatio)。
+// 目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，count 是 `.length`，不用另外
+// 手動維護數字說明。之後有需要再逐一擴大到評價/品質兩個分類。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -88,6 +91,13 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'revenueCagr3y',
   'revenueCagr5y',
   'revenueCagr8y',
+  'buybackYield',
+  'consecutiveDividendYears',
+  'dividendCoverageRatio',
+  'dividendGrowthRate3y',
+  'dividendGrowthRate5y',
+  'dividendGrowthRate8y',
+  'shareCountChangeRate',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

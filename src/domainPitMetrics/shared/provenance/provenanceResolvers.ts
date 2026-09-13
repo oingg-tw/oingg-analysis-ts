@@ -67,6 +67,11 @@ import { getRdIntensityProvenance } from '@/domainPitMetrics/growth/rdIntensity/
 import { getSgrProvenance } from '@/domainPitMetrics/growth/sgr/getSgrProvenance';
 import { getEpsCagrProvenanceForYears } from '@/domainPitMetrics/growth/epsCagr/getEpsCagrProvenance';
 import { getRevenueCagrProvenanceForYears } from '@/domainPitMetrics/growth/revenueCagr/getRevenueCagrProvenance';
+import { getBuybackYieldProvenance } from '@/domainPitMetrics/dividend/buybackYield/getBuybackYieldProvenance';
+import { getConsecutiveDividendYearsProvenance } from '@/domainPitMetrics/dividend/consecutiveDividendYears/getConsecutiveDividendYearsProvenance';
+import { getDividendCoverageRatioProvenance } from '@/domainPitMetrics/dividend/dividendCoverageRatio/getDividendCoverageRatioProvenance';
+import { getDividendGrowthRateProvenanceForYears } from '@/domainPitMetrics/dividend/dividendGrowthRate/getDividendGrowthRateProvenance';
+import { getShareCountChangeRateProvenance } from '@/domainPitMetrics/dividend/shareCountChangeRate/getShareCountChangeRateProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -153,4 +158,11 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   revenueCagr3y: getRevenueCagrProvenanceForYears(3),
   revenueCagr5y: getRevenueCagrProvenanceForYears(5),
   revenueCagr8y: getRevenueCagrProvenanceForYears(8),
+  buybackYield: getBuybackYieldProvenance,
+  consecutiveDividendYears: getConsecutiveDividendYearsProvenance,
+  dividendCoverageRatio: getDividendCoverageRatioProvenance,
+  dividendGrowthRate3y: getDividendGrowthRateProvenanceForYears(3),
+  dividendGrowthRate5y: getDividendGrowthRateProvenanceForYears(5),
+  dividendGrowthRate8y: getDividendGrowthRateProvenanceForYears(8),
+  shareCountChangeRate: getShareCountChangeRateProvenance,
 };
