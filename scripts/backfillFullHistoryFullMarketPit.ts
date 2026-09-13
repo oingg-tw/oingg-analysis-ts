@@ -21,18 +21,19 @@
 //   PILOT_LIMIT=30 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（單一季小批次測試）
 //   PILOT_QUARTERS=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（只跑最舊的 N 季）
 //   FORCE_RESTART=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（忽略續跑進度檔，
-//     全部季度從頭重跑）
+//     全部從頭重跑）
 //
-// 2026-09-13 使用者要求加上續跑機制——原本這支腳本被中斷（例如手動 kill、機器重開）就要
-// 從 113Q1 整個重跑，已經跑完的季度（可能好幾個小時）全部浪費掉，使用者形容「很恐怖」。
-// 現在每跑完一季（一般指標+銀行指標都完成）就把該季標記寫進 tmp/full-history-backfill-
-// progress.json，下次啟動時讀這個檔案跳過已完成的季度。用「整季」當續跑粒度而非逐一家
-// 公司，理由：(1) 每季耗時在 40~110 分鐘之間，中斷點落在季度中間時重跑該季本身損失有限；
-// (2) 逐家續跑要處理「這家公司在這季的哪些 metricCode 已經寫入、哪些沒有」這種更細的
-// 狀態，複雜度不成比例；(3) 每支 compute*Pit 都是 upsert，重跑已完成的季度不會有資料
-// 損壞風險，只是浪費時間——這正是要避免的事，但跳過已完成整季就已經解決大部分損失。
-// 進度檔只記錄「季度完成」不記錄錯誤數，重跑失敗的個別公司請用既有的
-// retryBackfillFailuresPit.ts（讀 tmp/backfill-failures-*.json）。
+// 2026-09-13 使用者要求加上續跑機制，原本被中斷（手動 kill、機器重開）就要從 113Q1
+// 整個重跑，已經跑完的部分（可能好幾個小時）全部浪費掉。續跑粒度是「單一公司」不是
+// 整季——每支 compute*Pit 都是獨立 upsert（不依賴同季其他公司或其他 metricCode 是否
+// 已寫入），逐家記錄「這家公司這一季（一般/銀行）已經處理過」不需要額外追蹤細節，
+// 複雜度並不比整季高，卻能把中斷造成的損失從「最多一整季（40~110 分鐘）」壓到
+// 「最多 FLUSH_EVERY 家（幾十秒）」。進度檔（tmp/full-history-backfill-progress.json）
+// 記錄「(季度, 一般/銀行) → 已處理過的 symbol 清單」，每處理 FLUSH_EVERY 家或該批次
+// 跑完就落盤一次，不是每家都寫檔（避免 I/O 太頻繁）。「已處理過」不代表「零錯誤」——
+// 失敗的公司會記錄進 tmp/backfill-failures-*.json，那個檔案本來就是重跑失敗清單用的
+// （retryBackfillFailuresPit.ts），續跑機制不重複做這件事，只避免重跑「已經成功寫入」
+// 的部分。
 
 import { mkdirSync, writeFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -45,6 +46,7 @@ import type { Season } from '../src/shared/rocQuarter';
 
 const PROGRESS_EVERY = 50;
 const SYMBOL_CONCURRENCY = 8;
+const FLUSH_EVERY = 20;
 
 // 113Q1 ~ 115Q2，舊到新——舊到新的順序純粹是方便看進度／符合直覺，各指標彼此獨立計算
 // 不依賴回填順序（每支 compute*Pit 都是自己重新查那一季的原始資料，不依賴 metric_values
@@ -74,26 +76,31 @@ const getBankSymbolsForQuarter = async (year: string, season: Season): Promise<s
   return rows.map((r) => r.symbol);
 };
 
+// 進度檔形狀：{ "113Q1:general": ["1101","1102",...], "113Q1:bank": [...], ... }——
+// key 是「季度:一般或銀行」，value 是這個批次裡已經處理過（不論成功或失敗，見檔頭
+// 說明）的 symbol 清單。用扁平的 key 而不是巢狀物件，單純是讀寫比較直接。
 const PROGRESS_FILE_PATH = join(process.cwd(), 'tmp', 'full-history-backfill-progress.json');
 
-const quarterKey = (year: string, season: Season): string => `${year}Q${season}`;
+const batchKey = (year: string, season: Season, kind: 'general' | 'bank'): string => `${year}Q${season}:${kind}`;
 
-const loadCompletedQuarters = (): Set<string> => {
-  if (process.env.FORCE_RESTART === '1') return new Set();
-  if (!existsSync(PROGRESS_FILE_PATH)) return new Set();
+type ProgressMap = Map<string, Set<string>>;
+
+const loadProgress = (): ProgressMap => {
+  if (process.env.FORCE_RESTART === '1') return new Map();
+  if (!existsSync(PROGRESS_FILE_PATH)) return new Map();
   try {
-    const raw = JSON.parse(readFileSync(PROGRESS_FILE_PATH, 'utf-8')) as { completedQuarters?: string[] };
-    return new Set(raw.completedQuarters ?? []);
+    const raw = JSON.parse(readFileSync(PROGRESS_FILE_PATH, 'utf-8')) as Record<string, string[]>;
+    return new Map(Object.entries(raw).map(([key, symbols]) => [key, new Set(symbols)]));
   } catch {
     // 進度檔損壞或格式不對——保守起見視為沒有進度，不要讓一個壞掉的檔案擋住整支腳本執行。
-    return new Set();
+    return new Map();
   }
 };
 
-const markQuarterCompleted = (completed: Set<string>, key: string): void => {
-  completed.add(key);
+const saveProgress = (progress: ProgressMap): void => {
   mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
-  writeFileSync(PROGRESS_FILE_PATH, JSON.stringify({ completedQuarters: Array.from(completed) }, null, 2));
+  const serializable = Object.fromEntries(Array.from(progress.entries()).map(([key, symbols]) => [key, Array.from(symbols)]));
+  writeFileSync(PROGRESS_FILE_PATH, JSON.stringify(serializable, null, 2));
 };
 
 const writeFailuresFile = (slug: string, failures: BackfillFailure[]): void => {
@@ -117,19 +124,31 @@ const ROLLING_WINDOW = 30;
 const runQuarterBatch = async (
   label: string,
   slug: string,
-  symbols: string[],
+  allSymbols: string[],
+  alreadyDone: Set<string>,
+  progress: ProgressMap,
+  progressKey: string,
   fn: (symbol: string) => Promise<{ failures: { label: string; error: unknown }[] }>
 ): Promise<BackfillFailure[]> => {
-  console.log(`[full-history-pit] ${label}：共 ${symbols.length} 家，併發數 ${SYMBOL_CONCURRENCY}`);
+  const pending = allSymbols.filter((s) => !alreadyDone.has(s));
+  const skipped = allSymbols.length - pending.length;
+  if (skipped > 0) {
+    console.log(`[full-history-pit] ${label}：續跑進度檔已標記 ${skipped}/${allSymbols.length} 家完成，跳過`);
+  }
+  console.log(`[full-history-pit] ${label}：共 ${allSymbols.length} 家（待處理 ${pending.length} 家），併發數 ${SYMBOL_CONCURRENCY}`);
+
+  if (pending.length === 0) return [];
+
   const t0 = Date.now();
   let done = 0;
+  let sinceLastFlush = 0;
   const errors: BackfillFailure[] = [];
   const recentCompletionTimes: number[] = [];
 
   let cursor = 0;
   const worker = async (): Promise<void> => {
-    while (cursor < symbols.length) {
-      const symbol = symbols[cursor]!;
+    while (cursor < pending.length) {
+      const symbol = pending[cursor]!;
       cursor += 1;
       try {
         const { failures } = await fn(symbol);
@@ -142,30 +161,43 @@ const runQuarterBatch = async (
         errors.push({ symbol, label: '(whole-symbol)', message: error instanceof Error ? error.message : String(error) });
         console.error(`[full-history-pit] ${label} ${symbol} 失敗：`, error);
       }
+
+      // 不論成功或失敗都標記「處理過」——失敗的公司走既有的 retryBackfillFailuresPit.ts
+      // 補（見檔頭說明），續跑機制的職責只是不要重跑已經處理過的部分。
+      alreadyDone.add(symbol);
       done += 1;
+      sinceLastFlush += 1;
       recentCompletionTimes.push(Date.now());
       if (recentCompletionTimes.length > ROLLING_WINDOW) recentCompletionTimes.shift();
 
-      if (done % PROGRESS_EVERY === 0 || done === symbols.length) {
+      if (sinceLastFlush >= FLUSH_EVERY || cursor >= pending.length) {
+        sinceLastFlush = 0;
+        saveProgress(progress);
+      }
+
+      if (done % PROGRESS_EVERY === 0 || done === pending.length) {
         const elapsedMs = Date.now() - t0;
-        const remaining = symbols.length - done;
-        // 樣本不足一個視窗時（季度剛開始）退回累積平均，避免除以太小的樣本數失真。
+        const remaining = pending.length - done;
+        // 樣本不足一個視窗時（批次剛開始）退回累積平均，避免除以太小的樣本數失真。
         const avgMsPerSymbol =
           recentCompletionTimes.length >= 2
             ? (recentCompletionTimes[recentCompletionTimes.length - 1]! - recentCompletionTimes[0]!) / (recentCompletionTimes.length - 1)
             : elapsedMs / done;
         const etaMs = avgMsPerSymbol * remaining;
         console.log(
-          `[full-history-pit] ${label} 進度 ${done}/${symbols.length}（${((done / symbols.length) * 100).toFixed(1)}%）` +
+          `[full-history-pit] ${label} 進度 ${done}/${pending.length}（${((done / pending.length) * 100).toFixed(1)}%）` +
             ` 已耗時 ${(elapsedMs / 60000).toFixed(1)} 分鐘，預估剩餘 ${(etaMs / 60000).toFixed(1)} 分鐘（近 ${recentCompletionTimes.length} 筆速度），錯誤 ${errors.length} 筆`
         );
       }
     }
   };
 
-  await Promise.all(Array.from({ length: Math.min(SYMBOL_CONCURRENCY, symbols.length) }, () => worker()));
+  await Promise.all(Array.from({ length: Math.min(SYMBOL_CONCURRENCY, pending.length) }, () => worker()));
 
-  console.log(`[full-history-pit] ${label} 完成，共 ${symbols.length} 家，錯誤 ${errors.length} 筆，總耗時 ${((Date.now() - t0) / 60000).toFixed(1)} 分鐘`);
+  progress.set(progressKey, alreadyDone);
+  saveProgress(progress);
+
+  console.log(`[full-history-pit] ${label} 完成，共 ${pending.length} 家，錯誤 ${errors.length} 筆，總耗時 ${((Date.now() - t0) / 60000).toFixed(1)} 分鐘`);
   writeFailuresFile(slug, errors);
   return errors;
 };
@@ -180,40 +212,40 @@ const main = async () => {
 
   const allErrors: BackfillFailure[] = [];
   const t0 = Date.now();
-  const completedQuarters = loadCompletedQuarters();
-  if (completedQuarters.size > 0) {
-    console.log(`[full-history-pit] 讀到續跑進度檔，已完成 ${completedQuarters.size} 季：${Array.from(completedQuarters).join(', ')}`);
+  const progress = loadProgress();
+  if (progress.size > 0) {
+    const totalDone = Array.from(progress.values()).reduce((sum, s) => sum + s.size, 0);
+    console.log(`[full-history-pit] 讀到續跑進度檔，${progress.size} 個批次共 ${totalDone} 家公司已標記處理過`);
   }
 
   for (const { year, season } of quarters) {
-    const key = quarterKey(year, season);
-    if (completedQuarters.has(key)) {
-      console.log(`\n[full-history-pit] ===== ${key} 已在續跑進度檔標記完成，跳過 =====`);
-      continue;
-    }
-
     console.log(`\n[full-history-pit] ===== ${year}Q${season} 開始 =====`);
     const [generalSymbolsFull, bankSymbolsFull] = await Promise.all([getGeneralSymbolsForQuarter(year, season), getBankSymbolsForQuarter(year, season)]);
     const generalSymbols = PILOT_LIMIT ? generalSymbolsFull.slice(0, PILOT_LIMIT) : generalSymbolsFull;
     const bankSymbols = PILOT_LIMIT ? bankSymbolsFull.slice(0, Math.min(PILOT_LIMIT, bankSymbolsFull.length)) : bankSymbolsFull;
 
+    const generalKey = batchKey(year, season, 'general');
+    const bankKey = batchKey(year, season, 'bank');
+
     const generalErrors = await runQuarterBatch(
       `${year}Q${season} 一般指標`,
       `general-${year}q${season}`,
       generalSymbols,
+      progress.get(generalKey) ?? new Set(),
+      progress,
+      generalKey,
       (symbol) => runTasks(buildGeneralTasks(symbol, { year, season }))
     );
     const bankErrors = await runQuarterBatch(
       `${year}Q${season} 銀行監理指標`,
       `bank-${year}q${season}`,
       bankSymbols,
+      progress.get(bankKey) ?? new Set(),
+      progress,
+      bankKey,
       (symbol) => runTasks(buildBankTasks(symbol, { year, season }))
     );
     allErrors.push(...generalErrors.map((e) => ({ ...e, label: `${year}Q${season}:${e.label}` })), ...bankErrors.map((e) => ({ ...e, label: `${year}Q${season}:${e.label}` })));
-
-    // 不管有沒有錯誤都標記完成——這支腳本的續跑粒度是「整季」，個別公司失敗有既有的
-    // retryBackfillFailuresPit.ts 處理，不需要靠重跑整季來補（見檔頭說明）。
-    markQuarterCompleted(completedQuarters, key);
   }
 
   console.log(
