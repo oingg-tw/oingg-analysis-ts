@@ -45,7 +45,13 @@ import { z } from 'zod';
 // 分開列出真正的原始欄位，methodologyNote 說明推導關係。debtToFcf/netDebtToEbitda 都
 // 刻意不共用 cashFlowValuationFamily 的 ttmComplete 旗標（理由同 capexToOcfRatio）。
 // 至此「財務韌性」分類扣掉 5 支銀行專屬指標跟 4 個危機預警模型後全部有稽核鏈了。
-// 之後有需要再逐一擴大。
+// 第十三批試點（2026-09-13，同一天延續，補完危機預警模型）：
+// altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore——都跟既有 altmanZScore 稽核鏈
+// 同一個原則：只算原始分數，不套用製造業/金融業排除（那是寫入路徑另外決定的政策，
+// 不是公式本身的計算）。ohlsonOScore 是 9 變數 Logit 模型，稽核鏈只列出真正的原始
+// statementField（13 筆：本季資產負債表快照 4 筆＋今年 TTM 淨利 4 季＋去年同期 TTM
+// 淨利 4 季＋今年 TTM 營業現金流 4 季），9 個中繼變數在 methodologyNote 說明算出來的
+// 值，不逐一拆成 entries。之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -84,6 +90,9 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'netWorkingCapitalToAssets',
   'totalDebtToCapital',
   'debtToFcf',
+  'altmanZDoublePrimeScore',
+  'zmijewskiScore',
+  'ohlsonOScore',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
