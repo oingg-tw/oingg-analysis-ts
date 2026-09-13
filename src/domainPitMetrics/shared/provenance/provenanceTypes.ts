@@ -38,7 +38,14 @@ import { z } from 'zod';
 // 同一天延續「財務韌性」分類）：financialLeverageDegree(DFL)/totalLeverageDegree(DTL)——
 // 本季 vs 去年同季的 YoY 比較，都需要先組出 EPS(淨利/流通股數)當分子，共用
 // resolveLeverageDegreeProvenanceInputs 這個共用 resolver，流通股數是「非財報欄位」
-// （type='other'，公開發行公司股本變動申報），不是 statementField。之後有需要再逐一擴大。
+// （type='other'，公開發行公司股本變動申報），不是 statementField。第十二批試點
+// （2026-09-13，同一天延續「財務韌性」分類，補完除了銀行/危機預警模型以外的剩餘 5 支）：
+// interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/
+// debtToFcf——有息負債/EBIT/EBITDA/淨負債/FCF 等中繼值都不是財報原始欄位，稽核鏈一律
+// 分開列出真正的原始欄位，methodologyNote 說明推導關係。debtToFcf/netDebtToEbitda 都
+// 刻意不共用 cashFlowValuationFamily 的 ttmComplete 旗標（理由同 capexToOcfRatio）。
+// 至此「財務韌性」分類扣掉 5 支銀行專屬指標跟 4 個危機預警模型後全部有稽核鏈了。
+// 之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -72,6 +79,11 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'cashToAssetsRatio',
   'financialLeverageDegree',
   'totalLeverageDegree',
+  'interestCoverage',
+  'netDebtToEbitda',
+  'netWorkingCapitalToAssets',
+  'totalDebtToCapital',
+  'debtToFcf',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

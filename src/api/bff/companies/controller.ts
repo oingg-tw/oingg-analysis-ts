@@ -49,6 +49,11 @@ import { getEquityRatioProvenance } from '@/domainPitMetrics/resilience/equityRa
 import { getCashToAssetsRatioProvenance } from '@/domainPitMetrics/resilience/cashToAssetsRatio/getCashToAssetsRatioProvenance';
 import { getFinancialLeverageDegreeProvenance } from '@/domainPitMetrics/resilience/financialLeverageDegree/getFinancialLeverageDegreeProvenance';
 import { getTotalLeverageDegreeProvenance } from '@/domainPitMetrics/resilience/totalLeverageDegree/getTotalLeverageDegreeProvenance';
+import { getInterestCoverageProvenance } from '@/domainPitMetrics/resilience/interestCoverage/getInterestCoverageProvenance';
+import { getNetDebtToEbitdaProvenance } from '@/domainPitMetrics/resilience/netDebtToEbitda/getNetDebtToEbitdaProvenance';
+import { getNetWorkingCapitalToAssetsProvenance } from '@/domainPitMetrics/resilience/netWorkingCapitalToAssets/getNetWorkingCapitalToAssetsProvenance';
+import { getTotalDebtToCapitalProvenance } from '@/domainPitMetrics/resilience/totalDebtToCapital/getTotalDebtToCapitalProvenance';
+import { getDebtToFcfProvenance } from '@/domainPitMetrics/resilience/debtToFcf/getDebtToFcfProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -665,6 +670,11 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   cashToAssetsRatio: getCashToAssetsRatioProvenance,
   financialLeverageDegree: getFinancialLeverageDegreeProvenance,
   totalLeverageDegree: getTotalLeverageDegreeProvenance,
+  interestCoverage: getInterestCoverageProvenance,
+  netDebtToEbitda: getNetDebtToEbitdaProvenance,
+  netWorkingCapitalToAssets: getNetWorkingCapitalToAssetsProvenance,
+  totalDebtToCapital: getTotalDebtToCapitalProvenance,
+  debtToFcf: getDebtToFcfProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始

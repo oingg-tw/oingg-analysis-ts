@@ -1,0 +1,156 @@
+import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+
+// 2026-09-13 使用者要求擴大稽核鏈——netDebtToEbitda = 淨負債(本季期末快照) / EBITDA(TTM
+// 加總)。淨負債 = 有息負債(短期借款+應付公司債+長期借款) − 現金及約當現金；EBITDA =
+// 稅前淨利+財務費用+折舊+攤銷。跟 computeNetDebtToEbitdaPit.ts 的 TTM 版本一致，固定
+// 回傳 TTM。
+
+export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter =
+    query.year !== undefined && query.season !== undefined
+      ? { year: query.year, season: query.season }
+      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+
+  if (!resolvedQuarter) {
+    return { symbol, metricCode: 'netDebtToEbitda', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
+  const bondsPayable = balanceSheet?.bondsPayable ?? null;
+  const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
+  const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
+  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
+
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) =>
+      Promise.all([
+        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+      ])
+    )
+  );
+
+  const preTaxes = ttmRecords.map(([income]) => income?.profitBeforeTax ?? null);
+  const financeCosts = ttmRecords.map(([income]) => income?.financeCosts ?? null);
+  const depreciations = ttmRecords.map(([, cashFlow]) => cashFlow?.depreciation ?? null);
+  const amortizations = ttmRecords.map(([, cashFlow]) => cashFlow?.amortization ?? null);
+
+  let ebitdaTtmSum = 0n;
+  let complete = true;
+  for (let i = 0; i < ttmRecords.length; i++) {
+    if (preTaxes[i] === null || financeCosts[i] === null || depreciations[i] === null || amortizations[i] === null) {
+      complete = false;
+    } else {
+      ebitdaTtmSum += preTaxes[i]! + financeCosts[i]! + depreciations[i]! + amortizations[i]!;
+    }
+  }
+
+  const value = complete && netDebt !== null && ebitdaTtmSum !== 0n ? Math.round((Number(netDebt) / Number(ebitdaTtmSum)) * 100) / 100 : null;
+
+  const entries: ProvenanceEntry[] = [
+    { role: '本季期末短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(shortTermBorrowings) },
+    {
+      role: '本季期末應付公司債（非流動部分）',
+      fiscalYear,
+      fiscalQuarter: seasonNum,
+      type: 'statementField',
+      statementType: 'balanceSheet',
+      fieldKey: 'noncurrent_portion_of_bonds_issued',
+      sourceDescription: null,
+      value: toProvenanceEntryValue(bondsPayable),
+    },
+    {
+      role: '本季期末長期借款',
+      fiscalYear,
+      fiscalQuarter: seasonNum,
+      type: 'statementField',
+      statementType: 'balanceSheet',
+      fieldKey: 'longterm_borrowings',
+      sourceDescription: null,
+      value: toProvenanceEntryValue(longTermBorrowings),
+    },
+    {
+      role: '本季期末現金及約當現金',
+      fiscalYear,
+      fiscalQuarter: seasonNum,
+      type: 'statementField',
+      statementType: 'balanceSheet',
+      fieldKey: 'cash_and_cash_equivalents',
+      sourceDescription: null,
+      value: toProvenanceEntryValue(cashAndEquivalents),
+    },
+    ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
+      const entryFiscalYear = rocYearToGregorian(Number(tq.year));
+      const entryFiscalQuarter = Number(tq.season);
+      return [
+        {
+          role: `TTM 稅前淨利（第 ${i + 1}/4 季，用於 EBITDA）`,
+          fiscalYear: entryFiscalYear,
+          fiscalQuarter: entryFiscalQuarter,
+          type: 'statementField',
+          statementType: 'incomeStatement',
+          fieldKey: 'profit_loss_before_tax',
+          sourceDescription: null,
+          value: toProvenanceEntryValue(preTaxes[i]),
+        },
+        {
+          role: `TTM 財務費用（第 ${i + 1}/4 季，用於 EBITDA）`,
+          fiscalYear: entryFiscalYear,
+          fiscalQuarter: entryFiscalQuarter,
+          type: 'statementField',
+          statementType: 'incomeStatement',
+          fieldKey: 'finance_costs',
+          sourceDescription: null,
+          value: toProvenanceEntryValue(financeCosts[i]),
+        },
+        {
+          role: `TTM 折舊（第 ${i + 1}/4 季，用於 EBITDA）`,
+          fiscalYear: entryFiscalYear,
+          fiscalQuarter: entryFiscalQuarter,
+          type: 'statementField',
+          statementType: 'cashFlowStatement',
+          fieldKey: 'adj_depreciation_expense',
+          sourceDescription: null,
+          value: toProvenanceEntryValue(depreciations[i]),
+        },
+        {
+          role: `TTM 攤銷（第 ${i + 1}/4 季，用於 EBITDA）`,
+          fiscalYear: entryFiscalYear,
+          fiscalQuarter: entryFiscalQuarter,
+          type: 'statementField',
+          statementType: 'cashFlowStatement',
+          fieldKey: 'adj_amortisation_expense',
+          sourceDescription: null,
+          value: toProvenanceEntryValue(amortizations[i]),
+        },
+      ];
+    }),
+  ];
+
+  return {
+    symbol,
+    metricCode: 'netDebtToEbitda',
+    found: true,
+    fiscalYear,
+    fiscalQuarter: seasonNum,
+    value,
+    entries,
+    methodologyNote: `分子淨負債 = 有息負債(短期借款+應付公司債+長期借款) − 現金及約當現金（見上方前 4 筆原始欄位），淨負債＝${netDebt ?? 'null'}。分母 EBITDA = 稅前淨利+財務費用+折舊+攤銷 逐季加總，本身不是財報原始欄位。`,
+  };
+};
