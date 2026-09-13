@@ -10,9 +10,10 @@ import { z } from 'zod';
 // get<Metric>Provenance.ts 檔案開頭的註解裡（例如 fieldKey 選擇、TTM vs Q 邏輯、
 // 跟原始 compute 檔案的關係），這裡重複記錄只會讓這個檔案跟著長胖，是吸取
 // companies/controller.ts 764 行巨石檔案（2026-09-13 拆分過）的教訓。已完成的分類：
-// 「營運效率」(16/16)、「財務韌性」扣掉 5 支銀行專屬指標後全部完成(19/19)。
-// 目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，count 是 `.length`，不用另外
-// 手動維護數字說明。之後有需要再逐一擴大。
+// 「營運效率」(16/16)、「財務韌性」扣掉 5 支銀行專屬指標後全部完成(19/19)、
+// 「獲利能力」全部完成(20/20)。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，
+// count 是 `.length`，不用另外手動維護數字說明。之後有需要再逐一擴大到成長性/股利/
+// 評價/品質四個分類。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -69,6 +70,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'nissimPenmanRnoa',
   'famaFrenchOperatingProfitability',
   'consecutiveProfitYears',
+  'grossMargin',
+  'operatingMargin',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

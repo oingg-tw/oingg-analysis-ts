@@ -54,6 +54,8 @@ import { getGreenblattRocProvenance } from '@/domainPitMetrics/profitability/gre
 import { getNissimPenmanRnoaProvenance } from '@/domainPitMetrics/profitability/nissimPenmanRnoa/getNissimPenmanRnoaProvenance';
 import { getFamaFrenchOperatingProfitabilityProvenance } from '@/domainPitMetrics/profitability/famaFrenchOperatingProfitability/getFamaFrenchOperatingProfitabilityProvenance';
 import { getConsecutiveProfitYearsProvenance } from '@/domainPitMetrics/profitability/consecutiveProfitYears/getConsecutiveProfitYearsProvenance';
+import { getGrossMarginProvenance } from '@/domainPitMetrics/profitability/grossMargin/getGrossMarginProvenance';
+import { getOperatingMarginProvenance } from '@/domainPitMetrics/profitability/operatingMargin/getOperatingMarginProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -123,4 +125,6 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   nissimPenmanRnoa: getNissimPenmanRnoaProvenance,
   famaFrenchOperatingProfitability: getFamaFrenchOperatingProfitabilityProvenance,
   consecutiveProfitYears: getConsecutiveProfitYearsProvenance,
+  grossMargin: getGrossMarginProvenance,
+  operatingMargin: getOperatingMarginProvenance,
 };

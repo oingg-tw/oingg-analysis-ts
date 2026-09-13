@@ -25,28 +25,40 @@ import { calculateOperatingMargin } from '@/domainPitMetrics/profitability/opera
 // operatingIncome -> net_operating_income_loss。金控業刻意不做同樣的事（margin/
 // turnover 概念在金控業結構性不成立，需要全新指標概念，不是替代科目能解決的問題，
 // 同樣見那份研究筆記的說明），不要看到這裡的模式就依樣畫葫蘆幫金控業加。
-const getMarginInputs = async (key: {
+export interface MarginInputs {
+  reportDate: Date;
+  revenue: bigint | null;
+  grossProfitLike: bigint | null;
+  operatingIncomeLike: bigint | null;
+  isInsuranceFallback: boolean;
+}
+
+// 2026-09-13 稽核鏈擴大到 grossMargin/operatingMargin 需要重用這支「一般表 or 保險替代表」
+// 的查詢邏輯（見下方保險業 fallback 說明），改成 export——純查詢函式，沒有副作用，跟
+// getGreenblattRocInputs 抽出來給 provenance 重用是同一個模式。多回傳一個
+// isInsuranceFallback 旗標，讓 provenance 知道這筆該標哪個 statementType/fieldKey。
+export const getMarginInputs = async (key: {
   symbol: string;
   year: number;
   quarter: number;
   dataType: string;
   subsidiaryCompanyId: string;
-}): Promise<{ reportDate: Date; revenue: bigint | null; grossProfitLike: bigint | null; operatingIncomeLike: bigint | null } | null> => {
+}): Promise<MarginInputs | null> => {
   const incomeStatement = await getQuarterlyIncomeStatement(key);
   if (incomeStatement?.operatingRevenue != null) {
-    return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome };
+    return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome, isInsuranceFallback: false };
   }
 
   const insurance = await getInsuranceIncomeStatementXbrlFirst(key);
   if (insurance) {
-    return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss };
+    return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss, isInsuranceFallback: true };
   }
 
   // 一般查得到列但 operatingRevenue 是 null（例如保險業在一般表裡有 profit_loss 等
   // 欄位、只是沒有 revenue），且保險替代也查無資料——回傳一般查詢結果的 reportDate（如果
   // 有）讓 knowledgeDate 解析至少能跑，三個金額欄位維持 null 走既有的 missing_input 邏輯。
   if (incomeStatement) {
-    return { reportDate: incomeStatement.reportDate, revenue: null, grossProfitLike: null, operatingIncomeLike: null };
+    return { reportDate: incomeStatement.reportDate, revenue: null, grossProfitLike: null, operatingIncomeLike: null, isInsuranceFallback: false };
   }
   return null;
 };
