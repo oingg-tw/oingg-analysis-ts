@@ -7,7 +7,19 @@ import { z } from 'zod';
 // GET /companies/piotroski-breakdown 同一天稍早的先例。第一批試點（2026-09-10）：
 // sue/chowderNumber/roe。第二批試點（2026-09-11，web-nuxt 要求擴大到全部 16 支有
 // badge 的指標，先做 2-3 支）：accrualsRatio/dividendPayoutRatio/altmanZScore。
-export const PILOT_PROVENANCE_METRIC_CODES = ['sue', 'chowderNumber', 'roe', 'accrualsRatio', 'dividendPayoutRatio', 'altmanZScore'] as const;
+// 第三批試點（2026-09-13，使用者詢問利息負擔/稅務負擔怎麼算，順便補上稽核鏈）：
+// dupontTaxBurden/dupontInterestBurden——目前全系統 117 支指標裡只有這 8 支有稽核鏈，
+// 其餘 109 支還沒有，之後有需要再逐一擴大。
+export const PILOT_PROVENANCE_METRIC_CODES = [
+  'sue',
+  'chowderNumber',
+  'roe',
+  'accrualsRatio',
+  'dividendPayoutRatio',
+  'altmanZScore',
+  'dupontTaxBurden',
+  'dupontInterestBurden',
+] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
 export const provenanceEntrySchema = z.object({

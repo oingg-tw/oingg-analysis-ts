@@ -8,6 +8,7 @@ import { metricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMetricH
 import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
@@ -377,7 +378,7 @@ export const registerCompaniesOpenApi = (): void => {
   registry.registerPath({
     method: 'get',
     path: '/companies/{symbol}/metric-provenance',
-    summary: '單一指標的原始計算來源明細（會計模式「點數字看來源」用，目前限 sue/chowderNumber/roe 三支試點）',
+    summary: `單一指標的原始計算來源明細（會計模式「點數字看來源」用，目前限 ${PILOT_PROVENANCE_METRIC_CODES.join('/')} 試點）`,
     description:
       '讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始財報欄位、各自的值，用來跳轉到' +
       'GET /companies/financial-statement 對應的那一列——現查現算，不持久化，跟 GET ' +
@@ -390,16 +391,17 @@ export const registerCompaniesOpenApi = (): void => {
       '快照、股本變動申報等），只給 sourceDescription 文字說明，沒有可連結的 fieldKey。methodologyNote' +
       '是部分指標的完整計算方法無法用單純欄位清單呈現時的補充說明——例如 sue 的標準差取自最近 20 期' +
       '未預期盈餘樣本，entries 只列出構成本季 UE 的 2 期（本季/去年同季）原始欄位，20 期樣本本身不' +
-      '逐筆列出，methodologyNote 會講清楚這個取捨；其餘指標為 null。試點範圍刻意只有 sue/' +
-      'chowderNumber/roe 三支（metricCode 用 zod enum 驗證，其餘一律 400，不是隱性涵蓋所有指標）。' +
-      'roe 目前固定回傳 TTM basis 的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料' +
+      `逐筆列出，methodologyNote 會講清楚這個取捨；其餘指標為 null。試點範圍刻意只有 ${PILOT_PROVENANCE_METRIC_CODES.join('/')}` +
+      '這幾支（metricCode 用 zod enum 驗證，其餘一律 400，不是隱性涵蓋所有指標——全系統目前 117 支' +
+      '指標裡只有這幾支有稽核鏈）。roe/dupontTaxBurden/dupontInterestBurden 目前固定回傳 TTM basis' +
+      '的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料' +
       '（found:false）是正常情境，回 200 不是 404，跟 financial-statement/piotroski-breakdown 同一' +
       '種慣例。symbol 是路徑參數，跟其餘 /companies/* 端點的 query 參數用法不同，這是刻意的設計。',
     tags: ['System'],
     request: { params: z.object({ symbol: z.string().meta({ description: '公司代號', example: '2330' }) }), query: getCompanyMetricProvenanceQuerySchema },
     responses: {
       200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResultSchema } } },
-      400: { description: '缺少 symbol，metricCode 不是 sue/chowderNumber/roe 之一，或 year/season 只給了其中一個。' },
+      400: { description: `缺少 symbol，metricCode 不是 ${PILOT_PROVENANCE_METRIC_CODES.join('/')} 之一，或 year/season 只給了其中一個。` },
     },
   });
 
@@ -416,9 +418,9 @@ export const registerCompaniesOpenApi = (): void => {
       '範圍內，那些指標的數值繼續走既有的 metric-history/metrics-history 端點。' +
       'value 為 null 時 passed 一定也是 null（無法判定，不是「未達成」），nullReason 說明原因' +
       '（例如金融保險業套用 Z-Score 這類模型時是 not_applicable_industry）。metricCode 可以直接' +
-      '拿去打 GET /companies/metric-history（查數值歷史）或 GET /companies/:symbol/metric-provenance' +
-      '（查原始計算來源，目前限 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/' +
-      'altmanZScore 試點範圍）。財務韌性三模型（Altman Z-Score/Beneish M-Score/Ohlson O-Score）' +
+      `拿去打 GET /companies/metric-history（查數值歷史）或 GET /companies/:symbol/metric-provenance` +
+      `（查原始計算來源，目前限 ${PILOT_PROVENANCE_METRIC_CODES.join('/')} 試點範圍）。財務韌性三模型` +
+      '（Altman Z-Score/Beneish M-Score/Ohlson O-Score）' +
       '的正式聚合計數（依 oingg-conductor-ts 文件庫《財務韌性三模型交叉驗證計算引擎》定義的' +
       'zone/calibrationStatus/分母浮動邏輯）還在跟文件維護方確認落差，目前這支端點的三個模型' +
       '都是各自獨立判定 passed，還沒有聚合計數欄位，等規格定案後再擴充，不會是 breaking change' +

@@ -23,6 +23,8 @@ import { getSueProvenance } from '@/domainPitMetrics/growth/sue/getSueProvenance
 import { getAccrualsRatioProvenance } from '@/domainPitMetrics/quality/accrualsRatio/getAccrualsRatioProvenance';
 import { getDividendPayoutRatioProvenance } from '@/domainPitMetrics/dividend/dividendPayoutRatio/getDividendPayoutRatioProvenance';
 import { getAltmanZScoreProvenance } from '@/domainPitMetrics/resilience/altmanZScore/getAltmanZScoreProvenance';
+import { getDupontTaxBurdenProvenance } from '@/domainPitMetrics/profitability/dupontTaxBurden/getDupontTaxBurdenProvenance';
+import { getDupontInterestBurdenProvenance } from '@/domainPitMetrics/profitability/dupontInterestBurden/getDupontInterestBurdenProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -589,7 +591,7 @@ export const getCompanyPiotroskiBreakdown = async (req: Request, res: Response, 
 
 export const getCompanyMetricProvenanceQuerySchema = z
   .object({
-    metricCode: z.enum(PILOT_PROVENANCE_METRIC_CODES, { error: 'metricCode is required, 目前僅支援 sue/chowderNumber/roe。' }),
+    metricCode: z.enum(PILOT_PROVENANCE_METRIC_CODES, { error: `metricCode is required, 目前僅支援 ${PILOT_PROVENANCE_METRIC_CODES.join('/')}。` }),
     year: z
       .string()
       .regex(/^\d{2,3}$/, 'year 必須是民國年數字字串，例如 "115"。')
@@ -613,6 +615,8 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   accrualsRatio: getAccrualsRatioProvenance,
   dividendPayoutRatio: getDividendPayoutRatioProvenance,
   altmanZScore: getAltmanZScoreProvenance,
+  dupontTaxBurden: getDupontTaxBurdenProvenance,
+  dupontInterestBurden: getDupontInterestBurdenProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
