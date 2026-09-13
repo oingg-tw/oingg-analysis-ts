@@ -3,7 +3,7 @@ import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
 import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/shared/sourceData/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';
 import { buildScreenerSql, buildRankingSql, buildValuesSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
-import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue } from './types';
+import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason } from './types';
 
 export { ScreenerValidationError };
 
@@ -11,6 +11,10 @@ export { ScreenerValidationError };
 // knowledge_date 統一切成 YYYY-MM-DD。companyName 先留空，parseRows 本身不查名稱（查名稱要
 // 另外打 twse/tpex，不是同一個資料庫查得到的東西）——由 attachCompanyNames 事後批次補上，
 // 兩件事分開做，parseRows 保持單純同步轉換。
+// 2026-09-13 補上 nullReason（見 queryBuilder.ts buildSelectColumnsSql 的說明）——這一列
+// 完全查無資料時（symbol 從沒被算過這支指標）n{index} 也會是 undefined/null，跟「算過但
+// value 為 null」在 SQL 層面無法區分（LEFT JOIN 到的整列都是 null），一律回傳 null，
+// 呼叫端要精確分辨兩者請改查 GET /companies/metric-history。
 const parseRows = (rows: Record<string, unknown>[], fields: IndexedField[]): Omit<ScreenerRow, 'companyName'>[] =>
   rows.map((row) => {
     const values: Record<string, ScreenerValue> = {};
@@ -18,8 +22,9 @@ const parseRows = (rows: Record<string, unknown>[], fields: IndexedField[]): Omi
       const rawValue = row[`v${f.index}`];
       const value = rawValue !== null && rawValue !== undefined ? Number(rawValue) : null;
       const date = row[`k${f.index}`];
-      const asOfDate = date ? (date instanceof Date ? date.toISOString().slice(0, 10) : String(date).slice(0, 10)) : null;
-      values[f.field] = { value, asOfDate };
+      const knowledgeDate = date ? (date instanceof Date ? date.toISOString().slice(0, 10) : String(date).slice(0, 10)) : null;
+      const nullReason = (row[`n${f.index}`] as ScreenerNullReason | null | undefined) ?? null;
+      values[f.field] = { value, knowledgeDate, nullReason };
     }
     return { symbol: row.symbol as string, values };
   });

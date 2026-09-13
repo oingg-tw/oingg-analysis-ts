@@ -125,15 +125,26 @@ export interface IndexedField extends FieldRef {
   index: number;
 }
 
-// 每個 field 選 value + knowledge_date 兩欄，用 index 當別名尾碼（v0/k0、v1/k1...），避免
-// 同一個組合出現在多個 field index 時互相覆蓋，parseRow 再用同一組 index 讀回來。asOfDate
-// 統一用 knowledge_date（不像舊架構要依「季報型/每日型」分別組年季字串或日期字串），單一
-// 欄位，不需要分支。
+// 每個 field 選 value + knowledge_date + null_reason 三欄，用 index 當別名尾碼
+// （v0/k0/n0、v1/k1/n1...），避免同一個組合出現在多個 field index 時互相覆蓋，parseRow
+// 再用同一組 index 讀回來。knowledgeDate 統一讀 knowledge_date（不像舊架構要依
+// 「季報型/每日型」分別組年季字串或日期字串），單一欄位，不需要分支。
+// 2026-09-13 這個輸出欄位原本叫 asOfDate，改名 knowledgeDate——跟其餘 PIT 端點
+// （metric-history 等）統一用語，也避免跟專案裡「asOfDate 當查詢輸入參數」的既有用法
+// （getStockPriceAsOf 等）撞名混淆，見 service.ts 的完整說明。
+// 2026-09-13 補上 null_reason——web-nuxt 回報徽章卡片（走 POST /screener/values）金融股
+// 顯示籠統的「尚無資料」，跟歷年統計表（走 GET /companies/metric-history，本來就有
+// nullReason）不一致，原因是這支查詢引擎的 SELECT 清單原本只挑 value/knowledge_date 兩欄。
+// 三個 build*Sql（screener/ranking/values）都共用這支函式，一次補齊，不用分別改三份。
 const buildSelectColumnsSql = (fields: IndexedField[], cteRefs: Map<string, CteRef>): Prisma.Sql[] =>
   fields.map((f) => {
     const alias = Prisma.raw(cteRefs.get(basisGroupKeyFor(f))!.alias);
     return Prisma.join(
-      [Prisma.sql`${alias}.${q('value')} AS ${Prisma.raw(`v${f.index}`)}`, Prisma.sql`${alias}.${q('knowledge_date')} AS ${Prisma.raw(`k${f.index}`)}`],
+      [
+        Prisma.sql`${alias}.${q('value')} AS ${Prisma.raw(`v${f.index}`)}`,
+        Prisma.sql`${alias}.${q('knowledge_date')} AS ${Prisma.raw(`k${f.index}`)}`,
+        Prisma.sql`${alias}.${q('null_reason')} AS ${Prisma.raw(`n${f.index}`)}`,
+      ],
       ', '
     );
   });

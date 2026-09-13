@@ -52,7 +52,7 @@ describe('runScreener', () => {
     const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }, { field: 'bankNplRatio.Q' }], pageSize: 500 });
     const missingBankRatio = result.results.find((r) => r.values['bankNplRatio.Q']!.value === null && r.values['roe.TTM']!.value !== null);
     assert.ok(missingBankRatio, '應該找得到至少一筆 roe.TTM 有資料但 bankNplRatio.Q 沒資料的公司（left-join 語意才成立）');
-    assert.equal(missingBankRatio!.values['bankNplRatio.Q']!.asOfDate, null, 'bankNplRatio.Q 沒資料時 asOfDate 也應該是 null');
+    assert.equal(missingBankRatio!.values['bankNplRatio.Q']!.knowledgeDate, null, 'bankNplRatio.Q 沒資料時 knowledgeDate 也應該是 null');
   });
 
   test('分頁：count/totalPages 是全部符合條件的總筆數，不是這一頁的筆數', async () => {
@@ -180,9 +180,9 @@ describe('runScreenerRanking', () => {
     }
   });
 
-  test('asOfDate 是 YYYY-MM-DD 格式（knowledge_date）', async () => {
+  test('knowledgeDate 是 YYYY-MM-DD 格式（knowledge_date）', async () => {
     const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 1, columns: [] });
-    assert.match(result.results[0]!.values['roe.TTM']!.asOfDate!, /^\d{4}-\d{2}-\d{2}$/);
+    assert.match(result.results[0]!.values['roe.TTM']!.knowledgeDate!, /^\d{4}-\d{2}-\d{2}$/);
   });
 
   test('sectorCodes：排行結果只會出現該產業的公司（2317 不屬於 24，不應該出現）', async () => {
@@ -202,7 +202,7 @@ describe('runScreenerValues', () => {
     const missing = result.results.find((r) => r.symbol === '0000');
     const found = result.results.find((r) => r.symbol === '2330');
     assert.ok(missing, '查無資料的 symbol 也應該出現在結果裡');
-    assert.deepEqual(missing!.values['roe.TTM'], { value: null, asOfDate: null });
+    assert.deepEqual(missing!.values['roe.TTM'], { value: null, knowledgeDate: null, nullReason: null });
     assert.ok(found!.values['roe.TTM']!.value !== null, '2330 應該查得到 ROE(TTM)');
   });
 

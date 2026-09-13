@@ -6,10 +6,24 @@ import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValu
 // "roe.TTM"），對應 GET /metrics（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。
 // 查詢引擎直接讀 pitMetrics 共用的 metric_values 表，取「每個 symbol 最新一筆」（依
 // fiscal_year/fiscal_quarter/knowledge_date 三欄排序），不分季報型/逐日型，兩種指標都吃
-// 同一套邏輯。asOfDate 統一是 knowledge_date（YYYY-MM-DD），不再是舊架構的 ROC 年季字串。
+// 同一套邏輯。knowledgeDate 統一是 knowledge_date（YYYY-MM-DD），不再是舊架構的 ROC 年季字串。
+// 2026-09-13 兩個破壞性變更：
+// (1) 欄位改名 asOfDate → knowledgeDate——跟其餘 PIT 端點（metric-history 等）統一用語，
+//     也避免跟專案裡「asOfDate 當查詢輸入參數」的既有用法（getStockPriceAsOf 等）撞名——
+//     這裡存的其實是「這個算出來的值哪天才被市場知道（公告日）」，跟「這個值在哪個日期
+//     生效」是不同問題，見 src/domainPitMetrics/knowledgeDate.ts 的說明。
+// (2) 補上 nullReason——原本只有 value/asOfDate，前端（徽章卡片）拿到 value:null
+//     時無法分辨「不適用（產業別排除）」跟其他情況，只能顯示籠統的「尚無資料」，跟
+//     GET /companies/metric-history（本來就有 nullReason）不一致。查無這一列（symbol 從沒
+//     被算過這支指標）時 nullReason 也是 null，跟「算過但為 null」在這層無法區分，需要精確
+//     分辨請改查 metric-history。
 const screenerValueSchema = z.object({
   value: z.number().nullable(),
-  asOfDate: z.string().nullable().meta({ description: 'knowledge_date（YYYY-MM-DD），value 為 null 時也是 null' }),
+  knowledgeDate: z.string().nullable().meta({ description: 'knowledge_date（YYYY-MM-DD）——這個值哪天被市場公告知道，不是財報期末日；value 為 null 時也是 null' }),
+  nullReason: z
+    .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
+    .nullable()
+    .meta({ description: 'value 為 null 時的原因；value 非 null 時一律是 null；查無此列（從沒被算過）時也是 null' }),
 });
 
 const screenerRowSchema = z.object({
