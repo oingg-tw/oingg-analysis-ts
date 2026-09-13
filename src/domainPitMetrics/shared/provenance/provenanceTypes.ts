@@ -27,7 +27,10 @@ import { z } from 'zod';
 // cashFlowValuationFamily 的 ttmComplete 旗標（那個旗標額外要求 revenue/netIncome
 // 齊全，是給同家族其他指標用的，不是這支自己的真實依賴）。至此「營運效率」分類全部
 // 16 支指標都有稽核鏈了（assetTurnover 算在 dupont family 那邊，不重複列）。目前全系統
-// 117 支指標裡只有這 23 支有稽核鏈，其餘 94 支還沒有，之後有需要再逐一擴大。
+// 117 支指標裡只有這 23 支有稽核鏈，其餘 94 支還沒有。第九批試點（2026-09-13，同一天
+// 開始「財務韌性」分類）：currentRatio/quickRatio/cashRatio——純資產負債表時點快照，
+// 只有 Q 一種 basis（沒有 TTM 概念），共用 resolveLiquidityRatioProvenanceInputs 這個
+// 共用 resolver。之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -52,6 +55,9 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'capexToRevenue',
   'capexToOcfRatio',
   'operatingExpenseRatio',
+  'currentRatio',
+  'quickRatio',
+  'cashRatio',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

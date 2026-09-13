@@ -40,6 +40,9 @@ import { getReceivablesToRevenueRatioProvenance } from '@/domainPitMetrics/effic
 import { getCapexToRevenueProvenance } from '@/domainPitMetrics/efficiency/capexToRevenue/getCapexToRevenueProvenance';
 import { getCapexToOcfRatioProvenance } from '@/domainPitMetrics/efficiency/capexToOcfRatio/getCapexToOcfRatioProvenance';
 import { getOperatingExpenseRatioProvenance } from '@/domainPitMetrics/efficiency/operatingExpenseRatio/getOperatingExpenseRatioProvenance';
+import { getCurrentRatioProvenance } from '@/domainPitMetrics/resilience/currentRatio/getCurrentRatioProvenance';
+import { getQuickRatioProvenance } from '@/domainPitMetrics/resilience/quickRatio/getQuickRatioProvenance';
+import { getCashRatioProvenance } from '@/domainPitMetrics/resilience/cashRatio/getCashRatioProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -647,6 +650,9 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   capexToRevenue: getCapexToRevenueProvenance,
   capexToOcfRatio: getCapexToOcfRatioProvenance,
   operatingExpenseRatio: getOperatingExpenseRatioProvenance,
+  currentRatio: getCurrentRatioProvenance,
+  quickRatio: getQuickRatioProvenance,
+  cashRatio: getCashRatioProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
