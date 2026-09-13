@@ -1,7 +1,7 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement, type CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import type { CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -62,7 +62,10 @@ export interface AccrualsRatioResolution {
   ttmAnchor: KnowledgeDateResolution | null;
 }
 
-export const resolveAccrualsRatioInputs = async (query: QuarterlyMetricQuery): Promise<AccrualsRatioResolution | null> => {
+export const resolveAccrualsRatioInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & BalanceSheetPort & CashFlowStatementPort = financialDataAdapter
+): Promise<AccrualsRatioResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -79,9 +82,9 @@ export const resolveAccrualsRatioInputs = async (query: QuarterlyMetricQuery): P
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const [balanceSheet, incomeStatement, cashFlowStatement] = await Promise.all([
-    getQuarterlyBalanceSheet(key),
-    getQuarterlyIncomeStatement(key),
-    getQuarterlyCashFlowStatement(key),
+    statements.getBalanceSheet(key),
+    statements.getIncomeStatement(key),
+    statements.getCashFlowStatement(key),
   ]);
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
@@ -93,8 +96,8 @@ export const resolveAccrualsRatioInputs = async (query: QuarterlyMetricQuery): P
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );
@@ -147,8 +150,11 @@ export interface AccrualsRatioPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteAccrualsRatioPit = async (query: QuarterlyMetricQuery): Promise<AccrualsRatioPitOutcome> => {
-  const resolution = await resolveAccrualsRatioInputs(query);
+export const computeAndWriteAccrualsRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & BalanceSheetPort & CashFlowStatementPort = financialDataAdapter
+): Promise<AccrualsRatioPitOutcome> => {
+  const resolution = await resolveAccrualsRatioInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }

@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -37,7 +36,10 @@ export interface PriceToResearchRatioPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWritePriceToResearchRatioPit = async (query: QuarterlyMetricQuery): Promise<PriceToResearchRatioPitOutcome> => {
+export const computeAndWritePriceToResearchRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & MarketCapPort = financialDataAdapter
+): Promise<PriceToResearchRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -55,9 +57,9 @@ export const computeAndWritePriceToResearchRatioPit = async (query: QuarterlyMet
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const currentIncome = await getQuarterlyIncomeStatement(key);
+  const currentIncome = await statements.getIncomeStatement(key);
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: currentIncome?.reportDate ?? null }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const rdRecords = await Promise.all(

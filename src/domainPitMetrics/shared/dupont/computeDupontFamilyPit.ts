@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -63,7 +62,10 @@ export interface DupontFamilyPitOutcome {
   dupontExtendedRoeTtm: BasisOutcome;
 }
 
-export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery): Promise<DupontFamilyPitOutcome> => {
+export const computeAndWriteDupontFamilyPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort = financialDataAdapter
+): Promise<DupontFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const skippedNoQuarter: DupontFamilyPitOutcome = {
@@ -101,7 +103,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, balanceSheet] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyBalanceSheet(key)]);
+  const [incomeStatement, balanceSheet] = await Promise.all([statements.getIncomeStatement(key), statements.getBalanceSheet(key)]);
 
   const netIncome = pickNetIncome(incomeStatement);
   const equity = pickEquity(balanceSheet);
@@ -235,7 +237,7 @@ export const computeAndWriteDupontFamilyPit = async (query: QuarterlyMetricQuery
   // netProfitMargin/assetTurnover 的 TTM 共用同一組「資料齊不齊」判斷（比照 margins.ts）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let revenueTtmSum = 0n;

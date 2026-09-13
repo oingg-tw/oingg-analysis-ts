@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type BalanceSheetPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -27,7 +25,10 @@ export interface EvToFcfPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteEvToFcfPit = async (query: QuarterlyMetricQuery): Promise<EvToFcfPitOutcome> => {
+export const computeAndWriteEvToFcfPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & CashFlowStatementPort & MarketCapPort = financialDataAdapter
+): Promise<EvToFcfPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -45,7 +46,7 @@ export const computeAndWriteEvToFcfPit = async (query: QuarterlyMetricQuery): Pr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
 
   const totalDebt = balanceSheet
     ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
@@ -55,12 +56,12 @@ export const computeAndWriteEvToFcfPit = async (query: QuarterlyMetricQuery): Pr
   const reportDate = balanceSheet?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let fcfTtmSum = 0n;

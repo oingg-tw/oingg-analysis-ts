@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -36,7 +35,7 @@ export interface EpsGrowthRatePitOutcome {
 // 本季/去年同季各自的 EPS（不依賴 eps 這個 metric_code 已寫入的值，跟 sgr 對 roe/
 // dividendPayoutRatio 的既有做法一致），流通股數各自用當下報告日對應的股本（不是固定用
 // 本季股本回推去年，避免股本異動時失真）。只有 Q 一種 basis。
-export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuery): Promise<EpsGrowthRatePitOutcome> => {
+export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter): Promise<EpsGrowthRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -54,13 +53,13 @@ export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuer
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
-  const currentShares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentShares = reportDate ? (await statements.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
   const currentEps = toEps(pickNetIncome(incomeStatement).value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({
+  const priorIncomeStatement = await statements.getIncomeStatement({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),
@@ -68,7 +67,7 @@ export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuer
     subsidiaryCompanyId,
   });
   const priorReportDate = priorIncomeStatement?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await statements.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorEps = toEps(pickNetIncome(priorIncomeStatement).value, priorShares);
 
   const growthRate =

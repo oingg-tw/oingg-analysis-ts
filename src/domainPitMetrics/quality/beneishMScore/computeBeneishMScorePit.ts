@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -55,12 +53,19 @@ export interface QuarterData {
   available: boolean;
 }
 
-const fetchQuarterData = async (symbol: string, rocYear: number, season: number, dataType: string, subsidiaryCompanyId: string): Promise<QuarterData> => {
+const fetchQuarterData = async (
+  symbol: string,
+  rocYear: number,
+  season: number,
+  dataType: string,
+  subsidiaryCompanyId: string,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort
+): Promise<QuarterData> => {
   const key = { symbol, year: rocYear, quarter: season, dataType, subsidiaryCompanyId };
   const [balanceSheet, incomeStatement, cashFlowStatement] = await Promise.all([
-    getQuarterlyBalanceSheet(key),
-    getQuarterlyIncomeStatement(key),
-    getQuarterlyCashFlowStatement(key),
+    statements.getBalanceSheet(key),
+    statements.getIncomeStatement(key),
+    statements.getCashFlowStatement(key),
   ]);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
 
@@ -133,7 +138,10 @@ export interface BeneishMScoreResolution {
 // 算出 8 個變量 + mScore 本身，不寫入——beneishMScore/beneishAqi/beneishDsri 三個
 // metric_code 的寫入路徑（下面三支 computeAndWriteXxxPit）都呼叫這支，各自只挑自己
 // 要的變量寫進 metric_value，避免重複查三次原始財報。
-export const resolveBeneishMScoreInputs = async (query: QuarterlyMetricQuery): Promise<BeneishMScoreResolution | null> => {
+export const resolveBeneishMScoreInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<BeneishMScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -153,8 +161,8 @@ export const resolveBeneishMScoreInputs = async (query: QuarterlyMetricQuery): P
   const priorSeasonNum = Number(prior.season);
 
   const [curr, prev] = await Promise.all([
-    fetchQuarterData(symbol, rocYear, seasonNum, dataType, subsidiaryCompanyId),
-    fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId),
+    fetchQuarterData(symbol, rocYear, seasonNum, dataType, subsidiaryCompanyId, statements),
+    fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId, statements),
   ]);
 
   const currArRatio = ratio(curr.accountsReceivable, curr.operatingRevenue);
@@ -227,8 +235,11 @@ const resolveVariableNullReason = (value: number | null, resolution: BeneishMSco
   return !resolution.prevAvailable ? 'insufficient_history' : 'missing_input';
 };
 
-export const computeAndWriteBeneishMScorePit = async (query: QuarterlyMetricQuery): Promise<BeneishMScorePitOutcome> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
+export const computeAndWriteBeneishMScorePit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<BeneishMScorePitOutcome> => {
+  const resolution = await resolveBeneishMScoreInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
   }

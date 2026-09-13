@@ -1,7 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { getXbrlCashFlowQuarterly } from '@/shared/sourceData/xbrlCashFlowQuarterly';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -42,7 +41,10 @@ export interface BuybackYieldPitOutcome {
 // metricCode，不合併成單一總回報率——dividendYield 是交易所公告 passthrough（EOD 快照），
 // 這支是自算 TTM 累計值，兩者頻率/資料源本質不同，前端要組合成「股東總回報率」可以自己
 // 把兩個值加起來，不用我們預先合併掉各自的可追溯性。
-export const computeAndWriteBuybackYieldPit = async (query: QuarterlyMetricQuery): Promise<BuybackYieldPitOutcome> => {
+export const computeAndWriteBuybackYieldPit = async (
+  query: QuarterlyMetricQuery,
+  statements: CashFlowStatementPort & MarketCapPort = financialDataAdapter
+): Promise<BuybackYieldPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -60,7 +62,7 @@ export const computeAndWriteBuybackYieldPit = async (query: QuarterlyMetricQuery
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainCashFlow = await getQuarterlyCashFlowStatement(key);
+  const mainCashFlow = await statements.getCashFlowStatement(key);
   const reportDate = mainCashFlow?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
@@ -77,7 +79,7 @@ export const computeAndWriteBuybackYieldPit = async (query: QuarterlyMetricQuery
   }
   const buybackAbs = buybackTtmSum < 0n ? -buybackTtmSum : buybackTtmSum;
 
-  const marketCap = reportDate ? await getMarketCapAsOf(symbol, reportDate) : null;
+  const marketCap = reportDate ? await statements.getMarketCap(symbol, reportDate) : null;
   // 2026-09-13 修正量綱 bug：buybackAbs 是現金流量表欄位，單位千元；marketCap.marketCap
   // 是 getMarketCapAsOf 回傳的市值，單位元。先前這裡直接相除沒有做 x1000 換算，導致算出來
   // 的殖利率被低估 1000 倍——稽核鏈驗證時發現（見 getBuybackYieldProvenance.ts 的說明）。

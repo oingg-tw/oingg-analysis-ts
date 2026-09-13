@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -28,7 +26,10 @@ export interface EvToEbitPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteEvToEbitPit = async (query: QuarterlyMetricQuery): Promise<EvToEbitPitOutcome> => {
+export const computeAndWriteEvToEbitPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & MarketCapPort = financialDataAdapter
+): Promise<EvToEbitPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -46,7 +47,7 @@ export const computeAndWriteEvToEbitPit = async (query: QuarterlyMetricQuery): P
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [balanceSheet, incomeStatement] = await Promise.all([getQuarterlyBalanceSheet(key), getQuarterlyIncomeStatement(key)]);
+  const [balanceSheet, incomeStatement] = await Promise.all([statements.getBalanceSheet(key), statements.getIncomeStatement(key)]);
 
   const totalDebt = balanceSheet
     ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
@@ -61,7 +62,7 @@ export const computeAndWriteEvToEbitPit = async (query: QuarterlyMetricQuery): P
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
   const qAnnValue = enterpriseValue !== null && ebitQuarterly !== null ? toMultipleFromThousands(enterpriseValue, ebitQuarterly * 4n) : null;
@@ -87,7 +88,7 @@ export const computeAndWriteEvToEbitPit = async (query: QuarterlyMetricQuery): P
   // TTM：近四季（含本季）EBIT 加總；企業價值沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ebitTtmSum = 0n;

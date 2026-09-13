@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -47,7 +45,10 @@ export interface PbRatioPitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWritePbRatioPit = async (query: QuarterlyMetricQuery): Promise<PbRatioPitOutcome> => {
+export const computeAndWritePbRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & PaidInSharesPort & StockPricePort = financialDataAdapter
+): Promise<PbRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -65,17 +66,17 @@ export const computeAndWritePbRatioPit = async (query: QuarterlyMetricQuery): Pr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await statements.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   const pbRatio = bvps !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, bvps) : null;
 

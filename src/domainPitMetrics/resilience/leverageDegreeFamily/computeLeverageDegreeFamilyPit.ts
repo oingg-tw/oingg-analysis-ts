@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -42,7 +41,7 @@ export interface LeverageDegreeFamilyPitOutcome {
   totalLeverageDegree: BasisOutcome;
 }
 
-export const computeAndWriteLeverageDegreeFamilyPit = async (query: QuarterlyMetricQuery): Promise<LeverageDegreeFamilyPitOutcome> => {
+export const computeAndWriteLeverageDegreeFamilyPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter): Promise<LeverageDegreeFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -60,11 +59,11 @@ export const computeAndWriteLeverageDegreeFamilyPit = async (query: QuarterlyMet
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const currentIncomeStatement = await getQuarterlyIncomeStatement(key);
+  const currentIncomeStatement = await statements.getIncomeStatement(key);
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({
+  const priorIncomeStatement = await statements.getIncomeStatement({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),
@@ -72,8 +71,8 @@ export const computeAndWriteLeverageDegreeFamilyPit = async (query: QuarterlyMet
     subsidiaryCompanyId,
   });
 
-  const currentShares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
-  const priorShares = priorIncomeStatement?.reportDate ? await getPaidInSharesAsOf(symbol, priorIncomeStatement.reportDate) : null;
+  const currentShares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
+  const priorShares = priorIncomeStatement?.reportDate ? await statements.getPaidInShares(symbol, priorIncomeStatement.reportDate) : null;
 
   const currentNetIncome = pickNetIncome(currentIncomeStatement);
   const priorNetIncome = pickNetIncome(priorIncomeStatement);

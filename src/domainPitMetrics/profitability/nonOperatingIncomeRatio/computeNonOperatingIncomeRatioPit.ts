@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -25,7 +25,7 @@ export interface NonOperatingIncomeRatioPitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteNonOperatingIncomeRatioPit = async (query: QuarterlyMetricQuery): Promise<NonOperatingIncomeRatioPitOutcome> => {
+export const computeAndWriteNonOperatingIncomeRatioPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<NonOperatingIncomeRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -43,7 +43,7 @@ export const computeAndWriteNonOperatingIncomeRatioPit = async (query: Quarterly
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
 
   const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;

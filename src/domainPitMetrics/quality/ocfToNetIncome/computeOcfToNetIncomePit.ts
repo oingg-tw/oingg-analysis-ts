@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -41,7 +40,10 @@ export interface OcfToNetIncomePitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteOcfToNetIncomePit = async (query: QuarterlyMetricQuery): Promise<OcfToNetIncomePitOutcome> => {
+export const computeAndWriteOcfToNetIncomePit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<OcfToNetIncomePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -59,7 +61,7 @@ export const computeAndWriteOcfToNetIncomePit = async (query: QuarterlyMetricQue
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, cashFlowStatement] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyCashFlowStatement(key)]);
+  const [incomeStatement, cashFlowStatement] = await Promise.all([statements.getIncomeStatement(key), statements.getCashFlowStatement(key)]);
   const netIncome = pickNetIncome(incomeStatement);
   const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
@@ -88,8 +90,8 @@ export const computeAndWriteOcfToNetIncomePit = async (query: QuarterlyMetricQue
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -18,7 +18,7 @@ export interface OperatingIncomeGrowthRatePitOutcome {
 
 // 營業利益成長率（單季年增率）= (本季營業利益 - 去年同季營業利益) / |去年同季營業利益| * 100。
 // 只有 Q 一種 basis，跟 revenueGrowthRate/netIncomeGrowthRate 同一組設計。
-export const computeAndWriteOperatingIncomeGrowthRatePit = async (query: QuarterlyMetricQuery): Promise<OperatingIncomeGrowthRatePitOutcome> => {
+export const computeAndWriteOperatingIncomeGrowthRatePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<OperatingIncomeGrowthRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -36,12 +36,12 @@ export const computeAndWriteOperatingIncomeGrowthRatePit = async (query: Quarter
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
   const currentOperatingIncome = incomeStatement?.operatingIncome ?? null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({
+  const priorIncomeStatement = await statements.getIncomeStatement({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),

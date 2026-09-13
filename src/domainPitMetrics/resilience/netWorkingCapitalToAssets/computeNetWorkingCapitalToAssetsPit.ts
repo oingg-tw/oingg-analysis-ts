@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -29,7 +29,7 @@ export interface NetWorkingCapitalToAssetsPitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteNetWorkingCapitalToAssetsPit = async (query: QuarterlyMetricQuery): Promise<NetWorkingCapitalToAssetsPitOutcome> => {
+export const computeAndWriteNetWorkingCapitalToAssetsPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort = financialDataAdapter): Promise<NetWorkingCapitalToAssetsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -47,7 +47,7 @@ export const computeAndWriteNetWorkingCapitalToAssetsPit = async (query: Quarter
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const currentAssets = balanceSheet?.currentAssets ?? null;
   const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;

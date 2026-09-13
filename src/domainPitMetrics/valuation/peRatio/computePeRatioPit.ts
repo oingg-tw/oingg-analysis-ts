@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -49,7 +47,10 @@ export interface PeRatioPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWritePeRatioPit = async (query: QuarterlyMetricQuery): Promise<PeRatioPitOutcome> => {
+export const computeAndWritePeRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & PaidInSharesPort & StockPricePort = financialDataAdapter
+): Promise<PeRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -67,19 +68,19 @@ export const computeAndWritePeRatioPit = async (query: QuarterlyMetricQuery): Pr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await statements.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   // TTM：近四季（含本季）淨利加總 / 流通股數，跟 eps.ts 的 TTM 算法完全相同。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ttmSum = 0n;

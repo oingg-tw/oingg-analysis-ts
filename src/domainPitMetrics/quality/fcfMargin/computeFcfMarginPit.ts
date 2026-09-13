@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -31,7 +30,7 @@ export interface FcfMarginPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteFcfMarginPit = async (query: QuarterlyMetricQuery): Promise<FcfMarginPitOutcome> => {
+export const computeAndWriteFcfMarginPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter): Promise<FcfMarginPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -52,8 +51,8 @@ export const computeAndWriteFcfMarginPit = async (query: QuarterlyMetricQuery): 
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );
@@ -101,7 +100,7 @@ export const computeAndWriteFcfMarginPit = async (query: QuarterlyMetricQuery): 
     }
   } else {
     const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-    const currentIncome = await getQuarterlyIncomeStatement(key);
+    const currentIncome = await statements.getIncomeStatement(key);
     const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: currentIncome?.reportDate ?? null }]);
     if (!mainAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };

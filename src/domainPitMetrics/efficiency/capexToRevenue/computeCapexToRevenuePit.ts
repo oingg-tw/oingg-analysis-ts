@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -33,7 +32,10 @@ export interface CapexToRevenuePitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQuery): Promise<CapexToRevenuePitOutcome> => {
+export const computeAndWriteCapexToRevenuePit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<CapexToRevenuePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -51,7 +53,7 @@ export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQue
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, cashFlowStatement] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyCashFlowStatement(key)]);
+  const [incomeStatement, cashFlowStatement] = await Promise.all([statements.getIncomeStatement(key), statements.getCashFlowStatement(key)]);
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
@@ -80,8 +82,8 @@ export const computeAndWriteCapexToRevenuePit = async (query: QuarterlyMetricQue
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );

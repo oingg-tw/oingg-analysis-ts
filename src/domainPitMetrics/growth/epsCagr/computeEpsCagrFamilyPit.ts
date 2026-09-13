@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -34,12 +33,13 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string,
+  statements: IncomeStatementPort & PaidInSharesPort
 ): Promise<number | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   if (quarters.some((q) => q === null || pickNetIncome(q).value === null)) {
     cache.set(rocYear, null);
@@ -48,7 +48,7 @@ const getAnnualEps = async (
 
   const netIncomeSum = quarters.reduce((sum, q) => sum + pickNetIncome(q).value!, 0n);
   const q4ReportDate = quarters[3]!.reportDate;
-  const shares = await getPaidInSharesAsOf(symbol, q4ReportDate);
+  const shares = await statements.getPaidInShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
     return null;
@@ -60,7 +60,10 @@ const getAnnualEps = async (
   return value;
 };
 
-export const computeAndWriteEpsCagrFamilyPit = async (query: QuarterlyMetricQuery): Promise<EpsCagrFamilyPitOutcome> => {
+export const computeAndWriteEpsCagrFamilyPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<EpsCagrFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -77,18 +80,18 @@ export const computeAndWriteEpsCagrFamilyPit = async (query: QuarterlyMetricQuer
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainIncomeStatement = await statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainIncomeStatement?.reportDate ?? null }]);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, number | null>();
-  const currentEps = await getAnnualEps(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
+  const currentEps = await getAnnualEps(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, statements);
 
   const results: Record<string, BasisOutcome> = {};
 
   for (const years of EPS_CAGR_YEARS) {
     const metricCode = `epsCagr${years}y`;
-    const priorEps = await getAnnualEps(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId);
+    const priorEps = await getAnnualEps(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, statements);
 
     const cagrPct =
       currentEps !== null && priorEps !== null && currentEps > 0 && priorEps > 0

@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -30,7 +29,10 @@ export interface PsrPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWritePsrPit = async (query: QuarterlyMetricQuery): Promise<PsrPitOutcome> => {
+export const computeAndWritePsrPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & MarketCapPort = financialDataAdapter
+): Promise<PsrPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -48,12 +50,12 @@ export const computeAndWritePsrPit = async (query: QuarterlyMetricQuery): Promis
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const reportDate = incomeStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
   const psrQuarterlyAnnualized = operatingRevenue !== null && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, operatingRevenue * 4n) : null;
   const qAnnNullReason: MetricNullReason | null = psrQuarterlyAnnualized === null ? (marketCap === null || operatingRevenue === null ? 'missing_input' : 'zero_or_negative_denominator') : null;
@@ -78,7 +80,7 @@ export const computeAndWritePsrPit = async (query: QuarterlyMetricQuery): Promis
   // 另外用 TTM anchor 重查一次，跟 fcfYield 的既有行為一致。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let revenueTtmSum = 0n;

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -23,7 +23,7 @@ export interface ConsecutiveDividendYearsPitOutcome {
   fy: BasisOutcome;
 }
 
-export const computeAndWriteConsecutiveDividendYearsPit = async (query: QuarterlyMetricQuery): Promise<ConsecutiveDividendYearsPitOutcome> => {
+export const computeAndWriteConsecutiveDividendYearsPit = async (query: QuarterlyMetricQuery, statements: CashFlowStatementPort = financialDataAdapter): Promise<ConsecutiveDividendYearsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -40,7 +40,7 @@ export const computeAndWriteConsecutiveDividendYearsPit = async (query: Quarterl
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainCashFlow = await statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }]);
 
   // 若最新一季不是 Q4，代表今年度還沒結束，起算年退回上一個完整年度——不把「今年至今」這種
@@ -54,7 +54,7 @@ export const computeAndWriteConsecutiveDividendYearsPit = async (query: Quarterl
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
     const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
     const records = await Promise.all(
-      yearQuarters.map((q) => getQuarterlyCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
+      yearQuarters.map((q) => statements.getCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
     );
 
     // 四季只要有一季查無資料，代表這個年度資料不完整，沒辦法判斷這年到底有沒有配息——保守

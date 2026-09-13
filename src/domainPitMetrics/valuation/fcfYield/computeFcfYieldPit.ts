@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -37,7 +35,10 @@ export interface FcfYieldPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): Promise<FcfYieldPitOutcome> => {
+export const computeAndWriteFcfYieldPit = async (
+  query: QuarterlyMetricQuery,
+  statements: CashFlowStatementPort & PaidInSharesPort & StockPricePort = financialDataAdapter
+): Promise<FcfYieldPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -55,20 +56,20 @@ export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): P
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const cashFlowStatement = await getQuarterlyCashFlowStatement(key);
+  const cashFlowStatement = await statements.getCashFlowStatement(key);
   const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = cashFlowStatement?.reportDate ?? null;
   const currentFcf = operatingCashFlow !== null && capitalExpenditures !== null ? operatingCashFlow + capitalExpenditures : null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const fcfPerShareQuarterly = currentFcf !== null && sharesValue !== null ? toPerShare(currentFcf, sharesValue) : null;
   const fcfPerShareQuarterlyAnnualized = fcfPerShareQuarterly !== null ? Math.round(fcfPerShareQuarterly * 4 * 100) / 100 : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await statements.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   const fcfYieldQuarterlyAnnualizedPct =
     fcfPerShareQuarterlyAnnualized !== null && stockPrice !== null ? toPctFromNumbers(fcfPerShareQuarterlyAnnualized, stockPrice.closePrice) : null;
@@ -94,7 +95,7 @@ export const computeAndWriteFcfYieldPit = async (query: QuarterlyMetricQuery): P
   // 不是另外用 TTM anchor 重查一次，跟 fcfYield.ts 的既有行為一致。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let fcfTtmSum = 0n;

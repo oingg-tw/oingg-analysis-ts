@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -77,7 +76,10 @@ export interface TurnoverRatioFamilyPitOutcome {
   receivablesToRevenueRatioTtm: BasisOutcome;
 }
 
-export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetricQuery): Promise<TurnoverRatioFamilyPitOutcome> => {
+export const computeAndWriteTurnoverRatioFamilyPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort = financialDataAdapter
+): Promise<TurnoverRatioFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const skipped = (action: 'skipped_no_quarter'): TurnoverRatioFamilyPitOutcome => ({
@@ -124,7 +126,7 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [balanceSheet, incomeStatement] = await Promise.all([getQuarterlyBalanceSheet(key), getQuarterlyIncomeStatement(key)]);
+  const [balanceSheet, incomeStatement] = await Promise.all([statements.getBalanceSheet(key), statements.getIncomeStatement(key)]);
 
   const inventory = balanceSheet?.inventory ?? null;
   const accountsReceivable = balanceSheet?.accountsReceivable ?? null;
@@ -203,7 +205,7 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (query: QuarterlyMetr
   // 分母固定用本季期末餘額（不平均不加總，跟舊架構一致）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let costTtmSum = 0n;

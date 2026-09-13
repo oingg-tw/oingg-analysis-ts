@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -37,7 +36,7 @@ export interface BvpsPitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteBvpsPit = async (query: QuarterlyMetricQuery): Promise<BvpsPitOutcome> => {
+export const computeAndWriteBvpsPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & PaidInSharesPort = financialDataAdapter): Promise<BvpsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -55,11 +54,11 @@ export const computeAndWriteBvpsPit = async (query: QuarterlyMetricQuery): Promi
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;

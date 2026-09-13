@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -28,7 +27,10 @@ export interface PFcfPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWritePFcfPit = async (query: QuarterlyMetricQuery): Promise<PFcfPitOutcome> => {
+export const computeAndWritePFcfPit = async (
+  query: QuarterlyMetricQuery,
+  statements: CashFlowStatementPort & MarketCapPort = financialDataAdapter
+): Promise<PFcfPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -46,14 +48,14 @@ export const computeAndWritePFcfPit = async (query: QuarterlyMetricQuery): Promi
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const cashFlowStatement = await getQuarterlyCashFlowStatement(key);
+  const cashFlowStatement = await statements.getCashFlowStatement(key);
   const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = cashFlowStatement?.reportDate ?? null;
   const freeCashFlow = operatingCashFlow !== null && capitalExpenditures !== null ? operatingCashFlow + capitalExpenditures : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
   const pFcfQuarterlyAnnualized = freeCashFlow !== null && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, freeCashFlow * 4n) : null;
   const qAnnNullReason: MetricNullReason | null =
@@ -78,7 +80,7 @@ export const computeAndWritePFcfPit = async (query: QuarterlyMetricQuery): Promi
   // TTM：近四季（含本季）自由現金流加總；市值沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let fcfTtmSum = 0n;

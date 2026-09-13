@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -26,7 +26,7 @@ export interface EquityGrowthRatePitOutcome {
 // 淨值成長率（單季年增率）= (本季期末淨值 - 去年同季期末淨值) / |去年同季期末淨值| * 100。
 // 淨值優先採歸屬母公司口徑，缺漏退回整體口徑（比照既有 pickEquity 規則，見 computeRoePit.ts）。
 // 只有 Q 一種 basis——資產負債表時點快照，沒有 TTM 概念（跟 bvps/stockPrice 同一種性質）。
-export const computeAndWriteEquityGrowthRatePit = async (query: QuarterlyMetricQuery): Promise<EquityGrowthRatePitOutcome> => {
+export const computeAndWriteEquityGrowthRatePit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort = financialDataAdapter): Promise<EquityGrowthRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -44,12 +44,12 @@ export const computeAndWriteEquityGrowthRatePit = async (query: QuarterlyMetricQ
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
   const currentEquity = pickEquity(balanceSheet).value;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorBalanceSheet = await getQuarterlyBalanceSheet({
+  const priorBalanceSheet = await statements.getBalanceSheet({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),

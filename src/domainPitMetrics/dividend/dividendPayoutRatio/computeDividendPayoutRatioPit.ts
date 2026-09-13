@@ -1,6 +1,7 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement, type CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import type { CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -55,7 +56,10 @@ export interface DividendPayoutRatioResolution {
   ttmAnchor: KnowledgeDateResolution | null;
 }
 
-export const resolveDividendPayoutRatioInputs = async (query: QuarterlyMetricQuery): Promise<DividendPayoutRatioResolution | null> => {
+export const resolveDividendPayoutRatioInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<DividendPayoutRatioResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -71,7 +75,7 @@ export const resolveDividendPayoutRatioInputs = async (query: QuarterlyMetricQue
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, cashFlowStatement] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyCashFlowStatement(key)]);
+  const [incomeStatement, cashFlowStatement] = await Promise.all([statements.getIncomeStatement(key), statements.getCashFlowStatement(key)]);
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
@@ -81,8 +85,8 @@ export const resolveDividendPayoutRatioInputs = async (query: QuarterlyMetricQue
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );
@@ -130,8 +134,11 @@ export interface DividendPayoutRatioPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteDividendPayoutRatioPit = async (query: QuarterlyMetricQuery): Promise<DividendPayoutRatioPitOutcome> => {
-  const resolution = await resolveDividendPayoutRatioInputs(query);
+export const computeAndWriteDividendPayoutRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter
+): Promise<DividendPayoutRatioPitOutcome> => {
+  const resolution = await resolveDividendPayoutRatioInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }

@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type BalanceSheetPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -30,7 +29,10 @@ export interface StockPricePitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteStockPricePit = async (query: QuarterlyMetricQuery): Promise<StockPricePitOutcome> => {
+export const computeAndWriteStockPricePit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & StockPricePort = financialDataAdapter
+): Promise<StockPricePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -48,11 +50,11 @@ export const computeAndWriteStockPricePit = async (query: QuarterlyMetricQuery):
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await statements.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   const price = stockPrice?.closePrice ?? null;
   const nullReason: MetricNullReason | null = price === null ? determineNullReason() : null;

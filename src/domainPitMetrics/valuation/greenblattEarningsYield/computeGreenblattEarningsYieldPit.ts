@@ -1,7 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -44,7 +43,10 @@ export interface GreenblattEarningsYieldResolution {
   mainAnchor: Awaited<ReturnType<typeof resolveKnowledgeDate>>;
 }
 
-export const resolveGreenblattEarningsYieldInputs = async (query: QuarterlyMetricQuery): Promise<GreenblattEarningsYieldResolution | null> => {
+export const resolveGreenblattEarningsYieldInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & MarketCapPort = financialDataAdapter
+): Promise<GreenblattEarningsYieldResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -60,19 +62,19 @@ export const resolveGreenblattEarningsYieldInputs = async (query: QuarterlyMetri
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const totalDebt =
     balanceSheet !== null ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n) : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const reportDate = balanceSheet?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCapAsOf = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCapAsOf = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const marketCap = marketCapAsOf?.marketCap ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords: (IncomeStatementFields | null)[] = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const ttmQuarterDetails: GreenblattEarningsYieldTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
@@ -114,8 +116,11 @@ export interface GreenblattEarningsYieldPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteGreenblattEarningsYieldPit = async (query: QuarterlyMetricQuery): Promise<GreenblattEarningsYieldPitOutcome> => {
-  const resolution = await resolveGreenblattEarningsYieldInputs(query);
+export const computeAndWriteGreenblattEarningsYieldPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & MarketCapPort = financialDataAdapter
+): Promise<GreenblattEarningsYieldPitOutcome> => {
+  const resolution = await resolveGreenblattEarningsYieldInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }

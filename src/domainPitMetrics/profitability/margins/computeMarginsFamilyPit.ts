@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getInsuranceIncomeStatementXbrlFirst, getLatestQuarterWithInsuranceIncomeStatement } from '@/shared/sourceData/insuranceIncomeStatementXbrlFirst';
+import { getLatestQuarterWithInsuranceIncomeStatement } from '@/shared/sourceData/insuranceIncomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type InsuranceIncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -37,19 +37,22 @@ export interface MarginInputs {
 // 的查詢邏輯（見下方保險業 fallback 說明），改成 export——純查詢函式，沒有副作用，跟
 // getGreenblattRocInputs 抽出來給 provenance 重用是同一個模式。多回傳一個
 // isInsuranceFallback 旗標，讓 provenance 知道這筆該標哪個 statementType/fieldKey。
-export const getMarginInputs = async (key: {
-  symbol: string;
-  year: number;
-  quarter: number;
-  dataType: string;
-  subsidiaryCompanyId: string;
-}): Promise<MarginInputs | null> => {
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+export const getMarginInputs = async (
+  key: {
+    symbol: string;
+    year: number;
+    quarter: number;
+    dataType: string;
+    subsidiaryCompanyId: string;
+  },
+  statements: IncomeStatementPort & InsuranceIncomeStatementPort = financialDataAdapter
+): Promise<MarginInputs | null> => {
+  const incomeStatement = await statements.getIncomeStatement(key);
   if (incomeStatement?.operatingRevenue != null) {
     return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome, isInsuranceFallback: false };
   }
 
-  const insurance = await getInsuranceIncomeStatementXbrlFirst(key);
+  const insurance = await statements.getInsuranceIncomeStatement(key);
   if (insurance) {
     return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss, isInsuranceFallback: true };
   }
@@ -80,7 +83,10 @@ export interface MarginsFamilyPitOutcome {
   operatingMarginTtm: BasisOutcome;
 }
 
-export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuery): Promise<MarginsFamilyPitOutcome> => {
+export const computeAndWriteMarginsFamilyPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & InsuranceIncomeStatementPort = financialDataAdapter
+): Promise<MarginsFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const skippedNoQuarter: MarginsFamilyPitOutcome = {
@@ -112,7 +118,7 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const marginInputs = await getMarginInputs(key);
+  const marginInputs = await getMarginInputs(key, statements);
   const operatingRevenue = marginInputs?.revenue ?? null;
   const grossProfit = marginInputs?.grossProfitLike ?? null;
   const operatingIncome = marginInputs?.operatingIncomeLike ?? null;
@@ -149,7 +155,7 @@ export const computeAndWriteMarginsFamilyPit = async (query: QuarterlyMetricQuer
   // 產業別，但這樣寫不用假設「本季用的來源，前三季一定也用同一個」。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, statements))
   );
 
   let revenueTtmSum = 0n;

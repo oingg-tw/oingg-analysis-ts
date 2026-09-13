@@ -1,7 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -45,12 +43,13 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string,
+  statements: IncomeStatementPort & PaidInSharesPort
 ): Promise<number | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   if (quarters.some((q) => q === null || pickNetIncome(q).value === null)) {
     cache.set(rocYear, null);
@@ -59,7 +58,7 @@ const getAnnualEps = async (
 
   const netIncomeSum = quarters.reduce((sum, q) => sum + pickNetIncome(q).value!, 0n);
   const q4ReportDate = quarters[3]!.reportDate;
-  const shares = await getPaidInSharesAsOf(symbol, q4ReportDate);
+  const shares = await statements.getPaidInShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
     return null;
@@ -79,7 +78,10 @@ export interface PegRatioPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWritePegRatioPit = async (query: QuarterlyMetricQuery): Promise<PegRatioPitOutcome> => {
+export const computeAndWritePegRatioPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & PaidInSharesPort & StockPricePort = financialDataAdapter
+): Promise<PegRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -97,19 +99,19 @@ export const computeAndWritePegRatioPit = async (query: QuarterlyMetricQuery): P
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainIncomeStatement = await getQuarterlyIncomeStatement(key);
+  const mainIncomeStatement = await statements.getIncomeStatement(key);
   const reportDate = mainIncomeStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await statements.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   // PER(TTM)：近四季（含本季）淨利加總 / 流通股數，跟 peRatio 的 TTM 算法完全相同。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ttmSum = 0n;
@@ -130,8 +132,8 @@ export const computeAndWritePegRatioPit = async (query: QuarterlyMetricQuery): P
   // 完整會計年度」。
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const epsCache = new Map<number, number | null>();
-  const currentAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
-  const priorAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId);
+  const currentAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, statements);
+  const priorAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, statements);
 
   const epsCagr5yPct =
     currentAnnualEps !== null && priorAnnualEps !== null && currentAnnualEps > 0 && priorAnnualEps > 0

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -28,7 +28,7 @@ export interface OperatingExpenseRatioPitOutcome {
 // operatingMargin 家族同一種 Q/TTM 設計，但這支不是家族檔案的一部分，獨立查詢——刻意不做
 // 保險業替代科目 fallback（保險業損益表結構本來就沒有這個概念，跟既有 margins 家族的既有
 // 決策一致，不要看到那裡有 fallback 就依樣畫葫蘆）。
-export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMetricQuery): Promise<OperatingExpenseRatioPitOutcome> => {
+export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<OperatingExpenseRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -46,7 +46,7 @@ export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMe
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
   const operatingExpense =
     incomeStatement?.sellingExpenses !== null && incomeStatement?.adminExpenses !== null && incomeStatement !== null
@@ -78,7 +78,7 @@ export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMe
   // TTM：近四季（含本季）營業費用/營收各自加總。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let expenseTtmSum = 0n;

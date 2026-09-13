@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -32,7 +31,10 @@ export interface CashFlowPerSharePitOutcome {
   fcfPerShareTtm: BasisOutcome;
 }
 
-export const computeAndWriteCashFlowPerSharePit = async (query: QuarterlyMetricQuery): Promise<CashFlowPerSharePitOutcome> => {
+export const computeAndWriteCashFlowPerSharePit = async (
+  query: QuarterlyMetricQuery,
+  statements: CashFlowStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<CashFlowPerSharePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const skippedNoQuarter: CashFlowPerSharePitOutcome = {
@@ -60,12 +62,12 @@ export const computeAndWriteCashFlowPerSharePit = async (query: QuarterlyMetricQ
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const cashFlowStatement = await getQuarterlyCashFlowStatement(key);
+  const cashFlowStatement = await statements.getCashFlowStatement(key);
   const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = cashFlowStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const currentFcf = calculateFcf(operatingCashFlow, capitalExpenditures);
@@ -112,7 +114,7 @@ export const computeAndWriteCashFlowPerSharePit = async (query: QuarterlyMetricQ
   // 任一為 null 就視為該季不齊，OCF/FCF 的 TTM 共用同一組「資料齊不齊」判斷（比照 cashFlowPerShare.ts）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ocfTtmSum = 0n;

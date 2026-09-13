@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -26,12 +25,13 @@ const getAnnualDividendPerShareProxy = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string,
+  statements: CashFlowStatementPort & PaidInSharesPort
 ): Promise<number | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   if (quarters.some((q) => q === null || q.dividendsPaid === null)) {
     cache.set(rocYear, null);
@@ -41,7 +41,7 @@ const getAnnualDividendPerShareProxy = async (
   const yearSum = quarters.reduce((sum, q) => sum + q!.dividendsPaid!, 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = quarters[3]!.reportDate;
-  const shares = await getPaidInSharesAsOf(symbol, q4ReportDate);
+  const shares = await statements.getPaidInShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
     return null;
@@ -53,7 +53,10 @@ const getAnnualDividendPerShareProxy = async (
   return value;
 };
 
-export const computeAndWriteDividendGrowthRateFamilyPit = async (query: QuarterlyMetricQuery): Promise<DividendGrowthRateFamilyPitOutcome> => {
+export const computeAndWriteDividendGrowthRateFamilyPit = async (
+  query: QuarterlyMetricQuery,
+  statements: CashFlowStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<DividendGrowthRateFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -75,18 +78,18 @@ export const computeAndWriteDividendGrowthRateFamilyPit = async (query: Quarterl
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainCashFlow = await statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }]);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, number | null>();
-  const currentDps = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
+  const currentDps = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, statements);
 
   const results: Record<string, BasisOutcome> = {};
 
   for (const years of DIVIDEND_GROWTH_RATE_YEARS) {
     const metricCode = `dividendGrowthRate${years}y`;
-    const priorDps = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId);
+    const priorDps = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, statements);
 
     const cagrPct =
       currentDps !== null && priorDps !== null && priorDps > 0 ? Math.round((Math.pow(currentDps / priorDps, 1 / years) - 1) * 100 * 100) / 100 : null;

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -28,19 +28,20 @@ const getAnnualCapex = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string,
+  statements: CashFlowStatementPort
 ): Promise<bigint | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const value = quarters.some((q) => q === null || q.capitalExpenditures === null) ? null : abs(quarters.reduce((sum, q) => sum + q!.capitalExpenditures!, 0n));
   cache.set(rocYear, value);
   return value;
 };
 
-export const computeAndWriteAbnormalCapexRatioPit = async (query: QuarterlyMetricQuery): Promise<AbnormalCapexRatioPitOutcome> => {
+export const computeAndWriteAbnormalCapexRatioPit = async (query: QuarterlyMetricQuery, statements: CashFlowStatementPort = financialDataAdapter): Promise<AbnormalCapexRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -57,15 +58,15 @@ export const computeAndWriteAbnormalCapexRatioPit = async (query: QuarterlyMetri
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlowStatement = await getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainCashFlowStatement = await statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlowStatement?.reportDate ?? null }]);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, bigint | null>();
 
-  const currentCapex = await getAnnualCapex(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
+  const currentCapex = await getAnnualCapex(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, statements);
   const priorCapexValues = await Promise.all(
-    [1, 2, 3].map((yearsAgo) => getAnnualCapex(cache, symbol, latestCompleteFiscalYear - yearsAgo, dataType, subsidiaryCompanyId))
+    [1, 2, 3].map((yearsAgo) => getAnnualCapex(cache, symbol, latestCompleteFiscalYear - yearsAgo, dataType, subsidiaryCompanyId, statements))
   );
 
   let ciPct: number | null = null;

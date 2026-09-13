@@ -1,8 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -32,7 +29,10 @@ export interface EvEbitdaPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteEvEbitdaPit = async (query: QuarterlyMetricQuery): Promise<EvEbitdaPitOutcome> => {
+export const computeAndWriteEvEbitdaPit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort & MarketCapPort = financialDataAdapter
+): Promise<EvEbitdaPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -51,9 +51,9 @@ export const computeAndWriteEvEbitdaPit = async (query: QuarterlyMetricQuery): P
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const [balanceSheet, incomeStatement, cashFlowStatement] = await Promise.all([
-    getQuarterlyBalanceSheet(key),
-    getQuarterlyIncomeStatement(key),
-    getQuarterlyCashFlowStatement(key),
+    statements.getBalanceSheet(key),
+    statements.getIncomeStatement(key),
+    statements.getCashFlowStatement(key),
   ]);
 
   const totalDebt = balanceSheet
@@ -74,7 +74,7 @@ export const computeAndWriteEvEbitdaPit = async (query: QuarterlyMetricQuery): P
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
   const qAnnValue = enterpriseValue !== null && ebitdaQuarterly !== null ? toMultipleFromThousands(enterpriseValue, ebitdaQuarterly * 4n) : null;
@@ -102,8 +102,8 @@ export const computeAndWriteEvEbitdaPit = async (query: QuarterlyMetricQuery): P
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );

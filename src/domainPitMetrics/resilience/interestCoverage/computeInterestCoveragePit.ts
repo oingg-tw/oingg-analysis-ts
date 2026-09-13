@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -31,7 +31,7 @@ export interface InterestCoveragePitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteInterestCoveragePit = async (query: QuarterlyMetricQuery): Promise<InterestCoveragePitOutcome> => {
+export const computeAndWriteInterestCoveragePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<InterestCoveragePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -49,7 +49,7 @@ export const computeAndWriteInterestCoveragePit = async (query: QuarterlyMetricQ
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
   const financeCosts = incomeStatement?.financeCosts ?? null;
   const reportDate = incomeStatement?.reportDate ?? null;
@@ -77,7 +77,7 @@ export const computeAndWriteInterestCoveragePit = async (query: QuarterlyMetricQ
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ebitTtmSum = 0n;

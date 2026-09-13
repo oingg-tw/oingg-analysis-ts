@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -39,7 +38,7 @@ export interface BvpsGrowthRatePitOutcome {
 // 組成第二張「淨值成長分解卡」，跟 growth 分類既有的 netIncomeGrowthRate/epsGrowthRate
 // 那組（損益表視角）並列成資產負債表視角的版本。只有 Q 一種 basis——資產負債表時點快照，
 // 沒有 TTM 概念（跟 bvps 自己一樣）。
-export const computeAndWriteBvpsGrowthRatePit = async (query: QuarterlyMetricQuery): Promise<BvpsGrowthRatePitOutcome> => {
+export const computeAndWriteBvpsGrowthRatePit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & PaidInSharesPort = financialDataAdapter): Promise<BvpsGrowthRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -57,13 +56,13 @@ export const computeAndWriteBvpsGrowthRatePit = async (query: QuarterlyMetricQue
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentShares = reportDate ? (await statements.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
   const currentBvps = toBvps(pickEquity(balanceSheet).value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorBalanceSheet = await getQuarterlyBalanceSheet({
+  const priorBalanceSheet = await statements.getBalanceSheet({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),
@@ -71,7 +70,7 @@ export const computeAndWriteBvpsGrowthRatePit = async (query: QuarterlyMetricQue
     subsidiaryCompanyId,
   });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await statements.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorBvps = toBvps(pickEquity(priorBalanceSheet).value, priorShares);
 
   const growthRate =

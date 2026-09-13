@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -22,7 +22,7 @@ export interface DividendCoverageRatioPitOutcome {
 // 撐得住，還是得舉債/賣資產硬發，跟 dividendPayoutRatio（用「淨利」當分母的會計盈餘角度）
 // 是互補而非重複的兩支指標，故意分開不合併。沒有配發股利（TTM 股利發放現金加總為 0）時
 // 這個比率沒有意義，回傳 null（zero_or_negative_denominator），不是無限大或 0。
-export const computeAndWriteDividendCoverageRatioPit = async (query: QuarterlyMetricQuery): Promise<DividendCoverageRatioPitOutcome> => {
+export const computeAndWriteDividendCoverageRatioPit = async (query: QuarterlyMetricQuery, statements: CashFlowStatementPort = financialDataAdapter): Promise<DividendCoverageRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -40,13 +40,13 @@ export const computeAndWriteDividendCoverageRatioPit = async (query: QuarterlyMe
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainCashFlow = await getQuarterlyCashFlowStatement(key);
+  const mainCashFlow = await statements.getCashFlowStatement(key);
   const reportDate = mainCashFlow?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ocfSum = 0n;

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -31,7 +31,7 @@ export interface ConsecutiveProfitYearsPitOutcome {
   fy: BasisOutcome;
 }
 
-export const computeAndWriteConsecutiveProfitYearsPit = async (query: QuarterlyMetricQuery): Promise<ConsecutiveProfitYearsPitOutcome> => {
+export const computeAndWriteConsecutiveProfitYearsPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<ConsecutiveProfitYearsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -48,7 +48,7 @@ export const computeAndWriteConsecutiveProfitYearsPit = async (query: QuarterlyM
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainIncomeStatement = await statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainIncomeStatement?.reportDate ?? null }]);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
@@ -60,7 +60,7 @@ export const computeAndWriteConsecutiveProfitYearsPit = async (query: QuarterlyM
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
     const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
     const records = await Promise.all(
-      yearQuarters.map((q) => getQuarterlyIncomeStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
+      yearQuarters.map((q) => statements.getIncomeStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
     );
 
     if (records.some((r) => r === null || pickNetIncome(r).value === null)) break;

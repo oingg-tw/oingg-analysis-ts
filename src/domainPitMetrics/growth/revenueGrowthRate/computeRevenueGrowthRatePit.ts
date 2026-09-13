@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -20,7 +20,7 @@ export interface RevenueGrowthRatePitOutcome {
 // getPastNQuarters({rocYear,season},5)[0] 取得，跟 shareCountChangeRate/piotroskiFScore
 // 既有慣例一致。只有 Q 一種 basis——單季 vs 去年同季本來就是最常見的營收成長率呈現方式，
 // 不疊加 TTM（TTM vs 去年 TTM 是另一種平滑季節性的版本，這裡先不做，需要的話是獨立擴充）。
-export const computeAndWriteRevenueGrowthRatePit = async (query: QuarterlyMetricQuery): Promise<RevenueGrowthRatePitOutcome> => {
+export const computeAndWriteRevenueGrowthRatePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<RevenueGrowthRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -38,12 +38,12 @@ export const computeAndWriteRevenueGrowthRatePit = async (query: QuarterlyMetric
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
   const currentRevenue = incomeStatement?.operatingRevenue ?? null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({
+  const priorIncomeStatement = await statements.getIncomeStatement({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),

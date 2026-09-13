@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -24,7 +24,7 @@ export interface NcavPitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteNcavPit = async (query: QuarterlyMetricQuery): Promise<NcavPitOutcome> => {
+export const computeAndWriteNcavPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort = financialDataAdapter): Promise<NcavPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -42,7 +42,7 @@ export const computeAndWriteNcavPit = async (query: QuarterlyMetricQuery): Promi
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const currentAssets = balanceSheet?.currentAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
   const preferredStockCapital = balanceSheet?.preferredStockCapital ?? 0n;

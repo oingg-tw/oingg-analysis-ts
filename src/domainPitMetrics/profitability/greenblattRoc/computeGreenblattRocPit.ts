@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -42,7 +42,10 @@ export interface GreenblattRocResolution {
   mainAnchor: Awaited<ReturnType<typeof resolveKnowledgeDate>>;
 }
 
-export const resolveGreenblattRocInputs = async (query: QuarterlyMetricQuery): Promise<GreenblattRocResolution | null> => {
+export const resolveGreenblattRocInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter
+): Promise<GreenblattRocResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -58,7 +61,7 @@ export const resolveGreenblattRocInputs = async (query: QuarterlyMetricQuery): P
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const currentAssets = balanceSheet?.currentAssets ?? null;
   const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
   const propertyPlantEquipment = balanceSheet?.propertyPlantEquipment ?? null;
@@ -68,7 +71,7 @@ export const resolveGreenblattRocInputs = async (query: QuarterlyMetricQuery): P
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords: (IncomeStatementFields | null)[] = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const ttmQuarterDetails: GreenblattRocTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
@@ -127,8 +130,11 @@ export interface GreenblattRocPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteGreenblattRocPit = async (query: QuarterlyMetricQuery): Promise<GreenblattRocPitOutcome> => {
-  const resolution = await resolveGreenblattRocInputs(query);
+export const computeAndWriteGreenblattRocPit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter
+): Promise<GreenblattRocPitOutcome> => {
+  const resolution = await resolveGreenblattRocInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }

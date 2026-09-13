@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
+
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -34,7 +34,7 @@ export interface FamaFrenchOperatingProfitabilityPitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: QuarterlyMetricQuery): Promise<FamaFrenchOperatingProfitabilityPitOutcome> => {
+export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<FamaFrenchOperatingProfitabilityPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -52,9 +52,9 @@ export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: 
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const bookEquity = pickEquity(balanceSheet);
-  const incomeStatement = await getQuarterlyIncomeStatement(key);
+  const incomeStatement = await statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? balanceSheet?.reportDate ?? null;
 
   const operatingProfitQuarterly =
@@ -90,7 +90,7 @@ export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: 
   // TTM：近四季（含本季）分子(毛利-推銷費用-管理費用-利息費用)各自加總，分母固定用本季期末帳面權益。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let operatingProfitTtmSum = 0n;

@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -76,7 +76,10 @@ export interface SueResolution {
   mainAnchor: KnowledgeDateResolution | null;
 }
 
-export const resolveSueInputs = async (query: QuarterlyMetricQuery): Promise<SueResolution | null> => {
+export const resolveSueInputs = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<SueResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -94,13 +97,13 @@ export const resolveSueInputs = async (query: QuarterlyMetricQuery): Promise<Sue
   // 24 期 EPS，舊到新排列，最後一筆就是本季。
   const epsQuarters = getPastNQuarters({ rocYear, season: season as Season }, QUARTERS_OF_EPS_NEEDED);
   const epsRecords = await Promise.all(
-    epsQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    epsQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const quarterDetails: SueQuarterDetail[] = await Promise.all(
     epsQuarters.map(async (tq, i) => {
       const record = epsRecords[i]!;
       const netIncome = pickNetIncome(record);
-      const shares = record ? (await getPaidInSharesAsOf(symbol, record.reportDate))?.paidInShares ?? null : null;
+      const shares = record ? (await statements.getPaidInShares(symbol, record.reportDate))?.paidInShares ?? null : null;
       return {
         rocYear: Number(tq.year),
         season: Number(tq.season),
@@ -154,8 +157,11 @@ export interface SuePitOutcome {
   q: BasisOutcome;
 }
 
-export const computeAndWriteSuePit = async (query: QuarterlyMetricQuery): Promise<SuePitOutcome> => {
-  const resolution = await resolveSueInputs(query);
+export const computeAndWriteSuePit = async (
+  query: QuarterlyMetricQuery,
+  statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<SuePitOutcome> => {
+  const resolution = await resolveSueInputs(query, statements);
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
   }

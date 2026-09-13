@@ -1,8 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -48,15 +45,22 @@ interface QuarterData {
   available: boolean; // 三張表是否至少都存在（不論欄位是否為 null）
 }
 
-const fetchQuarterData = async (symbol: string, rocYear: number, season: number, dataType: string, subsidiaryCompanyId: string): Promise<QuarterData> => {
+const fetchQuarterData = async (
+  symbol: string,
+  rocYear: number,
+  season: number,
+  dataType: string,
+  subsidiaryCompanyId: string,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort & PaidInSharesPort
+): Promise<QuarterData> => {
   const key = { symbol, year: rocYear, quarter: season, dataType, subsidiaryCompanyId };
   const [balanceSheet, incomeStatement, cashFlowStatement] = await Promise.all([
-    getQuarterlyBalanceSheet(key),
-    getQuarterlyIncomeStatement(key),
-    getQuarterlyCashFlowStatement(key),
+    statements.getBalanceSheet(key),
+    statements.getIncomeStatement(key),
+    statements.getCashFlowStatement(key),
   ]);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
 
   return {
     totalAssets: balanceSheet?.totalAssets ?? null,
@@ -112,7 +116,10 @@ export interface PiotroskiFScoreResolution {
 // 共用計算邏輯——寫入路徑（computeAndWritePiotroskiFScorePit）跟 on-demand 讀取路徑
 // （getPiotroskiFScoreBreakdown）各自呼叫，避免兩處各自維護一份 9 訊號計算邏輯。
 // resolvedQuarter 查無資料時回傳 null，呼叫端各自決定怎麼呈現「查無資料」。
-export const resolvePiotroskiFScoreSignals = async (query: QuarterlyMetricQuery): Promise<PiotroskiFScoreResolution | null> => {
+export const resolvePiotroskiFScoreSignals = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<PiotroskiFScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -132,8 +139,8 @@ export const resolvePiotroskiFScoreSignals = async (query: QuarterlyMetricQuery)
   const priorSeasonNum = Number(prior.season);
 
   const [curr, prev] = await Promise.all([
-    fetchQuarterData(symbol, rocYear, seasonNum, dataType, subsidiaryCompanyId),
-    fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId),
+    fetchQuarterData(symbol, rocYear, seasonNum, dataType, subsidiaryCompanyId, statements),
+    fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId, statements),
   ]);
 
   const currRoa = ratio(curr.netIncome, curr.totalAssets);
@@ -187,8 +194,11 @@ export const resolvePiotroskiFScoreSignals = async (query: QuarterlyMetricQuery)
   };
 };
 
-export const computeAndWritePiotroskiFScorePit = async (query: QuarterlyMetricQuery): Promise<PiotroskiFScorePitOutcome> => {
-  const resolution = await resolvePiotroskiFScoreSignals(query);
+export const computeAndWritePiotroskiFScorePit = async (
+  query: QuarterlyMetricQuery,
+  statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort & PaidInSharesPort = financialDataAdapter
+): Promise<PiotroskiFScorePitOutcome> => {
+  const resolution = await resolvePiotroskiFScoreSignals(query, statements);
 
   if (!resolution) {
     return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };

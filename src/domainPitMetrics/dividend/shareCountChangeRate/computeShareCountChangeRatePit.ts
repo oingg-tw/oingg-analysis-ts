@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -22,7 +21,7 @@ export interface ShareCountChangeRatePitOutcome {
 // 同季用 getPastNQuarters({rocYear,season},5)[0] 取得（5 季前，取最舊那一筆），跟
 // piotroskiFScore 的既有慣例一致，不是專門的新機制。只有 Q 一種 basis——流通股數是資產
 // 負債表時點快照，沒有 TTM/年化概念（跟 bvps/stockPrice 同一種性質）。
-export const computeAndWriteShareCountChangeRatePit = async (query: QuarterlyMetricQuery): Promise<ShareCountChangeRatePitOutcome> => {
+export const computeAndWriteShareCountChangeRatePit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & PaidInSharesPort = financialDataAdapter): Promise<ShareCountChangeRatePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -40,12 +39,12 @@ export const computeAndWriteShareCountChangeRatePit = async (query: QuarterlyMet
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const currentShares = reportDate ? await statements.getPaidInShares(symbol, reportDate) : null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorBalanceSheet = await getQuarterlyBalanceSheet({
+  const priorBalanceSheet = await statements.getBalanceSheet({
     symbol,
     year: Number(prior.year),
     quarter: Number(prior.season),
@@ -53,7 +52,7 @@ export const computeAndWriteShareCountChangeRatePit = async (query: QuarterlyMet
     subsidiaryCompanyId,
   });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? await getPaidInSharesAsOf(symbol, priorReportDate) : null;
+  const priorShares = priorReportDate ? await statements.getPaidInShares(symbol, priorReportDate) : null;
 
   const currentValue = currentShares?.paidInShares ?? null;
   const priorValue = priorShares?.paidInShares ?? null;

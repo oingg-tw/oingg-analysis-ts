@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
+
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -43,7 +43,7 @@ export interface AltmanZDoublePrimeScorePitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: QuarterlyMetricQuery): Promise<AltmanZDoublePrimeScorePitOutcome> => {
+export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<AltmanZDoublePrimeScorePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -61,7 +61,7 @@ export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: Quarterly
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await statements.getBalanceSheet(key);
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
   const currentAssets = balanceSheet?.currentAssets ?? null;
@@ -80,7 +80,7 @@ export const computeAndWriteAltmanZDoublePrimeScorePit = async (query: Quarterly
   // 但 Z″ 沒有 X5，不用查營收。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   let ebitTtmSum = 0n;
