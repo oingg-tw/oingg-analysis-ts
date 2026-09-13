@@ -1,10 +1,13 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { round2, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquity, pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案獨立重新實作 src/domainMetrics/sgr.ts——舊架構呼叫 calculateRoe()+
@@ -13,45 +16,12 @@ import type { MetricNullReason } from '../../metricBasis';
 // 維持每條 pipeline 獨立的既有原則（跟 computeDupontFamilyPit.ts 不依賴已遷移的 roe
 // 完全同一個判斷）。sgrTtm = ROE(TTM) x (1 - 配息率(TTM)/100)，只有 TTM 一種 basis。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-const round2 = (x: number): number => Math.round(x * 100) / 100;
-
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface SgrPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type SgrPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteSgrPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort = financialDataAdapter): Promise<SgrPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
@@ -95,9 +65,9 @@ export const computeAndWriteSgrPit = async (query: QuarterlyMetricQuery, stateme
     }
   }
 
-  const roeTtm = ttmComplete && equity.value !== null ? toPct(netIncomeTtmSum, equity.value) : null;
+  const roeTtm = ttmComplete && equity.value !== null ? toPercent(netIncomeTtmSum, equity.value) : null;
   const dividendsPaidAbs = dividendsPaidTtmSum < 0n ? -dividendsPaidTtmSum : dividendsPaidTtmSum;
-  const payoutRatioTtm = ttmComplete && netIncomeTtmSum > 0n ? toPct(dividendsPaidAbs, netIncomeTtmSum) : null;
+  const payoutRatioTtm = ttmComplete && netIncomeTtmSum > 0n ? toPercent(dividendsPaidAbs, netIncomeTtmSum) : null;
 
   const sgrTtm = roeTtm !== null && payoutRatioTtm !== null ? round2(roeTtm * (1 - payoutRatioTtm / 100)) : null;
   // 任一子計算因四季不齊而為 null 時回報 insufficient_history；子計算本身可算但值為 null

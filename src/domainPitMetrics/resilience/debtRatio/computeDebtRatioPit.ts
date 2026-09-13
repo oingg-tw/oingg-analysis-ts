@@ -1,41 +1,28 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/debtRatio.ts 的獨立重新實作。純資產負債表時點快照，只有
 // Q 一種 basis，跟 equityMultiplier/bvps 同一種形狀。
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface DebtRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-}
+export type DebtRatioPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteDebtRatioPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort = financialDataAdapter): Promise<DebtRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
@@ -52,7 +39,7 @@ export const computeAndWriteDebtRatioPit = async (query: QuarterlyMetricQuery, s
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const debtRatioPct = totalLiabilities !== null && totalAssets !== null ? toPct(totalLiabilities, totalAssets) : null;
+  const debtRatioPct = totalLiabilities !== null && totalAssets !== null ? toPercent(totalLiabilities, totalAssets) : null;
   const nullReason: MetricNullReason | null = debtRatioPct === null ? determineNullReason(totalLiabilities, totalAssets) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);

@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -12,18 +13,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 固定回傳 TTM。NOPAT 是計算出的中繼值不是原始欄位，用 methodologyNote 逐季說明換算，
 // 三個組成欄位（稅前淨利/財務費用/所得稅費用）都列成 entries。
 
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent' };
-  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
-  return { value: null, fieldKey: null };
-};
-
 const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
   if (!record || record.profitBeforeTax === null || record.financeCosts === null || record.incomeTaxExpense === null) return null;
   if (record.profitBeforeTax <= 0n) return null;
@@ -35,10 +24,7 @@ const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bi
 export const getRoicProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'roic', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

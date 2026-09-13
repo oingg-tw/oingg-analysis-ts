@@ -1,4 +1,5 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { pickEquity, pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
@@ -20,22 +21,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 交易日本身（resolveDailyCadenceKnowledgeDate，isFallback 恆為 false）——跟
 // marketRatios（exchangePeRatio 等）同一套逐日型慣例，不是季報型的
 // resolveKnowledgeDate。
-
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
-};
 
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;

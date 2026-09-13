@@ -1,10 +1,11 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——一次查詢
@@ -43,12 +44,7 @@ const toRatioFromThousands = (numeratorInThousands: bigint, denominatorInThousan
   return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100) / 100;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface CashFlowValuationFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface CashFlowValuationFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   evToOcf: BasisOutcome;
   evToSales: BasisOutcome;
   priceToOcf: BasisOutcome;
@@ -79,10 +75,7 @@ export const computeAndWriteCashFlowValuationFamilyPit = async (
     fcfConversionRate: { action },
   });
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) return skipped('skipped_no_quarter');
 

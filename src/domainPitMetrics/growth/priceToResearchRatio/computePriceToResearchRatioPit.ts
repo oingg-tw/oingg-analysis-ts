@@ -1,11 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增。研發費用查法同 rdIntensity（只有 XBRL 寬表有這個欄位，
@@ -27,14 +28,7 @@ const toMultipleFromThousands = (numerator: number, amountInThousands: bigint): 
   return Math.round((numerator / denominator) * 100) / 100;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface PriceToResearchRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type PriceToResearchRatioPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWritePriceToResearchRatioPit = async (
   query: QuarterlyMetricQuery,
@@ -42,10 +36,7 @@ export const computeAndWritePriceToResearchRatioPit = async (
 ): Promise<PriceToResearchRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };

@@ -45,3 +45,17 @@ export const getLatestAvailableQuarter = async (
 
   return { year: String(earliest.year), season: String(earliest.quarter) as Season };
 };
+
+// 2026-09-13：query 有帶 year/season 就直接用查詢指定的那一季，沒有才退回
+// getLatestAvailableQuarter() 自動解析——這個「查詢指定優先、否則抓最新」的判斷在全 repo
+// 上百支 compute*Pit.ts/get*Provenance.ts 裡各自重複同一段 5 行程式碼，統一抽出來，呼叫端
+// 只需要傳 query 本身（不用先解構出 symbol/dataType/subsidiaryCompanyId）跟 sources。
+export const resolveQuarterOrLatest = async (
+  query: { symbol: string; year?: string; season?: Season; dataType: string; subsidiaryCompanyId: string },
+  sources: StatementSource[]
+): Promise<{ year: string; season: Season } | null> => {
+  if (query.year !== undefined && query.season !== undefined) {
+    return { year: query.year, season: query.season };
+  }
+  return getLatestAvailableQuarter(query.symbol, query.dataType, query.subsidiaryCompanyId, sources);
+};

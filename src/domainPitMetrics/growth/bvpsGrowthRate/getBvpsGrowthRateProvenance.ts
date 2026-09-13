@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -10,18 +11,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // metric_code 已寫入的值，跟 computeBvpsGrowthRatePit.ts 一致），流通股數各自用當下
 // 報告日對應的股本。只有 Q 一種 basis。
 
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent' };
-  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
-  return { value: null, fieldKey: null };
-};
-
 const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
   if (equityInThousands === null || shares === null || shares === 0n) return null;
   return Math.round(((Number(equityInThousands) * 1000) / Number(shares)) * 100) / 100;
@@ -30,10 +19,7 @@ const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number
 export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'bvpsGrowthRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

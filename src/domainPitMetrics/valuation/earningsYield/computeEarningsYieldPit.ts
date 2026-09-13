@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 盈餘收益率（EY）= EPS(TTM) / 股價 * 100，是本益比的倒數換算成百分比呈現——獨立重新計算
@@ -14,28 +16,12 @@ import type { MetricNullReason } from '../../metricBasis';
 // 股價缺漏；EPS_TTM 為負時 EY 一樣算出真實但為負的值，不隱藏成 null（跟 peRatio 虧損時
 // 本益比為負同一個判斷）。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
-
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface EarningsYieldPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type EarningsYieldPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteEarningsYieldPit = async (
   query: QuarterlyMetricQuery,
@@ -43,10 +29,7 @@ export const computeAndWriteEarningsYieldPit = async (
 ): Promise<EarningsYieldPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };

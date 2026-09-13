@@ -5,7 +5,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { calculateGrossMargin } from '@/domainPitMetrics/profitability/grossMargin/calculateGrossMargin';
 import { calculateOperatingMargin } from '@/domainPitMetrics/profitability/operatingMargin/calculateOperatingMargin';
 
@@ -71,12 +72,7 @@ export const getMarginInputs = async (
 // 這裡只負責把查回來的原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、決定
 // knowledge_date、呼叫 writeMetricValue。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface MarginsFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface MarginsFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   grossMarginQ: BasisOutcome;
   grossMarginTtm: BasisOutcome;
   operatingMarginQ: BasisOutcome;

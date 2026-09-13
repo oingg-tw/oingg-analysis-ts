@@ -1,48 +1,30 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增，簡化版公式見 crociDefinition.ts 的說明（不做 CROCI 原始
 // 方法論的通膨/資本化調整）。Economic Capital 用本季期末總資產－流動負債（單一期末值，
 // 不平均、不加總，跟 ROE/ROA/CROIC 同一種簡化）。
 
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.netIncomeAttributableToParent !== null) return record.netIncomeAttributableToParent;
-  return record.netIncome;
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface CrociPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type CrociPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteCrociPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort = financialDataAdapter): Promise<CrociPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
@@ -81,7 +63,7 @@ export const computeAndWriteCrociPit = async (query: QuarterlyMetricQuery, state
     }
   }
 
-  const ttmValue = ttmComplete && economicCapital !== null ? toPct(grossCashFlowTtmSum, economicCapital) : null;
+  const ttmValue = ttmComplete && economicCapital !== null ? toPercent(grossCashFlowTtmSum, economicCapital) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(grossCashFlowTtmSum, economicCapital) : 'insufficient_history';
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);

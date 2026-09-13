@@ -1,21 +1,16 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/bvps.ts 的獨立重新實作。BVPS 是資產負債表時點快照，跟
 // equityMultiplier 同一種形狀，只有 Q 一種 basis，沒有 TTM/年化概念。
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
-};
 
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
@@ -27,22 +22,12 @@ const determineNullReason = (numerator: bigint | null, denominator: bigint | nul
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface BvpsPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-}
+export type BvpsPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteBvpsPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & PaidInSharesPort = financialDataAdapter): Promise<BvpsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };

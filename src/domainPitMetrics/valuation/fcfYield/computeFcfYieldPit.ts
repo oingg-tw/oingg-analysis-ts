@@ -1,10 +1,11 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案獨立重新實作 src/domainMetrics/fcfYield.ts——舊架構呼叫 calculateCashFlowPerShare()，
@@ -25,15 +26,7 @@ const toPctFromNumbers = (numerator: number, denominator: number): number | null
   return Math.round((numerator / denominator) * 100 * 100) / 100;
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface FcfYieldPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type FcfYieldPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteFcfYieldPit = async (
   query: QuarterlyMetricQuery,
@@ -41,10 +34,7 @@ export const computeAndWriteFcfYieldPit = async (
 ): Promise<FcfYieldPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };

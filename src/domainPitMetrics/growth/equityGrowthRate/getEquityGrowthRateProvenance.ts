@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -8,25 +9,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 同季期末淨值) / |去年同季期末淨值| * 100。淨值優先採歸屬母公司口徑，缺漏退回整體口徑。
 // 跟 computeEquityGrowthRatePit.ts 一致。只有 Q 一種 basis。
 
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent' };
-  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
-  return { value: null, fieldKey: null };
-};
-
 export const getEquityGrowthRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'equityGrowthRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

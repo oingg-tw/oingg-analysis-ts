@@ -1,11 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // SUE（標準化未預期盈餘，Standardized Unexpected Earnings）——季節性隨機漫步版
@@ -26,18 +27,6 @@ const MIN_UE_WINDOW = 20;
 // 算 20 期 UE 需要「本季往回 20 期」再加上「每期都要比對去年同季」，所以要抓到本季往回
 // 20+4-1=23 期前，共 24 期 EPS。
 const QUARTERS_OF_EPS_NEEDED = TARGET_UE_WINDOW + 4;
-
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
-  return { value: null, fieldKey: null };
-};
 
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
   if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
@@ -82,10 +71,7 @@ export const resolveSueInputs = async (
 ): Promise<SueResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) return null;
 
@@ -148,14 +134,7 @@ export const resolveSueInputs = async (
   return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, quarterDetails, lastIndex, ueValues, currentUe, stdDev, sueValue, nullReason, mainAnchor };
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface SuePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-}
+export type SuePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteSuePit = async (
   query: QuarterlyMetricQuery,

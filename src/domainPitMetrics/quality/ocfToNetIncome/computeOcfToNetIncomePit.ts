@@ -1,23 +1,16 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/ocfToNetIncome.ts 的獨立重新實作。沒有 Q_ANN——flow/flow
 // 比率年化沒有意義，跟 netProfitMargin 同一種規則。
-
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
 
 // 單位是「倍」，不是百分比。
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
@@ -30,15 +23,7 @@ const determineNullReason = (numerator: bigint | null, denominator: bigint | nul
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface OcfToNetIncomePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type OcfToNetIncomePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteOcfToNetIncomePit = async (
   query: QuarterlyMetricQuery,
@@ -46,10 +31,7 @@ export const computeAndWriteOcfToNetIncomePit = async (
 ): Promise<OcfToNetIncomePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };

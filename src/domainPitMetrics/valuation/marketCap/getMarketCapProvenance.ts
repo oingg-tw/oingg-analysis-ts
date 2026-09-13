@@ -1,4 +1,4 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
@@ -14,10 +14,7 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 export const getMarketCapProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'marketCap', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

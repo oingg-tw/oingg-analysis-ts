@@ -1,21 +1,15 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateFcf } from '@/domainPitMetrics/quality/cashFlowPerShare/fcf';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface DividendCoverageRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type DividendCoverageRatioPitOutcome = StandardBasisPitOutcome;
 
 // 股利保障倍數（現金流版）= TTM 自由現金流（FCF，見 quality/cashFlowPerShare/fcf.ts 的
 // calculateFcf） / TTM 股利發放現金（dividendsPaid）——衡量配息是不是真的用自由現金流
@@ -25,10 +19,7 @@ export interface DividendCoverageRatioPitOutcome {
 export const computeAndWriteDividendCoverageRatioPit = async (query: QuarterlyMetricQuery, statements: CashFlowStatementPort = financialDataAdapter): Promise<DividendCoverageRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };

@@ -1,10 +1,11 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { calculateFcf } from './fcf';
 import { calculateOcfPerShare } from '@/domainPitMetrics/quality/ocfPerShare/calculateOcfPerShare';
 import { calculateFcfPerShare } from '@/domainPitMetrics/quality/fcfPerShare/calculateFcfPerShare';
@@ -17,12 +18,7 @@ import { calculateFcfPerShare } from '@/domainPitMetrics/quality/fcfPerShare/cal
 // 的實際計算公式已經拆進 calculations/ 底下各自的檔案，這裡只負責把查回來的原始財報數字
 // 傳給對應的 calculateXxx() 純函式、串接輸出、決定 knowledge_date、呼叫 writeMetricValue。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface CashFlowPerSharePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface CashFlowPerSharePitOutcome extends QuarterlyPitOutcomeBase {
   ocfPerShareQ: BasisOutcome;
   ocfPerShareQAnn: BasisOutcome;
   ocfPerShareTtm: BasisOutcome;
@@ -49,10 +45,7 @@ export const computeAndWriteCashFlowPerSharePit = async (
     fcfPerShareTtm: { action: 'skipped_no_quarter' },
   };
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) return skippedNoQuarter;
 

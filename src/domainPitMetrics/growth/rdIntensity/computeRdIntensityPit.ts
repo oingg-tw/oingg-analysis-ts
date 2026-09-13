@@ -1,11 +1,13 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 研發費用（research_and_development_expense）只存在 XBRL 損益表寬表，舊表
@@ -30,20 +32,7 @@ const getResearchAndDevelopmentExpense = async (key: {
   return rows[0]?.research_and_development_expense ?? null;
 };
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RdIntensityPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type RdIntensityPitOutcome = StandardBasisPitOutcome;
 
 // 研發費用率 = 研發費用 / 營收 * 100（G-Score 成分）。營收複用既有的
 // incomeStatementXbrlFirst（有舊表 fallback），研發費用只查 XBRL 寬表（見上方說明）。
@@ -51,10 +40,7 @@ export interface RdIntensityPitOutcome {
 export const computeAndWriteRdIntensityPit = async (query: QuarterlyMetricQuery): Promise<RdIntensityPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -70,7 +56,7 @@ export const computeAndWriteRdIntensityPit = async (query: QuarterlyMetricQuery)
   const reportDate = incomeStatement?.reportDate ?? null;
   const revenue = incomeStatement?.operatingRevenue ?? null;
 
-  const ratioQuarterly = researchExpense !== null && revenue !== null ? toPct(researchExpense, revenue) : null;
+  const ratioQuarterly = researchExpense !== null && revenue !== null ? toPercent(researchExpense, revenue) : null;
   const quarterlyNullReason: MetricNullReason | null =
     ratioQuarterly !== null ? null : researchExpense === null || revenue === null ? 'missing_input' : 'zero_or_negative_denominator';
 
@@ -113,7 +99,7 @@ export const computeAndWriteRdIntensityPit = async (query: QuarterlyMetricQuery)
     }
   }
 
-  const ratioTtm = ttmComplete ? toPct(researchTtmSum, revenueTtmSum) : null;
+  const ratioTtm = ttmComplete ? toPercent(researchTtmSum, revenueTtmSum) : null;
   const ttmNullReason: MetricNullReason | null = ratioTtm !== null ? null : !ttmComplete ? 'insufficient_history' : 'zero_or_negative_denominator';
 
   let ttm: BasisOutcome;

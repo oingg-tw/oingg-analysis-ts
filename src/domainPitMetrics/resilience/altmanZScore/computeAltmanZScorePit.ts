@@ -1,4 +1,4 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getMarketCapAsOf, type MarketCapAsOf } from '@/shared/sourceData/marketCap';
@@ -6,7 +6,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
@@ -66,10 +67,7 @@ export interface AltmanZScoreResolution {
 export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery): Promise<AltmanZScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) return null;
 
@@ -165,14 +163,7 @@ export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery): Pr
   };
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface AltmanZScorePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type AltmanZScorePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteAltmanZScorePit = async (query: QuarterlyMetricQuery): Promise<AltmanZScorePitOutcome> => {
   const resolution = await resolveAltmanZScoreInputs(query);

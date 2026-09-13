@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -11,21 +12,12 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 逐年核對的事實，不是統計估計值，所以不需要像 SUE 那樣進一步省略），用
 // methodologyNote 說明判斷規則。
 
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.netIncomeAttributableToParent !== null) return record.netIncomeAttributableToParent;
-  return record.netIncome;
-};
-
 const MAX_LOOKBACK_YEARS = 30;
 
 export const getConsecutiveProfitYearsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'consecutiveProfitYears', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

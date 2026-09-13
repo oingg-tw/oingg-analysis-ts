@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
@@ -11,18 +12,6 @@ import { EPS_CAGR_YEARS } from './epsCagrDefinition';
 // 流通股數。跟 computeEpsCagrFamilyPit.ts 一致。這是 3 個獨立 metricCode
 // （epsCagr3y/5y/8y），這支檔案接受 years 參數，PROVENANCE_RESOLVERS 各自綁一個 years
 // 值呼叫。fiscalQuarter 固定回傳查詢當下的季別（FY basis，年度資料無季別概念）。
-
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
-  return { value: null, fieldKey: null };
-};
 
 interface AnnualEpsQuarterDetail {
   fiscalYear: number;
@@ -73,10 +62,7 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
     const { symbol, dataType, subsidiaryCompanyId } = query;
 
-    const resolvedQuarter =
-      query.year !== undefined && query.season !== undefined
-        ? { year: query.year, season: query.season }
-        : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
     if (!resolvedQuarter) {
       return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

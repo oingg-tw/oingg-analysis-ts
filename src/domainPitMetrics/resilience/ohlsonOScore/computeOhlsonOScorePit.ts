@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 
@@ -15,12 +17,6 @@ import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndust
 // piotroskiFScore/beneishMScore 用 getPastNQuarters({rocYear,season},5)[0]，再用那個錨點
 // 建去年的 TTM 窗口（getPastNQuarters(...,4)）。只有 TTM 一種 basis。只遷移 oScore，
 // probabilityOfBankruptcy（純函式轉換）跟 9 個內部變量不獨立遷移。
-
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.netIncomeAttributableToParent !== null) return record.netIncomeAttributableToParent;
-  return record.netIncome;
-};
 
 const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null)[]): bigint | null => {
   let sum = 0n;
@@ -34,22 +30,12 @@ const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; 
 
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface OhlsonOScorePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  ttm: BasisOutcome;
-}
+export type OhlsonOScorePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteOhlsonOScorePit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort & IncomeStatementPort & CashFlowStatementPort = financialDataAdapter): Promise<OhlsonOScorePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };

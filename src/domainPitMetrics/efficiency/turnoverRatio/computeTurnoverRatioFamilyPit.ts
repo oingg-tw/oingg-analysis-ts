@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { calculateInventoryTurnover } from '@/domainPitMetrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
 import { calculateReceivablesTurnover } from '@/domainPitMetrics/efficiency/receivablesTurnover/calculateReceivablesTurnover';
 import { calculateFixedAssetTurnover } from '@/domainPitMetrics/efficiency/fixedAssetTurnover/calculateFixedAssetTurnover';
@@ -38,17 +40,7 @@ const toRatio = (numeratorInThousands: bigint, denominatorInThousands: bigint): 
   if (denominatorInThousands === 0n) return null;
   return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100) / 100;
 };
-const toPct = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
-  if (denominatorInThousands === 0n) return null;
-  return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100 * 100) / 100;
-};
-
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface TurnoverRatioFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface TurnoverRatioFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   inventoryTurnoverQ: BasisOutcome;
   inventoryTurnoverQAnn: BasisOutcome;
   inventoryTurnoverTtm: BasisOutcome;
@@ -113,10 +105,7 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
     receivablesToRevenueRatioTtm: { action },
   });
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) return skipped('skipped_no_quarter');
 
@@ -273,7 +262,7 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
         knowledgeDateIsFallback,
       });
 
-      const inventoryToRevenueRatioValue = inventory !== null ? toPct(inventory, revenueTtmSum) : null;
+      const inventoryToRevenueRatioValue = inventory !== null ? toPercent(inventory, revenueTtmSum) : null;
       inventoryToRevenueRatioTtm = await writeMetricValue({
         ...coordinateFor('inventoryToRevenueRatio'),
         ...periodTypeGroup('TTM'),
@@ -283,7 +272,7 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
         knowledgeDateIsFallback,
       });
 
-      const receivablesToRevenueRatioValue = accountsReceivable !== null ? toPct(accountsReceivable, revenueTtmSum) : null;
+      const receivablesToRevenueRatioValue = accountsReceivable !== null ? toPercent(accountsReceivable, revenueTtmSum) : null;
       receivablesToRevenueRatioTtm = await writeMetricValue({
         ...coordinateFor('receivablesToRevenueRatio'),
         ...periodTypeGroup('TTM'),

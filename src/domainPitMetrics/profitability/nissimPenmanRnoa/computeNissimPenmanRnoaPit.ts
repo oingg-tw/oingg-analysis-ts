@@ -1,11 +1,14 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { round2, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquityValue as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/nissimPenmanRnoa.ts 的獨立重新實作，只遷移 RNOA 本身
@@ -13,19 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 有意義的財務比率）。因為不算 NBC，這裡「一季是否齊全」的判斷只看 NOPAT 算不算得出來，
 // 比舊架構（NOPAT 跟稅後淨利息費用都要非 null）更精確——跟第二層 margins 家族同樣的
 // 「不因不相關欄位缺漏連累」判斷，不是疏漏。
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-const round2 = (x: number): number => Math.round(x * 100) / 100;
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.equityAttributableToParent !== null) return record.equityAttributableToParent;
-  return record.totalEquity;
-};
 
 interface IncomeStatementSlice {
   operatingIncome: bigint | null;
@@ -44,24 +34,12 @@ const calculateNopat = (record: IncomeStatementSlice | null): bigint | null => {
   return BigInt(Math.round(Number(record.operatingIncome) * (1 - effectiveTaxRate)));
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface NissimPenmanRnoaPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type NissimPenmanRnoaPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<NissimPenmanRnoaPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -85,7 +63,7 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
   const noa = nfo !== null && equity !== null ? equity + nfo : null;
 
   const nopat = calculateNopat(incomeStatement);
-  const rnoaQuarterlyPct = nopat !== null && noa !== null ? toPct(nopat, noa) : null;
+  const rnoaQuarterlyPct = nopat !== null && noa !== null ? toPercent(nopat, noa) : null;
   const rnoaQuarterlyAnnualizedPct = rnoaQuarterlyPct !== null ? round2(rnoaQuarterlyPct * 4) : null;
 
   let qNullReason: MetricNullReason | null = null;
@@ -137,7 +115,7 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
     }
   }
 
-  const rnoaTtmPct = ttmComplete && noa !== null ? toPct(nopatTtmSum, noa) : null;
+  const rnoaTtmPct = ttmComplete && noa !== null ? toPercent(nopatTtmSum, noa) : null;
   let ttmNullReason: MetricNullReason | null = null;
   if (rnoaTtmPct === null) {
     ttmNullReason = !ttmComplete ? 'insufficient_history' : noa === null ? 'missing_input' : 'zero_or_negative_denominator';

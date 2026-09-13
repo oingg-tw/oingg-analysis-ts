@@ -1,12 +1,14 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import type { CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/accrualsRatio.ts 的獨立重新實作。分母固定用本季期末總資產
@@ -16,23 +18,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // fieldKey）+ 完整計算過程，給 getAccrualsRatioProvenance.ts（GET /companies/:symbol/
 // metric-provenance 的 accrualsRatio 試點）共用，寫入路徑（computeAndWriteAccrualsRatioPit）
 // 本身行為完全不變，只是內部改呼叫這個 resolver。
-
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
-  return { value: null, fieldKey: null };
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
 
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
@@ -68,10 +53,7 @@ export const resolveAccrualsRatioInputs = async (
 ): Promise<AccrualsRatioResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) return null;
 
@@ -126,7 +108,7 @@ export const resolveAccrualsRatioInputs = async (
   }
 
   const accrualsTtm = ttmComplete ? netIncomeTtmSum - ocfTtmSum - icfTtmSum : null;
-  const ttmValue = accrualsTtm !== null && totalAssets !== null ? toPct(accrualsTtm, totalAssets) : null;
+  const ttmValue = accrualsTtm !== null && totalAssets !== null ? toPercent(accrualsTtm, totalAssets) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(accrualsTtm, totalAssets) : 'insufficient_history';
 
   const ttmAnchor = ttmComplete
@@ -139,16 +121,7 @@ export const resolveAccrualsRatioInputs = async (
   return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface AccrualsRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type AccrualsRatioPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteAccrualsRatioPit = async (
   query: QuarterlyMetricQuery,
@@ -169,7 +142,7 @@ export const computeAndWriteAccrualsRatioPit = async (
     currentQuarter.netIncome.value !== null && currentCashFlow?.netCashFromOperatingActivities != null && currentCashFlow?.netCashFromInvestingActivities != null
       ? currentQuarter.netIncome.value - currentCashFlow.netCashFromOperatingActivities - currentCashFlow.netCashFromInvestingActivities
       : null;
-  const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssets !== null ? toPct(accrualsQuarterly, totalAssets) : null;
+  const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssets !== null ? toPercent(accrualsQuarterly, totalAssets) : null;
   const accrualsRatioQuarterlyAnnualized = accrualsRatioQuarterly !== null ? Math.round(accrualsRatioQuarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = accrualsRatioQuarterly === null ? determineNullReason(accrualsQuarterly, totalAssets) : null;
 

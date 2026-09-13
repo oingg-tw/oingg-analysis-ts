@@ -1,44 +1,29 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增（Novy-Marx GP/A）。分母固定用本季期末總資產，跟
 // accrualsRatio/ROE/ROA 同一種「TTM 分子加總、分母用單一期末值」簡化。
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
 
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface NovyMarxGpToAssetsPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type NovyMarxGpToAssetsPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<NovyMarxGpToAssetsPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -55,7 +40,7 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
   const grossProfitQuarterly = incomeStatement?.grossProfit ?? null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const quarterlyValue = grossProfitQuarterly !== null && totalAssets !== null ? toPct(grossProfitQuarterly, totalAssets) : null;
+  const quarterlyValue = grossProfitQuarterly !== null && totalAssets !== null ? toPercent(grossProfitQuarterly, totalAssets) : null;
   const quarterlyAnnualized = quarterlyValue !== null ? Math.round(quarterlyValue * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = quarterlyValue === null ? determineNullReason(grossProfitQuarterly, totalAssets) : null;
 
@@ -102,7 +87,7 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
     }
   }
 
-  const ttmValue = ttmComplete && totalAssets !== null ? toPct(grossProfitTtmSum, totalAssets) : null;
+  const ttmValue = ttmComplete && totalAssets !== null ? toPercent(grossProfitTtmSum, totalAssets) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(grossProfitTtmSum, totalAssets) : 'insufficient_history';
 
   let ttm: BasisOutcome;

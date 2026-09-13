@@ -1,46 +1,26 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquityValue as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // Fama-French (2015) RMW 因子背後的單一公司營業獲利力比率——只做分子容易單獨計算的比率
 // 本身，不做完整五因子模型的橫斷面排序建構+個股迴歸（那需要全市場批次回填+迴歸引擎，
 // 見 famaFrenchOperatingProfitabilityDefinition.ts 的 formulaNote）。帳面權益優先採
 // 歸屬於母公司口徑，缺漏退回整體口徑，跟既有 altmanZDoublePrimeScore 同一個 pickEquity 慣例。
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.equityAttributableToParent !== null) return record.equityAttributableToParent;
-  if (record.totalEquity !== null) return record.totalEquity;
-  return null;
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface FamaFrenchOperatingProfitabilityPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type FamaFrenchOperatingProfitabilityPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<FamaFrenchOperatingProfitabilityPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -66,7 +46,7 @@ export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: 
       ? incomeStatement.grossProfit - incomeStatement.sellingExpenses - incomeStatement.adminExpenses - incomeStatement.financeCosts
       : null;
 
-  const ratioQuarterly = operatingProfitQuarterly !== null && bookEquity !== null ? toPct(operatingProfitQuarterly, bookEquity) : null;
+  const ratioQuarterly = operatingProfitQuarterly !== null && bookEquity !== null ? toPercent(operatingProfitQuarterly, bookEquity) : null;
   const quarterlyNullReason: MetricNullReason | null =
     ratioQuarterly !== null ? null : operatingProfitQuarterly === null || bookEquity === null ? 'missing_input' : 'zero_or_negative_denominator';
 
@@ -103,7 +83,7 @@ export const computeAndWriteFamaFrenchOperatingProfitabilityPit = async (query: 
     }
   }
 
-  const ratioTtm = ttmComplete && bookEquity !== null ? toPct(operatingProfitTtmSum, bookEquity) : null;
+  const ratioTtm = ttmComplete && bookEquity !== null ? toPercent(operatingProfitTtmSum, bookEquity) : null;
   const ttmNullReason: MetricNullReason | null =
     ratioTtm !== null ? null : !ttmComplete || bookEquity === null ? 'insufficient_history' : 'zero_or_negative_denominator';
 

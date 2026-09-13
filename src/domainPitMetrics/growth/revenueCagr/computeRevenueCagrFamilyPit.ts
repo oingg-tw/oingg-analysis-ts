@@ -1,10 +1,11 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { REVENUE_CAGR_YEARS } from './revenueCagrDefinition';
 
@@ -14,12 +15,7 @@ import { REVENUE_CAGR_YEARS } from './revenueCagrDefinition';
 // （4 季 operatingRevenue 加總），用一個 Map 快取已經查過的年度，避免 3 個窗口重複查詢
 // 同一年度（例如最近一個完整年度這個查詢只需要做一次，3/5/8 年前則各自不同）。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RevenueCagrFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface RevenueCagrFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   results: Record<string, BasisOutcome>;
 }
 
@@ -44,10 +40,7 @@ const getAnnualRevenue = async (
 export const computeAndWriteRevenueCagrFamilyPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<RevenueCagrFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, results: Object.fromEntries(REVENUE_CAGR_YEARS.map((y) => [`revenueCagr${y}y`, { action: 'skipped_no_quarter' as const }])) };

@@ -1,9 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquityValue as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 
@@ -11,38 +14,17 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 // 長期借款），權益 pickEquity 慣例同 altmanZDoublePrimeScore。純資產負債表時點快照，
 // 只有 Q 一種 basis。
 
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.equityAttributableToParent !== null) return record.equityAttributableToParent;
-  return record.totalEquity;
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface TotalDebtToCapitalPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-}
+export type TotalDebtToCapitalPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteTotalDebtToCapitalPit = async (query: QuarterlyMetricQuery, statements: BalanceSheetPort = financialDataAdapter): Promise<TotalDebtToCapitalPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
@@ -62,7 +44,7 @@ export const computeAndWriteTotalDebtToCapitalPit = async (query: QuarterlyMetri
   const reportDate = balanceSheet?.reportDate ?? null;
 
   const denominator = totalDebt !== null && equity !== null ? totalDebt + equity : null;
-  const value = totalDebt !== null && denominator !== null ? toPct(totalDebt, denominator) : null;
+  const value = totalDebt !== null && denominator !== null ? toPercent(totalDebt, denominator) : null;
   const nullReason: MetricNullReason | null = value === null ? determineNullReason(totalDebt, denominator) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);

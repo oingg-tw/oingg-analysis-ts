@@ -1,22 +1,18 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/roic.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
 // 在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，延續既有慣例。
-
-const pickEquity = (record: { equityAttributableToParent: bigint | null; totalEquity: bigint | null } | null): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent };
-  if (record.totalEquity !== null) return { value: record.totalEquity };
-  return { value: null };
-};
 
 // 稅前淨利須為正，否則有效稅率沒有意義，NOPAT 視為 null（跟 roic.ts 現有行為一致）。
 const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
@@ -27,34 +23,17 @@ const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bi
   return BigInt(Math.round(Number(ebit) * (1 - effectiveTaxRate)));
 };
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RoicPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type RoicPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<RoicPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return {
@@ -85,7 +64,7 @@ export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statem
     totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const roicQuarterlyPct = nopat !== null && investedCapital !== null ? toPct(nopat, investedCapital) : null;
+  const roicQuarterlyPct = nopat !== null && investedCapital !== null ? toPercent(nopat, investedCapital) : null;
   const roicQuarterlyAnnualizedPct = roicQuarterlyPct !== null ? Math.round(roicQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roicQuarterlyPct === null ? determineNullReason(nopat, investedCapital) : null;
 
@@ -133,7 +112,7 @@ export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statem
     }
   }
 
-  const ttmValue = ttmComplete && investedCapital !== null ? toPct(nopatTtmSum, investedCapital) : null;
+  const ttmValue = ttmComplete && investedCapital !== null ? toPercent(nopatTtmSum, investedCapital) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(nopatTtmSum, investedCapital) : 'insufficient_history';
 
   let ttm: BasisOutcome;

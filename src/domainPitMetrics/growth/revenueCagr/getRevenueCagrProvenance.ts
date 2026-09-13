@@ -1,4 +1,4 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -36,10 +36,7 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
     const { symbol, dataType, subsidiaryCompanyId } = query;
 
-    const resolvedQuarter =
-      query.year !== undefined && query.season !== undefined
-        ? { year: query.year, season: query.season }
-        : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
     if (!resolvedQuarter) {
       return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

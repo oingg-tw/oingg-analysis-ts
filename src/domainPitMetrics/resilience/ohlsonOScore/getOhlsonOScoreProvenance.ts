@@ -1,4 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
@@ -12,12 +13,6 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // statementField），9 個中繼變數(SIZE/TLTA/WCTA/CLCA/OENEG/NITA/FUTL/INTWO/CHIN)在
 // methodologyNote 說明算出來的值，不逐一拆成 entries（都是這 13 筆原始欄位的組合，
 // 硬拆只會讓 entries 難以閱讀）。只算原始分數，不套用金融業排除。固定回傳 TTM。
-
-const pickNetIncome = (record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null): bigint | null => {
-  if (!record) return null;
-  if (record.netIncomeAttributableToParent !== null) return record.netIncomeAttributableToParent;
-  return record.netIncome;
-};
 
 const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null)[]): bigint | null => {
   let sum = 0n;
@@ -34,10 +29,7 @@ const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'ohlsonOScore', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

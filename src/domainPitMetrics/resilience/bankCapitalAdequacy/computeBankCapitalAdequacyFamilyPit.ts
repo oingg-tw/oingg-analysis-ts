@@ -2,7 +2,8 @@ import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from 
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateBankCarRatio } from '@/domainPitMetrics/resilience/bankCarRatio/calculateBankCarRatio';
 import { calculateBankCet1Ratio } from '@/domainPitMetrics/resilience/bankCet1Ratio/calculateBankCet1Ratio';
@@ -15,12 +16,7 @@ import { calculateBankTier1Ratio } from '@/domainPitMetrics/resilience/bankTier1
 // 是這批唯一自己做除法的欄位（eligible_capital / risk_weighted_assets），其餘都是 passthrough。
 // 只有 Q 一種 basis，同一次查詢寫三個 metric_code，共用同一組 knowledge_date。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface BankCapitalAdequacyFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface BankCapitalAdequacyFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   bankCarRatio: BasisOutcome;
   bankCet1Ratio: BasisOutcome;
   bankTier1Ratio: BasisOutcome;

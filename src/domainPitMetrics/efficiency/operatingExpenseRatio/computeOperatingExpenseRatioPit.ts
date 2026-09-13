@@ -1,26 +1,15 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface OperatingExpenseRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type OperatingExpenseRatioPitOutcome = StandardBasisPitOutcome;
 
 // 營業費用率 = 營業費用(推銷費用+管理費用) / 營收 * 100——只用 sellingExpenses+adminExpenses，
 // 不含研發費用（income statement 目前沒有獨立的研發費用欄位，跟 Beneish M-Score 的 SGAI
@@ -31,10 +20,7 @@ export interface OperatingExpenseRatioPitOutcome {
 export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort = financialDataAdapter): Promise<OperatingExpenseRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -54,7 +40,7 @@ export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMe
       : null;
   const revenue = incomeStatement?.operatingRevenue ?? null;
 
-  const ratioQuarterly = operatingExpense !== null && revenue !== null ? toPct(operatingExpense, revenue) : null;
+  const ratioQuarterly = operatingExpense !== null && revenue !== null ? toPercent(operatingExpense, revenue) : null;
   const quarterlyNullReason: MetricNullReason | null =
     ratioQuarterly !== null ? null : operatingExpense === null || revenue === null ? 'missing_input' : 'zero_or_negative_denominator';
 
@@ -93,7 +79,7 @@ export const computeAndWriteOperatingExpenseRatioPit = async (query: QuarterlyMe
     }
   }
 
-  const ratioTtm = ttmComplete ? toPct(expenseTtmSum, revenueTtmSum) : null;
+  const ratioTtm = ttmComplete ? toPercent(expenseTtmSum, revenueTtmSum) : null;
   const ttmNullReason: MetricNullReason | null = ratioTtm !== null ? null : !ttmComplete ? 'insufficient_history' : 'zero_or_negative_denominator';
 
   let ttm: BasisOutcome;

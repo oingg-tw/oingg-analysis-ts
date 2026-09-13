@@ -1,31 +1,20 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/roa.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
 // 私有函式，也不呼叫 calculateRoa() 本身——跟 src/domainPitMetrics/profitability/roe/computeRoePit.ts 同一種
 // 「保持新管線對舊系統唯讀」原則。tests/domainPitMetrics/roaPit.test.ts 拿 roa.test.ts 的既有
 // 基準數字交叉驗證。
-
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
 
 // 分子/分母任一為 null 視為缺輸入；兩者皆非 null 但分母為 0 才是「分母為零」——總資產為負
 // 仍然算得出一個（可能扭曲的）實際數字，不算 null（跟 roa.ts 現有對外行為一致）。
@@ -34,24 +23,12 @@ const determineNullReason = (numerator: bigint | null, denominator: bigint | nul
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RoaPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type RoaPitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<RoaPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return {
@@ -75,7 +52,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
   const netIncome = pickNetIncome(incomeStatement);
   const totalAssets = balanceSheet?.totalAssets ?? null;
 
-  const roaQuarterlyPct = netIncome.value !== null && totalAssets !== null ? toPct(netIncome.value, totalAssets) : null;
+  const roaQuarterlyPct = netIncome.value !== null && totalAssets !== null ? toPercent(netIncome.value, totalAssets) : null;
   const roaQuarterlyAnnualizedPct = roaQuarterlyPct !== null ? Math.round(roaQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roaQuarterlyPct === null ? determineNullReason(netIncome.value, totalAssets) : null;
 
@@ -134,7 +111,7 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
     }
   }
 
-  const roaTtmPct = ttmComplete && totalAssets !== null ? toPct(ttmSum, totalAssets) : null;
+  const roaTtmPct = ttmComplete && totalAssets !== null ? toPercent(ttmSum, totalAssets) : null;
   const ttmNullReason: MetricNullReason | null = roaTtmPct !== null ? null : ttmComplete ? determineNullReason(ttmSum, totalAssets) : 'insufficient_history';
 
   let ttm: BasisOutcome;

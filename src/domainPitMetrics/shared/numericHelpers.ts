@@ -34,6 +34,10 @@ export const toRatio = (numerator: bigint, denominator: bigint): number | null =
 
 export const round2 = (x: number): number => Math.round(x * 100) / 100;
 
+// bigint 版絕對值——capexToRevenue/abnormalCapexRatio 這類「來源資料本身是負值（現金流出）
+// 取絕對值後再算比率」的指標共用。
+export const absBigint = (value: bigint): bigint => (value < 0n ? -value : value);
+
 // 把單季比率乘 4 年化，四捨五入到小數 2 位——assetTurnover/四個週轉率/ocfPerShare/
 // fcfPerShare 的 Q_ANN basis 共用同一個換算方式。
 export const annualizeQuarterly = (quarterlyValue: number): number => round2(quarterlyValue * 4);

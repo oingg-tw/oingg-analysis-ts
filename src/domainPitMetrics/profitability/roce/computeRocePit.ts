@@ -1,11 +1,13 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/roce.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
@@ -16,34 +18,17 @@ const computeEbit = (record: { profitBeforeTax: bigint | null; financeCosts: big
   return record.profitBeforeTax + record.financeCosts;
 };
 
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RocePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type RocePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteRocePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<RocePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
     return {
@@ -70,7 +55,7 @@ export const computeAndWriteRocePit = async (query: QuarterlyMetricQuery, statem
   const capitalEmployed = totalAssets !== null && currentLiabilities !== null ? totalAssets - currentLiabilities : null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const roceQuarterlyPct = ebit !== null && capitalEmployed !== null ? toPct(ebit, capitalEmployed) : null;
+  const roceQuarterlyPct = ebit !== null && capitalEmployed !== null ? toPercent(ebit, capitalEmployed) : null;
   const roceQuarterlyAnnualizedPct = roceQuarterlyPct !== null ? Math.round(roceQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roceQuarterlyPct === null ? determineNullReason(ebit, capitalEmployed) : null;
 
@@ -118,7 +103,7 @@ export const computeAndWriteRocePit = async (query: QuarterlyMetricQuery, statem
     }
   }
 
-  const ttmValue = ttmComplete && capitalEmployed !== null ? toPct(ebitTtmSum, capitalEmployed) : null;
+  const ttmValue = ttmComplete && capitalEmployed !== null ? toPercent(ebitTtmSum, capitalEmployed) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(ebitTtmSum, capitalEmployed) : 'insufficient_history';
 
   let ttm: BasisOutcome;

@@ -2,7 +2,8 @@ import { getBankAssetQualityTotalLoans, getLatestQuarterWithBankAssetQuality } f
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateBankNplRatio } from '@/domainPitMetrics/resilience/bankNplRatio/calculateBankNplRatio';
 import { calculateBankNplCoverageRatio } from '@/domainPitMetrics/resilience/bankNplCoverageRatio/calculateBankNplCoverageRatio';
@@ -16,12 +17,7 @@ import { calculateBankNplCoverageRatio } from '@/domainPitMetrics/resilience/ban
 // 只有 Q 一種 basis：這是資產負債表時點快照，沒有 TTM/年化概念。非銀行公司、或銀行這季
 // 沒揭露，一律優雅降級成 null（missing_input），不做「這家公司是不是銀行」的前置判斷。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface BankAssetQualityFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface BankAssetQualityFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   bankNplRatio: BasisOutcome;
   bankNplCoverageRatio: BasisOutcome;
 }

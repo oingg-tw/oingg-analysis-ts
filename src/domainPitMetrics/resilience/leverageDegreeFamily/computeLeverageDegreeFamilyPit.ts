@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——財務槓桿度
@@ -14,15 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // getPastNQuarters({rocYear,season},5)[0]，分母為 0 時該項 %Δ 是 null）。只有 Q 一種
 // basis（YoY 比較本質上是單季對單季，不疊加 TTM）。
 
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): bigint | null => {
-  if (!record) return null;
-  if (record.netIncomeAttributableToParent !== null) return record.netIncomeAttributableToParent;
-  if (record.netIncome !== null) return record.netIncome;
-  return null;
-};
-
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
@@ -31,12 +24,7 @@ const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null
 const growthPct = (current: number | null, prior: number | null): number | null =>
   current !== null && prior !== null && prior !== 0 ? Math.round(((current - prior) / Math.abs(prior)) * 100 * 100) / 100 : null;
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface LeverageDegreeFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface LeverageDegreeFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   financialLeverageDegree: BasisOutcome;
   totalLeverageDegree: BasisOutcome;
 }
@@ -44,10 +32,7 @@ export interface LeverageDegreeFamilyPitOutcome {
 export const computeAndWriteLeverageDegreeFamilyPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter): Promise<LeverageDegreeFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, financialLeverageDegree: { action: 'skipped_no_quarter' }, totalLeverageDegree: { action: 'skipped_no_quarter' } };

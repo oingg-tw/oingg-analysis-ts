@@ -1,36 +1,23 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
+import { absBigint, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/capexToRevenue.ts 的獨立重新實作。資本支出來源資料是負值
 // （現金流出），取絕對值後再算比率。沒有 Q_ANN——flow/flow 比率年化沒有意義。
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
-
-const abs = (value: bigint): bigint => (value < 0n ? -value : value);
 
 const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
   if (numerator === null || denominator === null) return 'missing_input';
   return 'zero_or_negative_denominator';
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface CapexToRevenuePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type CapexToRevenuePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteCapexToRevenuePit = async (
   query: QuarterlyMetricQuery,
@@ -38,10 +25,7 @@ export const computeAndWriteCapexToRevenuePit = async (
 ): Promise<CapexToRevenuePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
@@ -58,7 +42,7 @@ export const computeAndWriteCapexToRevenuePit = async (
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
 
-  const quarterly = capitalExpenditures !== null && operatingRevenue !== null ? toPct(abs(capitalExpenditures), operatingRevenue) : null;
+  const quarterly = capitalExpenditures !== null && operatingRevenue !== null ? toPercent(absBigint(capitalExpenditures), operatingRevenue) : null;
   const quarterlyNullReason: MetricNullReason | null = quarterly === null ? determineNullReason(capitalExpenditures, operatingRevenue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
@@ -100,7 +84,7 @@ export const computeAndWriteCapexToRevenuePit = async (
     }
   }
 
-  const ttmValue = ttmComplete ? toPct(abs(capexTtmSum), revenueTtmSum) : null;
+  const ttmValue = ttmComplete ? toPercent(absBigint(capexTtmSum), revenueTtmSum) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(capexTtmSum, revenueTtmSum) : 'insufficient_history';
 
   let ttm: BasisOutcome;

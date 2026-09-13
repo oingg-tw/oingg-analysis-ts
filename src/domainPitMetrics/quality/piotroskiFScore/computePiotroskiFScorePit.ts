@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/piotroskiFScore.ts 的獨立重新實作。9 個二元訊號本季 vs
@@ -16,15 +18,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 跟 on-demand 讀取路徑（getPiotroskiFScoreBreakdown，見 getPiotroskiFScoreBreakdown.ts）
 // 各自呼叫同一份計算，不重複寫兩次；9 個訊號本身依然不寫進 metric_values，breakdown 端點
 // 現查現算。
-
-const pickNetIncome = (
-  record: { netIncomeAttributableToParent: bigint | null; netIncome: bigint | null } | null
-): { value: bigint | null } => {
-  if (!record) return { value: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent };
-  if (record.netIncome !== null) return { value: record.netIncome };
-  return { value: null };
-};
 
 const ratio = (numerator: bigint | null, denominator: bigint | null): number | null => {
   if (numerator === null || denominator === null || denominator === 0n) return null;
@@ -77,14 +70,7 @@ const fetchQuarterData = async (
   };
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface PiotroskiFScorePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-}
+export type PiotroskiFScorePitOutcome = StandardBasisPitOutcome;
 
 // 9 個二元訊號，命名/順序跟 Piotroski (2000) 原始論文一致，見 getPiotroskiFScoreBreakdown.ts
 // 依這個順序分成「獲利能力（前4）/財務槓桿與流動性（中3）/營運效率（後2）」三組。
@@ -122,10 +108,7 @@ export const resolvePiotroskiFScoreSignals = async (
 ): Promise<PiotroskiFScoreResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) return null;
 

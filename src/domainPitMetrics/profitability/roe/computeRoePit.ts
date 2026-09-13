@@ -1,12 +1,13 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import type { IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import type { BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { pickEquityWithFieldKey as pickEquity, pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/roe.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
@@ -26,30 +27,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 這支檔案自己重新定義一份），在呼叫端（第二個參數，預設值是 financialDataAdapter）
 // 注入——全部既有呼叫端一行都不用改。此模式已鋪開到全部 87 支 compute*Pit.ts，見
 // shared/ports/financialDataPorts.ts 的說明。
-
-interface PickedField {
-  value: bigint | null;
-  fieldKey: string | null;
-}
-
-const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
-  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
-  return { value: null, fieldKey: null };
-};
-
-const pickEquity = (record: BalanceSheetFields | null): PickedField => {
-  if (!record) return { value: null, fieldKey: null };
-  if (record.equityAttributableToParent !== null) return { value: record.equityAttributableToParent, fieldKey: 'equity_attributable_to_owners_of_parent' };
-  if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
-  return { value: null, fieldKey: null };
-};
-
-const toPct = (numerator: bigint, denominator: bigint): number | null => {
-  if (denominator === 0n) return null;
-  return Math.round((Number(numerator) / Number(denominator)) * 100 * 100) / 100;
-};
 
 // 分子/分母任一為 null 視為缺輸入；兩者皆非 null 但分母為 0 才是「分母為零」——負權益仍然
 // 算得出一個（可能扭曲的）實際數字，不算 null（跟 roe.ts 現有對外行為一致，這裡不改變語意）。
@@ -85,10 +62,7 @@ export const resolveRoeQuarterData = async (
 ): Promise<RoeQuarterResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) return null;
 
@@ -103,7 +77,7 @@ export const resolveRoeQuarterData = async (
   const netIncome = pickNetIncome(incomeStatement);
   const equity = pickEquity(balanceSheet);
 
-  const roeQuarterlyPct = netIncome.value !== null && equity.value !== null ? toPct(netIncome.value, equity.value) : null;
+  const roeQuarterlyPct = netIncome.value !== null && equity.value !== null ? toPercent(netIncome.value, equity.value) : null;
   const roeQuarterlyAnnualizedPct = roeQuarterlyPct !== null ? Math.round(roeQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roeQuarterlyPct === null ? determineNullReason(netIncome.value, equity.value) : null;
 
@@ -129,7 +103,7 @@ export const resolveRoeQuarterData = async (
     }
   }
 
-  const roeTtmPct = ttmComplete && equity.value !== null ? toPct(ttmSum, equity.value) : null;
+  const roeTtmPct = ttmComplete && equity.value !== null ? toPercent(ttmSum, equity.value) : null;
   const ttmNullReason: MetricNullReason | null = roeTtmPct !== null ? null : ttmComplete ? determineNullReason(ttmSum, equity.value) : 'insufficient_history';
 
   const ttmAnchor = ttmComplete
@@ -161,16 +135,7 @@ export const resolveRoeQuarterData = async (
   };
 };
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface RoePitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  q: BasisOutcome;
-  qAnn: BasisOutcome;
-  ttm: BasisOutcome;
-}
+export type RoePitOutcome = StandardBasisPitOutcome;
 
 export const computeAndWriteRoePit = async (
   query: QuarterlyMetricQuery,

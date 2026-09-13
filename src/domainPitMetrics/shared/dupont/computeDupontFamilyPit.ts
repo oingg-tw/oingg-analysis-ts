@@ -1,11 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
-import { pickNetIncome, pickEquity } from './pickers';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
+import { pickNetIncome, pickEquity } from '../pickers';
 import { calculateEbit } from './ebit';
 import { calculateNetProfitMargin } from '@/domainPitMetrics/profitability/netProfitMargin/calculateNetProfitMargin';
 import { calculateAssetTurnover } from '@/domainPitMetrics/efficiency/assetTurnover/calculateAssetTurnover';
@@ -38,12 +39,7 @@ import { calculateDupontExtendedRoe } from '@/domainPitMetrics/profitability/dup
 // writeMetricValue。Q 跟 TTM 兩個 basis 共用同一個 calculateXxx() 純函式（公式本身不會因為
 // 輸入是單季還是近四季加總而不同），差別只在傳進去的 bigint 是單季原始值還是 TTM 加總值。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface DupontFamilyPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface DupontFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   netProfitMarginQ: BasisOutcome;
   netProfitMarginTtm: BasisOutcome;
   assetTurnoverQ: BasisOutcome;
@@ -90,10 +86,7 @@ export const computeAndWriteDupontFamilyPit = async (
     dupontExtendedRoeTtm: { action: 'skipped_no_quarter' },
   };
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) return skippedNoQuarter;
 

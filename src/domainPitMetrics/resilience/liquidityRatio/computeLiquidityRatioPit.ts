@@ -1,9 +1,10 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { calculateCurrentRatio } from '@/domainPitMetrics/resilience/currentRatio/calculateCurrentRatio';
 import { calculateQuickRatio } from '@/domainPitMetrics/resilience/quickRatio/calculateQuickRatio';
@@ -19,12 +20,7 @@ import { calculateCashRatio } from '@/domainPitMetrics/resilience/cashRatio/calc
 // 的檔案，這裡只負責把查回來的原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、
 // 決定 knowledge_date、呼叫 writeMetricValue。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface LiquidityRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
+export interface LiquidityRatioPitOutcome extends QuarterlyPitOutcomeBase {
   currentRatio: BasisOutcome;
   quickRatio: BasisOutcome;
   cashRatio: BasisOutcome;
@@ -42,10 +38,7 @@ export const computeAndWriteLiquidityRatioPit = async (query: QuarterlyMetricQue
     cashRatio: { action: 'skipped_no_quarter' },
   };
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
 
   if (!resolvedQuarter) return skippedNoQuarter;
 

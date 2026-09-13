@@ -1,10 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
+import { absBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // Titman, Wei & Xie (2004) 異常資本投資比率——只有一個回溯窗口（前三年平均），跟
@@ -12,16 +14,7 @@ import type { MetricNullReason } from '../../metricBasis';
 // 單一窗口不需要拆多個 metric_code。資本支出來源資料是負值（現金流出），年度加總後
 // 取絕對值，跟 capexToRevenue 同一種慣例。
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface AbnormalCapexRatioPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  fy: BasisOutcome;
-}
-
-const abs = (value: bigint): bigint => (value < 0n ? -value : value);
+export type AbnormalCapexRatioPitOutcome = StandardBasisPitOutcome;
 
 const getAnnualCapex = async (
   cache: Map<number, bigint | null>,
@@ -36,7 +29,7 @@ const getAnnualCapex = async (
   const quarters = await Promise.all(
     [1, 2, 3, 4].map((quarter) => statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
-  const value = quarters.some((q) => q === null || q.capitalExpenditures === null) ? null : abs(quarters.reduce((sum, q) => sum + q!.capitalExpenditures!, 0n));
+  const value = quarters.some((q) => q === null || q.capitalExpenditures === null) ? null : absBigint(quarters.reduce((sum, q) => sum + q!.capitalExpenditures!, 0n));
   cache.set(rocYear, value);
   return value;
 };
@@ -44,10 +37,7 @@ const getAnnualCapex = async (
 export const computeAndWriteAbnormalCapexRatioPit = async (query: QuarterlyMetricQuery, statements: CashFlowStatementPort = financialDataAdapter): Promise<AbnormalCapexRatioPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, fy: { action: 'skipped_no_quarter' } };

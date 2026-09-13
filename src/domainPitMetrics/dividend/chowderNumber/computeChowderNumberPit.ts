@@ -1,11 +1,12 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeMetricValue, type MetricValueWriteOutcome, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
 // Chowder Number（Seeking Alpha 社群規則）= 現金殖利率 + 股利五年成長率，門檻 ≥12%（公用
@@ -26,14 +27,7 @@ import type { MetricNullReason } from '../../metricBasis';
 
 const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 
-type BasisOutcome = MetricValueWriteOutcome | { action: 'skipped_no_knowledge_date' } | { action: 'skipped_no_quarter' };
-
-export interface ChowderNumberPitOutcome {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-  fy: BasisOutcome;
-}
+export type ChowderNumberPitOutcome = StandardBasisPitOutcome;
 
 // 2026-09-10：dps 之外額外回傳逐季明細（原本算完就丟掉），給
 // getChowderNumberProvenance.ts（GET /companies/:symbol/metric-provenance 的
@@ -80,10 +74,7 @@ export const computeAndWriteChowderNumberPit = async (
 ): Promise<ChowderNumberPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter =
-    query.year !== undefined && query.season !== undefined
-      ? { year: query.year, season: query.season }
-      : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) {
     return { symbol, rocYear: null, season: null, fy: { action: 'skipped_no_quarter' } };
