@@ -23,6 +23,7 @@ import {
   getCompanyPiotroskiBreakdownQuerySchema,
   getCompanyMetricProvenanceQuerySchema,
   getCompanyBadgesQuerySchema,
+  getCompanyMetricCompletenessQuerySchema,
 } from './controller';
 import {
   companyProfileDetailSchema,
@@ -33,6 +34,7 @@ import {
   piotroskiFScoreBreakdownResultSchema,
   metricProvenanceResultSchema,
   companyBadgesResultSchema,
+  companyMetricCompletenessResultSchema,
 } from './types';
 
 const capitalStockHistoryResultSchema = z.object({
@@ -425,6 +427,26 @@ export const registerCompaniesOpenApi = (): void => {
     request: { query: getCompanyBadgesQuerySchema },
     responses: {
       200: { description: '依分類分組的 badge 達成結果。', content: { 'application/json': { schema: companyBadgesResultSchema } } },
+      400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/metric-completeness',
+    summary: '這家公司在 GET /metrics 全部指標上的完整度掃描（有沒有算出值，不是達成/未達成）',
+    description:
+      '2026-09-13 使用者要求：想知道有沒有機制掃描每家公司的指標完整度。GET /companies/badges' +
+      '只涵蓋 15 支「有 badge」的指標，且是判定「達成/未達成門檻」；這支端點掃過 GET /metrics' +
+      '全部指標（不限有 badge 的），對每支指標查一筆代表性 token 的最新值（優先取 TTM，' +
+      '沒有 TTM 就取該指標第一個可用 token，不是掃全部 token 組合），回傳 hasValue/nullReason，' +
+      '目的是資料品質稽核/前端呈現「這家公司資料涵蓋度」，不是選股門檻判定。每個分類跟總計' +
+      '都附 coveredCount/totalCount，方便直接算覆蓋率百分比。metricCode 可以直接拿去打' +
+      'GET /companies/metric-history 查完整歷史（可能有其他 token 有值，這裡只是代表性抽查）。',
+    tags: ['System'],
+    request: { query: getCompanyMetricCompletenessQuerySchema },
+    responses: {
+      200: { description: '依分類分組的指標完整度掃描結果。', content: { 'application/json': { schema: companyMetricCompletenessResultSchema } } },
       400: { description: '缺少 symbol。' },
     },
   });

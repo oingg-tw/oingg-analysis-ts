@@ -194,3 +194,37 @@ export const companyBadgesResultSchema = z.object({
   categories: z.array(companyBadgeCategorySchema).meta({ description: '只列出至少有 1 支 badge 的分類；沒有 badge 的分類（例如 profitability）不會出現' }),
 });
 export type CompanyBadgesResult = z.infer<typeof companyBadgesResultSchema>;
+
+// 2026-09-13：GET /companies/metric-completeness 的回應 schema——跟 companyBadgeResultSchema
+// 不同的是範圍涵蓋 GET /metrics 全部指標（不限有 badge 的 15 支），且不判定「達成/未達成」
+// （沒有門檻概念），只回答「這家公司這支指標有沒有算出值」，見
+// evaluateCompanyMetricCompleteness.ts 的完整說明。
+export const companyMetricCompletenessEntrySchema = z.object({
+  metricCode: z.string().meta({ description: '對應 GET /metrics 的 metricCode，可直接拿去打 metric-history/metric-provenance' }),
+  name: z.string().meta({ description: '指標中文名稱' }),
+  nameEn: z.string().optional().meta({ description: '英文名稱，選填，沒有時是 undefined' }),
+  token: z.string().nullable().meta({ description: '這次查詢用的代表性 token（優先 TTM，否則取第一個可用 token）；null 代表這支 metricCode 沒有任何可用 token（防呆用，目前沒有已知案例）' }),
+  hasValue: z.boolean().meta({ description: '這個 token 下最新一期是否有算出值' }),
+  nullReason: z
+    .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
+    .nullable()
+    .meta({ description: 'hasValue 為 false 時的原因；hasValue 為 true 時一律是 null。token 為 null 時也一律是 null' }),
+});
+export type CompanyMetricCompletenessEntry = z.infer<typeof companyMetricCompletenessEntrySchema>;
+
+export const companyMetricCompletenessCategorySchema = z.object({
+  categoryKey: z.string().meta({ description: '對應 GET /metrics 的 categoryKey' }),
+  categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「財務韌性」' }),
+  metrics: z.array(companyMetricCompletenessEntrySchema),
+  coveredCount: z.number().int().meta({ description: '這個分類裡 hasValue 為 true 的指標數' }),
+  totalCount: z.number().int().meta({ description: '這個分類的指標總數' }),
+});
+export type CompanyMetricCompletenessCategory = z.infer<typeof companyMetricCompletenessCategorySchema>;
+
+export const companyMetricCompletenessResultSchema = z.object({
+  symbol: z.string(),
+  coveredCount: z.number().int().meta({ description: '全部分類加總的 hasValue 為 true 指標數' }),
+  totalCount: z.number().int().meta({ description: '全部分類加總的指標總數' }),
+  categories: z.array(companyMetricCompletenessCategorySchema),
+});
+export type CompanyMetricCompletenessResult = z.infer<typeof companyMetricCompletenessResultSchema>;

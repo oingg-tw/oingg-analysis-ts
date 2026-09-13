@@ -1,7 +1,5 @@
 import { scanMetricFolderCatalog } from '@/api/bff/metrics/metricFolderCatalog';
-import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
-import { getMetricHistory } from '../queryMetricHistory';
-import { getDailyCadenceMetricHistory } from '../queryDailyCadenceMetricHistory';
+import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
 import type { MetricBadge } from '../../metricDefinitionSpec';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -34,30 +32,6 @@ export interface CompanyBadgeCategory {
   categoryDisplayName: string;
   badges: CompanyBadgeResult[];
 }
-
-const DATA_TYPE = '2'; // 既有 metric-history 端點的既定慣例：'2' = 合併口徑，不分子公司
-const SUBSIDIARY_COMPANY_ID = '';
-
-// 查一支 metricCode 在給定 token 下的最新一筆值——不管是季報型還是逐日型指標，呼叫端
-// 不用自己判斷該查哪張表，跟既有 GET /companies/metric-history 同一套 resolveTokenForMetric
-// + isDailyCadence 分流邏輯，避免兩處各自維護一份判斷。
-const fetchLatestValue = async (symbol: string, metricCode: string, token: string): Promise<{ value: number | null; nullReason: MetricNullReason | null } | null> => {
-  let fieldRef;
-  try {
-    fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
-  } catch (error) {
-    if (error instanceof ScreenerValidationError) return null;
-    throw error;
-  }
-
-  const result = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1);
-
-  const latest = result.entries.at(-1);
-  if (!latest) return { value: null, nullReason: null };
-  return { value: latest.value, nullReason: latest.nullReason };
-};
 
 // 依 threshold 的比較詞彙判定是否達成。value 是這支指標自己的數值，compareValue 是
 // compareAgainstFieldId 指向的另一支指標的數值（只有 comparator 搭配 compareAgainstFieldId
@@ -108,12 +82,12 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult> => {
           const badge = metric.badge!;
           const token = badge.token!; // 已在上面過濾掉 token undefined 的 badge（目前只有 piotroskiFScore）
-          const fetched = await fetchLatestValue(symbol, metric.metricCode, token);
+          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, token);
 
           let compareValue: number | null = null;
           if (badge.threshold.compareAgainstFieldId) {
             const [compareMetricCode, compareToken] = badge.threshold.compareAgainstFieldId.split('.');
-            const compareFetched = await fetchLatestValue(symbol, compareMetricCode!, compareToken!);
+            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareToken!);
             compareValue = compareFetched?.value ?? null;
           }
 
