@@ -3,7 +3,7 @@ import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type Income
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { calculateDupontTaxBurden } from './calculateDupontTaxBurden';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求：GET /companies/:symbol/metric-provenance 擴大到 dupontTaxBurden。
 // 現查現算不持久化，跟 getRoeProvenance.ts 同一個模式——刻意不動 computeDupontFamilyPit.ts
@@ -23,8 +23,6 @@ const pickNetIncome = (record: IncomeStatementFields | null): PickedField => {
   if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
   return { value: null, fieldKey: null };
 };
-
-const toEntryValue = (value: bigint | null | undefined): string | number | null => (value === null || value === undefined ? null : value.toString());
 
 export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -77,7 +75,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery):
         statementType: 'incomeStatement' as const,
         fieldKey: netIncomes[i]!.fieldKey,
         sourceDescription: null,
-        value: toEntryValue(netIncomes[i]!.value),
+        value: toProvenanceEntryValue(netIncomes[i]!.value),
       },
       {
         role: `TTM 稅前淨利（第 ${i + 1}/4 季）`,
@@ -87,7 +85,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery):
         statementType: 'incomeStatement' as const,
         fieldKey: 'profit_loss_before_tax',
         sourceDescription: null,
-        value: toEntryValue(preTaxes[i]),
+        value: toProvenanceEntryValue(preTaxes[i]),
       },
     ];
   });

@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveSueInputs, type SueQuarterDetail } from './computeSuePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 sue 試點，
 // 現查現算不持久化。完整計算需要 24 季資料（估 20 期 UE 的樣本標準差），若每季都列成
@@ -8,7 +8,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // 可逐格核對的原始事實。拍板：entries 只列「構成本季 UE」的 4 筆（本季/去年同季各自的
 // 淨利+股數），20 期樣本本身不逐筆列出，改用 methodologyNote 講清楚這個取捨。
 
-const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 const buildQuarterEntries = (detail: SueQuarterDetail, label: string): ProvenanceEntry[] => {
   const netIncomeEntry: ProvenanceEntry = {
@@ -19,7 +18,7 @@ const buildQuarterEntries = (detail: SueQuarterDetail, label: string): Provenanc
     statementType: 'incomeStatement',
     fieldKey: detail.netIncome.fieldKey,
     sourceDescription: null,
-    value: toEntryValue(detail.netIncome.value),
+    value: toProvenanceEntryValue(detail.netIncome.value),
   };
 
   const sharesEntry: ProvenanceEntry = {
@@ -30,7 +29,7 @@ const buildQuarterEntries = (detail: SueQuarterDetail, label: string): Provenanc
     statementType: null,
     fieldKey: null,
     sourceDescription: '公開發行公司股本變動申報',
-    value: toEntryValue(detail.shares),
+    value: toProvenanceEntryValue(detail.shares),
   };
 
   return [netIncomeEntry, sharesEntry];

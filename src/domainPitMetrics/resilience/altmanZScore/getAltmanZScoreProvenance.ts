@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveAltmanZScoreInputs } from './computeAltmanZScorePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
 // altmanZScore 試點，現查現算不持久化。這是三支裡工作量最大的一支——X1/X2 用本季資產負債表
@@ -8,7 +8,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // metricCode 同一套邏輯，不是單一原始科目，用 type:'other' 標示）。totalAssets 同時是
 // X1/X2/X3/X5 的分母，只列一次（role 講清楚它被用在哪幾個係數），不重複四次。
 
-const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const resolution = await resolveAltmanZScoreInputs(query);
@@ -28,7 +27,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
       statementType: 'balanceSheet',
       fieldKey: 'current_assets',
       sourceDescription: null,
-      value: toEntryValue(currentAssets),
+      value: toProvenanceEntryValue(currentAssets),
     },
     {
       role: '流動負債（X1 分子）',
@@ -38,7 +37,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
       statementType: 'balanceSheet',
       fieldKey: 'current_liabilities',
       sourceDescription: null,
-      value: toEntryValue(currentLiabilities),
+      value: toProvenanceEntryValue(currentLiabilities),
     },
     {
       role: '保留盈餘（X2 分子）',
@@ -48,7 +47,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
       statementType: 'balanceSheet',
       fieldKey: 'retained_earnings',
       sourceDescription: null,
-      value: toEntryValue(retainedEarnings),
+      value: toProvenanceEntryValue(retainedEarnings),
     },
     {
       role: '總資產（X1/X2/X3/X5 共用分母）',
@@ -58,7 +57,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
       statementType: 'balanceSheet',
       fieldKey: 'assets',
       sourceDescription: null,
-      value: toEntryValue(totalAssets),
+      value: toProvenanceEntryValue(totalAssets),
     },
     {
       role: '總負債（X4 分母）',
@@ -68,7 +67,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
       statementType: 'balanceSheet',
       fieldKey: 'liabilities',
       sourceDescription: null,
-      value: toEntryValue(totalLiabilities),
+      value: toProvenanceEntryValue(totalLiabilities),
     },
     {
       role: '市值（X4 分子，= 流通股數 × 股價，見 marketCap 指標）',
@@ -91,7 +90,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
           statementType: 'incomeStatement' as const,
           fieldKey: 'profit_loss_before_tax',
           sourceDescription: null,
-          value: toEntryValue(detail.profitBeforeTax),
+          value: toProvenanceEntryValue(detail.profitBeforeTax),
         },
         {
           role: `${label}：財務成本（利息費用）`,
@@ -101,7 +100,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
           statementType: 'incomeStatement' as const,
           fieldKey: 'finance_costs',
           sourceDescription: null,
-          value: toEntryValue(detail.financeCosts),
+          value: toProvenanceEntryValue(detail.financeCosts),
         },
         {
           role: `${label}：營業收入`,
@@ -111,7 +110,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Pr
           statementType: 'incomeStatement' as const,
           fieldKey: 'revenue',
           sourceDescription: null,
-          value: toEntryValue(detail.operatingRevenue),
+          value: toProvenanceEntryValue(detail.operatingRevenue),
         },
       ];
     }),

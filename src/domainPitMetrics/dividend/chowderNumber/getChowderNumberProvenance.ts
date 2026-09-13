@@ -5,7 +5,7 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult } from './computeChowderNumberPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 chowderNumber
 // 試點，現查現算不持久化。刻意不跟 computeAndWriteChowderNumberPit 共用一個 resolver——
@@ -16,11 +16,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 
 const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 
-const toEntryValue = (value: bigint | number | null): string | number | null => {
-  if (value === null) return null;
-  return typeof value === 'bigint' ? value.toString() : value;
-};
-
 const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult, label: string): ProvenanceEntry[] =>
   proxy.quarters.map((q) => ({
     role: `${label} 第 ${q.season} 季發放現金股利`,
@@ -30,7 +25,7 @@ const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult, lab
     statementType: 'cashFlowStatement',
     fieldKey: 'dividends_paid_financing',
     sourceDescription: null,
-    value: toEntryValue(q.dividendsPaid),
+    value: toProvenanceEntryValue(q.dividendsPaid),
   }));
 
 export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {

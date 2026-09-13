@@ -51,3 +51,12 @@ export const metricProvenanceResultSchema = z.object({
     .meta({ description: '部分指標的完整計算方法無法用單純的原始欄位清單完整呈現時的補充說明（例如 SUE 的 20 期標準差樣本未逐筆列出）；其餘指標為 null' }),
 });
 export type MetricProvenanceResult = z.infer<typeof metricProvenanceResultSchema>;
+
+// 2026-09-13 抽出來共用——8 支 get<Metric>Provenance.ts 原本各自複製貼上一份幾乎一樣的
+// 「bigint 轉字串、null/undefined 一律轉 null」轉換（3 種簽章都有：純 bigint|null、
+// bigint|number|null、bigint|null|undefined），沒有一份跟 provenanceEntrySchema.value
+// 的型別（string | number | null）搭配起來有實際差異，統一成這支涵蓋全部情境。
+export const toProvenanceEntryValue = (value: bigint | number | null | undefined): string | number | null => {
+  if (value === null || value === undefined) return null;
+  return typeof value === 'bigint' ? value.toString() : value;
+};

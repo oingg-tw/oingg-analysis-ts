@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveAccrualsRatioInputs } from './computeAccrualsRatioPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點，見 pilot 擴大範圍的說明）：GET /companies/:symbol/
 // metric-provenance 的 accrualsRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）
@@ -11,7 +11,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // 本來就是原生申報欄位，`getCashFlowStatementXbrlFirst` 已改成優先採原生值，這裡對應改回
 // statementField，只有極少數原生欄位仍缺漏、退回會計恆等式反推的情況才標記 type:'other'。
 
-const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const resolution = await resolveAccrualsRatioInputs(query);
@@ -32,7 +31,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): P
       statementType: 'incomeStatement',
       fieldKey: detail.netIncome.fieldKey,
       sourceDescription: null,
-      value: toEntryValue(detail.netIncome.value),
+      value: toProvenanceEntryValue(detail.netIncome.value),
     };
     const ocfEntry: ProvenanceEntry = {
       role: `${label}營業活動現金流`,
@@ -42,7 +41,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): P
       statementType: 'cashFlowStatement',
       fieldKey: 'cash_flows_from_used_in_operating_activities',
       sourceDescription: null,
-      value: toEntryValue(detail.cashFlow?.netCashFromOperatingActivities ?? null),
+      value: toProvenanceEntryValue(detail.cashFlow?.netCashFromOperatingActivities ?? null),
     };
     const icfEntry: ProvenanceEntry = {
       role: `${label}投資活動現金流`,
@@ -52,7 +51,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): P
       statementType: 'cashFlowStatement',
       fieldKey: 'net_cash_flows_from_used_in_investing_activities',
       sourceDescription: null,
-      value: toEntryValue(detail.cashFlow?.netCashFromInvestingActivities ?? null),
+      value: toProvenanceEntryValue(detail.cashFlow?.netCashFromInvestingActivities ?? null),
     };
     return [netIncomeEntry, ocfEntry, icfEntry];
   });
@@ -65,7 +64,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): P
     statementType: 'balanceSheet',
     fieldKey: 'assets',
     sourceDescription: null,
-    value: toEntryValue(totalAssets),
+    value: toProvenanceEntryValue(totalAssets),
   });
 
   return {

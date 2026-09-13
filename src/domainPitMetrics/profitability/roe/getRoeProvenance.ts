@@ -1,7 +1,7 @@
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveRoeQuarterData } from './computeRoePit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 roe 試點，
 // 現查現算不持久化，見 getPiotroskiFScoreBreakdown.ts 同一天稍早的先例。目前固定回傳
@@ -11,7 +11,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // fieldKey 永遠是 XBRL 的 snake_case key，缺資料時直接是 null（missing_input 情境），
 // 不是「有資料但來源不同」。
 
-const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 export const getRoeProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const resolution = await resolveRoeQuarterData(query);
@@ -36,7 +35,7 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery): Promise<Met
     statementType,
     fieldKey: picked.fieldKey,
     sourceDescription: null,
-    value: toEntryValue(picked.value),
+    value: toProvenanceEntryValue(picked.value),
   });
 
   const entries: ProvenanceEntry[] = [

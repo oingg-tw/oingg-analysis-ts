@@ -1,6 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveDividendPayoutRatioInputs } from './computeDividendPayoutRatioPit';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
 // dividendPayoutRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）需要 4 季 ×
@@ -9,7 +9,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // 仍然如實顯示 null（原始欄位真的是 null），不偷偷改成 0，跟寫入路徑「加總時當 0」是
 // 兩件事：這裡呈現的是原始事實，不是計算過程中的替代值。
 
-const toEntryValue = (value: bigint | null): string | number | null => (value === null ? null : value.toString());
 
 export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const resolution = await resolveDividendPayoutRatioInputs(query);
@@ -30,7 +29,7 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
       statementType: 'incomeStatement',
       fieldKey: detail.netIncome.fieldKey,
       sourceDescription: null,
-      value: toEntryValue(detail.netIncome.value),
+      value: toProvenanceEntryValue(detail.netIncome.value),
     };
     const dividendsPaidEntry: ProvenanceEntry = {
       role: `${label}發放現金股利`,
@@ -40,7 +39,7 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
       statementType: 'cashFlowStatement',
       fieldKey: 'dividends_paid_financing',
       sourceDescription: null,
-      value: toEntryValue(detail.cashFlow?.dividendsPaid ?? null),
+      value: toProvenanceEntryValue(detail.cashFlow?.dividendsPaid ?? null),
     };
     return [netIncomeEntry, dividendsPaidEntry];
   });

@@ -4,7 +4,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { calculateEbit } from '../../shared/dupont/ebit';
 import { calculateDupontInterestBurden } from './calculateDupontInterestBurden';
-import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求：GET /companies/:symbol/metric-provenance 擴大到
 // dupontInterestBurden。跟 getDupontTaxBurdenProvenance.ts 同一個模式（現查現算不持久化，
@@ -14,8 +14,6 @@ import type { MetricProvenanceResult, ProvenanceEntry } from '../../shared/prove
 // EBIT = 稅前淨利 + 財務費用，本身不是財報原始欄位，是本服務的衍生中繼值——稽核鏈只列出
 // 兩個真正的原始欄位（profit_loss_before_tax/finance_costs），methodologyNote 說明
 // EBIT 是這兩者相加得出，不硬塞一個不存在的 fieldKey。
-
-const toEntryValue = (value: bigint | null | undefined): string | number | null => (value === null || value === undefined ? null : value.toString());
 
 export const getDupontInterestBurdenProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -68,7 +66,7 @@ export const getDupontInterestBurdenProvenance = async (query: QuarterlyMetricQu
         statementType: 'incomeStatement' as const,
         fieldKey: 'profit_loss_before_tax',
         sourceDescription: null,
-        value: toEntryValue(preTaxes[i]),
+        value: toProvenanceEntryValue(preTaxes[i]),
       },
       {
         role: `TTM 財務費用（第 ${i + 1}/4 季，跟稅前淨利相加得出 EBIT）`,
@@ -78,7 +76,7 @@ export const getDupontInterestBurdenProvenance = async (query: QuarterlyMetricQu
         statementType: 'incomeStatement' as const,
         fieldKey: 'finance_costs',
         sourceDescription: null,
-        value: toEntryValue(financeCosts[i]),
+        value: toProvenanceEntryValue(financeCosts[i]),
       },
     ];
   });
