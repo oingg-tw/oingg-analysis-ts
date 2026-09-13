@@ -39,6 +39,9 @@ import { getDebtToFcfProvenance } from '@/domainPitMetrics/resilience/debtToFcf/
 import { getAltmanZDoublePrimeScoreProvenance } from '@/domainPitMetrics/resilience/altmanZDoublePrimeScore/getAltmanZDoublePrimeScoreProvenance';
 import { getZmijewskiScoreProvenance } from '@/domainPitMetrics/resilience/zmijewskiScore/getZmijewskiScoreProvenance';
 import { getOhlsonOScoreProvenance } from '@/domainPitMetrics/resilience/ohlsonOScore/getOhlsonOScoreProvenance';
+import { getEpsProvenance } from '@/domainPitMetrics/profitability/eps/getEpsProvenance';
+import { getRevenuePerShareProvenance } from '@/domainPitMetrics/profitability/revenuePerShare/getRevenuePerShareProvenance';
+import { getRoaProvenance } from '@/domainPitMetrics/profitability/roa/getRoaProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -93,4 +96,7 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   altmanZDoublePrimeScore: getAltmanZDoublePrimeScoreProvenance,
   zmijewskiScore: getZmijewskiScoreProvenance,
   ohlsonOScore: getOhlsonOScoreProvenance,
+  eps: getEpsProvenance,
+  revenuePerShare: getRevenuePerShareProvenance,
+  roa: getRoaProvenance,
 };
