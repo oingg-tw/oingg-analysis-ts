@@ -7,13 +7,13 @@ import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——buybackYield(TTM) = 近四季買回庫藏股支付現金加總
-// （取絕對值）/ 本季報告日市值 * 100。跟 computeBuybackYieldPit.ts 一致，買回金額只查
-// XBRL 現金流量表長表這一個欄位（沒有舊表 fallback）。固定回傳 TTM。
+// （取絕對值，單位千元，換算成元）/ 本季報告日市值（單位元）* 100。跟
+// computeBuybackYieldPit.ts 一致，買回金額只查 XBRL 現金流量表長表這一個欄位（沒有舊表
+// fallback）。固定回傳 TTM。
 //
-// 注意：computeBuybackYieldPit.ts 的分子（現金流量表欄位，千元）直接除以分母（
-// getMarketCapAsOf 回傳的市值，單位是元，未乘 1000 換算成千元或反過來），量綱不一致，
-// 這裡照樣重現既有寫入路徑的公式（不在稽核鏈裡靜默改寫），但已個別回報使用者確認是否
-// 為既有計算 bug。
+// 2026-09-13 稽核鏈驗證時發現原公式少做了千元換元的 x1000（分子千元直接除以分母的元，
+// 量綱不一致，實際數值被低估 1000 倍），已在 computeBuybackYieldPit.ts 修正並回填全市場
+// 歷史資料，這裡同步套用修正後的公式。
 
 const getTreasurySharesPurchased = async (key: {
   symbol: string;
@@ -61,7 +61,7 @@ export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery): Pr
   const buybackAbs = buybackTtmSum < 0n ? -buybackTtmSum : buybackTtmSum;
 
   const marketCap = reportDate ? await getMarketCapAsOf(symbol, reportDate) : null;
-  const value = complete && marketCap && marketCap.marketCap > 0 ? Math.round((Number(buybackAbs) / marketCap.marketCap) * 100 * 100) / 100 : null;
+  const value = complete && marketCap && marketCap.marketCap > 0 ? Math.round(((Number(buybackAbs) * 1000) / marketCap.marketCap) * 100 * 100) / 100 : null;
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
@@ -96,7 +96,6 @@ export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery): Pr
     fiscalQuarter: seasonNum,
     value,
     entries,
-    methodologyNote:
-      '分子買回庫藏股支付現金取絕對值後 TTM 加總（原始資料是現金流出負值），單位千元；分母市值單位是元——既有寫入路徑（computeBuybackYieldPit.ts）本身未做千元/元的量綱換算就直接相除，這裡原樣重現該公式供稽核，不在稽核鏈裡靜默修正。',
+    methodologyNote: '分子買回庫藏股支付現金取絕對值後 TTM 加總（原始資料是現金流出負值），單位千元，乘 1000 換算成元後再除以市值（單位元）。',
   };
 };

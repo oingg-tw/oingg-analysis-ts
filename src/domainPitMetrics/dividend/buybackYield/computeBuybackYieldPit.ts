@@ -78,8 +78,11 @@ export const computeAndWriteBuybackYieldPit = async (query: QuarterlyMetricQuery
   const buybackAbs = buybackTtmSum < 0n ? -buybackTtmSum : buybackTtmSum;
 
   const marketCap = reportDate ? await getMarketCapAsOf(symbol, reportDate) : null;
+  // 2026-09-13 修正量綱 bug：buybackAbs 是現金流量表欄位，單位千元；marketCap.marketCap
+  // 是 getMarketCapAsOf 回傳的市值，單位元。先前這裡直接相除沒有做 x1000 換算，導致算出來
+  // 的殖利率被低估 1000 倍——稽核鏈驗證時發現（見 getBuybackYieldProvenance.ts 的說明）。
   const buybackYieldTtm =
-    ttmComplete && marketCap && marketCap.marketCap > 0 ? Math.round((Number(buybackAbs) / marketCap.marketCap) * 100 * 100) / 100 : null;
+    ttmComplete && marketCap && marketCap.marketCap > 0 ? Math.round(((Number(buybackAbs) * 1000) / marketCap.marketCap) * 100 * 100) / 100 : null;
   const ttmNullReason: MetricNullReason | null = buybackYieldTtm !== null ? null : !ttmComplete ? 'insufficient_history' : 'missing_input';
 
   const coordinateBase = { symbol, metricCode: 'buybackYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
