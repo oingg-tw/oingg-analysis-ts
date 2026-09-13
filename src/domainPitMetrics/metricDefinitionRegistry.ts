@@ -66,7 +66,7 @@ import { pFcfDefinition } from '@/domainPitMetrics/valuation/pFcf/pFcfDefinition
 import { evEbitdaDefinition } from '@/domainPitMetrics/valuation/evEbitda/evEbitdaDefinition';
 import { evToEbitDefinition } from '@/domainPitMetrics/valuation/evToEbit/evToEbitDefinition';
 import { evToFcfDefinition } from '@/domainPitMetrics/valuation/evToFcf/evToFcfDefinition';
-import { priceToResearchRatioDefinition } from '@/domainPitMetrics/valuation/priceToResearchRatio/priceToResearchRatioDefinition';
+import { priceToResearchRatioDefinition } from '@/domainPitMetrics/growth/priceToResearchRatio/priceToResearchRatioDefinition';
 import { roicDefinition } from '@/domainPitMetrics/profitability/roic/roicDefinition';
 import { roceDefinition } from '@/domainPitMetrics/profitability/roce/roceDefinition';
 import { grossMarginDefinition } from '@/domainPitMetrics/profitability/grossMargin/grossMarginDefinition';
