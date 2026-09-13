@@ -20,6 +20,9 @@
 //   pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts
 //   PILOT_LIMIT=30 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（單一季小批次測試）
 //   PILOT_QUARTERS=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（只跑最舊的 N 季）
+//   ONLY_QUARTERS=115Q1,115Q2 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（只跑
+//     指定的季度，其餘不查也不跳過提示——用在「已經確認某幾季真的跑完，只想繼續剩下
+//     沒跑過的」，跟 PILOT_QUARTERS 只能取最舊 N 季不同）
 //   FORCE_RESTART=1 pnpm tsx scripts/backfillFullHistoryFullMarketPit.ts（忽略續跑進度檔，
 //     全部從頭重跑）
 //
@@ -208,7 +211,18 @@ const main = async () => {
 
   const PILOT_LIMIT = process.env.PILOT_LIMIT ? Number(process.env.PILOT_LIMIT) : undefined;
   const PILOT_QUARTERS = process.env.PILOT_QUARTERS ? Number(process.env.PILOT_QUARTERS) : undefined;
-  const quarters = PILOT_QUARTERS ? QUARTERS.slice(0, PILOT_QUARTERS) : QUARTERS;
+  const ONLY_QUARTERS = process.env.ONLY_QUARTERS
+    ? new Set(
+        process.env.ONLY_QUARTERS.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    : undefined;
+  const quarters = ONLY_QUARTERS
+    ? QUARTERS.filter((q) => ONLY_QUARTERS.has(`${q.year}Q${q.season}`))
+    : PILOT_QUARTERS
+      ? QUARTERS.slice(0, PILOT_QUARTERS)
+      : QUARTERS;
 
   const allErrors: BackfillFailure[] = [];
   const t0 = Date.now();
