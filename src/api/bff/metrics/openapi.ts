@@ -102,6 +102,13 @@ const metricFolderCatalogEntrySchema = z.object({
         '2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）搬過來，' +
         '只有 15 支指標有，其餘指標這個欄位是 undefined。',
     }),
+  hasProvenance: z.boolean().meta({
+    description:
+      '2026-09-13 新增：這支 metricCode 是否支援 GET /companies/:symbol/metric-provenance' +
+      '（稽核鏈/原始欄位溯源）——目前只有一批試點指標支援，範圍會逐批擴大，前端應該讀這個' +
+      '欄位動態決定要不要顯示「查看稽核鏈」的入口，不要自己另外維護一份 metricCode 清單' +
+      '（那份清單只會跟這裡的擴大進度脫節）。必填，不會是 undefined。',
+  }),
 });
 
 const metricFolderCatalogCategorySchema = z.object({
