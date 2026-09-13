@@ -3,7 +3,7 @@ import { resolveDividendPayoutRatioInputs } from './computeDividendPayoutRatioPi
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
-// dividendPayoutRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）需要 4 季 ×
+// dividendPayoutRatio 試點，現查現算不持久化。TTM basis（badge 用的 timeframe）需要 4 季 ×
 // （淨利 + 股利發放）= 8 筆，都是真實可對照的原始欄位，不像 sue 需要截斷，全部列出。
 // 股利發放缺漏視為 0（大多數季度本來就沒發放，不是資料缺漏）——這種情況 entry 的 value
 // 仍然如實顯示 null（原始欄位真的是 null），不偷偷改成 0，跟寫入路徑「加總時當 0」是

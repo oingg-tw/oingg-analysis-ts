@@ -2,7 +2,7 @@ import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { scanMetricFolderCatalog } from '@/api/bff/metrics/metricFolderCatalog';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
+import { validTimeframesForMetric } from '@/api/bff/screener/fieldResolver';
 
 // 2026-09-08：取代舊架構的 filterCatalog.csv（連同整套 filterCatalog/screener/
 // metricsService 機制一起退場，見 abstract-crafting-journal.md）——這支直接掃描
@@ -16,7 +16,7 @@ describe('scanMetricFolderCatalog', () => {
       assert.ok(category.metrics.length > 0, `分類 "${category.categoryKey}" 不應該出現在結果裡卻沒有任何指標`);
       for (const metric of category.metrics) {
         assert.ok(metric.metricCode in metricDefinitionRegistry, `"${metric.metricCode}"（分類 "${category.categoryKey}"）應該要在 metricDefinitionRegistry 裡`);
-        assert.deepEqual(metric.validTokens, validTokensForMetric(metric.metricCode));
+        assert.deepEqual(metric.validTimeframes, validTimeframesForMetric(metric.metricCode));
       }
     }
   });

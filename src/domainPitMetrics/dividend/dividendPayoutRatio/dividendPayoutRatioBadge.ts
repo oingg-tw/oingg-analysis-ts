@@ -21,7 +21,7 @@ export const dividendPayoutRatioBadge: MetricBadge = {
     '高配息產業慣例上發放率本來就偏高，屬產業特性差異，不是絕對標準。這不是一個有專屬名稱的正式法則' +
     '（不像 Chowder Rule 那樣有具體命名），也不是單一學術論文，而是 Fidelity 這份研究報告提出的具體' +
     '區間建議。',
-  token: 'TTM',
+  timeframe: 'TTM',
   threshold: {
     description: '40%–60%',
     thresholdLatex: '40 \\le \\mathrm{DividendPayoutRatio} \\le 60',

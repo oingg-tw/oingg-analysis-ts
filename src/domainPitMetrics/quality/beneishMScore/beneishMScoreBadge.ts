@@ -10,6 +10,6 @@ export const beneishMScoreBadge: MetricBadge = {
     '（例如提前認列營收、虛增應收帳款）。模型結合應收帳款成長率、毛利率變化、資產品質變化、營收成長率、' +
     '折舊政策變化、銷管費用變化、財務槓桿變化、應計項目等 8 個會計比率，加權計算出一個綜合分數。分數本身' +
     '是統計模型對「財報數字是否出現操縱跡象常見的異常模式」的量化呈現，不等於已認定財報造假。',
-  token: 'Q',
+  timeframe: 'Q',
   threshold: { description: '< -1.78', thresholdLatex: '\\mathrm{M} < -1.78', note: 'Beneish 原始論文劃定的疑似操縱門檻', denominator: 1, comparator: 'lt', value: -1.78 },
 };

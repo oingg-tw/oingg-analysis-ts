@@ -14,6 +14,6 @@ export const cashConversionCycleBadge: MetricBadge = {
     '零售/電商業者，不是單一學術論文提出的法則，而是業界公認的營運資金效率指標。需要注意的' +
     '是：這個訊號的解讀跟產業特性高度相關——零售/量販業常態性負 CCC 是這個商業模式的正常' +
     '現象，不代表特別優異；製造業出現負 CCC 才比較少見、值得特別留意。',
-  token: 'TTM',
+  timeframe: 'TTM',
   threshold: { description: '< 0', thresholdLatex: '\\mathrm{CCC} < 0', denominator: 1, comparator: 'lt', value: 0 },
 };

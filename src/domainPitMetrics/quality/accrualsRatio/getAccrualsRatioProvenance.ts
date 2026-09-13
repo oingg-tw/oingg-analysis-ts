@@ -3,7 +3,7 @@ import { resolveAccrualsRatioInputs } from './computeAccrualsRatioPit';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點，見 pilot 擴大範圍的說明）：GET /companies/:symbol/
-// metric-provenance 的 accrualsRatio 試點，現查現算不持久化。TTM basis（badge 用的 token）
+// metric-provenance 的 accrualsRatio 試點，現查現算不持久化。TTM basis（badge 用的 timeframe）
 // 需要 4 季 × (淨利 + OCF + ICF) = 12 筆 + 1 筆本季期末總資產（分母，不隨 TTM 加總）= 13 筆，
 // 每一筆都是真實可對照的原始欄位（不是統計估計值），不像 sue 需要截斷，全部列出。ICF
 // （netCashFromInvestingActivities）原本誤判成沒有對應的單一 XBRL 欄位、標記成

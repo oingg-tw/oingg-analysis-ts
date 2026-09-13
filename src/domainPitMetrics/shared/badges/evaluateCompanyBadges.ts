@@ -21,7 +21,7 @@ export interface CompanyBadgeResult {
   metricCode: string;
   name: string;
   nameEn?: string;
-  token: string;
+  timeframe: string;
   value: number | null;
   nullReason: MetricNullReason | null;
   passed: boolean | null;
@@ -73,21 +73,21 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
 
   const categories = await Promise.all(
     catalog.map(async ({ categoryKey, categoryDisplayName, metrics }) => {
-      // piotroskiFScore 的 badge 沒有 token/comparator（文件明講它的「N 選 M」門檻邏輯
+      // piotroskiFScore 的 badge 沒有 timeframe/comparator（文件明講它的「N 選 M」門檻邏輯
       // 無法用這裡的通用比較詞彙表達，見 metricDefinitionSpec.ts 的 threshold 說明），硬塞
-      // 進這支端點只會生出沒有意義的 token:''/passed:null。它已經有專門的
+      // 進這支端點只會生出沒有意義的 timeframe:''/passed:null。它已經有專門的
       // GET /companies/piotroski-breakdown 端點處理真正的判定邏輯，這裡直接跳過。
-      const badgeMetrics = metrics.filter((m) => m.badge && m.badge.token !== undefined);
+      const badgeMetrics = metrics.filter((m) => m.badge && m.badge.timeframe !== undefined);
       const badges = await Promise.all(
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult> => {
           const badge = metric.badge!;
-          const token = badge.token!; // 已在上面過濾掉 token undefined 的 badge（目前只有 piotroskiFScore）
-          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, token);
+          const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge（目前只有 piotroskiFScore）
+          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe);
 
           let compareValue: number | null = null;
           if (badge.threshold.compareAgainstFieldId) {
-            const [compareMetricCode, compareToken] = badge.threshold.compareAgainstFieldId.split('.');
-            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareToken!);
+            const [compareMetricCode, compareTimeframe] = badge.threshold.compareAgainstFieldId.split('.');
+            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareTimeframe!);
             compareValue = compareFetched?.value ?? null;
           }
 
@@ -95,7 +95,7 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
           const nullReason = fetched?.nullReason ?? null;
           const passed = value === null ? null : evaluateComparator(badge.threshold, value, compareValue);
 
-          return { metricCode: metric.metricCode, name: badge.name, nameEn: badge.nameEn, token, value, nullReason, passed };
+          return { metricCode: metric.metricCode, name: badge.name, nameEn: badge.nameEn, timeframe, value, nullReason, passed };
         })
       );
       return { categoryKey, categoryDisplayName, badges };

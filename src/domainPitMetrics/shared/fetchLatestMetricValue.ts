@@ -1,9 +1,9 @@
-import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
+import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
 import { getMetricHistory } from './queryMetricHistory';
 import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
 import type { MetricNullReason } from '../metricBasis';
 
-// 2026-09-13 從 evaluateCompanyBadges.ts 抽出來共用——查一支 metricCode 在給定 token 下的
+// 2026-09-13 從 evaluateCompanyBadges.ts 抽出來共用——查一支 metricCode 在給定 timeframe 下的
 // 最新一筆值，不管是季報型還是逐日型指標，呼叫端不用自己判斷該查哪張表。除了 badges 端點，
 // evaluateCompanyMetricCompleteness.ts（指標完整度掃描）也需要同一段邏輯，這裡開始有第二個
 // 消費者，抽成共用模組。
@@ -16,13 +16,13 @@ export interface LatestMetricValue {
   nullReason: MetricNullReason | null;
 }
 
-// token 不合法（例如已排除的 metricCode，或呼叫端傳了這支 metricCode 不支援的 token）回傳
-// null，不 throw——呼叫端（一次掃很多 metricCode 的情境）不應該因為單一 metricCode 的 token
+// timeframe 不合法（例如已排除的 metricCode，或呼叫端傳了這支 metricCode 不支援的 timeframe）回傳
+// null，不 throw——呼叫端（一次掃很多 metricCode 的情境）不應該因為單一 metricCode 的 timeframe
 // 問題整批失敗。
-export const fetchLatestMetricValue = async (symbol: string, metricCode: string, token: string): Promise<LatestMetricValue | null> => {
+export const fetchLatestMetricValue = async (symbol: string, metricCode: string, timeframe: string): Promise<LatestMetricValue | null> => {
   let fieldRef;
   try {
-    fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
+    fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
   } catch (error) {
     if (error instanceof ScreenerValidationError) return null;
     throw error;

@@ -4,7 +4,7 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 // 是同一種「這個東西的人類可讀名稱」概念（只是一個描述法則、一個描述指標本身），原本各自
 // 宣告導致 <metricCode>Badge.ts 跟 <metricCode>Definition.ts 형狀高度重複——先抽出這組
 // 共用欄位，id 已確認跟 metricCode 純粹重複（沒有法則本身以外的語意），直接刪除、改用
-// MetricDefinitionSpec.metricCode。author/summary/detail/threshold/token 這些沒有
+// MetricDefinitionSpec.metricCode。author/summary/detail/threshold/timeframe 這些沒有
 // 對應的重複對象，暫不合併，未來如果出現新的重複欄位再繼續抽。
 //
 // 2026-09-12 追加：MetricDefinitionSpec 本身也改用這個共用型別（displayName/
@@ -43,12 +43,12 @@ export interface MetricBadge extends NamedEntity {
   author: string;
   summary: string;
   detail: string;
-  // 2026-09-10：這支指標本身要用哪個 token 讀值來套用這個門檻（例如 altmanZScore 用
+  // 2026-09-10：這支指標本身要用哪個 timeframe 讀值來套用這個門檻（例如 altmanZScore 用
   // 'TTM'，sue 用 'Q'，chowderNumber 用 'FY'），必須是這支 metricCode 自己
   // allowedPeriodTypes/allowedSnapshotCadences 陣列裡真的存在的值——前端不用自己猜
-  // 該讀哪個 basis。allPositiveFieldIds 已經自帶完整 "metricCode.token" 字串
-  // （例如 "eps.TTM"），token 語意已經內含在裡面，這種情況本欄位留空。
-  token?: string;
+  // 該讀哪個 basis。allPositiveFieldIds 已經自帶完整 "metricCode.timeframe" 字串
+  // （例如 "eps.TTM"），timeframe 語意已經內含在裡面，這種情況本欄位留空。
+  timeframe?: string;
   threshold: {
     // 人類可讀的門檻說明，只放門檻本身（例如 "> 2.99"），不要夾帶括號附註——2026-09-10
     // 補訂跟 name/nameEn 同一個原則：括號裡不塞資訊，真的要補充說明另外用 note 欄位，
@@ -89,11 +89,11 @@ export interface MetricBadge extends NamedEntity {
     value?: number;
     valueMin?: number;
     valueMax?: number;
-    // 格式是 "metricCode.token"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
+    // 格式是 "metricCode.timeframe"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
     // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
     // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
     compareAgainstFieldId?: string;
-    // 格式同上，多個 "metricCode.token"，語意是「這些欄位全部都要 > 0」。
+    // 格式同上，多個 "metricCode.timeframe"，語意是「這些欄位全部都要 > 0」。
     allPositiveFieldIds?: string[];
   };
 }
@@ -203,7 +203,7 @@ interface MetricDefinitionSpecBase extends NamedEntity {
 }
 
 // 2026-09-09：原本是 4 個並排陣列（allowedPeriodTypes/allowedLookbackRanges/
-// allowedSamplingIntervals/allowedSnapshotCadences）+ allowedRollingWindowTokens，
+// allowedSamplingIntervals/allowedSnapshotCadences）+ allowedRollingWindowTimeframes，
 // 每個 metricCode 只用得到其中一組，其餘固定填 ['N/A']——這個形狀是 2026-09-08
 // metric_values 還沒拆表、三種指標共用一張表時的設計（DB 欄位本身就是這樣的 NOT NULL +
 // sentinel 形狀）。2026-09-09 拆成 metric_values（純季報型）/
@@ -213,7 +213,7 @@ interface MetricDefinitionSpecBase extends NamedEntity {
 // 每個 metricCode 只宣告它真正用得到的欄位。'period'（季報型，寫進 metric_values）/
 // 'rollingWindow'（Beta 這類滾動統計量）/'snapshot'（純市場快照），後兩者都寫進
 // metric_daily_cadence_values。外部 GET /metrics 回應原本也維持四陣列並排形狀，但
-// bff-ts 早就完全改讀 validTokens、不再碰那四個陣列，2026-09-09 已經把這個形狀從外部
+// bff-ts 早就完全改讀 validTimeframes、不再碰那四個陣列，2026-09-09 已經把這個形狀從外部
 // 回應裡整個拿掉，metric_definitions 表也同一天改成單一 spec JSON 欄位直接存整個
 // MetricDefinitionSpec——原本用來在兩種形狀之間轉換的 legacyAllowedArrays() adapter
 // 已經沒有任何消費端，整個刪除。
@@ -232,9 +232,9 @@ export type MetricDefinitionSpec =
       // 組合**——bff-ts 拿 beta 實測發現 3x3=9 種組合裡只有 3 種（1Y_1D/2Y_1W/5Y_1M）
       // 真的有資料，其餘 6 種雖然通過舊版 fieldResolver 的獨立欄位驗證（各自都在允許
       // 清單內），實際查詢永遠是 total:0 的假選項。這個欄位是唯一正確合法組合來源，
-      // token 格式跟 fieldResolver.ts 的 "<lookbackRange>_<samplingInterval>" 一致
-      // （例如 "2Y_1W"）——resolveTokenForMetric 對這組的驗證要看這個陣列，不能各自
+      // timeframe 格式跟 fieldResolver.ts 的 "<lookbackRange>_<samplingInterval>" 一致
+      // （例如 "2Y_1W"）——resolveTimeframeForMetric 對這組的驗證要看這個陣列，不能各自
       // 檢查兩個獨立陣列的 includes()。
-      allowedRollingWindowTokens: string[];
+      allowedRollingWindowTimeframes: string[];
     })
   | (MetricDefinitionSpecBase & { group: 'snapshot'; allowedSnapshotCadences: SnapshotCadence[] });

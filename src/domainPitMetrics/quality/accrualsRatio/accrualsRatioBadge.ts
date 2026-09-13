@@ -12,7 +12,7 @@ export const accrualsRatioBadge: MetricBadge = {
     '現金流）÷ 平均總資產」，比率越高代表當期盈餘越依賴會計估計與調整撐出來，而非實際收到的現金，是財報' +
     '鑑識領域最常被引用的盈餘品質指標之一。註：Sloan 原始論文用十分位排序法，本站採實務上常用的 ±10%' +
     '固定門檻，非原論文精確數字。',
-  token: 'TTM',
+  timeframe: 'TTM',
   threshold: {
     description: '絕對值 < 10%',
     thresholdLatex: '|\\mathrm{AccrualsRatio}| < 10',

@@ -8,7 +8,7 @@ import { getMetricHistory } from '@/domainPitMetrics/shared/queryMetricHistory';
 import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
-import { resolveTokenForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
+import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
 import type { PeriodType } from '@/domainPitMetrics/metricBasis';
 
 // 查無資料回傳空陣列，不是 404——mops 這批資料目前不是每家公司都有覆蓋，「查無股本異動
@@ -134,8 +134,8 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
     .string({ error: 'metricCode is required.' })
     .min(1)
     .meta({ description: 'point-in-time 架構的指標代碼，例如 "eps"、"bvps"——完整清單見 metricDefinitionRegistry.ts，之後新增指標會持續增加', example: 'eps' }),
-  token: z
-    .string({ error: 'token is required.' })
+  timeframe: z
+    .string({ error: 'timeframe is required.' })
     .min(1)
     .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
@@ -143,7 +143,7 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
 
 // 泛化版的單一 metric_code 歷史查詢端點——2026-09-06 point-in-time 架構第三批遷移（10 個
 // 新 metric_code）動工前新增，取代「每遷一支指標就在這三個檔案各自複製貼上一段」的模式
-// （roe-history/roa-history 就是這樣長出來的）。metricCode/token 都不是寫死的 zod enum，
+// （roe-history/roa-history 就是這樣長出來的）。metricCode/timeframe 都不是寫死的 zod enum，
 // 而是動態查 metricDefinitionRegistry——這份 registry 之後會持續成長，沒辦法每次新增指標
 // 都回來改一次這裡的型別。roe-history/roa-history/dupont-history 三支既有端點維持不動，
 // 這支只是之後新增指標的曝露管道，不是要取代它們（dupont-history 是真正的多 metric_code
@@ -152,6 +152,11 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
 // token 並改用 resolveTokenForMetric（跟 screener/fieldResolver.ts 的 "metricCode.token"
 // 解析共用同一套四組判斷邏輯）——這是「metric_values.basis 拆成四個精準命名欄位」重構
 // 的一部分，basis 這個字本身違反 ubiquitous language，見 abstract-crafting-journal.md。
+// 2026-09-14：token 再改名 timeframe（resolveTokenForMetric -> resolveTimeframeForMetric）——
+// token 一樣是「隨便一個識別字串」的空洞用詞，沒有傳達「這是在挑時間切法」的領域語意，
+// timeframe 是金融/交易類 API 常見用語（K 線圖 1D/1W/1M 就叫 timeframe），三種指標形狀
+// （period/rollingWindow/snapshot）都套得上去。這是對外 API 契約變更（query 參數
+// token= 改成 timeframe=），bff-ts 內部 basis->token 的轉換要同步改成 basis->timeframe。
 export const getCompanyMetricHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validationResult = getCompanyMetricHistoryQuerySchema.safeParse(req.query);
@@ -159,7 +164,7 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, metricCode, token, limit } = validationResult.data;
+    const { symbol, metricCode, timeframe, limit } = validationResult.data;
 
     // 2026-09-11 使用者要求：beta 不畫河流圖，沒有查詢單一公司歷史/最新值的需求，直接從
     // 這支端點移除——beta 全市場只回填最新一筆快照（不像 exchangePeRatio/exchangePbRatio/
@@ -171,7 +176,7 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
 
     let fieldRef;
     try {
-      fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
+      fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
     } catch (error) {
       if (error instanceof ScreenerValidationError) {
         return res.status(400).json({ message: error.message });
@@ -185,7 +190,7 @@ export const getCompanyMetricHistory = async (req: Request, res: Response, next:
     const { entries, total, hasMore } = fieldRef.isDailyCadence
       ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, '2', '', limit)
       : await getMetricHistory(symbol, metricCode, fieldRef.periodType, '2', '', limit);
-    res.status(200).json({ symbol, metricCode, token, total, hasMore, entries });
+    res.status(200).json({ symbol, metricCode, timeframe, total, hasMore, entries });
   } catch (error) {
     next(error);
   }
@@ -199,8 +204,8 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
     .string({ error: 'metricCodes is required.' })
     .min(1)
     .meta({ description: `逗號分隔的 metricCode 清單，例如 "grossMargin,operatingMargin,netProfitMargin"（最多 ${MAX_METRIC_CODES_PER_REQUEST} 個）`, example: 'grossMargin,operatingMargin,netProfitMargin' }),
-  token: z
-    .string({ error: 'token is required.' })
+  timeframe: z
+    .string({ error: 'timeframe is required.' })
     .min(1)
     .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
@@ -209,9 +214,10 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
 // 泛化版的「一次抓多個 metric_code」歷史查詢端點——2026-09-07 使用者要「五年三率」（毛利率/
 // 營業利益率/淨利率）一次拿齊時新增。跟 dupont-history 不同：dupont-history 是特定家族寫死
 // 具名欄位的組合端點；這支是任意 metricCode 清單、用 metricCode 當 key 合併回傳，不要求
-// 彼此有語意組裝關係。token 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
+// 彼此有語意組裝關係。timeframe 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
 // （附上是哪個 metricCode 不允許），不會部分成功。
-// 2026-09-08：query 參數原本叫 basis，改名 token（理由同 getCompanyMetricHistory 上方註解）。
+// 2026-09-08：query 參數原本叫 basis，改名 token；2026-09-14 再改名 timeframe（理由同
+// getCompanyMetricHistory 上方註解）。
 export const getCompanyMetricsHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validationResult = getCompanyMetricsHistoryQuerySchema.safeParse(req.query);
@@ -219,7 +225,7 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
       return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
     }
 
-    const { symbol, token, limit } = validationResult.data;
+    const { symbol, timeframe, limit } = validationResult.data;
     const metricCodes = [...new Set(validationResult.data.metricCodes.split(',').map((code) => code.trim()).filter((code) => code.length > 0))];
 
     if (metricCodes.length === 0) {
@@ -237,7 +243,7 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
     for (const metricCode of metricCodes) {
       let fieldRef;
       try {
-        fieldRef = resolveTokenForMetric(metricCode, token, `${metricCode}.${token}`);
+        fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
       } catch (error) {
         if (error instanceof ScreenerValidationError) {
           return res.status(400).json({ message: error.message });
@@ -251,7 +257,7 @@ export const getCompanyMetricsHistory = async (req: Request, res: Response, next
     }
 
     const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, '2', '', limit);
-    res.status(200).json({ symbol, metricCodes, token, total, hasMore, entries });
+    res.status(200).json({ symbol, metricCodes, timeframe, total, hasMore, entries });
   } catch (error) {
     next(error);
   }

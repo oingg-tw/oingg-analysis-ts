@@ -11,6 +11,6 @@ export const altmanZDoublePrimeScoreBadge: MetricBadge = {
     '不同新興市場產業間差異過大，會扭曲跨產業比較。將營運資金／總資產、保留盈餘／總資產、稅前息前淨利／總' +
     '資產、帳面權益／負債帳面值這 4 個財務比率各自加權後加總，得出一個綜合分數，分數越低代表模型認定的財務' +
     '危機風險越高。這是一個統計模型，反映的是歷史樣本歸納出的風險關聯性。',
-  token: 'TTM',
+  timeframe: 'TTM',
   threshold: { description: '> 2.6', thresholdLatex: "\\mathrm{Z}'' > 2.6", note: 'Altman 1983/1995 論文劃定的安全區下限', denominator: 1, comparator: 'gt', value: 2.6 },
 };

@@ -12,6 +12,6 @@ export const altmanZScoreBadge: MetricBadge = {
     '將營運資金／總資產、保留盈餘／總資產、稅前息前淨利／總資產、股票市值／負債帳面值、營收／總資產這 5 個' +
     '財務比率各自加權後加總，得出一個綜合分數，分數越低代表模型認定的財務危機風險越高。這是一個統計模型，' +
     '反映的是歷史樣本歸納出的風險關聯性。',
-  token: 'TTM',
+  timeframe: 'TTM',
   threshold: { description: '> 2.99', thresholdLatex: '\\mathrm{Z} > 2.99', note: 'Altman 原始論文劃定的安全區下限', denominator: 1, comparator: 'gt', value: 2.99 },
 };

@@ -172,7 +172,7 @@ export const companyBadgeResultSchema = z.object({
   metricCode: z.string().meta({ description: '對應 GET /metrics 的 metricCode，可直接拿去打 metric-history/metric-provenance' }),
   name: z.string().meta({ description: '徽章的中文名稱（法則名稱，不一定跟指標本身的 name 相同，例如 Fidelity 股利發放率最適區間）' }),
   nameEn: z.string().optional().meta({ description: '英文名稱，選填，沒有時是 undefined' }),
-  token: z.string().meta({ description: '這支 badge 讀值用的 token（對應 metric-history 的 token 參數）' }),
+  timeframe: z.string().meta({ description: '這支 badge 讀值用的 timeframe（對應 metric-history 的 timeframe 參數）' }),
   value: z.number().nullable().meta({ description: '這支指標最新一期的數值；null 代表算不出來，原因見 nullReason' }),
   nullReason: z
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
@@ -203,12 +203,12 @@ export const companyMetricCompletenessEntrySchema = z.object({
   metricCode: z.string().meta({ description: '對應 GET /metrics 的 metricCode，可直接拿去打 metric-history/metric-provenance' }),
   name: z.string().meta({ description: '指標中文名稱' }),
   nameEn: z.string().optional().meta({ description: '英文名稱，選填，沒有時是 undefined' }),
-  token: z.string().nullable().meta({ description: '這次查詢用的代表性 token（優先 TTM，否則取第一個可用 token）；null 代表這支 metricCode 沒有任何可用 token（防呆用，目前沒有已知案例）' }),
-  hasValue: z.boolean().meta({ description: '這個 token 下最新一期是否有算出值' }),
+  timeframe: z.string().nullable().meta({ description: '這次查詢用的代表性 timeframe（優先 TTM，否則取第一個可用 timeframe）；null 代表這支 metricCode 沒有任何可用 timeframe（防呆用，目前沒有已知案例）' }),
+  hasValue: z.boolean().meta({ description: '這個 timeframe 下最新一期是否有算出值' }),
   nullReason: z
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
     .nullable()
-    .meta({ description: 'hasValue 為 false 時的原因；hasValue 為 true 時一律是 null。token 為 null 時也一律是 null' }),
+    .meta({ description: 'hasValue 為 false 時的原因；hasValue 為 true 時一律是 null。timeframe 為 null 時也一律是 null' }),
 });
 export type CompanyMetricCompletenessEntry = z.infer<typeof companyMetricCompletenessEntrySchema>;
 

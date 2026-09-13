@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { validTokensForMetric } from '@/api/bff/screener/fieldResolver';
+import { validTimeframesForMetric } from '@/api/bff/screener/fieldResolver';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
@@ -9,7 +9,7 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
 // 那批拆分之後，
 // 每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），比對
-// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 token 清單，組出分類清單。
+// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 timeframe 清單，組出分類清單。
 //
 // 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts（已退場）
 // 當初的說明一致：正式環境 build 產物是 CommonJS，import.meta 在那個模式下是編譯期錯誤；
@@ -54,14 +54,14 @@ export interface MetricFolderCatalogEntry {
   // 選填，沒有時是 undefined（不是空字串）。
   nameEn?: string;
   unit: string;
-  // 2026-09-08 新增，2026-09-09 起是這個端點唯一曝露的 token 相關欄位——原本還有四個
+  // 2026-09-08 新增，2026-09-09 起是這個端點唯一曝露的 timeframe 相關欄位——原本還有四個
   // allowedXxx 陣列並排（allowedPeriodTypes/allowedLookbackRanges/
-  // allowedSamplingIntervals/allowedSnapshotCadences），但 bff-ts 早在拿到 validTokens
+  // allowedSamplingIntervals/allowedSnapshotCadences），但 bff-ts 早在拿到 validTimeframes
   // 之後就已經完全改讀這個欄位、不再碰那四個陣列（笛卡兒積會做出查不到資料的假選項，
   // 見 fieldResolver.ts 的說明）——既然沒有任何消費端還在用，直接移除四陣列並排的外部
-  // 回應形狀，只留這個唯一該信任的合法 token 清單。呼叫端（screener field 的 "."
-  // 後半段、companies 端點的 token query 參數）直接拿來當選單使用。
-  validTokens: string[];
+  // 回應形狀，只留這個唯一該信任的合法 timeframe 清單。呼叫端（screener field 的 "."
+  // 後半段、companies 端點的 timeframe query 參數）直接拿來當選單使用。
+  validTimeframes: string[];
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身由後端儲存，前端忠實顯示，
   // 不要各自維護一份跟後端實際計算對不上的算式。LaTeX 字串，用 @cortex-js/compute-engine
   // 驗證過語法（見 scripts/validateFormulaLatex.ts），建議前端用同一個套件家族的
@@ -126,7 +126,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           nameSuffix: definition.nameSuffix,
           nameEn: definition.nameEn,
           unit: definition.unit,
-          validTokens: validTokensForMetric(metricCode),
+          validTimeframes: validTimeframesForMetric(metricCode),
           formulaLatex: definition.formulaLatex,
           academicSourceUrl: definition.academicSourceUrl,
           referenceUrl: definition.referenceUrl,

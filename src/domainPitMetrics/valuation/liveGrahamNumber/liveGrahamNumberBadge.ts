@@ -16,7 +16,7 @@ export const liveGrahamNumberBadge: MetricBadge = {
     ' 1.5 倍（15 × 1.5 = 22.5）。這裡直接計算「本益比 × 股價淨值比」，跟 22.5 這個門檻比較，是數學上' +
     '等價、但不需要額外比較變量的寫法。計算基礎是「今天」的即時收盤價，搭配公司最新公布財報的 EPS/' +
     '每股淨值，每個交易日都會隨股價變動更新，反映以當下價格重新評估的結果。',
-  token: 'EOD',
+  timeframe: 'EOD',
   threshold: {
     description: '< 22.5',
     thresholdLatex: '\\mathrm{LiveGrahamNumber} < 22.5',

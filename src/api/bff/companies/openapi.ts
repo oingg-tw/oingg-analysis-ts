@@ -43,7 +43,7 @@ const capitalStockHistoryResultSchema = z.object({
   entries: z.array(capitalStockHistoryEntrySchema),
 });
 
-// total/hasMore：2026-09-07 使用者要求——total 是這個 symbol/metricCode/periodType(或 token) 去重後
+// total/hasMore：2026-09-07 使用者要求——total 是這個 symbol/metricCode/periodType(或 timeframe) 去重後
 // 總共有幾期（不受 limit 影響），hasMore = total > entries.length。前端可以用這兩個
 // 欄位決定要不要提供「看更長區間」的選項，例如完整歷史只有 6 年就不該讓使用者點「近 10
 // 年」（點了也只會拿到一樣的 6 年資料）。四支歷史端點都是同樣的語意，用同一段說明。
@@ -78,7 +78,7 @@ const dupontHistoryResultSchema = z.object({
 const metricHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.string(),
-  token: z.string(),
+  timeframe: z.string(),
   ...totalHasMoreFields,
   entries: z.array(metricHistoryEntrySchema),
 });
@@ -86,7 +86,7 @@ const metricHistoryResultSchema = z.object({
 const metricsHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCodes: z.array(z.string()),
-  token: z.string(),
+  timeframe: z.string(),
   ...totalHasMoreFields,
   entries: z.array(multiMetricHistoryEntrySchema),
 });
@@ -228,7 +228,7 @@ export const registerCompaniesOpenApi = (): void => {
       '（10 個新 metric_code）動工前新增，取代每遷一支指標就各自複製貼上一段端點樣板碼的模式。' +
       'metricCode 決定要查哪支指標，完整清單見程式碼裡的 metricDefinitionRegistry（目前已知：' +
       `${Object.keys(metricDefinitionRegistry).join('、')}），之後新增指標會持續增加，這裡不逐一列出维護。` +
-      'token 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，' +
+      'timeframe 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，' +
       'exchangePeRatio 只允許 "EOD"），傳不允許的值會回 400 並附上這個 metricCode 實際允許的' +
       '清單，完整組合見 GET /metrics。knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history' +
       '一致。**metricCode="beta" 不支援這支端點**（2026-09-11 使用者確認 beta 不畫河流圖，' +
@@ -237,12 +237,14 @@ export const registerCompaniesOpenApi = (): void => {
       '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
       '之後新增指標的曝露管道，不是要取代它們。（2026-09-08：這個 query 參數原本叫 basis，' +
       '改名 token 並改成同時涵蓋四組概念（periodType/lookbackRange+samplingInterval/' +
-      'snapshotCadence，見 metric_values.basis 拆分重構）——「basis」違反 ubiquitous language。）',
+      'snapshotCadence，見 metric_values.basis 拆分重構）——「basis」違反 ubiquitous language。' +
+      '2026-09-14：token 再改名 timeframe——同樣理由，「token」一樣是空洞用詞，沒有傳達' +
+      '「挑時間切法」的領域語意，改用金融 API 常見的 timeframe。）',
     tags: ['System'],
     request: { query: getCompanyMetricHistoryQuerySchema },
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
-      400: { description: '缺少 symbol/metricCode/token，或 metricCode 未知，或 metricCode="beta"，或 token 不在該 metricCode 允許的清單內。' },
+      400: { description: '缺少 symbol/metricCode/timeframe，或 metricCode 未知，或 metricCode="beta"，或 timeframe 不在該 metricCode 允許的清單內。' },
     },
   });
 
@@ -255,18 +257,19 @@ export const registerCompaniesOpenApi = (): void => {
       '這支用逗號分隔的 metricCodes 一次查多個（例如三率一次拿：' +
       '"grossMargin,operatingMargin,netProfitMargin"，最多 10 個），依 (fiscalYear,fiscalQuarter)' +
       '合併成一列，entries[].values 是以 metricCode 為 key 的物件，對應請求時給的清單。' +
-      'token 套用到清單裡的每個 metricCode，任一個不允許該 token 就整體回 400（附上是哪個' +
+      'timeframe 套用到清單裡的每個 metricCode，任一個不允許該 timeframe 就整體回 400（附上是哪個' +
       'metricCode 不允許），不會部分成功。**這支跟 dupont-history 是不同定位**：dupont-history' +
       '是杜邦拆解這種真正有語意組裝關係（三/五因子相乘）的家族專用組合端點，寫死具名欄位；這支' +
       '是任意 metricCode 的通用合併，沒有假設彼此有數學關係，純粹省去前端自己併多次呼叫結果的' +
       '麻煩。某個 metricCode 在某一期完全沒有列時（例如不同指標 backfill 範圍不同步），對應' +
       'values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。' +
-      '（2026-09-08：query 參數原本叫 basis，改名 token，理由同 GET /companies/metric-history。）',
+      '（2026-09-08：query 參數原本叫 basis，改名 token；2026-09-14 再改名 timeframe，理由同' +
+      'GET /companies/metric-history。）',
     tags: ['System'],
     request: { query: getCompanyMetricsHistoryQuerySchema },
     responses: {
       200: { description: '多指標歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricsHistoryResultSchema } } },
-      400: { description: '缺少 symbol/metricCodes/token，或某個 metricCode 未知，或 token 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。' },
+      400: { description: '缺少 symbol/metricCodes/timeframe，或某個 metricCode 未知，或 timeframe 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。' },
     },
   });
 
@@ -330,7 +333,7 @@ export const registerCompaniesOpenApi = (): void => {
     summary: '單一公司產業同業清單（產業同業比較功能第一步）',
     description:
       '用財政部稅籍行業標準分類（來源：gov-ts）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
-      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.token"）查實際指標數值，' +
+      '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.timeframe"）查實際指標數值，' +
       '這支端點刻意不重複做數值查詢那一層。' +
       '同業分組用動態層級回退：子類→細類→小類→中類，依序嘗試，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
       '連中類都不足門檻也會停在中類（不繼續往更粗的層級爬），此時 warnings 會提示「已回退到最粗層級，同業可能包含商業模式不同的公司」。' +
@@ -440,11 +443,11 @@ export const registerCompaniesOpenApi = (): void => {
     description:
       '2026-09-13 使用者要求：想知道有沒有機制掃描每家公司的指標完整度。GET /companies/badges' +
       '只涵蓋 15 支「有 badge」的指標，且是判定「達成/未達成門檻」；這支端點掃過 GET /metrics' +
-      '全部指標（不限有 badge 的），對每支指標查一筆代表性 token 的最新值（優先取 TTM，' +
-      '沒有 TTM 就取該指標第一個可用 token，不是掃全部 token 組合），回傳 hasValue/nullReason，' +
+      '全部指標（不限有 badge 的），對每支指標查一筆代表性 timeframe 的最新值（優先取 TTM，' +
+      '沒有 TTM 就取該指標第一個可用 timeframe，不是掃全部 timeframe 組合），回傳 hasValue/nullReason，' +
       '目的是資料品質稽核/前端呈現「這家公司資料涵蓋度」，不是選股門檻判定。每個分類跟總計' +
       '都附 coveredCount/totalCount，方便直接算覆蓋率百分比。metricCode 可以直接拿去打' +
-      'GET /companies/metric-history 查完整歷史（可能有其他 token 有值，這裡只是代表性抽查）。',
+      'GET /companies/metric-history 查完整歷史（可能有其他 timeframe 有值，這裡只是代表性抽查）。',
     tags: ['System'],
     request: { query: getCompanyMetricCompletenessQuerySchema },
     responses: {

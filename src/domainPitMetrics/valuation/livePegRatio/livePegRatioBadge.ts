@@ -20,7 +20,7 @@ export const livePegRatioBadge: MetricBadge = {
     '公布財報的 EPS 成長率，每個交易日都會隨股價變動更新。Lynch 的經驗法則是 PEG 等於 1' +
     '大致代表合理定價，明顯低於 1 代表相對於成長性而言股價可能偏低，高於 1（尤其遠高於）' +
     '則可能偏貴，這是一個經驗法則，不是嚴謹的學術估值模型。',
-  token: 'EOD',
+  timeframe: 'EOD',
   threshold: {
     description: '< 1',
     thresholdLatex: '\\mathrm{LivePEG} < 1',
