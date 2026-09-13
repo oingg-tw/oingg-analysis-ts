@@ -1,6 +1,7 @@
 import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet, type BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import { getBalanceSheetXbrlFirst, type BalanceSheetFields } from '@/shared/sourceData/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
+import type { QuarterlyKey } from '@/shared/sourceData/quarterlyKey';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -17,6 +18,25 @@ import type { MetricNullReason } from '../../metricBasis';
 // 完整計算過程，給 getRoeProvenance.ts（GET /companies/:symbol/metric-provenance 的
 // roe 試點）共用，寫入路徑（computeAndWriteRoePit）本身行為完全不變，只是內部改呼叫這個
 // resolver。2026-09-11：舊三大表已退役，PickedField 不再需要追蹤資料源（永遠是 XBRL）。
+//
+// 2026-09-13 依存反轉（DIP）示範：resolveRoeQuarterData 原本直接 import
+// getBalanceSheetXbrlFirst/getIncomeStatementXbrlFirst 兩個具體函式，高層的 ROE 業務
+// 邏輯直接依賴低層的「怎麼查 XBRL」細節。現在改成依賴 FinancialStatementPort 這個抽象
+// 介面，XBRL 查詢函式變成實作這個介面的一個 adapter（xbrlFinancialStatementAdapter），
+// 在呼叫端（第二個參數，預設值就是這個 adapter）注入——多數呼叫端不用改一行，因為
+// TypeScript 的預設參數本來就是既有慣例（跟其餘 pitMetrics 檔案的 query 參數形狀一致），
+// 只有想替換實作或測試時想塞假資料的呼叫端才需要明確傳第二個參數。這是全庫唯一一支
+// 套用這個模式的檔案，其餘 116 支 compute*Pit.ts 刻意維持原本直接 import 的寫法——這裡
+// 只是示範「如果要做，長什麼樣子」，還沒有全面鋪開的決定，見 2026-09-13 的討論。
+export interface FinancialStatementPort {
+  getIncomeStatement(key: QuarterlyKey): Promise<IncomeStatementFields | null>;
+  getBalanceSheet(key: QuarterlyKey): Promise<BalanceSheetFields | null>;
+}
+
+export const xbrlFinancialStatementAdapter: FinancialStatementPort = {
+  getIncomeStatement: getIncomeStatementXbrlFirst,
+  getBalanceSheet: getBalanceSheetXbrlFirst,
+};
 
 interface PickedField {
   value: bigint | null;
@@ -70,7 +90,10 @@ export interface RoeQuarterResolution {
   ttmAnchor: KnowledgeDateResolution | null;
 }
 
-export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery): Promise<RoeQuarterResolution | null> => {
+export const resolveRoeQuarterData = async (
+  query: QuarterlyMetricQuery,
+  statements: FinancialStatementPort = xbrlFinancialStatementAdapter
+): Promise<RoeQuarterResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
@@ -86,7 +109,7 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery): Promis
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, balanceSheet] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyBalanceSheet(key)]);
+  const [incomeStatement, balanceSheet] = await Promise.all([statements.getIncomeStatement(key), statements.getBalanceSheet(key)]);
 
   const netIncome = pickNetIncome(incomeStatement);
   const equity = pickEquity(balanceSheet);
@@ -103,7 +126,7 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery): Promis
   // 沿用本季（Q/Q_ANN）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const ttmNetIncomes = ttmRecords.map((record) => pickNetIncome(record));
@@ -160,10 +183,13 @@ export interface RoePitOutcome {
   ttm: BasisOutcome;
 }
 
-export const computeAndWriteRoePit = async (query: QuarterlyMetricQuery): Promise<RoePitOutcome> => {
+export const computeAndWriteRoePit = async (
+  query: QuarterlyMetricQuery,
+  statements: FinancialStatementPort = xbrlFinancialStatementAdapter
+): Promise<RoePitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolution = await resolveRoeQuarterData(query);
+  const resolution = await resolveRoeQuarterData(query, statements);
   if (!resolution) {
     return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }

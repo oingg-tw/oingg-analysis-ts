@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRoePit } from '@/domainPitMetrics/profitability/roe/computeRoePit';
+import { computeAndWriteRoePit, resolveRoeQuarterData, type FinancialStatementPort } from '@/domainPitMetrics/profitability/roe/computeRoePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
@@ -103,6 +103,61 @@ test('roePit: 9999（查無資料的公司）應該優雅降級，三個 periodT
 
   const count = await analysisPrisma.metricValue.count({ where: { symbol: '9999', metricCode: 'roe' } });
   assert.equal(count, 0);
+});
+
+// 2026-09-13 依存反轉（DIP）示範的實際效益：塞假的 FinancialStatementPort，不用去資料庫
+// 裡找一家真的「權益剛好是負值」的公司才能測邊界案例——resolveRoeQuarterData 本身不碰
+// Prisma，這裡完全掌控輸入，边界案例想要多精確就多精確。注意 resolveKnowledgeDate（決定
+// knowledge_date 用哪個公告日）跟 mainAnchor 解析仍然會查真實的 financial_report_announcement
+// 資料（DIP 這次示範沒有涵蓋這一層，只涵蓋損益表/資產負債表這兩個依賴），所以這裡用
+// 一家真實存在、有正常公告日覆蓋的公司（2330）當座標，只有「損益表/資產負債表回傳
+// 什麼數字」是假的，其餘查詢管線不變。
+test('roePit（DIP 示範）: 塞假的 FinancialStatementPort，驗證權益為負時仍算出真實負值不是 null', async () => {
+  const fakeStatements: FinancialStatementPort = {
+    getIncomeStatement: async () => ({
+      operatingRevenue: 1000n,
+      operatingCost: null,
+      grossProfit: null,
+      operatingIncome: null,
+      profitBeforeTax: null,
+      sellingExpenses: null,
+      adminExpenses: null,
+      financeCosts: null,
+      incomeTaxExpense: null,
+      netIncomeAttributableToParent: 100n,
+      netIncome: 100n,
+      reportDate: new Date('2026-06-30'),
+    }),
+    getBalanceSheet: async () => ({
+      currentAssets: null,
+      totalAssets: null,
+      propertyPlantEquipment: null,
+      retainedEarnings: null,
+      currentLiabilities: null,
+      totalLiabilities: null,
+      shortTermBorrowings: null,
+      bondsPayable: null,
+      longTermBorrowings: null,
+      cashAndEquivalents: null,
+      accountsReceivable: null,
+      inventory: null,
+      accountsPayable: null,
+      preferredStockCapital: null,
+      equityAttributableToParent: -500n,
+      totalEquity: -500n,
+      reportDate: new Date('2026-06-30'),
+    }),
+  };
+
+  const resolution = await resolveRoeQuarterData({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' }, fakeStatements);
+
+  assert.ok(resolution, '假資料完整（淨利/權益皆非 null），應該解析得出結果');
+  assert.equal(resolution!.netIncome.value, 100n);
+  assert.equal(resolution!.equity.value, -500n);
+  // ROE = 100/(-500)*100 = -20%，權益為負仍然算出真實（可能扭曲的）負值，不隱藏成 null——
+  // 這條斷言不需要去資料庫裡找一家真的資不抵債的公司才能驗證。
+  assert.equal(resolution!.roeQuarterlyPct, -20);
+  assert.equal(resolution!.quarterlyNullReason, null);
 });
 
 afterAll(async () => {
