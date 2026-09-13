@@ -37,6 +37,9 @@ import { getOperatingCycleProvenance } from '@/domainPitMetrics/efficiency/opera
 import { getNetWorkingCapitalTurnoverProvenance } from '@/domainPitMetrics/efficiency/netWorkingCapitalTurnover/getNetWorkingCapitalTurnoverProvenance';
 import { getInventoryToRevenueRatioProvenance } from '@/domainPitMetrics/efficiency/inventoryToRevenueRatio/getInventoryToRevenueRatioProvenance';
 import { getReceivablesToRevenueRatioProvenance } from '@/domainPitMetrics/efficiency/receivablesToRevenueRatio/getReceivablesToRevenueRatioProvenance';
+import { getCapexToRevenueProvenance } from '@/domainPitMetrics/efficiency/capexToRevenue/getCapexToRevenueProvenance';
+import { getCapexToOcfRatioProvenance } from '@/domainPitMetrics/efficiency/capexToOcfRatio/getCapexToOcfRatioProvenance';
+import { getOperatingExpenseRatioProvenance } from '@/domainPitMetrics/efficiency/operatingExpenseRatio/getOperatingExpenseRatioProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
 import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
@@ -641,6 +644,9 @@ const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number
   netWorkingCapitalTurnover: getNetWorkingCapitalTurnoverProvenance,
   inventoryToRevenueRatio: getInventoryToRevenueRatioProvenance,
   receivablesToRevenueRatio: getReceivablesToRevenueRatioProvenance,
+  capexToRevenue: getCapexToRevenueProvenance,
+  capexToOcfRatio: getCapexToOcfRatioProvenance,
+  operatingExpenseRatio: getOperatingExpenseRatioProvenance,
 };
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始

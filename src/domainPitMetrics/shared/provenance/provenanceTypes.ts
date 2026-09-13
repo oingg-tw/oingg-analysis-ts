@@ -20,8 +20,14 @@ import { z } from 'zod';
 // 第七批試點（2026-09-13，同一天延續擴大，補完「營運效率」分類剩下 3 支簡單比率）：
 // netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio——前者的
 // 分母淨營運資金 = 流動資產−流動負債（中繼值，稽核鏈分開列出兩筆原始欄位），後兩者是
-// 單純的資產負債表項目 / TTM 營收。目前全系統 117 支指標裡只有這 20 支有稽核鏈，其餘
-// 97 支還沒有，之後有需要再逐一擴大。
+// 單純的資產負債表項目 / TTM 營收。第八批試點（2026-09-13，同一天延續擴大，補完
+// 「營運效率」分類剩下 3 支較複雜的比率）：capexToRevenue/capexToOcfRatio/
+// operatingExpenseRatio——前兩支的分子（資本支出）來源資料是負值，稽核鏈原樣列出、
+// methodologyNote 說明取絕對值這一步；capexToOcfRatio 刻意不共用
+// cashFlowValuationFamily 的 ttmComplete 旗標（那個旗標額外要求 revenue/netIncome
+// 齊全，是給同家族其他指標用的，不是這支自己的真實依賴）。至此「營運效率」分類全部
+// 16 支指標都有稽核鏈了（assetTurnover 算在 dupont family 那邊，不重複列）。目前全系統
+// 117 支指標裡只有這 23 支有稽核鏈，其餘 94 支還沒有，之後有需要再逐一擴大。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -43,6 +49,9 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'netWorkingCapitalTurnover',
   'inventoryToRevenueRatio',
   'receivablesToRevenueRatio',
+  'capexToRevenue',
+  'capexToOcfRatio',
+  'operatingExpenseRatio',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
