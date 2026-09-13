@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityValue as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -13,11 +13,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 // 量化選股盤點使用者要求新增。有息負債定義同 evEbitda/evToEbit（短期借款+應付公司債+
 // 長期借款），權益 pickEquity 慣例同 altmanZDoublePrimeScore。純資產負債表時點快照，
 // 只有 Q 一種 basis。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type TotalDebtToCapitalPitOutcome = StandardBasisPitOutcome;
 

@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -16,11 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 const computeEbit = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null } | null): bigint | null => {
   if (!record || record.profitBeforeTax === null || record.financeCosts === null) return null;
   return record.profitBeforeTax + record.financeCosts;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
 };
 
 export type RocePitOutcome = StandardBasisPitOutcome;

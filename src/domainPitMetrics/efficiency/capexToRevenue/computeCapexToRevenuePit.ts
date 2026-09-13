@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import { absBigint, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { absBigint, determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -11,11 +11,6 @@ import type { MetricNullReason } from '../../metricBasis';
 
 // 這份檔案是 src/domainMetrics/capexToRevenue.ts 的獨立重新實作。資本支出來源資料是負值
 // （現金流出），取絕對值後再算比率。沒有 Q_ANN——flow/flow 比率年化沒有意義。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type CapexToRevenuePitOutcome = StandardBasisPitOutcome;
 

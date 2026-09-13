@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -12,11 +12,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/deRatio.ts 的獨立重新實作。純資產負債表時點快照，只有 Q
 // 一種 basis。負權益仍算出真實但扭曲的數字，不算 null（跟 roe.ts 現有對外行為一致）。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type DeRatioPitOutcome = StandardBasisPitOutcome;
 

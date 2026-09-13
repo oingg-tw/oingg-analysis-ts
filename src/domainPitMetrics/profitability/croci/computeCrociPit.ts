@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -13,11 +13,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 量化選股盤點使用者要求新增，簡化版公式見 crociDefinition.ts 的說明（不做 CROCI 原始
 // 方法論的通膨/資本化調整）。Economic Capital 用本季期末總資產－流動負債（單一期末值，
 // 不平均、不加總，跟 ROE/ROA/CROIC 同一種簡化）。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type CrociPitOutcome = StandardBasisPitOutcome;
 

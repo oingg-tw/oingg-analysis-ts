@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -15,11 +16,6 @@ import type { MetricNullReason } from '../../metricBasis';
 const toRatio = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
   return Math.round((Number(numerator) / Number(denominator)) * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
 };
 
 export type InterestCoveragePitOutcome = StandardBasisPitOutcome;

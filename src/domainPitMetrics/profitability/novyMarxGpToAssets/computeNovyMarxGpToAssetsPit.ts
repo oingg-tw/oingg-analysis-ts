@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -12,11 +12,6 @@ import type { MetricNullReason } from '../../metricBasis';
 
 // 量化選股盤點使用者要求新增（Novy-Marx GP/A）。分母固定用本季期末總資產，跟
 // accrualsRatio/ROE/ROA 同一種「TTM 分子加總、分母用單一期末值」簡化。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type NovyMarxGpToAssetsPitOutcome = StandardBasisPitOutcome;
 

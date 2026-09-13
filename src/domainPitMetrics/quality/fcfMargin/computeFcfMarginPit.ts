@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -12,11 +12,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // 量化選股盤點使用者要求新增。自由現金流 = 營業活動現金流 + 投資性資本支出
 // （capitalExpenditures 現金流量表原始科目已是負數），跟 ocfPerShare/fcfPerShare 同一套
 // FCF 定義，獨立重新計算不依賴其已寫入的值。只有 TTM 一種 basis。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type FcfMarginPitOutcome = StandardBasisPitOutcome;
 

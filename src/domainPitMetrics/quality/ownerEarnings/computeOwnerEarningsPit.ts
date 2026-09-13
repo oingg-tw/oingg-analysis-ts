@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
@@ -18,11 +19,6 @@ import type { MetricNullReason } from '../../metricBasis';
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
 };
 
 export type OwnerEarningsPitOutcome = StandardBasisPitOutcome;

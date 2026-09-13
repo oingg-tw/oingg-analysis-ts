@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
@@ -21,11 +21,6 @@ const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bi
   const ebit = record.profitBeforeTax + record.financeCosts;
   const effectiveTaxRate = Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
   return BigInt(Math.round(Number(ebit) * (1 - effectiveTaxRate)));
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
 };
 
 export type RoicPitOutcome = StandardBasisPitOutcome;

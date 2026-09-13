@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -11,11 +11,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/debtRatio.ts 的獨立重新實作。純資產負債表時點快照，只有
 // Q 一種 basis，跟 equityMultiplier/bvps 同一種形狀。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type DebtRatioPitOutcome = StandardBasisPitOutcome;
 

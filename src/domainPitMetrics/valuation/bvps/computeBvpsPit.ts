@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -15,11 +16,6 @@ import { rocYearToGregorian } from '@/shared/rocQuarter';
 const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;
-};
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
 };
 
 export type BvpsPitOutcome = StandardBasisPitOutcome;

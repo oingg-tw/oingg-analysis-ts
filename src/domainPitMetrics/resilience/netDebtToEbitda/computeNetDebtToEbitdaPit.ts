@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { determineNullReason } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -13,11 +14,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // EBIT = 稅前淨利+利息費用，這個公式在 interestCoverage/netDebtToEbitda/roic/roce 四個
 // 舊架構檔案各自重複定義，這裡延續同一個既有慣例，evEbitda 這批也會再重複一次淨負債+
 // EBITDA 的計算，不依賴這個 metric_code 已寫入的值。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export type NetDebtToEbitdaPitOutcome = StandardBasisPitOutcome;
 

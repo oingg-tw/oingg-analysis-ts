@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import type { CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
@@ -18,11 +18,6 @@ import type { MetricNullReason } from '../../metricBasis';
 // fieldKey）+ 完整計算過程，給 getAccrualsRatioProvenance.ts（GET /companies/:symbol/
 // metric-provenance 的 accrualsRatio 試點）共用，寫入路徑（computeAndWriteAccrualsRatioPit）
 // 本身行為完全不變，只是內部改呼叫這個 resolver。
-
-const determineNullReason = (numerator: bigint | null, denominator: bigint | null): MetricNullReason => {
-  if (numerator === null || denominator === null) return 'missing_input';
-  return 'zero_or_negative_denominator';
-};
 
 export interface AccrualsRatioTtmQuarterDetail {
   rocYear: number;
