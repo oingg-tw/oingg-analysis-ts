@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -7,7 +8,6 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeOrSkip } from '../../metricValueWriter';
 import type { StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../metricBasis';
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 一致）。
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
@@ -53,11 +53,7 @@ export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuer
   const priorShares = priorReportDate ? (await statements.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorEps = toEps(pickNetIncome(priorIncomeStatement).value, priorShares);
 
-  const growthRate =
-    currentEps !== null && priorEps !== null && priorEps !== 0
-      ? Math.round(((currentEps - priorEps) / Math.abs(priorEps)) * 100 * 100) / 100
-      : null;
-  const nullReason: MetricNullReason | null = growthRate !== null ? null : currentEps === null || priorEps === null ? 'missing_input' : 'zero_or_negative_denominator';
+  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'epsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

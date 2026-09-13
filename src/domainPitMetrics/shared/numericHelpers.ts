@@ -73,6 +73,24 @@ export const determineNullReason = (numerator: bigint | null, denominator: bigin
   return 'zero_or_negative_denominator';
 };
 
+// YoY 成長率 = (本期 - 去年同期) / |去年同期| * 100——assetGrowth/equityGrowthRate/
+// netIncomeGrowthRate/operatingIncomeGrowthRate/revenueGrowthRate/epsGrowthRate/
+// bvpsGrowthRate 這組「單季年增率」指標共用同一條公式，去年同期用 getPastNQuarters
+// ({rocYear,season},5)[0] 取得（各自呼叫端負責），這裡只負責公式本身跟 nullReason 判斷。
+// number 版給 EPS/BVPS 這類已經是浮點每股數字的輸入；bigint 版給資產/權益/淨利/營業利益/
+// 營收這類財報原始金額（單位千元）直接用，維持原本「先用 bigint 相減再轉 Number」的計算
+// 順序，避免大數先各自轉 Number 再相減可能引入的精度差異（雖然在千元單位下這組數字實務上
+// 遠低於 Number.MAX_SAFE_INTEGER，這裡仍選擇跟舊寫法逐位元一致）。
+export const calculateYoyGrowthRate = (current: number | null, prior: number | null): CalcResult => {
+  const value = current !== null && prior !== null && prior !== 0 ? Math.round(((current - prior) / Math.abs(prior)) * 100 * 100) / 100 : null;
+  return { value, nullReason: value !== null ? null : current === null || prior === null ? 'missing_input' : 'zero_or_negative_denominator' };
+};
+
+export const calculateYoyGrowthRateBigint = (current: bigint | null, prior: bigint | null): CalcResult => {
+  const value = current !== null && prior !== null && prior !== 0n ? Math.round((Number(current - prior) / Math.abs(Number(prior))) * 100 * 100) / 100 : null;
+  return { value, nullReason: value !== null ? null : current === null || prior === null ? 'missing_input' : 'zero_or_negative_denominator' };
+};
+
 // 天數指標（DIO/DSO/DPO）null_reason：對應周轉率本身為 0（除以零）回報
 // zero_or_negative_denominator；周轉率本身就是 null，原因照搬周轉率自己的 nullReason。
 export const daysNullReason = (turnover: number | null, turnoverNullReason: MetricNullReason | null): MetricNullReason => {

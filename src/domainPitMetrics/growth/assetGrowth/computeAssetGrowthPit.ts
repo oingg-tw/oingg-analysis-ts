@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
@@ -6,7 +7,6 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeOrSkip } from '../../metricValueWriter';
 import type { StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../metricBasis';
 
 export type AssetGrowthPitOutcome = StandardBasisPitOutcome;
 
@@ -42,11 +42,7 @@ export const computeAndWriteAssetGrowthPit = async (query: QuarterlyMetricQuery,
   });
   const priorAssets = priorBalanceSheet?.totalAssets ?? null;
 
-  const growthRate =
-    currentAssets !== null && priorAssets !== null && priorAssets !== 0n
-      ? Math.round((Number(currentAssets - priorAssets) / Math.abs(Number(priorAssets))) * 100 * 100) / 100
-      : null;
-  const nullReason: MetricNullReason | null = growthRate !== null ? null : currentAssets === null || priorAssets === null ? 'missing_input' : 'zero_or_negative_denominator';
+  const { value: growthRate, nullReason } = calculateYoyGrowthRateBigint(currentAssets, priorAssets);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'assetGrowth', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

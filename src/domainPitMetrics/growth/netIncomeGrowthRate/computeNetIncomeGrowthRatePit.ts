@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -7,7 +8,6 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeOrSkip } from '../../metricValueWriter';
 import type { StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../metricBasis';
 
 export type NetIncomeGrowthRatePitOutcome = StandardBasisPitOutcome;
 
@@ -42,12 +42,7 @@ export const computeAndWriteNetIncomeGrowthRatePit = async (query: QuarterlyMetr
   });
   const priorNetIncome = pickNetIncome(priorIncomeStatement).value;
 
-  const growthRate =
-    currentNetIncome !== null && priorNetIncome !== null && priorNetIncome !== 0n
-      ? Math.round((Number(currentNetIncome - priorNetIncome) / Math.abs(Number(priorNetIncome))) * 100 * 100) / 100
-      : null;
-  const nullReason: MetricNullReason | null =
-    growthRate !== null ? null : currentNetIncome === null || priorNetIncome === null ? 'missing_input' : 'zero_or_negative_denominator';
+  const { value: growthRate, nullReason } = calculateYoyGrowthRateBigint(currentNetIncome, priorNetIncome);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'netIncomeGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

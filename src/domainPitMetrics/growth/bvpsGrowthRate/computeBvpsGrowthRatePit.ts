@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -7,7 +8,6 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeOrSkip } from '../../metricValueWriter';
 import type { StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../metricBasis';
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 bvps.ts 一致）。
 const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
@@ -58,11 +58,7 @@ export const computeAndWriteBvpsGrowthRatePit = async (query: QuarterlyMetricQue
   const priorShares = priorReportDate ? (await statements.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorBvps = toBvps(pickEquity(priorBalanceSheet).value, priorShares);
 
-  const growthRate =
-    currentBvps !== null && priorBvps !== null && priorBvps !== 0
-      ? Math.round(((currentBvps - priorBvps) / Math.abs(priorBvps)) * 100 * 100) / 100
-      : null;
-  const nullReason: MetricNullReason | null = growthRate !== null ? null : currentBvps === null || priorBvps === null ? 'missing_input' : 'zero_or_negative_denominator';
+  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentBvps, priorBvps);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'bvpsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
