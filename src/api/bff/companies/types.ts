@@ -88,6 +88,7 @@ export const companyPeerGroupResultSchema = z.object({
   industryName: z.string().nullable(),
   confidence: z.number().nullable().meta({ description: '目標公司自己的分類信心分數（眾數分類次數/已分類供應鏈邊總數），不是同業群體的統計量，越接近 1 代表這家公司的業務性質越集中在單一分類' }),
   sampleSize: z.number().int().nullable().meta({ description: '目標公司自己已分類的供應鏈邊數量，樣本數太小時信心分數的參考價值較低' }),
+  updatedAt: z.string().nullable().meta({ description: '這家公司分類最後一次變動的日期（YYYY-MM-DD），不是查詢當下的時間；查詢快取只在伺服器啟動時載入一次，實際資料可能比伺服器啟動時間更舊' }),
   peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
   warnings: z.array(z.string()),
 });

@@ -25,6 +25,7 @@ interface CompanyCategoryEntry {
   sampleSize: number;
   confidence: number | null;
   coarseGroup: string | null;
+  updatedAt: Date | null; // 這家公司分類最後一次變動的時間（company_category_summary 的 updated_at，底層供應鏈邊的 category_updated_at 最大值）——不是「快取抓取時間」，是資料本身的新鮮度
 }
 
 interface RawCompanyCategorySummaryRow {
@@ -33,6 +34,7 @@ interface RawCompanyCategorySummaryRow {
   sample_size: number | string | null; // DB 是 Decimal，Prisma driver adapter 回傳字串或數字視情況而定，統一在 buildCompanyCategoryCache 轉成 number
   confidence: number | string | null;
   coarse_group: string | null;
+  updated_at: Date | null;
 }
 
 interface RawCategoryGroupRow {
@@ -47,7 +49,7 @@ let coarseGroupMembersCache: Map<string, Set<string>> | null = null;
 
 const fetchCompanyCategorySummaryOnce = async (): Promise<RawCompanyCategorySummaryRow[]> => {
   return playwrightExportPrisma.$queryRaw<RawCompanyCategorySummaryRow[]>`
-    SELECT code, category, sample_size, confidence, coarse_group
+    SELECT code, category, sample_size, confidence, coarse_group, updated_at
     FROM "export"."company_category_summary"
   `;
 };
@@ -73,6 +75,7 @@ const buildCompanyCategoryCache = (rows: RawCompanyCategorySummaryRow[]): Map<st
       sampleSize: toNumberOrNull(row.sample_size) ?? 0,
       confidence: toNumberOrNull(row.confidence),
       coarseGroup: row.coarse_group,
+      updatedAt: row.updated_at,
     });
   }
   return map;
@@ -114,10 +117,11 @@ export interface PeerGroupResult {
   category: string | null; // 目標公司自己的細分類，不受 level 影響——level:'coarseGroup' 時用來告訴呼叫端「原本是哪個細分類同業不足」，跟 code 是兩個不同語意的欄位，不要合併
   confidence: number | null; // 目標公司自己的信心分數（categoryCount/sampleSize），不是同業群體的統計量——新的資料品質信號，gov-ts 版本沒有
   sampleSize: number | null; // 目標公司自己已分類的供應鏈邊數量
+  updatedAt: Date | null; // 目標公司分類最後一次變動的時間，不是快取抓取時間——資料本身可能比伺服器啟動時間更舊（快取只在啟動時抓一次，見檔頭說明）
   peers: string[]; // 含目標公司自己；found=false 時是 []
 }
 
-const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, category: null, confidence: null, sampleSize: null, peers: [] };
+const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, category: null, confidence: null, sampleSize: null, updatedAt: null, peers: [] };
 
 export interface FindPeerGroupOptions {
   minConfidence?: number;
@@ -158,6 +162,7 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
     category: target.category,
     confidence: target.confidence,
     sampleSize: target.sampleSize,
+    updatedAt: target.updatedAt,
     peers: [symbol, ...categoryPeers],
   };
   if (categoryResult.peers.length >= minPeers) return categoryResult;
@@ -181,6 +186,7 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
     category: target.category,
     confidence: target.confidence,
     sampleSize: target.sampleSize,
+    updatedAt: target.updatedAt,
     peers: [symbol, ...coarseGroupPeers],
   };
   // 退到最粗層級（coarseGroup）湊到 minPeers 就回傳；湊不滿也回傳同一個結果（不繼續往上

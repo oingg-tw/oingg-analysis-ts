@@ -26,6 +26,7 @@ test('findPeerGroup: 2330 細分類同業數已經足夠，不需要回退到粗
   assert.equal(result.code, '積體電路');
   assert.ok(result.confidence !== null && result.confidence > 0.8, '2330 自己的分類信心分數應該偏高');
   assert.ok(result.sampleSize !== null && result.sampleSize > 0);
+  assert.ok(result.updatedAt !== null, '有分類的公司應該帶有 updatedAt（分類最後變動時間）');
   assert.ok(result.peers.length >= 3, '積體電路這個細分類全市場有百家以上公司，不該卡在門檻');
   assert.ok(result.peers.includes('2330'), '同業清單應該含目標公司自己');
 });

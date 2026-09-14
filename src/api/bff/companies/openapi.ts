@@ -360,7 +360,9 @@ export const registerCompaniesOpenApi = (): void => {
       'warnings 會額外提示「這次比較的參考價值可能較低」，但不會因此拒絕回傳結果。' +
       'found:false 代表查無分類資料：這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊），或是境外註冊（KY）公司——' +
       'KY 股不像舊版稅籍分類那樣有結構性資料缺口，warnings 只會提示「這批分類可能沒涵蓋到」。' +
-      '這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。',
+      '這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。' +
+      'updatedAt 是目標公司分類「最後一次變動」的日期（不是查詢當下的時間），可以用來跟使用者說明資料新鮮度——' +
+      '但請注意本服務的分類快取只在伺服器啟動時載入一次（沒有排程重抓機制），實際回傳的資料版本可能比伺服器啟動時間更舊。',
     tags: ['System'],
     request: { query: getCompanyPeerGroupQuerySchema },
     responses: {
