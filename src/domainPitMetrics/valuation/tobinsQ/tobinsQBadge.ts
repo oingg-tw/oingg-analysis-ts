@@ -1,8 +1,8 @@
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 export const tobinsQBadge: MetricBadge = {
-  name: '托賓Q值 < 1',
-  nameEn: "Tobin's Q < 1",
+  name: '托賓Q值',
+  nameEn: "Tobin's Q",
   author: 'James Tobin, 1969',
   summary: '市值低於資產重置成本，市場對企業資產的評價可能偏低。',
   detail:
