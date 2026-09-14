@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toRatio4FromNumbers as toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/balanceSheetXbrlFirst';
-import { getMarketCapAsOf } from '@/models/marketCap';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
+import { getMarketCapAsOf } from '@/models/twse/marketCap';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

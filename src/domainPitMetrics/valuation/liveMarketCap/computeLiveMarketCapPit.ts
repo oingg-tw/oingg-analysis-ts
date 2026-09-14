@@ -1,4 +1,4 @@
-import { getPaidInSharesAsOf } from '@/models/capitalStock';
+import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
 import { getLatestDailyPrice } from '@/models/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 

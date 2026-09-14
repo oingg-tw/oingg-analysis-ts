@@ -1,4 +1,4 @@
-import { getBankAssetQualityTotalLoans, getLatestQuarterWithBankAssetQuality } from '@/models/bankRegulatoryXbrl';
+import { getBankAssetQualityTotalLoans, getLatestQuarterWithBankAssetQuality } from '@/models/mops/bankRegulatoryXbrl';
 import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';

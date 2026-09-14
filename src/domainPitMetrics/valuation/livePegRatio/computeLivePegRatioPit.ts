@@ -1,8 +1,8 @@
 import { getLatestAvailableQuarter } from '@/models/latestQuarter';
 import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/models/capitalStock';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
 import { getLatestDailyPrice } from '@/models/twseMarketData';
 import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';

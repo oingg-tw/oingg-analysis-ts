@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
-import type { IncomeStatementFields } from '@/models/incomeStatementXbrlFirst';
+import type { IncomeStatementFields } from '@/models/mops/incomeStatementXbrlFirst';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
