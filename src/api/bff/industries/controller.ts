@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getCompanyNamesForSymbols } from '@/models/companyProfile';
-import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/models/industryClassification';
+import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/models/gov/industryClassification';
 import { listSecuritiesIndustrySectors } from '@/models/securitiesIndustry';
 
 export const getIndustryTreeQuerySchema = z.object({

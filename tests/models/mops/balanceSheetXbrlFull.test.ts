@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getBalanceSheetXbrlFull } from '@/models/balanceSheetXbrlFull';
+import { getBalanceSheetXbrlFull } from '@/models/mops/balanceSheetXbrlFull';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 // 2026-09-07 使用者發現 currentFinancialAssetsAtFairValueThroughProfitOrLoss

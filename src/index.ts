@@ -21,8 +21,8 @@ import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
 import { loadIndustryCodes } from './models/industryCodes';
-import { loadIndustryClassification } from './models/industryClassification';
-import { loadIndustryChainClassification } from './models/industryChainClassification';
+import { loadIndustryClassification } from './models/gov/industryClassification';
+import { loadIndustryChainClassification } from './models/playwright/industryChainClassification';
 
 const app = express();
 
@@ -77,11 +77,11 @@ const startServer = async () => {
     void loadIndustryCodes();
     // 背景載入 gov-ts 產業分類資料（產業樹狀瀏覽功能用，GET /industries/tree、/industries/flat）
     // ——同樣輔助性質，不 await，失敗只影響這兩支瀏覽端點，不擋伺服器啟動，見
-    // models/industryClassification.ts。
+    // models/gov/industryClassification.ts。
     void loadIndustryClassification();
     // 背景載入 playwright-py 供應鏈分類資料（同業比較 GET /companies/peer-group 用，
     // 2026-09-14 起取代上面 gov-ts 版本的 findPeerGroup）——同樣輔助性質，不 await，見
-    // models/industryChainClassification.ts。
+    // models/playwright/industryChainClassification.ts。
     void loadIndustryChainClassification();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性

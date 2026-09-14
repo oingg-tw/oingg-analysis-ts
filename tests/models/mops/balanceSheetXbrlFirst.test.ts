@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getBalanceSheetXbrlFirst } from '@/models/balanceSheetXbrlFirst';
+import { getBalanceSheetXbrlFirst } from '@/models/mops/balanceSheetXbrlFirst';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 // 2026-09-07 規劃這批換源時逐欄位用 2330/2317/1301/2412/2887/1101/1312/1522/2002

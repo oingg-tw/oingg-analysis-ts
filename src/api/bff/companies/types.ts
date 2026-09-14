@@ -73,7 +73,7 @@ export const companiesCountOnlyResultSchema = z.object({
 export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
 
 // 2026-09-05 新增，2026-09-14 資料源換成 oingg-playwright-py 供應鏈分類——「產業同業比較」
-// 功能，見 src/models/industryChainClassification.ts。
+// 功能，見 src/models/playwright/industryChainClassification.ts。
 export const companyPeerEntrySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),

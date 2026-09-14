@@ -16,7 +16,7 @@
 // 回傳值刻意不在這裡把 bigint/numeric 轉成字串——維持原始型別，交給呼叫端既有的
 // serializeStatementRow（controller.ts）統一序列化。
 
-import type { QuarterlyKey } from './quarterlyKey';
+import type { QuarterlyKey } from '../quarterlyKey';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 const IDENTITY_COLUMNS = new Set(['symbol', 'year', 'quarter', 'data_type', 'subsidiary_company_id', 'report_date', 'raw_context_ref', 'created_at', 'updated_at']);

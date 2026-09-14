@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getStockPriceAsOf } from '@/models/marketCap';
+import { getStockPriceAsOf } from '@/models/twse/marketCap';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 // 2026-09-06 修正：daily_price 對每個交易日都會有一列，沒成交的那天 close 是 null（不是

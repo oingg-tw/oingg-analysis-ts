@@ -1,10 +1,10 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/models/capitalStock';
+import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/models/mops/capitalStock';
 
 // 沒有唯一識別欄位，Prisma Client 不會產生存取子，一律走 $queryRaw（見
-// prisma/mopsExport/schema.prisma、src/models/capitalStock.ts 的說明）。
+// prisma/mopsExport/schema.prisma、src/models/mops/capitalStock.ts 的說明）。
 interface CapitalStockHistoryRow {
   symbol: string;
   effective_year: number;

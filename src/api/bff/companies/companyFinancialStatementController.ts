@@ -1,9 +1,9 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getLatestAvailableQuarter, type StatementSource } from '@/models/latestQuarter';
-import { getBalanceSheetXbrlFull } from '@/models/balanceSheetXbrlFull';
-import { getIncomeStatementXbrlFull } from '@/models/incomeStatementXbrlFull';
-import { getXbrlCashFlowQuarterly } from '@/models/xbrlCashFlowQuarterly';
+import { getBalanceSheetXbrlFull } from '@/models/mops/balanceSheetXbrlFull';
+import { getIncomeStatementXbrlFull } from '@/models/mops/incomeStatementXbrlFull';
+import { getXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
 import type { Season } from '@/shared/rocQuarter';
 
 const FINANCIAL_STATEMENT_TYPES = ['balanceSheet', 'incomeStatement', 'cashFlowStatement'] as const;

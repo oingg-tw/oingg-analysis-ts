@@ -1,5 +1,5 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { getPaidInSharesAsOf } from './capitalStock';
+import { getPaidInSharesAsOf } from '../mops/capitalStock';
 
 export interface MarketCapAsOf {
   marketCap: number; // 股價 x 流通股數（元）

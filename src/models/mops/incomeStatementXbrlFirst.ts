@@ -10,7 +10,7 @@
 // reportDate（eps／interestIncome 完全沒有任何檔案存取，這裡不處理——EPS 是各自用
 // 淨利/流通股數重新算的，不是讀這張表現成的 eps 欄位）。
 
-import type { QuarterlyKey } from './quarterlyKey';
+import type { QuarterlyKey } from '../quarterlyKey';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 export interface IncomeStatementFields {

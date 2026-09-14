@@ -9,7 +9,7 @@
 | 資料 | 現況 |
 |---|---|
 | TWSE `export.isin_securities`（`twseExportPrisma`） | `security_type = '特別股'` 篩出 28 檔目前上市中的特別股，例如 `1101B` 台泥乙特、`1312A` 國喬特。跟三大表一樣走 `$queryRawUnsafe`，沒有鏡像進 `prisma/twseExport/schema.prisma`（這張 view 沒有唯一識別欄位）。**TPEx（`tpexExportPrisma`）完全沒有這張表**，上櫃特別股（如果存在）沒有資料源，是外部缺口。 |
-| TWSE `export.daily_price` | 特別股的 symbol（例如 `1101B`）跟一般股票一樣是 key，直接複用既有的 `getStockPriceAsOf`（`src/models/marketCap.ts`），不用新寫查詢。 |
+| TWSE `export.daily_price` | 特別股的 symbol（例如 `1101B`）跟一般股票一樣是 key，直接複用既有的 `getStockPriceAsOf`（`src/models/twse/marketCap.ts`），不用新寫查詢。 |
 | mops-ts `export.preferred_stock_right`（`mopsExportPrisma`） | 77 列，`preferred_stock_code` 對應 `isin_securities.symbol`（28 檔目前上市的全部對得上）。**同一個 code 會有多列**（`series_no` 遞增，代表配息條件歷次修訂），查詢時要 `ORDER BY series_no DESC LIMIT 1` 拿最新條款，不能假設一個 code 只有一列。 |
 
 ## 逐欄位資料來源對照
@@ -154,7 +154,7 @@ currentYieldPct/redeemable 這幾個欄位的語意就來回確認了好幾輪�
 
 ## 順帶修正的共用基礎設施 bug（2026-09-06）
 
-實測特別股股價時發現 `getStockPriceAsOf`（`src/models/marketCap.ts`）對冷門
+實測特別股股價時發現 `getStockPriceAsOf`（`src/models/twse/marketCap.ts`）對冷門
 股票（例如 `1312A` 國喬特連續幾天沒成交）會誤判成查無股價——原本只抓「最新一列」，沒過濾
 `close IS NOT NULL`，沒成交那天 `close` 是 null 但那一列還是存在。已修正成「找最近一筆真的
 有成交價的日期」，這是共用函式，`fcfYield`/`psr`/`pFcf`/`evEbitda`/`altmanZScore` 的市值
@@ -169,5 +169,5 @@ currentYieldPct/redeemable 這幾個欄位的語意就來回確認了好幾輪�
 「同一個 preferred_stock_code 要拿最新 series_no」的邊界案例）、
 `tests/shared/preferredStockYield.test.ts`（YTC 二分法的封閉解交叉驗證+自洽性驗證、
 `resolveYtcPeriods` 邊界案例）、
-`tests/models/marketCap.test.ts`（`getStockPriceAsOf` 冷門股票沒成交日的
+`tests/models/twse/marketCap.test.ts`（`getStockPriceAsOf` 冷門股票沒成交日的
 回歸測試）。

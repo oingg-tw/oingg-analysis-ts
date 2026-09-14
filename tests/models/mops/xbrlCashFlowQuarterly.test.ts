@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getXbrlCashFlowQuarterly, getLatestQuarterWithXbrlCashFlowQuarterly } from '@/models/xbrlCashFlowQuarterly';
+import { getXbrlCashFlowQuarterly, getLatestQuarterWithXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 // mops-ts 2026-09-06 新增 export.xbrl_three_statements_long 的 statement_type=

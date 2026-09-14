@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/models/companyProfile';
-import { findPeerGroup } from '@/models/industryChainClassification';
+import { findPeerGroup } from '@/models/playwright/industryChainClassification';
 
 export const getCompanyPeerGroupQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
@@ -21,7 +21,7 @@ export const getCompanyPeerGroupQuerySchema = z.object({
 // 分類（Gemini 解析真實供應關係得出的 product_category），破壞性變更（industryLevel/
 // industryCode/industryName 換成 classificationLevel/confidence/sampleSize），已在
 // dev 環境驗證後通知 bff-ts。用細分類→粗分類兩層回退找同業，見
-// src/models/industryChainClassification.ts 的說明。
+// src/models/playwright/industryChainClassification.ts 的說明。
 //
 // 查無分類資料（found: false）分兩種成因，這支端點刻意不區分：(1) 這家公司是真實存在、可
 // 交易的公司，但供應鏈報告完全沒提到它、沒有任何已分類的邊；(2) symbol 打錯或根本不是

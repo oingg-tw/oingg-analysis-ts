@@ -17,7 +17,7 @@
 // 14 支既有 computeXxxPit.ts 都只透過 getCashFlowStatementXbrlFirst(key) 存取這 6 個
 // 欄位 + reportDate。
 
-import type { QuarterlyKey } from './quarterlyKey';
+import type { QuarterlyKey } from '../quarterlyKey';
 import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
 
 export interface CashFlowFields {

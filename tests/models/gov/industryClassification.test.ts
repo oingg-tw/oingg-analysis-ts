@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/models/industryClassification';
+import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/models/gov/industryClassification';
 
 beforeAll(async () => {
   await loadIndustryClassification();

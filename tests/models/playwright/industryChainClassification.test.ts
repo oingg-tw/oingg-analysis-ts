@@ -4,7 +4,7 @@ import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/models/companyProfile';
-import { loadIndustryChainClassification, findPeerGroup } from '@/models/industryChainClassification';
+import { loadIndustryChainClassification, findPeerGroup } from '@/models/playwright/industryChainClassification';
 
 let candidatePool: Set<string>;
 

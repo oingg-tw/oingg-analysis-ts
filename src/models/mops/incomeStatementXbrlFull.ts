@@ -6,7 +6,7 @@
 // balanceSheetXbrlFull.ts 完全一致，見那支檔案的檔頭說明——包含 2026-09-11 舊三大表
 // 已退役、不再有 fallback 分支這件事。
 
-import type { QuarterlyKey } from './quarterlyKey';
+import type { QuarterlyKey } from '../quarterlyKey';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 const IDENTITY_COLUMNS = new Set(['symbol', 'year', 'quarter', 'data_type', 'subsidiary_company_id', 'report_date', 'raw_context_ref', 'created_at', 'updated_at']);
