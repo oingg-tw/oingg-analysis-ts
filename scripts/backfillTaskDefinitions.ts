@@ -71,11 +71,33 @@ import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/domainPitMet
 import { computeAndWriteNcavPit } from '../src/domainPitMetrics/valuation/ncav/computeNcavPit';
 import { computeAndWriteMarketCapPit } from '../src/domainPitMetrics/valuation/marketCap/computeMarketCapPit';
 import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pegRatio/computePegRatioPit';
+// 2026-09-14 使用者發現：這份清單在 2026-09-11「全市場六季財報深度解鎖」批次跟
+// 2026-09-13「量化選股法則」批次各自新增指標時，都沒有回頭更新這份清單（兩份清單之間
+// 沒有型別系統強制同步，純粹手動維護），導致全市場歷史回補（backfillFullHistoryFullMarketPit.ts）
+// 從一開始就沒涵蓋到這 19 支指標（含 2 個家族函式）。這裡一次補齊。
+import { computeAndWriteEvToEbitPit } from '../src/domainPitMetrics/valuation/evToEbit/computeEvToEbitPit';
+import { computeAndWriteEvToFcfPit } from '../src/domainPitMetrics/valuation/evToFcf/computeEvToFcfPit';
+import { computeAndWriteGreenblattRocPit } from '../src/domainPitMetrics/profitability/greenblattRoc/computeGreenblattRocPit';
+import { computeAndWriteGreenblattEarningsYieldPit } from '../src/domainPitMetrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
+import { computeAndWriteTobinsQPit } from '../src/domainPitMetrics/valuation/tobinsQ/computeTobinsQPit';
+import { computeAndWritePriceToResearchRatioPit } from '../src/domainPitMetrics/growth/priceToResearchRatio/computePriceToResearchRatioPit';
+import { computeAndWriteNovyMarxGpToAssetsPit } from '../src/domainPitMetrics/profitability/novyMarxGpToAssets/computeNovyMarxGpToAssetsPit';
+import { computeAndWriteCrociPit } from '../src/domainPitMetrics/profitability/croci/computeCrociPit';
+import { computeAndWriteFcfMarginPit } from '../src/domainPitMetrics/quality/fcfMargin/computeFcfMarginPit';
+import { computeAndWriteNetWorkingCapitalToAssetsPit } from '../src/domainPitMetrics/resilience/netWorkingCapitalToAssets/computeNetWorkingCapitalToAssetsPit';
+import { computeAndWriteTotalDebtToCapitalPit } from '../src/domainPitMetrics/resilience/totalDebtToCapital/computeTotalDebtToCapitalPit';
+import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/domainPitMetrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
+import { computeAndWriteEquityRatioPit } from '../src/domainPitMetrics/resilience/equityRatio/computeEquityRatioPit';
+import { computeAndWriteCashToAssetsRatioPit } from '../src/domainPitMetrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
+import { computeAndWriteBeneishAqiPit } from '../src/domainPitMetrics/quality/beneishAqi/computeBeneishAqiPit';
+import { computeAndWriteBeneishDsriPit } from '../src/domainPitMetrics/quality/beneishDsri/computeBeneishDsriPit';
+import { computeAndWriteCashFlowValuationFamilyPit } from '../src/domainPitMetrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
+import { computeAndWriteLeverageDegreeFamilyPit } from '../src/domainPitMetrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
 
 export const GENERAL_METRIC_CODES = [
-  'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden',
+  'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden', 'netProfitMargin', 'equityMultiplier',
   'grahamNumber', 'ownerEarnings', 'altmanZScore', 'piotroskiFScore', 'beneishMScore', 'nissimPenmanRnoa', 'zmijewskiScore', 'ohlsonOScore',
-  'grossMargin', 'operatingMargin', 'assetTurnover', 'fixedAssetTurnover', 'inventoryDays', 'inventoryTurnover', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesTurnover', 'cashConversionCycle',
+  'grossMargin', 'operatingMargin', 'assetTurnover', 'fixedAssetTurnover', 'inventoryDays', 'inventoryTurnover', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesTurnover', 'cashConversionCycle', 'operatingCycle', 'netWorkingCapitalTurnover', 'inventoryToRevenueRatio', 'receivablesToRevenueRatio',
   'eps', 'bvps', 'revenuePerShare', 'dividendPayoutRatio', 'sgr', 'ocfPerShare', 'fcfPerShare', 'ocfToNetIncome', 'accrualsRatio', 'fcfYield',
   'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
   'revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate',
@@ -87,6 +109,11 @@ export const GENERAL_METRIC_CODES = [
   'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y',
   'operatingExpenseRatio',
   'ncav', 'marketCap', 'pegRatio',
+  'evToEbit', 'evToFcf', 'greenblattRoc', 'greenblattEarningsYield', 'tobinsQ', 'priceToResearchRatio',
+  'novyMarxGpToAssets', 'croci', 'fcfMargin', 'netWorkingCapitalToAssets', 'totalDebtToCapital',
+  'nonOperatingIncomeRatio', 'equityRatio', 'cashToAssetsRatio', 'beneishAqi', 'beneishDsri',
+  'evToOcf', 'evToSales', 'priceToOcf', 'debtToFcf', 'capexToOcfRatio', 'croic', 'ocfMargin', 'fcfConversionRate',
+  'financialLeverageDegree', 'totalLeverageDegree',
   'beta', 'exchangePeRatio', 'exchangePbRatio', 'dividendYield',
 ];
 
@@ -174,6 +201,24 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['ncav', () => computeAndWriteNcavPit(query)],
     ['marketCap', () => computeAndWriteMarketCapPit(query)],
     ['pegRatio', () => computeAndWritePegRatioPit(query)],
+    ['evToEbit', () => computeAndWriteEvToEbitPit(query)],
+    ['evToFcf', () => computeAndWriteEvToFcfPit(query)],
+    ['greenblattRoc', () => computeAndWriteGreenblattRocPit(query)],
+    ['greenblattEarningsYield', () => computeAndWriteGreenblattEarningsYieldPit(query)],
+    ['tobinsQ', () => computeAndWriteTobinsQPit(query)],
+    ['priceToResearchRatio', () => computeAndWritePriceToResearchRatioPit(query)],
+    ['novyMarxGpToAssets', () => computeAndWriteNovyMarxGpToAssetsPit(query)],
+    ['croci', () => computeAndWriteCrociPit(query)],
+    ['fcfMargin', () => computeAndWriteFcfMarginPit(query)],
+    ['netWorkingCapitalToAssets', () => computeAndWriteNetWorkingCapitalToAssetsPit(query)],
+    ['totalDebtToCapital', () => computeAndWriteTotalDebtToCapitalPit(query)],
+    ['nonOperatingIncomeRatio', () => computeAndWriteNonOperatingIncomeRatioPit(query)],
+    ['equityRatio', () => computeAndWriteEquityRatioPit(query)],
+    ['cashToAssetsRatio', () => computeAndWriteCashToAssetsRatioPit(query)],
+    ['beneishAqi', () => computeAndWriteBeneishAqiPit(query)],
+    ['beneishDsri', () => computeAndWriteBeneishDsriPit(query)],
+    ['cashFlowValuationFamily', () => computeAndWriteCashFlowValuationFamilyPit(query)],
+    ['leverageDegreeFamily', () => computeAndWriteLeverageDegreeFamilyPit(query)],
   ];
 
   if (quarter) return periodTasks; // 逐日型指標沒有「這一季」的概念，指定 quarter 時跳過，見上方說明。
