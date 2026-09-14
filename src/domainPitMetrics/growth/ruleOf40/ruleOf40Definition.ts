@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { ruleOf40Badge } from './ruleOf40Badge';
 
 export const ruleOf40Definition: MetricDefinitionSpec = {
   metricCode: 'ruleOf40',
@@ -20,5 +19,4 @@ export const ruleOf40Definition: MetricDefinitionSpec = {
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['revenue', 'netCashFromOperatingActivities', 'capitalExpenditures'],
   currentFormulaVersion: 1,
-  badge: ruleOf40Badge,
 };

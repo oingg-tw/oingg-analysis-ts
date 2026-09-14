@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { ncavBadge } from './ncavBadge';
 
 export const ncavDefinition: MetricDefinitionSpec = {
   metricCode: 'ncav',
@@ -20,7 +19,6 @@ export const ncavDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Net_current_asset_value',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）'],
-  badge: ncavBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['current_assets', 'liabilities'],

@@ -3,6 +3,7 @@ import { join } from 'path';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { validTimeframesForMetric } from '@/api/bff/screener/fieldResolver';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
+import { getBadgeForMetric } from '@/domainPitMetrics/badgeRegistry';
 import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
@@ -86,8 +87,9 @@ export interface MetricFolderCatalogEntry {
   // 資料來源標籤文字，改讀這裡統一維護。
   sources: string[];
   // 2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）
-  // 搬過來，見 metricDefinitionSpec.ts 的完整說明。只有 15 支指標有，其餘指標這個欄位是
-  // undefined。
+  // 搬過來，見 metricDefinitionSpec.ts 的完整說明。2026-09-14 來源改成獨立的
+  // badgeRegistry.ts，不是 definition.badge（那個欄位已移除）——單純搬家，形狀不變，只有
+  // 15 支指標有，其餘指標這個欄位是 undefined。
   badge?: MetricBadge;
   // 2026-09-13 新增：這支 metricCode 有沒有稽核鏈（GET /companies/:symbol/metric-provenance
   // 支援的 metricCode，見 provenanceTypes.ts 的 PILOT_PROVENANCE_METRIC_CODES）——原本
@@ -132,7 +134,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           referenceUrl: definition.referenceUrl,
           tier: definition.tier,
           sources: definition.sources,
-          badge: definition.badge,
+          badge: getBadgeForMetric(metricCode),
           hasProvenance: (PILOT_PROVENANCE_METRIC_CODES as readonly string[]).includes(metricCode),
         };
       });

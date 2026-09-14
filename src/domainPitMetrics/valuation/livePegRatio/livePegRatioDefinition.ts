@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { livePegRatioBadge } from './livePegRatioBadge';
 
 // 2026-09-11 應 web-nuxt 要求新增——pegRatio 的即時版本，見 computeLivePegRatioPit.ts
 // 檔頭說明。逐日型（snapshot），不是季報型。
@@ -16,7 +15,6 @@ export const livePegRatioDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/PEG_ratio',
   tier: 'composite',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
-  badge: livePegRatioBadge,
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares', 'daily_price.close'],

@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { altmanZDoublePrimeScoreBadge } from './altmanZDoublePrimeScoreBadge';
 
 export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'altmanZDoublePrimeScore',
@@ -21,7 +20,6 @@ export const altmanZDoublePrimeScoreDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
-  badge: altmanZDoublePrimeScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

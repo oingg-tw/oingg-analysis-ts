@@ -4,13 +4,15 @@
 // 這支腳本掃全部已註冊指標，只驗證有填 formulaLatex 的那些。
 //
 // 2026-09-10 追加：同一套驗證也套用到 MetricBadge.threshold.thresholdLatex（門檻本身
-// 的 LaTeX 呈現，見 metricDefinitionSpec.ts 的欄位說明），只有 11 支有 badge 的指標會
-// 檢查到。
+// 的 LaTeX 呈現，見 metricDefinitionSpec.ts 的欄位說明）。2026-09-14 badge 改成獨立的
+// badgeRegistry.ts（Record<metricCode, MetricBadge>），不再是 definition.badge，這裡
+// 改成同時掃這兩份登錄檔。
 //
 // 用法：pnpm tsx scripts/validateFormulaLatex.ts
 
 import { ComputeEngine } from '@cortex-js/compute-engine';
 import { metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { badgeRegistry } from '../src/domainPitMetrics/badgeRegistry';
 
 const ce = new ComputeEngine();
 
@@ -37,10 +39,11 @@ const main = () => {
       checked++;
       if (!validateOne(metricCode, definition.formulaLatex)) failed++;
     }
-    if (definition.badge?.threshold.thresholdLatex) {
-      checked++;
-      if (!validateOne(`${metricCode} (threshold)`, definition.badge.threshold.thresholdLatex)) failed++;
-    }
+  }
+
+  for (const [metricCode, badge] of Object.entries(badgeRegistry)) {
+    checked++;
+    if (!validateOne(`${metricCode} (threshold)`, badge.threshold.thresholdLatex)) failed++;
   }
 
   console.log(`\n共 ${checked} 個算式（formulaLatex + threshold.thresholdLatex），${failed} 個解析失敗。`);

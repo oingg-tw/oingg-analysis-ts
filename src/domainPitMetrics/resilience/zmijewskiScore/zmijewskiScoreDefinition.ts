@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { zmijewskiScoreBadge } from './zmijewskiScoreBadge';
 
 export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'zmijewskiScore',
@@ -16,7 +15,6 @@ export const zmijewskiScoreDefinition: MetricDefinitionSpec = {
   // referenceUrl 刻意留空，不要拿不夠權威的頁面充數。
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
-  badge: zmijewskiScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

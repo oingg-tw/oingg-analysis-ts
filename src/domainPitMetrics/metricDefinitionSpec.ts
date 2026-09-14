@@ -19,9 +19,13 @@ export interface NamedEntity {
 }
 
 // 2026-09-10：「大師徽章」型別本身（命名法則/門檻/引用出處），內容見各自
-// <metricCode>Badge.ts（跟 <metricCode>Definition.ts 同一個資料夾）——只有 15 支
-// 指標有，其餘指標的 MetricDefinitionSpec.badge 維持 undefined，見下方 badge 欄位的
-// 完整說明。
+// <metricCode>Badge.ts（跟 <metricCode>Definition.ts 同一個資料夾）。2026-09-14 應
+// 使用者要求把「哪個 metricCode 對應哪個徽章」這個對應關係從 MetricDefinitionSpec 抽出，
+// 搬到獨立的 badgeRegistry.ts（Record<metricCode, MetricBadge>）——原本
+// MetricDefinitionSpec.badge?: MetricBadge 把「這支指標怎麼算」（Definition 的職責）跟
+// 「哪個投資流派給它掛什麼門檻」（主觀策展）混在同一個物件裡，調整徽章內容還要去動
+// Definition 檔案；搬出去後兩者職責分開，MetricBadge 型別本身不變，一個 metricCode
+// 還是最多一個徽章。見 badgeRegistry.ts 的完整說明。
 export interface MetricBadge extends NamedEntity {
   // 2026-09-10 補訂分工規則（先前沒訂，導致 13 筆各自混用「英文（中文）」/「中文（英文）」/
   // 純英文三種寫法，已全部校正過一次）：name/nameEn 不互相夾雜對方語言插入括號——這才是
@@ -169,20 +173,6 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // 拿來定位 knowledgeDate（例如 stockPrice 借用資產負債表的 reportDate 但實際數值
   // 來自市場價）不算數。
   sources: string[];
-  // 2026-09-10 新增：web-nuxt 原本在前端 app/utils/guru-badges.ts 手工維護一份「大師徽章」
-  // 清單（12 支指標各自的命名法則/門檻/引用出處），因為當時 formulaLatex/referenceUrl 還沒
-  // 做出來才暫時放前端；現在後端已經有出處欄位的先例，使用者要求把徽章資料也搬過來，避免
-  // 兩邊repo各自維護一份、內容/門檻對不上。只有真的有「具名法則 + 明確門檻」的指標才填
-  // （目前 11 支，Piotroski F-Score 是唯一例外——它的門檻判斷是 clamp(round(value),0,9)>=8
-  // 這種「非完美 9/9 也算通過」的邏輯，下面 threshold 的比較詞彙表達不了，維持前端硬編碼，
-  // 不寫進這裡）。選填，其餘 73 支沒有徽章維持 undefined。
-  // 2026-09-10 拆檔：型別本身定義在這裡（MetricBadge，見下方），但每支指標的實際徽章
-  // 內容（一大段中文 detail prose + threshold）搬到各自資料夾的 <metricCode>Badge.ts，
-  // 跟 <metricCode>Definition.ts 分開——原因跟這個 session 稍早把 64 個 metricCode 定義
-  // 從單一大檔案拆成各自資料夾同一個邏輯：徽章內容是大段獨立文案，跟公式/dependsOn 這些
-  // 計算相關的宣告混在同一個物件字面值裡，會讓 Definition.ts 檔案變得很長、不好找兩種
-  // 完全不同性質的內容各自在哪裡。
-  badge?: MetricBadge;
   // 2026-09-11 使用者要求：dupontDecomposedRoe/dupontExtendedRoe 這類「拆解 ROE 用的中間
   // 因子組合」不該出現在 GET /filters 的指標選單/screener 篩選欄位裡——使用者篩選/排行時
   // 只需要 roe 本身，不需要看到「杜邦三因子拆解ROE」「杜邦五因子拆解ROE」這種對一般使用者

@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { liveGrahamNumberBadge } from './liveGrahamNumberBadge';
 
 // 2026-09-11 應 web-nuxt 要求新增——grahamNumber 的即時版本，見
 // computeLiveGrahamNumberPit.ts 檔頭說明。逐日型（snapshot），不是季報型，跟 grahamNumber
@@ -18,7 +17,6 @@ export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
-  badge: liveGrahamNumberBadge,
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares', 'daily_price.close'],

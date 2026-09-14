@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { cashConversionCycleBadge } from './cashConversionCycleBadge';
 
 export const cashConversionCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'cashConversionCycle',
@@ -14,7 +13,6 @@ export const cashConversionCycleDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%8E%B0%E9%87%91%E5%BE%AA%E7%8E%AF%E5%91%A8%E6%9C%9F',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
-  badge: cashConversionCycleBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['operating_costs', 'inventories', 'revenue', 'accountsReceivable', 'accountsPayable'],

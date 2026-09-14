@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { sueBadge } from './sueBadge';
 
 export const sueDefinition: MetricDefinitionSpec = {
   metricCode: 'sue',
@@ -23,7 +22,6 @@ export const sueDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Post%E2%80%93earnings-announcement_drift',
   tier: 'composite',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
-  badge: sueBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],

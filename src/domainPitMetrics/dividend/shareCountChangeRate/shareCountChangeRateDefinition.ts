@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { shareCountChangeRateBadge } from './shareCountChangeRateBadge';
 
 export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
   metricCode: 'shareCountChangeRate',
@@ -19,5 +18,4 @@ export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
   allowedPeriodTypes: ['Q'],
   dependsOn: ['paidInShares'],
   currentFormulaVersion: 1,
-  badge: shareCountChangeRateBadge,
 };

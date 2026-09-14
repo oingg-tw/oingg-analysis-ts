@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { ohlsonOScoreBadge } from './ohlsonOScoreBadge';
 
 export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'ohlsonOScore',
@@ -18,7 +17,6 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Ohlson_O-score',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
-  badge: ohlsonOScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { chowderNumberBadge } from './chowderNumberBadge';
 
 export const chowderNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'chowderNumber',
@@ -19,7 +18,6 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://seekingalpha.com/author/chowder/analysis',
   tier: 'composite',
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日評價指標（本益比／股價淨值比／殖利率）'],
-  badge: chowderNumberBadge,
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'paidInShares'],

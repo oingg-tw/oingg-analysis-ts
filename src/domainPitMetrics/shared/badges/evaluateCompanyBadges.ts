@@ -8,7 +8,8 @@ import type { MetricNullReason } from '../../metricBasis';
 //已經證實這樣做會出錯：把不同性質的指標混在同一組計數、沒處理產業排除等 null 情境）。
 // 後端統一算好 passed，前端只管呈現。
 //
-// 範圍只涵蓋 15 支「有 badge」的指標——沒有 badge 的其餘 79 支指標沒有「達成/未達成」
+// 範圍只涵蓋 badgeRegistry.ts 有登錄的 metricCode（2026-09-14 前是內嵌在
+// definition.badge，同日搬到獨立登錄檔，形狀不變）——沒有徽章的指標沒有「達成/未達成」
 // 這個概念，不在這支端點的範圍內（那些指標的數值本身走既有的 metric-history/
 // metrics-history 端點）。
 //

@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { piotroskiFScoreBadge } from './piotroskiFScoreBadge';
 
 export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'piotroskiFScore',
@@ -16,7 +15,6 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   referenceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
-  badge: piotroskiFScoreBadge,
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [

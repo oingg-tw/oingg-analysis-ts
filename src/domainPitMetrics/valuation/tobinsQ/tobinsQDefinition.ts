@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { tobinsQBadge } from './tobinsQBadge';
 
 export const tobinsQDefinition: MetricDefinitionSpec = {
   metricCode: 'tobinsQ',
@@ -20,5 +19,4 @@ export const tobinsQDefinition: MetricDefinitionSpec = {
   allowedPeriodTypes: ['Q'],
   dependsOn: ['liabilities', 'assets', 'paidInShares', 'daily_price.close'],
   currentFormulaVersion: 1,
-  badge: tobinsQBadge,
 };

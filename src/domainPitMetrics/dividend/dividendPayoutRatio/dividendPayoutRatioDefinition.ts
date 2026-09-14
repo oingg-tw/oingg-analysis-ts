@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { dividendPayoutRatioBadge } from './dividendPayoutRatioBadge';
 
 export const dividendPayoutRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'dividendPayoutRatio',
@@ -16,7 +15,6 @@ export const dividendPayoutRatioDefinition: MetricDefinitionSpec = {
   // academicSourceUrl 出處/推導過程見 dividendPayoutRatioBadge.ts 的更正說明。
   academicSourceUrl:
     'https://www.fidelity.com/bin-public/060_www_fidelity_com/documents/Payout-Ratio-The-Most-Influential-Management-Decision-a-Company-Can-Make-retail.pdf',
-  badge: dividendPayoutRatioBadge,
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'dividendsPaid'],

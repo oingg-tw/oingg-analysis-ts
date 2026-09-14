@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { consecutiveProfitYearsBadge } from './consecutiveProfitYearsBadge';
 
 export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
   metricCode: 'consecutiveProfitYears',
@@ -18,5 +17,4 @@ export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss'],
   currentFormulaVersion: 1,
-  badge: consecutiveProfitYearsBadge,
 };

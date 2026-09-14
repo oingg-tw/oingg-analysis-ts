@@ -99,8 +99,9 @@ const metricFolderCatalogEntrySchema = z.object({
     .optional()
     .meta({
       description:
-        '2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）搬過來，' +
-        '只有 15 支指標有，其餘指標這個欄位是 undefined。',
+        '2026-09-10 新增：web-nuxt 原本在前端手工維護的「大師徽章」資料（命名法則/門檻/引用出處）搬過來。' +
+        '2026-09-14 來源改成獨立的 badgeRegistry.ts，不是塞在指標定義本身，形狀不變。只有部分指標有，' +
+        '其餘指標這個欄位是 undefined。',
     }),
   hasProvenance: z.boolean().meta({
     description:
@@ -134,8 +135,8 @@ export const registerFiltersOpenApi = (): void => {
       '直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、' +
       'GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，' +
       '目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的' +
-      '公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）、badge（大師徽章資料，只有 11' +
-      '支指標有）。',
+      '公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）、badge（大師徽章資料，' +
+      '只有部分指標有）。',
     tags: ['System'],
     responses: {
       200: {

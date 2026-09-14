@@ -1,5 +1,4 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
-import { accrualsRatioBadge } from './accrualsRatioBadge';
 
 export const accrualsRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'accrualsRatio',
@@ -17,7 +16,6 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
   academicSourceUrl: 'https://doi.org/10.2308/TAR-9608042309',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
-  badge: accrualsRatioBadge,
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: [
