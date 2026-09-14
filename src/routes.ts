@@ -18,6 +18,7 @@ import materialAnnouncementsRouter from './api/bff/market/materialAnnouncements/
 import priceChangeRankingRouter from './api/bff/market/priceChangeRanking/route';
 import etfRankingRouter from './api/bff/market/etfRanking/route';
 import etfScreenerRouter from './api/bff/market/etfScreener/route';
+import taiexDailyPriceRouter from './api/bff/market/taiexDailyPrice/route';
 import rankingRouter from './api/bff/ranking/route';
 import equityRiskPremiumRouter from './api/bff/macro/equityRiskPremium/route';
 import govBondYield10yRouter from './api/bff/macro/govBondYield10y/route';
@@ -55,6 +56,7 @@ router.use(materialAnnouncementsRouter);
 router.use(priceChangeRankingRouter);
 router.use(etfRankingRouter);
 router.use(etfScreenerRouter);
+router.use(taiexDailyPriceRouter);
 
 // --- API Routes ---
 // 2026-09-04：原本 44 支「單一公司單一指標」的舊端點（BFF 沒有呼叫過）已刪除，取代方式是

@@ -23,6 +23,7 @@ import { registerMaterialAnnouncementsOpenApi } from '@/api/bff/market/materialA
 import { registerPriceChangeRankingOpenApi } from '@/api/bff/market/priceChangeRanking/openapi';
 import { registerPriceLimitRangeOpenApi } from '@/api/bff/market/priceLimitRange/openapi';
 import { registerRevenueRankingOpenApi } from '@/api/bff/market/revenueRanking/openapi';
+import { registerTaiexDailyPriceOpenApi } from '@/api/bff/market/taiexDailyPrice/openapi';
 import { registerVolumeTop20OpenApi } from '@/api/bff/market/volumeTop20/openapi';
 
 // 2026-09-05 起改成手動 registry——取代原本 swagger-jsdoc 直接讀 .ts 原始檔文字解析 JSDoc
@@ -48,6 +49,7 @@ registerMaterialAnnouncementsOpenApi();
 registerPriceChangeRankingOpenApi();
 registerPriceLimitRangeOpenApi();
 registerRevenueRankingOpenApi();
+registerTaiexDailyPriceOpenApi();
 registerVolumeTop20OpenApi();
 registerBatchOpenApi();
 
