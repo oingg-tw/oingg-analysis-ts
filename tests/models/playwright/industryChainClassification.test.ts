@@ -47,8 +47,22 @@ test('findPeerGroup: 1907 細分類同業數不足，回退到粗分類', () => 
 // 較低、但仍有分類的公司驗證：即使自己信心不到門檻，findPeerGroup 照常回傳結果（不拒絕查詢），
 // 只是候選池會排除掉信心更低的其他公司。minPeers 刻意設 1（兩次呼叫都必然停在細分類層級，
 // 不會有一邊回退到粗分類、一邊沒有的情況——那樣兩邊比較的就不是同一個候選池範圍，比較
-// peers.length 大小沒有意義，見下面對 1905 的直接存在性驗證）。
-test('findPeerGroup: minConfidence 只過濾候選同業，不因為目標公司自己信心不足而拒絕查詢', () => {
+// peers.length 大小沒有意義）。
+//
+// 2026-09-14 教訓：這裡原本點名「1905（華紙）信心分數 1.0，應該通過任何門檻都在同業池裡」，
+// 結果 playwright-py 當天多輪重分類後 1905 整個被改分類到「能源」（不再是紙業包裝材料），
+// 測試直接壞掉——點名特定公司的分類內容是另一種形式的「寫死精確數字」，一樣會隨資料源
+// 持續改善而過期。改成在測試當下現查一個「信心夠高、確定會通過嚴格門檻」的候選公司，
+// 不在程式碼裡硬編公司代號。
+test('findPeerGroup: minConfidence 只過濾候選同業，不因為目標公司自己信心不足而拒絕查詢', async () => {
+  const highConfidencePeerRows = await playwrightExportPrisma.$queryRaw<{ code: string }[]>`
+    SELECT code FROM "export"."company_category_summary"
+    WHERE category = '紙業包裝材料' AND code != '1907' AND confidence >= 0.95
+    LIMIT 1
+  `;
+  assert.ok(highConfidencePeerRows.length > 0, '前提：紙業包裝材料裡應該至少有一家信心分數 >=0.95 的公司（不是 1907 自己）');
+  const highConfidencePeer = highConfidencePeerRows[0]!.code;
+
   const permissive = findPeerGroup('1907', candidatePool, 1, { minConfidence: 0, minSampleSize: 0 });
   const strict = findPeerGroup('1907', candidatePool, 1, { minConfidence: 0.95, minSampleSize: 1 });
 
@@ -57,7 +71,7 @@ test('findPeerGroup: minConfidence 只過濾候選同業，不因為目標公司
   assert.equal(permissive.level, 'category');
   assert.equal(strict.level, 'category', 'minPeers=1 兩邊都應該停在細分類層級，不會觸發回退');
   assert.ok(strict.peers.length <= permissive.peers.length, '同一層級下，拉高候選同業的信心門檻，同業池只會變小或不變');
-  assert.ok(permissive.peers.includes('1905'), '1905（華紙）信心分數 1.0，應該通過任何門檻都在同業池裡');
+  assert.ok(permissive.peers.includes(highConfidencePeer), `${highConfidencePeer} 信心分數 >=0.95，應該通過任何門檻都在同業池裡`);
 });
 
 // category=null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）——
