@@ -20,6 +20,9 @@ import { beneishMScoreBadge } from './quality/beneishMScore/beneishMScoreBadge';
 import { piotroskiFScoreBadge } from './quality/piotroskiFScore/piotroskiFScoreBadge';
 import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreBadge';
 import { altmanZScoreBadge } from './resilience/altmanZScore/altmanZScoreBadge';
+import { bankCarRatioBadge } from './resilience/bankCarRatio/bankCarRatioBadge';
+import { bankCet1RatioBadge } from './resilience/bankCet1Ratio/bankCet1RatioBadge';
+import { bankTier1RatioBadge } from './resilience/bankTier1Ratio/bankTier1RatioBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
 import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
 import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
@@ -66,6 +69,9 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   piotroskiFScore: piotroskiFScoreBadge,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreBadge,
   altmanZScore: altmanZScoreBadge,
+  bankCarRatio: bankCarRatioBadge,
+  bankCet1Ratio: bankCet1RatioBadge,
+  bankTier1Ratio: bankTier1RatioBadge,
   currentRatio: currentRatioBadge,
   longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
   ohlsonOScore: ohlsonOScoreBadge,
