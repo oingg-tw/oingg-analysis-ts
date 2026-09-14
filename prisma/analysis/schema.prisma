@@ -165,8 +165,8 @@ model MetricValue {
 
   // periodType：季報型指標的期間聚合方式，唯一還留著的 basis 相關欄位（lookbackRange/
   // samplingInterval/snapshotCadence 三個逐日型專用欄位已經隨著拆表搬到
-  // MetricDailyCadenceValue，這張表不再需要）。'Q' | 'YTD' | 'TTM' | 'Q_ANN' | 'FY'，
-  // 完整說明見 src/domainPitMetrics/metricBasis.ts。
+  // MetricDailyCadenceValue，這張表不再需要）。'Q' | 'YTD' | 'TTM' | 'FY'（Q_ANN 已於
+  // 2026-09-14 應使用者要求移除節省運算），完整說明見 src/domainPitMetrics/metricBasis.ts。
   periodType String @map("period_type")
 
   // 沿用本檔案上方 45 張表區分個體/合併報表的既有慣例，跟 fiscalYear/fiscalQuarter(西元)
@@ -185,7 +185,7 @@ model MetricValue {
   // 只有 value 為 null 時才有意義；value 非 null 時應為 null。應用層 zod 驗證見 metricBasis.ts。
   nullReason String? @map("null_reason")
 
-  // 該值最早可被市場知道的日期。Q/Q_ANN = 本季財報公告日；TTM 完整時 = 近四季公告日最大值；
+  // 該值最早可被市場知道的日期。Q = 本季財報公告日；TTM 完整時 = 近四季公告日最大值；
   // TTM 不齊（value=null）時 = 主季自己的公告日。
   knowledgeDate DateTime @map("knowledge_date") @db.Date
 

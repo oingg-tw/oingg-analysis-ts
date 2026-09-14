@@ -10,7 +10,7 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 
 // 2026-09-13 使用者要求擴大稽核鏈——evEbitda(TTM) = 企業價值(EV=市值+淨負債，本季知識
 // 時點) / 近四季 EBITDA(=稅前淨利+財務費用+折舊+攤銷)加總。跟 computeEvEbitdaPit.ts
-// 一致。固定回傳 TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
+// 一致。固定回傳 TTM（該指標只有 TTM 一種 basis，Q_ANN 已於 2026-09-14 移除）。
 
 export const getEvEbitdaProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

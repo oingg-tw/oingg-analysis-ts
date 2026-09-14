@@ -21,7 +21,7 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -36,14 +36,12 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
   const quarterlyValue = grossProfitQuarterly !== null && totalAssets !== null ? toPercent(grossProfitQuarterly, totalAssets) : null;
-  const quarterlyAnnualized = quarterlyValue !== null ? Math.round(quarterlyValue * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = quarterlyValue === null ? determineNullReason(grossProfitQuarterly, totalAssets) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'novyMarxGpToAssets', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterlyValue, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', quarterlyAnnualized, quarterlyNullReason);
 
   // TTM：近四季（含本季）毛利加總，分母固定用本季期末總資產。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -95,5 +93,5 @@ export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetri
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

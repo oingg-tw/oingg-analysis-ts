@@ -24,9 +24,9 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
 
   const { symbol, fiscalYear, fiscalQuarter, inventory, accountsReceivable, accountsPayable, ttmQuarters, ttmOperatingCosts, ttmOperatingRevenues, ttmComplete, costTtmSum, revenueTtmSum } = resolution;
 
-  const inventoryTurnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
-  const receivablesTurnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
-  const payablesTurnover = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const inventoryTurnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
+  const receivablesTurnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
+  const payablesTurnover = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
 
   const inventoryDays = calculateInventoryDays(inventoryTurnover.value, inventoryTurnover.nullReason);
   const receivablesDays = calculateReceivablesDays(receivablesTurnover.value, receivablesTurnover.nullReason);

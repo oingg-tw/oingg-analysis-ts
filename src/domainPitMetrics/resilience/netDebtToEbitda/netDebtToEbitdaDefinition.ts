@@ -6,16 +6,15 @@ export const netDebtToEbitdaDefinition: MetricDefinitionSpec = {
   unit: '倍',
   formulaNote:
     '淨負債 = 有息負債(短期借款+應付公司債+長期借款) - 現金及約當現金；EBITDA = 稅前淨利+利息費用' +
-    '+折舊+攤銷；Q_ANN = 淨負債/(本季 EBITDA*4)；TTM = 淨負債/近四季（含本季）EBITDA 加總。' +
-    '只有 Q_ANN/TTM 兩種 basis——跟舊架構一致，taxonomy 只支援這兩種（store/flow 比率），沒有' +
-    '單季非年化版本。',
+    '+折舊+攤銷；TTM = 淨負債/近四季（含本季）EBITDA 加總。' +
+    '只有 TTM 一種 basis——store/flow 比率沒有單季非年化版本。',
   formulaLatex:
     '\\mathrm{NetDebtToEbitda} = \\frac{\\mathrm{NetDebt}}{\\mathrm{EBITDA}},\\quad \\mathrm{NetDebt} = \\mathrm{InterestBearingDebt} - \\mathrm{Cash}',
   referenceUrl: 'https://corporatefinanceinstitute.com/resources/valuation/net-debt-ebitda-ratio/',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['TTM'],
   dependsOn: [
     'shortTermBorrowings',
     'bondsPayable',

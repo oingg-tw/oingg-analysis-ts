@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { round2, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
+import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityValue as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
@@ -42,7 +42,7 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -64,7 +64,6 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
 
   const nopat = calculateNopat(incomeStatement);
   const rnoaQuarterlyPct = nopat !== null && noa !== null ? toPercent(nopat, noa) : null;
-  const rnoaQuarterlyAnnualizedPct = rnoaQuarterlyPct !== null ? round2(rnoaQuarterlyPct * 4) : null;
 
   let qNullReason: MetricNullReason | null = null;
   if (rnoaQuarterlyPct === null) {
@@ -75,7 +74,6 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
   const coordinateBase = { symbol, metricCode: 'nissimPenmanRnoa', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', rnoaQuarterlyPct, qNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', rnoaQuarterlyAnnualizedPct, qNullReason);
 
   // TTM：近四季（含本季）NOPAT 加總 / 本季期末 NOA（分母固定用期末值，跟 roic 的 TTM 邏輯一致）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -131,5 +129,5 @@ export const computeAndWriteNissimPenmanRnoaPit = async (query: QuarterlyMetricQ
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

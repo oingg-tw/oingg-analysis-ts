@@ -6,7 +6,7 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   unit: '%',
   formulaNote:
     'NOPAT = 營業利益*(1-有效稅率)；NOA(淨營業資產) = 權益+NFO(淨金融負債，= 有息負債-現金)；' +
-    'Q(單季) = NOPAT/NOA*100；Q_ANN = Q*4；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
+    'Q(單季) = NOPAT/NOA*100；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
     '（分母固定用本季，同 ROIC）。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
     '（沒有獨立查詢價值，範圍刻意限縮）。',
   formulaLatex:
@@ -17,7 +17,7 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: [
     'operatingIncome',
     'profit_loss_before_tax',

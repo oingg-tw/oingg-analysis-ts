@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -23,7 +23,7 @@ export const computeAndWriteEvToEbitPit = async (
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -40,23 +40,13 @@ export const computeAndWriteEvToEbitPit = async (
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 
-  const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
-  const financeCosts = incomeStatement?.financeCosts ?? null;
-  const ebitQuarterly = profitBeforeTax !== null && financeCosts !== null ? profitBeforeTax + financeCosts : null;
-
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
-  const qAnnValue = enterpriseValue !== null && ebitQuarterly !== null ? toMultipleFromThousands(enterpriseValue, ebitQuarterly * 4n) : null;
-  const qAnnNullReason: MetricNullReason | null =
-    qAnnValue === null ? (enterpriseValue === null || ebitQuarterly === null ? 'missing_input' : 'zero_or_negative_denominator') : null;
-
   const coordinateBase = { symbol, metricCode: 'evToEbit', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', qAnnValue, qAnnNullReason);
 
   // TTM：近四季（含本季）EBIT 加總；企業價值沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -108,5 +98,5 @@ export const computeAndWriteEvToEbitPit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, qAnn, ttm };
+  return { symbol, rocYear: year, season, ttm };
 };

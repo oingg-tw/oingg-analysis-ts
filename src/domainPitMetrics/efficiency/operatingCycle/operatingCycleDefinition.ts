@@ -1,8 +1,7 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——見
-// calculateOperatingCycle.ts 說明，跟既有 cashConversionCycle 同一個資料夾查詢、
-// 同時寫入 Q_ANN/TTM 兩個 basis。
+// calculateOperatingCycle.ts 說明，跟既有 cashConversionCycle 同一個資料夾查詢。
 export const operatingCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingCycle',
   name: '營運週期',
@@ -13,7 +12,7 @@ export const operatingCycleDefinition: MetricDefinitionSpec = {
   tier: 'derived',
   sources: ['資產負債表（XBRL）', '損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['TTM'],
   dependsOn: ['inventories', 'accounts_receivable_net', 'operating_costs', 'revenue'],
   currentFormulaVersion: 1,
 };

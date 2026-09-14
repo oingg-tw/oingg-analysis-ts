@@ -35,18 +35,16 @@ test('dupontFamilyPit: 2330 115Q2 合併報表，跟 dupont.test.ts 的既有基
   const netProfitMarginQ = await findLatest('2330', 'netProfitMargin', 'Q', 2026, 2);
   const netProfitMarginTtm = await findLatest('2330', 'netProfitMargin', 'TTM', 2026, 2);
   const assetTurnoverQ = await findLatest('2330', 'assetTurnover', 'Q', 2026, 2);
-  const assetTurnoverQAnn = await findLatest('2330', 'assetTurnover', 'Q_ANN', 2026, 2);
   const assetTurnoverTtm = await findLatest('2330', 'assetTurnover', 'TTM', 2026, 2);
   const equityMultiplier = await findLatest('2330', 'equityMultiplier', 'Q', 2026, 2);
   const decomposedRoeQ = await findLatest('2330', 'dupontDecomposedRoe', 'Q', 2026, 2);
   const decomposedRoeTtm = await findLatest('2330', 'dupontDecomposedRoe', 'TTM', 2026, 2);
 
-  assert.ok(netProfitMarginQ && netProfitMarginTtm && assetTurnoverQ && assetTurnoverQAnn && assetTurnoverTtm && equityMultiplier && decomposedRoeQ && decomposedRoeTtm, '5 個 metric_code 應該全部寫入 metric_values');
+  assert.ok(netProfitMarginQ && netProfitMarginTtm && assetTurnoverQ && assetTurnoverTtm && equityMultiplier && decomposedRoeQ && decomposedRoeTtm, '5 個 metric_code 應該全部寫入 metric_values');
 
   assert.equal(Number(netProfitMarginQ!.value), 55.62);
   assert.equal(Number(netProfitMarginTtm!.value), 50.38);
   assert.equal(Number(assetTurnoverQ!.value), 0.14);
-  assert.equal(Number(assetTurnoverQAnn!.value), 0.56);
   assert.equal(Number(assetTurnoverTtm!.value), 0.47);
   assert.equal(Number(equityMultiplier!.value), 1.46);
   assert.equal(Number(decomposedRoeQ!.value), 11.37);
@@ -98,7 +96,6 @@ test('dupontFamilyPit: 重跑同一組座標，去重邏輯應該讓第二次全
 
   assert.deepEqual(second.netProfitMarginQ, { action: 'skipped_unchanged' });
   assert.deepEqual(second.assetTurnoverQ, { action: 'skipped_unchanged' });
-  assert.deepEqual(second.assetTurnoverQAnn, { action: 'skipped_unchanged' });
   assert.deepEqual(second.equityMultiplier, { action: 'skipped_unchanged' });
   assert.deepEqual(second.dupontDecomposedRoeQ, { action: 'skipped_unchanged' });
 

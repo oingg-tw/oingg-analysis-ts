@@ -25,7 +25,6 @@ export const computeAndWriteRevenuePerSharePit = async (query: QuarterlyMetricQu
       rocYear: null,
       season: null,
       q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
       ttm: { action: 'skipped_no_quarter' },
     };
   }
@@ -44,7 +43,6 @@ export const computeAndWriteRevenuePerSharePit = async (query: QuarterlyMetricQu
   const sharesValue = shares?.paidInShares ?? null;
 
   const quarterly = operatingRevenue !== null && sharesValue !== null ? toPerShare(operatingRevenue, sharesValue) : null;
-  const quarterlyAnnualized = quarterly !== null ? Math.round(quarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = quarterly === null ? determineNullReason(operatingRevenue, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
@@ -52,7 +50,6 @@ export const computeAndWriteRevenuePerSharePit = async (query: QuarterlyMetricQu
   const coordinateBase = { symbol, metricCode: 'revenuePerShare', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', quarterlyAnnualized, quarterlyNullReason);
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
@@ -103,5 +100,5 @@ export const computeAndWriteRevenuePerSharePit = async (query: QuarterlyMetricQu
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

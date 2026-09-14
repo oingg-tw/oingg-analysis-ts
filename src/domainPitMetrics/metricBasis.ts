@@ -17,9 +17,10 @@ import { z } from 'zod';
 
 // periodType：季報型指標的「期間聚合方式」——描述一個數字是怎麼從財報的季度資料聚合出來的。
 // Q(單季，Bloomberg FQ / FactSet QTR) / YTD(年初累計) / TTM(近四季，投行慣稱 LTM，計算等價) /
-// Q_ANN(單季簡易年化=單季×4，**不是** SAAR，沒有季節調整，業界沒有直接對應概念，是本專案
-// 刻意的簡化) / FY(整年)。非本組指標填 'N/A'。
-export const periodTypeSchema = z.enum(['N/A', 'Q', 'YTD', 'TTM', 'Q_ANN', 'FY']);
+// FY(整年)。非本組指標填 'N/A'。2026-09-14 應使用者要求移除 Q_ANN（單季簡易年化=單季×4，
+// 本來就不是業界標準概念，只是本專案的簡化）節省運算——原本用 Q_ANN 的指標現在只剩 Q/TTM
+// 或只剩 TTM（原本只有 Q_ANN/TTM 兩種 basis 的 store/flow 比率）。
+export const periodTypeSchema = z.enum(['N/A', 'Q', 'YTD', 'TTM', 'FY']);
 export type PeriodType = z.infer<typeof periodTypeSchema>;
 
 // lookbackRange / samplingInterval：逐日型滾動統計量（目前只有 Beta）的「回溯範圍」與

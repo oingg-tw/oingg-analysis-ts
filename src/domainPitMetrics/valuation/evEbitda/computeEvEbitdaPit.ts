@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -26,7 +26,7 @@ export const computeAndWriteEvEbitdaPit = async (
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -47,28 +47,13 @@ export const computeAndWriteEvEbitdaPit = async (
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 
-  const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
-  const financeCosts = incomeStatement?.financeCosts ?? null;
-  const depreciation = cashFlowStatement?.depreciation ?? null;
-  const amortization = cashFlowStatement?.amortization ?? null;
-  const ebitdaQuarterly =
-    profitBeforeTax !== null && financeCosts !== null && depreciation !== null && amortization !== null
-      ? profitBeforeTax + financeCosts + depreciation + amortization
-      : null;
-
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
-  const qAnnValue = enterpriseValue !== null && ebitdaQuarterly !== null ? toMultipleFromThousands(enterpriseValue, ebitdaQuarterly * 4n) : null;
-  const qAnnNullReason: MetricNullReason | null =
-    qAnnValue === null ? (enterpriseValue === null || ebitdaQuarterly === null ? 'missing_input' : 'zero_or_negative_denominator') : null;
-
   const coordinateBase = { symbol, metricCode: 'evEbitda', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', qAnnValue, qAnnNullReason);
 
   // TTM：近四季（含本季）EBITDA 加總；企業價值（市值+淨負債）沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -132,5 +117,5 @@ export const computeAndWriteEvEbitdaPit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, qAnn, ttm };
+  return { symbol, rocYear: year, season, ttm };
 };

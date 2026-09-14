@@ -19,12 +19,10 @@ test('rocePit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', asy
     });
 
   const q = await findLatest('Q');
-  const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q && qAnn && ttm, '三個 periodType 應該全部寫入');
+  assert.ok(q && ttm, '兩個 periodType 應該全部寫入');
   assert.equal(Number(q!.value), 11.51);
-  assert.equal(Number(qAnn!.value), 46.04);
   assert.equal(Number(ttm!.value), 35.65);
 });
 

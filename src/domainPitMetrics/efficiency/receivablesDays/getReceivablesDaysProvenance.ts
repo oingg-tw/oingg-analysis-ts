@@ -15,7 +15,7 @@ export const getReceivablesDaysProvenance = async (query: QuarterlyMetricQuery):
   }
 
   const { symbol, fiscalYear, fiscalQuarter, accountsReceivable, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
-  const turnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const turnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
   const result = calculateReceivablesDays(turnover.value, turnover.nullReason);
 
   const entries: ProvenanceEntry[] = [

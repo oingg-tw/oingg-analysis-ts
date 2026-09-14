@@ -6,7 +6,7 @@ import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——股東盈餘（淨利+折舊攤銷+資本支出）/流通股數，跟
-// tests/domains/metrics/ownerEarnings.test.ts 的既有基準數字交叉驗證，Q/Q_ANN/TTM 三個
+// tests/domains/metrics/ownerEarnings.test.ts 的既有基準數字交叉驗證，Q/TTM 兩個
 // basis 都有。
 
 beforeAll(async () => {
@@ -18,13 +18,10 @@ test('ownerEarningsPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
 
   const where = { symbol: '2330', metricCode: 'ownerEarnings', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const q = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const qAnn = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q_ANN' }, orderBy: { knowledgeDate: 'desc' } });
   const ttm = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'TTM' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(q, 'basis=Q 應該有寫入');
   assert.equal(Number(q!.value), 15.78);
-  assert.ok(qAnn, 'basis=Q_ANN 應該有寫入');
-  assert.equal(Number(qAnn!.value), 63.12);
   assert.ok(ttm, 'basis=TTM 應該有寫入');
   assert.equal(Number(ttm!.value), 55.33);
 });

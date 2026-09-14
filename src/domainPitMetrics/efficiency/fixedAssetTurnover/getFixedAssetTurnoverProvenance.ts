@@ -14,7 +14,7 @@ export const getFixedAssetTurnoverProvenance = async (query: QuarterlyMetricQuer
   }
 
   const { symbol, fiscalYear, fiscalQuarter, propertyPlantEquipment, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
-  const result = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const result = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, nullReason: 'insufficient_history' as const };
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(

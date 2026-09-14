@@ -5,8 +5,9 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
   name: 'EV/EBITDA',
   unit: '倍',
   formulaNote:
-    '企業價值 = 市值+淨負債*1000；Q_ANN = 企業價值/(本季 EBITDA*4*1000)；TTM = 企業價值/' +
-    '(近四季 EBITDA 加總*1000)。股價/市值查詢邏輯同 psr。獨立重新計算淨負債+EBITDA（不依賴' +
+    '企業價值 = 市值+淨負債*1000；TTM = 企業價值/' +
+    '(近四季 EBITDA 加總*1000)。只有 TTM 一種 basis（store/flow 比率沒有單季非年化版本）。' +
+    '股價/市值查詢邏輯同 psr。獨立重新計算淨負債+EBITDA（不依賴' +
     'netDebtToEbitda 這個 metric_code 已寫入的值，公式在兩個檔案各自重複一次，延續舊架構本身' +
     '在 interestCoverage/netDebtToEbitda/roic/roce 四個檔案各自重複定義 EBIT 的既有慣例）。' +
     '沒有單季非年化版本。',
@@ -16,7 +17,7 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
-  allowedPeriodTypes: ['Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['TTM'],
   dependsOn: [
     'shortTermBorrowings',
     'bondsPayable',

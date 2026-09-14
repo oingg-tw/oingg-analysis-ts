@@ -5,14 +5,14 @@ export const assetTurnoverDefinition: MetricDefinitionSpec = {
   name: '總資產週轉率',
   unit: '次',
   formulaNote:
-    'Q(單季) = 本季營收/本季期末總資產（次）；Q_ANN = Q*4（簡易年化）；' +
+    'Q(單季) = 本季營收/本季期末總資產（次）；' +
     'TTM = 近四季（含本季）營收加總/本季期末總資產，四季不齊為 null。',
   formulaLatex: '\\mathrm{AssetTurnover} = \\frac{\\mathrm{Revenue}}{\\mathrm{TotalAssets}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Asset_turnover',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['revenue', 'assets'],
   currentFormulaVersion: 1,
 };

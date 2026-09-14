@@ -27,7 +27,6 @@ export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, stateme
       rocYear: null,
       season: null,
       q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
       ttm: { action: 'skipped_no_quarter' },
     };
   }
@@ -47,7 +46,6 @@ export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, stateme
   const sharesValue = shares?.paidInShares ?? null;
 
   const epsQuarterly = netIncome.value !== null && sharesValue !== null ? toPerShare(netIncome.value, sharesValue) : null;
-  const epsQuarterlyAnnualized = epsQuarterly !== null ? Math.round(epsQuarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = epsQuarterly === null ? determineNullReason(netIncome.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
@@ -55,10 +53,9 @@ export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, stateme
   const coordinateBase = { symbol, metricCode: 'eps', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', epsQuarterly, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', epsQuarterlyAnnualized, quarterlyNullReason);
 
   // TTM：近四季（含本季）淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
-  // knowledge_date 沿用本季（Q/Q_ANN）自己的，跟 computeRoePit.ts 的 TTM 處理一致。
+  // knowledge_date 沿用本季（Q）自己的，跟 computeRoePit.ts 的 TTM 處理一致。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
@@ -109,5 +106,5 @@ export const computeAndWriteEpsPit = async (query: QuarterlyMetricQuery, stateme
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

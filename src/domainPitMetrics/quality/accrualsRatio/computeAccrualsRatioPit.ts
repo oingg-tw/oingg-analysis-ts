@@ -124,13 +124,13 @@ export const computeAndWriteAccrualsRatioPit = async (
 ): Promise<AccrualsRatioPitOutcome> => {
   const resolution = await resolveAccrualsRatioInputs(query, statements);
   if (!resolution) {
-    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { symbol, rocYear, season, fiscalYear, fiscalQuarter, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
   const coordinateBase = { symbol, metricCode: 'accrualsRatio', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
-  // Q/Q_ANN 只用本季（TTM 明細裡的最後一筆就是本季）。
+  // Q 只用本季（TTM 明細裡的最後一筆就是本季）。
   const currentQuarter = ttmQuarterDetails[ttmQuarterDetails.length - 1]!;
   const currentCashFlow = currentQuarter.cashFlow;
   const accrualsQuarterly =
@@ -138,11 +138,9 @@ export const computeAndWriteAccrualsRatioPit = async (
       ? currentQuarter.netIncome.value - currentCashFlow.netCashFromOperatingActivities - currentCashFlow.netCashFromInvestingActivities
       : null;
   const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssets !== null ? toPercent(accrualsQuarterly, totalAssets) : null;
-  const accrualsRatioQuarterlyAnnualized = accrualsRatioQuarterly !== null ? Math.round(accrualsRatioQuarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = accrualsRatioQuarterly === null ? determineNullReason(accrualsQuarterly, totalAssets) : null;
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', accrualsRatioQuarterly, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', accrualsRatioQuarterlyAnnualized, quarterlyNullReason);
 
   let ttm: BasisOutcome;
   if (ttmComplete) {
@@ -171,5 +169,5 @@ export const computeAndWriteAccrualsRatioPit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear, season, q, qAnn, ttm };
+  return { symbol, rocYear, season, q, ttm };
 };

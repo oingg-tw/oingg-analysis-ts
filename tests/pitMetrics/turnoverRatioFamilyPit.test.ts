@@ -28,9 +28,8 @@ beforeAll(async () => {
 });
 
 test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', async () => {
-  // 這支 compute 函式一次寫 20 個 (metric_code, periodType) 組合（4 個周轉率 x 3 periodType + 3 個
-  // 天數指標 x 2 periodType + CCC x 2 periodType），每次 writeMetricValue 都是「先查後寫」兩次 DB
-  // 往返，比其他單一 metric_code 的測試慢，預設 5 秒逾時不夠，拉長到 20 秒。
+  // 這支 compute 函式一次寫多個 (metric_code, periodType) 組合，每次 writeMetricValue 都是
+  // 「先查後寫」兩次 DB 往返，比其他單一 metric_code 的測試慢，預設 5 秒逾時不夠，拉長到 20 秒。
   await computeAndWriteTurnoverRatioFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
   const findLatest = (metricCode: string, periodType: string) =>
@@ -40,59 +39,40 @@ test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交
     });
 
   const inventoryQ = await findLatest('inventoryTurnover', 'Q');
-  const inventoryQAnn = await findLatest('inventoryTurnover', 'Q_ANN');
   const inventoryTtm = await findLatest('inventoryTurnover', 'TTM');
   assert.equal(Number(inventoryQ!.value), 1.06);
-  assert.equal(Number(inventoryQAnn!.value), 4.24);
   assert.equal(Number(inventoryTtm!.value), 4.12);
 
   const receivablesQ = await findLatest('receivablesTurnover', 'Q');
-  const receivablesQAnn = await findLatest('receivablesTurnover', 'Q_ANN');
   const receivablesTtm = await findLatest('receivablesTurnover', 'TTM');
   assert.equal(Number(receivablesQ!.value), 2.92);
-  assert.equal(Number(receivablesQAnn!.value), 11.68);
   assert.equal(Number(receivablesTtm!.value), 10.19);
 
   const fixedAssetQ = await findLatest('fixedAssetTurnover', 'Q');
-  const fixedAssetQAnn = await findLatest('fixedAssetTurnover', 'Q_ANN');
   const fixedAssetTtm = await findLatest('fixedAssetTurnover', 'TTM');
   assert.equal(Number(fixedAssetQ!.value), 0.3);
-  assert.equal(Number(fixedAssetQAnn!.value), 1.2);
   assert.equal(Number(fixedAssetTtm!.value), 1.03);
 
   const payablesQ = await findLatest('payablesTurnover', 'Q');
-  const payablesQAnn = await findLatest('payablesTurnover', 'Q_ANN');
   const payablesTtm = await findLatest('payablesTurnover', 'TTM');
   assert.equal(Number(payablesQ!.value), 3.77);
-  assert.equal(Number(payablesQAnn!.value), 15.08);
   assert.equal(Number(payablesTtm!.value), 14.59);
 
-  const dioQAnn = await findLatest('inventoryDays', 'Q_ANN');
   const dioTtm = await findLatest('inventoryDays', 'TTM');
-  assert.equal(Number(dioQAnn!.value), 86.08);
   assert.equal(Number(dioTtm!.value), 88.59);
 
-  const dsoQAnn = await findLatest('receivablesDays', 'Q_ANN');
   const dsoTtm = await findLatest('receivablesDays', 'TTM');
-  assert.equal(Number(dsoQAnn!.value), 31.25);
   assert.equal(Number(dsoTtm!.value), 35.82);
 
-  const dpoQAnn = await findLatest('payablesDays', 'Q_ANN');
   const dpoTtm = await findLatest('payablesDays', 'TTM');
-  assert.equal(Number(dpoQAnn!.value), 24.2);
   assert.equal(Number(dpoTtm!.value), 25.02);
 
-  const cccQAnn = await findLatest('cashConversionCycle', 'Q_ANN');
   const cccTtm = await findLatest('cashConversionCycle', 'TTM');
-  assert.equal(Number(cccQAnn!.value), 93.13);
   assert.equal(Number(cccTtm!.value), 99.39);
 
   // 2026-09-11 新增（「全市場六季財報深度解鎖的指標」批次）——operatingCycle = DIO+DSO
-  // （不扣 DPO），跟上面已驗證過的 dio/dso 數字直接加總對得上：
-  // Q_ANN 86.08+31.25=117.33、TTM 88.59+35.82=124.41。
-  const operatingCycleQAnn = await findLatest('operatingCycle', 'Q_ANN');
+  // （不扣 DPO），跟上面已驗證過的 dio/dso 數字直接加總對得上：TTM 88.59+35.82=124.41。
   const operatingCycleTtm = await findLatest('operatingCycle', 'TTM');
-  assert.equal(Number(operatingCycleQAnn!.value), 117.33);
   assert.equal(Number(operatingCycleTtm!.value), 124.41);
 
   const netWorkingCapitalTurnoverTtm = await findLatest('netWorkingCapitalTurnover', 'TTM');

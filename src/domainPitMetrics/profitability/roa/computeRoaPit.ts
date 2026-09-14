@@ -31,7 +31,6 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
       rocYear: null,
       season: null,
       q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
       ttm: { action: 'skipped_no_quarter' },
     };
   }
@@ -48,7 +47,6 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
   const totalAssets = balanceSheet?.totalAssets ?? null;
 
   const roaQuarterlyPct = netIncome.value !== null && totalAssets !== null ? toPercent(netIncome.value, totalAssets) : null;
-  const roaQuarterlyAnnualizedPct = roaQuarterlyPct !== null ? Math.round(roaQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roaQuarterlyPct === null ? determineNullReason(netIncome.value, totalAssets) : null;
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
@@ -64,11 +62,10 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
   };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', roaQuarterlyPct, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', roaQuarterlyAnnualizedPct, quarterlyNullReason);
 
   // TTM：近四季（含本季）淨利加總 / 本季期末總資產。邏輯跟 computeRoePit.ts 的 TTM 處理一致，
   // 見那份檔案的說明——四季不齊時仍寫一列 value=null/insufficient_history，knowledge_date
-  // 沿用本季（Q/Q_ANN）自己的。
+  // 沿用本季（Q）自己的。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
@@ -119,5 +116,5 @@ export const computeAndWriteRoaPit = async (query: QuarterlyMetricQuery, stateme
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

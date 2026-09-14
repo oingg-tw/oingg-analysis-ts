@@ -17,7 +17,7 @@ export const getInventoryDaysProvenance = async (query: QuarterlyMetricQuery): P
   }
 
   const { symbol, fiscalYear, fiscalQuarter, inventory, ttmQuarters, ttmOperatingCosts, ttmComplete, costTtmSum } = resolution;
-  const turnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const turnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
   const result = calculateInventoryDays(turnover.value, turnover.nullReason);
 
   const entries: ProvenanceEntry[] = [

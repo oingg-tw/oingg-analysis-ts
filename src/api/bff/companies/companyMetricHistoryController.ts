@@ -38,12 +38,12 @@ export const getCompanyCapitalStockHistory = async (req: Request, res: Response,
 // 2026-09-08：這個 query 參數原本叫 basis，改名 periodType 是這次「metric_values.basis 拆成
 // 四個精準命名欄位」重構的一部分（basis 違反 ubiquitous language，見 abstract-crafting-
 // journal.md），不是單純改名，是外部契約 breaking change。
-const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_ROE_HISTORY_LIMIT = 40; // 10 年份季度資料，畫圖情境不需要更多
 
 export const getCompanyRoeHistoryQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
-  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)，預設 TTM' }),
   limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
@@ -68,12 +68,12 @@ export const getCompanyRoeHistory = async (req: Request, res: Response, next: Ne
 
 // ROA 這支指標目前允許的 periodType 跟 ROE 一模一樣（見
 // src/domainPitMetrics/metricDefinitionRegistry.ts 的 metricDefinitionRegistry.roa.allowedPeriodTypes）。
-const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'Q_ANN', 'TTM'] as const;
+const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_ROA_HISTORY_LIMIT = 40;
 
 export const getCompanyRoaHistoryQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
-  periodType: z.enum(ROA_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/單季簡易年化(Q_ANN)/近四季(TTM)，預設 TTM' }),
+  periodType: z.enum(ROA_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)，預設 TTM' }),
   limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
@@ -137,7 +137,7 @@ export const getCompanyMetricHistoryQuerySchema = z.object({
   timeframe: z
     .string({ error: 'timeframe is required.' })
     .min(1)
-    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /metrics" }),
+    .meta({ description: "'Q'/'YTD'/'TTM'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量，例如 '2Y_1W'），或 'EOD'（市場快照）——實際允許哪些由 metricCode 決定，不符合會回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
@@ -207,7 +207,7 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
   timeframe: z
     .string({ error: 'timeframe is required.' })
     .min(1)
-    .meta({ description: "'Q'/'YTD'/'TTM'/'Q_ANN'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /metrics" }),
+    .meta({ description: "'Q'/'YTD'/'TTM'/'FY' 之一（季報型），或 '<lookbackRange>_<samplingInterval>'（滾動統計量），或 'EOD'（市場快照），套用到清單裡的每個 metricCode，任一個不允許就整體回 400，可用組合見 GET /metrics" }),
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 

@@ -5,7 +5,7 @@ export const ocfPerShareDefinition: MetricDefinitionSpec = {
   name: '每股營業現金流',
   unit: '元',
   formulaNote:
-    'Q(單季) = 本季營業活動現金流*1000/流通股數；Q_ANN = Q*4；TTM = 近四季（含本季）營業活動' +
+    'Q(單季) = 本季營業活動現金流*1000/流通股數；TTM = 近四季（含本季）營業活動' +
     '現金流加總*1000/流通股數，四季不齊為 null。',
   formulaLatex: '\\mathrm{OcfPerShare} = \\frac{\\mathrm{CFO}}{\\mathrm{Shares}}',
   // 沒有每股專屬條目，中文維基「現金流量表」條目涵蓋營業活動現金流概念。
@@ -13,7 +13,7 @@ export const ocfPerShareDefinition: MetricDefinitionSpec = {
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'Q_ANN', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'paidInShares'],
   currentFormulaVersion: 1,
 };

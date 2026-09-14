@@ -51,8 +51,8 @@ const main = async () => {
       const cashFlowPerShareOutcome = await computeAndWriteCashFlowPerSharePit(query);
       console.log(
         `[cash-flow-per-share-pit] ${symbol} ${year}Q${season}: ` +
-          `ocf(Q=${JSON.stringify(cashFlowPerShareOutcome.ocfPerShareQ)}, Q_ANN=${JSON.stringify(cashFlowPerShareOutcome.ocfPerShareQAnn)}, TTM=${JSON.stringify(cashFlowPerShareOutcome.ocfPerShareTtm)}) ` +
-          `fcf(Q=${JSON.stringify(cashFlowPerShareOutcome.fcfPerShareQ)}, Q_ANN=${JSON.stringify(cashFlowPerShareOutcome.fcfPerShareQAnn)}, TTM=${JSON.stringify(cashFlowPerShareOutcome.fcfPerShareTtm)})`
+          `ocf(Q=${JSON.stringify(cashFlowPerShareOutcome.ocfPerShareQ)}, TTM=${JSON.stringify(cashFlowPerShareOutcome.ocfPerShareTtm)}) ` +
+          `fcf(Q=${JSON.stringify(cashFlowPerShareOutcome.fcfPerShareQ)}, TTM=${JSON.stringify(cashFlowPerShareOutcome.fcfPerShareTtm)})`
       );
 
       const ocfToNetIncomeOutcome = await computeAndWriteOcfToNetIncomePit(query);

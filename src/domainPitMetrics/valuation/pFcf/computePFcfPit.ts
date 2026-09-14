@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -24,7 +24,7 @@ export const computeAndWritePFcfPit = async (
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -34,21 +34,12 @@ export const computeAndWritePFcfPit = async (
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const cashFlowStatement = await statements.getCashFlowStatement(key);
-  const operatingCashFlow = cashFlowStatement?.netCashFromOperatingActivities ?? null;
-  const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = cashFlowStatement?.reportDate ?? null;
-  const freeCashFlow = operatingCashFlow !== null && capitalExpenditures !== null ? operatingCashFlow + capitalExpenditures : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
-  const pFcfQuarterlyAnnualized = freeCashFlow !== null && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, freeCashFlow * 4n) : null;
-  const qAnnNullReason: MetricNullReason | null =
-    pFcfQuarterlyAnnualized === null ? (marketCap === null || freeCashFlow === null ? 'missing_input' : 'zero_or_negative_denominator') : null;
-
   const coordinateBase = { symbol, metricCode: 'pFcf', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', pFcfQuarterlyAnnualized, qAnnNullReason);
 
   // TTM：近四季（含本季）自由現金流加總；市值沿用上面同一筆，不另外重查。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -100,5 +91,5 @@ export const computeAndWritePFcfPit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, qAnn, ttm };
+  return { symbol, rocYear: year, season, ttm };
 };

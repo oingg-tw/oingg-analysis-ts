@@ -39,7 +39,6 @@ export interface RoeQuarterResolution {
   netIncome: PickedField;
   equity: PickedField;
   roeQuarterlyPct: number | null;
-  roeQuarterlyAnnualizedPct: number | null;
   quarterlyNullReason: MetricNullReason | null;
   mainAnchor: KnowledgeDateResolution | null;
   ttmQuarters: { year: string; season: string }[];
@@ -73,7 +72,6 @@ export const resolveRoeQuarterData = async (
   const equity = pickEquity(balanceSheet);
 
   const roeQuarterlyPct = netIncome.value !== null && equity.value !== null ? toPercent(netIncome.value, equity.value) : null;
-  const roeQuarterlyAnnualizedPct = roeQuarterlyPct !== null ? Math.round(roeQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roeQuarterlyPct === null ? determineNullReason(netIncome.value, equity.value) : null;
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
@@ -81,7 +79,7 @@ export const resolveRoeQuarterData = async (
 
   // TTM：近四季（含本季）淨利加總 / 本季期末權益。四季資料需全部存在且淨利欄位皆非 null，
   // 否則視為不齊——不齊時寫一列 value=null/null_reason=insufficient_history，knowledge_date
-  // 沿用本季（Q/Q_ANN）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
+  // 沿用本季（Q）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
@@ -117,7 +115,6 @@ export const resolveRoeQuarterData = async (
     netIncome,
     equity,
     roeQuarterlyPct,
-    roeQuarterlyAnnualizedPct,
     quarterlyNullReason,
     mainAnchor,
     ttmQuarters,
@@ -140,16 +137,14 @@ export const computeAndWriteRoePit = async (
 
   const resolution = await resolveRoeQuarterData(query, statements);
   if (!resolution) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }
 
-  const { rocYear, season, fiscalYear, fiscalQuarter, roeQuarterlyPct, roeQuarterlyAnnualizedPct, quarterlyNullReason, mainAnchor, ttmComplete, roeTtmPct, ttmNullReason, ttmAnchor } =
-    resolution;
+  const { rocYear, season, fiscalYear, fiscalQuarter, roeQuarterlyPct, quarterlyNullReason, mainAnchor, ttmComplete, roeTtmPct, ttmNullReason, ttmAnchor } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'roe', fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', roeQuarterlyPct, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', roeQuarterlyAnnualizedPct, quarterlyNullReason);
 
   let ttm: BasisOutcome;
   if (ttmComplete) {
@@ -178,5 +173,5 @@ export const computeAndWriteRoePit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear, season, q, qAnn, ttm };
+  return { symbol, rocYear, season, q, ttm };
 };

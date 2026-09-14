@@ -36,7 +36,6 @@ export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statem
       rocYear: null,
       season: null,
       q: { action: 'skipped_no_quarter' },
-      qAnn: { action: 'skipped_no_quarter' },
       ttm: { action: 'skipped_no_quarter' },
     };
   }
@@ -60,14 +59,12 @@ export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statem
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
   const roicQuarterlyPct = nopat !== null && investedCapital !== null ? toPercent(nopat, investedCapital) : null;
-  const roicQuarterlyAnnualizedPct = roicQuarterlyPct !== null ? Math.round(roicQuarterlyPct * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = roicQuarterlyPct === null ? determineNullReason(nopat, investedCapital) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'roic', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', roicQuarterlyPct, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', roicQuarterlyAnnualizedPct, quarterlyNullReason);
 
   // TTM：近四季（含本季）NOPAT 加總，投入資本固定用本季期末值（不平均不加總）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -120,5 +117,5 @@ export const computeAndWriteRoicPit = async (query: QuarterlyMetricQuery, statem
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

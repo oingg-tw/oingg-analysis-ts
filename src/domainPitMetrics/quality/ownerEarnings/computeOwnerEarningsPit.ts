@@ -24,7 +24,7 @@ export const computeAndWriteOwnerEarningsPit = async (query: QuarterlyMetricQuer
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -49,14 +49,12 @@ export const computeAndWriteOwnerEarningsPit = async (query: QuarterlyMetricQuer
       : null;
 
   const quarterly = currentOwnerEarnings !== null && sharesValue !== null ? toPerShare(currentOwnerEarnings, sharesValue) : null;
-  const quarterlyAnnualized = quarterly !== null ? Math.round(quarterly * 4 * 100) / 100 : null;
   const quarterlyNullReason: MetricNullReason | null = quarterly === null ? determineNullReason(currentOwnerEarnings, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'ownerEarnings', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', quarterlyAnnualized, quarterlyNullReason);
 
   // TTM：各分項（淨利、折舊+攤銷、資本支出）各自加總近四季（含本季），全部齊全才算。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -114,5 +112,5 @@ export const computeAndWriteOwnerEarningsPit = async (query: QuarterlyMetricQuer
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, q, qAnn, ttm };
+  return { symbol, rocYear: year, season, q, ttm };
 };

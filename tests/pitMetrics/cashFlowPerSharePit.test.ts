@@ -23,18 +23,14 @@ test('cashFlowPerSharePit: 2330 115Q2 合併報表，跟既有基準數字交叉
     });
 
   const ocfQ = await findLatest('ocfPerShare', 'Q');
-  const ocfQAnn = await findLatest('ocfPerShare', 'Q_ANN');
   const ocfTtm = await findLatest('ocfPerShare', 'TTM');
   const fcfQ = await findLatest('fcfPerShare', 'Q');
-  const fcfQAnn = await findLatest('fcfPerShare', 'Q_ANN');
   const fcfTtm = await findLatest('fcfPerShare', 'TTM');
 
-  assert.ok(ocfQ && ocfQAnn && ocfTtm && fcfQ && fcfQAnn && fcfTtm, '兩個 metric_code 各 3 個 periodType 應該全部寫入');
+  assert.ok(ocfQ && ocfTtm && fcfQ && fcfTtm, '兩個 metric_code 各 2 個 periodType 應該全部寫入');
   assert.equal(Number(ocfQ!.value), 30.21);
-  assert.equal(Number(ocfQAnn!.value), 120.84);
   assert.equal(Number(ocfTtm!.value), 101.6);
   assert.equal(Number(fcfQ!.value), 11.08);
-  assert.equal(Number(fcfQAnn!.value), 44.32);
   assert.equal(Number(fcfTtm!.value), 44.1);
 });
 

@@ -20,10 +20,8 @@ import { calculateFcfPerShare } from '@/domainPitMetrics/quality/fcfPerShare/cal
 
 export interface CashFlowPerSharePitOutcome extends QuarterlyPitOutcomeBase {
   ocfPerShareQ: BasisOutcome;
-  ocfPerShareQAnn: BasisOutcome;
   ocfPerShareTtm: BasisOutcome;
   fcfPerShareQ: BasisOutcome;
-  fcfPerShareQAnn: BasisOutcome;
   fcfPerShareTtm: BasisOutcome;
 }
 
@@ -38,10 +36,8 @@ export const computeAndWriteCashFlowPerSharePit = async (
     rocYear: null,
     season: null,
     ocfPerShareQ: { action: 'skipped_no_quarter' },
-    ocfPerShareQAnn: { action: 'skipped_no_quarter' },
     ocfPerShareTtm: { action: 'skipped_no_quarter' },
     fcfPerShareQ: { action: 'skipped_no_quarter' },
-    fcfPerShareQAnn: { action: 'skipped_no_quarter' },
     fcfPerShareTtm: { action: 'skipped_no_quarter' },
   };
 
@@ -72,35 +68,15 @@ export const computeAndWriteCashFlowPerSharePit = async (
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
 
   let ocfPerShareQ: BasisOutcome;
-  let ocfPerShareQAnn: BasisOutcome;
   let fcfPerShareQ: BasisOutcome;
-  let fcfPerShareQAnn: BasisOutcome;
 
   if (!mainAnchor) {
     ocfPerShareQ = { action: 'skipped_no_knowledge_date' };
-    ocfPerShareQAnn = { action: 'skipped_no_knowledge_date' };
     fcfPerShareQ = { action: 'skipped_no_knowledge_date' };
-    fcfPerShareQAnn = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
     ocfPerShareQ = await writeMetricValue({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('Q'), value: ocfPerShareQuarterly.value, nullReason: ocfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    ocfPerShareQAnn = await writeMetricValue({
-      ...coordinateFor('ocfPerShare'),
-      ...periodTypeGroup('Q_ANN'),
-      value: ocfPerShareQuarterly.quarterlyAnnualized,
-      nullReason: ocfPerShareQuarterly.nullReason,
-      knowledgeDate,
-      knowledgeDateIsFallback,
-    });
     fcfPerShareQ = await writeMetricValue({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('Q'), value: fcfPerShareQuarterly.value, nullReason: fcfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fcfPerShareQAnn = await writeMetricValue({
-      ...coordinateFor('fcfPerShare'),
-      ...periodTypeGroup('Q_ANN'),
-      value: fcfPerShareQuarterly.quarterlyAnnualized,
-      nullReason: fcfPerShareQuarterly.nullReason,
-      knowledgeDate,
-      knowledgeDateIsFallback,
-    });
   }
 
   // TTM：近四季（含本季）OCF 加總；FCF TTM = OCF 加總 + 資本支出加總。一季只要 OCF 或資本支出
@@ -122,9 +98,9 @@ export const computeAndWriteCashFlowPerSharePit = async (
     }
   }
 
-  const ocfPerShareTtmCalc = ttmComplete ? calculateOcfPerShare(ocfTtmSum, sharesValue) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const ocfPerShareTtmCalc = ttmComplete ? calculateOcfPerShare(ocfTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
   const fcfTtmSum = ttmComplete ? ocfTtmSum + capexTtmSum : null;
-  const fcfPerShareTtmCalc = ttmComplete ? calculateFcfPerShare(fcfTtmSum, sharesValue) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const fcfPerShareTtmCalc = ttmComplete ? calculateFcfPerShare(fcfTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
 
   let ocfPerShareTtm: BasisOutcome;
   let fcfPerShareTtm: BasisOutcome;
@@ -151,5 +127,5 @@ export const computeAndWriteCashFlowPerSharePit = async (
     fcfPerShareTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, ocfPerShareQ, ocfPerShareQAnn, ocfPerShareTtm, fcfPerShareQ, fcfPerShareQAnn, fcfPerShareTtm };
+  return { symbol, rocYear: year, season, ocfPerShareQ, ocfPerShareTtm, fcfPerShareQ, fcfPerShareTtm };
 };

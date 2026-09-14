@@ -22,12 +22,10 @@ test('revenuePerSharePit: 2330 115Q2 合併報表，跟 revenuePerShare.test.ts 
     });
 
   const q = await findLatest('Q');
-  const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
-  assert.ok(q && qAnn && ttm, '三個 periodType 應該全部寫入 metric_values');
+  assert.ok(q && ttm, '兩個 periodType 應該全部寫入 metric_values');
   assert.equal(Number(q!.value), 48.99);
-  assert.equal(Number(qAnn!.value), 195.96);
   assert.equal(Number(ttm!.value), 171.23);
 });
 

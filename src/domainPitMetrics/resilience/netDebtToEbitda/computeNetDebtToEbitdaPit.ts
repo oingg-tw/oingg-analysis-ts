@@ -5,15 +5,16 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
-// 這份檔案是 src/domainMetrics/netDebtToEbitda.ts 的獨立重新實作。只有 Q_ANN/TTM 兩種
-// basis——跟舊架構一致，taxonomy 只支援這兩種（store/flow 比率），沒有單季非年化版本。
-// EBIT = 稅前淨利+利息費用，這個公式在 interestCoverage/netDebtToEbitda/roic/roce 四個
-// 舊架構檔案各自重複定義，這裡延續同一個既有慣例，evEbitda 這批也會再重複一次淨負債+
-// EBITDA 的計算，不依賴這個 metric_code 已寫入的值。
+// 這份檔案是 src/domainMetrics/netDebtToEbitda.ts 的獨立重新實作。2026-09-14 應使用者
+// 要求移除單季年化（Q_ANN）節省運算後，只剩 TTM 一種 basis（store/flow 比率本來就沒有
+// 單季非年化版本）。EBIT = 稅前淨利+利息費用，這個公式在
+// interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，這裡延續同一個
+// 既有慣例，evEbitda 這批也會再重複一次淨負債+EBITDA 的計算，不依賴這個 metric_code
+// 已寫入的值。
 
 export type NetDebtToEbitdaPitOutcome = StandardBasisPitOutcome;
 
@@ -23,7 +24,7 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -44,24 +45,10 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 
-  const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
-  const financeCosts = incomeStatement?.financeCosts ?? null;
-  const depreciation = cashFlowStatement?.depreciation ?? null;
-  const amortization = cashFlowStatement?.amortization ?? null;
-  const ebitdaQuarterly =
-    profitBeforeTax !== null && financeCosts !== null && depreciation !== null && amortization !== null
-      ? profitBeforeTax + financeCosts + depreciation + amortization
-      : null;
-
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
-
-  const qAnnValue = netDebt !== null && ebitdaQuarterly !== null && ebitdaQuarterly !== 0n ? Math.round((Number(netDebt) / (Number(ebitdaQuarterly) * 4)) * 100) / 100 : null;
-  const qAnnNullReason: MetricNullReason | null = qAnnValue === null ? determineNullReason(netDebt, ebitdaQuarterly) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateBase = { symbol, metricCode: 'netDebtToEbitda', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', qAnnValue, qAnnNullReason);
 
   // TTM：近四季（含本季）EBITDA 加總，淨負債固定用本季期末值（不平均不加總）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -125,5 +112,5 @@ export const computeAndWriteNetDebtToEbitdaPit = async (query: QuarterlyMetricQu
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, qAnn, ttm };
+  return { symbol, rocYear: year, season, ttm };
 };

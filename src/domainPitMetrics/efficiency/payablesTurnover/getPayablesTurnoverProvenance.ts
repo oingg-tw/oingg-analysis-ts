@@ -14,7 +14,7 @@ export const getPayablesTurnoverProvenance = async (query: QuarterlyMetricQuery)
   }
 
   const { symbol, fiscalYear, fiscalQuarter, accountsPayable, ttmQuarters, ttmOperatingCosts, ttmComplete, costTtmSum } = resolution;
-  const result = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const result = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(

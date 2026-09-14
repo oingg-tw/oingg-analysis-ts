@@ -44,7 +44,7 @@ const main = async () => {
         `[turnover-ratio-family-pit] ${symbol} ${year}Q${season}: ` +
           `inventory(Q=${JSON.stringify(turnoverOutcome.inventoryTurnoverQ)}) receivables(Q=${JSON.stringify(turnoverOutcome.receivablesTurnoverQ)}) ` +
           `fixedAsset(Q=${JSON.stringify(turnoverOutcome.fixedAssetTurnoverQ)}) payables(Q=${JSON.stringify(turnoverOutcome.payablesTurnoverQ)}) ` +
-          `ccc(Q_ANN=${JSON.stringify(turnoverOutcome.cashConversionCycleQAnn)}, TTM=${JSON.stringify(turnoverOutcome.cashConversionCycleTtm)})`
+          `ccc(TTM=${JSON.stringify(turnoverOutcome.cashConversionCycleTtm)})`
       );
     }
   }

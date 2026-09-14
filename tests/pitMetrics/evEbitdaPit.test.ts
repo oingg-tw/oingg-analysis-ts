@@ -29,7 +29,7 @@ test('evEbitdaPit: 2330 115Q2 合併報表，寫入的值應該落在合理區�
 test('evEbitdaPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {
   const outcome = await computeAndWriteEvEbitdaPit({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
-  assert.deepEqual(outcome.qAnn, { action: 'skipped_no_quarter' });
+  assert.deepEqual(outcome.ttm, { action: 'skipped_no_quarter' });
   const count = await analysisPrisma.metricValue.count({ where: { symbol: '9999', metricCode: 'evEbitda' } });
   assert.equal(count, 0);
 });

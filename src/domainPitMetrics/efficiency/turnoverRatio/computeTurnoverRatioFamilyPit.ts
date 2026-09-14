@@ -20,10 +20,11 @@ import { calculateOperatingCycle } from '@/domainPitMetrics/efficiency/operating
 // 這份檔案獨立重新實作 src/domainMetrics/turnoverRatio.ts 裡「還沒遷移」的欄位——
 // assetTurnover 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts 寫入，這裡不重複
 // 寫。一次查詢資產負債表+損益表，拆成 8 個 metric_code：inventoryTurnover/
-// receivablesTurnover/fixedAssetTurnover/payablesTurnover（各 Q/Q_ANN/TTM）、
-// inventoryDays/receivablesDays/payablesDays（DIO/DSO/DPO，各 Q_ANN/TTM）、
-// cashConversionCycle（CCC，Q_ANN/TTM）——跟 Dupont 家族同一種「一次查詢拆多個
-// metric_code」模式，只是規模更大。
+// receivablesTurnover/fixedAssetTurnover/payablesTurnover（各 Q/TTM）、
+// inventoryDays/receivablesDays/payablesDays（DIO/DSO/DPO，各 TTM）、
+// cashConversionCycle（CCC，TTM）——跟 Dupont 家族同一種「一次查詢拆多個
+// metric_code」模式，只是規模更大。2026-09-14 應使用者要求移除單季年化（Q_ANN）節省
+// 運算，Days/CCC/operatingCycle 家族原本只有 Q_ANN/TTM 兩種 basis，移除後只剩 TTM。
 //
 // 四個周轉率共用同一個 ttmComplete 旗標（只看 operatingCost/operatingRevenue 兩個欄位）
 // ——完全比照舊架構 turnoverRatio.ts 的判斷，這裡沒有像 margins 那批的行為差異，因為
@@ -35,33 +36,24 @@ import { calculateOperatingCycle } from '@/domainPitMetrics/efficiency/operating
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——
 // netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio 三支用的
-// 通用 TTM 比率 helper，都只有一種 basis（TTM），不像既有周轉率四支還有 Q/Q_ANN。
+// 通用 TTM 比率 helper，都只有一種 basis（TTM）。
 const toRatio = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
   if (denominatorInThousands === 0n) return null;
   return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100) / 100;
 };
 export interface TurnoverRatioFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   inventoryTurnoverQ: BasisOutcome;
-  inventoryTurnoverQAnn: BasisOutcome;
   inventoryTurnoverTtm: BasisOutcome;
   receivablesTurnoverQ: BasisOutcome;
-  receivablesTurnoverQAnn: BasisOutcome;
   receivablesTurnoverTtm: BasisOutcome;
   fixedAssetTurnoverQ: BasisOutcome;
-  fixedAssetTurnoverQAnn: BasisOutcome;
   fixedAssetTurnoverTtm: BasisOutcome;
   payablesTurnoverQ: BasisOutcome;
-  payablesTurnoverQAnn: BasisOutcome;
   payablesTurnoverTtm: BasisOutcome;
-  inventoryDaysQAnn: BasisOutcome;
   inventoryDaysTtm: BasisOutcome;
-  receivablesDaysQAnn: BasisOutcome;
   receivablesDaysTtm: BasisOutcome;
-  payablesDaysQAnn: BasisOutcome;
   payablesDaysTtm: BasisOutcome;
-  cashConversionCycleQAnn: BasisOutcome;
   cashConversionCycleTtm: BasisOutcome;
-  operatingCycleQAnn: BasisOutcome;
   operatingCycleTtm: BasisOutcome;
   netWorkingCapitalTurnoverTtm: BasisOutcome;
   inventoryToRevenueRatioTtm: BasisOutcome;
@@ -79,26 +71,17 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
     rocYear: null,
     season: null,
     inventoryTurnoverQ: { action },
-    inventoryTurnoverQAnn: { action },
     inventoryTurnoverTtm: { action },
     receivablesTurnoverQ: { action },
-    receivablesTurnoverQAnn: { action },
     receivablesTurnoverTtm: { action },
     fixedAssetTurnoverQ: { action },
-    fixedAssetTurnoverQAnn: { action },
     fixedAssetTurnoverTtm: { action },
     payablesTurnoverQ: { action },
-    payablesTurnoverQAnn: { action },
     payablesTurnoverTtm: { action },
-    inventoryDaysQAnn: { action },
     inventoryDaysTtm: { action },
-    receivablesDaysQAnn: { action },
     receivablesDaysTtm: { action },
-    payablesDaysQAnn: { action },
     payablesDaysTtm: { action },
-    cashConversionCycleQAnn: { action },
     cashConversionCycleTtm: { action },
-    operatingCycleQAnn: { action },
     operatingCycleTtm: { action },
     netWorkingCapitalTurnoverTtm: { action },
     inventoryToRevenueRatioTtm: { action },
@@ -137,57 +120,22 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
 
-  let inventoryTurnoverQ: BasisOutcome, inventoryTurnoverQAnn: BasisOutcome;
-  let receivablesTurnoverQ: BasisOutcome, receivablesTurnoverQAnn: BasisOutcome;
-  let fixedAssetTurnoverQ: BasisOutcome, fixedAssetTurnoverQAnn: BasisOutcome;
-  let payablesTurnoverQ: BasisOutcome, payablesTurnoverQAnn: BasisOutcome;
-  let inventoryDaysQAnn: BasisOutcome, receivablesDaysQAnn: BasisOutcome, payablesDaysQAnn: BasisOutcome, cashConversionCycleQAnn: BasisOutcome, operatingCycleQAnn: BasisOutcome;
+  let inventoryTurnoverQ: BasisOutcome;
+  let receivablesTurnoverQ: BasisOutcome;
+  let fixedAssetTurnoverQ: BasisOutcome;
+  let payablesTurnoverQ: BasisOutcome;
 
   if (!mainAnchor) {
-    inventoryTurnoverQ = inventoryTurnoverQAnn = { action: 'skipped_no_knowledge_date' };
-    receivablesTurnoverQ = receivablesTurnoverQAnn = { action: 'skipped_no_knowledge_date' };
-    fixedAssetTurnoverQ = fixedAssetTurnoverQAnn = { action: 'skipped_no_knowledge_date' };
-    payablesTurnoverQ = payablesTurnoverQAnn = { action: 'skipped_no_knowledge_date' };
-    inventoryDaysQAnn = receivablesDaysQAnn = payablesDaysQAnn = cashConversionCycleQAnn = operatingCycleQAnn = { action: 'skipped_no_knowledge_date' };
+    inventoryTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    receivablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    fixedAssetTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    payablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
   } else {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
     inventoryTurnoverQ = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q'), value: inventoryTurnoverQuarterly.value, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    inventoryTurnoverQAnn = await writeMetricValue({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q_ANN'), value: inventoryTurnoverQuarterly.quarterlyAnnualized, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     receivablesTurnoverQ = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q'), value: receivablesTurnoverQuarterly.value, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q_ANN'), value: receivablesTurnoverQuarterly.quarterlyAnnualized, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     fixedAssetTurnoverQ = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q'), value: fixedAssetTurnoverQuarterly.value, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQAnn = await writeMetricValue({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q_ANN'), value: fixedAssetTurnoverQuarterly.quarterlyAnnualized, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
     payablesTurnoverQ = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q'), value: payablesTurnoverQuarterly.value, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQAnn = await writeMetricValue({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q_ANN'), value: payablesTurnoverQuarterly.quarterlyAnnualized, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-    // DIO/DSO/DPO（Q_ANN）+ CCC（Q_ANN）
-    const inventoryDaysQAnnCalc = calculateInventoryDays(inventoryTurnoverQuarterly.quarterlyAnnualized, inventoryTurnoverQuarterly.nullReason);
-    const receivablesDaysQAnnCalc = calculateReceivablesDays(receivablesTurnoverQuarterly.quarterlyAnnualized, receivablesTurnoverQuarterly.nullReason);
-    const payablesDaysQAnnCalc = calculatePayablesDays(payablesTurnoverQuarterly.quarterlyAnnualized, payablesTurnoverQuarterly.nullReason);
-
-    inventoryDaysQAnn = await writeMetricValue({ ...coordinateFor('inventoryDays'), ...periodTypeGroup('Q_ANN'), value: inventoryDaysQAnnCalc.value, nullReason: inventoryDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesDaysQAnn = await writeMetricValue({ ...coordinateFor('receivablesDays'), ...periodTypeGroup('Q_ANN'), value: receivablesDaysQAnnCalc.value, nullReason: receivablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesDaysQAnn = await writeMetricValue({ ...coordinateFor('payablesDays'), ...periodTypeGroup('Q_ANN'), value: payablesDaysQAnnCalc.value, nullReason: payablesDaysQAnnCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-    const cccQAnnCalc = calculateCashConversionCycle(inventoryDaysQAnnCalc.value, receivablesDaysQAnnCalc.value, payablesDaysQAnnCalc.value);
-    cashConversionCycleQAnn = await writeMetricValue({
-      ...coordinateFor('cashConversionCycle'),
-      ...periodTypeGroup('Q_ANN'),
-      value: cccQAnnCalc.value,
-      nullReason: cccQAnnCalc.nullReason,
-      knowledgeDate,
-      knowledgeDateIsFallback,
-    });
-
-    const operatingCycleQAnnCalc = calculateOperatingCycle(inventoryDaysQAnnCalc.value, receivablesDaysQAnnCalc.value);
-    operatingCycleQAnn = await writeMetricValue({
-      ...coordinateFor('operatingCycle'),
-      ...periodTypeGroup('Q_ANN'),
-      value: operatingCycleQAnnCalc.value,
-      nullReason: operatingCycleQAnnCalc.nullReason,
-      knowledgeDate,
-      knowledgeDateIsFallback,
-    });
   }
 
   // TTM：近四季（含本季）營業成本/營收各自加總，四個周轉率共用同一個 ttmComplete 旗標，
@@ -209,10 +157,10 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
     }
   }
 
-  const inventoryTurnoverTtmCalc = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
-  const receivablesTurnoverTtmCalc = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
-  const fixedAssetTurnoverTtmCalc = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
-  const payablesTurnoverTtmCalc = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const inventoryTurnoverTtmCalc = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
+  const receivablesTurnoverTtmCalc = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
+  const fixedAssetTurnoverTtmCalc = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, nullReason: 'insufficient_history' as const };
+  const payablesTurnoverTtmCalc = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
 
   let inventoryTurnoverTtm: BasisOutcome, receivablesTurnoverTtm: BasisOutcome, fixedAssetTurnoverTtm: BasisOutcome, payablesTurnoverTtm: BasisOutcome;
   let inventoryDaysTtm: BasisOutcome, receivablesDaysTtm: BasisOutcome, payablesDaysTtm: BasisOutcome, cashConversionCycleTtm: BasisOutcome, operatingCycleTtm: BasisOutcome;
@@ -307,26 +255,17 @@ export const computeAndWriteTurnoverRatioFamilyPit = async (
     rocYear: year,
     season,
     inventoryTurnoverQ,
-    inventoryTurnoverQAnn,
     inventoryTurnoverTtm,
     receivablesTurnoverQ,
-    receivablesTurnoverQAnn,
     receivablesTurnoverTtm,
     fixedAssetTurnoverQ,
-    fixedAssetTurnoverQAnn,
     fixedAssetTurnoverTtm,
     payablesTurnoverQ,
-    payablesTurnoverQAnn,
     payablesTurnoverTtm,
-    inventoryDaysQAnn,
     inventoryDaysTtm,
-    receivablesDaysQAnn,
     receivablesDaysTtm,
-    payablesDaysQAnn,
     payablesDaysTtm,
-    cashConversionCycleQAnn,
     cashConversionCycleTtm,
-    operatingCycleQAnn,
     operatingCycleTtm,
     netWorkingCapitalTurnoverTtm,
     inventoryToRevenueRatioTtm,

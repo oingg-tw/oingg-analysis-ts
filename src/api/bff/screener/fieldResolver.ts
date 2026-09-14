@@ -8,7 +8,7 @@ import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence } fro
 // filterCatalog 一起刪除（見 abstract-crafting-journal.md）。pitMetrics 全部指標共用同一張
 // metric_values 表，沒有「表/欄位」這個維度，取而代之的是四個 basis 相關欄位（見
 // metricBasis.ts 的完整說明）——新格式改成 "metricCode.timeframe"：
-//   - 季報型指標（periodType 這組）：timeframe 是 Q/YTD/TTM/Q_ANN/FY 其中之一，例如 "roe.TTM"。
+//   - 季報型指標（periodType 這組）：timeframe 是 Q/YTD/TTM/FY 其中之一，例如 "roe.TTM"。
 //   - Beta 這類滾動統計量（lookbackRange+samplingInterval 這組）：timeframe 是
 //     "<lookbackRange>_<samplingInterval>"，例如 "beta.2Y_1W"。
 //   - 純市場快照（snapshotCadence 這組）：timeframe 是 EOD，例如 "exchangePeRatio.EOD"。

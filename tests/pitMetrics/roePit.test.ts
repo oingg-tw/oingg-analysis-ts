@@ -25,14 +25,11 @@ test('roePit: 2330 115Q2 合併報表，跟 roe.test.ts 的既有基準數字交
     });
 
   const q = await findLatest('Q');
-  const qAnn = await findLatest('Q_ANN');
   const ttm = await findLatest('TTM');
 
   assert.ok(q, 'periodType=Q 應該有寫入 metric_values');
-  assert.ok(qAnn, 'periodType=Q_ANN 應該有寫入 metric_values');
   assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   assert.equal(Number(q!.value), 10.98);
-  assert.equal(Number(qAnn!.value), 43.92);
   assert.equal(Number(ttm!.value), 34.78);
   assert.equal(q!.nullReason, null);
   assert.equal(ttm!.nullReason, null);
@@ -45,7 +42,6 @@ test('roePit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   const second = await computeAndWriteRoePit({ symbol: '2887', year: '115', season: '1', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
-  assert.deepEqual(second.qAnn, { action: 'skipped_unchanged' });
   // 2887 115Q1 的 TTM 是否齊全視實際資料而定，只要 periodType 有被計算（不是 skipped_no_quarter/
   // skipped_no_knowledge_date），第二次呼叫就一定要落在 skipped_unchanged。
   if ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date')) {
@@ -60,7 +56,7 @@ test('roePit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   assert.equal(count, 1, '重複寫入同一個座標不應該疊加成多列');
 });
 
-// 2317：financial_report_announcement 完全零筆覆蓋（實測確認），保證 Q/Q_ANN 落到
+// 2317：financial_report_announcement 完全零筆覆蓋（實測確認），保證 Q 落到
 // report_date_fallback。損益表/資產負債表依賴指標換源到 XBRL 之後（2026-09-07），舊表
 // 原本缺漏的 114Q4 損益表被 XBRL 補齊了（舊表 quarterly_income_statement 完全查無這一列，
 // XBRL quarterly_income_statement_xbrl 有真實資料），2317 115Q2 的 TTM 因此從
@@ -93,13 +89,12 @@ test('roePit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
   assert.equal(ttm!.nullReason, null);
 });
 
-test('roePit: 9999（查無資料的公司）應該優雅降級，三個 periodType 都不寫入', async () => {
+test('roePit: 9999（查無資料的公司）應該優雅降級，都不寫入', async () => {
   const outcome = await computeAndWriteRoePit({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.equal(outcome.rocYear, null);
   assert.equal(outcome.season, null);
   assert.deepEqual(outcome.q, { action: 'skipped_no_quarter' });
-  assert.deepEqual(outcome.qAnn, { action: 'skipped_no_quarter' });
   assert.deepEqual(outcome.ttm, { action: 'skipped_no_quarter' });
 
   const count = await analysisPrisma.metricValue.count({ where: { symbol: '9999', metricCode: 'roe' } });

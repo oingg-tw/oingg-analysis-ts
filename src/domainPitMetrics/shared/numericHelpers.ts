@@ -12,12 +12,6 @@ export interface CalcResult {
   nullReason: MetricNullReason | null;
 }
 
-// 部分指標同時有 Q（單季）跟 Q_ANN（單季年化，乘 4）兩個 basis——年化值只是把 value 乘 4，
-// 附加在同一個計算結果上，不是獨立的計算邏輯。
-export interface AnnualizableCalcResult extends CalcResult {
-  quarterlyAnnualized: number | null;
-}
-
 // 百分比（× 100%），四捨五入到小數 2 位——dupont/margins 家族的比率型指標（淨利率/毛利率/
 // 稅務負擔…）都是這個尺度。
 export const toPercent = (numerator: bigint, denominator: bigint): number | null => {
@@ -68,10 +62,6 @@ export const toMultipleFromThousands = (numerator: number, amountInThousands: bi
 // bigint 版絕對值——capexToRevenue/abnormalCapexRatio 這類「來源資料本身是負值（現金流出）
 // 取絕對值後再算比率」的指標共用。
 export const absBigint = (value: bigint): bigint => (value < 0n ? -value : value);
-
-// 把單季比率乘 4 年化，四捨五入到小數 2 位——assetTurnover/四個週轉率/ocfPerShare/
-// fcfPerShare 的 Q_ANN basis 共用同一個換算方式。
-export const annualizeQuarterly = (quarterlyValue: number): number => round2(quarterlyValue * 4);
 
 // 每股金額——分子是財報原始金額（單位：千元），乘 1000 換算成元之後除以流通股數，
 // 四捨五入到小數 2 位。ocfPerShare/fcfPerShare 用這個換算。

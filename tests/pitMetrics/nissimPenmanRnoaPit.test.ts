@@ -7,8 +7,7 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——只遷移 RNOA 本身（NOPAT/NOA），不遷移
 // FLEV/NBC/SPREAD/reconstructedRoe，跟 tests/domains/metrics/nissimPenmanRnoa.test.ts 的
-// 既有基準數字交叉驗證。Q_ANN = round2(rnoaQuarterlyPct x 4)，是 rnoaQuarterlyPct 的純
-// 線性推導，這裡一併驗證。
+// 既有基準數字交叉驗證。
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.nissimPenmanRnoa!);
@@ -19,13 +18,10 @@ test('nissimPenmanRnoaPit: 2330 115Q2 合併報表，跟既有基準數字交叉
 
   const where = { symbol: '2330', metricCode: 'nissimPenmanRnoa', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const q = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q' }, orderBy: { knowledgeDate: 'desc' } });
-  const qAnn = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'Q_ANN' }, orderBy: { knowledgeDate: 'desc' } });
   const ttm = await analysisPrisma.metricValue.findFirst({ where: { ...where, periodType: 'TTM' }, orderBy: { knowledgeDate: 'desc' } });
 
   assert.ok(q, 'basis=Q 應該有寫入');
   assert.equal(Number(q!.value), 15.09);
-  assert.ok(qAnn, 'basis=Q_ANN 應該有寫入');
-  assert.equal(Number(qAnn!.value), 60.36);
   assert.ok(ttm, 'basis=TTM 應該有寫入');
   assert.equal(Number(ttm!.value), 50.2);
 });

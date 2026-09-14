@@ -40,7 +40,7 @@ const main = async () => {
       console.log(
         `[dupont-family-pit] ${symbol} ${year}Q${season}: ` +
           `netProfitMargin(Q=${JSON.stringify(dupontOutcome.netProfitMarginQ)}, TTM=${JSON.stringify(dupontOutcome.netProfitMarginTtm)}) ` +
-          `assetTurnover(Q=${JSON.stringify(dupontOutcome.assetTurnoverQ)}, Q_ANN=${JSON.stringify(dupontOutcome.assetTurnoverQAnn)}, TTM=${JSON.stringify(dupontOutcome.assetTurnoverTtm)}) ` +
+          `assetTurnover(Q=${JSON.stringify(dupontOutcome.assetTurnoverQ)}, TTM=${JSON.stringify(dupontOutcome.assetTurnoverTtm)}) ` +
           `equityMultiplier=${JSON.stringify(dupontOutcome.equityMultiplier)} ` +
           `decomposedRoe(Q=${JSON.stringify(dupontOutcome.dupontDecomposedRoeQ)}, TTM=${JSON.stringify(dupontOutcome.dupontDecomposedRoeTtm)})`
       );

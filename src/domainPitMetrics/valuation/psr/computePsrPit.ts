@@ -5,7 +5,7 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQ
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
 
@@ -13,7 +13,8 @@ import type { MetricNullReason } from '../../metricBasis';
 // 這裡不依賴 revenuePerShare 這個 metric_code 已寫入的值，自己重新查損益表算營收。市值部分
 // 直接複用 resolveKnowledgeDate 算出來的 knowledge_date 去查 getMarketCapAsOf——跟
 // fcfYield/computeFcfYieldPit.ts 發現的「股價/市值不需要另外設計 knowledge_date 機制」一致，
-// Q_ANN/TTM 共用同一次市值查詢結果，不分別重查。沒有單季非年化版本（store/flow 比率）。
+// TTM 沿用同一次市值查詢結果。2026-09-14 應使用者要求移除單季年化（Q_ANN）節省運算——
+// store/flow 比率本來就沒有單季非年化版本，只剩 TTM 一種 basis。
 
 export type PsrPitOutcome = StandardBasisPitOutcome;
 
@@ -26,7 +27,7 @@ export const computeAndWritePsrPit = async (
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
 
   if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, qAnn: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
+    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
   }
 
   const { year, season } = resolvedQuarter;
@@ -36,18 +37,12 @@ export const computeAndWritePsrPit = async (
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const incomeStatement = await statements.getIncomeStatement(key);
-  const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const reportDate = incomeStatement?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
   const marketCap = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
-  const psrQuarterlyAnnualized = operatingRevenue !== null && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, operatingRevenue * 4n) : null;
-  const qAnnNullReason: MetricNullReason | null = psrQuarterlyAnnualized === null ? (marketCap === null || operatingRevenue === null ? 'missing_input' : 'zero_or_negative_denominator') : null;
-
   const coordinateBase = { symbol, metricCode: 'psr', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const qAnn = await writeOrSkip(mainAnchor, coordinateBase, 'Q_ANN', psrQuarterlyAnnualized, qAnnNullReason);
 
   // TTM：近四季（含本季）營收加總；市值沿用上面同一筆（本季 knowledge_date 查到的），不是
   // 另外用 TTM anchor 重查一次，跟 fcfYield 的既有行為一致。
@@ -100,5 +95,5 @@ export const computeAndWritePsrPit = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, qAnn, ttm };
+  return { symbol, rocYear: year, season, ttm };
 };

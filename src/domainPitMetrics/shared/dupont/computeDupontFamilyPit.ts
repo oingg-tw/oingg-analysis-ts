@@ -43,7 +43,6 @@ export interface DupontFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   netProfitMarginQ: BasisOutcome;
   netProfitMarginTtm: BasisOutcome;
   assetTurnoverQ: BasisOutcome;
-  assetTurnoverQAnn: BasisOutcome;
   assetTurnoverTtm: BasisOutcome;
   equityMultiplier: BasisOutcome;
   dupontDecomposedRoeQ: BasisOutcome;
@@ -71,7 +70,6 @@ export const computeAndWriteDupontFamilyPit = async (
     netProfitMarginQ: { action: 'skipped_no_quarter' },
     netProfitMarginTtm: { action: 'skipped_no_quarter' },
     assetTurnoverQ: { action: 'skipped_no_quarter' },
-    assetTurnoverQAnn: { action: 'skipped_no_quarter' },
     assetTurnoverTtm: { action: 'skipped_no_quarter' },
     equityMultiplier: { action: 'skipped_no_quarter' },
     dupontDecomposedRoeQ: { action: 'skipped_no_quarter' },
@@ -131,7 +129,6 @@ export const computeAndWriteDupontFamilyPit = async (
 
   let netProfitMarginQ: BasisOutcome;
   let assetTurnoverQ: BasisOutcome;
-  let assetTurnoverQAnn: BasisOutcome;
   let equityMultiplierOutcome: BasisOutcome;
   let dupontDecomposedRoeQ: BasisOutcome;
   let dupontTaxBurdenQ: BasisOutcome;
@@ -142,7 +139,6 @@ export const computeAndWriteDupontFamilyPit = async (
   if (!mainAnchor) {
     netProfitMarginQ = { action: 'skipped_no_knowledge_date' };
     assetTurnoverQ = { action: 'skipped_no_knowledge_date' };
-    assetTurnoverQAnn = { action: 'skipped_no_knowledge_date' };
     equityMultiplierOutcome = { action: 'skipped_no_knowledge_date' };
     dupontDecomposedRoeQ = { action: 'skipped_no_knowledge_date' };
     dupontTaxBurdenQ = { action: 'skipped_no_knowledge_date' };
@@ -163,14 +159,6 @@ export const computeAndWriteDupontFamilyPit = async (
       ...coordinateFor('assetTurnover'),
       ...periodTypeGroup('Q'),
       value: assetTurnoverQuarterly.value,
-      nullReason: assetTurnoverQuarterly.nullReason,
-      knowledgeDate,
-      knowledgeDateIsFallback,
-    });
-    assetTurnoverQAnn = await writeMetricValue({
-      ...coordinateFor('assetTurnover'),
-      ...periodTypeGroup('Q_ANN'),
-      value: assetTurnoverQuarterly.quarterlyAnnualized,
       nullReason: assetTurnoverQuarterly.nullReason,
       knowledgeDate,
       knowledgeDateIsFallback,
@@ -262,7 +250,7 @@ export const computeAndWriteDupontFamilyPit = async (
   }
 
   const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
-  const assetTurnoverTtmCalc = ttmComplete && totalAssets !== null ? calculateAssetTurnover(revenueTtmSum, totalAssets) : { value: null, quarterlyAnnualized: null, nullReason: 'insufficient_history' as const };
+  const assetTurnoverTtmCalc = ttmComplete && totalAssets !== null ? calculateAssetTurnover(revenueTtmSum, totalAssets) : { value: null, nullReason: 'insufficient_history' as const };
 
   const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierResult.value);
   const decomposedRoeTtmNullReason = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : ('insufficient_history' as const);
@@ -441,7 +429,6 @@ export const computeAndWriteDupontFamilyPit = async (
     netProfitMarginQ,
     netProfitMarginTtm,
     assetTurnoverQ,
-    assetTurnoverQAnn,
     assetTurnoverTtm,
     equityMultiplier: equityMultiplierOutcome,
     dupontDecomposedRoeQ,
