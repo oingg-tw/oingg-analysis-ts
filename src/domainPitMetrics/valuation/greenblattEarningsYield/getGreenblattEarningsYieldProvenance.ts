@@ -1,17 +1,31 @@
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveGreenblattEarningsYieldInputs } from './computeGreenblattEarningsYieldPit';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——greenblattEarningsYield(TTM) = 近四季 EBIT(=稅前
 // 淨利+財務費用)加總 / EV(=市值+有息負債-現金及約當現金，本季期末)。跟
 // computeGreenblattEarningsYieldPit.ts 共用同一個 resolveGreenblattEarningsYieldInputs
 // （跟 accrualsRatio/greenblattRoc 的做法一致），現查現算不持久化。固定回傳 TTM。
+//
+// 2026-09-14：greenblattEarningsYield 已從 PILOT_PROVENANCE_METRIC_CODES／
+// PROVENANCE_RESOLVERS 移除（見 provenanceTypes.ts 註解），這支函式不再被任何路由呼叫，
+// 純粹保留邏輯供未來神奇公式合併使用。metricCode 字面量已不在窄化後的型別裡，用
+// `as ProvenanceMetricCode` 讓它繼續編譯過，不影響任何執行期路徑。
 
 export const getGreenblattEarningsYieldProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
   const resolution = await resolveGreenblattEarningsYieldInputs(query);
 
   if (!resolution) {
-    return { symbol: query.symbol, metricCode: 'greenblattEarningsYield', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+    return {
+      symbol: query.symbol,
+      metricCode: 'greenblattEarningsYield' as ProvenanceMetricCode,
+      found: false,
+      fiscalYear: null,
+      fiscalQuarter: null,
+      value: null,
+      entries: [],
+      methodologyNote: null,
+    };
   }
 
   const { symbol, fiscalYear, fiscalQuarter, marketCap, totalDebt, cashAndEquivalents, ttmQuarterDetails, earningsYieldTtm } = resolution;
@@ -46,7 +60,7 @@ export const getGreenblattEarningsYieldProvenance = async (query: QuarterlyMetri
 
   return {
     symbol,
-    metricCode: 'greenblattEarningsYield',
+    metricCode: 'greenblattEarningsYield' as ProvenanceMetricCode,
     found: true,
     fiscalYear,
     fiscalQuarter,

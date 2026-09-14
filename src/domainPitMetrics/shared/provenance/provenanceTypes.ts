@@ -119,7 +119,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'evToSales',
   'priceToOcf',
   'grahamNumber',
-  'greenblattEarningsYield',
+  // greenblattEarningsYield 先不曝露稽核鏈（2026-09-14 使用者要求，跟 metricDefinitionRegistry
+  // 移除是同一則決定，等神奇公式上線再一起合併回來）。
   'earningsYield',
   'tobinsQ',
   'pegRatio',

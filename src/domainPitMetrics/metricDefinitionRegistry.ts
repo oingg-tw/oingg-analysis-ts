@@ -21,7 +21,12 @@ import { pbRatioDefinition } from '@/domainPitMetrics/valuation/pbRatio/pbRatioD
 import { stockPriceDefinition } from '@/domainPitMetrics/valuation/stockPrice/stockPriceDefinition';
 import { marketCapDefinition } from '@/domainPitMetrics/valuation/marketCap/marketCapDefinition';
 import { tobinsQDefinition } from '@/domainPitMetrics/valuation/tobinsQ/tobinsQDefinition';
-import { greenblattEarningsYieldDefinition } from '@/domainPitMetrics/valuation/greenblattEarningsYield/greenblattEarningsYieldDefinition';
+// 2026-09-14 使用者要求：greenblattEarningsYield 先不要單獨曝露成獨立指標，等神奇公式
+// （Magic Formula Investing，greenblattRoc + greenblattEarningsYield 排名合併）上線時
+// 再一起合併進去。compute*Pit.ts/Definition.ts/getProvenance.ts 檔案都還在（之後神奇
+// 公式要用），只是先不註冊進這份 registry——writeMetricValue() 對未註冊的 metricCode
+// 會直接 rejected，不會意外寫入；GET /metrics 等端點也都是動態查這份 registry，不用
+// 額外處理曝露邏輯，拿掉這行 import/註冊就是唯一要做的事。
 import { greenblattRocDefinition } from '@/domainPitMetrics/profitability/greenblattRoc/greenblattRocDefinition';
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
@@ -158,7 +163,6 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   stockPrice: stockPriceDefinition,
   marketCap: marketCapDefinition,
   tobinsQ: tobinsQDefinition,
-  greenblattEarningsYield: greenblattEarningsYieldDefinition,
   greenblattRoc: greenblattRocDefinition,
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,

@@ -88,7 +88,6 @@ import { getEvToOcfProvenance } from '@/domainPitMetrics/valuation/evToOcf/getEv
 import { getEvToSalesProvenance } from '@/domainPitMetrics/valuation/evToSales/getEvToSalesProvenance';
 import { getPriceToOcfProvenance } from '@/domainPitMetrics/valuation/priceToOcf/getPriceToOcfProvenance';
 import { getGrahamNumberProvenance } from '@/domainPitMetrics/valuation/grahamNumber/getGrahamNumberProvenance';
-import { getGreenblattEarningsYieldProvenance } from '@/domainPitMetrics/valuation/greenblattEarningsYield/getGreenblattEarningsYieldProvenance';
 import { getEarningsYieldProvenance } from '@/domainPitMetrics/valuation/earningsYield/getEarningsYieldProvenance';
 import { getTobinsQProvenance } from '@/domainPitMetrics/valuation/tobinsQ/getTobinsQProvenance';
 import { getPegRatioProvenance } from '@/domainPitMetrics/valuation/pegRatio/getPegRatioProvenance';
@@ -212,7 +211,6 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   evToSales: getEvToSalesProvenance,
   priceToOcf: getPriceToOcfProvenance,
   grahamNumber: getGrahamNumberProvenance,
-  greenblattEarningsYield: getGreenblattEarningsYieldProvenance,
   earningsYield: getEarningsYieldProvenance,
   tobinsQ: getTobinsQProvenance,
   pegRatio: getPegRatioProvenance,
