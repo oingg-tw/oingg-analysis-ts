@@ -1,4 +1,5 @@
 import type { MetricDefinitionSpec } from '@/domainPitMetrics/metricDefinitionSpec';
+import { currentRatioBadge } from './currentRatioBadge';
 
 export const currentRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'currentRatio',
@@ -13,4 +14,5 @@ export const currentRatioDefinition: MetricDefinitionSpec = {
   allowedPeriodTypes: ['Q'],
   dependsOn: ['current_assets', 'current_liabilities'],
   currentFormulaVersion: 1,
+  badge: currentRatioBadge,
 };
