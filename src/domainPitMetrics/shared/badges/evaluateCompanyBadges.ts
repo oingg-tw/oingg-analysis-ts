@@ -81,11 +81,23 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
       // 進這支端點只會生出沒有意義的 timeframe:''/passed:null。它已經有專門的
       // GET /companies/piotroski-breakdown 端點處理真正的判定邏輯，這裡直接跳過。
       const badgeMetrics = metrics.filter((m) => m.badge && m.badge.timeframe !== undefined);
-      const badges = await Promise.all(
-        badgeMetrics.map(async (metric): Promise<CompanyBadgeResult> => {
+      const evaluated = await Promise.all(
+        badgeMetrics.map(async (metric): Promise<CompanyBadgeResult | null> => {
           const badge = metric.badge!;
           const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge（目前只有 piotroskiFScore）
           const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe);
+
+          // 2026-09-15 使用者要求新增：像 bankCarRatio/bankCet1Ratio/bankTier1Ratio 這種
+          // 只對特定產業（銀行/金控）有意義的指標，非銀行公司（例如台積電）從來不會有任何
+          // metric_values 列（計算函式本身就跳過非銀行公司，不是這一季剛好算不出來）——
+          // fetchLatestMetricValue 對「查無此列」跟「有列但這季算不出來」用同一個殼回傳
+          // （value/nullReason 都是 null），差別在於「真的沒列」時 nullReason 是 JS 的
+          // null（不是 MetricNullReason 列舉裡的任何一個值，那組列舉專門描述「有嘗試算但
+          // 算不出來」的原因）。用這個差異判斷「這支徽章對這家公司根本不適用」就整個跳過
+          // 不回傳，不要讓使用者看到一排全 null 的無意義徽章——跟「這季剛好算不出來但
+          // 未來可能有」（nullReason 是列舉值之一）是不同情境，後者要維持顯示。
+          const isGenuinelyNotApplicable = fetched !== null && fetched.value === null && fetched.nullReason === null;
+          if (isGenuinelyNotApplicable) return null;
 
           let compareValue: number | null = null;
           if (badge.threshold.compareAgainstFieldId) {
@@ -111,6 +123,7 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
           };
         })
       );
+      const badges = evaluated.filter((b): b is CompanyBadgeResult => b !== null);
       return { categoryKey, categoryDisplayName, badges };
     })
   );
