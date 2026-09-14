@@ -4,7 +4,7 @@ import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/models/companyProfile';
-import { loadIndustryChainClassification, findPeerGroup } from '@/models/playwright/industryChainClassification';
+import { loadIndustryChainClassification, findPeerGroup, listAllCompanyCategories, listCategoryGroups } from '@/models/playwright/industryChainClassification';
 
 let candidatePool: Set<string>;
 
@@ -77,6 +77,31 @@ test('findPeerGroup: 目標公司沒有任何已分類的供應鏈邊，found �
 test('findPeerGroup: 查無此公司代號（不存在的 symbol）應該優雅回傳 found:false，不拋錯', () => {
   const result = findPeerGroup('0000000', candidatePool, 3);
   assert.equal(result.found, false);
+});
+
+// 2026-09-14 新增——給「產業追蹤」頁面重建用的批次匯出，見 industries/controller.ts 的
+// getIndustryChainClassification。
+test('listAllCompanyCategories: 一次回傳全部公司，含 category 為 null 的（不濾掉）', () => {
+  const companies = listAllCompanyCategories();
+
+  assert.ok(companies.length >= 1900, '全市場應該有接近 1984 家上市櫃公司');
+  const tsmc = companies.find((c) => c.symbol === '2330');
+  assert.equal(tsmc?.category, '積體電路');
+  assert.equal(tsmc?.coarseGroup, '電子零組件與半導體');
+
+  const withNullCategory = companies.filter((c) => c.category === null);
+  assert.ok(withNullCategory.length > 0, '應該存在完全沒有已分類供應鏈邊的公司，且不能被濾掉');
+});
+
+test('listCategoryGroups: 10 組粗分類，每組底下都有至少一個細分類', () => {
+  const groups = listCategoryGroups();
+
+  assert.equal(groups.length, 10, '2026-09-14 實測是 10 組粗分類');
+  for (const g of groups) {
+    assert.ok(g.fineCategories.length > 0, `${g.coarseGroup} 底下應該至少有一個細分類`);
+  }
+  const electronics = groups.find((g) => g.coarseGroup === '電子零組件與半導體');
+  assert.ok(electronics?.fineCategories.includes('積體電路'), '電子零組件與半導體粗分類應該涵蓋積體電路這個細分類');
 });
 
 afterAll(async () => {

@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getIndustryTreeQuerySchema } from './controller';
-import { industryTreeNodeResultSchema, industryFlatResultSchema, securitiesIndustrySectorsResultSchema } from './types';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (): void => {
   registry.registerPath({
@@ -40,6 +40,25 @@ export const registerIndustriesOpenApi = (): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '全部已分類公司的 symbol/companyName/path 陣列。', content: { 'application/json': { schema: industryFlatResultSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/chain-classification',
+    summary: '攤平全部公司的供應鏈分類（新版「產業追蹤」頁面用，取代 gov-ts 稅籍分類樹）',
+    description:
+      '給重建後的「產業追蹤」頁面用——資料源改成 oingg-playwright-py 的供應鏈分類（見 GET /companies/peer-group ' +
+      '的說明），跟上面 GET /industries/tree（gov-ts 財政部稅籍五層分類）是完全不同的分類體系，不是取代舊端點，' +
+      '是給重建後的新頁面用（舊頁面/舊端點目前仍照常運作）。一次回傳全部約 1984 家上市櫃公司的分類 ' +
+      '（含 category 為 null、完全沒出現在供應鏈報告裡的公司，不濾掉）+ 10 組粗分類到細分類的對照表 ' +
+      '（groups），前端可以自己組出「粗分類 -> 細分類 -> 公司」的 drill-down 樹狀結構，不用逐一查詢。' +
+      'confidence/sampleSize/updatedAt 三個欄位語意跟 GET /companies/peer-group 完全一致（見該端點說明），' +
+      '這支同樣沒有排程重抓機制，服務啟動後才會反映 playwright-py 那邊的最新變動。沒有查詢參數，純讀記憶體' +
+      '快取，成本低，可以每次都打不用自己快取。',
+    tags: ['Industries'],
+    responses: {
+      200: { description: '全部公司的供應鏈分類 + 粗分類對照表。', content: { 'application/json': { schema: chainClassificationResultSchema } } },
     },
   });
 

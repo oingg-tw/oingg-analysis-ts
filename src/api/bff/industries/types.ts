@@ -51,6 +51,32 @@ export const industryTreeNodeResultSchema = z.object({
 export type IndustryTreeNodeResult = z.infer<typeof industryTreeNodeResultSchema>;
 
 
+// 2026-09-14 新增——「產業追蹤」頁面重建成 playwright-py 供應鏈分類，見
+// src/models/playwright/industryChainClassification.ts 的說明。跟上面 gov-ts 稅籍五層
+// 分類（industryFlatResultSchema）是完全不同的分類體系（扁平 2 層，不是 5 層樹），刻意
+// 獨立一組 schema，不合併/不相容。
+
+export const chainClassificationCompanySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+  category: z.string().nullable().meta({ description: '33 個細分類其中之一；null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）' }),
+  coarseGroup: z.string().nullable().meta({ description: '10 組粗分類其中之一，category 為 null 時這裡也是 null' }),
+  confidence: z.number().nullable().meta({ description: '分類信心分數（眾數分類次數/已分類供應鏈邊總數），越接近 1 代表業務性質越集中在單一分類' }),
+  sampleSize: z.number().int().meta({ description: '已分類的供應鏈邊數量，0 代表完全沒有已分類的邊' }),
+  updatedAt: z.string().nullable().meta({ description: '這家公司分類最後一次變動的日期（YYYY-MM-DD），不是查詢當下時間' }),
+});
+
+export const chainClassificationGroupSchema = z.object({
+  coarseGroup: z.string(),
+  fineCategories: z.array(z.string()).meta({ description: '這個粗分類底下涵蓋的細分類清單' }),
+});
+
+export const chainClassificationResultSchema = z.object({
+  companies: z.array(chainClassificationCompanySchema).meta({ description: '全部上市櫃公司（不濾掉 category 為 null 的），目前約 1984 家' }),
+  groups: z.array(chainClassificationGroupSchema).meta({ description: '10 組粗分類 -> 細分類對照表，給 drill-down 用' }),
+});
+export type ChainClassificationResult = z.infer<typeof chainClassificationResultSchema>;
+
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是
 // 完全不同的體系：只有單一層級（不是樹狀），40 個代碼扁平列出，刻意獨立一組 schema。

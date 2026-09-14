@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/models/gov/industryClassification';
+import { listAllCompanyCategories, listCategoryGroups } from '@/models/playwright/industryChainClassification';
 import { listSecuritiesIndustrySectors } from '@/models/securitiesIndustry';
 
 export const getIndustryTreeQuerySchema = z.object({
@@ -54,6 +55,32 @@ export const getIndustryFlat = async (_req: Request, res: Response, next: NextFu
     const nameMap = await getCompanyNamesForSymbols(paths.map((p) => p.symbol));
     res.status(200).json({
       companies: paths.map((p) => ({ symbol: p.symbol, companyName: nameMap.get(p.symbol) ?? null, path: p.path })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2026-09-14 應 web-nuxt 要求新增——「產業追蹤」頁面重建成 playwright-py 供應鏈分類（取代
+// 舊版用 GET /industries/tree/flat 的 gov-ts 稅籍分類樹），一次回傳全部公司的分類 +
+// 10 組粗分類對照表，讓前端自己做 drill-down（粗分類 -> 細分類 -> 公司），不用逐一查詢。
+// 跟 GET /companies/peer-group（單一公司找同業）是同一份底層快取，但用途不同，刻意分開：
+// 這支是批次瀏覽（比照舊版 GET /industries/flat 的精神），那支是單一公司查詢。
+export const getIndustryChainClassification = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companies = listAllCompanyCategories();
+    const nameMap = await getCompanyNamesForSymbols(companies.map((c) => c.symbol));
+    res.status(200).json({
+      companies: companies.map((c) => ({
+        symbol: c.symbol,
+        companyName: nameMap.get(c.symbol) ?? null,
+        category: c.category,
+        coarseGroup: c.coarseGroup,
+        confidence: c.confidence,
+        sampleSize: c.sampleSize,
+        updatedAt: c.updatedAt?.toISOString().slice(0, 10) ?? null,
+      })),
+      groups: listCategoryGroups(),
     });
   } catch (error) {
     next(error);

@@ -195,3 +195,47 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
   // 不是保證一定湊滿 minPeers 家。
   return coarseGroupResult;
 };
+
+// ============================================================================
+// 產業瀏覽（批次匯出，給「產業追蹤」頁面重建用，2026-09-14 web-nuxt 要求）
+// ============================================================================
+
+export interface CompanyCategoryListEntry {
+  symbol: string;
+  category: string | null;
+  coarseGroup: string | null;
+  confidence: number | null;
+  sampleSize: number;
+  updatedAt: Date | null;
+}
+
+// 一次回傳全部公司的分類（含 category=null 那些，不濾掉——呼叫端自己判斷要不要顯示
+// 「未分類」），比照 industryClassification.ts 的 listAllCompanyIndustryPaths() 同一種
+// 「純讀記憶體快取、一次匯出、前端自建索引」精神，取代舊版樹狀瀏覽用的
+// GET /industries/flat（那支是 gov-ts 稅籍分類專用，這裡是 playwright-py 供應鏈分類的
+// 對應物，兩支刻意分開，不合併）。
+export const listAllCompanyCategories = (): CompanyCategoryListEntry[] => {
+  if (!companyCategoryCache) return [];
+  return [...companyCategoryCache.entries()].map(([symbol, entry]) => ({
+    symbol,
+    category: entry.category,
+    coarseGroup: entry.coarseGroup,
+    confidence: entry.confidence,
+    sampleSize: entry.sampleSize,
+    updatedAt: entry.updatedAt,
+  }));
+};
+
+export interface CategoryGroupListEntry {
+  coarseGroup: string;
+  fineCategories: string[];
+}
+
+// 10 組粗分類 -> 底下細分類清單，給前端做 drill-down（粗分類 -> 細分類 -> 公司）用，
+// 不用自己從 listAllCompanyCategories() 的結果反推分組關係。
+export const listCategoryGroups = (): CategoryGroupListEntry[] => {
+  if (!coarseGroupMembersCache) return [];
+  return [...coarseGroupMembersCache.entries()]
+    .map(([coarseGroup, fineCategories]) => ({ coarseGroup, fineCategories: [...fineCategories].sort() }))
+    .sort((a, b) => a.coarseGroup.localeCompare(b.coarseGroup));
+};
