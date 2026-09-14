@@ -89,12 +89,12 @@ export const getIndustryChainClassification = async (_req: Request, res: Respons
 };
 
 // 2026-09-14 應 web-nuxt 要求新增（第二輪，聚落樹）——playwright-py 的供應鏈聚落分群
-// （Louvain 社群偵測 + 人工中文標籤，113 個頂層聚落，節點數 >100 的大群會再切一次產生
-// 子聚落），跟上面 getIndustryChainClassification 的 category/coarseGroup 是完全獨立
-// 的另一套分群概念，見 industryClusters.ts 的完整說明（⚠️ cluster_id 不穩定，前端不能
-// 拿它當永久識別碼快取）。一次回傳整棵樹（113 個頂層聚落 + 子聚落 + 全部成員），成員
-// code 混雜上市櫃公司跟外部/非上市公司（供應鏈脈絡完整度優先），isListed 標示這個 code
-// 查不查得到 twse/tpex company_profile，前端可以用這個欄位決定要不要讓使用者點進公司
+// （人工中文標籤，見 industryClusters.ts 檔頭關於分群演算法/數量會變動的完整說明），
+// 跟上面 getIndustryChainClassification 的 category/coarseGroup 是完全獨立的另一套
+// 分群概念（⚠️ cluster_id 不穩定，前端不能拿它當永久識別碼快取）。一次回傳整棵樹
+// （全部頂層聚落 + 子聚落 + 全部成員），成員 code 混雜上市櫃公司跟外部/非上市公司
+// （供應鏈脈絡完整度優先），isListed 標示這個 code 查不查得到 twse/tpex company_profile，
+// 前端可以用這個欄位決定要不要讓使用者點進公司
 // 詳情頁（非上市公司沒有對應的個股頁面）。
 export const getIndustryChainClusters = async (_req: Request, res: Response, next: NextFunction) => {
   try {

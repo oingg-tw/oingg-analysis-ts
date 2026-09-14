@@ -2,16 +2,21 @@ import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient
 import { logger } from '@/shared/logger';
 
 // 2026-09-14：給重建版「產業追蹤」頁面的 drill-down 樹用——playwright-py 的供應鏈聚落分群
-// （Louvain 社群偵測 + 人工中文標籤），跟同資料夾 industryChainClassification.ts 的
+// （人工中文標籤，不是 Gemini 生成），跟同資料夾 industryChainClassification.ts 的
 // category/coarseGroup（扁平 2 層、33→10）是完全獨立的另一套分群概念：聚落是真正的階層
-// 結構（113 個頂層聚落，其中節點數 >100 的大群會再切一次 Louvain 產生子聚落），不是
-// category_hierarchy 那套「供應鏈上下游 tiers」，也不是 coarseGroup 那種業務相似度分組。
+// 結構，不是 category_hierarchy 那套「供應鏈上下游 tiers」，也不是 coarseGroup 那種業務
+// 相似度分組。2026-09-14 當天演算法整個重做過一次（原本 Louvain 社群偵測「單次切+事後
+// 補丁式細分」113 頂層+475 子聚落，改成「由下而上的 dendrogram 分層」124 頂層+278
+// 子聚落，這次新演算法下實測每個頂層聚落底下都有子聚落）——分群方法本身可能還會再調整，
+// directMemberCodes 是不是恆為空陣列不要當成假設寫死，程式邏輯要能同時處理「有/沒有
+// 子聚落」兩種情況（見下方 ClusterNode 的說明）。
 //
 // ⚠️ cluster_id/sub_cluster_id 不是穩定 id——playwright-py 重跑 build_industry_chain
-// （報告更新/圖重建）後 Louvain 重新分群，同一個 cluster_id 可能對應到完全不同的一群
-// 公司，號碼會整個洗牌。呼叫端（controller/前端）不能把它當永久不變的產業分類代碼快取/
-// 收藏/放進分享連結，只能當「這次查詢當下的聚落」用。playwright-py 承諾重新分群時會
-// 主動通知，屆時只需要重啟服務重新載入快取，不需要改程式碼。
+// （報告更新/圖重建，或像 2026-09-14 這次直接換分群演算法）後重新分群，同一個 cluster_id
+// 可能對應到完全不同的一群公司，號碼會整個洗牌。呼叫端（controller/前端）不能把它當
+// 永久不變的產業分類代碼快取/收藏/放進分享連結，只能當「這次查詢當下的聚落」用。
+// playwright-py 承諾重新分群時會主動通知，屆時只需要重啟服務重新載入快取，不需要改
+// 程式碼（2026-09-14 當天已經實際發生過一次，流程驗證過可行）。
 //
 // 供應鏈圖節點不是只有台股上市櫃公司——7,566 個節點裡只有 1,912 個是上市櫃公司，其餘
 // 5,654 個是外部/非上市公司（蘋果/Nvidia/ASML 這類，用公司名稱生成的穩定 id 不是股票
@@ -31,7 +36,7 @@ export interface ClusterSubGroup {
 export interface ClusterNode {
   clusterId: number;
   label: string | null;
-  directMemberCodes: string[]; // 沒有再切子聚落的直屬成員（節點數 <=100 的頂層聚落，全部成員都在這裡）
+  directMemberCodes: string[]; // 沒有再切子聚落的直屬成員；是不是恆為空陣列取決於當下的分群演算法（見檔頭說明），不要假設一定有/一定沒有
   subClusters: ClusterSubGroup[];
 }
 
@@ -132,7 +137,7 @@ export const loadIndustryClusters = async (): Promise<void> => {
   }
 };
 
-// 113 個頂層聚落，依 clusterId 排序（穩定順序，不代表任何業務意義，純粹方便呼叫端
+// 全部頂層聚落（2026-09-14 實測 124 個），依 clusterId 排序（穩定順序，不代表任何業務意義，純粹方便呼叫端
 // 每次拿到一致的陣列順序）。
 export const listIndustryClusters = (): ClusterNode[] => {
   if (!clusterNodeCache) return [];

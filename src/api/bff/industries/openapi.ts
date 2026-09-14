@@ -67,21 +67,23 @@ export const registerIndustriesOpenApi = (): void => {
     path: '/industries/chain-clusters',
     summary: '供應鏈聚落分群 drill-down 樹（「產業追蹤」頁面第二種瀏覽方式，跟 chain-classification 是不同的分群概念）',
     description:
-      '給「產業追蹤」頁面用——playwright-py 的供應鏈聚落分群（Louvain 社群偵測 + 人工中文標籤），跟 ' +
+      '給「產業追蹤」頁面用——playwright-py 的供應鏈聚落分群（人工中文標籤，不是 Gemini 生成），跟 ' +
       'GET /industries/chain-classification 的 category/coarseGroup（扁平 2 層業務相似度分組）是完全獨立的另一套 ' +
-      '概念：聚落是真正的階層結構，113 個頂層聚落，節點數 >100 的大群會再切一次 Louvain 產生子聚落（subClusters），' +
-      '其餘頂層群全部成員都在 directMembers。一次回傳整棵樹（含全部成員），不用逐一查詢。\n\n' +
-      '⚠️ **clusterId/subClusterId 不是穩定 id**——playwright-py 重跑供應鏈報告解析重建圖後，Louvain 重新分群，' +
-      '同一個 id 可能對應到完全不同的一群公司，號碼會整個洗牌（playwright-py 重新分群時會主動通知，屆時只需要' +
-      '重啟本服務即可，不需要改程式碼）。前端不能把這兩個 id 當永久不變的產業分類代碼快取、放進收藏/分享連結，' +
-      '只能當「這次查詢當下的聚落」使用，每次都應該重新呼叫這支端點。\n\n' +
+      '概念：聚落是真正的階層結構（頂層聚落 + 子聚落）。分群方法/數量會隨 playwright-py 調整演算法而變動' +
+      '（2026-09-14 當天就從 113 頂層+475 子聚落換成 124 頂層+278 子聚落，新版下每個頂層聚落都有子聚落，但這是' +
+      '演算法特性不是保證，某些頂層聚落仍可能沒有子聚落、全部成員都在 directMembers，前端邏輯要能同時處理兩種情況）。' +
+      '一次回傳整棵樹（含全部成員），不用逐一查詢。\n\n' +
+      '⚠️ **clusterId/subClusterId 不是穩定 id**——playwright-py 重跑供應鏈報告解析重建圖、或調整分群演算法後，' +
+      '同一個 id 可能對應到完全不同的一群公司，號碼會整個洗牌（2026-09-14 當天已經發生過一次）。' +
+      'playwright-py 重新分群時會主動通知，屆時只需要重啟本服務即可，不需要改程式碼。前端不能把這兩個 id ' +
+      '當永久不變的產業分類代碼快取、放進收藏/分享連結，只能當「這次查詢當下的聚落」使用，每次都應該重新呼叫這支端點。\n\n' +
       '成員（members/directMembers）的 code 不是只有台股上市櫃公司——供應鏈圖節點包含國際客戶/供應商（蘋果、' +
       'NVIDIA、ASML 這類），isListed:false 代表這是外部/非上市公司節點（沒有對應的個股詳情頁可以連結），' +
       'name 來自 playwright-py 的公司名稱對照表，不是 twse/tpex company_profile。沒有查詢參數，純讀記憶體' +
       '快取，成本低，可以每次都打不用自己快取。',
     tags: ['Industries'],
     responses: {
-      200: { description: '113 個頂層聚落的完整 drill-down 樹。', content: { 'application/json': { schema: chainClustersResultSchema } } },
+      200: { description: '全部頂層聚落的完整 drill-down 樹。', content: { 'application/json': { schema: chainClustersResultSchema } } },
     },
   });
 

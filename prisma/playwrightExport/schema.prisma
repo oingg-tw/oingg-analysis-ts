@@ -71,12 +71,13 @@ view CategoryGroup {
 }
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 113 個頂層聚落，一個聚落一列。Louvain 社群偵測 + 人工中文標籤，跟 category/coarseGroup
-/// 是完全獨立的另一套分群概念（真正的階層結構，不是扁平 2 層）。⚠️ cluster_id 不是穩定
-/// id——playwright-py 重跑 build_industry_chain（報告更新/圖重建）後 Louvain 重新分群，
-/// 同一個 cluster_id 可能對應到完全不同的一群公司，號碼會整個洗牌，不能當永久不變的
-/// 產業分類代碼快取/收藏，只能當「這次查詢當下的聚落」用。playwright-py 承諾重新分群時
-/// 會主動通知。
+/// 頂層聚落，一個聚落一列（2026-09-14 當天演算法重做過一次：113→124，見下方警告）。
+/// 人工中文標籤（不是 Gemini 生成），跟 category/coarseGroup 是完全獨立的另一套分群概念
+/// （真正的階層結構，不是扁平 2 層）。⚠️ cluster_id 不是穩定 id——playwright-py 重跑
+/// build_industry_chain（報告更新/圖重建），或像 2026-09-14 這次直接換分群演算法
+/// （Louvain「單次切+事後補丁式細分」→「由下而上的 dendrogram 分層」）後重新分群，同一個
+/// cluster_id 可能對應到完全不同的一群公司，號碼會整個洗牌，不能當永久不變的產業分類
+/// 代碼快取/收藏，只能當「這次查詢當下的聚落」用。playwright-py 承諾重新分群時會主動通知。
 view IndustryCluster {
   clusterId Int?    @map("cluster_id")
   label     String?
@@ -88,9 +89,11 @@ view IndustryCluster {
 
 /// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
 /// 7,566 筆成員（含 1,912 家上市櫃公司 + 5,654 個外部/非上市公司節點，兩種都收在 code
-/// 欄位裡）。子層（subClusterId）不是每個頂層都有——只有節點數 >100 的大群才會再切一次
-/// Louvain，其餘頂層群 subClusterId/subLabel 是 null。clusterSize 是這個（子）群的節點數。
-/// code 對不到 twse_tpex_listed_companies 時（外部公司），去 ExternalCompany 查名稱。
+/// 欄位裡）。子層（subClusterId）不保證每個頂層都有——取決於 playwright-py 當下的分群
+/// 演算法（2026-09-14 換過一次演算法後實測是每個頂層聚落都有子聚落，但不要當成固定
+/// 規則），沒有子聚落的頂層群 subClusterId/subLabel 是 null。clusterSize 是這個（子）
+/// 群的節點數。code 對不到 twse_tpex_listed_companies 時（外部公司），去
+/// ExternalCompany 查名稱。
 view IndustryClusterMember {
   code         String?
   clusterId    Int?      @map("cluster_id")

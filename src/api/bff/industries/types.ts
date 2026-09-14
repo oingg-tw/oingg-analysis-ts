@@ -96,12 +96,12 @@ export const chainClusterSubGroupSchema = z.object({
 export const chainClusterSchema = z.object({
   clusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
   label: z.string().nullable(),
-  directMembers: z.array(chainClusterMemberSchema).meta({ description: '沒有再切子聚落的直屬成員——節點數 <=100 的頂層聚落，全部成員都在這裡（subClusters 會是空陣列）' }),
-  subClusters: z.array(chainClusterSubGroupSchema).meta({ description: '節點數 >100 的頂層聚落才會有子聚落；沒有子聚落時是空陣列' }),
+  directMembers: z.array(chainClusterMemberSchema).meta({ description: '沒有再切子聚落的直屬成員；是否為空陣列取決於 playwright-py 當下的分群演算法，不要假設固定規則（見 subClusters 說明）' }),
+  subClusters: z.array(chainClusterSubGroupSchema).meta({ description: '這個頂層聚落底下的子聚落；分群演算法可能讓每個頂層聚落都有子聚落，也可能只有部分聚落有，沒有子聚落時是空陣列' }),
 });
 
 export const chainClustersResultSchema = z.object({
-  clusters: z.array(chainClusterSchema).meta({ description: '113 個頂層聚落，含全部成員（一次回傳整棵樹，不用逐一查詢）' }),
+  clusters: z.array(chainClusterSchema).meta({ description: '全部頂層聚落，含全部成員（一次回傳整棵樹，不用逐一查詢）' }),
 });
 export type ChainClustersResult = z.infer<typeof chainClustersResultSchema>;
 
