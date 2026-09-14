@@ -6,7 +6,7 @@ import { logger } from '@/shared/logger';
 // 4 組代碼（rank 0=主要，1-3=次要，這裡只用 rank=0）。
 //
 // 2026-09-14：原本這裡還有「產業同業比較（findPeerGroup）」這條用途，已搬到獨立的
-// src/shared/sourceData/industryChainClassification.ts（資料源換成 oingg-playwright-py
+// src/models/industryChainClassification.ts（資料源換成 oingg-playwright-py
 // 的供應鏈分類），這份檔案現在只剩「產業階層瀏覽」這一種用途：
 // 產業階層瀏覽（getIndustryNodeInfo/listIndustryChildren/listIndustryCompanies）——
 // 純瀏覽語意（可展開的樹狀結構），不做動態回退，查無資料就是查無資料。因為每家公司一定

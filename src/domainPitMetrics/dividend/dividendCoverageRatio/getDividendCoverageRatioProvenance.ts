@@ -1,5 +1,5 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import { calculateFcf } from '@/domainPitMetrics/quality/cashFlowPerShare/fcf';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // 2026-09-05 新增——「產業追蹤」樹狀階層瀏覽功能，見
-// src/shared/sourceData/industryClassification.ts 的說明。
+// src/models/industryClassification.ts 的說明。
 
 export const industryLevelSchema = z.enum(['section', 'division', 'group', 'class', 'subclass']);
 

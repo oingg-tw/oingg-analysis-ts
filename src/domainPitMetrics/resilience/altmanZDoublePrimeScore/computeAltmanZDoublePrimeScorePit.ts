@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
@@ -10,8 +10,8 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
-import { getCompanySectionCode } from '@/shared/sourceData/industryClassification';
+import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
+import { getCompanySectionCode } from '@/models/industryClassification';
 
 // Altman Z″-Score（1983/1995，非製造業/新興市場版）——四變數，刻意拿掉 X5（資產週轉率），
 // 理由是原始論文認為週轉率在非製造業/新興市場產業間差異太大，會扭曲跨產業比較，跟

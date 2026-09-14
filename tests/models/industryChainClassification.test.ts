@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
-import { loadIndustryChainClassification, findPeerGroup } from '@/shared/sourceData/industryChainClassification';
+import { getSecuritySymbolSet } from '@/models/companyProfile';
+import { loadIndustryChainClassification, findPeerGroup } from '@/models/industryChainClassification';
 
 let candidatePool: Set<string>;
 

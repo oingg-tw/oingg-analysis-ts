@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
-import { capitalStockHistoryEntrySchema } from '@/shared/sourceData/capitalStock';
+import { capitalStockHistoryEntrySchema } from '@/models/capitalStock';
 import { roeHistoryEntrySchema } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
 import { metricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMetricHistory';
 import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
-import { monthlyRevenueEntrySchema } from '@/shared/sourceData/monthlyRevenue';
+import { monthlyRevenueEntrySchema } from '@/models/monthlyRevenue';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
 import {

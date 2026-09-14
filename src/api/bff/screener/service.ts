@@ -1,6 +1,6 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
-import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/shared/sourceData/securitiesIndustry';
+import { getCompanyNamesForSymbols } from '@/models/companyProfile';
+import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/models/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';
 import { buildScreenerSql, buildRankingSql, buildValuesSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
 import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason } from './types';

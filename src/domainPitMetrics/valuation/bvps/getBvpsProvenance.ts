@@ -1,8 +1,8 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/balanceSheetXbrlFirst';
+import { getPaidInSharesAsOf } from '@/models/capitalStock';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';

@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail } from '@/shared/sourceData/companyProfile';
+import { listAllCompanyNames, countAllCompanyNames, getCompanyProfileDetail } from '@/models/companyProfile';
 
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
 // 本服務不代為決定；limit 的「上限」（最多允許幾筆）由本服務依自己扛不扛得住決定，所有請求

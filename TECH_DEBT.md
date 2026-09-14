@@ -55,7 +55,7 @@
 - **`GET /industries/value-chain`：已結案，放棄**——tpex-ts 2026-09-11 確認不爭取
   `ic.tpex.org.tw` 的書面授權，資料源整個放棄，他們那邊已刪除 scraper/schema/表/
   export view（prod 那張表從頭到尾是空的，沒有資料遺失問題）。analysis-ts 這邊同步
-  清掉所有相關程式碼（`src/shared/sourceData/industryValueChain.ts` 整支刪除，
+  清掉所有相關程式碼（`src/models/industryValueChain.ts` 整支刪除，
   `industries/controller.ts`/`route.ts`/`openapi.ts`/`types.ts` 的相關函式/schema/
   註冊一併移除），不是繼續停用等待，是真的不存在了。
 - **查核意見類型（`auditOpinionRisk`/`GET /companies/profile` 的欄位）：已結案，放棄**

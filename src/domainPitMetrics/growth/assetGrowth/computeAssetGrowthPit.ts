@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';

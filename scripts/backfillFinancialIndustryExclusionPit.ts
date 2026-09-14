@@ -1,6 +1,6 @@
 // 2026-09-13 使用者拍板排入行程：Altman Z-Score/Z″-Score/Beneish M-Score/Ohlson O-Score/
 // Zmijewski Score 這 5 個危機預警/操縱偵測模型，這學期加上金融保險業（industry='17'）排除
-// 邏輯（見 src/shared/sourceData/securitiesIndustry.ts 的 isFinancialIndustryCompany 說明），
+// 邏輯（見 src/models/securitiesIndustry.ts 的 isFinancialIndustryCompany 說明），
 // 但只在開發時對 2891 等個案手動 spot check 過，全市場金融業公司的 DB 值還沒重算，
 // nullReason 停留在舊的 insufficient_history/missing_input（見跟 oingg-web-nuxt-ef 的討論）。
 //
@@ -17,7 +17,7 @@ import { computeAndWriteBeneishMScorePit } from '../src/domainPitMetrics/quality
 import { computeAndWriteOhlsonOScorePit } from '../src/domainPitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
 import { computeAndWriteZmijewskiScorePit } from '../src/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { listCompaniesBySectorCodes } from '../src/shared/sourceData/securitiesIndustry';
+import { listCompaniesBySectorCodes } from '../src/models/securitiesIndustry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';

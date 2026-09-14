@@ -1,5 +1,5 @@
-import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from '@/shared/sourceData/bankRegulatoryXbrl';
-import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from '@/models/bankRegulatoryXbrl';
+import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 

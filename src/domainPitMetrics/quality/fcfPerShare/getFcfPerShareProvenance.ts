@@ -1,6 +1,6 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/cashFlowStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/models/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

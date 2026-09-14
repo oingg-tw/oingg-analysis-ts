@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -8,7 +8,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/ohlsonOScore.ts 的獨立重新實作。Logit 財務危機預警模型：
 // O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG - 2.37*NITA

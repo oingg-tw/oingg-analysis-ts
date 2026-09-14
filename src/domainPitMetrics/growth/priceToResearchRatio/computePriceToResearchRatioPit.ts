@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';

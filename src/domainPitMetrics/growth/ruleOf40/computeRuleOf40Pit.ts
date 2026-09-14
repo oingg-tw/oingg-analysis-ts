@@ -1,6 +1,6 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
-import { isSoftwareOrCloudIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { isSoftwareOrCloudIndustryCompany } from '@/models/securitiesIndustry';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

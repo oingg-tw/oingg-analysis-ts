@@ -1,7 +1,7 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
-import type { CashFlowFields } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import type { CashFlowFields } from '@/models/cashFlowStatementXbrlFirst';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

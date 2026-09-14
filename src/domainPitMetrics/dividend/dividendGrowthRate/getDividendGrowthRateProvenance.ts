@@ -1,6 +1,6 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/cashFlowStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/models/capitalStock';
 import { rocYearToGregorian } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';

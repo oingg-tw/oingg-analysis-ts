@@ -1,6 +1,6 @@
 import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
 
 interface RawMonthlyRevenueRow {
@@ -22,7 +22,7 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來當排序依據。
 //
 // monthly_revenue 的範圍是「公開發行公司」，不是只有上市櫃（dev 樣本看過 000xxx 開頭的代號），
-// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 src/shared/sourceData/companyProfile.ts
+// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 src/models/companyProfile.ts
 // 的 getAllSecurityRows 說明。preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-01 tpex-ts 也開了自己的 monthly_revenue（欄位跟 TWSE 那份一致）——上市/上櫃各自

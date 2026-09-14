@@ -1,7 +1,7 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
-import { getXbrlCashFlowQuarterly } from '@/shared/sourceData/xbrlCashFlowQuarterly';
-import { getMarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/cashFlowStatementXbrlFirst';
+import { getXbrlCashFlowQuarterly } from '@/models/xbrlCashFlowQuarterly';
+import { getMarketCapAsOf } from '@/models/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';

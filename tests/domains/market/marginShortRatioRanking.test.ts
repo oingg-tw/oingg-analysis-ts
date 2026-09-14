@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { calculateMarginShortRatioRanking } from '@/api/bff/market/marginShortRatioRanking/service';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/models/companyProfile';
 
 test('calculateMarginShortRatioRanking: 應該依券資比由高到低排序，且不含融資餘額 <= 0 的公司', async () => {
   const result = await calculateMarginShortRatioRanking({ limit: 20 });

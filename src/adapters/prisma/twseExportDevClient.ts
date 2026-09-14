@@ -10,7 +10,7 @@ import { logger } from '@/shared/logger';
 // 2026-09-07 拿到 twse-ts 的 TWSE_EXPORT_DATABASE_URL_DEV（host ep-damp-butterfly，
 // 跟 PROD 的 ep-summer-surf 是不同 Neon 專案）後發現 `export.monthly_revenue` 只有
 // DEV 有 2330 完整 5 年資料（2021-08~2026-07），PROD 這批目前是 0 筆/資料源本身品質
-// 有問題（見 ../../shared/sourceData/monthlyRevenue.ts 的說明）。twse-ts 已確認這是
+// 有問題（見 ../../models/monthlyRevenue.ts 的說明）。twse-ts 已確認這是
 // 一次性手動回填（從 MOPS 舊制個股查詢頁逐月抓的），不是常態每日更新的管道，之後也不會
 // 自動長出新月份或新公司——**固定連 DEV，不用 config.isProduction 切換**，因為這整個
 // 連線本身就是「目前只有這個環境有這批資料」的權宜之計，跟執行環境是 prod 還是 dev

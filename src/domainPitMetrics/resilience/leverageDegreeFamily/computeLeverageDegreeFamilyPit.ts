@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';

@@ -1,7 +1,7 @@
 import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
+import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/models/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
 import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
 
@@ -26,7 +26,7 @@ interface PoolRow extends RawAttentionHistoryNoteRow {
 // 後剩不到 limit 筆的問題，見 valuation/ranking 的 COMPANY_SYMBOL_SUBQUERY 同樣的考量。
 //
 // TWSE 這邊額外篩 source = 'COMPANY_PROFILE'，排除證券商登記等非交易性質的
-// 'COMPANY_PROFILE_PUBLIC'（見 src/shared/sourceData/companyProfile.ts 的說明）；KY 股跟
+// 'COMPANY_PROFILE_PUBLIC'（見 src/models/companyProfile.ts 的說明）；KY 股跟
 // 興櫃都算真正公司，不篩掉。TPEx 沒有對應的非公司性質分類，維持原樣不加條件。
 export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<AttentionStocksResult> => {
   const { limit } = query;

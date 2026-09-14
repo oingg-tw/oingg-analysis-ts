@@ -1,6 +1,6 @@
 import twseExportPrisma from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { PriceLimitRangeResult, PriceLimitRangeRow } from './types';
 
 interface RawTwsePriceLimitRangeRow {

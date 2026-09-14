@@ -20,9 +20,9 @@ import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
 import routes from './routes';
 import errorHandler from './shared/errorHandler';
-import { loadIndustryCodes } from './shared/sourceData/industryCodes';
-import { loadIndustryClassification } from './shared/sourceData/industryClassification';
-import { loadIndustryChainClassification } from './shared/sourceData/industryChainClassification';
+import { loadIndustryCodes } from './models/industryCodes';
+import { loadIndustryClassification } from './models/industryClassification';
+import { loadIndustryChainClassification } from './models/industryChainClassification';
 
 const app = express();
 
@@ -73,15 +73,15 @@ const startServer = async () => {
     await connectTwseExportDb();
     await connectTwseExportDevDb();
     // 背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
-    // export DB 連線問題拖慢或擋住伺服器啟動），見 shared/sourceData/industryCodes.ts 的說明。
+    // export DB 連線問題拖慢或擋住伺服器啟動），見 models/industryCodes.ts 的說明。
     void loadIndustryCodes();
     // 背景載入 gov-ts 產業分類資料（產業樹狀瀏覽功能用，GET /industries/tree、/industries/flat）
     // ——同樣輔助性質，不 await，失敗只影響這兩支瀏覽端點，不擋伺服器啟動，見
-    // shared/sourceData/industryClassification.ts。
+    // models/industryClassification.ts。
     void loadIndustryClassification();
     // 背景載入 playwright-py 供應鏈分類資料（同業比較 GET /companies/peer-group 用，
     // 2026-09-14 起取代上面 gov-ts 版本的 findPeerGroup）——同樣輔助性質，不 await，見
-    // shared/sourceData/industryChainClassification.ts。
+    // models/industryChainClassification.ts。
     void loadIndustryChainClassification();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性

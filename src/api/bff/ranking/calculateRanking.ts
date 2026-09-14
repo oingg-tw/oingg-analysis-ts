@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { Prisma } from '#generated/tpex-export-client';
 import { Prisma as TwsePrisma } from '#generated/twse-export-client';
 import { z } from 'zod';
@@ -70,7 +70,7 @@ const METRIC_COLUMNS: Record<RankingMetric, string> = {
 // 2026-09-01 應使用者要求排除 ETF/衍生性商品；2026-09-02 再加上排除 KY 股（境外註冊掛牌
 // 公司）：symbol 過濾要放進查詢本身，不能等查完再篩掉——不然 LIMIT 抓到的前 limit 筆可能
 // 一半是 ETF/KY 股，篩完剩不到 limit 筆，讓合併後的排行漏掉本來排得進來的真公司，見
-// src/shared/sourceData/companyProfile.ts 的 getAllSecurityRows 說明。excludeKy: true 是這支
+// src/models/companyProfile.ts 的 getAllSecurityRows 說明。excludeKy: true 是這支
 // 端點特有的政策，preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-03 使用者決定 curated 中台層現階段太早，改回直接查 twseExportPrisma——這張 view

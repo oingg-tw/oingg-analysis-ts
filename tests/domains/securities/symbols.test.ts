@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getSecuritySymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbols } from '@/models/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
@@ -16,7 +16,7 @@ test('getSecuritySymbols: 預設值（含興櫃、不排 KY、股票+特別股�
   assert.ok(!symbols.includes('000104'), '000104（臺銀證券，TWSE 非交易性質的證券商登記資料）不應該在清單裡');
   assert.ok(symbols.includes('1101B'), '1101B（台泥乙特，特別股）不給 preferredStock 篩選時應該在清單裡');
 
-  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/shared/sourceData/companyProfile.ts 的
+  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/models/companyProfile.ts 的
   // getAllSecurityRows——company_profile 還有 COMPANY_PROFILE_PUBLIC 這種非交易性質的登記資料，
   // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
   // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。
@@ -52,7 +52,7 @@ test('getSecuritySymbols: includeEmerging=false 應該排除興櫃公司', async
 });
 
 test('getSecuritySymbols: excludeKy=true 應該排除 KY 股', async () => {
-  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/shared/sourceData/companyProfile.ts 的
+  // 一定要加 source = 'COMPANY_PROFILE'，理由見 src/models/companyProfile.ts 的
   // getAllSecurityRows——company_profile 還有 COMPANY_PROFILE_PUBLIC 這種非交易性質的登記資料，
   // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
   // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。

@@ -1,10 +1,10 @@
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { companyExists } from '@/shared/sourceData/companyProfile';
-import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/shared/sourceData/twseMarketData';
-import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/shared/sourceData/exDividendNotice';
-import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/shared/sourceData/foreignShareholding';
-import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/shared/sourceData/stockPledgeRatio';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { companyExists } from '@/models/companyProfile';
+import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/models/twseMarketData';
+import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/models/exDividendNotice';
+import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/models/foreignShareholding';
+import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/models/stockPledgeRatio';
+import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type {
   StockPricesResult,
   StockQuoteResult,
@@ -135,7 +135,7 @@ export const getStockPrices = async (symbols: string[]): Promise<StockPricesResu
 // 給個股頁面「下次除權息」提示、觀察清單「近期除權息」卡片用——2026-09-04 應 web-nuxt
 // 要求新增，同一個 symbol 參數同時支援單一公司（個股頁面）跟多公司批次查詢（觀察清單），
 // 跟 getStockPrices 同一種慣例。只有 TWSE 有這份資料（見
-// src/shared/sourceData/exDividendNotice.ts 的說明），沒有除權息預告的 symbol 直接不會
+// src/models/exDividendNotice.ts 的說明），沒有除權息預告的 symbol 直接不會
 // 出現在回傳的 notices 裡，不是空陣列。
 export const getExDividendNotices = async (symbols: string[]): Promise<ExDividendNoticesResult> => {
   const notices = await getUpcomingExDividendNotices(symbols);

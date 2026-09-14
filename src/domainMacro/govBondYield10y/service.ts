@@ -12,7 +12,7 @@ interface RawGovBondYieldRow {
 // 當中性的利率參考基準用（不做投資建議），只要最新一筆，不用整段歷史，所以不像
 // equityRiskPremium 那樣要處理窗口/重疊區間。2026-09-03 使用者決定 curated 中台層現階段太早，
 // 改回直接查 govExportPrisma（來源是央行統計資料庫 EG43M01en，見
-// src/shared/sourceData/riskFreeRate.ts 的說明）。
+// src/models/riskFreeRate.ts 的說明）。
 export const getLatestGovBondYield10y = async (): Promise<GovBondYield10yResult> => {
   const warnings: string[] = [];
 

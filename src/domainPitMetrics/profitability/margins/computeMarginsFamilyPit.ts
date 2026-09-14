@@ -1,5 +1,5 @@
-import { getLatestAvailableQuarter } from '@/shared/sourceData/latestQuarter';
-import { getLatestQuarterWithInsuranceIncomeStatement } from '@/shared/sourceData/insuranceIncomeStatementXbrlFirst';
+import { getLatestAvailableQuarter } from '@/models/latestQuarter';
+import { getLatestQuarterWithInsuranceIncomeStatement } from '@/models/insuranceIncomeStatementXbrlFirst';
 import { financialDataAdapter, type IncomeStatementPort, type InsuranceIncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

@@ -13,7 +13,7 @@
 //
 // 31 支既有 computeXxxPit.ts 只透過 getBalanceSheetXbrlFirst(key) 存取以下 16 個欄位 +
 // reportDate（capitalStock 完全沒有任何檔案存取，這裡不處理——流通股數需求走獨立的
-// @/shared/sourceData/capitalStock.ts）。
+// @/models/capitalStock.ts）。
 
 import type { QuarterlyKey } from './quarterlyKey';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';

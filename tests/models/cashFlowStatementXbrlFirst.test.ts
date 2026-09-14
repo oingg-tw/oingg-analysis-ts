@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getCashFlowStatementXbrlFirst } from '@/shared/sourceData/cashFlowStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst } from '@/models/cashFlowStatementXbrlFirst';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 
 // 2026-09-07 規劃這批換源時逐欄位用 2330 115Q2 交叉驗證過。2026-09-11 舊三大表

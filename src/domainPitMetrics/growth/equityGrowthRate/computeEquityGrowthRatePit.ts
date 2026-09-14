@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { calculateYoyGrowthRateBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';

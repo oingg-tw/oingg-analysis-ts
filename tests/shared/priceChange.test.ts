@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/shared/sourceData/priceChange';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 
 interface DistinctTradeDateRow {
@@ -12,7 +12,7 @@ interface CloseRow {
 }
 
 test('getCumulativeChangePercent: TWSE 2330 應該等於最新收盤跟往前6個交易日收盤的點對點漲跌幅', async () => {
-  // 交易日曆要跟 src/shared/sourceData/priceChange.ts 的實際演算法一致——查 daily_taiex_index
+  // 交易日曆要跟 src/models/priceChange.ts 的實際演算法一致——查 daily_taiex_index
   // （PK 是 tradeDate，就是官方交易日曆），不是對 daily_price 查 DISTINCT trade_date。
   // 2026-09-03 實測發現 daily_price 偶爾會有非交易日的雜訊列（例如 2330 在 2026-08-31 這種
   // 週末有一筆資料），用 daily_price 自建交易日清單會跟正式演算法的基準日對不上，算出不同的

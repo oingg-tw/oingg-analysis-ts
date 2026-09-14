@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
 
 interface RawChangeRow {
@@ -25,13 +25,13 @@ interface RawChangeRow {
 // 只是「少幾筆」。所以這裡每一列都帶自己的 tradeDate/previousTradeDate，兩個市場可能不同。
 //
 // 排除 ETF/衍生性商品——這是主打上市公司證券的排行榜功能，見
-// src/shared/sourceData/companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
+// src/models/companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
 // 維持這支排行原本的行為。
 //
 // 交易日改查 daily_taiex_index（一天一筆、tradeDate 是 PK），不對 daily_price 查 DISTINCT
 // tradeDate——2026-09-02 實測發現 daily_price 150萬筆只有 (symbol, tradeDate) 複合 PK，沒有
 // 單獨對 tradeDate 的索引，這種不帶 symbol 條件的查詢近乎全表掃描，單次 3~7 秒，是這支端點
-// 回應緩慢（4~4.6秒）的根因，見 src/shared/sourceData/priceChange.ts 同樣的修法。
+// 回應緩慢（4~4.6秒）的根因，見 src/models/priceChange.ts 同樣的修法。
 const getLatestTwoTradeDatesTwse = async (): Promise<[Date, Date] | null> => {
   const rows = await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
     SELECT trade_date FROM "export"."daily_taiex_index" ORDER BY trade_date DESC LIMIT 2

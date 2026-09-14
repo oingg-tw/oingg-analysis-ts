@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPerShare, toRatioFromNumbers } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type PaidInSharesPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';

@@ -1,4 +1,4 @@
-import { getDailyValuationAsOf } from '@/shared/sourceData/twseMarketData';
+import { getDailyValuationAsOf } from '@/models/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, snapshotCadenceGroup } from '../../metricValueWriter';
 import { calculateExchangePeRatio } from '@/domainPitMetrics/valuation/exchangePeRatio/calculateExchangePeRatio';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { securityEntrySchema } from '@/shared/sourceData/companyProfile';
+import { securityEntrySchema } from '@/models/companyProfile';
 
 // 2026-09-11 新增——跟 companies/types.ts 的 companiesListResultSchema/
 // companiesCountOnlyResultSchema 同一組分頁形狀，但 entries 用 securityEntrySchema

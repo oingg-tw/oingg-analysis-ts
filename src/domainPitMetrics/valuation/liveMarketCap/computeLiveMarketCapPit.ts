@@ -1,5 +1,5 @@
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getLatestDailyPrice } from '@/shared/sourceData/twseMarketData';
+import { getPaidInSharesAsOf } from '@/models/capitalStock';
+import { getLatestDailyPrice } from '@/models/twseMarketData';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, snapshotCadenceGroup } from '../../metricValueWriter';

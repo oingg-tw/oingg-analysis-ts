@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getCompanyProfileDetail } from '@/shared/sourceData/companyProfile';
+import { getCompanyProfileDetail } from '@/models/companyProfile';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 
@@ -40,7 +40,7 @@ test('getCompanyProfileDetail: 查無此公司代號應該回傳 null，不拋�
 test('getCompanyProfileDetail: industry 是「非產業」代碼（證券商/期貨商登記等）時，industryName 應該回 null 而不是內部附註文字', async () => {
   // 000104=臺銀證券（industry='XX'），industry_name 原始值帶著「（證券商）」這類 twse-ts
   // 自己加的工程附註，不是給終端使用者看的，2026-09-02 跟 twse-ts 確認過（見
-  // src/shared/sourceData/companyProfile.ts 的 NON_INDUSTRY_CODES 說明）。
+  // src/models/companyProfile.ts 的 NON_INDUSTRY_CODES 說明）。
   const result = await getCompanyProfileDetail('000104');
   assert.ok(result);
   assert.equal(result!.industry, 'XX');

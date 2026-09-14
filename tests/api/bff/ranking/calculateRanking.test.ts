@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { calculateRanking } from '@/api/bff/ranking/calculateRanking';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet } from '@/models/companyProfile';
 
 // daily_valuation 每天更新，不釘死確切公司/數值，只驗證排序正確、排除邏輯有效——
 // 跟本服務其他吃即時市場資料的測試同一種風格。

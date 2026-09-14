@@ -1,9 +1,9 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/shared/sourceData/capitalStock';
-import { getStockPriceAsOf } from '@/shared/sourceData/marketCap';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/incomeStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/models/capitalStock';
+import { getStockPriceAsOf } from '@/models/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';

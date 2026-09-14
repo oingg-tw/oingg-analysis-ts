@@ -1,7 +1,7 @@
 import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { loadIndustryCodes } from '@/shared/sourceData/industryCodes';
-import { isValidSecuritiesSectorCode, listSecuritiesIndustrySectors, listCompaniesBySectorCodes } from '@/shared/sourceData/securitiesIndustry';
+import { loadIndustryCodes } from '@/models/industryCodes';
+import { isValidSecuritiesSectorCode, listSecuritiesIndustrySectors, listCompaniesBySectorCodes } from '@/models/securitiesIndustry';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
 

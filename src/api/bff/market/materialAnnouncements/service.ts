@@ -1,5 +1,5 @@
 import twseExportPrisma from '@/adapters/prisma/twseExportClient';
-import { getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { MaterialAnnouncementsQuery, MaterialAnnouncementsResult, MaterialAnnouncementRow } from './types';
 
 interface RawMaterialAnnouncementRow {

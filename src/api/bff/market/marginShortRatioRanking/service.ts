@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/shared/sourceData/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { MarginShortRatioRankingQuery, MarginShortRatioRankingResult, MarginShortRatioRow } from './types';
 
 interface RawMarginBalanceRow {
@@ -23,7 +23,7 @@ interface RatioRow {
 // 無限大處理。
 //
 // 排除 ETF/衍生性商品（例如槓桿/反向 ETF）——這是主打上市公司證券的排行榜功能，不是全部有
-// 融資融券資料的標的都要排進來，見 src/shared/sourceData/companyProfile.ts 的
+// 融資融券資料的標的都要排進來，見 src/models/companyProfile.ts 的
 // getAllSecurityRows 說明。preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-04 應要求合併上櫃（tpex-ts 開了 export.margin_balance，source 是他們內部的

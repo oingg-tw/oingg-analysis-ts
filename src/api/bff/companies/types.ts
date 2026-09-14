@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { companyNameEntrySchema } from '@/shared/sourceData/companyProfile';
+import { companyNameEntrySchema } from '@/models/companyProfile';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
 // 純 TypeScript interface，跟 Swagger 文件（原本手寫 JSDoc）是兩份要手動保持同步的東西，
@@ -73,7 +73,7 @@ export const companiesCountOnlyResultSchema = z.object({
 export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
 
 // 2026-09-05 新增，2026-09-14 資料源換成 oingg-playwright-py 供應鏈分類——「產業同業比較」
-// 功能，見 src/shared/sourceData/industryChainClassification.ts。
+// 功能，見 src/models/industryChainClassification.ts。
 export const companyPeerEntrySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),

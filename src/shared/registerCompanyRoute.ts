@@ -1,5 +1,5 @@
 import type { Router } from 'ultimate-express';
-import { getCompanyName } from './sourceData/companyProfile';
+import { getCompanyName } from '../models/companyProfile';
 import { logger } from '@/shared/logger';
 
 // 取代原本「每個 controller 自己呼叫 sendWithCompanyName」的做法（2026-09-01 使用者要求）——

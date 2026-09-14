@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type BalanceSheetPort, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
@@ -8,7 +8,7 @@ import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowle
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/beneishMScore.ts 的獨立重新實作。8 個變量（DSRI/GMI/AQI/
 // SGI/DEPI/SGAI/TATA/LVGI）本季 vs 去年同季比較，去年同季座標比照 piotroskiFScore 用

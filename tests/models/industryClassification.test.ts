@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/shared/sourceData/industryClassification';
+import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/models/industryClassification';
 
 beforeAll(async () => {
   await loadIndustryClassification();
 });
 
 // 產業階層瀏覽（純瀏覽，不做動態回退）——findPeerGroup 已於 2026-09-14 搬到
-// src/shared/sourceData/industryChainClassification.ts（資料源換成 oingg-playwright-py
-// 供應鏈分類），對應測試見 tests/shared/sourceData/industryChainClassification.test.ts，
+// src/models/industryChainClassification.ts（資料源換成 oingg-playwright-py
+// 供應鏈分類），對應測試見 tests/models/industryChainClassification.test.ts，
 // 不再放這裡。
 
 test('getIndustryNodeInfo/listIndustryChildren: 樹根查詢回傳全部 19 個 section，companyCount 是 999', () => {

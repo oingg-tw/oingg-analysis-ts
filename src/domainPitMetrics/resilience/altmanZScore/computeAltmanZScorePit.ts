@@ -1,8 +1,8 @@
-import { resolveQuarterOrLatest } from '@/shared/sourceData/latestQuarter';
+import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/shared/sourceData/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/shared/sourceData/incomeStatementXbrlFirst';
-import { getMarketCapAsOf, type MarketCapAsOf } from '@/shared/sourceData/marketCap';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/models/incomeStatementXbrlFirst';
+import { getMarketCapAsOf, type MarketCapAsOf } from '@/models/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
@@ -10,7 +10,7 @@ import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowle
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
+import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/altmanZScore.ts 的獨立重新實作——舊架構呼叫
 // calculateInterestCoverage()（取 EBIT-TTM）+ calculateTurnoverRatio()（取 assetTurnoverTtm

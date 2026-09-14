@@ -1,7 +1,7 @@
 import type { Season } from './rocQuarter';
 
 // 季度財報類指標共用的查詢介面——year/season 選填但要成對，不給就自動抓「該指標實際依賴的
-// 財報表都有資料」的最新一季（見 shared/sourceData/latestQuarter.ts），只給其中一個視為無效
+// 財報表都有資料」的最新一季（見 models/latestQuarter.ts），只給其中一個視為無效
 // 請求（在 controller 用 zod refine 擋掉）。「實際依賴哪些表」因指標而異，各自 types.ts 的
 // XxxQuery 型別別名上方會補充說明。
 export interface QuarterlyMetricQuery {
