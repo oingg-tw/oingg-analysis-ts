@@ -4,6 +4,7 @@ export const EPS_CAGR_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `epsCagr${years}y`,
+  folderName: 'epsCagr',
   name: `EPS ${years}年複合成長率`,
   unit: '%',
   formulaNote:

@@ -22,9 +22,11 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // 拆多個 metric_code」的編排邏輯，資料夾名稱本身不是 metricCode，過濾條件自然排除）、
 // `chip/`（空殼分類，目前沒有任何指標遷入，見該資料夾的 README.md）。判斷一個子資料夾
 // 是不是「真正的獨立指標」，不是靠白名單／黑名單資料夾名稱，是直接比對資料夾名稱有沒有
-// 出現在 metricDefinitionRegistry 裡——這樣「一次查詢拆多個 metric_code」的編排資料夾
-// （turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/cashFlowPerShare/
-// liquidityRatio，資料夾名稱本身都不是 metricCode）會被自然濾掉，不用額外維護排除清單。
+// 出現在 metricDefinitionRegistry 裡（或有 metricCode 宣告 folderName 指向它，見下方
+// metricCodesForFolder()/metricDefinitionSpec.ts 的完整說明）——這樣「一次查詢拆多個
+// metric_code」的編排資料夾（turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/
+// cashFlowPerShare/liquidityRatio，資料夾名稱本身都不是 metricCode，也沒有任何 metricCode
+// 宣告 folderName 指向它們）會被自然濾掉，不用額外維護排除清單。
 const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domainPitMetrics');
 
 // 2026-09-09 web-nuxt 回報：指標本身已經有 displayName，但分類這一層完全沒有中文（前端只能
@@ -115,10 +117,21 @@ const listSubdirectoryNames = (dir: string): string[] => {
   }
 };
 
+// 2026-09-14 新增：epsCagr/revenueCagr/dividendGrowthRate 這三個「家族」資料夾各自用一個
+// buildDefinition(years) 從同一個資料夾產生多個 metricCode（例如 epsCagr3y/5y/8y 全部放在
+// growth/epsCagr/ 底下），靠 registry 裡的 folderName 欄位（見 metricDefinitionSpec.ts 的
+// 完整說明）反查回這個資料夾底下實際有哪些 metricCode——一般 1:1 的指標沒有宣告 folderName，
+// fallback 成資料夾名稱本身當 metricCode（維持原本行為不變）。
+const metricCodesForFolder = (folderName: string): string[] => {
+  if (folderName in metricDefinitionRegistry) return [folderName];
+  return Object.keys(metricDefinitionRegistry).filter((code) => metricDefinitionRegistry[code]!.folderName === folderName);
+};
+
 export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
   CATEGORIES.map(({ key: categoryKey, displayName: categoryDisplayName }) => {
     const metrics = listSubdirectoryNames(join(PIT_METRICS_ROOT, categoryKey))
-      .filter((folderName) => folderName in metricDefinitionRegistry && !metricDefinitionRegistry[folderName]!.excludeFromFilterCatalog)
+      .flatMap(metricCodesForFolder)
+      .filter((metricCode) => !metricDefinitionRegistry[metricCode]!.excludeFromFilterCatalog)
       .sort()
       .map((metricCode): MetricFolderCatalogEntry => {
         const definition = metricDefinitionRegistry[metricCode]!;

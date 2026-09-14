@@ -6,7 +6,9 @@ import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividen
 import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/shareCountChangeRateBadge';
 import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
 import { cashConversionCycleBadge } from './efficiency/cashConversionCycle/cashConversionCycleBadge';
+import { epsCagr3yBadge } from './growth/epsCagr/epsCagr3yBadge';
 import { ruleOf40Badge } from './growth/ruleOf40/ruleOf40Badge';
+import { sgrBadge } from './growth/sgr/sgrBadge';
 import { sueBadge } from './growth/sue/sueBadge';
 import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
@@ -49,7 +51,9 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   shareCountChangeRate: shareCountChangeRateBadge,
   shareholderYield: shareholderYieldBadge,
   cashConversionCycle: cashConversionCycleBadge,
+  epsCagr3y: epsCagr3yBadge,
   ruleOf40: ruleOf40Badge,
+  sgr: sgrBadge,
   sue: sueBadge,
   consecutiveProfitYears: consecutiveProfitYearsBadge,
   grossMargin: grossMarginBadge,

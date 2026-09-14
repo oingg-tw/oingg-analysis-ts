@@ -4,6 +4,7 @@ export const DIVIDEND_GROWTH_RATE_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `dividendGrowthRate${years}y`,
+  folderName: 'dividendGrowthRate',
   name: `現金流量股利${years}年成長率`,
   unit: '%',
   formulaNote:

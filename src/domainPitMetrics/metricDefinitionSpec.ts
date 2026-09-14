@@ -180,6 +180,18 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // 但指標本身照常計算/寫入 metric_values、GET /companies/dupont-history 等既有端點完全
   // 不受影響——只是不出現在「指標選單」這一層。其餘指標維持 undefined（=false，正常出現）。
   excludeFromFilterCatalog?: boolean;
+  // 2026-09-14 新增：scanMetricFolderCatalog.ts 原本假設「資料夾名稱 === metricCode」
+  // 1:1——但 epsCagr/revenueCagr/dividendGrowthRate 這三個「家族」資料夾各自用一個
+  // buildDefinition(years) 參數化函式，從同一個資料夾產生多個 metricCode（例如
+  // epsCagr3y/epsCagr5y/epsCagr8y 全部放在 growth/epsCagr/ 底下），資料夾名稱本身
+  // 不是任何一個真正的 metricCode，原本的掃描邏輯會把這整個家族的 metricCode 全部
+  // 濾掉（folderName in registry 找不到 'epsCagr' 這個 key）。這個欄位只給這種家族成員
+  // 填（例如 epsCagr3y 填 'epsCagr'），讓掃描邏輯能把它們對應回實際所在的資料夾；一般
+  // 1:1 的指標不用填（維持 undefined，掃描邏輯 fallback 成 metricCode 自己當資料夾名稱）。
+  // 刻意不影響「一次查詢拆多個 metric_code」的編排資料夾（turnoverRatio/margins/...）
+  // 判斷邏輯——那些資料夾名稱本身沒有任何 metricCode 宣告 folderName 指向它們，維持被
+  // 自然濾掉。
+  folderName?: string;
   // 2026-09-06 起改存 mops-ts 驗證過的 XBRL account_code（export.xbrl_three_statements_long
   // 的 account_code 欄位，snake_case，是 mops-ts 自己整理過的命名，不是原始 IFRS PascalCase
   // 標籤）——之前用 mops-ts 原始欄位名稱（camelCase）是因為 XBRL 資料只涵蓋測試公司 1101，

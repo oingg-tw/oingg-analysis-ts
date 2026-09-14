@@ -4,6 +4,7 @@ export const REVENUE_CAGR_YEARS = [3, 5, 8] as const;
 
 const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `revenueCagr${years}y`,
+  folderName: 'revenueCagr',
   name: `營收${years}年複合成長率`,
   unit: '%',
   formulaNote:
