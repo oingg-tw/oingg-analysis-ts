@@ -16,7 +16,7 @@
   新指標，全部都已經是全市場覆蓋，不再是「只有 2330」的狀態。以下這條舊記錄已解決，
   不用再提。
 - **真正的資料覆蓋率缺口，改成結構性的「深度不夠」而不是「範圍沒做」**：
-  `chowderNumber`/`pegRatio`/`epsCagr3y`/`epsCagr5y`/`epsCagr8y`/
+  `chowderNumber`/`pegRatio`/`livePegRatio`/`epsCagr3y`/`epsCagr5y`/`epsCagr8y`/
   `revenueCagr3y`/`revenueCagr5y`/`revenueCagr8y`/`dividendGrowthRate3y`/
   `dividendGrowthRate5y`/`dividendGrowthRate8y` 這批需要 ≥3 年（≥12 季）歷史回溯的
   指標，全市場已回填但實測非 null 比例偏低——mops-ts 的 XBRL 全市場覆蓋實際是從
@@ -25,13 +25,13 @@
   **2026-09-14 實測進度**（對照 2026-09-11 舊快照的 1~2/2058）：3 年版本已經有
   實質進展——`epsCagr3y` 33/2067、`revenueCagr3y` 138/2067；但 5 年/8 年版本
   （`epsCagr5y`/`8y`、`revenueCagr5y`/`8y`、`dividendGrowthRate5y`/`8y`）跟
-  `chowderNumber`/`pegRatio` 幾乎沒動，仍是 0~1/2058。深度還是不夠，只是 3 年版本
-  比 5/8 年版本先解套，之後可以再抽查一次確認趨勢。
-- **`livePegRatio` 0/0，性質不同於上面的深度缺口**：2026-09-14 實測 `metric_values`
-  裡這個 metricCode **完全沒有任何列**（不是 non-null 比例低，是連 null 值都沒有），
-  跟深度不夠的性質不一樣，比較像是漏排進某次批次計算或 metricCode 本身有其他問題。
-  還沒查根因，之後要花時間看是不是漏跑了 `liveGrahamNumber`/`liveMarketCap` 那批
-  即時版指標的其中一支。
+  `chowderNumber`/`pegRatio`/`livePegRatio`（`livePegRatio` 內部邏輯依賴 5 年年度
+  EPS，實測 `metric_daily_cadence_values` 裡 1781 家有列但只有 1 家非 null，同一種
+  深度限制）幾乎沒動，仍是 0~1。深度還是不夠，只是 3 年版本比 5/8 年版本先解套，
+  之後可以再抽查一次確認趨勢。
+  （⚠️ 查這批指標時要注意 `livePegRatio` 是逐日型 snapshotCadence='EOD'，寫進
+  `metric_daily_cadence_values`，不是 `metric_values`——2026-09-14 曾經查錯表誤判
+  成「完全沒資料」，已更正。）
 
 ## 卡在其他微服務，等對方排期
 
