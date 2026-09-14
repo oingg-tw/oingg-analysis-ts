@@ -34,6 +34,20 @@ export const isFinancialIndustryCompany = async (symbol: string): Promise<boolea
   return industry === '17';
 };
 
+// 2026-09-14 新增：ruleOf40（Brad Feld 提出的「營收成長率+FCF利潤率≥40%」複合指標）原始
+// 設計是給軟體/SaaS 這類輕資產、高毛利、經常性收入商業模式評估的，對傳產股（營收成長慢但
+// 資本結構完全不同）套用會失去意義，甚至可能誤導。跟 isFinancialIndustryCompany 同一種
+// 「模型本身不適用不是資料缺漏」判斷，改用允許清單（不是排除清單）：'30'=資訊服務業、
+// '36'=數位雲端，是證交所類股裡跟「軟體/SaaS」概念最接近的兩個分類。
+export const isSoftwareOrCloudIndustryCompany = async (symbol: string): Promise<boolean> => {
+  const [twseRows, tpexRows] = await Promise.all([
+    twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+    tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+  ]);
+  const industry = twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
+  return industry === '30' || industry === '36';
+};
+
 export interface SecuritiesIndustrySector {
   code: string;
   name: string;

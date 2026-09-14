@@ -85,6 +85,7 @@ import { computeAndWritePriceToResearchRatioPit } from '../src/domainPitMetrics/
 import { computeAndWriteNovyMarxGpToAssetsPit } from '../src/domainPitMetrics/profitability/novyMarxGpToAssets/computeNovyMarxGpToAssetsPit';
 import { computeAndWriteCrociPit } from '../src/domainPitMetrics/profitability/croci/computeCrociPit';
 import { computeAndWriteFcfMarginPit } from '../src/domainPitMetrics/quality/fcfMargin/computeFcfMarginPit';
+import { computeAndWriteRuleOf40Pit } from '../src/domainPitMetrics/growth/ruleOf40/computeRuleOf40Pit';
 import { computeAndWriteNetWorkingCapitalToAssetsPit } from '../src/domainPitMetrics/resilience/netWorkingCapitalToAssets/computeNetWorkingCapitalToAssetsPit';
 import { computeAndWriteTotalDebtToCapitalPit } from '../src/domainPitMetrics/resilience/totalDebtToCapital/computeTotalDebtToCapitalPit';
 import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/domainPitMetrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
@@ -111,7 +112,7 @@ export const GENERAL_METRIC_CODES = [
   'operatingExpenseRatio',
   'ncav', 'marketCap', 'pegRatio',
   'evToEbit', 'evToFcf', 'greenblattRoc', 'tobinsQ', 'priceToResearchRatio',
-  'novyMarxGpToAssets', 'croci', 'fcfMargin', 'netWorkingCapitalToAssets', 'totalDebtToCapital',
+  'novyMarxGpToAssets', 'croci', 'fcfMargin', 'ruleOf40', 'netWorkingCapitalToAssets', 'totalDebtToCapital',
   'nonOperatingIncomeRatio', 'equityRatio', 'cashToAssetsRatio', 'beneishAqi', 'beneishDsri',
   'evToOcf', 'evToSales', 'priceToOcf', 'debtToFcf', 'capexToOcfRatio', 'croic', 'ocfMargin', 'fcfConversionRate',
   'financialLeverageDegree', 'totalLeverageDegree',
@@ -210,6 +211,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['novyMarxGpToAssets', () => computeAndWriteNovyMarxGpToAssetsPit(query)],
     ['croci', () => computeAndWriteCrociPit(query)],
     ['fcfMargin', () => computeAndWriteFcfMarginPit(query)],
+    ['ruleOf40', () => computeAndWriteRuleOf40Pit(query)],
     ['netWorkingCapitalToAssets', () => computeAndWriteNetWorkingCapitalToAssetsPit(query)],
     ['totalDebtToCapital', () => computeAndWriteTotalDebtToCapitalPit(query)],
     ['nonOperatingIncomeRatio', () => computeAndWriteNonOperatingIncomeRatioPit(query)],

@@ -40,6 +40,7 @@ import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/div
 import { shareCountChangeRateDefinition } from '@/domainPitMetrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
 import { sgrDefinition } from '@/domainPitMetrics/growth/sgr/sgrDefinition';
 import { revenueGrowthRateDefinition } from '@/domainPitMetrics/growth/revenueGrowthRate/revenueGrowthRateDefinition';
+import { ruleOf40Definition } from '@/domainPitMetrics/growth/ruleOf40/ruleOf40Definition';
 import { epsGrowthRateDefinition } from '@/domainPitMetrics/growth/epsGrowthRate/epsGrowthRateDefinition';
 import { netIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/netIncomeGrowthRate/netIncomeGrowthRateDefinition';
 import { operatingIncomeGrowthRateDefinition } from '@/domainPitMetrics/growth/operatingIncomeGrowthRate/operatingIncomeGrowthRateDefinition';
@@ -174,6 +175,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   shareCountChangeRate: shareCountChangeRateDefinition,
   sgr: sgrDefinition,
   revenueGrowthRate: revenueGrowthRateDefinition,
+  ruleOf40: ruleOf40Definition,
   epsGrowthRate: epsGrowthRateDefinition,
   netIncomeGrowthRate: netIncomeGrowthRateDefinition,
   operatingIncomeGrowthRate: operatingIncomeGrowthRateDefinition,
