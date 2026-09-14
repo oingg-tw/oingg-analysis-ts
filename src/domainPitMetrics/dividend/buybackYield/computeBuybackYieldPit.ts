@@ -30,11 +30,13 @@ const getTreasurySharesPurchased = async (key: {
 export type BuybackYieldPitOutcome = StandardBasisPitOutcome;
 
 // 買回殖利率 = TTM（近四季）買回庫藏股支付現金加總 / 市值（收盤價 x 流通股數，以主要
-// 季度報告日為準）* 100。跟 dividendYield（交易所公告的股利殖利率）並列成「股東總回報率
-// （Shareholder Yield = 股利殖利率 + 買回殖利率）」的另一半，但這裡刻意分開兩個獨立
-// metricCode，不合併成單一總回報率——dividendYield 是交易所公告 passthrough（EOD 快照），
-// 這支是自算 TTM 累計值，兩者頻率/資料源本質不同，前端要組合成「股東總回報率」可以自己
-// 把兩個值加起來，不用我們預先合併掉各自的可追溯性。
+// 季度報告日為準）* 100。這支獨立存在，供只需要「買回」這一半數字的情境單獨查詢。
+//
+// 2026-09-14 更新：原本這裡的註解說「刻意不合併成單一 Shareholder Yield，前端自己把
+// dividendYield(EOD)+buybackYield(TTM) 加起來就好」——這個決定已經被使用者推翻，見
+// dividend/shareholderYield/computeShareholderYieldPit.ts。那支是獨立重新計算的複合
+// metricCode（不是讀這支或 dividendYield 已寫入的值相加），後端統一算好「股東總回饋率」
+// 掛徽章用；這支 buybackYield 本身沒有被取代，繼續保留給只需要買回這半邊數字的情境。
 export const computeAndWriteBuybackYieldPit = async (
   query: QuarterlyMetricQuery,
   statements: CashFlowStatementPort & MarketCapPort = financialDataAdapter
