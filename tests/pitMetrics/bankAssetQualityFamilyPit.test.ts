@@ -28,19 +28,19 @@ test('bankAssetQualityFamilyPit: 2801（彰化銀行）115Q2，跟實測驗證�
   assert.equal(coverage!.nullReason, null);
 });
 
-test('bankAssetQualityFamilyPit: 2330（台積電，真實存在但不是銀行）應該優雅降級成 missing_input 的 null 列，不是不寫入', async () => {
-  // 2330 在 bank_asset_quality_xbrl 完全查無列，但 financial_report_announcement 有這家
-  // 公司這一季的真實公告日資料（跟 bank 資料來源無關的另一張表）——knowledge_date 照樣解得
-  // 出來，所以會寫入一筆 value:null/nullReason:'missing_input' 的列，不是 skipped。
-  // 不斷言 outcome 的 write action 字面值（inserted/skipped_unchanged 取決於這個 symbol/
-  // 季度組合先前有沒有跑過，dev DB 是持久狀態不是每次測試都乾淨）——只驗證最終 DB 狀態。
-  await computeAndWriteBankAssetQualityFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+test('bankAssetQualityFamilyPit: 2330（台積電，真實存在但不是銀行）應該完全不寫入任何列', async () => {
+  // 2026-09-14 修正：原本非銀行公司會優雅降級成 value:null/nullReason:'missing_input'
+  // 的列，實測發現上游 bank_capital_adequacy_detail_xbrl 對 2330 曾經誤植過非 null 值，
+  // 導致這類「一律不做產業前置判斷」的設計對非銀行公司做了無意義的查詢——現在改成一開始
+  // 就用 isFinancialIndustryCompany 擋掉，2330 不是金融保險業，直接回傳 skipped_no_quarter，
+  // 不寫入任何 metric_value 列。
+  const outcome = await computeAndWriteBankAssetQualityFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
+  assert.deepEqual(outcome.bankNplRatio, { action: 'skipped_no_quarter' });
+  assert.deepEqual(outcome.bankNplCoverageRatio, { action: 'skipped_no_quarter' });
   const where = { symbol: '2330', metricCode: 'bankNplRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const npl = await analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' } });
-  assert.ok(npl);
-  assert.equal(npl!.value, null);
-  assert.equal(npl!.nullReason, 'missing_input');
+  assert.equal(npl, null);
 });
 
 test('bankAssetQualityFamilyPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {

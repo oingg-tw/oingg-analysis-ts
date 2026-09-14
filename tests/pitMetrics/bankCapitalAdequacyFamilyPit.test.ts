@@ -50,19 +50,22 @@ test('bankCapitalAdequacyFamilyPit: 不給 year/season 時自動抓最新一季�
   assert.equal(outcome.season, '2', '應該抓到 115Q2（有真實值的最新一季），不是曆法上更新但值為 null 的季度');
 });
 
-test('bankCapitalAdequacyFamilyPit: 2330（台積電，真實存在但不是銀行）應該優雅降級成 missing_input 的 null 列，不是不寫入', async () => {
-  // bank_capital_adequacy_detail_xbrl 這張表的 XBRL tag 是廣泛提取的——2330 這種非銀行公司
-  // 也有一列，只是財務欄位全部是 null（report_date 本身仍然是真實值）。knowledge_date 解得
-  // 出來，所以會寫入一筆 value:null/nullReason:'missing_input' 的列，不是 skipped。
-  // 不斷言 outcome 的 write action 字面值（inserted/skipped_unchanged 取決於這個 symbol/
-  // 季度組合先前有沒有跑過，dev DB 是持久狀態不是每次測試都乾淨）——只驗證最終 DB 狀態。
-  await computeAndWriteBankCapitalAdequacyFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+test('bankCapitalAdequacyFamilyPit: 2330（台積電，真實存在但不是銀行）應該完全不寫入任何列', async () => {
+  // 2026-09-14 修正：`bank_capital_adequacy_detail_xbrl` 這張表的 XBRL tag 是廣泛提取的
+  // ——2330 這種非銀行公司也有一列（只是財務欄位全部是 null，report_date 本身仍然是真實
+  // 值），原本這支函式沒有前置產業判斷，這支測試本身呼叫一次就會對 2330 寫入一筆
+  // value:null/nullReason:'missing_input' 的列——使用者認定這是「浪費一次無意義計算」
+  // 必須避免（不是 mops-ts 資料誤植，是這支函式本來就沒有先判斷是不是金融保險業）。
+  // 現在改成一開始就用 isFinancialIndustryCompany 擋掉，2330 不是金融保險業，直接回傳
+  // skipped_no_quarter，不寫入任何 metric_value 列。
+  const outcome = await computeAndWriteBankCapitalAdequacyFamilyPit({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
 
+  assert.deepEqual(outcome.bankCarRatio, { action: 'skipped_no_quarter' });
+  assert.deepEqual(outcome.bankCet1Ratio, { action: 'skipped_no_quarter' });
+  assert.deepEqual(outcome.bankTier1Ratio, { action: 'skipped_no_quarter' });
   const where = { symbol: '2330', metricCode: 'bankCarRatio', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' };
   const car = await analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' } });
-  assert.ok(car);
-  assert.equal(car!.value, null);
-  assert.equal(car!.nullReason, 'missing_input');
+  assert.equal(car, null);
 });
 
 afterAll(async () => {
