@@ -77,6 +77,34 @@ export const chainClassificationResultSchema = z.object({
 });
 export type ChainClassificationResult = z.infer<typeof chainClassificationResultSchema>;
 
+// 2026-09-14 新增（第二輪）——playwright-py 的供應鏈聚落分群，跟上面 category/coarseGroup
+// 是完全獨立的另一套分群概念，見 src/models/playwright/industryClusters.ts 的完整說明
+// （⚠️ clusterId/subClusterId 不是穩定 id，不能當永久識別碼快取）。
+
+export const chainClusterMemberSchema = z.object({
+  code: z.string().meta({ description: '上市櫃公司代號，或外部/非上市公司的穩定 id（playwright-py 用公司名稱生成，不是股票代號）' }),
+  name: z.string().nullable(),
+  isListed: z.boolean().meta({ description: 'true 代表 code 是台股上市櫃公司（查得到 twse/tpex company_profile），false 代表外部/非上市公司節點，沒有對應的個股詳情頁可以連結' }),
+});
+
+export const chainClusterSubGroupSchema = z.object({
+  subClusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
+  subLabel: z.string().nullable(),
+  members: z.array(chainClusterMemberSchema),
+});
+
+export const chainClusterSchema = z.object({
+  clusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
+  label: z.string().nullable(),
+  directMembers: z.array(chainClusterMemberSchema).meta({ description: '沒有再切子聚落的直屬成員——節點數 <=100 的頂層聚落，全部成員都在這裡（subClusters 會是空陣列）' }),
+  subClusters: z.array(chainClusterSubGroupSchema).meta({ description: '節點數 >100 的頂層聚落才會有子聚落；沒有子聚落時是空陣列' }),
+});
+
+export const chainClustersResultSchema = z.object({
+  clusters: z.array(chainClusterSchema).meta({ description: '113 個頂層聚落，含全部成員（一次回傳整棵樹，不用逐一查詢）' }),
+});
+export type ChainClustersResult = z.infer<typeof chainClustersResultSchema>;
+
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是
 // 完全不同的體系：只有單一層級（不是樹狀），40 個代碼扁平列出，刻意獨立一組 schema。

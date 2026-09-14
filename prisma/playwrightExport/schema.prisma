@@ -4,15 +4,19 @@
 // 「產業相似度」分組，不是 TWSE 官方 37 類）、etl_reader role（只能 SELECT export
 // schema，一次性授權到位，之後陸續加新 view 不用重新談連線——這個 schema 預期會像
 // gov-ts/mops-ts/twse-ts 那樣持續累加，不是只服務 findPeerGroup 這一個功能），連線用
-// .env 的 PLAYWRIGHT_EXPORT_DATABASE_URL / PLAYWRIGHT_EXPORT_DIRECT_URL。
+// .env 的 PLAYWRIGHT_EXPORT_DATABASE_URL / PLAYWRIGHT_EXPORT_DIRECT_URL。同日稍晚
+// 再加上 industry_clusters/industry_cluster_members/external_companies 三張 view
+// （供應鏈聚落分群，見 IndustryCluster 的說明）——驗證過 etl_reader 的 ALTER DEFAULT
+// PRIVILEGES 是對整個 export schema 設的，新 view 自動套用權限，不用重發連線字串。
 //
 // 跟 prisma/govExport/schema.prisma 同一種模式，見該檔案開頭的說明。沒有 IngestionRun
 // 握手表（playwright-py 這批 view 是即時算出來的彙整結果，不是逐批 ETL 同步，沒有「這批
-// 資料涵蓋到哪個時間點」這個概念，company_category_summary 自己的 updated_at 欄位已經
-// 夠用，不需要另外的握手表）。
+// 資料涵蓋到哪個時間點」這個概念，company_category_summary/industry_cluster_members
+// 自己的 updated_at/computed_at 欄位已經夠用，不需要另外的握手表）。
 //
-// 這兩張 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢
-// 一律走 $queryRaw，見 src/shared/sourceData/industryChainClassification.ts。
+// 這幾張 view 都沒有唯一識別欄位，Prisma Client 不會產生 model 存取子（@@ignore），查詢
+// 一律走 $queryRaw，見 src/models/playwright/industryChainClassification.ts、
+// src/models/playwright/industryClusters.ts。
 //
 // 異動這裡的 model 後，重新跑 `npx prisma db pull --schema=prisma/playwrightExport/schema.prisma`
 // 內省，這個 schema 由 playwright-py 擁有，本服務永遠不對它跑 migrate——內省後記得把 view
@@ -42,10 +46,10 @@ view CompanyCategorySummary {
   code          String?
   name          String?
   category      String?
-  categoryCount BigInt?  @map("category_count")
-  sampleSize    Decimal? @map("sample_size") @db.Decimal
-  confidence    Decimal? @db.Decimal
-  coarseGroup   String?  @map("coarse_group")
+  categoryCount BigInt?   @map("category_count")
+  sampleSize    Decimal?  @map("sample_size") @db.Decimal
+  confidence    Decimal?  @db.Decimal
+  coarseGroup   String?   @map("coarse_group")
   updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
 
   @@map("company_category_summary")
@@ -62,6 +66,54 @@ view CategoryGroup {
   fineCategory String? @map("fine_category")
 
   @@map("category_groups")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 113 個頂層聚落，一個聚落一列。Louvain 社群偵測 + 人工中文標籤，跟 category/coarseGroup
+/// 是完全獨立的另一套分群概念（真正的階層結構，不是扁平 2 層）。⚠️ cluster_id 不是穩定
+/// id——playwright-py 重跑 build_industry_chain（報告更新/圖重建）後 Louvain 重新分群，
+/// 同一個 cluster_id 可能對應到完全不同的一群公司，號碼會整個洗牌，不能當永久不變的
+/// 產業分類代碼快取/收藏，只能當「這次查詢當下的聚落」用。playwright-py 承諾重新分群時
+/// 會主動通知。
+view IndustryCluster {
+  clusterId Int?    @map("cluster_id")
+  label     String?
+
+  @@map("industry_clusters")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 7,566 筆成員（含 1,912 家上市櫃公司 + 5,654 個外部/非上市公司節點，兩種都收在 code
+/// 欄位裡）。子層（subClusterId）不是每個頂層都有——只有節點數 >100 的大群才會再切一次
+/// Louvain，其餘頂層群 subClusterId/subLabel 是 null。clusterSize 是這個（子）群的節點數。
+/// code 對不到 twse_tpex_listed_companies 時（外部公司），去 ExternalCompany 查名稱。
+view IndustryClusterMember {
+  code         String?
+  clusterId    Int?      @map("cluster_id")
+  subClusterId Int?      @map("sub_cluster_id")
+  subLabel     String?   @map("sub_label")
+  clusterSize  Int?      @map("cluster_size")
+  computedAt   DateTime? @map("computed_at") @db.Timestamptz(6)
+
+  @@map("industry_cluster_members")
+  @@ignore
+  @@schema("export")
+}
+
+/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
+/// 9,430 筆外部（非上市櫃）公司節點的名稱對照——id 是 playwright-py 用公司名稱生成的
+/// 穩定 id，不是股票代號，跟 IndustryClusterMember.code 對不到 twse_tpex_listed_companies
+/// 時來這裡查 name_zh/name_en。
+view ExternalCompany {
+  id     String?
+  nameZh String? @map("name_zh")
+  nameEn String? @map("name_en")
+
+  @@map("external_companies")
   @@ignore
   @@schema("export")
 }

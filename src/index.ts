@@ -23,6 +23,7 @@ import errorHandler from './shared/errorHandler';
 import { loadIndustryCodes } from './models/industryCodes';
 import { loadIndustryClassification } from './models/gov/industryClassification';
 import { loadIndustryChainClassification } from './models/playwright/industryChainClassification';
+import { loadIndustryClusters } from './models/playwright/industryClusters';
 
 const app = express();
 
@@ -83,6 +84,10 @@ const startServer = async () => {
     // 2026-09-14 起取代上面 gov-ts 版本的 findPeerGroup）——同樣輔助性質，不 await，見
     // models/playwright/industryChainClassification.ts。
     void loadIndustryChainClassification();
+    // 背景載入 playwright-py 供應鏈聚落分群（「產業追蹤」頁面 drill-down 樹用，
+    // GET /industries/chain-clusters）——同樣輔助性質，不 await，見
+    // models/playwright/industryClusters.ts（cluster_id 不穩定的重要說明）。
+    void loadIndustryClusters();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
     // connection refused。改成明確的 IPv4 位址，不讓 Node 自己決定要 bind 哪個位址族。
