@@ -9,7 +9,7 @@ import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDai
 import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/shared/sourceData/monthlyRevenue';
 import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
-import type { PeriodType } from '@/domainPitMetrics/metricBasis';
+import type { PeriodType, LookbackRange, SamplingInterval } from '@/domainPitMetrics/metricBasis';
 
 // 查無資料回傳空陣列，不是 404——mops 這批資料目前不是每家公司都有覆蓋，「查無股本異動
 // 歷史」是正常情境，不代表這家公司不存在（公司存不存在是 /companies/profile 負責判斷的事）。
@@ -291,6 +291,51 @@ export const getCompanyMonthlyRevenueHistory = async (req: Request, res: Respons
     const { symbol, limit } = validationResult.data;
     const { entries, total, hasMore } = await getMonthlyRevenueHistory(symbol, limit);
     res.status(200).json({ symbol, total, hasMore, entries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2026-09-14 web-nuxt 轉達使用者需求：股票詳情頁 Beta 卡片要直接顯示係數數值，不只是
+// 對照走勢圖。GET /companies/metric-history 對 metricCode='beta' 一律 400（2026-09-11
+// 的既有決定，理由是 beta 沒有真正的歷史時間序列可畫河流圖），但那個決定針對的是「畫圖用
+// 的歷史查詢」，不涵蓋「查單一公司目前的係數值」這個不同情境——後者用 screener/ranking
+// 查一個 symbol 是殺雞用牛刀（那是給篩選/排名情境設計的端點），所以另開這支輕量的單一
+// 公司快照端點，一次回傳三個滾動視窗（1Y_1D/2Y_1W/5Y_1M）各自最新一筆，不做歷史累積。
+const BETA_WINDOWS: { timeframe: string; lookbackRange: LookbackRange; samplingInterval: SamplingInterval }[] = [
+  { timeframe: '1Y_1D', lookbackRange: '1Y', samplingInterval: '1D' },
+  { timeframe: '2Y_1W', lookbackRange: '2Y', samplingInterval: '1W' },
+  { timeframe: '5Y_1M', lookbackRange: '5Y', samplingInterval: '1M' },
+];
+
+export const getCompanyBetaQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+});
+
+export const getCompanyBeta = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyBetaQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+
+    const { symbol } = validationResult.data;
+    const windows = await Promise.all(
+      BETA_WINDOWS.map(async ({ timeframe, lookbackRange, samplingInterval }) => {
+        const { entries } = await getDailyCadenceMetricHistory(symbol, 'beta', { lookbackRange, samplingInterval, snapshotCadence: 'N/A' }, '2', '', 1);
+        const latest = entries.at(-1) ?? null;
+        return {
+          timeframe,
+          value: latest?.value ?? null,
+          nullReason: latest?.nullReason ?? null,
+          tradeDate: latest?.tradeDate ?? null,
+          knowledgeDate: latest?.knowledgeDate ?? null,
+          knowledgeDateIsFallback: latest?.knowledgeDateIsFallback ?? null,
+        };
+      })
+    );
+
+    res.status(200).json({ symbol, metricCode: 'beta', windows });
   } catch (error) {
     next(error);
   }

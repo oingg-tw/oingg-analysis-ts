@@ -25,6 +25,7 @@ import {
   getCompanyMetricProvenanceQuerySchema,
   getCompanyBadgesQuerySchema,
   getCompanyMetricCompletenessQuerySchema,
+  getCompanyBetaQuerySchema,
 } from './controller';
 import {
   companyProfileDetailSchema,
@@ -95,6 +96,20 @@ const monthlyRevenueHistoryResultSchema = z.object({
   symbol: z.string(),
   ...totalHasMoreFields,
   entries: z.array(monthlyRevenueEntrySchema),
+});
+
+const betaWindowSchema = z.object({
+  timeframe: z.enum(['1Y_1D', '2Y_1W', '5Y_1M']),
+  value: z.number().nullable(),
+  nullReason: z.enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history']).nullable(),
+  tradeDate: z.string().nullable().meta({ description: '"YYYY-MM-DD"，查無資料時為 null' }),
+  knowledgeDate: z.string().nullable(),
+  knowledgeDateIsFallback: z.boolean().nullable(),
+});
+const companyBetaResultSchema = z.object({
+  symbol: z.string(),
+  metricCode: z.literal('beta'),
+  windows: z.array(betaWindowSchema).meta({ description: '固定 3 筆，依 1Y_1D/2Y_1W/5Y_1M 順序，查無資料的窗口欄位皆為 null' }),
 });
 
 export const registerCompaniesOpenApi = (): void => {
@@ -452,6 +467,24 @@ export const registerCompaniesOpenApi = (): void => {
     request: { query: getCompanyMetricCompletenessQuerySchema },
     responses: {
       200: { description: '依分類分組的指標完整度掃描結果。', content: { 'application/json': { schema: companyMetricCompletenessResultSchema } } },
+      400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/beta',
+    summary: '單一公司 Beta 係數目前值（三個滾動視窗各自最新一筆快照）',
+    description:
+      '2026-09-14 web-nuxt 轉達使用者需求：股票詳情頁 Beta 卡片要直接顯示係數數值。' +
+      'GET /companies/metric-history 對 metricCode=beta 一律回 400（beta 沒有真正的歷史時間序列可畫河流圖，' +
+      '這支端點針對的是「查目前值」這個不同情境，不是要繞過那個限制），排行/篩選情境仍請用 screener/ranking' +
+      '（field: "beta.1Y_1D" 等）。一次回傳 1Y_1D/2Y_1W/5Y_1M 三個滾動視窗各自最新一筆，查無資料的窗口 value/' +
+      'nullReason/tradeDate 等欄位皆為 null，不是 404。',
+    tags: ['System'],
+    request: { query: getCompanyBetaQuerySchema },
+    responses: {
+      200: { description: '三個滾動視窗各自最新一筆 Beta 快照。', content: { 'application/json': { schema: companyBetaResultSchema } } },
       400: { description: '缺少 symbol。' },
     },
   });
