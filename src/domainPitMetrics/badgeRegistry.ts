@@ -25,6 +25,8 @@ import { liveGrahamNumberBadge } from './valuation/liveGrahamNumber/liveGrahamNu
 import { livePegRatioBadge } from './valuation/livePegRatio/livePegRatioBadge';
 import { ncavBadge } from './valuation/ncav/ncavBadge';
 import { tobinsQBadge } from './valuation/tobinsQ/tobinsQBadge';
+import { psrBadge } from './valuation/psr/psrBadge';
+import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 
 // 2026-09-14 應使用者要求，取代原本 MetricDefinitionSpec.badge?: MetricBadge（內嵌在各自
 // <metricCode>Definition.ts 裡）的做法——那個設計把「這支指標怎麼算」（客觀事實，
@@ -66,6 +68,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   livePegRatio: livePegRatioBadge,
   ncav: ncavBadge,
   tobinsQ: tobinsQBadge,
+  psr: psrBadge,
+  epsGrowthRate: epsGrowthRateBadge,
 };
 
 export const getBadgeForMetric = (metricCode: string): MetricBadge | undefined => badgeRegistry[metricCode];
