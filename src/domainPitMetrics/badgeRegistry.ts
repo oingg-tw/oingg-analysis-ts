@@ -21,6 +21,7 @@ import { piotroskiFScoreBadge } from './quality/piotroskiFScore/piotroskiFScoreB
 import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreBadge';
 import { altmanZScoreBadge } from './resilience/altmanZScore/altmanZScoreBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
+import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
 import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
 import { zmijewskiScoreBadge } from './resilience/zmijewskiScore/zmijewskiScoreBadge';
 import { liveGrahamNumberBadge } from './valuation/liveGrahamNumber/liveGrahamNumberBadge';
@@ -66,6 +67,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreBadge,
   altmanZScore: altmanZScoreBadge,
   currentRatio: currentRatioBadge,
+  longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
   ohlsonOScore: ohlsonOScoreBadge,
   zmijewskiScore: zmijewskiScoreBadge,
   liveGrahamNumber: liveGrahamNumberBadge,

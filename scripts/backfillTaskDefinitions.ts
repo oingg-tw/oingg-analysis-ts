@@ -30,6 +30,7 @@ import { computeAndWriteFcfYieldPit } from '../src/domainPitMetrics/valuation/fc
 import { computeAndWriteDebtRatioPit } from '../src/domainPitMetrics/resilience/debtRatio/computeDebtRatioPit';
 import { computeAndWriteLiquidityRatioPit } from '../src/domainPitMetrics/resilience/liquidityRatio/computeLiquidityRatioPit';
 import { computeAndWriteDeRatioPit } from '../src/domainPitMetrics/resilience/deRatio/computeDeRatioPit';
+import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/domainPitMetrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit';
 import { computeAndWriteInterestCoveragePit } from '../src/domainPitMetrics/resilience/interestCoverage/computeInterestCoveragePit';
 import { computeAndWriteNetDebtToEbitdaPit } from '../src/domainPitMetrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
 import { computeAndWriteCapexToRevenuePit } from '../src/domainPitMetrics/efficiency/capexToRevenue/computeCapexToRevenuePit';
@@ -103,7 +104,7 @@ export const GENERAL_METRIC_CODES = [
   'grahamNumber', 'ownerEarnings', 'altmanZScore', 'piotroskiFScore', 'beneishMScore', 'nissimPenmanRnoa', 'zmijewskiScore', 'ohlsonOScore',
   'grossMargin', 'operatingMargin', 'assetTurnover', 'fixedAssetTurnover', 'inventoryDays', 'inventoryTurnover', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesTurnover', 'cashConversionCycle', 'operatingCycle', 'netWorkingCapitalTurnover', 'inventoryToRevenueRatio', 'receivablesToRevenueRatio',
   'eps', 'bvps', 'revenuePerShare', 'dividendPayoutRatio', 'sgr', 'ocfPerShare', 'fcfPerShare', 'ocfToNetIncome', 'accrualsRatio', 'fcfYield',
-  'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
+  'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'longTermDebtToNetCurrentAssets', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
   'revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate',
   'assetGrowth', 'consecutiveProfitYears', 'earningsYield',
   'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate', 'shareholderYield',
@@ -168,6 +169,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['debtRatio', () => computeAndWriteDebtRatioPit(query)],
     ['liquidityRatio', () => computeAndWriteLiquidityRatioPit(query)],
     ['deRatio', () => computeAndWriteDeRatioPit(query)],
+    ['longTermDebtToNetCurrentAssets', () => computeAndWriteLongTermDebtToNetCurrentAssetsPit(query)],
     ['interestCoverage', () => computeAndWriteInterestCoveragePit(query)],
     ['netDebtToEbitda', () => computeAndWriteNetDebtToEbitdaPit(query)],
     ['capexToRevenue', () => computeAndWriteCapexToRevenuePit(query)],

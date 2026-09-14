@@ -52,6 +52,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'cashRatio',
   'debtRatio',
   'deRatio',
+  'longTermDebtToNetCurrentAssets',
   'equityRatio',
   'cashToAssetsRatio',
   'financialLeverageDegree',

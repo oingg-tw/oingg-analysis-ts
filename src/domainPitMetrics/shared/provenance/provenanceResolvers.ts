@@ -27,6 +27,7 @@ import { getQuickRatioProvenance } from '@/domainPitMetrics/resilience/quickRati
 import { getCashRatioProvenance } from '@/domainPitMetrics/resilience/cashRatio/getCashRatioProvenance';
 import { getDebtRatioProvenance } from '@/domainPitMetrics/resilience/debtRatio/getDebtRatioProvenance';
 import { getDeRatioProvenance } from '@/domainPitMetrics/resilience/deRatio/getDeRatioProvenance';
+import { getLongTermDebtToNetCurrentAssetsProvenance } from '@/domainPitMetrics/resilience/longTermDebtToNetCurrentAssets/getLongTermDebtToNetCurrentAssetsProvenance';
 import { getEquityRatioProvenance } from '@/domainPitMetrics/resilience/equityRatio/getEquityRatioProvenance';
 import { getCashToAssetsRatioProvenance } from '@/domainPitMetrics/resilience/cashToAssetsRatio/getCashToAssetsRatioProvenance';
 import { getFinancialLeverageDegreeProvenance } from '@/domainPitMetrics/resilience/financialLeverageDegree/getFinancialLeverageDegreeProvenance';
@@ -144,6 +145,7 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   cashRatio: getCashRatioProvenance,
   debtRatio: getDebtRatioProvenance,
   deRatio: getDeRatioProvenance,
+  longTermDebtToNetCurrentAssets: getLongTermDebtToNetCurrentAssetsProvenance,
   equityRatio: getEquityRatioProvenance,
   cashToAssetsRatio: getCashToAssetsRatioProvenance,
   financialLeverageDegree: getFinancialLeverageDegreeProvenance,

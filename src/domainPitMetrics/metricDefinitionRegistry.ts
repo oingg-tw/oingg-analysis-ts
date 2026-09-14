@@ -66,6 +66,7 @@ import { currentRatioDefinition } from '@/domainPitMetrics/resilience/currentRat
 import { quickRatioDefinition } from '@/domainPitMetrics/resilience/quickRatio/quickRatioDefinition';
 import { cashRatioDefinition } from '@/domainPitMetrics/resilience/cashRatio/cashRatioDefinition';
 import { deRatioDefinition } from '@/domainPitMetrics/resilience/deRatio/deRatioDefinition';
+import { longTermDebtToNetCurrentAssetsDefinition } from '@/domainPitMetrics/resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsDefinition';
 import { interestCoverageDefinition } from '@/domainPitMetrics/resilience/interestCoverage/interestCoverageDefinition';
 import { netDebtToEbitdaDefinition } from '@/domainPitMetrics/resilience/netDebtToEbitda/netDebtToEbitdaDefinition';
 import { capexToRevenueDefinition } from '@/domainPitMetrics/efficiency/capexToRevenue/capexToRevenueDefinition';
@@ -203,6 +204,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   quickRatio: quickRatioDefinition,
   cashRatio: cashRatioDefinition,
   deRatio: deRatioDefinition,
+  longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsDefinition,
   interestCoverage: interestCoverageDefinition,
   netDebtToEbitda: netDebtToEbitdaDefinition,
   capexToRevenue: capexToRevenueDefinition,
