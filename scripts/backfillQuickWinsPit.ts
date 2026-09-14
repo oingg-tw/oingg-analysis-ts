@@ -6,7 +6,7 @@
 // 用法：pnpm tsx scripts/backfillQuickWinsPit.ts
 
 import { computeAndWriteAssetGrowthPit } from '../src/domainPitMetrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/profitability/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
+import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
 import { computeAndWriteEarningsYieldPit } from '../src/domainPitMetrics/valuation/earningsYield/computeEarningsYieldPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';

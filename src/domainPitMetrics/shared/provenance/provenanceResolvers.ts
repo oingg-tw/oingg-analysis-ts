@@ -53,7 +53,7 @@ import { getRoceProvenance } from '@/domainPitMetrics/profitability/roce/getRoce
 import { getGreenblattRocProvenance } from '@/domainPitMetrics/profitability/greenblattRoc/getGreenblattRocProvenance';
 import { getNissimPenmanRnoaProvenance } from '@/domainPitMetrics/profitability/nissimPenmanRnoa/getNissimPenmanRnoaProvenance';
 import { getFamaFrenchOperatingProfitabilityProvenance } from '@/domainPitMetrics/profitability/famaFrenchOperatingProfitability/getFamaFrenchOperatingProfitabilityProvenance';
-import { getConsecutiveProfitYearsProvenance } from '@/domainPitMetrics/profitability/consecutiveProfitYears/getConsecutiveProfitYearsProvenance';
+import { getConsecutiveProfitYearsProvenance } from '@/domainPitMetrics/quality/consecutiveProfitYears/getConsecutiveProfitYearsProvenance';
 import { getGrossMarginProvenance } from '@/domainPitMetrics/profitability/grossMargin/getGrossMarginProvenance';
 import { getOperatingMarginProvenance } from '@/domainPitMetrics/profitability/operatingMargin/getOperatingMarginProvenance';
 import { getAssetGrowthProvenance } from '@/domainPitMetrics/growth/assetGrowth/getAssetGrowthProvenance';

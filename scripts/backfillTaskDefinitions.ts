@@ -45,10 +45,11 @@ import { computeAndWriteOperatingIncomeGrowthRatePit } from '../src/domainPitMet
 import { computeAndWriteEquityGrowthRatePit } from '../src/domainPitMetrics/growth/equityGrowthRate/computeEquityGrowthRatePit';
 import { computeAndWriteBvpsGrowthRatePit } from '../src/domainPitMetrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit';
 import { computeAndWriteAssetGrowthPit } from '../src/domainPitMetrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/profitability/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
+import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
 import { computeAndWriteEarningsYieldPit } from '../src/domainPitMetrics/valuation/earningsYield/computeEarningsYieldPit';
 import { computeAndWriteBuybackYieldPit } from '../src/domainPitMetrics/dividend/buybackYield/computeBuybackYieldPit';
 import { computeAndWriteDividendCoverageRatioPit } from '../src/domainPitMetrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
+import { computeAndWriteShareholderYieldPit } from '../src/domainPitMetrics/dividend/shareholderYield/computeShareholderYieldPit';
 import { computeAndWriteShareCountChangeRatePit } from '../src/domainPitMetrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
 import { computeAndWriteStockPricePit } from '../src/domainPitMetrics/valuation/stockPrice/computeStockPricePit';
 import { computeAndWritePeRatioPit } from '../src/domainPitMetrics/valuation/peRatio/computePeRatioPit';
@@ -104,7 +105,7 @@ export const GENERAL_METRIC_CODES = [
   'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
   'revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate',
   'assetGrowth', 'consecutiveProfitYears', 'earningsYield',
-  'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate',
+  'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate', 'shareholderYield',
   'stockPrice', 'peRatio', 'pbRatio',
   'abnormalCapexRatio', 'altmanZDoublePrimeScore',
   'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
@@ -185,6 +186,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['earningsYield', () => computeAndWriteEarningsYieldPit(query)],
     ['buybackYield', () => computeAndWriteBuybackYieldPit(query)],
     ['dividendCoverageRatio', () => computeAndWriteDividendCoverageRatioPit(query)],
+    ['shareholderYield', () => computeAndWriteShareholderYieldPit(query)],
     ['shareCountChangeRate', () => computeAndWriteShareCountChangeRatePit(query)],
     ['stockPrice', () => computeAndWriteStockPricePit(query)],
     ['peRatio', () => computeAndWritePeRatioPit(query)],

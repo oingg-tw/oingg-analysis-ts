@@ -37,6 +37,7 @@ import { revenueCagrFamilyDefinitions } from '@/domainPitMetrics/growth/revenueC
 import { epsCagrFamilyDefinitions } from '@/domainPitMetrics/growth/epsCagr/epsCagrDefinition';
 import { buybackYieldDefinition } from '@/domainPitMetrics/dividend/buybackYield/buybackYieldDefinition';
 import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
+import { shareholderYieldDefinition } from '@/domainPitMetrics/dividend/shareholderYield/shareholderYieldDefinition';
 import { shareCountChangeRateDefinition } from '@/domainPitMetrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
 import { sgrDefinition } from '@/domainPitMetrics/growth/sgr/sgrDefinition';
 import { revenueGrowthRateDefinition } from '@/domainPitMetrics/growth/revenueGrowthRate/revenueGrowthRateDefinition';
@@ -49,7 +50,7 @@ import { bvpsGrowthRateDefinition } from '@/domainPitMetrics/growth/bvpsGrowthRa
 import { assetGrowthDefinition } from '@/domainPitMetrics/growth/assetGrowth/assetGrowthDefinition';
 import { rdIntensityDefinition } from '@/domainPitMetrics/growth/rdIntensity/rdIntensityDefinition';
 import { sueDefinition } from '@/domainPitMetrics/growth/sue/sueDefinition';
-import { consecutiveProfitYearsDefinition } from '@/domainPitMetrics/profitability/consecutiveProfitYears/consecutiveProfitYearsDefinition';
+import { consecutiveProfitYearsDefinition } from '@/domainPitMetrics/quality/consecutiveProfitYears/consecutiveProfitYearsDefinition';
 import { earningsYieldDefinition } from '@/domainPitMetrics/valuation/earningsYield/earningsYieldDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
@@ -172,6 +173,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   chowderNumber: chowderNumberDefinition,
   buybackYield: buybackYieldDefinition,
   dividendCoverageRatio: dividendCoverageRatioDefinition,
+  shareholderYield: shareholderYieldDefinition,
   shareCountChangeRate: shareCountChangeRateDefinition,
   sgr: sgrDefinition,
   revenueGrowthRate: revenueGrowthRateDefinition,

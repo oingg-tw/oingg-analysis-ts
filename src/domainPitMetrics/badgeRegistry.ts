@@ -3,10 +3,11 @@ import type { MetricBadge } from './metricDefinitionSpec';
 import { chowderNumberBadge } from './dividend/chowderNumber/chowderNumberBadge';
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/shareCountChangeRateBadge';
+import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
 import { cashConversionCycleBadge } from './efficiency/cashConversionCycle/cashConversionCycleBadge';
 import { ruleOf40Badge } from './growth/ruleOf40/ruleOf40Badge';
 import { sueBadge } from './growth/sue/sueBadge';
-import { consecutiveProfitYearsBadge } from './profitability/consecutiveProfitYears/consecutiveProfitYearsBadge';
+import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -41,6 +42,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   chowderNumber: chowderNumberBadge,
   dividendPayoutRatio: dividendPayoutRatioBadge,
   shareCountChangeRate: shareCountChangeRateBadge,
+  shareholderYield: shareholderYieldBadge,
   cashConversionCycle: cashConversionCycleBadge,
   ruleOf40: ruleOf40Badge,
   sue: sueBadge,
