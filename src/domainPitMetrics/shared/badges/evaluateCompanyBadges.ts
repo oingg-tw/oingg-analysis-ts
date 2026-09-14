@@ -25,6 +25,8 @@ export interface CompanyBadgeResult {
   timeframe: string;
   value: number | null;
   nullReason: MetricNullReason | null;
+  knowledgeDate: string | null;
+  knowledgeDateIsFallback: boolean | null;
   passed: boolean | null;
 }
 
@@ -96,7 +98,17 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
           const nullReason = fetched?.nullReason ?? null;
           const passed = value === null ? null : evaluateComparator(badge.threshold, value, compareValue);
 
-          return { metricCode: metric.metricCode, name: badge.name, nameEn: badge.nameEn, timeframe, value, nullReason, passed };
+          return {
+            metricCode: metric.metricCode,
+            name: badge.name,
+            nameEn: badge.nameEn,
+            timeframe,
+            value,
+            nullReason,
+            knowledgeDate: fetched?.knowledgeDate ?? null,
+            knowledgeDateIsFallback: fetched?.knowledgeDateIsFallback ?? null,
+            passed,
+          };
         })
       );
       return { categoryKey, categoryDisplayName, badges };

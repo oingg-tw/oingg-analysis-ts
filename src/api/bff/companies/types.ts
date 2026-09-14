@@ -178,6 +178,8 @@ export const companyBadgeResultSchema = z.object({
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
     .nullable()
     .meta({ description: 'value 為 null 時的原因；value 非 null 時一律是 null' }),
+  knowledgeDate: z.string().nullable().meta({ description: '2026-09-14 新增：這筆值最早可被市場知道的日期（"YYYY-MM-DD"），跟 metrics-history 同一個語意；查無資料時是 null' }),
+  knowledgeDateIsFallback: z.boolean().nullable().meta({ description: '2026-09-14 新增：true 代表 knowledgeDate 是用財報期末日頂替的（沒有真實公告日），有 look-ahead bias 風險；查無資料時是 null' }),
   passed: z.boolean().nullable().meta({ description: '是否達成門檻；value 為 null 時 passed 也一定是 null（無法判定，不是「未達成」）' }),
 });
 export type CompanyBadgeResult = z.infer<typeof companyBadgeResultSchema>;

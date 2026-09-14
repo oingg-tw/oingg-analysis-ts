@@ -11,9 +11,13 @@ import type { MetricNullReason } from '../metricBasis';
 const DATA_TYPE = '2'; // 既有 metric-history 端點的既定慣例：'2' = 合併口徑，不分子公司
 const SUBSIDIARY_COMPANY_ID = '';
 
+// 2026-09-14 補上 knowledgeDate/knowledgeDateIsFallback——web-nuxt 徽章卡片有一行「資料時間」
+// 要顯示，跟 metrics-history/piotroski-breakdown 既有慣例一致；查無資料時兩者都是 null。
 export interface LatestMetricValue {
   value: number | null;
   nullReason: MetricNullReason | null;
+  knowledgeDate: string | null;
+  knowledgeDateIsFallback: boolean | null;
 }
 
 // timeframe 不合法（例如已排除的 metricCode，或呼叫端傳了這支 metricCode 不支援的 timeframe）回傳
@@ -33,6 +37,6 @@ export const fetchLatestMetricValue = async (symbol: string, metricCode: string,
     : await getMetricHistory(symbol, metricCode, fieldRef.periodType, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1);
 
   const latest = result.entries.at(-1);
-  if (!latest) return { value: null, nullReason: null };
-  return { value: latest.value, nullReason: latest.nullReason };
+  if (!latest) return { value: null, nullReason: null, knowledgeDate: null, knowledgeDateIsFallback: null };
+  return { value: latest.value, nullReason: latest.nullReason, knowledgeDate: latest.knowledgeDate, knowledgeDateIsFallback: latest.knowledgeDateIsFallback };
 };
