@@ -1,4 +1,5 @@
 import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from '@/shared/sourceData/bankRegulatoryXbrl';
+import { isFinancialIndustryCompany } from '@/shared/sourceData/securitiesIndustry';
 import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
@@ -24,6 +25,25 @@ export interface BankCapitalAdequacyFamilyPitOutcome extends QuarterlyPitOutcome
 
 export const computeAndWriteBankCapitalAdequacyFamilyPit = async (query: QuarterlyMetricQuery): Promise<BankCapitalAdequacyFamilyPitOutcome> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  // 2026-09-14 使用者要求：`bank_capital_adequacy_detail_xbrl` 的來源資料曾經對非銀行公司
+  // （例如 2330）出現過 eligible_capital 非 null 的誤植列，導致上游「這一季有哪些銀行」
+  // 的偵測（getBankSymbolsForQuarter，見 backfillFullHistoryFullMarketPit.ts/
+  // scanMetricGapsPit.ts）誤判成銀行、觸發這支函式對非銀行公司做一次注定產出 null 的
+  // 無意義查詢。這裡在碰資料庫之前先用產業分類擋掉，不管上游來源表資料再怎麼髒，非金融
+  // 保險業（industry='17'）的公司都不會走到下面任何一次查詢——不寫入任何 metric_value
+  // 列（不是 not_applicable_industry，因為銀行資本適足率這三個 metricCode 本來就不該對
+  // 非銀行公司存在任何一列，寫 not_applicable_industry 反而製造沒必要的噪音列）。
+  if (!(await isFinancialIndustryCompany(symbol))) {
+    return {
+      symbol,
+      rocYear: null,
+      season: null,
+      bankCarRatio: { action: 'skipped_no_quarter' },
+      bankCet1Ratio: { action: 'skipped_no_quarter' },
+      bankTier1Ratio: { action: 'skipped_no_quarter' },
+    };
+  }
 
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
