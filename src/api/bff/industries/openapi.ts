@@ -53,7 +53,7 @@ export const registerIndustriesOpenApi = (): void => {
       '是給重建後的新頁面用（舊頁面/舊端點目前仍照常運作）。一次回傳全部約 1984 家上市櫃公司的分類 ' +
       '（含 category 為 null、完全沒出現在供應鏈報告裡的公司，不濾掉）+ 10 組粗分類到細分類的對照表 ' +
       '（groups），前端可以自己組出「粗分類 -> 細分類 -> 公司」的 drill-down 樹狀結構，不用逐一查詢。' +
-      'confidence/sampleSize/updatedAt 三個欄位語意跟 GET /companies/peer-group 完全一致（見該端點說明），' +
+      'source/updatedAt 兩個欄位語意跟 GET /companies/peer-group 完全一致（見該端點說明），' +
       '這支同樣沒有排程重抓機制，服務啟動後才會反映 playwright-py 那邊的最新變動。沒有查詢參數，純讀記憶體' +
       '快取，成本低，可以每次都打不用自己快取。',
     tags: ['Industries'],

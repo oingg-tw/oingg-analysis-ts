@@ -61,8 +61,7 @@ export const chainClassificationCompanySchema = z.object({
   companyName: z.string().nullable(),
   category: z.string().nullable().meta({ description: '33 個細分類其中之一；null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）' }),
   coarseGroup: z.string().nullable().meta({ description: '10 組粗分類其中之一，category 為 null 時這裡也是 null' }),
-  confidence: z.number().nullable().meta({ description: '分類信心分數（眾數分類次數/已分類供應鏈邊總數），越接近 1 代表業務性質越集中在單一分類' }),
-  sampleSize: z.number().int().meta({ description: '已分類的供應鏈邊數量，0 代表完全沒有已分類的邊' }),
+  source: z.enum(['keyword', 'gemini']).nullable().meta({ description: '這家公司分類的判斷來源——2026-09-15 取代原本的 confidence/sampleSize，keyword 代表僅用免費關鍵字規則判斷、gemini 代表額外經過 Gemini 語意驗證/修正過，category 為 null 時這裡也是 null' }),
   updatedAt: z.string().nullable().meta({ description: '這家公司分類最後一次變動的日期（YYYY-MM-DD），不是查詢當下時間' }),
 });
 

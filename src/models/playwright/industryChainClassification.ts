@@ -19,20 +19,28 @@ import { logger } from '@/shared/logger';
 // （除非重啟）——playwright-py 的分類資料這段期間變動比 gov-ts 稅籍分類活躍得多，但
 // 2026-09-14 使用者決定沿用既有「啟動時抓一次」模式，不新增排程機制（這個服務目前沒有
 // 任何 export.* 資料源有定期重抓的先例，見 loadIndustryClassification/loadIndustryCodes）。
+//
+// 2026-09-15 架構調整——playwright-py 把「拿供應鏈邊的 product_category 眾數投票猜公司
+// 分類」整個換掉，改成「直接對公司本身分類」（讀 company_research 報告的「中游」段落，
+// 一家公司一次判斷，不靠邊的數量投票）：company_category_summary 拿掉 category_count/
+// sample_size/confidence 這組「邊投票可信度」欄位，換成 source（'keyword'|'gemini'，
+// 先跑免費關鍵字規則 97.2% 覆蓋，再跑 Gemini 全量驗證/修正 89.2% 覆蓋，'gemini' 代表
+// 有被驗證過）。這是破壞性變更，不是加欄位——findPeerGroup 原本用 confidence/sampleSize
+// 當候選同業的品質門檻，現在改用 source（見下方 FindPeerGroupOptions 的
+// requireVerifiedSource），confidence/sampleSize 這組概念在新架構下不存在對應物，
+// PeerGroupResult 已移除這兩個欄位。
 
 interface CompanyCategoryEntry {
   category: string | null;
-  sampleSize: number;
-  confidence: number | null;
+  source: 'keyword' | 'gemini' | null;
   coarseGroup: string | null;
-  updatedAt: Date | null; // 這家公司分類最後一次變動的時間（company_category_summary 的 updated_at，底層供應鏈邊的 category_updated_at 最大值）——不是「快取抓取時間」，是資料本身的新鮮度
+  updatedAt: Date | null; // 這家公司分類最後一次變動的時間（company_category_summary 的 updated_at）——不是「快取抓取時間」，是資料本身的新鮮度
 }
 
 interface RawCompanyCategorySummaryRow {
   code: string;
   category: string | null;
-  sample_size: number | string | null; // DB 是 Decimal，Prisma driver adapter 回傳字串或數字視情況而定，統一在 buildCompanyCategoryCache 轉成 number
-  confidence: number | string | null;
+  source: string | null;
   coarse_group: string | null;
   updated_at: Date | null;
 }
@@ -49,7 +57,7 @@ let coarseGroupMembersCache: Map<string, Set<string>> | null = null;
 
 const fetchCompanyCategorySummaryOnce = async (): Promise<RawCompanyCategorySummaryRow[]> => {
   return playwrightExportPrisma.$queryRaw<RawCompanyCategorySummaryRow[]>`
-    SELECT code, category, sample_size, confidence, coarse_group, updated_at
+    SELECT code, category, source, coarse_group, updated_at
     FROM "export"."company_category_summary"
   `;
 };
@@ -61,19 +69,14 @@ const fetchCategoryGroupsOnce = async (): Promise<RawCategoryGroupRow[]> => {
   `;
 };
 
-const toNumberOrNull = (value: number | string | null): number | null => {
-  if (value === null) return null;
-  const n = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(n) ? n : null;
-};
+const toSourceOrNull = (value: string | null): 'keyword' | 'gemini' | null => (value === 'keyword' || value === 'gemini' ? value : null);
 
 const buildCompanyCategoryCache = (rows: RawCompanyCategorySummaryRow[]): Map<string, CompanyCategoryEntry> => {
   const map = new Map<string, CompanyCategoryEntry>();
   for (const row of rows) {
     map.set(row.code, {
       category: row.category,
-      sampleSize: toNumberOrNull(row.sample_size) ?? 0,
-      confidence: toNumberOrNull(row.confidence),
+      source: toSourceOrNull(row.source),
       coarseGroup: row.coarse_group,
       updatedAt: row.updated_at,
     });
@@ -115,32 +118,27 @@ export interface PeerGroupResult {
   code: string | null; // 這次比較實際用的層級的代碼（level:'category' 時是細分類，level:'coarseGroup' 時是粗分類）
   name: string | null;
   category: string | null; // 目標公司自己的細分類，不受 level 影響——level:'coarseGroup' 時用來告訴呼叫端「原本是哪個細分類同業不足」，跟 code 是兩個不同語意的欄位，不要合併
-  confidence: number | null; // 目標公司自己的信心分數（categoryCount/sampleSize），不是同業群體的統計量——新的資料品質信號，gov-ts 版本沒有
-  sampleSize: number | null; // 目標公司自己已分類的供應鏈邊數量
+  source: 'keyword' | 'gemini' | null; // 目標公司分類的判斷來源，2026-09-15 取代原本的 confidence/sampleSize（見檔頭說明）——純資訊性欄位，不用來過濾候選同業（見下方 findPeerGroup 的說明）
   updatedAt: Date | null; // 目標公司分類最後一次變動的時間，不是快取抓取時間——資料本身可能比伺服器啟動時間更舊（快取只在啟動時抓一次，見檔頭說明）
   peers: string[]; // 含目標公司自己；found=false 時是 []
 }
 
-const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, category: null, confidence: null, sampleSize: null, updatedAt: null, peers: [] };
+const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, category: null, source: null, updatedAt: null, peers: [] };
 
-export interface FindPeerGroupOptions {
-  minConfidence?: number;
-  minSampleSize?: number;
-}
-
+// 2026-09-15：原本這裡有 FindPeerGroupOptions（minConfidence/minSampleSize）用來過濾候選
+// 同業本身的分類信不信得過，資料源換掉 confidence/sampleSize 概念後，跟 playwright-py
+// 確認過：新架構下 source='keyword'（代表 Gemini 完全沒看過這家公司）全市場只剩 18 家
+// （<1%，1966/1984 家都是 source='gemini'），對方建議不用特別做「只收 gemini 驗證過」
+// 的篩選機制，母體太小不值得增加複雜度。故意不用一個新的 requireVerifiedSource 之類的
+// 參數取代，直接跟著建議拿掉整個品質門檻概念——找同業只看 category 是否相符，source
+// 只當純資訊性欄位回傳給呼叫端參考。
+//
 // 找同業：(1) 目標公司完全沒有分類（category===null）-> 查無資料；(2) 同細分類候選池湊到
 // minPeers（含自己）-> level:'category'；(3) 不夠 -> 用粗分類找跨細分類的候選池，湊到
 // minPeers -> level:'coarseGroup'；(4) 粗分類池仍不足但非空 -> 照舊版「退到最粗層級也要
 // 回傳」的慣例，即使沒湊到 minPeers 也回傳這個結果；(5) 連粗分類池都是空的（理論上不會
 // 發生，粗分類池至少包含目標公司自己）-> 查無資料。
-//
-// minConfidence/minSampleSize 是「候選同業本身的分類信不信得過」門檻——candidate 自己的
-// confidence/sampleSize 沒過門檻就不列入同業池（分類本身就不可靠的公司拉進來比較會稀釋
-// 整組同業的參考價值）。目標公司（symbol 自己）不受這個門檻限制：只要有分類就照常執行
-// 找同業流程，回傳的 target confidence/sampleSize 讓呼叫端（controller）自己決定要不要
-// 額外提醒使用者「這次比較本身信心較低」，這支函式只負責找同業、不負責決定要不要拒絕。
-export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>, minPeers: number, options: FindPeerGroupOptions = {}): PeerGroupResult => {
-  const { minConfidence = 0, minSampleSize = 0 } = options;
+export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>, minPeers: number): PeerGroupResult => {
   if (!companyCategoryCache || !coarseGroupMembersCache) return NOT_FOUND;
   const target = companyCategoryCache.get(symbol);
   if (!target || target.category === null) return NOT_FOUND;
@@ -148,8 +146,6 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
   const isQualifiedCandidate = (s: string): CompanyCategoryEntry | undefined => {
     const entry = companyCategoryCache!.get(s);
     if (!entry || entry.category === null) return undefined;
-    if (entry.sampleSize < minSampleSize) return undefined;
-    if (entry.confidence === null || entry.confidence < minConfidence) return undefined;
     return entry;
   };
 
@@ -160,8 +156,7 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
     code: target.category,
     name: target.category,
     category: target.category,
-    confidence: target.confidence,
-    sampleSize: target.sampleSize,
+    source: target.source,
     updatedAt: target.updatedAt,
     peers: [symbol, ...categoryPeers],
   };
@@ -184,8 +179,7 @@ export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>
     code: target.coarseGroup,
     name: target.coarseGroup,
     category: target.category,
-    confidence: target.confidence,
-    sampleSize: target.sampleSize,
+    source: target.source,
     updatedAt: target.updatedAt,
     peers: [symbol, ...coarseGroupPeers],
   };
@@ -204,8 +198,7 @@ export interface CompanyCategoryListEntry {
   symbol: string;
   category: string | null;
   coarseGroup: string | null;
-  confidence: number | null;
-  sampleSize: number;
+  source: 'keyword' | 'gemini' | null;
   updatedAt: Date | null;
 }
 
@@ -220,8 +213,7 @@ export const listAllCompanyCategories = (): CompanyCategoryListEntry[] => {
     symbol,
     category: entry.category,
     coarseGroup: entry.coarseGroup,
-    confidence: entry.confidence,
-    sampleSize: entry.sampleSize,
+    source: entry.source,
     updatedAt: entry.updatedAt,
   }));
 };

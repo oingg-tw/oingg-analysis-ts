@@ -355,9 +355,9 @@ export const registerCompaniesOpenApi = (): void => {
       '跟供應鏈上下游方向無關，不是套用 TWSE 官方 37 類）。同業分組先試細分類，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
       '不夠則回退到粗分類，粗分類也不足門檻一樣停在該層（不繼續往上爬），此時 warnings 會提示「已回退到更粗分類，同業可能包含商業模式不同的公司」。' +
       'classificationLevel 明確標示這次比較實際用的是哪一層，避免誤把寬鬆比較當成精確比較。' +
-      'minConfidence/minSampleSize 是候選同業自己的分類信心門檻（分類本身不可靠的公司不列入同業池），' +
-      'confidence/sampleSize 兩個回應欄位則是目標公司自己的信心分數/樣本數——如果目標公司自己信心不足，' +
-      'warnings 會額外提示「這次比較的參考價值可能較低」，但不會因此拒絕回傳結果。' +
+      'source 欄位是目標公司分類的判斷來源（keyword=僅關鍵字規則、gemini=額外經過語意驗證/修正），' +
+      '2026-09-15 取代原本的 confidence/sampleSize 信心門檻設計——playwright-py 換源後全市場 source=keyword ' +
+      '的公司只剩不到 1%，不再需要用門檻篩選候選同業，minConfidence/minSampleSize 這兩個 query 參數已移除。' +
       'found:false 代表查無分類資料：這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊），或是境外註冊（KY）公司——' +
       'KY 股不像舊版稅籍分類那樣有結構性資料缺口，warnings 只會提示「這批分類可能沒涵蓋到」。' +
       '這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。' +
