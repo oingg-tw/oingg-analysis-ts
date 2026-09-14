@@ -72,7 +72,8 @@ export const companiesCountOnlyResultSchema = z.object({
 });
 export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
 
-// 2026-09-05 新增——「產業同業比較」功能，見 src/shared/sourceData/industryClassification.ts。
+// 2026-09-05 新增，2026-09-14 資料源換成 oingg-playwright-py 供應鏈分類——「產業同業比較」
+// 功能，見 src/shared/sourceData/industryChainClassification.ts。
 export const companyPeerEntrySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
@@ -82,9 +83,11 @@ export const companyPeerGroupResultSchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
   found: z.boolean().meta({ description: 'false 代表查無產業分類資料（見 warnings 是否有 KY 股提示），其餘欄位皆為 null/空陣列' }),
-  industryLevel: z.enum(['subclass', 'class', 'group', 'division']).nullable().meta({ description: '這次比較實際使用的分類層級（子類/細類/小類/中類），由動態回退演算法決定' }),
-  industryCode: z.string().nullable(),
+  classificationLevel: z.enum(['category', 'coarseGroup']).nullable().meta({ description: '這次比較實際使用的分類層級（細分類/粗分類），由回退演算法決定；coarseGroup 代表細分類同業數不足，已回退到更粗的分組' }),
+  industryCode: z.string().nullable().meta({ description: '這次比較用的分類代碼（細分類或粗分類名稱本身，供應鏈分類沒有獨立的代碼系統，代碼即名稱）' }),
   industryName: z.string().nullable(),
+  confidence: z.number().nullable().meta({ description: '目標公司自己的分類信心分數（眾數分類次數/已分類供應鏈邊總數），不是同業群體的統計量，越接近 1 代表這家公司的業務性質越集中在單一分類' }),
+  sampleSize: z.number().int().nullable().meta({ description: '目標公司自己已分類的供應鏈邊數量，樣本數太小時信心分數的參考價值較低' }),
   peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
   warnings: z.array(z.string()),
 });

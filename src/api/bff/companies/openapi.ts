@@ -347,15 +347,20 @@ export const registerCompaniesOpenApi = (): void => {
     path: '/companies/peer-group',
     summary: '單一公司產業同業清單（產業同業比較功能第一步）',
     description:
-      '用財政部稅籍行業標準分類（來源：gov-ts）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
+      '用 oingg-playwright-py 的供應鏈分類（Gemini 解析真實供應關係得出的 product_category，2026-09-14 起取代原本的' +
+      '財政部稅籍行業標準分類）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——' +
       '拿到 peers 之後請自行呼叫 POST /screener/values（symbols + columns，field 格式 "metricCode.timeframe"）查實際指標數值，' +
       '這支端點刻意不重複做數值查詢那一層。' +
-      '同業分組用動態層級回退：子類→細類→小類→中類，依序嘗試，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
-      '連中類都不足門檻也會停在中類（不繼續往更粗的層級爬），此時 warnings 會提示「已回退到最粗層級，同業可能包含商業模式不同的公司」。' +
-      'industryLevel 明確標示這次比較實際用的是哪一層，避免誤把寬鬆比較當成精確比較。' +
-      'found:false 代表查無分類資料，分兩種情況：這家公司資料暫時沒被 gov-ts 涵蓋到，或是境外註冊（KY）公司——' +
-      'KY 股結構上沒有台灣稅籍、永遠不會有分類資料，這種情況 warnings 會明確提示「請在呼叫前先篩掉 KY 股」，' +
-      '不是暫時性的資料缺漏。這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。',
+      '分類是扁平 2 層：33 個細分類（category）→ 10 個粗分類（coarseGroup，playwright-py 自己設計的業務相似度分組，' +
+      '跟供應鏈上下游方向無關，不是套用 TWSE 官方 37 類）。同業分組先試細分類，同業數（含目標公司自己）達到 minPeers 就停在該層；' +
+      '不夠則回退到粗分類，粗分類也不足門檻一樣停在該層（不繼續往上爬），此時 warnings 會提示「已回退到更粗分類，同業可能包含商業模式不同的公司」。' +
+      'classificationLevel 明確標示這次比較實際用的是哪一層，避免誤把寬鬆比較當成精確比較。' +
+      'minConfidence/minSampleSize 是候選同業自己的分類信心門檻（分類本身不可靠的公司不列入同業池），' +
+      'confidence/sampleSize 兩個回應欄位則是目標公司自己的信心分數/樣本數——如果目標公司自己信心不足，' +
+      'warnings 會額外提示「這次比較的參考價值可能較低」，但不會因此拒絕回傳結果。' +
+      'found:false 代表查無分類資料：這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊），或是境外註冊（KY）公司——' +
+      'KY 股不像舊版稅籍分類那樣有結構性資料缺口，warnings 只會提示「這批分類可能沒涵蓋到」。' +
+      '這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律回 200。',
     tags: ['System'],
     request: { query: getCompanyPeerGroupQuerySchema },
     responses: {

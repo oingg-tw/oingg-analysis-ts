@@ -3,24 +3,19 @@ import { logger } from '@/shared/logger';
 
 // 資料源是 gov-ts 的財政部稅籍行業標準分類（export.company_industry_classification +
 // export.industry_codes），五層階層 section/division/group/class/subclass，每家公司最多
-// 4 組代碼（rank 0=主要，1-3=次要，這裡只用 rank=0）。兩種用途，兩組獨立的查詢函式：
+// 4 組代碼（rank 0=主要，1-3=次要，這裡只用 rank=0）。
 //
-// 1. 產業同業比較（findPeerGroup）——核心問題是分類層級的「同業密度」是真正的限制：用 999
-//    家已追蹤公司實測，子類層級中位數只有 1 家同業（過半是孤例），中類層級雖然保證有同業
-//    但會混進不相關業務（例：健身中心在中類「運動娛樂休閒服務業」的「同業」是主題樂園、
-//    KTV）。用動態層級回退解決：從子類開始比對，同業數不足門檻就往更粗一層退，直到湊足或
-//    退到中類為止（不繼續往 section 爬，gov-ts 的密度分析只測到中類）。
-// 2. 產業階層瀏覽（getIndustryNodeInfo/listIndustryChildren/listIndustryCompanies）——
-//    純瀏覽語意（可展開的樹狀結構），不做動態回退，查無資料就是查無資料。因為每家公司一定
-//    分類到 subclass 這個最細層級（5 層代碼全部非 null），「公司的某層級欄位精確等於 code」
-//    天生就等於「這個 code 子樹底下的公司總數」，不需要遞迴爬子節點加總。
+// 2026-09-14：原本這裡還有「產業同業比較（findPeerGroup）」這條用途，已搬到獨立的
+// src/shared/sourceData/industryChainClassification.ts（資料源換成 oingg-playwright-py
+// 的供應鏈分類），這份檔案現在只剩「產業階層瀏覽」這一種用途：
+// 產業階層瀏覽（getIndustryNodeInfo/listIndustryChildren/listIndustryCompanies）——
+// 純瀏覽語意（可展開的樹狀結構），不做動態回退，查無資料就是查無資料。因為每家公司一定
+// 分類到 subclass 這個最細層級（5 層代碼全部非 null），「公司的某層級欄位精確等於 code」
+// 天生就等於「這個 code 子樹底下的公司總數」，不需要遞迴爬子節點加總。
 
 export type IndustryLevel = 'section' | 'division' | 'group' | 'class' | 'subclass';
 
-// 樹狀瀏覽用的「根→葉」順序，跟下面 PEER_FALLBACK_LEVELS（葉→根、不含 section）是兩種不同
-// 用途的常數，不要合併——語意不同（一個是回退順序，一個是樹的階層順序）。
 const TREE_LEVELS: IndustryLevel[] = ['section', 'division', 'group', 'class', 'subclass'];
-const PEER_FALLBACK_LEVELS: IndustryLevel[] = ['subclass', 'class', 'group', 'division'];
 
 interface CompanyClassification {
   section: string | null;
@@ -179,23 +174,9 @@ export const loadIndustryClassification = async (): Promise<void> => {
     companyCountCache = buildCompanyCountCache(classification, tree);
     logger.info(`[industry-classification]: 已從 gov-ts 載入產業分類（${classification.size} 家公司）、代碼字典（${codeRows.length} 筆）、階層樹（${rootCodes.length} 個 section）。`);
   } catch (error) {
-    logger.warn({ err: error }, '[industry-classification]: 載入失敗，不影響伺服器啟動；之後的同業比較/產業瀏覽查詢會回傳查無資料（除非重啟伺服器重新載入）。');
+    logger.warn({ err: error }, '[industry-classification]: 載入失敗，不影響伺服器啟動；之後的產業瀏覽查詢會回傳查無資料（除非重啟伺服器重新載入）。');
   }
 };
-
-// ============================================================================
-// 產業同業比較
-// ============================================================================
-
-export interface PeerGroupResult {
-  found: boolean;
-  level: IndustryLevel | null;
-  code: string | null;
-  name: string | null;
-  peers: string[]; // 含目標公司自己；found=false 時是 []
-}
-
-const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, peers: [] };
 
 // 2026-09-13 新增：給 computeAltmanZDoublePrimeScorePit.ts 判斷「是不是製造業」用——
 // Z″-Score（1995）是 Altman 專門排除 X5（資產週轉率）給非製造業公司用的版本，section='C'
@@ -209,28 +190,6 @@ export const getCompanySectionCode = async (symbol: string): Promise<string | nu
     SELECT section_code FROM "export"."company_industry_classification" WHERE symbol = ${symbol} AND rank = 0 LIMIT 1
   `;
   return rows[0]?.section_code ?? null;
-};
-
-// 動態層級回退：子類(subclass)→細類(class)→小類(group)→中類(division)，同業數（含自己）
-// 達到 minPeers 就停在該層；連 division 都不足門檻仍然停在 division（不繼續往 section
-// 爬），即使那樣同業數可能不足。純讀記憶體快取，同步函式，不用 await。
-export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>, minPeers: number): PeerGroupResult => {
-  if (!classificationCache || !industryNameCache) return NOT_FOUND;
-  const target = classificationCache.get(symbol);
-  if (!target) return NOT_FOUND;
-
-  let divisionFallback: PeerGroupResult | null = null;
-  for (const level of PEER_FALLBACK_LEVELS) {
-    const code = target[level];
-    if (code === null) continue;
-
-    const peers = [...candidatePool].filter((s) => s !== symbol && classificationCache!.get(s)?.[level] === code);
-    const result: PeerGroupResult = { found: true, level, code, name: industryNameCache.get(code) ?? null, peers: [symbol, ...peers] };
-    if (level === 'division') divisionFallback = result;
-    if (result.peers.length >= minPeers) return result;
-  }
-
-  return divisionFallback ?? NOT_FOUND; // 連 division 代碼都沒有 -> 真的沒有分類資料可比
 };
 
 // ============================================================================
