@@ -1,6 +1,7 @@
 import type { MetricBadge } from './metricDefinitionSpec';
 
 import { chowderNumberBadge } from './dividend/chowderNumber/chowderNumberBadge';
+import { dividendCoverageRatioBadge } from './dividend/dividendCoverageRatio/dividendCoverageRatioBadge';
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/shareCountChangeRateBadge';
 import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
@@ -9,6 +10,7 @@ import { ruleOf40Badge } from './growth/ruleOf40/ruleOf40Badge';
 import { sueBadge } from './growth/sue/sueBadge';
 import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
+import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
@@ -40,6 +42,7 @@ import { tobinsQBadge } from './valuation/tobinsQ/tobinsQBadge';
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   chowderNumber: chowderNumberBadge,
+  dividendCoverageRatio: dividendCoverageRatioBadge,
   dividendPayoutRatio: dividendPayoutRatioBadge,
   shareCountChangeRate: shareCountChangeRateBadge,
   shareholderYield: shareholderYieldBadge,
@@ -48,6 +51,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   sue: sueBadge,
   consecutiveProfitYears: consecutiveProfitYearsBadge,
   grossMargin: grossMarginBadge,
+  oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
   accrualsRatio: accrualsRatioBadge,

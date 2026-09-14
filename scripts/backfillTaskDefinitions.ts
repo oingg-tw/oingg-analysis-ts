@@ -62,6 +62,7 @@ import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/domai
 import { computeAndWriteRdIntensityPit } from '../src/domainPitMetrics/growth/rdIntensity/computeRdIntensityPit';
 import { computeAndWriteSuePit } from '../src/domainPitMetrics/growth/sue/computeSuePit';
 import { computeAndWriteRevenueCagrFamilyPit } from '../src/domainPitMetrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
+import { computeAndWriteOneDollarTestPit } from '../src/domainPitMetrics/profitability/oneDollarTest/computeOneDollarTestPit';
 import { computeAndWriteEpsCagrFamilyPit } from '../src/domainPitMetrics/growth/epsCagr/computeEpsCagrFamilyPit';
 import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/domainPitMetrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
 import { computeAndWriteOperatingExpenseRatioPit } from '../src/domainPitMetrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit';
@@ -109,7 +110,7 @@ export const GENERAL_METRIC_CODES = [
   'stockPrice', 'peRatio', 'pbRatio',
   'abnormalCapexRatio', 'altmanZDoublePrimeScore',
   'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
-  'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y',
+  'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y', 'oneDollarTest',
   'operatingExpenseRatio',
   'ncav', 'marketCap', 'pegRatio',
   'evToEbit', 'evToFcf', 'greenblattRoc', 'tobinsQ', 'priceToResearchRatio',
@@ -199,6 +200,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['rdIntensity', () => computeAndWriteRdIntensityPit(query)],
     ['sue', () => computeAndWriteSuePit(query)],
     ['revenueCagrFamily', () => computeAndWriteRevenueCagrFamilyPit(query)],
+    ['oneDollarTest', () => computeAndWriteOneDollarTestPit(query)],
     ['epsCagrFamily', () => computeAndWriteEpsCagrFamilyPit(query)],
     ['dividendGrowthRateFamily', () => computeAndWriteDividendGrowthRateFamilyPit(query)],
     ['operatingExpenseRatio', () => computeAndWriteOperatingExpenseRatioPit(query)],

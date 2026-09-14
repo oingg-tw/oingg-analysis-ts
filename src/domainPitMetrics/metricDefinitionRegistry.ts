@@ -34,6 +34,7 @@ import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/
 import { dividendGrowthRateFamilyDefinitions } from '@/domainPitMetrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
 import { chowderNumberDefinition } from '@/domainPitMetrics/dividend/chowderNumber/chowderNumberDefinition';
 import { revenueCagrFamilyDefinitions } from '@/domainPitMetrics/growth/revenueCagr/revenueCagrDefinition';
+import { oneDollarTestDefinition } from '@/domainPitMetrics/profitability/oneDollarTest/oneDollarTestDefinition';
 import { epsCagrFamilyDefinitions } from '@/domainPitMetrics/growth/epsCagr/epsCagrDefinition';
 import { buybackYieldDefinition } from '@/domainPitMetrics/dividend/buybackYield/buybackYieldDefinition';
 import { dividendCoverageRatioDefinition } from '@/domainPitMetrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
@@ -187,6 +188,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   rdIntensity: rdIntensityDefinition,
   sue: sueDefinition,
   ...revenueCagrFamilyDefinitions,
+  oneDollarTest: oneDollarTestDefinition,
   ...epsCagrFamilyDefinitions,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
