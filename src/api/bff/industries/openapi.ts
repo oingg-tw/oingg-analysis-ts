@@ -1,6 +1,6 @@
 import { registry } from '@/adapters/swagger/registry';
 import { getIndustryTreeQuerySchema } from './controller';
-import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, securitiesIndustrySectorsResultSchema } from './types';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, industryTreeResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (): void => {
   registry.registerPath({
@@ -87,6 +87,33 @@ export const registerIndustriesOpenApi = (): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '全部頂層聚落的完整 drill-down 樹。', content: { 'application/json': { schema: chainClustersResultSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/chain-tree',
+    summary: '產業追蹤逐層點開瀏覽樹（取代 chain-classification 原本的扁平兩層瀏覽用途）',
+    description:
+      '給重建後的「產業追蹤」頁面用（第二次重建）——playwright-py 把原本扁平兩層的 category/' +
+      'coarseGroup 換成真正的階層樹：粗分類(10+其他) → 產業(33) → 產業內區隔（依「共用上下游' +
+      '夥伴」遞迴分群，1~3 層，Gemini 取名，兄弟節點互相區分，例如資訊設備底下會拆成「筆電與' +
+      '伺服器代工」「散熱模組與伺服器導軌」「工業電腦與嵌入式系統」）→ 公司。注意這不是取代 ' +
+      'GET /industries/chain-classification——那支端點跟底層的 company_category_summary ' +
+      '資料本身沒有下線，繼續是 GET /companies/peer-group 同業比較的資料源、也繼續是每家公司' +
+      '「產業標籤」的顯示用途，這裡只是給樹狀瀏覽 UI 換一個更細緻的資料源。\n\n' +
+      'nodeType 恆為 coarse_group/category/segment/misc 四種之一，misc 是「其他（共用上下游' +
+      '太少）」的長尾桶，這種桶底下的公司彼此不見得真的相近。members 只有葉節點（children 為' +
+      '空陣列）才有值，全部是上市櫃公司（不像 chain-clusters 混雜外部/非上市節點，這裡不需要 ' +
+      'isListed 欄位）。\n\n' +
+      '⚠️ **nodeId 不是穩定 id**——playwright-py 重建樹（報告更新或調整分群邏輯）後，同一個 ' +
+      'nodeId 可能對應到完全不同的節點，號碼會整個洗牌，跟 GET /industries/chain-clusters 的 ' +
+      'clusterId 同一種不穩定性質，前端不能把它當永久識別碼快取/收藏/放進分享連結。一次回傳' +
+      '整棵樹（含全部子節點跟葉節點成員），沒有查詢參數，純讀記憶體快取，成本低，可以每次都打' +
+      '不用自己快取。',
+    tags: ['Industries'],
+    responses: {
+      200: { description: '整棵產業追蹤瀏覽樹（頂層粗分類 + 全部子節點 + 葉節點成員）。', content: { 'application/json': { schema: industryTreeResultSchema } } },
     },
   });
 

@@ -4,6 +4,7 @@ import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/models/gov/industryClassification';
 import { listAllCompanyCategories, listCategoryGroups } from '@/models/playwright/industryChainClassification';
 import { listIndustryClusters, getExternalCompanyName } from '@/models/playwright/industryClusters';
+import { listIndustryTree, type IndustryTreeNode } from '@/models/playwright/industryTree';
 import { listSecuritiesIndustrySectors } from '@/models/securitiesIndustry';
 
 export const getIndustryTreeQuerySchema = z.object({
@@ -121,6 +122,36 @@ export const getIndustryChainClusters = async (_req: Request, res: Response, nex
         })),
       })),
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2026-09-15 應 web-nuxt「產業追蹤」頁面重建（第二次，逐層點開瀏覽樹）需求新增——
+// playwright-py 重建了樹狀瀏覽結構（粗分類→產業→產業內區隔（1~3層）→公司），取代
+// getIndustryChainClassification 原本給瀏覽用的扁平兩層（那支端點/資料本身沒有下線，
+// company_category_summary 繼續是 findPeerGroup 同業比較跟公司「產業標籤」顯示用，
+// 兩者不是取代關係，見 industryTree.ts 檔頭說明）。一次回傳整棵樹（含全部子節點跟葉
+// 節點成員），成員只在葉節點出現，全部是上市櫃公司（不像 chain-clusters 含外部節點，
+// 這裡不需要 isListed）。
+const collectAllMemberSymbols = (nodes: IndustryTreeNode[]): string[] => nodes.flatMap((n) => [...n.memberSymbols, ...collectAllMemberSymbols(n.children)]);
+
+export const getIndustryChainTree = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const roots = listIndustryTree();
+    const nameMap = await getCompanyNamesForSymbols(collectAllMemberSymbols(roots));
+
+    const toResponseNode = (node: IndustryTreeNode): unknown => ({
+      nodeId: node.nodeId,
+      nodeType: node.nodeType,
+      label: node.label,
+      depth: node.depth,
+      size: node.size,
+      children: node.children.map(toResponseNode),
+      members: node.memberSymbols.map((symbol) => ({ symbol, companyName: nameMap.get(symbol) ?? null })),
+    });
+
+    res.status(200).json({ roots: roots.map(toResponseNode) });
   } catch (error) {
     next(error);
   }

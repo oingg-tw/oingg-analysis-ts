@@ -24,6 +24,7 @@ import { loadIndustryCodes } from './models/industryCodes';
 import { loadIndustryClassification } from './models/gov/industryClassification';
 import { loadIndustryChainClassification } from './models/playwright/industryChainClassification';
 import { loadIndustryClusters } from './models/playwright/industryClusters';
+import { loadIndustryTree } from './models/playwright/industryTree';
 
 const app = express();
 
@@ -88,6 +89,10 @@ const startServer = async () => {
     // GET /industries/chain-clusters）——同樣輔助性質，不 await，見
     // models/playwright/industryClusters.ts（cluster_id 不穩定的重要說明）。
     void loadIndustryClusters();
+    // 背景載入 playwright-py 產業追蹤逐層點開瀏覽樹（GET /industries/chain-tree，取代
+    // chain-classification 原本的扁平兩層瀏覽用途）——同樣輔助性質，不 await，見
+    // models/playwright/industryTree.ts（node_id 不穩定的重要說明）。
+    void loadIndustryTree();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
     // connection refused。改成明確的 IPv4 位址，不讓 Node 自己決定要 bind 哪個位址族。

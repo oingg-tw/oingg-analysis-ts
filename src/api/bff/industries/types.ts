@@ -105,6 +105,37 @@ export const chainClustersResultSchema = z.object({
 });
 export type ChainClustersResult = z.infer<typeof chainClustersResultSchema>;
 
+// 2026-09-15 新增——playwright-py 重建的「產業追蹤」逐層點開瀏覽樹，取代
+// chainClassificationResultSchema 原本給瀏覽用的扁平兩層（那份資料本身沒有下線，繼續是
+// findPeerGroup 同業比較跟公司「產業標籤」顯示用，見 src/models/playwright/industryTree.ts
+// 的完整說明）。⚠️ nodeId 不是穩定 id，跟 chain-clusters 的 clusterId 同一種不穩定性質，
+// 不能當永久識別碼快取。
+
+export const industryTreeMemberSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+});
+
+// 真正的巢狀樹（children 遞迴出現同一種節點形狀），但 registry.registerPath 底層的
+// OpenAPI walker 不支援 z.lazy 自我參照（會無限遞迴導致 stack overflow，已實測炸過一次）
+// ——這兩份 result schema 只用來產生 OpenAPI 文件，不是拿來 runtime 驗證回應（這支
+// controller 沒有呼叫 .parse()），所以 children 用 z.array(z.unknown()) 終止遞迴，靠
+// .meta() 的文字說明「這裡遞迴重複同一個節點形狀」，不會犧牲文件的實際可讀性。
+export const industryTreeNodeSchema = z.object({
+  nodeId: z.string().meta({ description: '⚠️ 不是穩定 id，樹重建後編號會變，不要快取' }),
+  nodeType: z.enum(['coarse_group', 'category', 'segment', 'misc']).meta({ description: 'coarse_group=粗分類、category=產業、segment=產業內區隔、misc=「其他（共用上下游太少）」長尾桶' }),
+  label: z.string().nullable(),
+  depth: z.number().meta({ description: '樹的深度，根節點（粗分類）是 0' }),
+  size: z.number().nullable().meta({ description: 'playwright-py 提供的節點規模數字（通常是底下公司數），純參考用，實際公司清單以 members/子節點遞迴收集為準' }),
+  children: z.array(z.unknown()).meta({ description: '遞迴重複同一個節點形狀（nodeId/nodeType/label/depth/size/children/members），深度視實際分群結果而定（通常 1~4 層）' }),
+  members: z.array(industryTreeMemberSchema).meta({ description: '只有葉節點（children 為空陣列）才有成員；全部是上市櫃公司，不含外部/非上市節點，不需要 isListed 欄位' }),
+});
+
+export const industryTreeResultSchema = z.object({
+  roots: z.array(industryTreeNodeSchema).meta({ description: '全部頂層節點（粗分類），含完整子樹跟葉節點成員，一次回傳整棵樹；children 內部形狀跟 roots 的元素完全一致，遞迴到底' }),
+});
+export type IndustryTreeResult = z.infer<typeof industryTreeResultSchema>;
+
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是
 // 完全不同的體系：只有單一層級（不是樹狀），40 個代碼扁平列出，刻意獨立一組 schema。
