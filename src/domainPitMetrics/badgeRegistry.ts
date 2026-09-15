@@ -16,6 +16,8 @@ import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestB
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
+import { fcfConversionRateBadge } from './quality/fcfConversionRate/fcfConversionRateBadge';
+import { ocfToNetIncomeBadge } from './quality/ocfToNetIncome/ocfToNetIncomeBadge';
 import { beneishMScoreBadge } from './quality/beneishMScore/beneishMScoreBadge';
 import { piotroskiFScoreBadge } from './quality/piotroskiFScore/piotroskiFScoreBadge';
 import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreBadge';
@@ -65,6 +67,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
   accrualsRatio: accrualsRatioBadge,
+  fcfConversionRate: fcfConversionRateBadge,
+  ocfToNetIncome: ocfToNetIncomeBadge,
   beneishMScore: beneishMScoreBadge,
   piotroskiFScore: piotroskiFScoreBadge,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreBadge,
