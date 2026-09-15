@@ -34,6 +34,7 @@ import { dividendPerShareDefinition } from '@/domainPitMetrics/dividend/dividend
 import { grossProfitPerShareDefinition } from '@/domainPitMetrics/profitability/grossProfitPerShare/grossProfitPerShareDefinition';
 import { operatingIncomePerShareDefinition } from '@/domainPitMetrics/profitability/operatingIncomePerShare/operatingIncomePerShareDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
+import { dividendDistributionCountDefinition } from '@/domainPitMetrics/dividend/dividendDistributionCount/dividendDistributionCountDefinition';
 import { dividendGrowthRateFamilyDefinitions } from '@/domainPitMetrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
 import { chowderNumberDefinition } from '@/domainPitMetrics/dividend/chowderNumber/chowderNumberDefinition';
 import { revenueCagrFamilyDefinitions } from '@/domainPitMetrics/growth/revenueCagr/revenueCagrDefinition';
@@ -185,6 +186,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   dividendPayoutRatio: dividendPayoutRatioDefinition,
   dividendPerShare: dividendPerShareDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
+  dividendDistributionCount: dividendDistributionCountDefinition,
   ...dividendGrowthRateFamilyDefinitions,
   chowderNumber: chowderNumberDefinition,
   buybackYield: buybackYieldDefinition,

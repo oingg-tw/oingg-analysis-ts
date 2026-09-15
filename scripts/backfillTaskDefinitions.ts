@@ -62,6 +62,7 @@ import { computeAndWriteAbnormalCapexRatioPit } from '../src/domainPitMetrics/qu
 import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
 import { computeAndWriteChowderNumberPit } from '../src/domainPitMetrics/dividend/chowderNumber/computeChowderNumberPit';
 import { computeAndWriteConsecutiveDividendYearsPit } from '../src/domainPitMetrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
+import { computeAndWriteDividendDistributionCountPit } from '../src/domainPitMetrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
 import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/domainPitMetrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
 import { computeAndWriteRdIntensityPit } from '../src/domainPitMetrics/growth/rdIntensity/computeRdIntensityPit';
 import { computeAndWriteSuePit } from '../src/domainPitMetrics/growth/sue/computeSuePit';
@@ -115,7 +116,7 @@ export const GENERAL_METRIC_CODES = [
   'buybackYield', 'dividendCoverageRatio', 'shareCountChangeRate', 'shareholderYield',
   'stockPrice', 'peRatio', 'pbRatio',
   'abnormalCapexRatio', 'altmanZDoublePrimeScore',
-  'chowderNumber', 'consecutiveDividendYears', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
+  'chowderNumber', 'consecutiveDividendYears', 'dividendDistributionCount', 'famaFrenchOperatingProfitability', 'rdIntensity', 'sue',
   'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y', 'oneDollarTest',
   'operatingExpenseRatio',
   'ncav', 'marketCap', 'pegRatio',
@@ -216,6 +217,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['altmanZDoublePrimeScore', () => computeAndWriteAltmanZDoublePrimeScorePit(query)],
     ['chowderNumber', () => computeAndWriteChowderNumberPit(query)],
     ['consecutiveDividendYears', () => computeAndWriteConsecutiveDividendYearsPit(query)],
+    ['dividendDistributionCount', () => computeAndWriteDividendDistributionCountPit(query)],
     ['famaFrenchOperatingProfitability', () => computeAndWriteFamaFrenchOperatingProfitabilityPit(query)],
     ['rdIntensity', () => computeAndWriteRdIntensityPit(query)],
     ['sue', () => computeAndWriteSuePit(query)],
