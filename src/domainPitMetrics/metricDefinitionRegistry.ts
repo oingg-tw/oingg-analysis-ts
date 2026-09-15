@@ -14,6 +14,7 @@ import { dupontInterestBurdenDefinition } from '@/domainPitMetrics/profitability
 import { dupontEbitMarginDefinition } from '@/domainPitMetrics/profitability/dupontEbitMargin/dupontEbitMarginDefinition';
 import { dupontExtendedRoeDefinition } from '@/domainPitMetrics/profitability/dupontExtendedRoe/dupontExtendedRoeDefinition';
 import { epsDefinition } from '@/domainPitMetrics/profitability/eps/epsDefinition';
+import { pretaxIncomePerShareDefinition } from '@/domainPitMetrics/profitability/pretaxIncomePerShare/pretaxIncomePerShareDefinition';
 import { bvpsDefinition } from '@/domainPitMetrics/valuation/bvps/bvpsDefinition';
 import { peRatioDefinition } from '@/domainPitMetrics/valuation/peRatio/peRatioDefinition';
 import { pegRatioDefinition } from '@/domainPitMetrics/valuation/pegRatio/pegRatioDefinition';
@@ -55,6 +56,7 @@ import { consecutiveProfitYearsDefinition } from '@/domainPitMetrics/quality/con
 import { earningsYieldDefinition } from '@/domainPitMetrics/valuation/earningsYield/earningsYieldDefinition';
 import { ocfPerShareDefinition } from '@/domainPitMetrics/quality/ocfPerShare/ocfPerShareDefinition';
 import { fcfPerShareDefinition } from '@/domainPitMetrics/quality/fcfPerShare/fcfPerShareDefinition';
+import { depreciationAmortizationPerShareDefinition } from '@/domainPitMetrics/quality/depreciationAmortizationPerShare/depreciationAmortizationPerShareDefinition';
 import { ocfToNetIncomeDefinition } from '@/domainPitMetrics/quality/ocfToNetIncome/ocfToNetIncomeDefinition';
 import { accrualsRatioDefinition } from '@/domainPitMetrics/quality/accrualsRatio/accrualsRatioDefinition';
 import { fcfMarginDefinition } from '@/domainPitMetrics/quality/fcfMargin/fcfMarginDefinition';
@@ -159,6 +161,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   dupontEbitMargin: dupontEbitMarginDefinition,
   dupontExtendedRoe: dupontExtendedRoeDefinition,
   eps: epsDefinition,
+  pretaxIncomePerShare: pretaxIncomePerShareDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,
   pegRatio: pegRatioDefinition,
@@ -193,6 +196,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   ...epsCagrFamilyDefinitions,
   ocfPerShare: ocfPerShareDefinition,
   fcfPerShare: fcfPerShareDefinition,
+  depreciationAmortizationPerShare: depreciationAmortizationPerShareDefinition,
   ocfToNetIncome: ocfToNetIncomeDefinition,
   accrualsRatio: accrualsRatioDefinition,
   fcfMargin: fcfMarginDefinition,

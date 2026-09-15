@@ -66,6 +66,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'zmijewskiScore',
   'ohlsonOScore',
   'eps',
+  'pretaxIncomePerShare',
   'revenuePerShare',
   'roa',
   'netProfitMargin',
@@ -134,6 +135,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'fcfPerShare',
   'ocfMargin',
   'ocfPerShare',
+  'depreciationAmortizationPerShare',
   'ocfToNetIncome',
   'ownerEarnings',
 ] as const;

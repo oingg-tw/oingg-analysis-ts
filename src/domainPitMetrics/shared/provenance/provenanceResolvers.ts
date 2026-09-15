@@ -41,6 +41,7 @@ import { getAltmanZDoublePrimeScoreProvenance } from '@/domainPitMetrics/resilie
 import { getZmijewskiScoreProvenance } from '@/domainPitMetrics/resilience/zmijewskiScore/getZmijewskiScoreProvenance';
 import { getOhlsonOScoreProvenance } from '@/domainPitMetrics/resilience/ohlsonOScore/getOhlsonOScoreProvenance';
 import { getEpsProvenance } from '@/domainPitMetrics/profitability/eps/getEpsProvenance';
+import { getPretaxIncomePerShareProvenance } from '@/domainPitMetrics/profitability/pretaxIncomePerShare/getPretaxIncomePerShareProvenance';
 import { getRevenuePerShareProvenance } from '@/domainPitMetrics/profitability/revenuePerShare/getRevenuePerShareProvenance';
 import { getRoaProvenance } from '@/domainPitMetrics/profitability/roa/getRoaProvenance';
 import { getNetProfitMarginProvenance } from '@/domainPitMetrics/profitability/netProfitMargin/getNetProfitMarginProvenance';
@@ -101,6 +102,7 @@ import { getFcfMarginProvenance } from '@/domainPitMetrics/quality/fcfMargin/get
 import { getFcfPerShareProvenance } from '@/domainPitMetrics/quality/fcfPerShare/getFcfPerShareProvenance';
 import { getOcfMarginProvenance } from '@/domainPitMetrics/quality/ocfMargin/getOcfMarginProvenance';
 import { getOcfPerShareProvenance } from '@/domainPitMetrics/quality/ocfPerShare/getOcfPerShareProvenance';
+import { getDepreciationAmortizationPerShareProvenance } from '@/domainPitMetrics/quality/depreciationAmortizationPerShare/getDepreciationAmortizationPerShareProvenance';
 import { getOcfToNetIncomeProvenance } from '@/domainPitMetrics/quality/ocfToNetIncome/getOcfToNetIncomeProvenance';
 import { getOwnerEarningsProvenance } from '@/domainPitMetrics/quality/ownerEarnings/getOwnerEarningsProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
@@ -159,6 +161,7 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   zmijewskiScore: getZmijewskiScoreProvenance,
   ohlsonOScore: getOhlsonOScoreProvenance,
   eps: getEpsProvenance,
+  pretaxIncomePerShare: getPretaxIncomePerShareProvenance,
   revenuePerShare: getRevenuePerShareProvenance,
   roa: getRoaProvenance,
   netProfitMargin: getNetProfitMarginProvenance,
@@ -225,6 +228,7 @@ export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)
   fcfPerShare: getFcfPerShareProvenance,
   ocfMargin: getOcfMarginProvenance,
   ocfPerShare: getOcfPerShareProvenance,
+  depreciationAmortizationPerShare: getDepreciationAmortizationPerShareProvenance,
   ocfToNetIncome: getOcfToNetIncomeProvenance,
   ownerEarnings: getOwnerEarningsProvenance,
 };
