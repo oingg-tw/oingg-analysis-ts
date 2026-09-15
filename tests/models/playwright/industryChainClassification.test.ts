@@ -28,10 +28,13 @@ test('listAllCompanyCategories: 一次回傳全部公司，不主動濾掉任何
   assert.ok(tsmc?.coarseGroup !== null, '2330 應該有粗分類');
 });
 
-test('listCategoryGroups: 10 組粗分類，每組底下都有至少一個細分類', () => {
+// 2026-09-15（第三次）：粗分類組數本身也會隨 playwright-py 擴充細分類清單變動
+// （34→52類那次新增了「民生服務」粗分類，10→11組）——不斷言精確組數，只驗證
+// 結構性質，同一個教訓見這份檔案其餘測試的既有說明。
+test('listCategoryGroups: 每組粗分類底下都有至少一個細分類', () => {
   const groups = listCategoryGroups();
 
-  assert.equal(groups.length, 10, '2026-09-14 實測是 10 組粗分類');
+  assert.ok(groups.length > 0, '應該至少有一組粗分類');
   for (const g of groups) {
     assert.ok(g.fineCategories.length > 0, `${g.coarseGroup} 底下應該至少有一個細分類`);
   }

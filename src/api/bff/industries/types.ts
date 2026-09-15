@@ -59,7 +59,7 @@ export type IndustryTreeNodeResult = z.infer<typeof industryTreeNodeResultSchema
 export const chainClassificationCompanySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
-  category: z.string().nullable().meta({ description: '33 個細分類其中之一；null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）' }),
+  category: z.string().nullable().meta({ description: '細分類其中之一（清單會隨 playwright-py 發現新缺口持續擴充，不是固定數量，實際清單見 GET /industries/chain-classification 的 groups）；null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）' }),
   coarseGroup: z.string().nullable().meta({ description: '10 組粗分類其中之一，category 為 null 時這裡也是 null' }),
   source: z.enum(['keyword', 'gemini']).nullable().meta({ description: '這家公司分類的判斷來源——2026-09-15 取代原本的 confidence/sampleSize，keyword 代表僅用免費關鍵字規則判斷、gemini 代表額外經過 Gemini 語意驗證/修正過，category 為 null 時這裡也是 null' }),
   updatedAt: z.string().nullable().meta({ description: '這家公司分類最後一次變動的日期（YYYY-MM-DD），不是查詢當下時間' }),

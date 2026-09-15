@@ -95,7 +95,7 @@ export const companyPeerGroupResultSchema = z.object({
     .meta({ description: '這次比較實際使用的樹狀層級——segment=產業內區隔（最理想，代表真正共用上下游的同業）、category=退到整個產業層級、coarse_group=退到最粗的粗分類層級；恆不會是 misc（那個長尾桶不當同業池，見 industryTree.ts 說明）' }),
   peerGroupNodeId: z.string().nullable().meta({ description: '⚠️ 不是穩定 id，樹重建後編號會變，不要快取；這次比較實際使用的節點 id' }),
   peerGroupLabel: z.string().nullable().meta({ description: '這次比較實際使用的層級名稱，例如「晶圓代工與主流封測」（segment）或「積體電路」（category）' }),
-  category: z.string().nullable().meta({ description: '這家公司的產業標籤（33 類之一），純資訊性欄位，來源跟 GET /industries/chain-classification 一致，不是這次同業比較實際用到的層級（那個看 peerGroupLevel/peerGroupLabel）' }),
+  category: z.string().nullable().meta({ description: '這家公司的產業標籤（細分類清單會持續擴充，不是固定數量），純資訊性欄位，來源跟 GET /industries/chain-classification 一致，不是這次同業比較實際用到的層級（那個看 peerGroupLevel/peerGroupLabel）' }),
   coarseGroup: z.string().nullable().meta({ description: '這家公司的粗分類標籤（10 組之一），純資訊性欄位，語意同上' }),
   source: z.enum(['keyword', 'gemini']).nullable().meta({ description: '這家公司產業標籤（category/coarseGroup）的判斷來源，keyword 代表僅用免費關鍵字規則判斷、gemini 代表額外經過 Gemini 語意驗證/修正過，全市場 source=keyword 的公司極少（<1%）；純資訊性欄位，跟同業比較用的樹狀結構是獨立的兩件事' }),
   updatedAt: z.string().nullable().meta({ description: '這家公司產業標籤最後一次變動的日期（YYYY-MM-DD），不是查詢當下的時間；查詢快取只在伺服器啟動時載入一次，實際資料可能比伺服器啟動時間更舊' }),

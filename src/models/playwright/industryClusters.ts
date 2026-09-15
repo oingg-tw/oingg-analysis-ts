@@ -28,9 +28,9 @@ import { logger } from '@/shared/logger';
 // （除非重啟），見該檔案的說明。
 //
 // 2026-09-15：playwright-py 在 export.industry_cluster_members 加了 meta_group 欄位——
-// 326 個細聚落（見上面 resolution limit 修復）再收斂成約 17~20 組更粗的「元分組」，跟
-// industryChainClassification.ts 的 coarseGroup（33細分類→10組）是同一種「細分類太多、
-// 再包一層粗分類方便瀏覽」的設計精神，但這裡是聚落層級不是 category 層級，兩者不要混淆。
+// 細聚落再收斂成更粗的「元分組」，跟 industryChainClassification.ts 的 coarseGroup
+// 是同一種「細分類太多、再包一層粗分類方便瀏覽」的設計精神，但這裡是聚落層級不是
+// category 層級，兩者不要混淆。兩邊的組數/群數都會隨資料源持續調整，不要寫死數字。
 // 同一個 cluster_id 底下所有 member 列的 meta_group 恆一致（已實測 0 個聚落有分歧），
 // 所以視為 ClusterNode 的欄位而非 member 層級屬性。
 
@@ -43,7 +43,7 @@ export interface ClusterSubGroup {
 export interface ClusterNode {
   clusterId: number;
   label: string | null;
-  metaGroup: string | null; // 326 細聚落收斂成的粗分組（約17~20組），見上方 2026-09-15 說明
+  metaGroup: string | null; // 細聚落收斂成的粗分組，見上方 2026-09-15 說明；組數會隨資料源調整持續變動
   directMemberCodes: string[]; // 沒有再切子聚落的直屬成員；是不是恆為空陣列取決於當下的分群演算法（見檔頭說明），不要假設一定有/一定沒有
   subClusters: ClusterSubGroup[];
 }

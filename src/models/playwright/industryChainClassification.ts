@@ -9,9 +9,11 @@ import { logger } from '@/shared/logger';
 // getCompanySectionCode（判斷「是不是製造業」），playwright-py 的分類是扁平 2 層
 // （細分類/粗分類），沒有對應的遞迴樹狀結構，兩邊刻意不合併，各自服務各自的用途。
 //
-// 分類形狀：33 個「細分類」（category，供應鏈邊的眾數分類）→ 10 個「粗分類」
-// （coarseGroup，playwright-py 自己設計的業務相似度分組，跟供應鏈上下游方向無關，不是
-// category_hierarchy 那套 tiers，也不是套用 TWSE 官方 37 類——2026-09-14 使用者明確
+// 分類形狀：N 個「細分類」（category，公司本身分類，2026-09-14 上線時 33 個，
+// 2026-09-15 探索性擴充到 52 個，之後還會隨 playwright-py 發現新缺口繼續變動，不要
+// 寫死精確數字）→ M 個「粗分類」（coarseGroup，playwright-py 自己設計的業務相似度
+// 分組，跟供應鏈上下游方向無關，不是 category_hierarchy 那套 tiers，也不是套用
+// TWSE 官方 37 類——2026-09-14 使用者明確
 // 否決套用 TWSE 分類）。找同業時先試細分類，不夠退到粗分類，兩層都不夠就查無同業——
 // 沒有 gov-ts 版本那種 4 層動態回退，這是資料源天生的形狀差異，不是簡化。
 //

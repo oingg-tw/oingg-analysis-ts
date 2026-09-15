@@ -80,9 +80,10 @@ export const registerIndustriesOpenApi = (): void => {
       '成員（members/directMembers）的 code 不是只有台股上市櫃公司——供應鏈圖節點包含國際客戶/供應商（蘋果、' +
       'NVIDIA、ASML 這類），isListed:false 代表這是外部/非上市公司節點（沒有對應的個股詳情頁可以連結），' +
       'name 來自 playwright-py 的公司名稱對照表，不是 twse/tpex company_profile。\n\n' +
-      'metaGroup（2026-09-15 新增）：326 個細聚落再收斂成的粗分組（約 17~20 組），跟 ' +
+      'metaGroup（2026-09-15 新增）：細聚落再收斂成的粗分組，跟 ' +
       'GET /industries/chain-classification 的 coarseGroup 是完全不同層級的另一套「粗分組」' +
-      '（那個是 33 細分類→10 組，這個是 326 細聚落→約 17~20 組），不要混淆使用。沒有查詢參數，純讀記憶體' +
+      '（分別是兩套獨立的分類/分群體系各自收斂出來的粗分組，數量都會隨資料源調整持續變動，不要' +
+      '寫死精確數字，也不要混淆使用）。沒有查詢參數，純讀記憶體' +
       '快取，成本低，可以每次都打不用自己快取。',
     tags: ['Industries'],
     responses: {
