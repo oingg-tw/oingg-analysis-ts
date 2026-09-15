@@ -109,90 +109,15 @@ export const loadIndustryChainClassification = async (): Promise<void> => {
 };
 
 // ============================================================================
-// 產業同業比較（取代 industryClassification.ts 原本的 gov-ts 版 findPeerGroup）
-// ============================================================================
-
-export interface PeerGroupResult {
-  found: boolean;
-  level: 'category' | 'coarseGroup' | null;
-  code: string | null; // 這次比較實際用的層級的代碼（level:'category' 時是細分類，level:'coarseGroup' 時是粗分類）
-  name: string | null;
-  category: string | null; // 目標公司自己的細分類，不受 level 影響——level:'coarseGroup' 時用來告訴呼叫端「原本是哪個細分類同業不足」，跟 code 是兩個不同語意的欄位，不要合併
-  source: 'keyword' | 'gemini' | null; // 目標公司分類的判斷來源，2026-09-15 取代原本的 confidence/sampleSize（見檔頭說明）——純資訊性欄位，不用來過濾候選同業（見下方 findPeerGroup 的說明）
-  updatedAt: Date | null; // 目標公司分類最後一次變動的時間，不是快取抓取時間——資料本身可能比伺服器啟動時間更舊（快取只在啟動時抓一次，見檔頭說明）
-  peers: string[]; // 含目標公司自己；found=false 時是 []
-}
-
-const NOT_FOUND: PeerGroupResult = { found: false, level: null, code: null, name: null, category: null, source: null, updatedAt: null, peers: [] };
-
-// 2026-09-15：原本這裡有 FindPeerGroupOptions（minConfidence/minSampleSize）用來過濾候選
-// 同業本身的分類信不信得過，資料源換掉 confidence/sampleSize 概念後，跟 playwright-py
-// 確認過：新架構下 source='keyword'（代表 Gemini 完全沒看過這家公司）全市場只剩 18 家
-// （<1%，1966/1984 家都是 source='gemini'），對方建議不用特別做「只收 gemini 驗證過」
-// 的篩選機制，母體太小不值得增加複雜度。故意不用一個新的 requireVerifiedSource 之類的
-// 參數取代，直接跟著建議拿掉整個品質門檻概念——找同業只看 category 是否相符，source
-// 只當純資訊性欄位回傳給呼叫端參考。
-//
-// 找同業：(1) 目標公司完全沒有分類（category===null）-> 查無資料；(2) 同細分類候選池湊到
-// minPeers（含自己）-> level:'category'；(3) 不夠 -> 用粗分類找跨細分類的候選池，湊到
-// minPeers -> level:'coarseGroup'；(4) 粗分類池仍不足但非空 -> 照舊版「退到最粗層級也要
-// 回傳」的慣例，即使沒湊到 minPeers 也回傳這個結果；(5) 連粗分類池都是空的（理論上不會
-// 發生，粗分類池至少包含目標公司自己）-> 查無資料。
-export const findPeerGroup = (symbol: string, candidatePool: ReadonlySet<string>, minPeers: number): PeerGroupResult => {
-  if (!companyCategoryCache || !coarseGroupMembersCache) return NOT_FOUND;
-  const target = companyCategoryCache.get(symbol);
-  if (!target || target.category === null) return NOT_FOUND;
-
-  const isQualifiedCandidate = (s: string): CompanyCategoryEntry | undefined => {
-    const entry = companyCategoryCache!.get(s);
-    if (!entry || entry.category === null) return undefined;
-    return entry;
-  };
-
-  const categoryPeers = [...candidatePool].filter((s) => s !== symbol && isQualifiedCandidate(s)?.category === target.category);
-  const categoryResult: PeerGroupResult = {
-    found: true,
-    level: 'category',
-    code: target.category,
-    name: target.category,
-    category: target.category,
-    source: target.source,
-    updatedAt: target.updatedAt,
-    peers: [symbol, ...categoryPeers],
-  };
-  if (categoryResult.peers.length >= minPeers) return categoryResult;
-
-  // 理論上不會發生（33 細分類全部都有對應的粗分類），防禦性處理：查無粗分類對照就停在
-  // 細分類層級的結果（即使沒湊到 minPeers），跟下面「退到最粗層級也要回傳」同一個慣例。
-  if (target.coarseGroup === null) return categoryResult;
-
-  const coarseGroupCategories = coarseGroupMembersCache.get(target.coarseGroup);
-  const coarseGroupPeers = [...candidatePool].filter((s) => {
-    if (s === symbol) return false;
-    const candidateCategory = isQualifiedCandidate(s)?.category;
-    if (candidateCategory === undefined || candidateCategory === null) return false;
-    return coarseGroupCategories?.has(candidateCategory) ?? false;
-  });
-  const coarseGroupResult: PeerGroupResult = {
-    found: true,
-    level: 'coarseGroup',
-    code: target.coarseGroup,
-    name: target.coarseGroup,
-    category: target.category,
-    source: target.source,
-    updatedAt: target.updatedAt,
-    peers: [symbol, ...coarseGroupPeers],
-  };
-  // 退到最粗層級（coarseGroup）湊到 minPeers 就回傳；湊不滿也回傳同一個結果（不繼續往上
-  // 爬——粗分類已經是最粗的層級），跟 gov-ts 版本「連 division 都不足門檻也要停在
-  // division」的既有慣例一致：找同業的目的是給呼叫端一個「這個信心水準下最好的分組」，
-  // 不是保證一定湊滿 minPeers 家。
-  return coarseGroupResult;
-};
-
-// ============================================================================
 // 產業瀏覽（批次匯出，給「產業追蹤」頁面重建用，2026-09-14 web-nuxt 要求）
 // ============================================================================
+//
+// 2026-09-15（第二次）：同業比較（原本這裡的 findPeerGroup）已搬到
+// src/models/playwright/industryTree.ts 的 findPeerGroupByTree，改用產業追蹤樹的葉節點
+// 當第一選擇，不再用這裡的 33 類 category 當第一選擇——這份檔案的 companyCategoryCache/
+// coarseGroupMembersCache 現在純粹是「產業標籤」顯示用途（見下方 getCompanyCategoryInfo/
+// listAllCompanyCategories），不再是同業比較演算法本身的資料源，舊版 findPeerGroup 已
+// 直接刪除，不留 fallback。
 
 export interface CompanyCategoryListEntry {
   symbol: string;
@@ -231,3 +156,10 @@ export const listCategoryGroups = (): CategoryGroupListEntry[] => {
     .map(([coarseGroup, fineCategories]) => ({ coarseGroup, fineCategories: [...fineCategories].sort() }))
     .sort((a, b) => a.coarseGroup.localeCompare(b.coarseGroup));
 };
+
+// 2026-09-15（第二次）：findPeerGroup 同業比較改用 industryTree.ts 的樹狀結構找同業，
+// 這裡的 category/coarseGroup/source 不再是同業比較演算法本身的一部分，但仍然是每家
+// 公司的「產業標籤」顯示用途（見檔頭說明）——給 GET /companies/peer-group 之類需要
+// 「同時顯示同業結果 + 這家公司的產業標籤」的呼叫端用，不用整份 listAllCompanyCategories()
+// 只為了查一家公司。
+export const getCompanyCategoryInfo = (symbol: string): CompanyCategoryEntry | undefined => companyCategoryCache?.get(symbol);
