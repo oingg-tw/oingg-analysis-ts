@@ -30,6 +30,9 @@ import { greenblattEarningsYieldDefinition } from '@/domainPitMetrics/valuation/
 import { magicFormulaRankDefinition } from '@/domainPitMetrics/valuation/magicFormulaRank/magicFormulaRankDefinition';
 import { revenuePerShareDefinition } from '@/domainPitMetrics/profitability/revenuePerShare/revenuePerShareDefinition';
 import { dividendPayoutRatioDefinition } from '@/domainPitMetrics/dividend/dividendPayoutRatio/dividendPayoutRatioDefinition';
+import { dividendPerShareDefinition } from '@/domainPitMetrics/dividend/dividendPerShare/dividendPerShareDefinition';
+import { grossProfitPerShareDefinition } from '@/domainPitMetrics/profitability/grossProfitPerShare/grossProfitPerShareDefinition';
+import { operatingIncomePerShareDefinition } from '@/domainPitMetrics/profitability/operatingIncomePerShare/operatingIncomePerShareDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domainPitMetrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
 import { dividendGrowthRateFamilyDefinitions } from '@/domainPitMetrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
 import { chowderNumberDefinition } from '@/domainPitMetrics/dividend/chowderNumber/chowderNumberDefinition';
@@ -165,6 +168,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   dupontExtendedRoe: dupontExtendedRoeDefinition,
   eps: epsDefinition,
   pretaxIncomePerShare: pretaxIncomePerShareDefinition,
+  grossProfitPerShare: grossProfitPerShareDefinition,
+  operatingIncomePerShare: operatingIncomePerShareDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,
   pegRatio: pegRatioDefinition,
@@ -178,6 +183,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   magicFormulaRank: magicFormulaRankDefinition,
   revenuePerShare: revenuePerShareDefinition,
   dividendPayoutRatio: dividendPayoutRatioDefinition,
+  dividendPerShare: dividendPerShareDefinition,
   consecutiveDividendYears: consecutiveDividendYearsDefinition,
   ...dividendGrowthRateFamilyDefinitions,
   chowderNumber: chowderNumberDefinition,
