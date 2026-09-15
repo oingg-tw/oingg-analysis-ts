@@ -26,6 +26,13 @@ import { logger } from '@/shared/logger';
 //
 // 快取策略跟 industryChainClassification.ts 一致：伺服器啟動時抓一次進記憶體，之後不重抓
 // （除非重啟），見該檔案的說明。
+//
+// 2026-09-15：playwright-py 在 export.industry_cluster_members 加了 meta_group 欄位——
+// 326 個細聚落（見上面 resolution limit 修復）再收斂成約 17~20 組更粗的「元分組」，跟
+// industryChainClassification.ts 的 coarseGroup（33細分類→10組）是同一種「細分類太多、
+// 再包一層粗分類方便瀏覽」的設計精神，但這裡是聚落層級不是 category 層級，兩者不要混淆。
+// 同一個 cluster_id 底下所有 member 列的 meta_group 恆一致（已實測 0 個聚落有分歧），
+// 所以視為 ClusterNode 的欄位而非 member 層級屬性。
 
 export interface ClusterSubGroup {
   subClusterId: number;
@@ -36,6 +43,7 @@ export interface ClusterSubGroup {
 export interface ClusterNode {
   clusterId: number;
   label: string | null;
+  metaGroup: string | null; // 326 細聚落收斂成的粗分組（約17~20組），見上方 2026-09-15 說明
   directMemberCodes: string[]; // 沒有再切子聚落的直屬成員；是不是恆為空陣列取決於當下的分群演算法（見檔頭說明），不要假設一定有/一定沒有
   subClusters: ClusterSubGroup[];
 }
@@ -48,6 +56,7 @@ interface RawIndustryClusterRow {
 interface RawIndustryClusterMemberRow {
   code: string;
   cluster_id: number;
+  meta_group: string | null;
   sub_cluster_id: number | null;
   sub_label: string | null;
 }
@@ -74,7 +83,7 @@ const fetchIndustryClustersOnce = async (): Promise<RawIndustryClusterRow[]> => 
 
 const fetchIndustryClusterMembersOnce = async (): Promise<RawIndustryClusterMemberRow[]> => {
   return playwrightExportPrisma.$queryRaw<RawIndustryClusterMemberRow[]>`
-    SELECT code, cluster_id, sub_cluster_id, sub_label FROM "export"."industry_cluster_members"
+    SELECT code, cluster_id, meta_group, sub_cluster_id, sub_label FROM "export"."industry_cluster_members"
   `;
 };
 
@@ -87,13 +96,15 @@ const fetchExternalCompaniesOnce = async (): Promise<RawExternalCompanyRow[]> =>
 const buildClusterNodeCache = (clusterRows: RawIndustryClusterRow[], memberRows: RawIndustryClusterMemberRow[]): Map<number, ClusterNode> => {
   const map = new Map<number, ClusterNode>();
   for (const row of clusterRows) {
-    map.set(row.cluster_id, { clusterId: row.cluster_id, label: row.label, directMemberCodes: [], subClusters: [] });
+    map.set(row.cluster_id, { clusterId: row.cluster_id, label: row.label, metaGroup: null, directMemberCodes: [], subClusters: [] });
   }
 
   const subClusterByKey = new Map<string, ClusterSubGroup>();
   for (const row of memberRows) {
     const node = map.get(row.cluster_id);
     if (!node) continue; // 理論上不會發生（member 一定屬於某個已知的頂層聚落），防禦性跳過
+
+    if (node.metaGroup === null) node.metaGroup = row.meta_group; // 同一聚落底下每列 meta_group 恆一致，取第一筆即可
 
     if (row.sub_cluster_id === null) {
       node.directMemberCodes.push(row.code);

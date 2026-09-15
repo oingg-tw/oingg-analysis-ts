@@ -95,6 +95,7 @@ export const chainClusterSubGroupSchema = z.object({
 export const chainClusterSchema = z.object({
   clusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
   label: z.string().nullable(),
+  metaGroup: z.string().nullable().meta({ description: '2026-09-15 新增——326 個細聚落再收斂成的粗分組（約 17~20 組），跟 chain-classification 的 coarseGroup 是不同層級的另一套「粗分組」，不要混淆；同一批分群結果下不會變動，只有整個重新分群才會跟著 clusterId 一起洗牌' }),
   directMembers: z.array(chainClusterMemberSchema).meta({ description: '沒有再切子聚落的直屬成員；是否為空陣列取決於 playwright-py 當下的分群演算法，不要假設固定規則（見 subClusters 說明）' }),
   subClusters: z.array(chainClusterSubGroupSchema).meta({ description: '這個頂層聚落底下的子聚落；分群演算法可能讓每個頂層聚落都有子聚落，也可能只有部分聚落有，沒有子聚落時是空陣列' }),
 });

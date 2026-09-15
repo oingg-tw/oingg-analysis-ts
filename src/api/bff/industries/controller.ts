@@ -112,6 +112,7 @@ export const getIndustryChainClusters = async (_req: Request, res: Response, nex
       clusters: clusters.map((c) => ({
         clusterId: c.clusterId,
         label: c.label,
+        metaGroup: c.metaGroup,
         directMembers: c.directMemberCodes.map(resolveMember),
         subClusters: c.subClusters.map((s) => ({
           subClusterId: s.subClusterId,
