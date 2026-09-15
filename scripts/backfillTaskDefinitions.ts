@@ -72,6 +72,7 @@ import { computeAndWriteBetaPit } from '../src/domainPitMetrics/valuation/beta/c
 import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
 import { computeAndWriteBankAssetQualityFamilyPit } from '../src/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
 import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/domainPitMetrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit';
+import { computeAndWriteBankIncomeWaterfallPit } from '../src/domainPitMetrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
 import { computeAndWriteNcavPit } from '../src/domainPitMetrics/valuation/ncav/computeNcavPit';
 import { computeAndWriteMarketCapPit } from '../src/domainPitMetrics/valuation/marketCap/computeMarketCapPit';
 import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pegRatio/computePegRatioPit';
@@ -123,7 +124,17 @@ export const GENERAL_METRIC_CODES = [
   'beta', 'exchangePeRatio', 'exchangePbRatio', 'dividendYield',
 ];
 
-export const BANK_METRIC_CODES = ['bankNplRatio', 'bankNplCoverageRatio', 'bankCarRatio', 'bankCet1Ratio', 'bankTier1Ratio'];
+export const BANK_METRIC_CODES = [
+  'bankNplRatio',
+  'bankNplCoverageRatio',
+  'bankCarRatio',
+  'bankCet1Ratio',
+  'bankTier1Ratio',
+  'bankNetInterestIncomePerShare',
+  'bankNetNonInterestIncomePerShare',
+  'bankBadDebtProvisionPerShare',
+  'bankOtherOperatingExpensePerShare',
+];
 
 export type BackfillTask = [string, () => Promise<unknown>];
 
@@ -246,6 +257,7 @@ export const buildBankTasks = (symbol: string, quarter?: { year: string; season:
   return [
     ['bankAssetQuality', () => computeAndWriteBankAssetQualityFamilyPit(query)],
     ['bankCapitalAdequacy', () => computeAndWriteBankCapitalAdequacyFamilyPit(query)],
+    ['bankIncomeWaterfall', () => computeAndWriteBankIncomeWaterfallPit(query)],
   ];
 };
 

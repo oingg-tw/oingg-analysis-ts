@@ -125,6 +125,10 @@ import { bankNplCoverageRatioDefinition } from '@/domainPitMetrics/resilience/ba
 import { bankCarRatioDefinition } from '@/domainPitMetrics/resilience/bankCarRatio/bankCarRatioDefinition';
 import { bankCet1RatioDefinition } from '@/domainPitMetrics/resilience/bankCet1Ratio/bankCet1RatioDefinition';
 import { bankTier1RatioDefinition } from '@/domainPitMetrics/resilience/bankTier1Ratio/bankTier1RatioDefinition';
+import { bankNetInterestIncomePerShareDefinition } from '@/domainPitMetrics/profitability/bankNetInterestIncomePerShare/bankNetInterestIncomePerShareDefinition';
+import { bankNetNonInterestIncomePerShareDefinition } from '@/domainPitMetrics/profitability/bankNetNonInterestIncomePerShare/bankNetNonInterestIncomePerShareDefinition';
+import { bankBadDebtProvisionPerShareDefinition } from '@/domainPitMetrics/profitability/bankBadDebtProvisionPerShare/bankBadDebtProvisionPerShareDefinition';
+import { bankOtherOperatingExpensePerShareDefinition } from '@/domainPitMetrics/profitability/bankOtherOperatingExpensePerShare/bankOtherOperatingExpensePerShareDefinition';
 import { exchangePeRatioDefinition } from '@/domainPitMetrics/valuation/exchangePeRatio/exchangePeRatioDefinition';
 import { exchangePbRatioDefinition } from '@/domainPitMetrics/valuation/exchangePbRatio/exchangePbRatioDefinition';
 import { dividendYieldDefinition } from '@/domainPitMetrics/dividend/dividendYield/dividendYieldDefinition';
@@ -265,6 +269,10 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   bankCarRatio: bankCarRatioDefinition,
   bankCet1Ratio: bankCet1RatioDefinition,
   bankTier1Ratio: bankTier1RatioDefinition,
+  bankNetInterestIncomePerShare: bankNetInterestIncomePerShareDefinition,
+  bankNetNonInterestIncomePerShare: bankNetNonInterestIncomePerShareDefinition,
+  bankBadDebtProvisionPerShare: bankBadDebtProvisionPerShareDefinition,
+  bankOtherOperatingExpensePerShare: bankOtherOperatingExpensePerShareDefinition,
   exchangePeRatio: exchangePeRatioDefinition,
   exchangePbRatio: exchangePbRatioDefinition,
   dividendYield: dividendYieldDefinition,
