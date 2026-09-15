@@ -83,6 +83,7 @@ import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pe
 import { computeAndWriteEvToEbitPit } from '../src/domainPitMetrics/valuation/evToEbit/computeEvToEbitPit';
 import { computeAndWriteEvToFcfPit } from '../src/domainPitMetrics/valuation/evToFcf/computeEvToFcfPit';
 import { computeAndWriteGreenblattRocPit } from '../src/domainPitMetrics/profitability/greenblattRoc/computeGreenblattRocPit';
+import { computeAndWriteGreenblattEarningsYieldPit } from '../src/domainPitMetrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
 // greenblattEarningsYield 先不註冊/不回填（2026-09-14 使用者要求，等神奇公式上線再合併
 // 進來），見 metricDefinitionRegistry.ts 同一則說明。
 import { computeAndWriteTobinsQPit } from '../src/domainPitMetrics/valuation/tobinsQ/computeTobinsQPit';
@@ -116,7 +117,7 @@ export const GENERAL_METRIC_CODES = [
   'revenueCagr3y', 'revenueCagr5y', 'revenueCagr8y', 'epsCagr3y', 'epsCagr5y', 'epsCagr8y', 'dividendGrowthRate3y', 'dividendGrowthRate5y', 'dividendGrowthRate8y', 'oneDollarTest',
   'operatingExpenseRatio',
   'ncav', 'marketCap', 'pegRatio',
-  'evToEbit', 'evToFcf', 'greenblattRoc', 'tobinsQ', 'priceToResearchRatio',
+  'evToEbit', 'evToFcf', 'greenblattRoc', 'greenblattEarningsYield', 'tobinsQ', 'priceToResearchRatio',
   'novyMarxGpToAssets', 'croci', 'fcfMargin', 'ruleOf40', 'netWorkingCapitalToAssets', 'totalDebtToCapital',
   'nonOperatingIncomeRatio', 'equityRatio', 'cashToAssetsRatio', 'beneishAqi', 'beneishDsri',
   'evToOcf', 'evToSales', 'priceToOcf', 'debtToFcf', 'capexToOcfRatio', 'croic', 'ocfMargin', 'fcfConversionRate',
@@ -225,6 +226,7 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
     ['evToEbit', () => computeAndWriteEvToEbitPit(query)],
     ['evToFcf', () => computeAndWriteEvToFcfPit(query)],
     ['greenblattRoc', () => computeAndWriteGreenblattRocPit(query)],
+    ['greenblattEarningsYield', () => computeAndWriteGreenblattEarningsYieldPit(query)],
     ['tobinsQ', () => computeAndWriteTobinsQPit(query)],
     ['priceToResearchRatio', () => computeAndWritePriceToResearchRatioPit(query)],
     ['novyMarxGpToAssets', () => computeAndWriteNovyMarxGpToAssetsPit(query)],
