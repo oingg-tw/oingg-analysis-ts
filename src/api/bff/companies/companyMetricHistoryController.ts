@@ -301,10 +301,12 @@ export const getCompanyMonthlyRevenueHistory = async (req: Request, res: Respons
 // 的既有決定，理由是 beta 沒有真正的歷史時間序列可畫河流圖），但那個決定針對的是「畫圖用
 // 的歷史查詢」，不涵蓋「查單一公司目前的係數值」這個不同情境——後者用 screener/ranking
 // 查一個 symbol 是殺雞用牛刀（那是給篩選/排名情境設計的端點），所以另開這支輕量的單一
-// 公司快照端點，一次回傳三個滾動視窗（1Y_1D/2Y_1W/5Y_1M）各自最新一筆，不做歷史累積。
+// 公司快照端點，一次回傳四個滾動視窗（1Y_1D/2Y_1W/3Y_1W/5Y_1M，2026-09-15 新增
+// 3Y_1W）各自最新一筆，不做歷史累積。
 const BETA_WINDOWS: { timeframe: string; lookbackRange: LookbackRange; samplingInterval: SamplingInterval }[] = [
   { timeframe: '1Y_1D', lookbackRange: '1Y', samplingInterval: '1D' },
   { timeframe: '2Y_1W', lookbackRange: '2Y', samplingInterval: '1W' },
+  { timeframe: '3Y_1W', lookbackRange: '3Y', samplingInterval: '1W' },
   { timeframe: '5Y_1M', lookbackRange: '5Y', samplingInterval: '1M' },
 ];
 

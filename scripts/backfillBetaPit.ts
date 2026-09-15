@@ -39,7 +39,7 @@ const main = async () => {
 
     for (const tradeDate of tradeDates) {
       const outcome = await computeAndWriteBetaPit({ symbol, date: tradeDate, dataType: '2', subsidiaryCompanyId: '' });
-      for (const result of [outcome.beta1YDaily, outcome.beta2YWeekly, outcome.beta5YMonthly]) {
+      for (const result of [outcome.beta1YDaily, outcome.beta2YWeekly, outcome.beta3YWeekly, outcome.beta5YMonthly]) {
         if (result.action === 'inserted') inserted++;
         else if (result.action === 'updated_same_knowledge_date') updated++;
         else skipped++;

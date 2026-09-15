@@ -26,11 +26,15 @@ export type PeriodType = z.infer<typeof periodTypeSchema>;
 // lookbackRange / samplingInterval：逐日型滾動統計量（目前只有 Beta）的「回溯範圍」與
 // 「取樣粒度」兩個正交維度——描述一個滾動統計量是拿多長的歷史、用什麼頻率取樣的報酬率序列
 // 算出來的，跟 periodType 的「財報期別」完全是不同問題。兩者要嘛同時是真實值、要嘛同時是
-// 'N/A'（結構性不變式，metricValueWriter.ts 會擋）。目前實際計算的三種組合對應業界標準 Beta
+// 'N/A'（結構性不變式，metricValueWriter.ts 會擋）。目前實際計算的組合對應業界標準 Beta
 // 視窗：1Y×1D（252 個交易日，年化波動率/52 週動量基準）、2Y×1W（Bloomberg BETA 頁面與
-// Barra 預設，104 週）、5Y×1M（Morningstar / S&P 長期 Beta 標準，60 個月）。允許值刻意不
-// 綁死組合——正交參數化的意義就是之後要加新組合不用改 enum。
-export const lookbackRangeSchema = z.enum(['N/A', '1Y', '2Y', '5Y']);
+// Barra 預設，104 週）、5Y×1M（Morningstar / S&P 長期 Beta 標準，60 個月）、3Y×1W
+// （2026-09-15 應使用者要求新增，156 週——3年窗口是介於 Bloomberg 2年週頻跟 Morningstar
+// 5年月頻之間的常見折衷週期，Beta 估計方法論文獻普遍認為 3 年、5 年週頻 Beta 比 1 年
+// 更穩定，見 MDPI 期刊《Time Dependence of CAPM Betas on the Choice of Interval
+// Frequency and Return Timeframes》）。允許值刻意不綁死組合——正交參數化的意義就是
+// 之後要加新組合不用改 enum。
+export const lookbackRangeSchema = z.enum(['N/A', '1Y', '2Y', '3Y', '5Y']);
 export type LookbackRange = z.infer<typeof lookbackRangeSchema>;
 export const samplingIntervalSchema = z.enum(['N/A', '1D', '1W', '1M']);
 export type SamplingInterval = z.infer<typeof samplingIntervalSchema>;

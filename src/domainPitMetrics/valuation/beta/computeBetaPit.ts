@@ -26,7 +26,7 @@ import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../me
 export type BetaSamplingFrequency = 'daily' | 'weekly' | 'monthly';
 
 interface BetaWindowConfig {
-  outputKey: 'beta1YDaily' | 'beta2YWeekly' | 'beta5YMonthly';
+  outputKey: 'beta1YDaily' | 'beta2YWeekly' | 'beta3YWeekly' | 'beta5YMonthly';
   lookbackRange: LookbackRange;
   samplingInterval: SamplingInterval;
   years: number;
@@ -36,6 +36,7 @@ interface BetaWindowConfig {
 const WINDOW_CONFIGS: BetaWindowConfig[] = [
   { outputKey: 'beta1YDaily', lookbackRange: '1Y', samplingInterval: '1D', years: 1, frequency: 'daily' },
   { outputKey: 'beta2YWeekly', lookbackRange: '2Y', samplingInterval: '1W', years: 2, frequency: 'weekly' },
+  { outputKey: 'beta3YWeekly', lookbackRange: '3Y', samplingInterval: '1W', years: 3, frequency: 'weekly' },
   { outputKey: 'beta5YMonthly', lookbackRange: '5Y', samplingInterval: '1M', years: 5, frequency: 'monthly' },
 ];
 
@@ -156,6 +157,7 @@ export interface BetaPitOutcome {
   tradeDate: string | null;
   beta1YDaily: BasisOutcome;
   beta2YWeekly: BasisOutcome;
+  beta3YWeekly: BasisOutcome;
   beta5YMonthly: BasisOutcome;
 }
 
@@ -167,6 +169,7 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
     tradeDate: null,
     beta1YDaily: { action: 'skipped_no_trade_date' },
     beta2YWeekly: { action: 'skipped_no_trade_date' },
+    beta3YWeekly: { action: 'skipped_no_trade_date' },
     beta5YMonthly: { action: 'skipped_no_trade_date' },
   };
 
@@ -246,6 +249,7 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
     tradeDate: effectiveAsOf,
     beta1YDaily: outcomes.beta1YDaily,
     beta2YWeekly: outcomes.beta2YWeekly,
+    beta3YWeekly: outcomes.beta3YWeekly,
     beta5YMonthly: outcomes.beta5YMonthly,
   };
 };

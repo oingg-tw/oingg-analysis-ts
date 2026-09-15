@@ -19,7 +19,7 @@ beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.beta!);
 });
 
-test('betaPit: 2330 三個窗口都應該算出合理範圍內的值，並正確寫入 metric_daily_cadence_values', async () => {
+test('betaPit: 2330 四個窗口都應該算出合理範圍內的值，並正確寫入 metric_daily_cadence_values', async () => {
   const outcome = await computeAndWriteBetaPit({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.notEqual(outcome.tradeDate, null, '2330 應該要能找到重疊交易日當基準日');
@@ -27,6 +27,7 @@ test('betaPit: 2330 三個窗口都應該算出合理範圍內的值，並正確
   for (const [lookbackRange, samplingInterval] of [
     ['1Y', '1D'],
     ['2Y', '1W'],
+    ['3Y', '1W'],
     ['5Y', '1M'],
   ] as [LookbackRange, SamplingInterval][]) {
     const window = `${lookbackRange}_${samplingInterval}`; // 只是給斷言訊息用的顯示字串
@@ -51,6 +52,7 @@ test('betaPit: 重跑同一個基準日，去重邏輯應該讓第二次全部 s
 
   assert.deepEqual(second.beta1YDaily, { action: 'skipped_unchanged' });
   assert.deepEqual(second.beta2YWeekly, { action: 'skipped_unchanged' });
+  assert.deepEqual(second.beta3YWeekly, { action: 'skipped_unchanged' });
   assert.deepEqual(second.beta5YMonthly, { action: 'skipped_unchanged' });
 });
 
@@ -60,6 +62,7 @@ test('betaPit: 9999（查無股價資料的公司）應該優雅降級，不寫�
   assert.equal(outcome.tradeDate, null);
   assert.deepEqual(outcome.beta1YDaily, { action: 'skipped_no_trade_date' });
   assert.deepEqual(outcome.beta2YWeekly, { action: 'skipped_no_trade_date' });
+  assert.deepEqual(outcome.beta3YWeekly, { action: 'skipped_no_trade_date' });
   assert.deepEqual(outcome.beta5YMonthly, { action: 'skipped_no_trade_date' });
 
   const count = await analysisPrisma.metricDailyCadenceValue.count({ where: { symbol: '9999', metricCode: 'beta' } });
