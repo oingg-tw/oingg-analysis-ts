@@ -1,3 +1,8 @@
+// ⚠ flaky 隔離區（tests/README.md 的 flaky 政策）——2026-09-17 隔離，到期日 2026-10-01。
+// 原因：跨 company_profile × daily_price 全市場 join 的 raw SQL 在 twse-ts export DB 上偶爾
+// 超過 5 秒（上游 ingest 時段或連線池忙碌時），vitest 預設 timeout 就炸；不是本服務邏輯問題。
+// 修法候選：把 SQL 縮成固定日期/固定 symbol 子集，或搬進 repository 測試給明確的 timeout。
+// 到期前沒修就刪除，不能無限期隔離。
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
