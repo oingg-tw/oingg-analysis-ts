@@ -1,7 +1,7 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { priceLimitRangeResultSchema } from './types';
 
-export const registerPriceLimitRangeOpenApi = (): void => {
+export const registerPriceLimitRangeOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/price-limit-range',

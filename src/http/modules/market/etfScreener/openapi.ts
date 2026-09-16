@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { postEtfScreenerBodySchema } from './controller';
 import { etfScreenerResponseSchema, etfFilterCatalogResponseSchema } from './types';
 
-export const registerEtfScreenerOpenApi = (): void => {
+export const registerEtfScreenerOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/etf-screener/filters',

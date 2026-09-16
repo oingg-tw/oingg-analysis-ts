@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getEquityRiskPremiumQuerySchema } from './controller';
 import { equityRiskPremiumResultSchema } from '@/application/macro/equityRiskPremium/types';
 
-export const registerEquityRiskPremiumOpenApi = (): void => {
+export const registerEquityRiskPremiumOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/macro/equity-risk-premium',

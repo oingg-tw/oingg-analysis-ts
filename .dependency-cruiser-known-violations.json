@@ -155,51 +155,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/batch/daily/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/batch/quarterly/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/batch/runner.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/middleware/bffAuth.ts",
-    "to": "src/infrastructure/config.ts",
-    "unresolvedTo": "@/infrastructure/config",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -365,20 +323,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/companies/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/companies/types.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -477,37 +421,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/industries/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/macro/equityRiskPremium/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/macro/equityRiskPremium/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -533,37 +449,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/macro/govBondYield10y/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/attentionStocks/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/attentionStocks/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -631,20 +519,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/disposedStocks/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/disposedStocks/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -701,20 +575,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/etfRanking/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/etfRanking/service.ts",
     "to": "src/infrastructure/repositories/sitca/etfQueries.ts",
     "unresolvedTo": "@/infrastructure/repositories/sitca/etfQueries",
@@ -732,20 +592,6 @@
     "from": "src/http/modules/market/etfScreener/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/etfScreener/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -813,20 +659,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/marginShortRatioRanking/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -858,20 +690,6 @@
     "from": "src/http/modules/market/materialAnnouncements/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/materialAnnouncements/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -925,20 +743,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/priceChangeRanking/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/priceChangeRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -970,20 +774,6 @@
     "from": "src/http/modules/market/priceLimitRange/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceLimitRange/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -1037,20 +827,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/revenueRanking/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/revenueRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -1093,20 +869,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/market/taiexDailyPrice/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/taiexDailyPrice/service.ts",
     "to": "src/infrastructure/repositories/twse/taiexIndex.ts",
     "unresolvedTo": "@/infrastructure/repositories/twse/taiexIndex",
@@ -1124,20 +886,6 @@
     "from": "src/http/modules/market/volumeTop20/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/volumeTop20/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -1191,20 +939,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/metrics/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/preferredStock/controller.ts",
     "to": "src/infrastructure/repositories/exchange/preferredStock.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/preferredStock",
@@ -1222,20 +956,6 @@
     "from": "src/http/modules/preferredStock/controller.ts",
     "to": "src/infrastructure/repositories/twse/marketCap.ts",
     "unresolvedTo": "@/infrastructure/repositories/twse/marketCap",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/preferredStock/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -1289,37 +1009,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/ranking/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/screener/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/screener/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -1401,20 +1093,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/securities/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/securities/types.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -1432,20 +1110,6 @@
     "from": "src/http/modules/stocks/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/stocks/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -1572,34 +1236,6 @@
     "from": "src/http/modules/stocks/types.ts",
     "to": "src/infrastructure/repositories/twse/stockPledgeRatio.ts",
     "unresolvedTo": "@/infrastructure/repositories/twse/stockPledgeRatio",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/system/openapi.ts",
-    "to": "src/infrastructure/swagger/registry.ts",
-    "unresolvedTo": "@/infrastructure/swagger/registry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/system/root.ts",
-    "to": "src/bootstrap/serverInfo.ts",
-    "unresolvedTo": "@/bootstrap/serverInfo",
     "dependencyTypes": [
       "undetermined",
       "import"

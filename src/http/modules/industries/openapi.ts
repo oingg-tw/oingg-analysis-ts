@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getIndustryTreeQuerySchema } from './controller';
 import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, industryTreeResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
-export const registerIndustriesOpenApi = (): void => {
+export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/industries/tree',

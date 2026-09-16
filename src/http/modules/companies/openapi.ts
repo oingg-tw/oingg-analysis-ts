@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { capitalStockHistoryEntrySchema } from '@/infrastructure/repositories/mops/capitalStock';
 import { roeHistoryEntrySchema } from '@/application/metrics/profitability/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/application/metrics/profitability/roa/queryRoaHistory';
@@ -112,7 +112,7 @@ const companyBetaResultSchema = z.object({
   windows: z.array(betaWindowSchema).meta({ description: '固定 4 筆，依 1Y_1D/2Y_1W/3Y_1W/5Y_1M 順序（2026-09-15 新增 3Y_1W），查無資料的窗口欄位皆為 null' }),
 });
 
-export const registerCompaniesOpenApi = (): void => {
+export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/companies',

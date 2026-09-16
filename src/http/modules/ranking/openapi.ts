@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getRankingQuerySchema } from './controller';
 import { rankingResultSchema } from './calculateRanking';
 
-export const registerValuationRankingOpenApi = (): void => {
+export const registerValuationRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/valuation/ranking',

@@ -1,7 +1,7 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { govBondYield10yResultSchema } from '@/application/macro/govBondYield10y/types';
 
-export const registerGovBondYield10yOpenApi = (): void => {
+export const registerGovBondYield10yOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/macro/gov-bond-yield-10y',

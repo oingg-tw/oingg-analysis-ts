@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './controller';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如
@@ -58,7 +58,7 @@ const companyRankResultSchema = z.object({
   topPercent: z.number().nullable().meta({ description: 'rank÷totalCount×100，四捨五入到小數點後一位。數字越小代表排名越前面，例如 5 代表排在全市場前 5%（不是「百分位」那種越高越好的敘述方向，刻意選這個命名貼近「贏過前 X%」的中文口語問法）' }),
 });
 
-export const registerScreenerOpenApi = (): void => {
+export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'post',
     path: '/screener',

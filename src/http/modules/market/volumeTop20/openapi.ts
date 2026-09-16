@@ -1,7 +1,7 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { volumeTop20ResultSchema } from './types';
 
-export const registerVolumeTop20OpenApi = (): void => {
+export const registerVolumeTop20OpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/volume-top20',

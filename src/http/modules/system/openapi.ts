@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
-export const registerSystemOpenApi = (): void => {
+export const registerSystemOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/',

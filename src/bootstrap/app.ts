@@ -2,18 +2,38 @@ import express from 'ultimate-express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
+import type { Logger } from 'pino';
+import type { HttpModule } from '@/http/module';
+import { createBffAuth } from '@/http/middleware/bffAuth';
+import { createErrorHandler } from '@/http/middleware/errorHandler';
 import { logger } from '@/infrastructure/logger';
 import { config } from '@/infrastructure/config';
-import { swaggerUi, swaggerSpec } from '@/bootstrap/openapi';
-import routes from '@/http/routes';
-import { createErrorHandler } from '@/http/middleware/errorHandler';
+import { httpModules } from './httpModules';
+import { buildOpenApiDocument } from './openapi';
 
-// 2026-09-17 clean architecture 重構 Phase 0：把「組 express app」從 src/index.ts 抽出來，
-// 跟「連 DB / 載快取 / listen」分開——HTTP 契約測試（tests/contract/http/）需要一個不會
-// 自己去 listen 固定 port、也不會自己連 DB 的 app 物件，用 supertest 打 ephemeral port。
-// 這裡的 middleware 鏈跟抽出前的 index.ts 一模一樣，純搬移不改行為；Phase 4 會再改成
-// 從 HttpModule 清單組裝（見 ~/.claude/plans/resilient-baking-quail.md）。
-export const createApp = () => {
+// 2026-09-17 clean architecture 重構：Phase 0 把「組 express app」從 src/index.ts 抽出來，跟「連 DB /
+// 載快取 / listen」分開（HTTP 契約測試要一個不 listen、不連 DB 的 app）；Phase 4 改成從 HttpModule
+// 清單組裝——middleware 鏈跟以前一模一樣，只是路由掛載不再靠 src/http/routes.ts 手寫順序，而是
+// 依模組的 auth 標籤分組（public → batch → bffAuth → bff）。
+export interface AppOptions {
+  modules: readonly HttpModule[];
+  logger: Logger;
+  isProduction: boolean;
+  bffApiKey: string | null | undefined;
+  openApiDocument: object;
+}
+
+// 正式進場點跟契約測試都用這組預設值（config 已在 import 時驗證完環境變數）。
+export const defaultAppOptions = (): AppOptions => ({
+  modules: httpModules,
+  logger,
+  isProduction: config.isProduction,
+  bffApiKey: config.bffApiKey,
+  openApiDocument: buildOpenApiDocument(httpModules, { port: config.port }),
+});
+
+export const createApp = (options: AppOptions = defaultAppOptions()) => {
   const app = express();
 
   app.use(helmet());
@@ -32,14 +52,26 @@ export const createApp = () => {
   // 錯誤判斷（res.statusCode >= 500 那條路徑）本身沒受影響，只有這個文字判斷是錯的，但錯到會
   // 讓人誤判系統一直在出錯，一定要覆蓋掉。走到這個 callback 代表 pino-http 自己已經判定不是
   // 5xx/沒有 err（那條路走 customErrorMessage），直接回「request completed」就對了。
-  app.use(pinoHttp({ logger, customSuccessMessage: () => 'request completed' }));
+  app.use(pinoHttp({ logger: options.logger, customSuccessMessage: () => 'request completed' }));
 
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(options.openApiDocument as Parameters<typeof swaggerUi.setup>[0]));
 
-  app.use(routes);
+  const mount = (module: HttpModule): void => {
+    if (module.mountPath) app.use(module.mountPath, module.router);
+    else app.use(module.router);
+  };
+
+  // 健康檢查給 Cloud Run/uptime 監控打，不能要求帶密鑰，否則監控系統也要知道這把密鑰。
+  for (const module of options.modules.filter((m) => m.auth === 'public')) mount(module);
+  // Batch 給 GCP Cloud Scheduler 用，不是 BFF——刻意不套 BFF 的共用密鑰（之後接 Cloud Run IAM invoker，
+  // 是完全不同的信任邊界，不能共用同一把密鑰；2026-09-17 使用者拍板維持現狀）。
+  for (const module of options.modules.filter((m) => m.auth === 'batch')) mount(module);
+  // 以下都是只給 bff-ts 呼叫的模組，2026-09-05 起套用共用密鑰驗證。
+  app.use(createBffAuth({ apiKey: options.bffApiKey }));
+  for (const module of options.modules.filter((m) => m.auth === 'bff')) mount(module);
 
   // 一定要是最後一個 middleware，才接得到前面所有路由丟出來的錯誤。
-  app.use(createErrorHandler({ isProduction: config.isProduction }));
+  app.use(createErrorHandler({ isProduction: options.isProduction }));
 
   return app;
 };

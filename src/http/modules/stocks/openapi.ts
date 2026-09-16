@@ -1,4 +1,4 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import {
   getQuoteParamsSchema,
   symbolsQuerySchema,
@@ -21,7 +21,7 @@ import {
   dailyPriceHistoryResultSchema,
 } from './types';
 
-export const registerStocksOpenApi = (): void => {
+export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/stocks/{symbol}/quote',

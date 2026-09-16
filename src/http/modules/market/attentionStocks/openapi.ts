@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getAttentionStocksQuerySchema } from './controller';
 import { attentionStocksResultSchema } from './types';
 
-export const registerAttentionStocksOpenApi = (): void => {
+export const registerAttentionStocksOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/attention-stocks',

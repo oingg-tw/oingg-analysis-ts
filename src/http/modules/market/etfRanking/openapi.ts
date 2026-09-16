@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getEtfRankingQuerySchema } from './controller';
 import { etfRankingResultSchema } from './types';
 
-export const registerEtfRankingOpenApi = (): void => {
+export const registerEtfRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/etf-ranking',

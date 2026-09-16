@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getTaiexDailyPriceQuerySchema } from './controller';
 import { taiexDailyPriceResultSchema } from './types';
 
-export const registerTaiexDailyPriceOpenApi = (): void => {
+export const registerTaiexDailyPriceOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/taiex-daily-price',

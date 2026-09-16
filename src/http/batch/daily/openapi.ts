@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 const responseSchema = z.object({ message: z.string() });
 
-export const registerDailyBatchOpenApi = (): void => {
+export const registerDailyBatchOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'post',
     path: '/batch/compute/daily',

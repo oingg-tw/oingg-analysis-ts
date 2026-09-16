@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getMarginShortRatioRankingQuerySchema } from './controller';
 import { marginShortRatioRankingResultSchema } from './types';
 
-export const registerMarginShortRatioRankingOpenApi = (): void => {
+export const registerMarginShortRatioRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/market/margin-short-ratio-ranking',

@@ -1,8 +1,8 @@
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getPreferredStocksQuerySchema } from './controller';
 import { preferredStocksResultSchema, preferredStockFieldCatalogResponseSchema } from './types';
 
-export const registerPreferredStockOpenApi = (): void => {
+export const registerPreferredStockOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/preferred-stocks',

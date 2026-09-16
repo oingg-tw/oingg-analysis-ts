@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 // 2026-09-08 起改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（見
 // metricFolderCatalog.ts 的說明），取代舊架構手動維護的 filterCatalog.csv。
@@ -122,7 +122,7 @@ const filtersResultSchema = z.object({
   categories: z.array(metricFolderCatalogCategorySchema),
 });
 
-export const registerFiltersOpenApi = (): void => {
+export const registerFiltersOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/metrics',

@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { registry } from '@/infrastructure/swagger/registry';
+import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getSecuritiesQuerySchema } from './controller';
 import { securitiesListResultSchema, securitiesCountOnlyResultSchema } from './types';
 
-export const registerSecuritiesOpenApi = (): void => {
+export const registerSecuritiesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/securities',
