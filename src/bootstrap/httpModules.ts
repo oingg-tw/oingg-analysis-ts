@@ -5,7 +5,7 @@ import { createSystemRouter } from '@/http/modules/system/root';
 import { registerSystemOpenApi } from '@/http/modules/system/openapi';
 import batchRouter from '@/http/batch/route';
 import { registerBatchOpenApi } from '@/http/batch/openapi';
-import metricsRouter from '@/http/modules/metrics/route';
+import { createMetricsRouter } from '@/http/modules/metrics/route';
 import { registerFiltersOpenApi } from '@/http/modules/metrics/openapi';
 import { createCompaniesRouter } from '@/http/modules/companies/route';
 import { registerCompaniesOpenApi } from '@/http/modules/companies/openapi';
@@ -17,7 +17,7 @@ import { createIndustriesRouter } from '@/http/modules/industries/route';
 import { registerIndustriesOpenApi } from '@/http/modules/industries/openapi';
 import { createStocksRouter } from '@/http/modules/stocks/route';
 import { registerStocksOpenApi } from '@/http/modules/stocks/openapi';
-import screenerRouter from '@/http/modules/screener/route';
+import { createScreenerRouter } from '@/http/modules/screener/route';
 import { registerScreenerOpenApi } from '@/http/modules/screener/openapi';
 import marginShortRatioRankingRouter from '@/http/modules/market/marginShortRatioRanking/route';
 import { registerMarginShortRatioRankingOpenApi } from '@/http/modules/market/marginShortRatioRanking/openapi';
@@ -41,7 +41,7 @@ import etfScreenerRouter from '@/http/modules/market/etfScreener/route';
 import { registerEtfScreenerOpenApi } from '@/http/modules/market/etfScreener/openapi';
 import taiexDailyPriceRouter from '@/http/modules/market/taiexDailyPrice/route';
 import { registerTaiexDailyPriceOpenApi } from '@/http/modules/market/taiexDailyPrice/openapi';
-import rankingRouter from '@/http/modules/ranking/route';
+import { createRankingRouter } from '@/http/modules/ranking/route';
 import { registerValuationRankingOpenApi } from '@/http/modules/ranking/openapi';
 import { createEquityRiskPremiumRouter } from '@/http/modules/macro/equityRiskPremium/route';
 import { registerEquityRiskPremiumOpenApi } from '@/http/modules/macro/equityRiskPremium/openapi';
@@ -63,13 +63,13 @@ import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYiel
 export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
   { name: 'batch', auth: 'batch', router: batchRouter, registerOpenApi: registerBatchOpenApi },
-  { name: 'metrics', auth: 'bff', router: metricsRouter, registerOpenApi: registerFiltersOpenApi },
+  { name: 'metrics', auth: 'bff', router: createMetricsRouter(), registerOpenApi: registerFiltersOpenApi },
   { name: 'companies', auth: 'bff', router: createCompaniesRouter(deps), registerOpenApi: registerCompaniesOpenApi },
   { name: 'securities', auth: 'bff', router: createSecuritiesRouter(deps), registerOpenApi: registerSecuritiesOpenApi },
   { name: 'preferredStock', auth: 'bff', router: createPreferredStockRouter(deps), registerOpenApi: registerPreferredStockOpenApi },
   { name: 'industries', auth: 'bff', router: createIndustriesRouter(deps), registerOpenApi: registerIndustriesOpenApi },
   { name: 'stocks', auth: 'bff', router: createStocksRouter(deps), registerOpenApi: registerStocksOpenApi },
-  { name: 'screener', auth: 'bff', router: screenerRouter, registerOpenApi: registerScreenerOpenApi },
+  { name: 'screener', auth: 'bff', router: createScreenerRouter(deps), registerOpenApi: registerScreenerOpenApi },
   { name: 'marginShortRatioRanking', auth: 'bff', router: marginShortRatioRankingRouter, registerOpenApi: registerMarginShortRatioRankingOpenApi },
   { name: 'revenueRanking', auth: 'bff', router: revenueRankingRouter, registerOpenApi: registerRevenueRankingOpenApi },
   { name: 'volumeTop20', auth: 'bff', router: volumeTop20Router, registerOpenApi: registerVolumeTop20OpenApi },
@@ -81,7 +81,7 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'etfRanking', auth: 'bff', router: etfRankingRouter, registerOpenApi: registerEtfRankingOpenApi },
   { name: 'etfScreener', auth: 'bff', router: etfScreenerRouter, registerOpenApi: registerEtfScreenerOpenApi },
   { name: 'taiexDailyPrice', auth: 'bff', router: taiexDailyPriceRouter, registerOpenApi: registerTaiexDailyPriceOpenApi },
-  { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: rankingRouter, registerOpenApi: registerValuationRankingOpenApi },
+  { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: createRankingRouter(deps), registerOpenApi: registerValuationRankingOpenApi },
   { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },
   { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: createGovBondYield10yRouter(deps), registerOpenApi: registerGovBondYield10yOpenApi },
 ];

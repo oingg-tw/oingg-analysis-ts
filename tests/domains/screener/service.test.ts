@@ -1,6 +1,7 @@
 import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/http/modules/screener/service';
+import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/application/screener/service';
+import { appDeps } from '@/bootstrap/deps';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
 
@@ -28,7 +29,7 @@ const baseRequest = { filters: [] as { field: string; min: number | null; max: n
 
 describe('runScreener', () => {
   test('單一 filter 命中：roe.TTM >= 0 的公司應該全部滿足門檻', async () => {
-    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: 0, max: null }], columns: [{ field: 'roe.TTM' }], pageSize: 200 });
+    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: 0, max: null }], columns: [{ field: 'roe.TTM' }], pageSize: 200 }, appDeps);
     assert.ok(result.results.length > 0, '應該至少篩得出幾家公司');
     for (const row of result.results) {
       assert.ok(row.values['roe.TTM']!.value! >= 0, `${row.symbol} 的 roe.TTM 不應該小於 0`);
@@ -36,12 +37,12 @@ describe('runScreener', () => {
   });
 
   test('沒有列 columns 時，values 是空物件，不是 undefined', async () => {
-    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: 0, max: null }], pageSize: 1 });
+    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: 0, max: null }], pageSize: 1 }, appDeps);
     assert.deepEqual(result.results[0]!.values, {});
   });
 
   test('exclude=true 且 min/max 皆為 null 時，沒有邊界可言，應該篩掉全部', async () => {
-    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: null, max: null, exclude: true }], columns: [{ field: 'roe.TTM' }] });
+    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: null, max: null, exclude: true }], columns: [{ field: 'roe.TTM' }] }, appDeps);
     assert.deepEqual(result.results, []);
     assert.equal(result.count, 0);
   });
@@ -49,24 +50,24 @@ describe('runScreener', () => {
   test('columns 缺資料時是 left-join 語意：該欄位 null 但 symbol 仍在結果裡', async () => {
     // roe.TTM 跟 bankNplRatio.Q 的 symbol 集合不完全重疊（bankNplRatio 只有銀行股），
     // 用「沒有 filters，兩個 column-only 欄位」的 UNION 路徑驗證 left-join 語意。
-    const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }, { field: 'bankNplRatio.Q' }], pageSize: 500 });
+    const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }, { field: 'bankNplRatio.Q' }], pageSize: 500 }, appDeps);
     const missingBankRatio = result.results.find((r) => r.values['bankNplRatio.Q']!.value === null && r.values['roe.TTM']!.value !== null);
     assert.ok(missingBankRatio, '應該找得到至少一筆 roe.TTM 有資料但 bankNplRatio.Q 沒資料的公司（left-join 語意才成立）');
     assert.equal(missingBankRatio!.values['bankNplRatio.Q']!.knowledgeDate, null, 'bankNplRatio.Q 沒資料時 knowledgeDate 也應該是 null');
   });
 
   test('分頁：count/totalPages 是全部符合條件的總筆數，不是這一頁的筆數', async () => {
-    const page1 = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], pageSize: 1, page: 1 });
+    const page1 = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], pageSize: 1, page: 1 }, appDeps);
     assert.ok(page1.count >= 2, '總筆數應該至少有 2 家（2330/2317）才有意義驗證分頁');
     assert.equal(page1.totalPages, Math.ceil(page1.count / 1));
     assert.equal(page1.results.length, 1);
 
-    const page2 = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], pageSize: 1, page: 2 });
+    const page2 = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], pageSize: 1, page: 2 }, appDeps);
     assert.notDeepEqual(page1.results.map((r) => r.symbol), page2.results.map((r) => r.symbol), '第二頁不應該跟第一頁重複');
   });
 
   test('sortField="symbol" 應該依 symbol 排序', async () => {
-    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'symbol', sortOrder: 'desc', pageSize: 5 });
+    const result = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'symbol', sortOrder: 'desc', pageSize: 5 }, appDeps);
     for (let i = 1; i < result.results.length; i++) {
       assert.ok(result.results[i - 1]!.symbol >= result.results[i]!.symbol, '應該由大到小排序');
     }
@@ -84,7 +85,7 @@ describe('runScreener', () => {
       sortOrder: 'desc',
       pageSize: 200,
       sectorCodes: ['24', '31'],
-    });
+    }, appDeps);
     const symbolOrder = result.results.map((r) => r.symbol);
     const index2330 = symbolOrder.indexOf('2330');
     const index2317 = symbolOrder.indexOf('2317');
@@ -94,29 +95,29 @@ describe('runScreener', () => {
 
   test('sortField 沒有先出現在 columns 裡應該拋 ScreenerValidationError', async () => {
     await assert.rejects(
-      () => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'beta.1Y_1D', sortOrder: 'asc' }),
+      () => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'beta.1Y_1D', sortOrder: 'asc' }, appDeps),
       ScreenerValidationError,
     );
   });
 
   test('只給 sortField 不給 sortOrder 應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'symbol' }), ScreenerValidationError);
+    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], sortField: 'symbol' }, appDeps), ScreenerValidationError);
   });
 
   test('field 格式錯誤（缺少 "."）應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roeTtm', min: 1, max: 2 }] }), ScreenerValidationError);
+    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roeTtm', min: 1, max: 2 }] }, appDeps), ScreenerValidationError);
   });
 
   test('metricCode 不存在應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'notARealMetric.Q', min: 1, max: 2 }] }), ScreenerValidationError);
+    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'notARealMetric.Q', min: 1, max: 2 }] }, appDeps), ScreenerValidationError);
   });
 
   test('metricCode 存在但 basis 不支援應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roe.FY', min: 1, max: 2 }] }), ScreenerValidationError);
+    await assert.rejects(() => runScreener({ ...baseRequest, filters: [{ field: 'roe.FY', min: 1, max: 2 }] }, appDeps), ScreenerValidationError);
   });
 
   test('filters 跟 columns 都是空的應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener(baseRequest), ScreenerValidationError);
+    await assert.rejects(() => runScreener(baseRequest, appDeps), ScreenerValidationError);
   });
 });
 
@@ -126,20 +127,20 @@ describe('runScreener', () => {
 // 成全部通過。
 describe('runScreener with sectorCodes', () => {
   test('只給 sectorCodes（不搭配數字篩選），回傳的公司都屬於該產業', async () => {
-    const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 });
+    const result = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 }, appDeps);
     assert.ok(result.results.some((r) => r.symbol === '2330'), '2330 屬於 24，應該出現在結果裡');
     assert.ok(!result.results.some((r) => r.symbol === '2317'), '2317 不屬於 24，不應該出現在結果裡');
   });
 
   test('sectorCodes + 數字篩選（roe.TTM）組合，交集正確：candidate 但不滿足數字條件的公司應該被排除', async () => {
-    const withoutFilter = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 });
+    const withoutFilter = await runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 200 }, appDeps);
     const withFilter = await runScreener({
       ...baseRequest,
       filters: [{ field: 'roe.TTM', min: 0, max: null }],
       columns: [{ field: 'roe.TTM' }],
       sectorCodes: ['24'],
       pageSize: 200,
-    });
+    }, appDeps);
     assert.ok(withFilter.results.length <= withoutFilter.results.length, '加上數字篩選後結果不應該變多');
     for (const row of withFilter.results) {
       assert.ok(row.values['roe.TTM']!.value! >= 0, `${row.symbol} 應該同時滿足產業跟數字條件`);
@@ -147,19 +148,19 @@ describe('runScreener with sectorCodes', () => {
   });
 
   test('給無效產業代碼應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['ZZ'] }), ScreenerValidationError);
+    await assert.rejects(() => runScreener({ ...baseRequest, columns: [{ field: 'roe.TTM' }], sectorCodes: ['ZZ'] }, appDeps), ScreenerValidationError);
   });
 
   test('不給 sectorCodes，行為跟現有測試完全一致（零回歸）：總筆數不受任何候選集合限制', async () => {
-    const withIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 1 });
-    const withoutIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], pageSize: 1 });
+    const withIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], sectorCodes: ['24'], pageSize: 1 }, appDeps);
+    const withoutIndustry = await runScreener({ ...baseRequest, filters: [{ field: 'roe.TTM', min: -999, max: null }], columns: [{ field: 'roe.TTM' }], pageSize: 1 }, appDeps);
     assert.ok(withoutIndustry.count > withIndustry.count, '不給 sectorCodes 時總筆數應該遠大於限定單一產業的總筆數（全市場已回填近 2000 家公司）');
   });
 });
 
 describe('runScreenerRanking', () => {
   test('desc 排序，2330 應該排在 2317 前面，筆數不超過 limit', async () => {
-    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [] });
+    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [] }, appDeps);
     assert.ok(result.results.length <= 5);
     const symbolOrder = result.results.map((r) => r.symbol);
     const index2330 = symbolOrder.indexOf('2330');
@@ -173,7 +174,7 @@ describe('runScreenerRanking', () => {
   });
 
   test('排序欄位本身一定會出現在 values 裡，且保證非 null（WHERE value IS NOT NULL）', async () => {
-    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'asc', limit: 5, columns: [] });
+    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'asc', limit: 5, columns: [] }, appDeps);
     for (const row of result.results) {
       assert.ok('roe.TTM' in row.values, '排序欄位應該自動出現在 values 裡');
       assert.ok(row.values['roe.TTM']!.value !== null, '排序用的欄位不應該是 null');
@@ -181,23 +182,23 @@ describe('runScreenerRanking', () => {
   });
 
   test('knowledgeDate 是 YYYY-MM-DD 格式（knowledge_date）', async () => {
-    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 1, columns: [] });
+    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 1, columns: [] }, appDeps);
     assert.match(result.results[0]!.values['roe.TTM']!.knowledgeDate!, /^\d{4}-\d{2}-\d{2}$/);
   });
 
   test('sectorCodes：排行結果只會出現該產業的公司（2317 不屬於 24，不應該出現）', async () => {
-    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 50, columns: [], sectorCodes: ['24'] });
+    const result = await runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 50, columns: [], sectorCodes: ['24'] }, appDeps);
     assert.ok(!result.results.some((r) => r.symbol === '2317'));
   });
 
   test('sectorCodes 給無效代碼應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [], sectorCodes: ['ZZ'] }), ScreenerValidationError);
+    await assert.rejects(() => runScreenerRanking({ field: 'roe.TTM', direction: 'desc', limit: 5, columns: [], sectorCodes: ['ZZ'] }, appDeps), ScreenerValidationError);
   });
 });
 
 describe('runScreenerValues', () => {
   test('每個要求的 symbol 都會出現在結果裡，查無資料的 symbol 不會被拿掉', async () => {
-    const result = await runScreenerValues({ symbols: ['2330', '0000'], columns: [{ field: 'roe.TTM' }] });
+    const result = await runScreenerValues({ symbols: ['2330', '0000'], columns: [{ field: 'roe.TTM' }] }, appDeps);
     assert.equal(result.results.length, 2);
     const missing = result.results.find((r) => r.symbol === '0000');
     const found = result.results.find((r) => r.symbol === '2330');
@@ -207,17 +208,17 @@ describe('runScreenerValues', () => {
   });
 
   test('重複的 symbol 應該去重，不會出現兩筆一樣的結果', async () => {
-    const result = await runScreenerValues({ symbols: ['2330', '2330'], columns: [{ field: 'roe.TTM' }] });
+    const result = await runScreenerValues({ symbols: ['2330', '2330'], columns: [{ field: 'roe.TTM' }] }, appDeps);
     assert.equal(result.results.length, 1);
   });
 
   test('symbols 是空陣列應該回傳空結果，不拋錯', async () => {
-    const result = await runScreenerValues({ symbols: [], columns: [{ field: 'roe.TTM' }] });
+    const result = await runScreenerValues({ symbols: [], columns: [{ field: 'roe.TTM' }] }, appDeps);
     assert.deepEqual(result.results, []);
   });
 
   test('查不到的 field 應該拋 ScreenerValidationError', async () => {
-    await assert.rejects(() => runScreenerValues({ symbols: ['2330'], columns: [{ field: 'notARealMetric.Q' }] }), ScreenerValidationError);
+    await assert.rejects(() => runScreenerValues({ symbols: ['2330'], columns: [{ field: 'notARealMetric.Q' }] }, appDeps), ScreenerValidationError);
   });
 });
 

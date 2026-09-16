@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import type { ValuationRankingPort } from '@/application/ports/valuationRanking';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { Prisma } from '#generated/tpex-export-client';
 import { Prisma as TwsePrisma } from '#generated/twse-export-client';
@@ -107,3 +108,6 @@ export const queryTpexValuationRanking = async (
     excludedNonPositiveCount: Number(excludedCountRows[0]?.cnt ?? 0),
   };
 };
+
+// application/ports/valuationRanking.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const exchangeValuationRanking: ValuationRankingPort = { resolveLatestValuationTradeDate, queryTwseValuationRanking, queryTpexValuationRanking };

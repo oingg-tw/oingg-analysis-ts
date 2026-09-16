@@ -1,5 +1,7 @@
 import { ValidationError } from '@/application/errors';
-import { resolveTimeframeForMetric, validTimeframesForMetric, type FieldRef } from '@/application/metrics/resolveTimeframeForMetric';
+import { resolveTimeframeForMetric, type FieldRef } from '@/application/metrics/resolveTimeframeForMetric';
+
+export type { FieldRef };
 
 // 2026-09-08 重建：舊架構 screener 的 field 格式是 "metricKey.fieldKey"（fieldKey 對應
 // 某個舊架構表的欄位名稱，例如 "roe.roeQuarterlyPct"），靠 metricTableRegistry.ts 解析成
@@ -15,16 +17,10 @@ import { resolveTimeframeForMetric, validTimeframesForMetric, type FieldRef } fr
 // 落在其中一組，依 metricCode 自動判斷該用哪一組的解析規則，timeframe 格式錯誤或不在
 // 允許清單內都會拒絕。可用的 metricCode/timeframe 組合見 GET /metrics。
 //
-// 2026-09-17 clean architecture 重構 Phase 1：timeframe 的解析規則搬到 domain/metrics/
-// timeframe.ts（純函式）+ application/metrics/resolveTimeframeForMetric.ts（查 registry、
-// 丟 ValidationError），這裡只剩「把 HTTP 輸入的 "metricCode.timeframe" 字串切開」，並 re-export
-// 給既有呼叫端。ScreenerValidationError 現在就是 application 共用的 ValidationError（同一個
-// class，instanceof 判斷不變），錯誤訊息逐字保留。
-
-export { ValidationError as ScreenerValidationError };
-export { resolveTimeframeForMetric, validTimeframesForMetric };
-export type { FieldRef };
-
+// 2026-09-17 clean architecture 重構：timeframe 的解析規則在 domain/metrics/timeframe.ts（純函式）+
+// application/metrics/resolveTimeframeForMetric.ts（查 registry、丟 ValidationError），這裡只剩
+// 「把 "metricCode.timeframe" 字串切開」；Phase 4 從 http/modules/screener/fieldResolver.ts 搬到
+// application。錯誤訊息是對外契約（bff-ts 直接顯示 400 的 message），逐字保留。
 export const resolveFieldOrThrow = (field: string): FieldRef => {
   const firstDot = field.indexOf('.');
   if (firstDot === -1) {

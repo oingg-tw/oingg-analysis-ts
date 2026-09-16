@@ -8,6 +8,7 @@ import type { IndustryReferenceDataPort } from './ports/industryReference';
 import type { CapitalStockHistoryPort } from './ports/capitalStock';
 import type { MonthlyRevenuePort } from './ports/monthlyRevenue';
 import type { FinancialStatementRowsPort } from './ports/financialStatementRows';
+import type { ValuationRankingPort } from './ports/valuationRanking';
 
 // 2026-09-17 clean architecture 重構 Phase 4：整個服務的依賴集合——指標核心的 PitDeps 再加上 HTTP use case
 // 用的 port。每個 use case 的最後一個參數是 `deps: Pick<AppDeps, ...>`（只挑自己用到的），由
@@ -22,4 +23,5 @@ export interface AppDeps extends PitDeps {
   capitalStockHistory: CapitalStockHistoryPort;
   monthlyRevenue: MonthlyRevenuePort;
   statementRows: FinancialStatementRowsPort;
+  valuationRanking: ValuationRankingPort;
 }

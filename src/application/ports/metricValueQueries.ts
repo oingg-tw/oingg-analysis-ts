@@ -1,4 +1,5 @@
 import type { LookbackRange, PeriodType, SamplingInterval, SnapshotCadence } from '@/domain/metrics/metricBasis';
+import type { FieldRef } from '@/domain/metrics/timeframe';
 
 // analysis DB 的 metric_values / metric_daily_cadence_values 讀取端 port（寫入端是 metricValues.ts 的
 // MetricValueRepository，刻意分開：指標核心的 PitDeps 只需要寫入端 + findLatest，讀取端是 HTTP use case 在用，
@@ -29,6 +30,32 @@ export interface DailyCadenceCoordinateGroup {
   snapshotCadence: SnapshotCadence;
 }
 
+// ---- screener 的四種查詢（POST /screener、GET /screener/ranking、GET /screener/company-rank、POST /screener/values）。
+// SQL 組裝（CTE 去重、INNER/LEFT JOIN 語意、RANK() window）是 infrastructure 的知識，application 只拿到
+// 已執行完的列：每個 field 依 index 對應 v{i}/k{i}/n{i} 三欄（value/knowledge_date/null_reason），
+// 解析回 ScreenerValue 在 application/screener/service.ts。
+export interface ScreenerFilterCondition extends FieldRef {
+  min: number | null;
+  max: number | null;
+  exclude: boolean;
+}
+
+export interface ScreenerSortSpec {
+  field: string; // "symbol" 或 columns 裡其中一個 field 字串——service 已經驗證過存在，repository 直接信任
+  order: 'asc' | 'desc';
+}
+
+export interface ScreenerIndexedField extends FieldRef {
+  index: number;
+}
+
+export interface CompanyRankRow {
+  symbol: string;
+  value: unknown;
+  rank: bigint;
+  total_count: bigint;
+}
+
 export interface MetricValueQueryPort {
   // 某支逐日型 snapshot 指標（exchangePeRatio/exchangePbRatio/dividendYield…）目前市場最後所知的一筆值。
   findLatestSnapshotValue(
@@ -51,4 +78,12 @@ export interface MetricValueQueryPort {
     dataType: string,
     subsidiaryCompanyId: string
   ): Promise<DailyCadenceHistoryRow[]>;
+  // 篩選：每列 symbol + 每個 column 的 v/k/n 三欄 + total_count（COUNT(*) OVER()）；candidateSymbols=null 代表不限類股。
+  screen(filters: ScreenerFilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: ScreenerSortSpec | null, candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
+  // 排行：排序欄位永遠是 index 0，其餘 columns 接在後面。
+  rank(rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[], candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
+  // 單一公司在全市場某欄位的名次（RANK()，並列共用名次）；查無資料回空陣列。
+  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc'): Promise<CompanyRankRow[]>;
+  // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
+  values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
 }

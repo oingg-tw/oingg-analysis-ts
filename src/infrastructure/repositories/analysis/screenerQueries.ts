@@ -1,5 +1,11 @@
 import { Prisma } from '#generated/analysis-client';
 import type { FieldRef } from '@/domain/metrics/timeframe';
+import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec } from '@/application/ports/metricValueQueries';
+
+// 三個輸入型別 2026-09-17 Phase 4 搬到 application/ports/metricValueQueries.ts（port 的 DTO），這裡沿用舊名。
+export type IndexedField = ScreenerIndexedField;
+export type FilterCondition = ScreenerFilterCondition;
+export type SortSpec = ScreenerSortSpec;
 
 // 2026-09-17 重構 Phase 2：從 http/modules/screener/queryBuilder.ts 搬來——這裡只有 Prisma.sql
 // 的組裝（純函式、寫死 metric_values / metric_daily_cadence_values 的表名欄位名，是 infrastructure
@@ -125,10 +131,6 @@ const buildFromClause = (filterCteRefs: CteRef[], columnOnlyCteRefs: CteRef[]): 
   return { extraCte: allSymbolsCte, fromSql: Prisma.join(joinParts, ' '), symbolExpr: Prisma.sql`all_symbols.${q('symbol')}` };
 };
 
-export interface IndexedField extends FieldRef {
-  index: number;
-}
-
 // 每個 field 選 value + knowledge_date + null_reason 三欄，用 index 當別名尾碼
 // （v0/k0/n0、v1/k1/n1...），避免同一個組合出現在多個 field index 時互相覆蓋，parseRow
 // 再用同一組 index 讀回來。knowledgeDate 統一讀 knowledge_date（不像舊架構要依
@@ -153,12 +155,6 @@ const buildSelectColumnsSql = (fields: IndexedField[], cteRefs: Map<string, CteR
     );
   });
 
-export interface FilterCondition extends FieldRef {
-  min: number | null;
-  max: number | null;
-  exclude: boolean;
-}
-
 // exclude=false：保留落在 [min, max] 內的值，null 一律排除。
 // exclude=true：保留落在 [min, max] 外的值，null 一律排除；min/max 都沒給時「外面」沒有邊界
 // 可言，篩掉全部——沿用舊架構同一條規則（跟 bff-ts 對過的既定行為，這次重建不改語意）。
@@ -179,12 +175,6 @@ const buildFilterCondition = (condition: FilterCondition, cteRefs: Map<string, C
   if (condition.max !== null) bounds.push(Prisma.sql`${col} > ${condition.max}`);
   return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
 };
-
-export interface SortSpec {
-  /** "symbol" 或 columns 裡其中一個 field 字串——service.ts 已經驗證過存在，這裡直接信任。 */
-  field: string;
-  order: 'asc' | 'desc';
-}
 
 // candidateSymbols：2026-09-11 新增，類股篩選（sectorCodes）resolve 出來的候選公司
 // 集合，null 代表沒有類股篩選、不多加這個條件（行為跟改動前完全一樣）。注入方式比照

@@ -1,3 +1,7 @@
+// screener 系列端點（POST /screener、GET /screener/ranking、GET /screener/company-rank、POST /screener/values）
+// 的輸入/回應形狀——2026-09-17 Phase 4 從 http/modules/screener/types.ts 逐字搬來（use case 住 application，
+// 型別不能反過來 import http）。
+
 export interface ScreenerFilterInput {
   field: string; // "metricCode.basis"，例如 "roe.TTM"
   min: number | null;
@@ -10,7 +14,7 @@ export interface ScreenerColumnInput {
 }
 
 // 'missing_input' | 'zero_or_negative_denominator' | 'not_applicable_industry' | 'insufficient_history'，
-// 完整說明見 src/domainPitMetrics/metricBasis.ts 的 metricNullReasonSchema。
+// 完整說明見 domain/metrics/metricBasis.ts 的 metricNullReasonSchema。
 export type ScreenerNullReason = 'missing_input' | 'zero_or_negative_denominator' | 'not_applicable_industry' | 'insufficient_history';
 
 export interface ScreenerValue {

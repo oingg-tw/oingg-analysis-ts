@@ -8,6 +8,7 @@ import { industryReferenceData } from '@/infrastructure/cache/industryReferenceD
 import { mopsCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
 import { twseDevMonthlyRevenue } from '@/infrastructure/repositories/twse/monthlyRevenue';
 import { mopsFinancialStatementRows } from '@/infrastructure/repositories/mops/financialStatementRows';
+import { exchangeValuationRanking } from '@/infrastructure/repositories/exchange/dailyValuationRanking';
 import { createPitDeps } from './pitDeps';
 
 // 整個服務的 composition root：指標核心的 pitDeps 加上 HTTP use case 用的 port。全 repo 只有這裡（跟測試的
@@ -23,6 +24,7 @@ export const createAppDeps = (): AppDeps => ({
   capitalStockHistory: mopsCapitalStockHistory,
   monthlyRevenue: twseDevMonthlyRevenue,
   statementRows: mopsFinancialStatementRows,
+  valuationRanking: exchangeValuationRanking,
 });
 
 export const appDeps: AppDeps = createAppDeps();

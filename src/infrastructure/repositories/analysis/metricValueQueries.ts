@@ -1,8 +1,9 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { Prisma } from '#generated/analysis-client';
 import type { SnapshotCadence } from '@/domain/metrics/metricBasis';
-import type { MetricValueQueryPort } from '@/application/ports/metricValueQueries';
+import type { CompanyRankRow, MetricValueQueryPort } from '@/application/ports/metricValueQueries';
 import { listDailyCadenceMetricHistoryRows, listPeriodMetricHistoryRows } from './metricValueRepository';
+import { buildCompanyRankSql, buildRankingSql, buildScreenerSql, buildValuesSql } from './screenerQueries';
 
 // 執行 ./screenerQueries.ts 組出來的 Prisma.Sql（screener 的四種查詢共用）。
 export const runAnalysisRawQuery = <T>(sql: Prisma.Sql): Promise<T[]> => analysisPrisma.$queryRaw<T[]>(sql);
@@ -35,11 +36,16 @@ export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[
     ? analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } })
     : analysisPrisma.metricValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } });
 
-// application/ports/metricValueQueries.ts 的實作（screener 的查詢之後併進來）；兩支歷史查詢的本體在
-// metricValueRepository.ts（跟寫入端同一個檔案，Phase 2 搬進來時就放那裡）。
+// application/ports/metricValueQueries.ts 的實作；兩支歷史查詢的本體在 metricValueRepository.ts（跟寫入端同一個
+// 檔案，Phase 2 搬進來時就放那裡），screener 四種查詢 = ./screenerQueries.ts 組 SQL + 這裡執行——Prisma.Sql 不出
+// infrastructure。
 export const analysisMetricValueQueries: MetricValueQueryPort = {
   findLatestSnapshotValue,
   countMetricRowsWrittenSince,
   listPeriodMetricHistoryRows,
   listDailyCadenceMetricHistoryRows,
+  screen: (filters, columns, page, pageSize, sort, candidateSymbols) => runAnalysisRawQuery<Record<string, unknown>>(buildScreenerSql(filters, columns, page, pageSize, sort, candidateSymbols)),
+  rank: (rankedField, direction, limit, columns, candidateSymbols) => runAnalysisRawQuery<Record<string, unknown>>(buildRankingSql(rankedField, direction, limit, columns, candidateSymbols)),
+  companyRank: (symbol, field, direction) => runAnalysisRawQuery<CompanyRankRow>(buildCompanyRankSql(symbol, field, direction)),
+  values: (symbols, columns) => runAnalysisRawQuery<Record<string, unknown>>(buildValuesSql(symbols, columns)),
 };

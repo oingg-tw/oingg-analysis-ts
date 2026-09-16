@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './controller';
+import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './schemas';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如
 // "roe.TTM"），對應 GET /metrics（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。

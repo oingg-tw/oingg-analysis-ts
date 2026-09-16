@@ -120,6 +120,10 @@ export interface IndustryReferenceDataPort {
   getCompanyCategoryInfo(symbol: string): CompanyCategoryInfo | undefined;
   // 從這家公司所在的葉節點往上找，直到同業數（含自己、且在 candidatePool 內）達到 minPeers；見 industryTree.ts 的完整說明。
   findPeerGroupByTree(symbol: string, candidatePool: ReadonlySet<string>, minPeers: number): TreePeerGroupResult;
-  // ---- 證交所類股
+  // ---- 證交所類股（company_profile.industry 兩碼代碼；代碼字典是啟動快取，公司清單查 DB）
   listSecuritiesIndustrySectors(): Promise<SecuritiesIndustrySector[]>;
+  // 字典裡有、且不是 XX/98/91/07 這種非產業代碼。
+  isValidSecuritiesSectorCode(code: string): boolean;
+  // 屬於這些類股代碼（聯集）的全部上市櫃公司 symbol。
+  listCompaniesBySectorCodes(codes: string[]): Promise<Set<string>>;
 }

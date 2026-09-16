@@ -1,8 +1,13 @@
 import { Router } from 'ultimate-express';
-import { getRanking } from './controller';
+import { calculateRanking, type RankingDeps } from '@/application/ranking/calculateRanking';
+import { jsonRoute } from '@/http/route';
+import { getRankingQuerySchema } from './schemas';
 
-const router = Router();
+// 對外路徑是 /valuation/ranking（bootstrap/httpModules.ts 用 mountPath '/valuation' 掛載）。
+export const createRankingRouter = (deps: RankingDeps): Router => {
+  const router = Router();
 
-router.get('/ranking', getRanking);
+  router.get('/ranking', ...jsonRoute({ query: getRankingQuerySchema }, ({ query }) => calculateRanking(query, deps)));
 
-export default router;
+  return router;
+};

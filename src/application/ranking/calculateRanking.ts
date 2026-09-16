@@ -1,11 +1,11 @@
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import {
-  resolveLatestValuationTradeDate,
-  queryTwseValuationRanking,
-  queryTpexValuationRanking,
-  type ValuationRankingQueryResult,
-} from '@/infrastructure/repositories/exchange/dailyValuationRanking';
 import { z } from 'zod';
+import type { AppDeps } from '@/application/deps';
+import type { ValuationRankingQueryResult } from '@/application/ports/valuationRanking';
+
+// 2026-09-17 Phase 4：從 http/modules/ranking/calculateRanking.ts 搬來，兩個市場的 daily_valuation 查詢改走
+// deps.valuationRanking、候選公司/名稱改走 deps.companyProfiles，編排邏輯逐字不變。zod schema 留在這裡：
+// rankingResultSchema 同時是 OpenAPI 文件跟型別的真理來源（http/modules/ranking/openapi.ts 直接引用）。
+export type RankingDeps = Pick<AppDeps, 'valuationRanking' | 'companyProfiles'>;
 
 export const rankingMetricSchema = z.enum(['peRatio', 'pbRatio', 'dividendYield']);
 export type RankingMetric = z.infer<typeof rankingMetricSchema>;
@@ -65,7 +65,7 @@ const EXCLUDE_NON_POSITIVE: Record<RankingMetric, boolean> = {
 // dailyValuationRanking.ts，這裡只留 zod schema 跟「兩個市場各自解析交易日 → 合併 → 警語」的編排。
 const EMPTY_MARKET_RESULT: ValuationRankingQueryResult = { rows: [], excludedNonPositiveCount: 0 };
 
-export const calculateRanking = async (query: RankingQuery): Promise<RankingResult> => {
+export const calculateRanking = async (query: RankingQuery, deps: RankingDeps): Promise<RankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [
     'peRatio/pbRatio/dividendYield 直接來自 oingg-twse（上市）/oingg-tpex（上櫃）的 daily_valuation，本服務沒有自己重算，見 valuation/marketRatios/ 的說明。',
@@ -75,7 +75,10 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   // 其他 asOfDate 查詢同一種容錯方式（例如週末/國定假日不是交易日）。2026-09-04 起兩邊各自解析
   // 自己的交易日（export 資料新鮮度不保證同步，實測過差到 5 天），日期不一樣時在 warnings 明講。
   const referenceDate = query.date ? new Date(`${query.date}T00:00:00.000Z`) : null;
-  const [twseTradeDate, tpexTradeDate] = await Promise.all([resolveLatestValuationTradeDate('TWSE', referenceDate), resolveLatestValuationTradeDate('TPEx', referenceDate)]);
+  const [twseTradeDate, tpexTradeDate] = await Promise.all([
+    deps.valuationRanking.resolveLatestValuationTradeDate('TWSE', referenceDate),
+    deps.valuationRanking.resolveLatestValuationTradeDate('TPEx', referenceDate),
+  ]);
 
   if (!twseTradeDate && !tpexTradeDate) {
     warnings.push('查無任何一天的 daily_valuation 資料，無法計算排行。');
@@ -83,10 +86,10 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
   }
 
   const excludeNonPositive = EXCLUDE_NON_POSITIVE[metric];
-  const twseCompanySymbols = twseTradeDate ? await getSecuritySymbolSet({ market: 'TWSE', excludeKy: true, preferredStock: 'exclude' }) : new Set<string>();
+  const twseCompanySymbols = twseTradeDate ? await deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', excludeKy: true, preferredStock: 'exclude' }) : new Set<string>();
   const [twseResult, tpexResult] = await Promise.all([
-    twseTradeDate ? queryTwseValuationRanking(twseTradeDate, metric, order, limit, excludeNonPositive, twseCompanySymbols) : Promise.resolve(EMPTY_MARKET_RESULT),
-    tpexTradeDate ? queryTpexValuationRanking(tpexTradeDate, metric, order, limit, excludeNonPositive) : Promise.resolve(EMPTY_MARKET_RESULT),
+    twseTradeDate ? deps.valuationRanking.queryTwseValuationRanking(twseTradeDate, metric, order, limit, excludeNonPositive, twseCompanySymbols) : Promise.resolve(EMPTY_MARKET_RESULT),
+    tpexTradeDate ? deps.valuationRanking.queryTpexValuationRanking(tpexTradeDate, metric, order, limit, excludeNonPositive) : Promise.resolve(EMPTY_MARKET_RESULT),
   ]);
 
   const resolvedDates = [twseTradeDate, tpexTradeDate].filter((d): d is Date => d !== null);
@@ -108,7 +111,7 @@ export const calculateRanking = async (query: RankingQuery): Promise<RankingResu
     warnings.push(`${latestDate.toISOString().slice(0, 10)} 查無符合條件的資料，無法計算排行。`);
   }
 
-  const companyNames = await getCompanyNamesForSymbols(limited.map((row) => row.symbol));
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols(limited.map((row) => row.symbol));
   const rankings: RankingRow[] = limited.map((row, index) => ({ rank: index + 1, symbol: row.symbol, companyName: companyNames.get(row.symbol) ?? null, value: row.value }));
 
   return {
