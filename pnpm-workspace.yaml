@@ -4,5 +4,9 @@ allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
   '@scarf/scarf': false
+  # dependency-cruiser 用的 swc 解析器——原生執行檔由 optionalDependencies 的平台套件提供，
+  # postinstall 只是備援下載，不需要跑（2026-09-17 實測不跑也能載入）。pnpm add 時它自己寫進
+  # 「set this to true or false」這個佔位字串會讓整份檔案失效、之後每個 pnpm 指令都炸掉，要填實際值。
+  '@swc/core': false
   esbuild: true
   prisma: true

@@ -18,7 +18,10 @@ const bankNplRatioJob: IndicatorJob = {
   name: 'bankNplRatio',
   category: 'resilience',
   getCompanyIds: async () => [],
-  run: (symbol) => computeAndWriteBankAssetQualityFamilyPit({ symbol, year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' }),
+  run: async (symbol) => {
+    await computeAndWriteBankAssetQualityFamilyPit({ symbol, year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
+    return { warnings: [] };
+  },
 };
 
 // writeMetricValue 值沒變時是 skipped_unchanged（不落地任何寫入、不更新 computedAt，

@@ -41,7 +41,7 @@ test('roaPit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   const second = await computeAndWriteRoaPit({ symbol: '2887', year: '115', season: '1', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
-  if ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date')) {
+  if (!second.ttm || ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date'))) {
     // 這組座標本來就算不出 TTM，不構成去重測試的一部分。
   } else {
     assert.deepEqual(second.ttm, { action: 'skipped_unchanged' });

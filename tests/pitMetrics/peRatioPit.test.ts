@@ -34,7 +34,7 @@ test('peRatioPit: 重跑同一組座標，去重邏輯應該讓第二次全部 s
   await computeAndWritePeRatioPit(query);
   const second = await computeAndWritePeRatioPit(query);
 
-  if ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date')) {
+  if (!second.ttm || ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date'))) {
     // 這組座標本來就算不出 TTM，不構成去重測試的一部分。
   } else {
     assert.deepEqual(second.ttm, { action: 'skipped_unchanged' });

@@ -17,8 +17,8 @@ test('compareBySortField: 字串欄位（例如 issueDate ISO 字串）字典序
 });
 
 test('compareBySortField: null 一律排最後，不管 asc/desc', () => {
-  const withValue = { ytcPct: 3 };
-  const withNull = { ytcPct: null };
+  const withValue: { ytcPct: number | null } = { ytcPct: 3 };
+  const withNull: { ytcPct: number | null } = { ytcPct: null };
   assert.ok(compareBySortField(withNull, withValue, 'ytcPct', 'asc') > 0, 'asc：null 排在有值的後面');
   assert.ok(compareBySortField(withNull, withValue, 'ytcPct', 'desc') > 0, 'desc：null 仍然排在有值的後面');
   assert.ok(compareBySortField(withValue, withNull, 'ytcPct', 'asc') < 0);

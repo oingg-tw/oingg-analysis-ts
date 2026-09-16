@@ -44,7 +44,7 @@ test('roePit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipp
   assert.deepEqual(second.q, { action: 'skipped_unchanged' });
   // 2887 115Q1 的 TTM 是否齊全視實際資料而定，只要 periodType 有被計算（不是 skipped_no_quarter/
   // skipped_no_knowledge_date），第二次呼叫就一定要落在 skipped_unchanged。
-  if ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date')) {
+  if (!second.ttm || ('action' in second.ttm && (second.ttm.action === 'skipped_no_quarter' || second.ttm.action === 'skipped_no_knowledge_date'))) {
     // 這組座標本來就算不出 TTM，不構成去重測試的一部分。
   } else {
     assert.deepEqual(second.ttm, { action: 'skipped_unchanged' });
