@@ -1,6 +1,6 @@
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveRoeQuarterData } from './computeRoePit';
+import { resolveRoeQuarterData, type RoeDeps } from './computeRoe';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 roe 試點，
@@ -12,8 +12,9 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 不是「有資料但來源不同」。
 
 
-export const getRoeProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveRoeQuarterData(query);
+// 2026-09-17 Phase 3：跟 computeRoe 共用同一份 resolver，所以也收同一組 deps（provenanceResolvers.ts 綁定）。
+export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveRoeQuarterData(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'roe', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

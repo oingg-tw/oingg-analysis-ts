@@ -1,5 +1,6 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { getRoeProvenance } from '@/application/metrics/profitability/roe/getRoeProvenance';
+import { legacyPitDeps } from '@/application/metrics/legacyBridge';
 import { getChowderNumberProvenance } from '@/application/metrics/dividend/chowderNumber/getChowderNumberProvenance';
 import { getSueProvenance } from '@/application/metrics/growth/sue/getSueProvenance';
 import { getAccrualsRatioProvenance } from '@/application/metrics/quality/accrualsRatio/getAccrualsRatioProvenance';
@@ -119,7 +120,8 @@ import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './pr
 // get<Metric>Provenance.ts、在這裡的 dispatch table 加一行，不需要碰其餘 controller/
 // route/openapi/types 邏輯。roe 目前固定用 TTM basis（見 getRoeProvenance.ts 的說明）。
 export const PROVENANCE_RESOLVERS: Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number], (query: QuarterlyMetricQuery) => Promise<MetricProvenanceResult>> = {
-  roe: getRoeProvenance,
+  // Phase 3 已遷移的指標在這裡綁 legacyPitDeps（遷移期間的過渡；Phase 4 controller 改收 bootstrap 綁定好的 use case 後拿掉）。
+  roe: (query) => getRoeProvenance(query, legacyPitDeps),
   chowderNumber: getChowderNumberProvenance,
   sue: getSueProvenance,
   accrualsRatio: getAccrualsRatioProvenance,
