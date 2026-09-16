@@ -19,7 +19,7 @@
 // 搬完之後照慣例：pnpm typecheck、pnpm test、pnpm lint:deps:baseline（同一個 commit 重產）。
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, relative, resolve } from 'node:path';
 
 const ROOT = process.cwd();
@@ -146,7 +146,10 @@ const main = (): void => {
 
   for (const [file, content] of pendingWrites) writeFileSync(file, content);
   for (const [from, to] of moves) {
-    execFileSync('git', ['mv', '-k', toPosix(relative(ROOT, from)), toPosix(relative(ROOT, to))], { cwd: ROOT, stdio: 'inherit' });
+    // git mv 不會幫忙建目標資料夾（會直接失敗）——先建好；也不要用 -k 吞掉錯誤，搬失敗要炸出來，
+    // 不然會留下「import 改好了、檔案沒搬」的半套狀態（2026-09-17 第一次跑就踩到）。
+    mkdirSync(dirname(to), { recursive: true });
+    execFileSync('git', ['mv', toPosix(relative(ROOT, from)), toPosix(relative(ROOT, to))], { cwd: ROOT, stdio: 'inherit' });
   }
   console.log('[move-modules] 完成。接著：pnpm typecheck && pnpm test && pnpm lint:deps:baseline');
 };

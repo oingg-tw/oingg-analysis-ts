@@ -49,9 +49,6 @@
   "prisma": {
     "schema": "prisma/analysis/schema.prisma"
   },
-  "lint-staged": {
-    "*.ts": "oxlint --type-aware"
-  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@cortex-js/compute-engine": "^0.126.2",
