@@ -1,0 +1,116 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
+import { pickEquity } from '@/domain/metrics/shared/pickers';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
+import { periodTypeGroup } from '@/domain/metrics/coordinate';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import type { PitDeps } from '@/application/metrics/deps';
+
+// 這份檔案是 src/domainMetrics/roic.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
+// 在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，延續既有慣例。
+
+// 稅前淨利須為正，否則有效稅率沒有意義，NOPAT 視為 null（跟 roic.ts 現有行為一致）。
+const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
+  if (!record || record.profitBeforeTax === null || record.financeCosts === null || record.incomeTaxExpense === null) return null;
+  if (record.profitBeforeTax <= 0n) return null;
+  const ebit = record.profitBeforeTax + record.financeCosts;
+  const effectiveTaxRate = Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
+  return BigInt(Math.round(Number(ebit) * (1 - effectiveTaxRate)));
+};
+
+
+export type RoicDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+
+export type RoicComputationBatch = ComputationBatch<'q' | 'ttm'>;
+
+export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): Promise<RoicComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
+
+  if (!resolvedQuarter) {
+    return noQuarterBatch(symbol, ['q', 'ttm']);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const [balanceSheet, incomeStatement] = await Promise.all([deps.statements.getBalanceSheet(key), deps.statements.getIncomeStatement(key)]);
+
+  const nopat = computeNopat(incomeStatement);
+  const equity = pickEquity(balanceSheet);
+  const totalDebt = balanceSheet
+    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+    : null;
+  const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
+  const investedCapital =
+    totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
+  const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
+
+  const roicQuarterlyPct = nopat !== null && investedCapital !== null ? toPercent(nopat, investedCapital) : null;
+  const quarterlyNullReason: MetricNullReason | null = roicQuarterlyPct === null ? determineNullReason(nopat, investedCapital) : null;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'roic', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', roicQuarterlyPct, quarterlyNullReason);
+
+  // TTM：近四季（含本季）NOPAT 加總，投入資本固定用本季期末值（不平均不加總）。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+  );
+
+  let nopatTtmSum = 0n;
+  let ttmComplete = true;
+  for (const record of ttmRecords) {
+    const quarterNopat = computeNopat(record);
+    if (quarterNopat === null) {
+      ttmComplete = false;
+    } else {
+      nopatTtmSum += quarterNopat;
+    }
+  }
+
+  const ttmValue = ttmComplete && investedCapital !== null ? toPercent(nopatTtmSum, investedCapital) : null;
+  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(nopatTtmSum, investedCapital) : 'insufficient_history';
+
+  let ttm: ComputationSlot;
+  if (ttmComplete) {
+    const ttmAnchor = await resolveKnowledgeDate(
+      symbol,
+      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null })), deps.announcements
+    );
+    if (!ttmAnchor) {
+      ttm = { action: 'skipped_no_knowledge_date' };
+    } else {
+      ttm = computation({
+        ...coordinateBase,
+        ...periodTypeGroup('TTM'),
+        value: ttmValue,
+        nullReason: ttmNullReason,
+        knowledgeDate: ttmAnchor.knowledgeDate,
+        knowledgeDateIsFallback: ttmAnchor.isFallback,
+      });
+    }
+  } else if (mainAnchor) {
+    ttm = computation({
+      ...coordinateBase,
+      ...periodTypeGroup('TTM'),
+      value: null,
+      nullReason: 'insufficient_history',
+      knowledgeDate: mainAnchor.knowledgeDate,
+      knowledgeDateIsFallback: mainAnchor.isFallback,
+    });
+  } else {
+    ttm = { action: 'skipped_no_knowledge_date' };
+  }
+
+  return { symbol, rocYear: year, season, slots: { q, ttm } };
+};

@@ -37,6 +37,13 @@ export interface ComputationBatch<K extends string> {
   slots: Record<K, ComputationSlot>;
 }
 
+// 逐日型指標（beta/marketRatios/live*）的一批計算結果：座標是交易日（YYYY-MM-DD），沒有季度。
+export interface DailyComputationBatch<K extends string> {
+  symbol: string;
+  tradeDate: string | null;
+  slots: Record<K, ComputationSlot>;
+}
+
 // knowledge_date 解析結果裡 slot 用得到的兩個欄位（application/metrics/knowledgeDate.ts 的
 // KnowledgeDateResolution 是它的超集）。
 export interface KnowledgeAnchor {
@@ -64,6 +71,10 @@ export const periodSlot = (
     knowledgeDateIsFallback: anchor.isFallback,
   };
 };
+
+// 舊 `await writeMetricValue({...})` 的純函式版：就是那筆完整的寫入資料本身。identity 函式的價值在於
+// 型別檢查（物件字面值的多餘/缺漏欄位在這裡被抓到）跟可 grep 的標記，codemod 用它一對一取代舊呼叫。
+export const computation = (input: MetricComputation): ComputationSlot => input;
 
 // 解析不到任何一季（公司查無財報）時的整批 skip——舊架構每支 compute 各自手寫
 // `{ symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: {...} }`。

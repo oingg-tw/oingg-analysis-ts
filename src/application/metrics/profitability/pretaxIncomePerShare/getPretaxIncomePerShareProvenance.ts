@@ -1,19 +1,18 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——跟 getEpsProvenance.ts
 // 幾乎同一種形狀，差別只在分子用損益表的 profit_loss_before_tax（稅前淨利）取代淨利
 // picker。固定回傳 TTM（跟其餘試點慣例一致）。
 
-export const getPretaxIncomePerShareProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getPretaxIncomePerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'pretaxIncomePerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -25,14 +24,14 @@ export const getPretaxIncomePerShareProvenance = async (query: QuarterlyMetricQu
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const currentIncomeStatement = await getQuarterlyIncomeStatement(key);
+  const currentIncomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = currentIncomeStatement?.reportDate ?? null;
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const pretaxIncomes = ttmRecords.map((r) => r?.profitBeforeTax ?? null);
 

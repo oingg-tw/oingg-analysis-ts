@@ -1,10 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateDupontTaxBurden } from '../../../../domain/metrics/profitability/dupontTaxBurden/calculateDupontTaxBurden';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求：GET /companies/:symbol/metric-provenance 擴大到 dupontTaxBurden。
 // 現查現算不持久化，跟 getRoeProvenance.ts 同一個模式——刻意不動 computeDupontFamilyPit.ts
@@ -13,10 +13,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 完全一致（都呼叫同一支 calculateDupontTaxBurden 純函式）。固定回傳 TTM（跟 roe 同一個
 // 試點慣例，Q 版的欄位組成比較簡單，之後真的需要再開放 periodType 查詢參數）。
 
-export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'dupontTaxBurden', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -29,7 +29,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery):
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const netIncomes = ttmRecords.map(pickNetIncome);

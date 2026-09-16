@@ -1,6 +1,5 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { getLatestQuarterWithInsuranceIncomeStatement } from '@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst';
-import { getMarginInputs } from '../margins/computeMarginsFamilyPit';
+import { getMarginInputs, type MarginsFamilyDeps } from '../margins/computeMarginsFamily';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
@@ -11,14 +10,16 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 同一個 getMarginInputs（一般表查無 operatingRevenue 時自動退回保險業 IFRS17 替代科目，
 // 金控業刻意不做同樣的事，見該檔案檔頭說明）。固定回傳 TTM。
 
-export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps: MarginsFamilyDeps): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
-      : ((await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement'])) ??
-        (await getLatestQuarterWithInsuranceIncomeStatement(symbol, dataType, subsidiaryCompanyId).then((q) => (q ? { year: String(q.year), season: String(q.quarter) as Season } : null))));
+      : ((await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement'], deps.quarters)) ??
+        (await deps.quarters
+          .latestQuarterWith('insuranceIncomeStatement', symbol, dataType, subsidiaryCompanyId)
+          .then((q) => (q ? { year: String(q.year), season: String(q.quarter) as Season } : null))));
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'grossMargin', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -31,7 +32,7 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery): Pro
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, deps))
   );
 
   let revenueTtmSum = 0n;

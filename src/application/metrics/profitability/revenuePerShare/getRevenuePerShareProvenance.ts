@@ -1,19 +1,18 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——revenuePerShare(TTM) = 近四季營收加總×1000 / 流通股數。
 // 結構跟 getEpsProvenance.ts 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome
 // 那種欄位選擇邏輯）。固定回傳 TTM。
 
-export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'revenuePerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -25,14 +24,14 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery):
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const currentIncomeStatement = await getQuarterlyIncomeStatement(key);
+  const currentIncomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = currentIncomeStatement?.reportDate ?? null;
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
+  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const revenues = ttmRecords.map((record) => record?.operatingRevenue ?? null);
 

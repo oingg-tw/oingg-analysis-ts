@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveGreenblattRocInputs } from './computeGreenblattRocPit';
+import { resolveGreenblattRocInputs, type GreenblattRocDeps } from './computeGreenblattRoc';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——greenblattRoc(TTM) = 近四季 EBIT(=稅前淨利+財務費用)
@@ -7,8 +7,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // computeGreenblattRocPit.ts 共用同一個 resolveGreenblattRocInputs（跟 accrualsRatio
 // 的做法一致），現查現算不持久化。固定回傳 TTM。
 
-export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveGreenblattRocInputs(query);
+export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, deps: GreenblattRocDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveGreenblattRocInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'greenblattRoc', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

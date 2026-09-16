@@ -1,0 +1,111 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toPercent } from '@/domain/metrics/shared/numericHelpers';
+import { pickEquityValue as pickEquity } from '@/domain/metrics/shared/pickers';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
+import { periodTypeGroup } from '@/domain/metrics/coordinate';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import type { PitDeps } from '@/application/metrics/deps';
+
+// Fama-French (2015) RMW 因子背後的單一公司營業獲利力比率——只做分子容易單獨計算的比率
+// 本身，不做完整五因子模型的橫斷面排序建構+個股迴歸（那需要全市場批次回填+迴歸引擎，
+// 見 famaFrenchOperatingProfitabilityDefinition.ts 的 formulaNote）。帳面權益優先採
+// 歸屬於母公司口徑，缺漏退回整體口徑，跟既有 altmanZDoublePrimeScore 同一個 pickEquity 慣例。
+
+export type FamaFrenchOperatingProfitabilityDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+
+export type FamaFrenchOperatingProfitabilityComputationBatch = ComputationBatch<'q' | 'ttm'>;
+
+export const computeFamaFrenchOperatingProfitability = async (query: QuarterlyMetricQuery, deps: FamaFrenchOperatingProfitabilityDeps): Promise<FamaFrenchOperatingProfitabilityComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
+
+  if (!resolvedQuarter) {
+    return noQuarterBatch(symbol, ['q', 'ttm']);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const balanceSheet = await deps.statements.getBalanceSheet(key);
+  const bookEquity = pickEquity(balanceSheet);
+  const incomeStatement = await deps.statements.getIncomeStatement(key);
+  const reportDate = incomeStatement?.reportDate ?? balanceSheet?.reportDate ?? null;
+
+  const operatingProfitQuarterly =
+    incomeStatement?.grossProfit !== null &&
+    incomeStatement?.grossProfit !== undefined &&
+    incomeStatement.sellingExpenses !== null &&
+    incomeStatement.adminExpenses !== null &&
+    incomeStatement.financeCosts !== null
+      ? incomeStatement.grossProfit - incomeStatement.sellingExpenses - incomeStatement.adminExpenses - incomeStatement.financeCosts
+      : null;
+
+  const ratioQuarterly = operatingProfitQuarterly !== null && bookEquity !== null ? toPercent(operatingProfitQuarterly, bookEquity) : null;
+  const quarterlyNullReason: MetricNullReason | null =
+    ratioQuarterly !== null ? null : operatingProfitQuarterly === null || bookEquity === null ? 'missing_input' : 'zero_or_negative_denominator';
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'famaFrenchOperatingProfitability', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', ratioQuarterly, quarterlyNullReason);
+
+  // TTM：近四季（含本季）分子(毛利-推銷費用-管理費用-利息費用)各自加總，分母固定用本季期末帳面權益。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+  );
+
+  let operatingProfitTtmSum = 0n;
+  let ttmComplete = true;
+  for (const record of ttmRecords) {
+    if (record === null || record.grossProfit === null || record.sellingExpenses === null || record.adminExpenses === null || record.financeCosts === null) {
+      ttmComplete = false;
+    } else {
+      operatingProfitTtmSum += record.grossProfit - record.sellingExpenses - record.adminExpenses - record.financeCosts;
+    }
+  }
+
+  const ratioTtm = ttmComplete && bookEquity !== null ? toPercent(operatingProfitTtmSum, bookEquity) : null;
+  const ttmNullReason: MetricNullReason | null =
+    ratioTtm !== null ? null : !ttmComplete || bookEquity === null ? 'insufficient_history' : 'zero_or_negative_denominator';
+
+  let ttm: ComputationSlot;
+  if (ttmComplete && bookEquity !== null) {
+    const ttmAnchor = await resolveKnowledgeDate(
+      symbol,
+      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null })), deps.announcements
+    );
+    if (!ttmAnchor) {
+      ttm = { action: 'skipped_no_knowledge_date' };
+    } else {
+      ttm = computation({
+        ...coordinateBase,
+        ...periodTypeGroup('TTM'),
+        value: ratioTtm,
+        nullReason: ttmNullReason,
+        knowledgeDate: ttmAnchor.knowledgeDate,
+        knowledgeDateIsFallback: ttmAnchor.isFallback,
+      });
+    }
+  } else if (mainAnchor) {
+    ttm = computation({
+      ...coordinateBase,
+      ...periodTypeGroup('TTM'),
+      value: null,
+      nullReason: ttmNullReason ?? 'insufficient_history',
+      knowledgeDate: mainAnchor.knowledgeDate,
+      knowledgeDateIsFallback: mainAnchor.isFallback,
+    });
+  } else {
+    ttm = { action: 'skipped_no_knowledge_date' };
+  }
+
+  return { symbol, rocYear: year, season, slots: { q, ttm } };
+};

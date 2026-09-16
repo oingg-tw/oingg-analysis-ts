@@ -1,97 +1,12 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/application/metrics/shared/ports/financialDataPorts';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeNovyMarxGpToAssets } from './computeNovyMarxGpToAssets';
+import type { StandardBasisPitOutcome } from '@/application/metrics/pitOutcome';
 
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
-
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-
-// 量化選股盤點使用者要求新增（Novy-Marx GP/A）。分母固定用本季期末總資產，跟
-// accrualsRatio/ROE/ROA 同一種「TTM 分子加總、分母用單一期末值」簡化。
+// **暫時性 shim**（2026-09-17 Phase 3）：novyMarxGpToAssets 的計算本體搬到 computeNovyMarxGpToAssets.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteNovyMarxGpToAssetsPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeNovyMarxGpToAssets';
 
 export type NovyMarxGpToAssetsPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteNovyMarxGpToAssetsPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & BalanceSheetPort = financialDataAdapter): Promise<NovyMarxGpToAssetsPitOutcome> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
-
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [balanceSheet, incomeStatement] = await Promise.all([statements.getBalanceSheet(key), statements.getIncomeStatement(key)]);
-  const totalAssets = balanceSheet?.totalAssets ?? null;
-  const grossProfitQuarterly = incomeStatement?.grossProfit ?? null;
-  const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
-
-  const quarterlyValue = grossProfitQuarterly !== null && totalAssets !== null ? toPercent(grossProfitQuarterly, totalAssets) : null;
-  const quarterlyNullReason: MetricNullReason | null = quarterlyValue === null ? determineNullReason(grossProfitQuarterly, totalAssets) : null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const coordinateBase = { symbol, metricCode: 'novyMarxGpToAssets', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterlyValue, quarterlyNullReason);
-
-  // TTM：近四季（含本季）毛利加總，分母固定用本季期末總資產。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
-
-  let grossProfitTtmSum = 0n;
-  let ttmComplete = true;
-  for (const record of ttmRecords) {
-    if (record === null || record.grossProfit === null) {
-      ttmComplete = false;
-    } else {
-      grossProfitTtmSum += record.grossProfit;
-    }
-  }
-
-  const ttmValue = ttmComplete && totalAssets !== null ? toPercent(grossProfitTtmSum, totalAssets) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(grossProfitTtmSum, totalAssets) : 'insufficient_history';
-
-  let ttm: BasisOutcome;
-  if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null }))
-    );
-    if (!ttmAnchor) {
-      ttm = { action: 'skipped_no_knowledge_date' };
-    } else {
-      ttm = await writeMetricValue({
-        ...coordinateBase,
-        ...periodTypeGroup('TTM'),
-        value: ttmValue,
-        nullReason: ttmNullReason,
-        knowledgeDate: ttmAnchor.knowledgeDate,
-        knowledgeDateIsFallback: ttmAnchor.isFallback,
-      });
-    }
-  } else if (mainAnchor) {
-    ttm = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('TTM'),
-      value: null,
-      nullReason: 'insufficient_history',
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  } else {
-    ttm = { action: 'skipped_no_knowledge_date' };
-  }
-
-  return { symbol, rocYear: year, season, q, ttm };
-};
+export const computeAndWriteNovyMarxGpToAssetsPit = runLegacyPit(computeNovyMarxGpToAssets);
