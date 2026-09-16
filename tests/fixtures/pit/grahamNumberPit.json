@@ -1,0 +1,225 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-11T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "market.getStockPrice([\"2330\",{\"$date\":\"2026-08-11T00:00:00.000Z\"}])": {
+      "closePrice": 2395,
+      "tradeDate": "2026-08-11"
+    },
+    "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
+    "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
+    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "effectiveMonth": 5,
+      "effectiveYear": 2026,
+      "paidInShares": {
+        "$bigint": "25932370067"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "accountsPayable": {
+        "$bigint": "108890080"
+      },
+      "accountsReceivable": {
+        "$bigint": "435762477"
+      },
+      "bondsPayable": {
+        "$bigint": "815036716"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "3134218213"
+      },
+      "currentAssets": {
+        "$bigint": "4565700742"
+      },
+      "currentLiabilities": {
+        "$bigint": "1857761825"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "6432518334"
+      },
+      "inventory": {
+        "$bigint": "385524542"
+      },
+      "longTermBorrowings": {
+        "$bigint": "49226958"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "4302880478"
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "6051113099"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "9375654727"
+      },
+      "totalEquity": {
+        "$bigint": "6474470981"
+      },
+      "totalLiabilities": {
+        "$bigint": "2901183746"
+      }
+    },
+    "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "adminExpenses": {
+        "$bigint": "21833650"
+      },
+      "financeCosts": {
+        "$bigint": "2716862"
+      },
+      "grossProfit": {
+        "$bigint": "751295421"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "114998383"
+      },
+      "netIncome": {
+        "$bigint": "572801304"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "572479752"
+      },
+      "operatingCost": {
+        "$bigint": "382808019"
+      },
+      "operatingIncome": {
+        "$bigint": "658966142"
+      },
+      "operatingRevenue": {
+        "$bigint": "1134103440"
+      },
+      "profitBeforeTax": {
+        "$bigint": "687799687"
+      },
+      "reportDate": {
+        "$date": "2026-03-31T00:00:00.000Z"
+      },
+      "sellingExpenses": {
+        "$bigint": "4415322"
+      }
+    },
+    "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "adminExpenses": {
+        "$bigint": "21366992"
+      },
+      "financeCosts": {
+        "$bigint": "3085049"
+      },
+      "grossProfit": {
+        "$bigint": "860310695"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "155649163"
+      },
+      "netIncome": {
+        "$bigint": "706780923"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "706561938"
+      },
+      "operatingCost": {
+        "$bigint": "410069555"
+      },
+      "operatingIncome": {
+        "$bigint": "766602651"
+      },
+      "operatingRevenue": {
+        "$bigint": "1270380250"
+      },
+      "profitBeforeTax": {
+        "$bigint": "862430086"
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "sellingExpenses": {
+        "$bigint": "4468953"
+      }
+    },
+    "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "adminExpenses": {
+        "$bigint": "20048234"
+      },
+      "financeCosts": {
+        "$bigint": "2958568"
+      },
+      "grossProfit": {
+        "$bigint": "588542829"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "73613661"
+      },
+      "netIncome": {
+        "$bigint": "451755362"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "452301407"
+      },
+      "operatingCost": {
+        "$bigint": "401375489"
+      },
+      "operatingIncome": {
+        "$bigint": "500684818"
+      },
+      "operatingRevenue": {
+        "$bigint": "989918318"
+      },
+      "profitBeforeTax": {
+        "$bigint": "525369023"
+      },
+      "reportDate": {
+        "$date": "2025-09-30T00:00:00.000Z"
+      },
+      "sellingExpenses": {
+        "$bigint": "3973966"
+      }
+    },
+    "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "adminExpenses": {
+        "$bigint": "18416935"
+      },
+      "financeCosts": {
+        "$bigint": "3043450"
+      },
+      "grossProfit": {
+        "$bigint": "651986836"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "86947868"
+      },
+      "netIncome": {
+        "$bigint": "505415333"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "505743990"
+      },
+      "operatingCost": {
+        "$bigint": "394103585"
+      },
+      "operatingIncome": {
+        "$bigint": "564902413"
+      },
+      "operatingRevenue": {
+        "$bigint": "1046090421"
+      },
+      "profitBeforeTax": {
+        "$bigint": "592363201"
+      },
+      "reportDate": {
+        "$date": "2025-12-31T00:00:00.000Z"
+      },
+      "sellingExpenses": {
+        "$bigint": "4916048"
+      }
+    }
+  }
+}

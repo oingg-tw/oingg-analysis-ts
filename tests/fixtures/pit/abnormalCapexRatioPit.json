@@ -1,0 +1,403 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-11T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "quarters.latestQuarterWith([\"cashFlowStatement\",\"9999\",\"2\",\"\"])": null,
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":111}])": {
+      "amortization": {
+        "$bigint": "2167798"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-262134719"
+      },
+      "depreciation": {
+        "$bigint": "108934265"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308546"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-288073791"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "372169688"
+      },
+      "reportDate": {
+        "$date": "2022-03-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "amortization": {
+        "$bigint": "2239265"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-302498628"
+      },
+      "depreciation": {
+        "$bigint": "108083376"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308546"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-272231795"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "385244745"
+      },
+      "reportDate": {
+        "$date": "2023-03-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "amortization": {
+        "$bigint": "2326061"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-181304802"
+      },
+      "depreciation": {
+        "$bigint": "156697101"
+      },
+      "dividendsPaid": {
+        "$bigint": "-77796213"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-159806991"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "436311108"
+      },
+      "reportDate": {
+        "$date": "2024-03-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2134152"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-330826730"
+      },
+      "depreciation": {
+        "$bigint": "173004927"
+      },
+      "dividendsPaid": {
+        "$bigint": "-103721521"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-290192426"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "625573672"
+      },
+      "reportDate": {
+        "$date": "2025-03-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":111}])": {
+      "amortization": {
+        "$bigint": "2183912"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-217722949"
+      },
+      "depreciation": {
+        "$bigint": "111040735"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308547"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-275932106"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "338849429"
+      },
+      "reportDate": {
+        "$date": "2022-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "amortization": {
+        "$bigint": "2295727"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-250534217"
+      },
+      "depreciation": {
+        "$bigint": "121643961"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308547"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-259326076"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "167247979"
+      },
+      "reportDate": {
+        "$date": "2023-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "amortization": {
+        "$bigint": "2237284"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-205674684"
+      },
+      "depreciation": {
+        "$bigint": "162929310"
+      },
+      "dividendsPaid": {
+        "$bigint": "-90762248"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-197607330"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "377668210"
+      },
+      "reportDate": {
+        "$date": "2024-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2050645"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-297225801"
+      },
+      "depreciation": {
+        "$bigint": "186007267"
+      },
+      "dividendsPaid": {
+        "$bigint": "-116697300"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-228488307"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "497064085"
+      },
+      "reportDate": {
+        "$date": "2025-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "amortization": {
+        "$bigint": "2309315"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-496001947"
+      },
+      "depreciation": {
+        "$bigint": "196228853"
+      },
+      "dividendsPaid": {
+        "$bigint": "-155595147"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-492810418"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "783364977"
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":111}])": {
+      "amortization": {
+        "$bigint": "2198447"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-265970089"
+      },
+      "depreciation": {
+        "$bigint": "103147219"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308546"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-284390325"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "412698167"
+      },
+      "reportDate": {
+        "$date": "2022-09-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "amortization": {
+        "$bigint": "2353332"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-226623760"
+      },
+      "depreciation": {
+        "$bigint": "144926830"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308546"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-242243223"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "294645276"
+      },
+      "reportDate": {
+        "$date": "2023-09-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "amortization": {
+        "$bigint": "2313422"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-207078888"
+      },
+      "depreciation": {
+        "$bigint": "165915135"
+      },
+      "dividendsPaid": {
+        "$bigint": "-90762247"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-195509921"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "391992467"
+      },
+      "reportDate": {
+        "$date": "2024-09-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2094758"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-287451994"
+      },
+      "depreciation": {
+        "$bigint": "160692513"
+      },
+      "dividendsPaid": {
+        "$bigint": "-116697301"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-259752617"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "426829081"
+      },
+      "reportDate": {
+        "$date": "2025-09-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":111}])": {
+      "amortization": {
+        "$bigint": "2205937"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-336844373"
+      },
+      "depreciation": {
+        "$bigint": "105375960"
+      },
+      "dividendsPaid": {
+        "$bigint": "-71308546"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-342532013"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "486881904"
+      },
+      "reportDate": {
+        "$date": "2022-12-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "amortization": {
+        "$bigint": "2369926"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-170160220"
+      },
+      "depreciation": {
+        "$bigint": "148278504"
+      },
+      "dividendsPaid": {
+        "$bigint": "-77796213"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-132319502"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "394829347"
+      },
+      "reportDate": {
+        "$date": "2023-12-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "amortization": {
+        "$bigint": "2309382"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-361948162"
+      },
+      "depreciation": {
+        "$bigint": "168068940"
+      },
+      "dividendsPaid": {
+        "$bigint": "-103734518"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-311918527"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "620205283"
+      },
+      "reportDate": {
+        "$date": "2024-12-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2132857"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-356906004"
+      },
+      "depreciation": {
+        "$bigint": "159979251"
+      },
+      "dividendsPaid": {
+        "$bigint": "-129663077"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-365960057"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "725508787"
+      },
+      "reportDate": {
+        "$date": "2025-12-31T00:00:00.000Z"
+      }
+    }
+  }
+}

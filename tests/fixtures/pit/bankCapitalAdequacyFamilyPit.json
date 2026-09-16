@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2801\",115,1,{\"$date\":\"2026-03-31T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-05-14T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "announcements.getPriceAnchorDate([\"2801\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-24T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "industry.isFinancialIndustryCompany([\"2330\"])": false,
+    "industry.isFinancialIndustryCompany([\"2801\"])": true,
+    "quarters.latestQuarterWith([\"bankCapitalAdequacy\",\"2801\",\"2\",\"\"])": {
+      "quarter": 2,
+      "year": 115
+    },
+    "statements.getBankCapitalAdequacy([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2801\",\"year\":115}])": {
+      "eligibleCapital": null,
+      "ratioOrdinaryShareEquityToRwa": null,
+      "ratioTierICapitalToRwa": null,
+      "reportDate": {
+        "$date": "2026-03-31T00:00:00.000Z"
+      },
+      "riskWeightedAssets": null
+    },
+    "statements.getBankCapitalAdequacy([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2801\",\"year\":115}])": {
+      "eligibleCapital": {
+        "$bigint": "271700094"
+      },
+      "ratioOrdinaryShareEquityToRwa": 10.37,
+      "ratioTierICapitalToRwa": 11.75,
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "riskWeightedAssets": {
+        "$bigint": "1942712427"
+      }
+    }
+  }
+}

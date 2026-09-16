@@ -1,0 +1,138 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2330\",115,1,{\"$date\":\"2026-03-31T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-05-12T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-11T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "market.getStockPrice([\"2330\",{\"$date\":\"2026-05-12T00:00:00.000Z\"}])": {
+      "closePrice": 2255,
+      "tradeDate": "2026-05-12"
+    },
+    "market.getStockPrice([\"2330\",{\"$date\":\"2026-08-11T00:00:00.000Z\"}])": {
+      "closePrice": 2395,
+      "tradeDate": "2026-08-11"
+    },
+    "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
+    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-03-31T00:00:00.000Z\"}])": {
+      "effectiveMonth": 11,
+      "effectiveYear": 2025,
+      "paidInShares": {
+        "$bigint": "25932524521"
+      }
+    },
+    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "effectiveMonth": 5,
+      "effectiveYear": 2026,
+      "paidInShares": {
+        "$bigint": "25932370067"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "accountsPayable": {
+        "$bigint": "98055133"
+      },
+      "accountsReceivable": {
+        "$bigint": "357742772"
+      },
+      "bondsPayable": {
+        "$bigint": "860026070"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "3035637228"
+      },
+      "currentAssets": {
+        "$bigint": "4265512176"
+      },
+      "currentLiabilities": {
+        "$bigint": "1714253448"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "5890960252"
+      },
+      "inventory": {
+        "$bigint": "311453459"
+      },
+      "longTermBorrowings": {
+        "$bigint": "40991672"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3954679396"
+      },
+      "reportDate": {
+        "$date": "2026-03-31T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "5520488484"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "8660949685"
+      },
+      "totalEquity": {
+        "$bigint": "5932388921"
+      },
+      "totalLiabilities": {
+        "$bigint": "2728560764"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "accountsPayable": {
+        "$bigint": "108890080"
+      },
+      "accountsReceivable": {
+        "$bigint": "435762477"
+      },
+      "bondsPayable": {
+        "$bigint": "815036716"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "3134218213"
+      },
+      "currentAssets": {
+        "$bigint": "4565700742"
+      },
+      "currentLiabilities": {
+        "$bigint": "1857761825"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "6432518334"
+      },
+      "inventory": {
+        "$bigint": "385524542"
+      },
+      "longTermBorrowings": {
+        "$bigint": "49226958"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "4302880478"
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "6051113099"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "9375654727"
+      },
+      "totalEquity": {
+        "$bigint": "6474470981"
+      },
+      "totalLiabilities": {
+        "$bigint": "2901183746"
+      }
+    }
+  }
+}

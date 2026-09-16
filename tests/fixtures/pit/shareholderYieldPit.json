@@ -1,0 +1,905 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-11T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "market.getMarketCap([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "closePrice": 2410,
+      "marketCap": 62497011861470,
+      "paidInShares": {
+        "$bigint": "25932370067"
+      },
+      "tradeDate": "2026-06-30"
+    },
+    "quarters.latestQuarterWith([\"cashFlowStatement\",\"9999\",\"2\",\"\"])": null,
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "amortization": {
+        "$bigint": "2137832"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-350762799"
+      },
+      "depreciation": {
+        "$bigint": "163312605"
+      },
+      "dividendsPaid": {
+        "$bigint": "-129662913"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-356853756"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "698976265"
+      },
+      "reportDate": {
+        "$date": "2026-03-31T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "amortization": {
+        "$bigint": "2309315"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-496001947"
+      },
+      "depreciation": {
+        "$bigint": "196228853"
+      },
+      "dividendsPaid": {
+        "$bigint": "-155595147"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-492810418"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "783364977"
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2094758"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-287451994"
+      },
+      "depreciation": {
+        "$bigint": "160692513"
+      },
+      "dividendsPaid": {
+        "$bigint": "-116697301"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-259752617"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "426829081"
+      },
+      "reportDate": {
+        "$date": "2025-09-30T00:00:00.000Z"
+      }
+    },
+    "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "amortization": {
+        "$bigint": "2132857"
+      },
+      "capitalExpenditures": {
+        "$bigint": "-356906004"
+      },
+      "depreciation": {
+        "$bigint": "159979251"
+      },
+      "dividendsPaid": {
+        "$bigint": "-129663077"
+      },
+      "netCashFromInvestingActivities": {
+        "$bigint": "-365960057"
+      },
+      "netCashFromOperatingActivities": {
+        "$bigint": "725508787"
+      },
+      "reportDate": {
+        "$date": "2025-12-31T00:00:00.000Z"
+      }
+    },
+    "xbrlAccounts.getCashFlowAccounts([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "accounts": {
+        "acquisition_of_fin_assets_fvtoci": {
+          "$bigint": "-39021167"
+        },
+        "acquisition_of_fin_assets_fvtpl_designated": {
+          "$bigint": "-199549"
+        },
+        "acquisition_of_financial_assets_at_amortised_cost": {
+          "$bigint": "-52400523"
+        },
+        "adj_amortisation_expense": {
+          "$bigint": "2137832"
+        },
+        "adj_decrease_increase_in_inventories": {
+          "$bigint": "-23343974"
+        },
+        "adj_decrease_increase_in_other_current_assets": {
+          "$bigint": "-20099311"
+        },
+        "adj_depreciation_expense": {
+          "$bigint": "163312605"
+        },
+        "adj_dividend_income": {
+          "$bigint": "-124339"
+        },
+        "adj_gain_loss_on_disposals_ppe": {
+          "$bigint": "-605807"
+        },
+        "adj_increase_decrease_in_other_current_liabilities": {
+          "$bigint": "-35363592"
+        },
+        "adj_interest_expense": {
+          "$bigint": "2716862"
+        },
+        "adj_interest_income": {
+          "$bigint": "-28862263"
+        },
+        "adj_sharebased_payments": {
+          "$bigint": "113979"
+        },
+        "adj_unrealised_fx_losses_gains": {
+          "$bigint": "-3465430"
+        },
+        "cash_and_cash_equivalents_at_beginning_of_period": {
+          "$bigint": "2767856402"
+        },
+        "cash_and_cash_equivalents_at_end_of_period": {
+          "$bigint": "3035637228"
+        },
+        "cash_flows_from_used_in_financing_activities": {
+          "$bigint": "-119910612"
+        },
+        "cash_flows_from_used_in_operating_activities": {
+          "$bigint": "698976265"
+        },
+        "cash_flows_from_used_in_operations": {
+          "$bigint": "700477402"
+        },
+        "change_in_noncontrolling_interests": {
+          "$bigint": "-1035"
+        },
+        "decrease_in_guarantee_deposits_received": {
+          "$bigint": "-5618"
+        },
+        "decrease_in_refundable_deposits": {
+          "$bigint": "59650"
+        },
+        "decrease_increase_ar_due_from_related_parties": {
+          "$bigint": "-2522858"
+        },
+        "decrease_increase_fin_assets_fvtpl_mandatory": {
+          "$bigint": "5165216"
+        },
+        "decrease_increase_in_accounts_receivable": {
+          "$bigint": "-78691219"
+        },
+        "decrease_increase_in_other_financial_assets": {
+          "$bigint": "213958"
+        },
+        "decrease_increase_in_other_operating_assets": {
+          "$bigint": "-16723337"
+        },
+        "decrease_increase_in_other_receivable_due_from_related_parties": {
+          "$bigint": "-483880"
+        },
+        "dividends_paid_financing": {
+          "$bigint": "-129662913"
+        },
+        "dividends_received_investing": {
+          "$bigint": "1041306"
+        },
+        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents": {
+          "$bigint": "45568929"
+        },
+        "impairment_loss_on_nonfinancial_assets": {
+          "$bigint": "0"
+        },
+        "income_taxes_paid_refund_operating": {
+          "$bigint": "-1501137"
+        },
+        "increase_decrease_in_accounts_payable": {
+          "$bigint": "15503538"
+        },
+        "increase_decrease_in_accounts_payable_to_related_parties": {
+          "$bigint": "22195"
+        },
+        "increase_decrease_in_accrued_pension_liabilities": {
+          "$bigint": "-71904"
+        },
+        "increase_decrease_in_cash_and_cash_equivalents": {
+          "$bigint": "267780826"
+        },
+        "increase_decrease_in_other_operating_liabilities": {
+          "$bigint": "35585650"
+        },
+        "increase_in_guarantee_deposits_received": {
+          "$bigint": "4244"
+        },
+        "increase_in_other_prepayments": {
+          "$bigint": "-10202"
+        },
+        "increase_in_refundable_deposits": {
+          "$bigint": "-104983"
+        },
+        "interest_paid_financing": {
+          "$bigint": "-2747192"
+        },
+        "interest_received_investing": {
+          "$bigint": "26745717"
+        },
+        "loss_gain_on_disposal_of_investments": {
+          "$bigint": "25414"
+        },
+        "net_cash_flows_from_used_in_investing_activities": {
+          "$bigint": "-356853756"
+        },
+        "net_loss_gain_fin_assets_liabilities_fvtpl": {
+          "$bigint": "-50482"
+        },
+        "other_adjustments_to_reconcile_profit_loss": {
+          "$bigint": "-43517"
+        },
+        "other_inflows_outflows_cash_financing": {
+          "$bigint": "-182380"
+        },
+        "other_inflows_outflows_cash_investing": {
+          "$bigint": "-4572020"
+        },
+        "payments_of_lease_liabilities_financing": {
+          "$bigint": "-1328422"
+        },
+        "proceeds_from_capital_reduction_fin_assets_fvtoci": {
+          "$bigint": "185918"
+        },
+        "proceeds_from_disposal_fin_assets_fvtoci": {
+          "$bigint": "22786201"
+        },
+        "proceeds_from_issuing_bonds": {
+          "$bigint": "17182426"
+        },
+        "proceeds_from_long_term_debt": {
+          "$bigint": "2020000"
+        },
+        "proceeds_from_repayments_fin_assets_amortised_cost": {
+          "$bigint": "38519146"
+        },
+        "proceeds_from_sales_of_ppe_investing": {
+          "$bigint": "1812754"
+        },
+        "provision_reversal_of_provision_for_bad_debt_expense": {
+          "$bigint": "17283"
+        },
+        "purchase_of_intangible_assets_investing": {
+          "$bigint": "-933027"
+        },
+        "purchase_of_ppe_investing": {
+          "$bigint": "-350762799"
+        },
+        "repayments_of_bonds": {
+          "$bigint": "-4800000"
+        },
+        "repayments_of_long_term_debt": {
+          "$bigint": "-389722"
+        },
+        "share_of_loss_profit_associates_jv_equity_method": {
+          "$bigint": "-1684904"
+        }
+      },
+      "reportDate": {
+        "$date": "2026-03-31T00:00:00.000Z"
+      }
+    },
+    "xbrlAccounts.getCashFlowAccounts([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
+      "accounts": {
+        "acquisition_of_fin_assets_fvtoci": {
+          "$bigint": "-18771377"
+        },
+        "acquisition_of_fin_assets_fvtpl_designated": {
+          "$bigint": "-544856"
+        },
+        "acquisition_of_financial_assets_at_amortised_cost": {
+          "$bigint": "-93330916"
+        },
+        "adj_amortisation_expense": {
+          "$bigint": "2309315"
+        },
+        "adj_decrease_increase_in_inventories": {
+          "$bigint": "-74071083"
+        },
+        "adj_decrease_increase_in_other_current_assets": {
+          "$bigint": "-3778075"
+        },
+        "adj_depreciation_expense": {
+          "$bigint": "196228853"
+        },
+        "adj_dividend_income": {
+          "$bigint": "-1846711"
+        },
+        "adj_gain_loss_on_disposals_ppe": {
+          "$bigint": "429850"
+        },
+        "adj_increase_decrease_in_other_current_liabilities": {
+          "$bigint": "13422522"
+        },
+        "adj_interest_expense": {
+          "$bigint": "3085049"
+        },
+        "adj_interest_income": {
+          "$bigint": "-30044721"
+        },
+        "adj_sharebased_payments": {
+          "$bigint": "123047"
+        },
+        "adj_unrealised_fx_losses_gains": {
+          "$bigint": "-889523"
+        },
+        "cash_and_cash_equivalents_at_beginning_of_period": {
+          "$bigint": "3035637228"
+        },
+        "cash_and_cash_equivalents_at_end_of_period": {
+          "$bigint": "3134218213"
+        },
+        "cash_flows_from_used_in_financing_activities": {
+          "$bigint": "-184653221"
+        },
+        "cash_flows_from_used_in_operating_activities": {
+          "$bigint": "783364977"
+        },
+        "cash_flows_from_used_in_operations": {
+          "$bigint": "971583452"
+        },
+        "cash_per_balance_sheet": {
+          "$bigint": "3134218213"
+        },
+        "change_in_noncontrolling_interests": {
+          "$bigint": "1105646"
+        },
+        "decrease_in_guarantee_deposits_received": {
+          "$bigint": "-951"
+        },
+        "decrease_in_refundable_deposits": {
+          "$bigint": "261638"
+        },
+        "decrease_increase_ar_due_from_related_parties": {
+          "$bigint": "101819"
+        },
+        "decrease_increase_fin_assets_fvtpl_mandatory": {
+          "$bigint": "-1354875"
+        },
+        "decrease_increase_in_accounts_receivable": {
+          "$bigint": "-78019705"
+        },
+        "decrease_increase_in_other_financial_assets": {
+          "$bigint": "-1071421"
+        },
+        "decrease_increase_in_other_operating_assets": {
+          "$bigint": "571855"
+        },
+        "decrease_increase_in_other_receivable_due_from_related_parties": {
+          "$bigint": "749762"
+        },
+        "dividends_paid_financing": {
+          "$bigint": "-155595147"
+        },
+        "dividends_received_investing": {
+          "$bigint": "1124822"
+        },
+        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents": {
+          "$bigint": "-7320353"
+        },
+        "impairment_loss_on_nonfinancial_assets": {
+          "$bigint": "0"
+        },
+        "income_taxes_paid_refund_operating": {
+          "$bigint": "-188218475"
+        },
+        "increase_decrease_in_accounts_payable": {
+          "$bigint": "10834947"
+        },
+        "increase_decrease_in_accounts_payable_to_related_parties": {
+          "$bigint": "-65188"
+        },
+        "increase_decrease_in_accrued_pension_liabilities": {
+          "$bigint": "-46691"
+        },
+        "increase_decrease_in_cash_and_cash_equivalents": {
+          "$bigint": "98580985"
+        },
+        "increase_decrease_in_other_operating_liabilities": {
+          "$bigint": "137244500"
+        },
+        "increase_in_guarantee_deposits_received": {
+          "$bigint": "4317"
+        },
+        "increase_in_other_prepayments": {
+          "$bigint": "-8777"
+        },
+        "increase_in_refundable_deposits": {
+          "$bigint": "-190781"
+        },
+        "interest_paid_financing": {
+          "$bigint": "-7142216"
+        },
+        "interest_received_investing": {
+          "$bigint": "25800425"
+        },
+        "loss_gain_on_disposal_of_investments": {
+          "$bigint": "24352"
+        },
+        "net_cash_flows_from_used_in_investing_activities": {
+          "$bigint": "-492810418"
+        },
+        "net_loss_gain_fin_assets_liabilities_fvtpl": {
+          "$bigint": "-251130"
+        },
+        "other_adjustments_to_reconcile_profit_loss": {
+          "$bigint": "297882"
+        },
+        "other_inflows_outflows_cash_financing": {
+          "$bigint": "-91962"
+        },
+        "other_inflows_outflows_cash_investing": {
+          "$bigint": "817753"
+        },
+        "payments_of_lease_liabilities_financing": {
+          "$bigint": "-921267"
+        },
+        "proceeds_from_capital_reduction_fin_assets_fvtoci": {
+          "$bigint": "894"
+        },
+        "proceeds_from_disposal_fin_assets_fvtoci": {
+          "$bigint": "24004688"
+        },
+        "proceeds_from_issuing_bonds": {
+          "$bigint": "18381126"
+        },
+        "proceeds_from_long_term_debt": {
+          "$bigint": "9930000"
+        },
+        "proceeds_from_repayments_fin_assets_amortised_cost": {
+          "$bigint": "51664033"
+        },
+        "proceeds_from_sales_of_ppe_investing": {
+          "$bigint": "179434"
+        },
+        "provision_reversal_of_provision_for_bad_debt_expense": {
+          "$bigint": "34460"
+        },
+        "purchase_of_intangible_assets_investing": {
+          "$bigint": "-2943325"
+        },
+        "purchase_of_ppe_investing": {
+          "$bigint": "-496001947"
+        },
+        "repayments_of_bonds": {
+          "$bigint": "-50061100"
+        },
+        "repayments_of_long_term_debt": {
+          "$bigint": "-261667"
+        },
+        "share_of_loss_profit_associates_jv_equity_method": {
+          "$bigint": "-1438471"
+        }
+      },
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      }
+    },
+    "xbrlAccounts.getCashFlowAccounts([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "accounts": {
+        "acquisition_of_fin_assets_fvtoci": {
+          "$bigint": "-16264133"
+        },
+        "acquisition_of_fin_assets_fvtpl_designated": {
+          "$bigint": "-33656"
+        },
+        "acquisition_of_financial_assets_at_amortised_cost": {
+          "$bigint": "-34147320"
+        },
+        "adj_amortisation_expense": {
+          "$bigint": "2094758"
+        },
+        "adj_decrease_increase_in_inventories": {
+          "$bigint": "15504653"
+        },
+        "adj_decrease_increase_in_other_current_assets": {
+          "$bigint": "5607823"
+        },
+        "adj_depreciation_expense": {
+          "$bigint": "160692513"
+        },
+        "adj_dividend_income": {
+          "$bigint": "-80218"
+        },
+        "adj_gain_loss_on_disposals_ppe": {
+          "$bigint": "251291"
+        },
+        "adj_increase_decrease_in_other_current_liabilities": {
+          "$bigint": "-20693552"
+        },
+        "adj_interest_expense": {
+          "$bigint": "2958568"
+        },
+        "adj_interest_income": {
+          "$bigint": "-26180345"
+        },
+        "adj_sharebased_payments": {
+          "$bigint": "273416"
+        },
+        "adj_unrealised_fx_losses_gains": {
+          "$bigint": "8542205"
+        },
+        "cash_and_cash_equivalents_at_beginning_of_period": {
+          "$bigint": "2364524340"
+        },
+        "cash_and_cash_equivalents_at_end_of_period": {
+          "$bigint": "2470759384"
+        },
+        "cash_flows_from_used_in_financing_activities": {
+          "$bigint": "-128293126"
+        },
+        "cash_flows_from_used_in_operating_activities": {
+          "$bigint": "426829081"
+        },
+        "cash_flows_from_used_in_operations": {
+          "$bigint": "564095378"
+        },
+        "change_in_noncontrolling_interests": {
+          "$bigint": "1007573"
+        },
+        "decrease_in_guarantee_deposits_received": {
+          "$bigint": "-2530"
+        },
+        "decrease_in_refundable_deposits": {
+          "$bigint": "22247"
+        },
+        "decrease_increase_ar_due_from_related_parties": {
+          "$bigint": "-58551"
+        },
+        "decrease_increase_fin_assets_fvtpl_mandatory": {
+          "$bigint": "2708753"
+        },
+        "decrease_increase_in_accounts_receivable": {
+          "$bigint": "-72070317"
+        },
+        "decrease_increase_in_other_financial_assets": {
+          "$bigint": "-2648192"
+        },
+        "decrease_increase_in_other_operating_assets": {
+          "$bigint": "-634336"
+        },
+        "decrease_increase_in_other_receivable_due_from_related_parties": {
+          "$bigint": "-47109"
+        },
+        "dividends_paid_financing": {
+          "$bigint": "-116697301"
+        },
+        "dividends_received_investing": {
+          "$bigint": "2706164"
+        },
+        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents": {
+          "$bigint": "67451706"
+        },
+        "impairment_loss_on_nonfinancial_assets": {
+          "$bigint": "1459"
+        },
+        "income_taxes_paid_refund_operating": {
+          "$bigint": "-137266297"
+        },
+        "increase_decrease_in_accounts_payable": {
+          "$bigint": "929976"
+        },
+        "increase_decrease_in_accounts_payable_to_related_parties": {
+          "$bigint": "684725"
+        },
+        "increase_decrease_in_accrued_pension_liabilities": {
+          "$bigint": "-48626"
+        },
+        "increase_decrease_in_cash_and_cash_equivalents": {
+          "$bigint": "106235044"
+        },
+        "increase_decrease_in_other_operating_liabilities": {
+          "$bigint": "-37844299"
+        },
+        "increase_in_guarantee_deposits_received": {
+          "$bigint": "2000"
+        },
+        "increase_in_other_prepayments": {
+          "$bigint": "-12886"
+        },
+        "increase_in_refundable_deposits": {
+          "$bigint": "-64868"
+        },
+        "interest_paid_financing": {
+          "$bigint": "-4039862"
+        },
+        "interest_received_investing": {
+          "$bigint": "22351062"
+        },
+        "loss_gain_on_disposal_of_intangible_assets": {
+          "$bigint": "0"
+        },
+        "loss_gain_on_disposal_of_investments": {
+          "$bigint": "16770"
+        },
+        "net_cash_flows_from_used_in_investing_activities": {
+          "$bigint": "-259752617"
+        },
+        "net_loss_gain_fin_assets_liabilities_fvtpl": {
+          "$bigint": "-151828"
+        },
+        "other_adjustments_to_reconcile_profit_loss": {
+          "$bigint": "341818"
+        },
+        "other_inflows_outflows_cash_financing": {
+          "$bigint": "0"
+        },
+        "other_inflows_outflows_cash_investing": {
+          "$bigint": "4769789"
+        },
+        "payments_of_lease_liabilities_financing": {
+          "$bigint": "-966913"
+        },
+        "payments_to_acquire_treasury_shares": {
+          "$bigint": "0"
+        },
+        "proceeds_from_capital_reduction_fin_assets_fvtoci": {
+          "$bigint": "91387"
+        },
+        "proceeds_from_changes_in_ownership_interests_in_subsidiaries": {
+          "$bigint": "0"
+        },
+        "proceeds_from_disposal_fin_assets_fvtoci": {
+          "$bigint": "15858170"
+        },
+        "proceeds_from_issuing_bonds": {
+          "$bigint": "30051174"
+        },
+        "proceeds_from_long_term_debt": {
+          "$bigint": "2231900"
+        },
+        "proceeds_from_repayments_fin_assets_amortised_cost": {
+          "$bigint": "33336724"
+        },
+        "proceeds_from_sales_of_ppe_investing": {
+          "$bigint": "69498"
+        },
+        "provision_reversal_of_provision_for_bad_debt_expense": {
+          "$bigint": "-262"
+        },
+        "purchase_of_intangible_assets_investing": {
+          "$bigint": "-978459"
+        },
+        "purchase_of_ppe_investing": {
+          "$bigint": "-287451994"
+        },
+        "repayments_of_bonds": {
+          "$bigint": "-39160000"
+        },
+        "repayments_of_long_term_debt": {
+          "$bigint": "-719167"
+        },
+        "share_of_loss_profit_associates_jv_equity_method": {
+          "$bigint": "-1424738"
+        }
+      },
+      "reportDate": {
+        "$date": "2025-09-30T00:00:00.000Z"
+      }
+    },
+    "xbrlAccounts.getCashFlowAccounts([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "accounts": {
+        "acquisition_of_fin_assets_fvtoci": {
+          "$bigint": "-13207331"
+        },
+        "acquisition_of_fin_assets_fvtpl_designated": {
+          "$bigint": "-98071"
+        },
+        "acquisition_of_financial_assets_at_amortised_cost": {
+          "$bigint": "-58891373"
+        },
+        "adj_amortisation_expense": {
+          "$bigint": "2132857"
+        },
+        "adj_decrease_increase_in_inventories": {
+          "$bigint": "579578"
+        },
+        "adj_decrease_increase_in_other_current_assets": {
+          "$bigint": "-83656338"
+        },
+        "adj_depreciation_expense": {
+          "$bigint": "159979251"
+        },
+        "adj_dividend_income": {
+          "$bigint": "-47959"
+        },
+        "adj_gain_loss_on_disposals_ppe": {
+          "$bigint": "94292"
+        },
+        "adj_increase_decrease_in_other_current_liabilities": {
+          "$bigint": "-35563111"
+        },
+        "adj_interest_expense": {
+          "$bigint": "3043450"
+        },
+        "adj_interest_income": {
+          "$bigint": "-29507426"
+        },
+        "adj_sharebased_payments": {
+          "$bigint": "173007"
+        },
+        "adj_unrealised_fx_losses_gains": {
+          "$bigint": "13661848"
+        },
+        "cash_and_cash_equivalents_at_beginning_of_period": {
+          "$bigint": "2470759384"
+        },
+        "cash_and_cash_equivalents_at_end_of_period": {
+          "$bigint": "2767856402"
+        },
+        "cash_flows_from_used_in_financing_activities": {
+          "$bigint": "-107685373"
+        },
+        "cash_flows_from_used_in_operating_activities": {
+          "$bigint": "725508787"
+        },
+        "cash_flows_from_used_in_operations": {
+          "$bigint": "726916419"
+        },
+        "change_in_noncontrolling_interests": {
+          "$bigint": "4062159"
+        },
+        "decrease_in_guarantee_deposits_received": {
+          "$bigint": "-4166"
+        },
+        "decrease_in_refundable_deposits": {
+          "$bigint": "1037080"
+        },
+        "decrease_increase_ar_due_from_related_parties": {
+          "$bigint": "-403157"
+        },
+        "decrease_increase_fin_assets_fvtpl_mandatory": {
+          "$bigint": "7523731"
+        },
+        "decrease_increase_in_accounts_receivable": {
+          "$bigint": "26425943"
+        },
+        "decrease_increase_in_other_financial_assets": {
+          "$bigint": "77148866"
+        },
+        "decrease_increase_in_other_operating_assets": {
+          "$bigint": "-35554303"
+        },
+        "decrease_increase_in_other_receivable_due_from_related_parties": {
+          "$bigint": "-210520"
+        },
+        "dividends_paid_financing": {
+          "$bigint": "-129663077"
+        },
+        "dividends_received_investing": {
+          "$bigint": "47959"
+        },
+        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents": {
+          "$bigint": "45233661"
+        },
+        "impairment_loss_on_nonfinancial_assets": {
+          "$bigint": "-889976"
+        },
+        "income_taxes_paid_refund_operating": {
+          "$bigint": "-1407632"
+        },
+        "increase_decrease_in_accounts_payable": {
+          "$bigint": "-1873553"
+        },
+        "increase_decrease_in_accounts_payable_to_related_parties": {
+          "$bigint": "-182530"
+        },
+        "increase_decrease_in_accrued_pension_liabilities": {
+          "$bigint": "12238"
+        },
+        "increase_decrease_in_cash_and_cash_equivalents": {
+          "$bigint": "297097018"
+        },
+        "increase_decrease_in_other_operating_liabilities": {
+          "$bigint": "32898050"
+        },
+        "increase_in_guarantee_deposits_received": {
+          "$bigint": "0"
+        },
+        "increase_in_other_prepayments": {
+          "$bigint": "-9780"
+        },
+        "increase_in_refundable_deposits": {
+          "$bigint": "-72945"
+        },
+        "interest_paid_financing": {
+          "$bigint": "-5350237"
+        },
+        "interest_received_investing": {
+          "$bigint": "26160011"
+        },
+        "loss_gain_on_disposal_of_intangible_assets": {
+          "$bigint": "2477"
+        },
+        "loss_gain_on_disposal_of_investments": {
+          "$bigint": "100579"
+        },
+        "net_cash_flows_from_used_in_investing_activities": {
+          "$bigint": "-365960057"
+        },
+        "net_loss_gain_fin_assets_liabilities_fvtpl": {
+          "$bigint": "3056"
+        },
+        "other_adjustments_to_reconcile_profit_loss": {
+          "$bigint": "123933"
+        },
+        "other_inflows_outflows_cash_financing": {
+          "$bigint": "-68199"
+        },
+        "other_inflows_outflows_cash_investing": {
+          "$bigint": "-1342294"
+        },
+        "payments_of_lease_liabilities_financing": {
+          "$bigint": "-884191"
+        },
+        "payments_to_acquire_treasury_shares": {
+          "$bigint": "0"
+        },
+        "proceeds_from_capital_reduction_fin_assets_fvtoci": {
+          "$bigint": "5123"
+        },
+        "proceeds_from_changes_in_ownership_interests_in_subsidiaries": {
+          "$bigint": "0"
+        },
+        "proceeds_from_disposal_fin_assets_fvtoci": {
+          "$bigint": "14448924"
+        },
+        "proceeds_from_issuing_bonds": {
+          "$bigint": "23493338"
+        },
+        "proceeds_from_long_term_debt": {
+          "$bigint": "3031500"
+        },
+        "proceeds_from_repayments_fin_assets_amortised_cost": {
+          "$bigint": "26941890"
+        },
+        "proceeds_from_sales_of_ppe_investing": {
+          "$bigint": "482264"
+        },
+        "provision_reversal_of_provision_for_bad_debt_expense": {
+          "$bigint": "21536"
+        },
+        "purchase_of_intangible_assets_investing": {
+          "$bigint": "-4552025"
+        },
+        "purchase_of_ppe_investing": {
+          "$bigint": "-356906004"
+        },
+        "repayments_of_bonds": {
+          "$bigint": "-1750000"
+        },
+        "repayments_of_long_term_debt": {
+          "$bigint": "-552500"
+        },
+        "share_of_loss_profit_associates_jv_equity_method": {
+          "$bigint": "-1482601"
+        }
+      },
+      "reportDate": {
+        "$date": "2025-12-31T00:00:00.000Z"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "market.getDailyValuation([\"2330\",{\"$undefined\":true}])": {
+      "dividendYield": 0.92,
+      "pbRatio": 9.61,
+      "peRatio": 27.65,
+      "tradeDate": {
+        "$date": "2026-09-15T00:00:00.000Z"
+      }
+    },
+    "market.getDailyValuation([\"9999\",{\"$undefined\":true}])": null
+  }
+}

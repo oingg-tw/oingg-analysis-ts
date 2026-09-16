@@ -40,7 +40,10 @@ pnpm typecheck          # src + tests + scripts 三份 tsconfig 都過型別檢�
 - 每個測試檔案結束前用 `afterAll()` 呼叫用到的 Prisma client 的 `$disconnect()`，不然 process 不會自然結束。
 - 斷言的數字如果來自實測，註解註明是哪家公司、哪一季，方便之後對照或重新驗證。
 - **不要拿「目前哪家公司財報進度落後」這種會隨資料庫累積而改變的狀態寫死成斷言**（2026-08-28 踩過一次：測試「公司 2887 資產負債表到 115Q1、損益表卡在 114Q2」這個交集案例時，把 `114`/`2` 寫死進斷言，結果 mops 隔天把 2887 損益表補到 115Q1，8 個測試檔案一起變紅）。正確做法：用 `getLatestAvailableQuarter` 對同一組 `sources` 現查現算出期望值，斷言服務回傳的季度等於這個現查的結果，而不是寫死某一天觀察到的數字。同一個原則也適用於 playwright-py 這類持續演進的資料源：不要斷言精確的聚落數/分類數/某家公司的分類，改成跟資料源當下現查的結果比對，或只斷言結構性質。
-- Phase 5 起的單元測試：一個 port 一個 fake（`tests/fakes/inMemory<PortName>.ts`），`tests/fakes/createTestDeps.ts` 用空 fake 填滿整份 `AppDeps`，測試只覆寫自己需要的 port；fake 只實作 port 介面、永不碰 Prisma 型別（dependency-cruiser 的 `unit-tests-no-io` 規則強制）。真實財報數字的測試輸入用 `scripts/captureTestFixtures.ts` 擷取到 `tests/fixtures/`，讓既有的 golden 數字變成確定性斷言。
+- 單元測試的 deps：`tests/fakes/createTestDeps.ts`（整份 `AppDeps`）/ `tests/fakes/pit/createTestPitDeps.ts`（指標核心的 `PitDeps`）——沒覆寫的 port 一碰就丟錯，測試只覆寫自己需要的 port（幾個 async 函式的物件字面值就夠，見 `tests/unit/application/stocks/getStockQuote.test.ts`）；`metricValues` 預設記憶體版（`tests/fakes/pit/inMemoryMetricValues.ts`）。fake 只實作 port 介面、永不碰 Prisma 型別（dependency-cruiser 的 `unit-tests-no-io` 規則強制）。
+- **指標的 cassette 單元測試**（`tests/unit/application/metrics/*Pit.test.ts`）：釘真實公司真實數字（2330 115Q2 ROE = 10.98 之類）的 60 支指標測試不連 DB——`tests/fixtures/pit/<測試名>.json` 是用真實 `pitDeps` 錄下的「每個 port 呼叫的參數 → 回傳值」（VCR 式），`createPitReplay('<測試名>')`（`tests/fakes/pit/replayHarness.ts`）回放：`replay.run(computeXxx)(query)` 對應以前的 `computeAndWriteXxxPit(query)`（compute + 記憶體 persist），`replay.findLatest/findMany/count(where)` 對應以前對 `analysisPrisma.metricValue*` 的查詢。沒錄到的呼叫直接丟錯，不會靜默回 null。回放時「現在」被釘在 cassette 的 `recordedAt`（vitest 假時鐘，只假 Date）。
+  - **重錄**：`npx tsx tests/fixtures/pit/capture.ts [測試名...]`（連 dev DB 唯讀，metricValues 換成記憶體版所以不寫入；約 30 秒）——測試新增了 compute/query 組合、或上游資料重編後要更新釘住的數字時跑；先確認新數字是對的再改斷言。錄製器會掃測試檔案裡的 `replay.run(computeXxx)({...})` 自動決定要錄哪些呼叫。
+  - 指標的邊界案例（負權益、四季不齊、公告日缺漏…）用 `createTestPitDeps` + `inMemoryStatements` 手工 seed（見 `computeRoe.test.ts`），不用 cassette。
 
 ## flaky 政策
 

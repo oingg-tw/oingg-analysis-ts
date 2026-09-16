@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "entries": {
+    "announcements.getPriceAnchorDate([\"2801\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+      "date": {
+        "$date": "2026-08-24T00:00:00.000Z"
+      },
+      "source": "announcement"
+    },
+    "industry.isFinancialIndustryCompany([\"2330\"])": false,
+    "industry.isFinancialIndustryCompany([\"2801\"])": true,
+    "industry.isFinancialIndustryCompany([\"9999\"])": false,
+    "statements.getBankAssetQuality([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2801\",\"year\":115}])": {
+      "coverageRatio": 901.58,
+      "nonPerformingLoansRatio": 0.15,
+      "reportDate": {
+        "$date": "2026-06-30T00:00:00.000Z"
+      }
+    }
+  }
+}
