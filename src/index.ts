@@ -14,12 +14,8 @@ import { warmCaches } from './bootstrap/warmCaches';
 // 行為跟抽出前完全一樣，見 src/bootstrap/app.ts 的說明。
 const startServer = async () => {
   try {
-    // 正式環境沒設 BFF_API_KEY 就直接讓伺服器啟動失敗——不要悄悄退化成「正式環境也不驗證」
-    // （bffAuth.ts 本身在沒設這個環境變數時會直接放行，那個行為是為了本機開發方便，正式環境
-    // 不該依賴同一個寬容度）。
-    if (config.isProduction && !config.bffApiKey) {
-      throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/api/bff/bffAuth.ts。');
-    }
+    // 環境變數（含「正式環境一定要有 BFF_API_KEY」）在 import config 的當下就驗證完了，
+    // 缺什麼會直接列出來讓 process 起不來，見 src/infrastructure/config.ts。
     await connectAllDbs();
     // 五個輔助性快取在背景載入，不 await（不能因為 export DB 連線問題拖慢或擋住伺服器啟動），
     // 各自失敗只影響對應端點，見 src/bootstrap/warmCaches.ts。

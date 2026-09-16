@@ -1,6 +1,3 @@
-// 一定要在 import PrismaPg 之前先載入 .env，理由見 ./index.ts 開頭的說明（Prisma 5/6 的
-// env() datasource 有內建自動載入 .env，driver adapter 沒有，要自己載）。
-import 'dotenv/config';
 import { PrismaClient } from '#generated/twse-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/infrastructure/config';
@@ -17,7 +14,7 @@ import { logger } from '@/infrastructure/logger';
 // 無關（prod 環境跑這個服務一樣要連到 twse-ts 的 DEV 資料庫才拿得到月營收，因為 PROD
 // 沒有）。之後 twse-ts 真的把月營收做成正式 PROD 管道時，要重新評估要不要換回
 // twseExportPrisma，屆時這支檔案可能整個廢棄。
-const adapter = new PrismaPg({ connectionString: process.env.TWSE_EXPORT_DATABASE_URL_DEV });
+const adapter = new PrismaPg({ connectionString: config.db.twseExportDev });
 
 export const twseExportDevPrisma = new PrismaClient({
   adapter,

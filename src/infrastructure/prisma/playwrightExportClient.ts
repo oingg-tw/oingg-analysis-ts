@@ -1,6 +1,3 @@
-// 一定要在 import PrismaPg 之前先載入 .env，理由見 ./index.ts 開頭的說明（Prisma 5/6 的
-// env() datasource 有內建自動載入 .env，driver adapter 沒有，要自己載）。
-import 'dotenv/config';
 import { PrismaClient } from '#generated/playwright-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '@/infrastructure/config';
@@ -10,7 +7,7 @@ import { logger } from '@/infrastructure/logger';
 // （etl_reader role 限制，見 prisma/playwrightExport/schema.prisma 的說明），跟其他
 // export client（govExportPrisma/mopsExportPrisma/...）同一種模式，不要混用。
 // Prisma 7 driver adapter，見 ./index.ts 的說明（pgbouncer=true 那個坑）。
-const adapter = new PrismaPg({ connectionString: process.env.PLAYWRIGHT_EXPORT_DATABASE_URL });
+const adapter = new PrismaPg({ connectionString: config.db.playwrightExport });
 
 export const playwrightExportPrisma = new PrismaClient({
   adapter,

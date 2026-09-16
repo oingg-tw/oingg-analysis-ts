@@ -43,9 +43,9 @@
       }
     },
     {
-      // 現在合法讀 process.env 的地方；Phase 1 把 8 個 Prisma client 的 URL 改從 config 拿之後，
-      // 這份清單縮到只剩 config 一個檔案（見計畫 Phase 1 退出條件）。
-      "files": ["src/infrastructure/config.ts", "src/infrastructure/prisma/**", "scripts/pitBackfillFixtures.ts"],
+      // src/ 裡唯一合法讀 process.env 的地方（其餘一律從 config 拿）；scripts/pitBackfillFixtures.ts
+      // 是 backfill 腳本的環境變數開關，不屬於服務本體。
+      "files": ["src/infrastructure/config.ts", "scripts/pitBackfillFixtures.ts"],
       "rules": {
         "no-restricted-properties": "off"
       }
