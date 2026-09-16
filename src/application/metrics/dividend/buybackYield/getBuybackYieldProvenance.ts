@@ -1,10 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
-import { getXbrlCashFlowQuarterly } from '@/infrastructure/repositories/mops/xbrlCashFlowQuarterly';
-import { getMarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——buybackYield(TTM) = 近四季買回庫藏股支付現金加總
 // （取絕對值，單位千元，換算成元）/ 本季報告日市值（單位元）* 100。跟
@@ -21,16 +19,16 @@ const getTreasurySharesPurchased = async (key: {
   quarter: number;
   dataType: string;
   subsidiaryCompanyId: string;
-}): Promise<bigint | null> => {
-  const xbrl = await getXbrlCashFlowQuarterly(key);
+}, deps: Pick<PitDeps, 'statements' | 'quarters' | 'market' | 'xbrlAccounts'>): Promise<bigint | null> => {
+  const xbrl = await deps.xbrlAccounts.getCashFlowAccounts(key);
   if (!xbrl) return null;
   return xbrl.accounts.payments_to_acquire_treasury_shares ?? 0n;
 };
 
-export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'market' | 'xbrlAccounts'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'buybackYield', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -41,12 +39,12 @@ export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery): Pr
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainCashFlow = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const reportDate = mainCashFlow?.reportDate ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getTreasurySharesPurchased({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => getTreasurySharesPurchased({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, deps))
   );
 
   let buybackTtmSum = 0n;
@@ -57,7 +55,7 @@ export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery): Pr
   }
   const buybackAbs = buybackTtmSum < 0n ? -buybackTtmSum : buybackTtmSum;
 
-  const marketCap = reportDate ? await getMarketCapAsOf(symbol, reportDate) : null;
+  const marketCap = reportDate ? await deps.market.getMarketCap(symbol, reportDate) : null;
   const value = complete && marketCap && marketCap.marketCap > 0 ? Math.round(((Number(buybackAbs) * 1000) / marketCap.marketCap) * 100 * 100) / 100 : null;
 
   const entries: ProvenanceEntry[] = [

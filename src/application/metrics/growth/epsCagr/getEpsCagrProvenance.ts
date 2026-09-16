@@ -1,11 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { EPS_CAGR_YEARS } from '../../../../domain/metrics/growth/epsCagr/epsCagrDefinition';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——epsCagr{3,5,8}y = (最近一個完整會計年度 EPS / N 年前
 // 完整會計年度 EPS)^(1/N) - 1。年度 EPS = 4 季淨利加總（歸屬母公司優先）/ 當年 Q4 報告日
@@ -30,12 +29,12 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>
 ): Promise<AnnualEpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const netIncomes = records.map(pickNetIncome);
   const quarters: AnnualEpsQuarterDetail[] = netIncomes.map((netIncome, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, netIncome }));
@@ -48,7 +47,7 @@ const getAnnualEps = async (
 
   const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
   const q4ReportDate = records[3]!.reportDate;
-  const shares = (await getPaidInSharesAsOf(symbol, q4ReportDate))?.paidInShares ?? null;
+  const shares = (await deps.shares.getPaidInShares(symbol, q4ReportDate))?.paidInShares ?? null;
 
   const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
   const result: AnnualEpsResult = { eps, quarters, shares };
@@ -56,13 +55,13 @@ const getAnnualEps = async (
   return result;
 };
 
-export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[number]) => {
+export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>) => {
   const metricCode = `epsCagr${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
     const { symbol, dataType, subsidiaryCompanyId } = query;
 
-    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
     if (!resolvedQuarter) {
       return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -75,8 +74,8 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
 
     const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
     const cache = new Map<number, AnnualEpsResult>();
-    const current = await getAnnualEps(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
-    const prior = await getAnnualEps(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId);
+    const current = await getAnnualEps(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
+    const prior = await getAnnualEps(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, deps);
 
     const value =
       current.eps !== null && prior.eps !== null && current.eps > 0 && prior.eps > 0

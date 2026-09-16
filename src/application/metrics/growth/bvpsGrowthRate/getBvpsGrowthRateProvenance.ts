@@ -1,11 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { calculateYoyGrowthRate } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——bvpsGrowthRate（單季年增率）= (本季 BVPS - 去年同季
 // BVPS) / |去年同季 BVPS| * 100，本季/去年同季各自獨立算 BVPS（不依賴 bvps 這個
@@ -17,10 +16,10 @@ const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number
   return Math.round(((Number(equityInThousands) * 1000) / Number(shares)) * 100) / 100;
 };
 
-export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'bvpsGrowthRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -31,19 +30,19 @@ export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): 
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const currentEquity = pickEquity(balanceSheet);
   const currentReportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = currentReportDate ? (await getPaidInSharesAsOf(symbol, currentReportDate))?.paidInShares ?? null : null;
+  const currentShares = currentReportDate ? (await deps.shares.getPaidInShares(symbol, currentReportDate))?.paidInShares ?? null : null;
   const currentBvps = toBvps(currentEquity.value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorRocYear = Number(prior.year);
   const priorSeason = Number(prior.season);
-  const priorBalanceSheet = await getQuarterlyBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
+  const priorBalanceSheet = await deps.statements.getBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorEquity = pickEquity(priorBalanceSheet);
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorBvps = toBvps(priorEquity.value, priorShares);
 
   const { value } = calculateYoyGrowthRate(currentBvps, priorBvps);

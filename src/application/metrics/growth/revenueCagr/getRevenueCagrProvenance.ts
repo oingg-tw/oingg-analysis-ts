@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { REVENUE_CAGR_YEARS } from '../../../../domain/metrics/growth/revenueCagr/revenueCagrDefinition';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——revenueCagr{3,5,8}y = (最近一個完整會計年度營收 /
 // N 年前完整會計年度營收)^(1/N) - 1，年營收各自是 4 季 operatingRevenue 加總。跟
@@ -16,12 +16,12 @@ const getAnnualRevenue = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters'>
 ) => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const quarters = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, value: r?.operatingRevenue ?? null }));
   const value = records.some((r) => r === null || r.operatingRevenue === null) ? null : records.reduce((sum, r) => sum + r!.operatingRevenue!, 0n);
@@ -30,13 +30,13 @@ const getAnnualRevenue = async (
   return result;
 };
 
-export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEARS)[number]) => {
+export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters'>) => {
   const metricCode = `revenueCagr${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
     const { symbol, dataType, subsidiaryCompanyId } = query;
 
-    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+    const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
     if (!resolvedQuarter) {
       return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -49,8 +49,8 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
 
     const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
     const cache = new Map<number, { value: bigint | null; quarters: { fiscalYear: number; fiscalQuarter: number; value: bigint | null }[] }>();
-    const current = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
-    const prior = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId);
+    const current = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
+    const prior = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, deps);
 
     const value =
       current.value !== null && prior.value !== null && prior.value > 0n

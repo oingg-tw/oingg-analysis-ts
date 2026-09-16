@@ -1,10 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
-import { getDailyValuationAsOf } from '@/infrastructure/repositories/exchange/twseMarketData';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult } from './computeChowderNumberPit';
+import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult, type ChowderNumberDeps } from './computeChowderNumber';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 chowderNumber
@@ -28,10 +26,11 @@ const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult, lab
     value: toProvenanceEntryValue(q.dividendsPaid),
   }));
 
-export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+// 借用 computeChowderNumber 的 getAnnualDividendPerShareProxy（要 shares），deps 直接用它那一組。
+export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery, deps: ChowderNumberDeps): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'chowderNumber', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -42,16 +41,16 @@ export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery): P
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }]);
+  const mainCashFlow = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }], deps.announcements);
 
-  const dailyValuation = mainAnchor ? await getDailyValuationAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const dailyValuation = mainAnchor ? await deps.market.getDailyValuation(symbol, mainAnchor.knowledgeDate) : null;
   const dividendYieldPct = dailyValuation?.dividendYield ?? null;
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const [currentProxy, priorProxy] = await Promise.all([
-    getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId),
-    getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear - DIVIDEND_GROWTH_LOOKBACK_YEARS, dataType, subsidiaryCompanyId),
+    getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps),
+    getAnnualDividendPerShareProxy(symbol, latestCompleteFiscalYear - DIVIDEND_GROWTH_LOOKBACK_YEARS, dataType, subsidiaryCompanyId, deps),
   ]);
 
   const currentDps = currentProxy.dps;

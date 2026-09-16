@@ -1,11 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { calculateYoyGrowthRate } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——epsGrowthRate（單季年增率）= (本季 EPS - 去年同季
 // EPS) / |去年同季 EPS| * 100，本季/去年同季各自獨立算 EPS（不依賴 eps 這個 metric_code
@@ -17,10 +16,10 @@ const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): numb
   return Math.round(((Number(netIncomeInThousands) * 1000) / Number(shares)) * 100) / 100;
 };
 
-export const getEpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getEpsGrowthRateProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'epsGrowthRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -31,19 +30,19 @@ export const getEpsGrowthRateProvenance = async (query: QuarterlyMetricQuery): P
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const incomeStatement = await getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const incomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const currentNetIncome = pickNetIncome(incomeStatement);
   const currentReportDate = incomeStatement?.reportDate ?? null;
-  const currentShares = currentReportDate ? (await getPaidInSharesAsOf(symbol, currentReportDate))?.paidInShares ?? null : null;
+  const currentShares = currentReportDate ? (await deps.shares.getPaidInShares(symbol, currentReportDate))?.paidInShares ?? null : null;
   const currentEps = toEps(currentNetIncome.value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorRocYear = Number(prior.year);
   const priorSeason = Number(prior.season);
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
+  const priorIncomeStatement = await deps.statements.getIncomeStatement({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorNetIncome = pickNetIncome(priorIncomeStatement);
   const priorReportDate = priorIncomeStatement?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await getPaidInSharesAsOf(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
   const priorEps = toEps(priorNetIncome.value, priorShares);
 
   const { value } = calculateYoyGrowthRate(currentEps, priorEps);

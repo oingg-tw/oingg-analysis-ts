@@ -648,11 +648,13 @@ const rewriteProvenance = (original: string, computeFileBase: string | null, dep
   const depsTypeText = usesComputeResolver ? (depsTypeName ?? 'PitDeps') : ownPick;
   if (usesComputeResolver && depsTypeName && depsKeys.size > 0) manual.push(`同時直接用 port（${[...depsKeys].join(',')}）又呼叫 resolver：deps 型別暫用 ${depsTypeName}，請確認涵蓋`);
 
-  {
+  // 匯出的函式跟同檔的內部 helper（getAnnualCapex 之類）一視同仁：本體用到 deps 就加參數、呼叫端補引數；
+  // 呼叫端補了 deps 之後它自己也「用到 deps」了，所以迭代到沒有新變化為止（最多 4 輪）。
+  for (let round = 0; round < 4; round += 1) {
     const sf = parse(text);
     const edits: TextEdit[] = [];
+    const patched = new Map<string, number>(); // 這一輪加了 deps 參數的函式 → 原本的參數個數
     for (const decl of sf.getVariableDeclarations()) {
-      if (!decl.getVariableStatement()?.isExported()) continue;
       const arrow = decl.getInitializerIfKind(SyntaxKind.ArrowFunction);
       if (!arrow) continue;
       const params = arrow.getParameters();
@@ -665,7 +667,19 @@ const rewriteProvenance = (original: string, computeFileBase: string | null, dep
         continue;
       }
       edits.push({ start: last.getEnd(), end: last.getEnd(), text: `, deps: ${depsTypeText}` });
+      patched.set(decl.getName(), params.length);
     }
+    for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+      const callee = call.getExpression();
+      if (!Node.isIdentifier(callee)) continue;
+      const expected = patched.get(callee.getText());
+      if (expected === undefined) continue;
+      const args = call.getArguments();
+      if (args.length === expected && args[args.length - 1]?.getText() !== 'deps') {
+        edits.push({ start: afterLastArg(call), end: afterLastArg(call), text: ', deps' });
+      }
+    }
+    if (edits.length === 0) break;
     text = applyEdits(text, edits);
   }
 
@@ -781,11 +795,19 @@ const migrateMetricDir = (dir: string, dryRun: boolean, show: boolean, resolverE
   for (const pitFile of pitFiles) {
     const pitPath = join(dir, pitFile);
     const content = readFileSync(pitPath, 'utf8');
-    if (content.includes('runLegacyPit(')) {
+    const newBase = pitFile.replace(/Pit\.ts$/, '');
+    if (/runLegacyPit(Nested)?\(/.test(content)) {
+      // compute 已經遷移過：只補處理還沒拿到 deps 參數的 provenance（例如手動 revert 後重跑）。
+      const shimComputeName = /runLegacyPit(?:Nested)?\((\w+)/.exec(content)?.[1];
+      const shimDepsTypeName = shimComputeName ? `${shimComputeName.slice('compute'.length)}Deps` : null;
+      for (const provFile of files.filter((f) => PROVENANCE_FILE.test(f))) {
+        const provPath = join(dir, provFile);
+        if (readFileSync(provPath, 'utf8').includes('deps:')) continue;
+        migrateProvenanceFile(provPath, newBase, shimDepsTypeName, dryRun, show, resolverEdits);
+      }
       console.log(`[skip] ${rel(pitPath)} 已經是 shim`);
       continue;
     }
-    const newBase = pitFile.replace(/Pit\.ts$/, '');
     const newPath = join(dir, `${newBase}.ts`);
     const oldFunctionName = /export const (computeAndWrite\w+)\b/.exec(content)?.[1];
     if (!oldFunctionName) {

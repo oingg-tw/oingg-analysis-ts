@@ -1,8 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——consecutiveDividendYears = 從最近一個完整會計年度
 // 往回數，逐年檢查「該年 4 季現金流量表發放股利加總是否非零」，遇到 0 或缺資料就停止，
@@ -13,10 +13,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 
 const MAX_LOOKBACK_YEARS = 30;
 
-export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'consecutiveDividendYears', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -37,7 +37,7 @@ export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetr
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
     const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
     const records = await Promise.all(
-      yearQuarters.map((q) => getQuarterlyCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
+      yearQuarters.map((q) => deps.statements.getCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
     );
 
     if (records.some((r) => r === null)) break;

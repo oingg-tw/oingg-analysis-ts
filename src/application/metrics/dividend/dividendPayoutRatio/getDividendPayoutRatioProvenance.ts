@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveDividendPayoutRatioInputs } from './computeDividendPayoutRatioPit';
+import { resolveDividendPayoutRatioInputs, type DividendPayoutRatioDeps } from './computeDividendPayoutRatio';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
@@ -10,8 +10,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 兩件事：這裡呈現的是原始事實，不是計算過程中的替代值。
 
 
-export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveDividendPayoutRatioInputs(query);
+export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQuery, deps: DividendPayoutRatioDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveDividendPayoutRatioInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'dividendPayoutRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

@@ -1,10 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { DIVIDEND_GROWTH_RATE_YEARS } from '../../../../domain/metrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——dividendGrowthRate{3,5,8}y = (最近一個完整會計年度
 // 近似每股股利 / N 年前完整會計年度近似每股股利)^(1/N) - 1。年度近似每股股利 = 4 季
@@ -31,12 +30,12 @@ const getAnnualDividendPerShareProxy = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>
 ): Promise<AnnualDpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const quarters: AnnualDpsQuarterDetail[] = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, dividendsPaid: r?.dividendsPaid ?? null }));
 
@@ -49,7 +48,7 @@ const getAnnualDividendPerShareProxy = async (
   const yearSum = records.reduce((sum, r) => sum + r!.dividendsPaid!, 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = records[3]!.reportDate;
-  const shares = (await getPaidInSharesAsOf(symbol, q4ReportDate))?.paidInShares ?? null;
+  const shares = (await deps.shares.getPaidInShares(symbol, q4ReportDate))?.paidInShares ?? null;
 
   const dps = shares !== null && shares !== 0n ? (Number(dividendsPaidAbs) * 1000) / Number(shares) : null;
   const result: AnnualDpsResult = { dps, quarters, shares };
@@ -57,13 +56,13 @@ const getAnnualDividendPerShareProxy = async (
   return result;
 };
 
-export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_GROWTH_RATE_YEARS)[number]) => {
+export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_GROWTH_RATE_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>) => {
   const metricCode = `dividendGrowthRate${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
     const { symbol, dataType, subsidiaryCompanyId } = query;
 
-    const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+    const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
     if (!resolvedQuarter) {
       return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -76,8 +75,8 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
 
     const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
     const cache = new Map<number, AnnualDpsResult>();
-    const current = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
-    const prior = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId);
+    const current = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
+    const prior = await getAnnualDividendPerShareProxy(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, deps);
 
     const value =
       current.dps !== null && prior.dps !== null && prior.dps > 0

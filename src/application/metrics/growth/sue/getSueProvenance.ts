@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveSueInputs, type SueQuarterDetail } from './computeSuePit';
+import { resolveSueInputs, type SueQuarterDetail, type SueDeps } from './computeSue';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 sue 試點，
@@ -35,8 +35,8 @@ const buildQuarterEntries = (detail: SueQuarterDetail, label: string): Provenanc
   return [netIncomeEntry, sharesEntry];
 };
 
-export const getSueProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveSueInputs(query);
+export const getSueProvenance = async (query: QuarterlyMetricQuery, deps: SueDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveSueInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'sue', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

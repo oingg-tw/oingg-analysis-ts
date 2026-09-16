@@ -1,0 +1,70 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domain/metrics/shared/numericHelpers';
+import { pickEquity } from '@/domain/metrics/shared/pickers';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import type { PitDeps } from '@/application/metrics/deps';
+
+// 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 bvps.ts 一致）。
+const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
+  if (equityInThousands === null || shares === null || shares === 0n) return null;
+  return Math.round(((Number(equityInThousands) * 1000) / Number(shares)) * 100) / 100;
+};
+
+
+export type BvpsGrowthRateDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+
+export type BvpsGrowthRateComputationBatch = ComputationBatch<'q'>;
+
+// BVPS 成長率（單季年增率）= (本季 BVPS - 去年同季 BVPS) / |去年同季 BVPS| * 100——獨立
+// 重新計算本季/去年同季各自的 BVPS（不依賴 bvps 這個 metric_code 已寫入的值，跟
+// epsGrowthRate 對 eps 的既有做法一致），流通股數各自用當下報告日對應的股本。跟
+// equityGrowthRate（淨值總額成長率）搭配使用：淨值成長率 ≈ BVPS成長率 + 股本變化率——
+// 兩者相等代表股本沒變動；BVPS成長率明顯低於淨值成長率，代表現金增資稀釋了每股淨值；
+// 反之代表減資/買回墊高了每股淨值。跟 dividend 分類的 shareCountChangeRate 三支一起
+// 組成第二張「淨值成長分解卡」，跟 growth 分類既有的 netIncomeGrowthRate/epsGrowthRate
+// 那組（損益表視角）並列成資產負債表視角的版本。只有 Q 一種 basis——資產負債表時點快照，
+// 沒有 TTM 概念（跟 bvps 自己一樣）。
+export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: BvpsGrowthRateDeps): Promise<BvpsGrowthRateComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
+
+  if (!resolvedQuarter) {
+    return noQuarterBatch(symbol, ['q']);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const balanceSheet = await deps.statements.getBalanceSheet(key);
+  const reportDate = balanceSheet?.reportDate ?? null;
+  const currentShares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentBvps = toBvps(pickEquity(balanceSheet).value, currentShares);
+
+  const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
+  const priorBalanceSheet = await deps.statements.getBalanceSheet({
+    symbol,
+    year: Number(prior.year),
+    quarter: Number(prior.season),
+    dataType,
+    subsidiaryCompanyId,
+  });
+  const priorReportDate = priorBalanceSheet?.reportDate ?? null;
+  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorBvps = toBvps(pickEquity(priorBalanceSheet).value, priorShares);
+
+  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentBvps, priorBvps);
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'bvpsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', growthRate, nullReason);
+
+  return { symbol, rocYear: year, season, slots: { q } };
+};

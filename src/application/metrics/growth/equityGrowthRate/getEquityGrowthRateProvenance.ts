@@ -1,19 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { calculateYoyGrowthRateBigint } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——equityGrowthRate（單季年增率）= (本季期末淨值 - 去年
 // 同季期末淨值) / |去年同季期末淨值| * 100。淨值優先採歸屬母公司口徑，缺漏退回整體口徑。
 // 跟 computeEquityGrowthRatePit.ts 一致。只有 Q 一種 basis。
 
-export const getEquityGrowthRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getEquityGrowthRateProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'equityGrowthRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -24,13 +24,13 @@ export const getEquityGrowthRateProvenance = async (query: QuarterlyMetricQuery)
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const currentEquity = pickEquity(balanceSheet);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorRocYear = Number(prior.year);
   const priorSeason = Number(prior.season);
-  const priorBalanceSheet = await getQuarterlyBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
+  const priorBalanceSheet = await deps.statements.getBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorEquity = pickEquity(priorBalanceSheet);
 
   const { value } = calculateYoyGrowthRateBigint(currentEquity.value, priorEquity.value);

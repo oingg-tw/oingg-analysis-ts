@@ -1,10 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getResearchAndDevelopmentExpense as getRdExpenseXbrl } from '@/infrastructure/repositories/mops/incomeStatementXbrlExtra';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——rdIntensity(TTM) = 近四季研發費用加總 / 近四季營收
 // 加總 * 100。研發費用（research_and_development_expense）只存在 XBRL 損益表寬表，
@@ -17,14 +16,14 @@ const getResearchAndDevelopmentExpense = async (key: {
   quarter: number;
   dataType: string;
   subsidiaryCompanyId: string;
-}): Promise<bigint | null> => {
-  return getRdExpenseXbrl(key);
+}, deps: Pick<PitDeps, 'statements' | 'quarters' | 'xbrlAccounts'>): Promise<bigint | null> => {
+  return deps.xbrlAccounts.getResearchAndDevelopmentExpense(key);
 };
 
-export const getRdIntensityProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getRdIntensityProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'xbrlAccounts'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'rdIntensity', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -39,7 +38,7 @@ export const getRdIntensityProvenance = async (query: QuarterlyMetricQuery): Pro
   const ttmRecords = await Promise.all(
     ttmQuarters.map(async (tq) => {
       const tqKey = { symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId };
-      const [incomeStatement, researchExpense] = await Promise.all([getQuarterlyIncomeStatement(tqKey), getResearchAndDevelopmentExpense(tqKey)]);
+      const [incomeStatement, researchExpense] = await Promise.all([deps.statements.getIncomeStatement(tqKey), getResearchAndDevelopmentExpense(tqKey, deps)]);
       return { revenue: incomeStatement?.operatingRevenue ?? null, researchExpense };
     })
   );
