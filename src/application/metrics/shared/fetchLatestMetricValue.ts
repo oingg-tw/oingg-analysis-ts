@@ -1,4 +1,5 @@
-import { resolveTimeframeForMetric, ScreenerValidationError } from '@/http/modules/screener/fieldResolver';
+import { ValidationError } from '@/application/errors';
+import { resolveTimeframeForMetric } from '../resolveTimeframeForMetric';
 import { getMetricHistory } from './queryMetricHistory';
 import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
 import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
@@ -7,6 +8,8 @@ import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
 // 最新一筆值，不管是季報型還是逐日型指標，呼叫端不用自己判斷該查哪張表。除了 badges 端點，
 // evaluateCompanyMetricCompleteness.ts（指標完整度掃描）也需要同一段邏輯，這裡開始有第二個
 // 消費者，抽成共用模組。
+// 2026-09-17：timeframe 解析改用 application 自己的 resolveTimeframeForMetric（原本反過來
+// import HTTP 層的 screener/fieldResolver，是依賴反轉）。
 
 const DATA_TYPE = '2'; // 既有 metric-history 端點的既定慣例：'2' = 合併口徑，不分子公司
 const SUBSIDIARY_COMPANY_ID = '';
@@ -28,7 +31,7 @@ export const fetchLatestMetricValue = async (symbol: string, metricCode: string,
   try {
     fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
   } catch (error) {
-    if (error instanceof ScreenerValidationError) return null;
+    if (error instanceof ValidationError) return null;
     throw error;
   }
 

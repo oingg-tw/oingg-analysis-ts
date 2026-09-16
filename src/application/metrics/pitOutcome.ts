@@ -1,4 +1,4 @@
-import type { MetricValueWriteOutcome } from './metricValueWriter';
+import type { MetricValueWriteOutcome } from '@/domain/metrics/coordinate';
 
 // 87 支 compute*Pit.ts 的回傳型別（XxxPitOutcome）幾乎都是同一個形狀：symbol/rocYear/
 // season 三個座標欄位 + 一組 basis 結果（q/ttm/fy 任意子集，每個 metric 只用到

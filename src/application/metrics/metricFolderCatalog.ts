@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
-import { validTimeframesForMetric } from '@/http/modules/screener/fieldResolver';
+import { validTimeframesForMetric } from './resolveTimeframeForMetric';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
 import { getBadgeForMetric } from '@/domain/metrics/badgeRegistry';
 import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';

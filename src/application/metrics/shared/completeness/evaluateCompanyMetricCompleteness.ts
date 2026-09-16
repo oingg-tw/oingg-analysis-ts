@@ -1,4 +1,4 @@
-import { scanMetricFolderCatalog } from '@/http/modules/metrics/metricFolderCatalog';
+import { scanMetricFolderCatalog } from '@/application/metrics/metricFolderCatalog';
 import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 

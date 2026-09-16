@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { companyNameEntrySchema } from '@/infrastructure/repositories/exchange/companyProfile';
+import type { CompanyProfileDetail } from '@/application/companies/types';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
 // 純 TypeScript interface，跟 Swagger 文件（原本手寫 JSDoc）是兩份要手動保持同步的東西，
@@ -55,8 +56,11 @@ export const companyProfileDetailSchema = z.object({
   email: z.string().nullable(),
   website: z.string().nullable().meta({ description: '2026-09-04 起已正規化成裸網域（去 scheme/尾斜線/www. 前綴），方便直接接 logo 服務' }),
   issuedShares: z.string().nullable(),
-});
-export type CompanyProfileDetail = z.infer<typeof companyProfileDetailSchema>;
+  // 2026-09-17：型別的真理來源改成 application/companies/types.ts 的介面（infrastructure 的
+  // companyProfile.ts 也用它，不再反過來 import HTTP 層），這裡的 schema 用 satisfies 釘住，
+  // 欄位對不上會編譯失敗。
+}) satisfies z.ZodType<CompanyProfileDetail>;
+export type { CompanyProfileDetail };
 
 // 2026-09-01 應 bff-ts 要求新增的 GET /companies 兩種回應形狀（依 countOnly 決定回哪一種）。
 export const companiesListResultSchema = z.object({

@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'ultimate-express';
-import { scanMetricFolderCatalog } from './metricFolderCatalog';
+import { scanMetricFolderCatalog } from '@/application/metrics/metricFolderCatalog';
 
 const router = Router();
 

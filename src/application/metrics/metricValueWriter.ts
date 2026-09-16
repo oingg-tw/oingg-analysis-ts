@@ -1,34 +1,16 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { metricDefinitionRegistry } from './metricDefinitionRegistry';
-import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence, MetricNullReason } from '../../domain/metrics/metricBasis';
+import type { PeriodType, MetricNullReason } from '../../domain/metrics/metricBasis';
+import { periodTypeGroup, rollingWindowGroup, snapshotCadenceGroup, type MetricValueCoordinate, type MetricValueWriteOutcome } from '@/domain/metrics/coordinate';
 import type { KnowledgeDateResolution } from './knowledgeDate';
 import type { BasisOutcome } from './pitOutcome';
 
-export interface MetricValueCoordinate {
-  symbol: string;
-  metricCode: string;
-  // 任何一筆座標只會有其中「一組」是真實值，其餘固定 'N/A'：periodType 單獨一組
-  // （季報型指標，寫進 metric_values）；lookbackRange+samplingInterval 成對一組 /
-  // snapshotCadence 單獨一組（逐日型指標，寫進 metric_daily_cadence_values）——
-  // 完整說明見 metricBasis.ts。哪一組是真實值決定這筆資料寫進哪張表，呼叫端不用
-  // 知道這件事，writeMetricValue() 內部處理。
-  periodType: PeriodType;
-  lookbackRange: LookbackRange;
-  samplingInterval: SamplingInterval;
-  snapshotCadence: SnapshotCadence;
-  // 2026-09-09：fiscalYear/fiscalQuarter 拆表後只有季報型（periodType 這組）才需要，
-  // 改成 optional——writeMetricValue() 判斷走季報型路徑時才要求必填（執行期驗證），
-  // 逐日型路徑完全不使用這兩個欄位（沒有 DAILY_CADENCE_FISCAL_QUARTER 這種 sentinel
-  // 可以填了，因為 metric_daily_cadence_values 根本沒有 fiscalYear/fiscalQuarter 欄位）。
-  fiscalYear?: number;
-  fiscalQuarter?: number;
-  // tradeDate：拆表後只有逐日型（lookbackRange/snapshotCadence 這兩組）才需要，是
-  // metric_daily_cadence_values 的真正自然鍵（NOT NULL）——writeMetricValue() 判斷
-  // 走逐日型路徑時執行期驗證必填。季報型路徑完全不使用這個欄位。
-  tradeDate?: Date | null;
-  dataType: string;
-  subsidiaryCompanyId: string;
-}
+// 2026-09-17 clean architecture 重構 Phase 1：座標型別、三個 basis group helper、
+// MetricValueWriteOutcome 搬到 domain/metrics/coordinate.ts（純 domain 知識，timeframe
+// 解析也要用，不能反過來依賴這支會碰 Prisma 的 writer）；這裡 re-export 讓 ~150 個既有
+// 呼叫點不用改 import。
+export { periodTypeGroup, rollingWindowGroup, snapshotCadenceGroup };
+export type { MetricValueCoordinate, MetricValueWriteOutcome };
 
 export interface MetricValueInput extends MetricValueCoordinate {
   value: number | null;
@@ -38,41 +20,7 @@ export interface MetricValueInput extends MetricValueCoordinate {
   formulaVersion?: number; // 預設 1
 }
 
-// 四個 basis 相關欄位的「其中一組是真實值，其餘固定 'N/A'」這個結構性規則，每個
-// writeMetricValue 呼叫點都要遵守——~150 個呼叫點如果各自手寫四個欄位太囉唆也容易漏改，
-// 這三個 helper 各自對應一組語意，呼叫端 `...periodTypeGroup('TTM')` 展開成完整的四欄位
-// 組合，只需要記得自己這組要填哪個真實值。
-export const periodTypeGroup = (periodType: PeriodType): Pick<MetricValueCoordinate, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'> => ({
-  periodType,
-  lookbackRange: 'N/A',
-  samplingInterval: 'N/A',
-  snapshotCadence: 'N/A',
-});
-
-export const rollingWindowGroup = (
-  lookbackRange: LookbackRange,
-  samplingInterval: SamplingInterval,
-): Pick<MetricValueCoordinate, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'> => ({
-  periodType: 'N/A',
-  lookbackRange,
-  samplingInterval,
-  snapshotCadence: 'N/A',
-});
-
-export const snapshotCadenceGroup = (snapshotCadence: SnapshotCadence): Pick<MetricValueCoordinate, 'periodType' | 'lookbackRange' | 'samplingInterval' | 'snapshotCadence'> => ({
-  periodType: 'N/A',
-  lookbackRange: 'N/A',
-  samplingInterval: 'N/A',
-  snapshotCadence,
-});
-
 const periodTypeIsSet = (periodType: PeriodType): boolean => periodType !== 'N/A';
-
-export type MetricValueWriteOutcome =
-  | { action: 'inserted' }
-  | { action: 'updated_same_knowledge_date' } // 同一天重跑，非新資訊，就地覆蓋而非疊列
-  | { action: 'skipped_unchanged' } // spec v0.2 §5.2：值沒變就不寫
-  | { action: 'rejected'; reason: string }; // spec v0.2 §5.5：欄位組合不在 allowed* 內 / metricCode 未註冊 / 結構不變式違反
 
 // 2026-09-17 改成相對容差：原本固定 `< 1e-9` 的絕對容差對市值這種 1e12 等級的數字根本
 // 不可能成立——float64 在 1e12 的精度只有 ~1e-4，price × shares 算出來的浮點雜訊永遠比

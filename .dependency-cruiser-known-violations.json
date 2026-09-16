@@ -2076,48 +2076,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/application/metrics/shared/badges/evaluateCompanyBadges.ts",
-    "to": "src/http/modules/metrics/metricFolderCatalog.ts",
-    "unresolvedTo": "@/http/modules/metrics/metricFolderCatalog",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/completeness/evaluateCompanyMetricCompleteness.ts",
-    "to": "src/http/modules/metrics/metricFolderCatalog.ts",
-    "unresolvedTo": "@/http/modules/metrics/metricFolderCatalog",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/fetchLatestMetricValue.ts",
-    "to": "src/http/modules/screener/fieldResolver.ts",
-    "unresolvedTo": "@/http/modules/screener/fieldResolver",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/application/metrics/shared/marketRatios/computeMarketRatiosPit.ts",
     "to": "src/infrastructure/repositories/exchange/twseMarketData.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/twseMarketData",
@@ -4706,85 +4664,6 @@
       "severity": "error",
       "name": "http-not-infrastructure"
     }
-  },
-  {
-    "type": "dependency",
-    "from": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "to": "src/http/modules/companies/types.ts",
-    "unresolvedTo": "@/http/modules/companies/types",
-    "dependencyTypes": [
-      "undetermined",
-      "import",
-      "type-only"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "infrastructure-not-up"
-    }
-  },
-  {
-    "type": "cycle",
-    "from": "src/application/metrics/metricValueWriter.ts",
-    "to": "src/application/metrics/pitOutcome.ts",
-    "unresolvedTo": "./pitOutcome",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/application/metrics/pitOutcome.ts",
-        "dependencyTypes": [
-          "local",
-          "import",
-          "type-only"
-        ]
-      },
-      {
-        "name": "src/application/metrics/metricValueWriter.ts",
-        "dependencyTypes": [
-          "local",
-          "import",
-          "type-only"
-        ]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
-    "from": "src/http/modules/companies/types.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/infrastructure/repositories/exchange/companyProfile.ts",
-        "dependencyTypes": [
-          "undetermined",
-          "import"
-        ]
-      },
-      {
-        "name": "src/http/modules/companies/types.ts",
-        "dependencyTypes": [
-          "undetermined",
-          "import",
-          "type-only"
-        ]
-      }
-    ]
   },
   {
     "type": "dependency",

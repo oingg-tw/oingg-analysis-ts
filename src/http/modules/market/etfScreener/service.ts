@@ -1,4 +1,5 @@
 import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { ValidationError } from '@/application/errors';
 import {
   NUMERIC_FIELDS,
   CATEGORICAL_FIELDS,
@@ -13,7 +14,9 @@ import {
 import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from './queryBuilder';
 import type { EtfFilterInput, EtfColumnInput, EtfScreenerResponse, EtfScreenerRow, EtfFilterCatalogResponse, EtfFilterFieldCatalogEntry } from './types';
 
-export class EtfScreenerValidationError extends Error {}
+// 2026-09-17 clean architecture 重構 Phase 1：改用 application 共用的 ValidationError（同一個
+// class，controller/測試的 instanceof 判斷不變），這個名稱只是給既有呼叫端的別名。
+export { ValidationError as EtfScreenerValidationError };
 
 const getLatestYearMonth = async (): Promise<string | null> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ year_month: string | null }[]>`
@@ -27,30 +30,30 @@ const getLatestYearMonth = async (): Promise<string | null> => {
 const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
   const definition = resolveEtfField(input.field);
   if (!definition) {
-    throw new EtfScreenerValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
+    throw new ValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
   }
 
   if (definition.kind === 'numeric') {
     if (!('min' in input) || !('max' in input) || typeof input.min === 'string' || typeof input.max === 'string') {
-      throw new EtfScreenerValidationError(`"${input.field}" 是數字欄位，filter 要給數字 min/max，不是 values 或日期字串。`);
+      throw new ValidationError(`"${input.field}" 是數字欄位，filter 要給數字 min/max，不是 values 或日期字串。`);
     }
     return { kind: 'numeric', definition, min: input.min, max: input.max, exclude: input.exclude ?? false };
   }
 
   if (definition.kind === 'date') {
     if (!('min' in input) || !('max' in input) || typeof input.min === 'number' || typeof input.max === 'number') {
-      throw new EtfScreenerValidationError(`"${input.field}" 是日期欄位，filter 要給 'YYYY-MM-DD' 字串 min/max，不是 values 或數字。`);
+      throw new ValidationError(`"${input.field}" 是日期欄位，filter 要給 'YYYY-MM-DD' 字串 min/max，不是 values 或數字。`);
     }
     return { kind: 'date', definition, min: input.min, max: input.max, exclude: input.exclude ?? false };
   }
 
   if (!('values' in input) || !Array.isArray(input.values)) {
-    throw new EtfScreenerValidationError(`"${input.field}" 是類別欄位，filter 要給 values 陣列，不是 min/max。`);
+    throw new ValidationError(`"${input.field}" 是類別欄位，filter 要給 values 陣列，不是 min/max。`);
   }
   if (definition.isBoolean) {
     const invalid = input.values.filter((v) => v !== 'true' && v !== 'false');
     if (invalid.length > 0) {
-      throw new EtfScreenerValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
+      throw new ValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
     }
   }
   return { kind: 'categorical', definition, values: input.values };
@@ -59,7 +62,7 @@ const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
 const resolveColumn = (input: EtfColumnInput): ColumnRef => {
   const definition = resolveEtfField(input.field);
   if (!definition) {
-    throw new EtfScreenerValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
+    throw new ValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
   }
   return { field: input.field, definition };
 };
@@ -69,11 +72,11 @@ const resolveColumn = (input: EtfColumnInput): ColumnRef => {
 const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | undefined, columns: ColumnRef[]): SortSpec | null => {
   if (!sortField) return null;
   if (!sortOrder) {
-    throw new EtfScreenerValidationError('有給 sortField 就要一起給 sortOrder。');
+    throw new ValidationError('有給 sortField 就要一起給 sortOrder。');
   }
   if (sortField === 'symbol') return { field: 'symbol', order: sortOrder };
   if (!columns.some((c) => c.field === sortField)) {
-    throw new EtfScreenerValidationError(`sortField "${sortField}" 要嘛是 "symbol"，要嘛要先出現在 columns 裡才能排序。`);
+    throw new ValidationError(`sortField "${sortField}" 要嘛是 "symbol"，要嘛要先出現在 columns 裡才能排序。`);
   }
   return { field: sortField, order: sortOrder };
 };
@@ -101,7 +104,7 @@ export const runEtfScreener = async (request: {
   const sort = resolveSort(request.sortField, request.sortOrder, columns);
 
   if (filters.length === 0 && columns.length === 0) {
-    throw new EtfScreenerValidationError('filters 跟 columns 至少要提供一個。');
+    throw new ValidationError('filters 跟 columns 至少要提供一個。');
   }
 
   const yearMonth = await getLatestYearMonth();
