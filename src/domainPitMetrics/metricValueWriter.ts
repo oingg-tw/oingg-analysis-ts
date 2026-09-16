@@ -74,9 +74,17 @@ export type MetricValueWriteOutcome =
   | { action: 'skipped_unchanged' } // spec v0.2 §5.2：值沒變就不寫
   | { action: 'rejected'; reason: string }; // spec v0.2 §5.5：欄位組合不在 allowed* 內 / metricCode 未註冊 / 結構不變式違反
 
+// 2026-09-17 改成相對容差：原本固定 `< 1e-9` 的絕對容差對市值這種 1e12 等級的數字根本
+// 不可能成立——float64 在 1e12 的精度只有 ~1e-4，price × shares 算出來的浮點雜訊永遠比
+// 1e-9 大，導致 2317 marketCap 114Q1 這一列每次重跑都被判「值變了」、寫回去的卻是同一個
+// 數字（DB 欄位的 scale 把雜訊截掉了），白白 upsert 一次、shadow 表也跟著累積一筆垃圾，
+// 更讓「重跑全部 skipped_unchanged」這個等價證明失效（scripts/verifyMetricEquivalencePit.ts）。
+// 相對容差 1e-12 × 量級：對 1e12 的市值容差是 1 元、對 12.34 這種百分比是 1e-11，兩者都遠
+// 低於任何有意義的差異，也低於 DB 欄位保留的小數位。小數字維持 1e-9 的絕對下限。
 const valuesEqual = (a: number | null, b: number | null): boolean => {
   if (a === null || b === null) return a === b;
-  return Math.abs(a - b) < 1e-9;
+  const tolerance = Math.max(1e-9, 1e-12 * Math.max(Math.abs(a), Math.abs(b)));
+  return Math.abs(a - b) <= tolerance;
 };
 
 // 兩張表（metric_values / metric_daily_cadence_values）的「既有列 vs 新輸入」比對邏輯
