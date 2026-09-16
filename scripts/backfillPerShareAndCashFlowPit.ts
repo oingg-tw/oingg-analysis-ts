@@ -6,7 +6,8 @@
 // 用法：pnpm tsx scripts/backfillPerShareAndCashFlowPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前兩批 backfill 腳本同一組）。
 import { computeAndWriteAccrualsRatioPit, computeAndWriteBvpsPit, computeAndWriteCashFlowPerSharePit, computeAndWriteDividendPayoutRatioPit, computeAndWriteEpsPit, computeAndWriteFcfYieldPit, computeAndWriteOcfToNetIncomePit, computeAndWriteRevenuePerSharePit, computeAndWriteSgrPit } from '../src/bootstrap/pitMetrics';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';

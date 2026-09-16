@@ -1,7 +1,8 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteBetaPit } from '@/bootstrap/pitMetrics';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '@/bootstrap/metricDefinitions';
 import type { LookbackRange, SamplingInterval } from '@/domain/metrics/metricBasis';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';

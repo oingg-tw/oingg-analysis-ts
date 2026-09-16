@@ -292,6 +292,5 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
 };
 
 // 2026-09-17 重構 Phase 2：metric_definitions 的 upsert 搬到 infrastructure/repositories/analysis/
-// metricDefinitionRepository.ts（registry 本身從此不碰 Prisma），這裡 re-export 給既有的
-// backfill 腳本/測試呼叫端；Phase 3 改由 bootstrap 綁定後這個 re-export 會拿掉。
-export { upsertMetricDefinition } from '@/infrastructure/repositories/analysis/metricDefinitionRepository';
+// metricDefinitionRepository.ts（registry 本身從此不碰 Prisma）；Phase 4 起 backfill 腳本/測試改從
+// src/bootstrap/metricDefinitions.ts 拿 upsertMetricDefinition，這裡不再 re-export infrastructure。

@@ -10,7 +10,8 @@
 //
 // 用法：pnpm tsx scripts/backfillGrowthPit.ts
 import { computeAndWriteBvpsGrowthRatePit, computeAndWriteEpsGrowthRatePit, computeAndWriteEquityGrowthRatePit, computeAndWriteNetIncomeGrowthRatePit, computeAndWriteOperatingIncomeGrowthRatePit, computeAndWriteRevenueGrowthRatePit } from '../src/bootstrap/pitMetrics';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

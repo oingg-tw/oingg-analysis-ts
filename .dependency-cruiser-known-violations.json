@@ -1,20 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/application/metrics/metricDefinitionRegistry.ts",
-    "to": "src/infrastructure/repositories/analysis/metricDefinitionRepository.ts",
-    "unresolvedTo": "@/infrastructure/repositories/analysis/metricDefinitionRepository",
-    "dependencyTypes": [
-      "undetermined",
-      "export"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillAbnormalCapexRatioPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",

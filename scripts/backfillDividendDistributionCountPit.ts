@@ -7,7 +7,8 @@
 // 用法：pnpm tsx scripts/backfillDividendDistributionCountPit.ts
 import { computeAndWriteDividendDistributionCountPit } from '../src/bootstrap/pitMetrics';
 import { getSymbolsWithDividendDistribution } from '../src/infrastructure/repositories/mops/dividendDistribution';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

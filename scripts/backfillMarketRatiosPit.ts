@@ -9,7 +9,8 @@
 //
 // 用法：pnpm tsx scripts/backfillMarketRatiosPit.ts
 import { computeAndWriteMarketRatiosPit } from '../src/bootstrap/pitMetrics';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

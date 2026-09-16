@@ -1,7 +1,8 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteOwnerEarningsPit } from '@/bootstrap/pitMetrics';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '@/bootstrap/metricDefinitions';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

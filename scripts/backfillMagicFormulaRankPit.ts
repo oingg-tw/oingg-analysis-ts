@@ -18,7 +18,8 @@
 // 用法：pnpm tsx scripts/backfillMagicFormulaRankPit.ts
 import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRocPit } from '../src/bootstrap/pitMetrics';
 import { isFinancialIndustryCompany } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { persistMetricValue } from '../src/bootstrap/pitMetrics';
 import { periodTypeGroup } from '../src/domain/metrics/coordinate';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
