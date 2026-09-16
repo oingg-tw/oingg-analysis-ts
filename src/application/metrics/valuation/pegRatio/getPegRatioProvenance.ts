@@ -1,13 +1,11 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
-import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——pegRatio(TTM) = PER(TTM) / EPS 5年複合成長率(%)。
 // PER 算法複製自 peRatio，EPS CAGR 固定只取 5 年（不像 epsCagr 有 3/8 年版本，PEG 原始
@@ -33,12 +31,12 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>
 ): Promise<AnnualEpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const netIncomes = records.map(pickNetIncome);
   const quarters: AnnualEpsQuarterDetail[] = netIncomes.map((netIncome, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, netIncome }));
@@ -51,7 +49,7 @@ const getAnnualEps = async (
 
   const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
   const q4ReportDate = records[3]!.reportDate;
-  const shares = (await getPaidInSharesAsOf(symbol, q4ReportDate))?.paidInShares ?? null;
+  const shares = (await deps.shares.getPaidInShares(symbol, q4ReportDate))?.paidInShares ?? null;
 
   const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
   const result: AnnualEpsResult = { eps, quarters, shares };
@@ -59,10 +57,10 @@ const getAnnualEps = async (
   return result;
 };
 
-export const getPegRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'pegRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -73,15 +71,15 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery): Promis
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainIncomeStatement = await getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const mainIncomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const reportDate = mainIncomeStatement?.reportDate ?? null;
-  const shares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const netIncomes = ttmRecords.map(pickNetIncome);
 
@@ -97,8 +95,8 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery): Promis
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const epsCache = new Map<number, AnnualEpsResult>();
-  const currentAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
-  const priorAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId);
+  const currentAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
+  const priorAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, deps);
 
   const epsCagr5yPct =
     currentAnnual.eps !== null && priorAnnual.eps !== null && currentAnnual.eps > 0 && priorAnnual.eps > 0

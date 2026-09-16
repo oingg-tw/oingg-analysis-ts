@@ -1,24 +1,21 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity, pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
-import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——grahamNumber(TTM) = PER(TTM) × PBR，跟
 // computeGrahamNumberPit.ts 一致，數學上等價於原始公式 sqrt(22.5×EPS×BVPS) vs 股價 的
 // 比較（見該檔案 2026-09-10 的說明）。獨立重算 EPS/BVPS/PER/PBR，不依賴對應
 // metric_code 已寫入的值。固定回傳 TTM。
 
-export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'grahamNumber', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -30,21 +27,21 @@ export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery): Pr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const [balanceSheet, incomeStatement] = await Promise.all([
-    getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
-    getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
   ]);
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
-  const shares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
+  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
   const bvps = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
   const pbRatio = bvps !== null && stockPrice !== null && bvps !== 0 ? Math.round((stockPrice.closePrice / bvps) * 100) / 100 : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const netIncomes = ttmRecords.map(pickNetIncome);
 

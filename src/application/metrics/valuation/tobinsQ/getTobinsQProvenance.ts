@@ -1,20 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toRatio4FromNumbers as toRatio4 } from '@/domain/metrics/shared/numericHelpers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getMarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——tobinsQ = (市值 + 總負債) / 總資產（簡化版 Tobin's
 // Q，市場對負債的評價假設等於帳面值）。市值用本季知識時點，資產負債表欄位換算成元後
 // 相加。跟 computeTobinsQPit.ts 一致。只有 Q 一種 basis。
 
-export const getTobinsQProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getTobinsQProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'tobinsQ', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -25,13 +24,13 @@ export const getTobinsQProvenance = async (query: QuarterlyMetricQuery): Promise
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCapAsOf = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const marketCapAsOf = mainAnchor ? await deps.market.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const marketCap = marketCapAsOf?.marketCap ?? null;
 
   const value = marketCap !== null && totalLiabilities !== null && totalAssets !== null ? toRatio4(marketCap + Number(totalLiabilities) * 1000, Number(totalAssets) * 1000) : null;

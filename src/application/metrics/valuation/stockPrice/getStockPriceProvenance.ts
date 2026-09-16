@@ -1,19 +1,18 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——stockPrice = 該季知識時點（比照 bvps，只用資產負債表
 // 解析）當下最近一筆收盤價。跟 computeStockPricePit.ts 一致，不是財報衍生值，是純市場
 // 觀察值。只有 Q 一種 basis。
 
-export const getStockPriceProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getStockPriceProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'stockPrice', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -24,10 +23,10 @@ export const getStockPriceProvenance = async (query: QuarterlyMetricQuery): Prom
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const reportDate = balanceSheet?.reportDate ?? null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
   const value = stockPrice?.closePrice ?? null;
 
   const entries: ProvenanceEntry[] = [

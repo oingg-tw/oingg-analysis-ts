@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveGreenblattEarningsYieldInputs } from './computeGreenblattEarningsYieldPit';
+import { resolveGreenblattEarningsYieldInputs, type GreenblattEarningsYieldDeps } from './computeGreenblattEarningsYield';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——greenblattEarningsYield(TTM) = 近四季 EBIT(=稅前
@@ -12,8 +12,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 純粹保留邏輯供未來神奇公式合併使用。metricCode 字面量已不在窄化後的型別裡，用
 // `as ProvenanceMetricCode` 讓它繼續編譯過，不影響任何執行期路徑。
 
-export const getGreenblattEarningsYieldProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveGreenblattEarningsYieldInputs(query);
+export const getGreenblattEarningsYieldProvenance = async (query: QuarterlyMetricQuery, deps: GreenblattEarningsYieldDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveGreenblattEarningsYieldInputs(query, deps);
 
   if (!resolution) {
     return {

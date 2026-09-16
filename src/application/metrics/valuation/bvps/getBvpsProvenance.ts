@@ -1,20 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——bvps = 本季期末淨值×1000(千元換元) / 流通股數。
 // 淨值優先採歸屬母公司口徑，缺漏退回整體口徑。跟 computeBvpsPit.ts 一致。只有 Q 一種
 // basis，沒有 TTM/年化概念（資產負債表時點快照）。
 
-export const getBvpsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getBvpsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'bvps', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -25,10 +24,10 @@ export const getBvpsProvenance = async (query: QuarterlyMetricQuery): Promise<Me
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const shares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
+  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
 
   const value = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 

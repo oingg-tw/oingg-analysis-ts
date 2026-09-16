@@ -1,22 +1,20 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
-import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——pbRatio = 股價(knowledge_date) / BVPS(本季期末權益
 // ×1000(千元換元)/流通股數)。跟 computePbRatioPit.ts 一致，獨立重算 BVPS 不依賴 bvps
 // 這個 metric_code 已寫入的值。只有 Q 一種 basis。
 
-export const getPbRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getPbRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'pbRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -27,14 +25,14 @@ export const getPbRatioProvenance = async (query: QuarterlyMetricQuery): Promise
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const shares = reportDate ? (await getPaidInSharesAsOf(symbol, reportDate))?.paidInShares ?? null : null;
+  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
   const bvps = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const stockPrice = mainAnchor ? await getStockPriceAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
   const value = bvps !== null && stockPrice !== null && bvps !== 0 ? Math.round((stockPrice.closePrice / bvps) * 100) / 100 : null;
 
   const entries: ProvenanceEntry[] = [

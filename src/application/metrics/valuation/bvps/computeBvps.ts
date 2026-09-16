@@ -1,0 +1,67 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
+import { pickEquity } from '@/domain/metrics/shared/pickers';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { periodTypeGroup } from '@/domain/metrics/coordinate';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import type { PitDeps } from '@/application/metrics/deps';
+
+// 這份檔案是 src/domainMetrics/bvps.ts 的獨立重新實作。BVPS 是資產負債表時點快照，跟
+// equityMultiplier 同一種形狀，只有 Q 一種 basis，沒有 TTM/年化概念。
+
+
+export type BvpsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+
+export type BvpsComputationBatch = ComputationBatch<'q'>;
+
+export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): Promise<BvpsComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
+
+  if (!resolvedQuarter) {
+    return noQuarterBatch(symbol, ['q']);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const balanceSheet = await deps.statements.getBalanceSheet(key);
+  const equity = pickEquity(balanceSheet);
+  const reportDate = balanceSheet?.reportDate ?? null;
+
+  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
+  const sharesValue = shares?.paidInShares ?? null;
+
+  const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
+  const nullReason: MetricNullReason | null = bvps === null ? determineNullReason(equity.value, sharesValue) : null;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+
+  let q: ComputationSlot;
+  if (!mainAnchor) {
+    q = { action: 'skipped_no_knowledge_date' };
+  } else {
+    q = computation({
+      symbol,
+      metricCode: 'bvps',
+      fiscalYear,
+      fiscalQuarter: seasonNum,
+      dataType,
+      subsidiaryCompanyId,
+      ...periodTypeGroup('Q'),
+      value: bvps,
+      nullReason,
+      knowledgeDate: mainAnchor.knowledgeDate,
+      knowledgeDateIsFallback: mainAnchor.isFallback,
+    });
+  }
+
+  return { symbol, rocYear: year, season, slots: { q } };
+};

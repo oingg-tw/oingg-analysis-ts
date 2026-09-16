@@ -1,73 +1,12 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { financialDataAdapter, type BalanceSheetPort, type MarketCapPort } from '@/application/metrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeMarketCap } from './computeMarketCap';
+import type { StandardBasisPitOutcome } from '@/application/metrics/pitOutcome';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
-import { roundToSignificantFigures } from '../../../../domain/metrics/shared/numericHelpers';
-
-// 市值 = 收盤價 × 流通股數，獨立立出 metric_code 的理由見 marketCapDefinition.ts 檔頭
-// 說明。knowledge_date 解析比照 stockPrice（只用資產負債表，不查損益表），保證跟
-// stockPrice/bvps/pbRatio/ncav 同步。只有 Q 一種 basis。
-//
-// 2026-09-11 使用者要求：個股篩選的市值欄位保留 4 位有效數字（不是小數位數）——市值
-// 動輒幾千億到幾兆，固定小數位數沒有意義，改用有效數字才是使用者真正想看到的精度。
-// 只影響這個 metricCode 寫入的值本身；altmanZScore/tobinsQ/greenblattEarningsYield
-// 等其他指標的市值輸入都是各自獨立呼叫 getMarketCapAsOf 拿到完整精度的原始值，不會
-// 讀這裡寫入的四捨五入後數字，不受影響。
-
-const determineNullReason = (): MetricNullReason => 'missing_input';
+// **暫時性 shim**（2026-09-17 Phase 3）：marketCap 的計算本體搬到 computeMarketCap.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteMarketCapPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeMarketCap';
 
 export type MarketCapPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteMarketCapPit = async (
-  query: QuarterlyMetricQuery,
-  statements: BalanceSheetPort & MarketCapPort = financialDataAdapter
-): Promise<MarketCapPitOutcome> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
-
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await statements.getBalanceSheet(key);
-  const reportDate = balanceSheet?.reportDate ?? null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCapAsOf = mainAnchor ? await statements.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
-
-  const marketCap = marketCapAsOf ? roundToSignificantFigures(marketCapAsOf.marketCap, 4) : null;
-  const nullReason: MetricNullReason | null = marketCap === null ? determineNullReason() : null;
-
-  let q: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      symbol,
-      metricCode: 'marketCap',
-      fiscalYear,
-      fiscalQuarter: seasonNum,
-      dataType,
-      subsidiaryCompanyId,
-      ...periodTypeGroup('Q'),
-      value: marketCap,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
-
-  return { symbol, rocYear: year, season, q };
-};
+export const computeAndWriteMarketCapPit = runLegacyPit(computeMarketCap) as (query: Parameters<typeof computeMarketCap>[0]) => Promise<MarketCapPitOutcome>;

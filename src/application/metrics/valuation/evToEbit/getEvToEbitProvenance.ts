@@ -1,21 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——evToEbit(TTM) = 企業價值(EV=市值+淨負債，本季知識
 // 時點) / 近四季 EBIT(=稅前淨利+財務費用)加總（Acquirer's Multiple，跟 evEbitda 幾乎
 // 同一套邏輯，差別只在 EBIT 不加回折舊攤銷）。跟 computeEvToEbitPit.ts 一致。固定回傳
 // TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
 
-export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'evToEbit', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -27,8 +25,8 @@ export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery): Promis
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const [balanceSheet, mainIncomeStatement] = await Promise.all([
-    getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
-    getQuarterlyIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
+    deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
   ]);
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
@@ -38,13 +36,13 @@ export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery): Promis
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
   const reportDate = balanceSheet?.reportDate ?? mainIncomeStatement?.reportDate ?? null;
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const marketCap = mainAnchor ? await getMarketCapAsOf(symbol, mainAnchor.knowledgeDate) : null;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const marketCap = mainAnchor ? await deps.market.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const preTaxes = ttmRecords.map((r) => r?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map((r) => r?.financeCosts ?? null);
