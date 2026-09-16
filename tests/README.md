@@ -14,7 +14,7 @@ pnpm test               # unit + contract（日常開發、pre-push hook 跑這�
 pnpm test:unit
 pnpm test:contract
 pnpm test:contract:update   # 刻意的 API 變更：更新 snapshot，diff 跟路由變更放同一個 commit 審閱並通知 bff-ts
-pnpm test:integration   # phase 收尾/大改動後跑（~2 分鐘起跳）
+pnpm test:integration   # phase 收尾/大改動後跑（打 SIT branch，平行約 10 秒）
 pnpm test:flaky
 pnpm test:all           # 四個 project 全跑
 pnpm typecheck          # src + tests + scripts 三份 tsconfig 都過型別檢查
