@@ -9,4 +9,4 @@ export * from './computeNovyMarxGpToAssets';
 
 export type NovyMarxGpToAssetsPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteNovyMarxGpToAssetsPit = runLegacyPit(computeNovyMarxGpToAssets);
+export const computeAndWriteNovyMarxGpToAssetsPit = runLegacyPit(computeNovyMarxGpToAssets) as (query: Parameters<typeof computeNovyMarxGpToAssets>[0]) => Promise<NovyMarxGpToAssetsPitOutcome>;

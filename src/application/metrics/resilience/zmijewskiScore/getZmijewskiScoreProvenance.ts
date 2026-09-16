@@ -1,19 +1,18 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——Zmijewski X = -4.3 - 4.5×(淨利TTM/總資產) +
 // 5.7×(總負債/總資產) - 0.004×(流動資產/流動負債)。跟 getAltmanZScoreProvenance.ts
 // 同一個模式：只算原始分數，不套用金融業排除（那是寫入路徑的政策決定）。固定回傳 TTM。
 
-export const getZmijewskiScoreProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getZmijewskiScoreProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'zmijewskiScore', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -24,7 +23,7 @@ export const getZmijewskiScoreProvenance = async (query: QuarterlyMetricQuery): 
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
   const currentAssets = balanceSheet?.currentAssets ?? null;
@@ -32,7 +31,7 @@ export const getZmijewskiScoreProvenance = async (query: QuarterlyMetricQuery): 
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const netIncomes = ttmRecords.map(pickNetIncome);
 

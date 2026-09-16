@@ -18,4 +18,4 @@ export interface BankIncomeWaterfallPitOutcome extends QuarterlyPitOutcomeBase {
   bankOtherOperatingExpensePerShareTtm: BasisOutcome;
 }
 
-export const computeAndWriteBankIncomeWaterfallPit = runLegacyPit(computeBankIncomeWaterfall);
+export const computeAndWriteBankIncomeWaterfallPit = runLegacyPit(computeBankIncomeWaterfall) as (query: Parameters<typeof computeBankIncomeWaterfall>[0]) => Promise<BankIncomeWaterfallPitOutcome>;

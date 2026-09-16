@@ -1,10 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——fcfConversionRate(TTM) = 近四季自由現金流(FCF=OCF+
 // 資本支出)加總 / 近四季淨利加總。跟 computeCashFlowValuationFamilyPit.ts 一致，這裡只
@@ -15,10 +14,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 照抄 computeCashFlowValuationFamilyPit.ts 既有寫入路徑的實際欄位選擇，驗證時發現
 // 用 pickNetIncome 會跟已寫入的值有微幅落差（2330 51.12 vs 51.13）才確認的。
 
-export const getFcfConversionRateProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getFcfConversionRateProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'fcfConversionRate', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -33,8 +32,8 @@ export const getFcfConversionRateProvenance = async (query: QuarterlyMetricQuery
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );

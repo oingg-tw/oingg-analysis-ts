@@ -1,8 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈涵蓋範圍——inventoryTurnover/receivablesTurnover/
 // fixedAssetTurnover/payablesTurnover 這 4 支周轉率共用完全同一組輸入（本季期末資產負債表
@@ -30,10 +29,10 @@ export interface TurnoverRatioProvenanceInputs {
   revenueTtmSum: bigint;
 }
 
-export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetricQuery): Promise<TurnoverRatioProvenanceInputs | null> => {
+export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<TurnoverRatioProvenanceInputs | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) return null;
 
@@ -43,11 +42,11 @@ export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetri
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const balanceSheet = await getQuarterlyBalanceSheet(key);
+  const balanceSheet = await deps.statements.getBalanceSheet(key);
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const ttmOperatingCosts = ttmRecords.map((record) => record?.operatingCost ?? null);

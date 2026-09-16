@@ -1,17 +1,17 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——cashToAssetsRatio(現金及約當現金占總資產比) =
 // 現金及約當現金 / 總資產 × 100。純資產負債表時點快照，只有 Q 一種 basis。
 
-export const getCashToAssetsRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getCashToAssetsRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'cashToAssetsRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -22,7 +22,7 @@ export const getCashToAssetsRatioProvenance = async (query: QuarterlyMetricQuery
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const value = cashAndEquivalents !== null && totalAssets !== null ? toPercent(cashAndEquivalents, totalAssets) : null;

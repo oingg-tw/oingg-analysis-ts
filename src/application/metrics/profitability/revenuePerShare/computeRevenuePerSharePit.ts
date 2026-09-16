@@ -9,4 +9,4 @@ export * from './computeRevenuePerShare';
 
 export type RevenuePerSharePitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteRevenuePerSharePit = runLegacyPit(computeRevenuePerShare);
+export const computeAndWriteRevenuePerSharePit = runLegacyPit(computeRevenuePerShare) as (query: Parameters<typeof computeRevenuePerShare>[0]) => Promise<RevenuePerSharePitOutcome>;

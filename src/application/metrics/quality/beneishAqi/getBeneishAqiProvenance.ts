@@ -1,15 +1,16 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveBeneishMScoreInputs } from '../beneishMScore/computeBeneishMScorePit';
+import { resolveBeneishMScoreInputs } from '../beneishMScore/computeBeneishMScore';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { BeneishAqiDeps } from './computeBeneishAqi';
 
 // 2026-09-13 使用者要求擴大稽核鏈——beneishAqi = 本期資產品質指標(=1-(流動資產+不動產
 // 廠房設備)/總資產) / 去年同期同一指標。是 beneishMScore 8 個變量之一，曝露成獨立
 // metric_code，共用同一個 resolveBeneishMScoreInputs（跟 computeBeneishAqiPit.ts 一致）。
 // 跟 beneishMScore 稽核鏈同樣的先例：不套用金融保險業排除，永遠顯示原始公式結果。
 
-export const getBeneishAqiProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
+export const getBeneishAqiProvenance = async (query: QuarterlyMetricQuery, deps: BeneishAqiDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveBeneishMScoreInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'beneishAqi', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

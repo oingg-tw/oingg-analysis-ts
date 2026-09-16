@@ -9,4 +9,4 @@ export * from './computeGreenblattRoc';
 
 export type GreenblattRocPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteGreenblattRocPit = runLegacyPit(computeGreenblattRoc);
+export const computeAndWriteGreenblattRocPit = runLegacyPit(computeGreenblattRoc) as (query: Parameters<typeof computeGreenblattRoc>[0]) => Promise<GreenblattRocPitOutcome>;

@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolvePiotroskiFScoreSignals } from './computePiotroskiFScorePit';
+import { resolvePiotroskiFScoreSignals, type PiotroskiFScoreDeps } from './computePiotroskiFScore';
 import { PIOTROSKI_GROUP_METADATA, PIOTROSKI_SIGNAL_LABELS, type PiotroskiGroupMetadata } from './piotroskiFScoreGroupMetadata';
 
 // 2026-09-10 web-nuxt 要求：依 Piotroski (2000) 原始論文的分組把 9 個訊號拆成 3 組顯示
@@ -44,8 +44,9 @@ export interface PiotroskiFScoreBreakdown {
   signalLabels: Readonly<Record<string, string>>;
 }
 
-export const getPiotroskiFScoreBreakdown = async (query: QuarterlyMetricQuery): Promise<PiotroskiFScoreBreakdown> => {
-  const resolution = await resolvePiotroskiFScoreSignals(query);
+// 2026-09-17 Phase 3：跟 computePiotroskiFScore 共用同一份 resolver，所以也收同一組 deps（controller 遷移期間綁 legacyPitDeps）。
+export const getPiotroskiFScoreBreakdown = async (query: QuarterlyMetricQuery, deps: PiotroskiFScoreDeps): Promise<PiotroskiFScoreBreakdown> => {
+  const resolution = await resolvePiotroskiFScoreSignals(query, deps);
 
   if (!resolution) {
     return {

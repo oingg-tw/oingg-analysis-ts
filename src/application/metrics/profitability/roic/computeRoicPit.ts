@@ -9,4 +9,4 @@ export * from './computeRoic';
 
 export type RoicPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteRoicPit = runLegacyPit(computeRoic);
+export const computeAndWriteRoicPit = runLegacyPit(computeRoic) as (query: Parameters<typeof computeRoic>[0]) => Promise<RoicPitOutcome>;

@@ -7,13 +7,14 @@ import { calculateReceivablesDays } from '../../../../domain/metrics/efficiency/
 import { calculateOperatingCycle } from '../../../../domain/metrics/efficiency/operatingCycle/calculateOperatingCycle';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——operatingCycle = DIO + DSO（不扣 DPO，跟
 // cashConversionCycle 差異是不考慮付款緩衝期），見 getCashConversionCycleProvenance.ts
 // 同一個模式的說明，只是少了應付帳款那組欄位。
 
-export const getOperatingCycleProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query);
+export const getOperatingCycleProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'operatingCycle', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

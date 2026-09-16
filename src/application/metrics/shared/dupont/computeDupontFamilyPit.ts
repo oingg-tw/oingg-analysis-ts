@@ -25,4 +25,4 @@ export interface DupontFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   dupontExtendedRoeTtm: BasisOutcome;
 }
 
-export const computeAndWriteDupontFamilyPit = runLegacyPit(computeDupontFamily);
+export const computeAndWriteDupontFamilyPit = runLegacyPit(computeDupontFamily) as (query: Parameters<typeof computeDupontFamily>[0]) => Promise<DupontFamilyPitOutcome>;

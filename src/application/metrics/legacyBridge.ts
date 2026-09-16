@@ -15,3 +15,16 @@ export const runLegacyPit =
   <Q, B extends { slots: Record<string, ComputationSlot> }>(compute: (query: Q, deps: PitDeps) => Promise<B>) =>
   async (query: Q): Promise<PersistedBatch<B>> =>
     persistComputations(await compute(query, legacyPitDeps), legacyPitDeps);
+
+// epsCagr/revenueCagr/dividendGrowthRate 三個「一個回溯窗口一個 metric_code」的 family，舊 outcome 把各窗口的
+// 結果巢狀在 `results` 底下（`{ symbol, rocYear, season, results: { epsCagr3y, epsCagr5y, ... } }`），
+// verifyMetricEquivalencePit 的 key 是 "results.epsCagr3y"——攤平後再包回去，舊形狀一個 byte 都不變。
+export const runLegacyPitNested =
+  <Q, B extends { slots: Record<string, ComputationSlot> }>(compute: (query: Q, deps: PitDeps) => Promise<B>, nestUnder: string) =>
+  async (query: Q): Promise<Omit<B, 'slots'> & Record<string, unknown>> => {
+    const batch = await compute(query, legacyPitDeps);
+    const persisted = (await persistComputations(batch, legacyPitDeps)) as Record<string, unknown>;
+    const { slots, ...context } = batch;
+    const nested = Object.fromEntries(Object.keys(slots).map((key) => [key, persisted[key]]));
+    return { ...context, [nestUnder]: nested } as Omit<B, 'slots'> & Record<string, unknown>;
+  };

@@ -9,4 +9,4 @@ export * from './computePretaxIncomePerShare';
 
 export type PretaxIncomePerSharePitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWritePretaxIncomePerSharePit = runLegacyPit(computePretaxIncomePerShare);
+export const computeAndWritePretaxIncomePerSharePit = runLegacyPit(computePretaxIncomePerShare) as (query: Parameters<typeof computePretaxIncomePerShare>[0]) => Promise<PretaxIncomePerSharePitOutcome>;

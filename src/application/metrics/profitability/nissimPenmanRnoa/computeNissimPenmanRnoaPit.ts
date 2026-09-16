@@ -9,4 +9,4 @@ export * from './computeNissimPenmanRnoa';
 
 export type NissimPenmanRnoaPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteNissimPenmanRnoaPit = runLegacyPit(computeNissimPenmanRnoa);
+export const computeAndWriteNissimPenmanRnoaPit = runLegacyPit(computeNissimPenmanRnoa) as (query: Parameters<typeof computeNissimPenmanRnoa>[0]) => Promise<NissimPenmanRnoaPitOutcome>;

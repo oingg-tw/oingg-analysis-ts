@@ -9,4 +9,4 @@ export * from './computeFamaFrenchOperatingProfitability';
 
 export type FamaFrenchOperatingProfitabilityPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteFamaFrenchOperatingProfitabilityPit = runLegacyPit(computeFamaFrenchOperatingProfitability);
+export const computeAndWriteFamaFrenchOperatingProfitabilityPit = runLegacyPit(computeFamaFrenchOperatingProfitability) as (query: Parameters<typeof computeFamaFrenchOperatingProfitability>[0]) => Promise<FamaFrenchOperatingProfitabilityPitOutcome>;

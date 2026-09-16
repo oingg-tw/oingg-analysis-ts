@@ -14,4 +14,4 @@ export interface MarginsFamilyPitOutcome extends QuarterlyPitOutcomeBase {
   operatingMarginTtm: BasisOutcome;
 }
 
-export const computeAndWriteMarginsFamilyPit = runLegacyPit(computeMarginsFamily);
+export const computeAndWriteMarginsFamilyPit = runLegacyPit(computeMarginsFamily) as (query: Parameters<typeof computeMarginsFamily>[0]) => Promise<MarginsFamilyPitOutcome>;

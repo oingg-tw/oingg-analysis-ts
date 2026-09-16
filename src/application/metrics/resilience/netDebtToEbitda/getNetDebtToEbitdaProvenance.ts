@@ -1,20 +1,18 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——netDebtToEbitda = 淨負債(本季期末快照) / EBITDA(TTM
 // 加總)。淨負債 = 有息負債(短期借款+應付公司債+長期借款) − 現金及約當現金；EBITDA =
 // 稅前淨利+財務費用+折舊+攤銷。跟 computeNetDebtToEbitdaPit.ts 的 TTM 版本一致，固定
 // 回傳 TTM。
 
-export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'netDebtToEbitda', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -25,7 +23,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery):
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
@@ -37,8 +35,8 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery):
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
       Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
       ])
     )
   );

@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveBeneishMScoreInputs, type QuarterData } from './computeBeneishMScorePit';
+import { resolveBeneishMScoreInputs, type QuarterData, type BeneishMScoreDeps } from './computeBeneishMScore';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
@@ -30,8 +30,8 @@ const buildQuarterEntries = (label: string, fiscalYear: number, fiscalQuarter: n
   { role: `${label}營業活動現金流`, fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'cashFlowStatement', fieldKey: 'cash_flows_from_used_in_operating_activities', sourceDescription: null, value: toProvenanceEntryValue(data.operatingCashFlow) },
 ];
 
-export const getBeneishMScoreProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
+export const getBeneishMScoreProvenance = async (query: QuarterlyMetricQuery, deps: BeneishMScoreDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveBeneishMScoreInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'beneishMScore', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

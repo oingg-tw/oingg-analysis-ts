@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——capexToOcfRatio = |近四季資本支出加總| / 近四季營業活動
 // 現金流加總 × 100。這支指標實際在 computeCashFlowValuationFamilyPit.ts 裡跟 evToOcf/
@@ -13,10 +13,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // OCF/資本支出兩個欄位）重新查一次，不引入不相關的完整度限制。現查現算不持久化，
 // 刻意不動家族編排檔案。固定回傳 TTM。
 
-export const getCapexToOcfRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getCapexToOcfRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'capexToOcfRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -29,7 +29,7 @@ export const getCapexToOcfRatioProvenance = async (query: QuarterlyMetricQuery):
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
   const ocfs = ttmRecords.map((record) => record?.netCashFromOperatingActivities ?? null);

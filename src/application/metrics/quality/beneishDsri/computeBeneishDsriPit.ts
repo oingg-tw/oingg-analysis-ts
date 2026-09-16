@@ -1,6 +1,11 @@
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveBeneishMScoreInputs, resolveVariableNullReason, type BasisOutcome } from '../beneishMScore/computeBeneishMScorePit';
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeBeneishDsri } from './computeBeneishDsri';
+import type { BasisOutcome } from '@/application/metrics/pitOutcome';
+
+// **暫時性 shim**（2026-09-17 Phase 3）：beneishDsri 的計算本體搬到 computeBeneishDsri.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteBeneishDsriPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeBeneishDsri';
 
 export interface BeneishDsriPitOutcome {
   symbol: string;
@@ -9,37 +14,4 @@ export interface BeneishDsriPitOutcome {
   q: BasisOutcome;
 }
 
-// 2026-09-13：DSRI 是 beneishMScore 8 個變量之一，曝露成獨立 metric_code——共用
-// resolveBeneishMScoreInputs()，不重新查財報、不重新推導公式，見 beneishDsriDefinition.ts
-// 的說明。
-export const computeAndWriteBeneishDsriPit = async (query: QuarterlyMetricQuery): Promise<BeneishDsriPitOutcome> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
-  if (!resolution) {
-    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
-  }
-
-  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, mainAnchor, dsri } = resolution;
-  const value = resolution.isFinancial ? null : dsri;
-  const nullReason = resolveVariableNullReason(dsri, resolution);
-
-  let q: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      symbol,
-      metricCode: 'beneishDsri',
-      fiscalYear,
-      fiscalQuarter,
-      dataType: query.dataType,
-      subsidiaryCompanyId: query.subsidiaryCompanyId,
-      ...periodTypeGroup('Q'),
-      value: value !== null ? Math.round(value * 10000) / 10000 : null,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
-
-  return { symbol, rocYear, season, q };
-};
+export const computeAndWriteBeneishDsriPit = runLegacyPit(computeBeneishDsri) as (query: Parameters<typeof computeBeneishDsri>[0]) => Promise<BeneishDsriPitOutcome>;

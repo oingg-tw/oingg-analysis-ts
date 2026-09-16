@@ -1,102 +1,12 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/application/metrics/shared/ports/financialDataPorts';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeFcfMargin } from './computeFcfMargin';
+import type { StandardBasisPitOutcome } from '@/application/metrics/pitOutcome';
 
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-
-// 量化選股盤點使用者要求新增。自由現金流 = 營業活動現金流 + 投資性資本支出
-// （capitalExpenditures 現金流量表原始科目已是負數），跟 ocfPerShare/fcfPerShare 同一套
-// FCF 定義，獨立重新計算不依賴其已寫入的值。只有 TTM 一種 basis。
+// **暫時性 shim**（2026-09-17 Phase 3）：fcfMargin 的計算本體搬到 computeFcfMargin.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteFcfMarginPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeFcfMargin';
 
 export type FcfMarginPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteFcfMarginPit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & CashFlowStatementPort = financialDataAdapter): Promise<FcfMarginPitOutcome> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
-
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, ttm: { action: 'skipped_no_quarter' } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
-
-  let revenueTtmSum = 0n;
-  let fcfTtmSum = 0n;
-  let ttmComplete = true;
-  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
-    if (
-      incomeRecord === null ||
-      cashFlowRecord === null ||
-      incomeRecord.operatingRevenue === null ||
-      cashFlowRecord.netCashFromOperatingActivities === null ||
-      cashFlowRecord.capitalExpenditures === null
-    ) {
-      ttmComplete = false;
-    } else {
-      revenueTtmSum += incomeRecord.operatingRevenue;
-      fcfTtmSum += cashFlowRecord.netCashFromOperatingActivities + cashFlowRecord.capitalExpenditures;
-    }
-  }
-
-  const ttmValue = ttmComplete ? toPercent(fcfTtmSum, revenueTtmSum) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(fcfTtmSum, revenueTtmSum) : 'insufficient_history';
-
-  const coordinateBase = { symbol, metricCode: 'fcfMargin', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  let ttm: BasisOutcome;
-  if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
-    );
-    if (!ttmAnchor) {
-      ttm = { action: 'skipped_no_knowledge_date' };
-    } else {
-      ttm = await writeMetricValue({
-        ...coordinateBase,
-        ...periodTypeGroup('TTM'),
-        value: ttmValue,
-        nullReason: ttmNullReason,
-        knowledgeDate: ttmAnchor.knowledgeDate,
-        knowledgeDateIsFallback: ttmAnchor.isFallback,
-      });
-    }
-  } else {
-    const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-    const currentIncome = await statements.getIncomeStatement(key);
-    const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: currentIncome?.reportDate ?? null }]);
-    if (!mainAnchor) {
-      ttm = { action: 'skipped_no_knowledge_date' };
-    } else {
-      ttm = await writeMetricValue({
-        ...coordinateBase,
-        ...periodTypeGroup('TTM'),
-        value: null,
-        nullReason: 'insufficient_history',
-        knowledgeDate: mainAnchor.knowledgeDate,
-        knowledgeDateIsFallback: mainAnchor.isFallback,
-      });
-    }
-  }
-
-  return { symbol, rocYear: year, season, ttm };
-};
+export const computeAndWriteFcfMarginPit = runLegacyPit(computeFcfMargin) as (query: Parameters<typeof computeFcfMargin>[0]) => Promise<FcfMarginPitOutcome>;

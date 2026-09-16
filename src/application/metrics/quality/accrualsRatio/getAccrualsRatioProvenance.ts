@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveAccrualsRatioInputs } from './computeAccrualsRatioPit';
+import { resolveAccrualsRatioInputs, type AccrualsRatioDeps } from './computeAccrualsRatio';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點，見 pilot 擴大範圍的說明）：GET /companies/:symbol/
@@ -12,8 +12,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // statementField，只有極少數原生欄位仍缺漏、退回會計恆等式反推的情況才標記 type:'other'。
 
 
-export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveAccrualsRatioInputs(query);
+export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery, deps: AccrualsRatioDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveAccrualsRatioInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'accrualsRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

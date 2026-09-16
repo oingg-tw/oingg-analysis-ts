@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
 import { absBigint } from '@/domain/metrics/shared/numericHelpers';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——abnormalCapexRatio（Titman, Wei & Xie 2004）=
 // 最近完整會計年度資本支出(取絕對值) / 前三年資本支出(取絕對值)平均 - 1，再乘 100。
@@ -20,12 +20,13 @@ const getAnnualCapex = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string
+  subsidiaryCompanyId: string,
+  deps: Pick<PitDeps, 'statements'>
 ): Promise<AnnualCapexResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => getQuarterlyCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
+    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
   const hasAll = quarters.every((q) => q !== null && q.capitalExpenditures !== null);
   const quarterlySum = hasAll ? quarters.reduce((sum, q) => sum! + q!.capitalExpenditures!, 0n) : null;
@@ -34,10 +35,10 @@ const getAnnualCapex = async (
   return result;
 };
 
-export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'abnormalCapexRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -51,9 +52,9 @@ export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuer
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, AnnualCapexResult>();
 
-  const current = await getAnnualCapex(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId);
+  const current = await getAnnualCapex(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
   const priorYears = [1, 2, 3].map((yearsAgo) => latestCompleteFiscalYear - yearsAgo);
-  const priors = await Promise.all(priorYears.map((y) => getAnnualCapex(cache, symbol, y, dataType, subsidiaryCompanyId)));
+  const priors = await Promise.all(priorYears.map((y) => getAnnualCapex(cache, symbol, y, dataType, subsidiaryCompanyId, deps)));
 
   let value: number | null = null;
   if (current.capex !== null && !priors.some((p) => p.capex === null)) {

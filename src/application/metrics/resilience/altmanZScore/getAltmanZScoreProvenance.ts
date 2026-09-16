@@ -1,5 +1,5 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveAltmanZScoreInputs } from './computeAltmanZScorePit';
+import { resolveAltmanZScoreInputs, type AltmanZScoreDeps } from './computeAltmanZScore';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
@@ -9,8 +9,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // X1/X2/X3/X5 的分母，只列一次（role 講清楚它被用在哪幾個係數），不重複四次。
 
 
-export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveAltmanZScoreInputs(query);
+export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery, deps: AltmanZScoreDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveAltmanZScoreInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'altmanZScore', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

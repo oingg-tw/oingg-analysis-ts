@@ -3,12 +3,13 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateFixedAssetTurnover } from '../../../../domain/metrics/efficiency/fixedAssetTurnover/calculateFixedAssetTurnover';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——fixedAssetTurnover = 營收(TTM) / 本季期末不動產廠房
 // 及設備，見 resolveTurnoverRatioProvenanceInputs.ts 的共用查詢說明。固定回傳 TTM。
 
-export const getFixedAssetTurnoverProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query);
+export const getFixedAssetTurnoverProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'fixedAssetTurnover', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

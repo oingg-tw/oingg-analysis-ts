@@ -1,0 +1,116 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
+import { pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
+import { periodTypeGroup } from '@/domain/metrics/coordinate';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import type { PitDeps } from '@/application/metrics/deps';
+
+// 這份檔案是 src/domainMetrics/ownerEarnings.ts 的獨立重新實作。股東盈餘 = 淨利+折舊+攤銷
+// +資本支出（資本支出來源資料是負值/流出，用加法），結構跟 eps/revenuePerShare 一樣，只是
+// 分子組成不同。
+
+
+export type OwnerEarningsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+
+export type OwnerEarningsComputationBatch = ComputationBatch<'q' | 'ttm'>;
+
+export const computeOwnerEarnings = async (query: QuarterlyMetricQuery, deps: OwnerEarningsDeps): Promise<OwnerEarningsComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement'], deps.quarters);
+
+  if (!resolvedQuarter) {
+    return noQuarterBatch(symbol, ['q', 'ttm']);
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const [incomeStatement, cashFlowStatement] = await Promise.all([deps.statements.getIncomeStatement(key), deps.statements.getCashFlowStatement(key)]);
+  const netIncome = pickNetIncome(incomeStatement);
+  const depreciation = cashFlowStatement?.depreciation ?? null;
+  const amortization = cashFlowStatement?.amortization ?? null;
+  const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
+  const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
+
+  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
+  const sharesValue = shares?.paidInShares ?? null;
+
+  const currentOwnerEarnings =
+    netIncome.value !== null && depreciation !== null && amortization !== null && capitalExpenditures !== null
+      ? netIncome.value + depreciation + amortization + capitalExpenditures
+      : null;
+
+  const quarterly = currentOwnerEarnings !== null && sharesValue !== null ? toPerShare(currentOwnerEarnings, sharesValue) : null;
+  const quarterlyNullReason: MetricNullReason | null = quarterly === null ? determineNullReason(currentOwnerEarnings, sharesValue) : null;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'ownerEarnings', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
+
+  // TTM：各分項（淨利、折舊+攤銷、資本支出）各自加總近四季（含本季），全部齊全才算。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map((tq) =>
+      Promise.all([
+        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
+      ])
+    )
+  );
+
+  let ownerEarningsTtmSum = 0n;
+  let ttmComplete = true;
+  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
+    const picked = pickNetIncome(incomeRecord);
+    if (picked.value === null || cashFlowRecord === null || cashFlowRecord.depreciation === null || cashFlowRecord.amortization === null || cashFlowRecord.capitalExpenditures === null) {
+      ttmComplete = false;
+    } else {
+      ownerEarningsTtmSum += picked.value + cashFlowRecord.depreciation + cashFlowRecord.amortization + cashFlowRecord.capitalExpenditures;
+    }
+  }
+
+  const ttmValue = ttmComplete && sharesValue !== null ? toPerShare(ownerEarningsTtmSum, sharesValue) : null;
+  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(ownerEarningsTtmSum, sharesValue) : 'insufficient_history';
+
+  let ttm: ComputationSlot;
+  if (ttmComplete) {
+    const ttmAnchor = await resolveKnowledgeDate(
+      symbol,
+      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null })), deps.announcements
+    );
+    if (!ttmAnchor) {
+      ttm = { action: 'skipped_no_knowledge_date' };
+    } else {
+      ttm = computation({
+        ...coordinateBase,
+        ...periodTypeGroup('TTM'),
+        value: ttmValue,
+        nullReason: ttmNullReason,
+        knowledgeDate: ttmAnchor.knowledgeDate,
+        knowledgeDateIsFallback: ttmAnchor.isFallback,
+      });
+    }
+  } else if (mainAnchor) {
+    ttm = computation({
+      ...coordinateBase,
+      ...periodTypeGroup('TTM'),
+      value: null,
+      nullReason: 'insufficient_history',
+      knowledgeDate: mainAnchor.knowledgeDate,
+      knowledgeDateIsFallback: mainAnchor.isFallback,
+    });
+  } else {
+    ttm = { action: 'skipped_no_knowledge_date' };
+  }
+
+  return { symbol, rocYear: year, season, slots: { q, ttm } };
+};

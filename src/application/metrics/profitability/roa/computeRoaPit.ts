@@ -9,4 +9,4 @@ export * from './computeRoa';
 
 export type RoaPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteRoaPit = runLegacyPit(computeRoa);
+export const computeAndWriteRoaPit = runLegacyPit(computeRoa) as (query: Parameters<typeof computeRoa>[0]) => Promise<RoaPitOutcome>;

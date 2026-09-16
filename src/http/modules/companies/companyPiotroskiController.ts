@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getPiotroskiFScoreBreakdown } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreBreakdown';
+import { legacyPitDeps } from '@/application/metrics/legacyBridge';
 
 export const getCompanyPiotroskiBreakdownQuerySchema = z
   .object({
@@ -31,7 +32,8 @@ export const getCompanyPiotroskiBreakdown = async (req: Request, res: Response, 
     }
 
     const { symbol, year, season } = validationResult.data;
-    const breakdown = await getPiotroskiFScoreBreakdown({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+    // Phase 3 遷移期間先綁 legacyPitDeps；Phase 4 改收 bootstrap 綁定好的 use case。
+    const breakdown = await getPiotroskiFScoreBreakdown({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' }, legacyPitDeps);
     res.status(200).json(breakdown);
   } catch (error) {
     next(error);

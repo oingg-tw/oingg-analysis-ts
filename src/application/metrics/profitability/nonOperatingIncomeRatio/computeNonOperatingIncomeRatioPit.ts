@@ -9,4 +9,4 @@ export * from './computeNonOperatingIncomeRatio';
 
 export type NonOperatingIncomeRatioPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteNonOperatingIncomeRatioPit = runLegacyPit(computeNonOperatingIncomeRatio);
+export const computeAndWriteNonOperatingIncomeRatioPit = runLegacyPit(computeNonOperatingIncomeRatio) as (query: Parameters<typeof computeNonOperatingIncomeRatio>[0]) => Promise<NonOperatingIncomeRatioPitOutcome>;

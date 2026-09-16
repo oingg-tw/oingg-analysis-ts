@@ -1,6 +1,11 @@
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveBeneishMScoreInputs, resolveVariableNullReason, type BasisOutcome } from '../beneishMScore/computeBeneishMScorePit';
-import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeBeneishAqi } from './computeBeneishAqi';
+import type { BasisOutcome } from '@/application/metrics/pitOutcome';
+
+// **暫時性 shim**（2026-09-17 Phase 3）：beneishAqi 的計算本體搬到 computeBeneishAqi.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteBeneishAqiPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeBeneishAqi';
 
 export interface BeneishAqiPitOutcome {
   symbol: string;
@@ -9,37 +14,4 @@ export interface BeneishAqiPitOutcome {
   q: BasisOutcome;
 }
 
-// 2026-09-13：AQI 是 beneishMScore 8 個變量之一，曝露成獨立 metric_code——共用
-// resolveBeneishMScoreInputs()，不重新查財報、不重新推導公式，見 beneishAqiDefinition.ts
-// 的說明。
-export const computeAndWriteBeneishAqiPit = async (query: QuarterlyMetricQuery): Promise<BeneishAqiPitOutcome> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
-  if (!resolution) {
-    return { symbol: query.symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
-  }
-
-  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, mainAnchor, aqi } = resolution;
-  const value = resolution.isFinancial ? null : aqi;
-  const nullReason = resolveVariableNullReason(aqi, resolution);
-
-  let q: BasisOutcome;
-  if (!mainAnchor) {
-    q = { action: 'skipped_no_knowledge_date' };
-  } else {
-    q = await writeMetricValue({
-      symbol,
-      metricCode: 'beneishAqi',
-      fiscalYear,
-      fiscalQuarter,
-      dataType: query.dataType,
-      subsidiaryCompanyId: query.subsidiaryCompanyId,
-      ...periodTypeGroup('Q'),
-      value: value !== null ? Math.round(value * 10000) / 10000 : null,
-      nullReason,
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  }
-
-  return { symbol, rocYear, season, q };
-};
+export const computeAndWriteBeneishAqiPit = runLegacyPit(computeBeneishAqi) as (query: Parameters<typeof computeBeneishAqi>[0]) => Promise<BeneishAqiPitOutcome>;

@@ -9,4 +9,4 @@ export * from './computeOneDollarTest';
 
 export type OneDollarTestPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteOneDollarTestPit = runLegacyPit(computeOneDollarTest);
+export const computeAndWriteOneDollarTestPit = runLegacyPit(computeOneDollarTest) as (query: Parameters<typeof computeOneDollarTest>[0]) => Promise<OneDollarTestPitOutcome>;

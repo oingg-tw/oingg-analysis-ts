@@ -1,15 +1,16 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveBeneishMScoreInputs } from '../beneishMScore/computeBeneishMScorePit';
+import { resolveBeneishMScoreInputs } from '../beneishMScore/computeBeneishMScore';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { BeneishDsriDeps } from './computeBeneishDsri';
 
 // 2026-09-13 使用者要求擴大稽核鏈——beneishDsri = 本期(應收帳款/營收) / 去年同期
 // (應收帳款/營收)。是 beneishMScore 8 個變量之一，曝露成獨立 metric_code，共用同一個
 // resolveBeneishMScoreInputs（跟 computeBeneishDsriPit.ts 一致）。跟 beneishMScore
 // 稽核鏈同樣的先例：不套用金融保險業排除，永遠顯示原始公式結果。
 
-export const getBeneishDsriProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveBeneishMScoreInputs(query);
+export const getBeneishDsriProvenance = async (query: QuarterlyMetricQuery, deps: BeneishDsriDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveBeneishMScoreInputs(query, deps);
 
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'beneishDsri', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };

@@ -2,13 +2,14 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateQuickRatio } from '../../../../domain/metrics/resilience/quickRatio/calculateQuickRatio';
 import { resolveLiquidityRatioProvenanceInputs } from '../liquidityRatio/resolveLiquidityRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——quickRatio(速動比率) = (流動資產−存貨) / 流動負債 × 100，
 // 純資產負債表時點快照，只有 Q 一種 basis。共用 resolveLiquidityRatioProvenanceInputs，
 // 稽核鏈分開列出流動資產/存貨/流動負債三筆原始欄位，不是只列相減後的速動資產。
 
-export const getQuickRatioProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveLiquidityRatioProvenanceInputs(query);
+export const getQuickRatioProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveLiquidityRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'quickRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

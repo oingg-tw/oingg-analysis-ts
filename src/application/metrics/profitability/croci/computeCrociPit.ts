@@ -9,4 +9,4 @@ export * from './computeCroci';
 
 export type CrociPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteCrociPit = runLegacyPit(computeCroci);
+export const computeAndWriteCrociPit = runLegacyPit(computeCroci) as (query: Parameters<typeof computeCroci>[0]) => Promise<CrociPitOutcome>;

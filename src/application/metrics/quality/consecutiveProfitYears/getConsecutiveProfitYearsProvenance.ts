@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
 import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——consecutiveProfitYears = 從最近一個完整會計年度往回
 // 數，逐年檢查「該年 4 季淨利加總是否為正」，遇到非正或缺資料就停止，回傳連續年數。跟
@@ -14,10 +14,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 
 const MAX_LOOKBACK_YEARS = 30;
 
-export const getConsecutiveProfitYearsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getConsecutiveProfitYearsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'consecutiveProfitYears', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -38,7 +38,7 @@ export const getConsecutiveProfitYearsProvenance = async (query: QuarterlyMetric
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
     const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
     const records = await Promise.all(
-      yearQuarters.map((q) => getQuarterlyIncomeStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
+      yearQuarters.map((q) => deps.statements.getIncomeStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
     );
 
     if (records.some((r) => r === null || pickNetIncome(r) === null)) break;

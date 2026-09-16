@@ -9,4 +9,4 @@ export * from './computeEps';
 
 export type EpsPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteEpsPit = runLegacyPit(computeEps);
+export const computeAndWriteEpsPit = runLegacyPit(computeEps) as (query: Parameters<typeof computeEps>[0]) => Promise<EpsPitOutcome>;

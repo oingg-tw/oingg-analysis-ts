@@ -1,19 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 長期負債 = 長期借款 + 應付公司債（非流動部分），刻意不含短期借款（跟 deRatio 的「有息
 // 負債」不同組合，見 computeLongTermDebtToNetCurrentAssetsPit.ts 的說明）。淨流動資產 =
 // 流動資產 - 流動負債，<=0 時 value 是 null（zero_or_negative_denominator）。純資產負債表
 // 時點快照，只有 Q 一種 basis。
 
-export const getLongTermDebtToNetCurrentAssetsProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
+export const getLongTermDebtToNetCurrentAssetsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
     return { symbol, metricCode: 'longTermDebtToNetCurrentAssets', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
@@ -24,7 +24,7 @@ export const getLongTermDebtToNetCurrentAssetsProvenance = async (query: Quarter
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermDebt = balanceSheet ? (longTermBorrowings ?? 0n) + (bondsPayable ?? 0n) : null;

@@ -8,4 +8,4 @@ import type { StandardBasisPitOutcome } from '../../pitOutcome';
 // 時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
 export type RoePitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteRoePit = runLegacyPit(computeRoe);
+export const computeAndWriteRoePit = runLegacyPit(computeRoe) as (query: Parameters<typeof computeRoe>[0]) => Promise<RoePitOutcome>;

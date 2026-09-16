@@ -9,4 +9,4 @@ export * from './computeRoce';
 
 export type RocePitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteRocePit = runLegacyPit(computeRoce);
+export const computeAndWriteRocePit = runLegacyPit(computeRoce) as (query: Parameters<typeof computeRoce>[0]) => Promise<RocePitOutcome>;

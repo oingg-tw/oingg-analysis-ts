@@ -4,12 +4,13 @@ import { calculateReceivablesTurnover } from '../../../../domain/metrics/efficie
 import { calculateReceivablesDays } from '../../../../domain/metrics/efficiency/receivablesDays/calculateReceivablesDays';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——receivablesDays(DSO) = 365 / 應收帳款周轉率(TTM)，
 // 是 receivablesTurnover 的衍生轉換，見 getInventoryDaysProvenance.ts 同一個模式的說明。
 
-export const getReceivablesDaysProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query);
+export const getReceivablesDaysProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'receivablesDays', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

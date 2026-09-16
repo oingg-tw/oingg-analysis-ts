@@ -9,6 +9,7 @@ import { calculatePayablesDays } from '../../../../domain/metrics/efficiency/pay
 import { calculateCashConversionCycle } from '../../../../domain/metrics/efficiency/cashConversionCycle/calculateCashConversionCycle';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——cashConversionCycle(CCC) = DIO + DSO − DPO，是三支
 // 天數指標（各自又是對應周轉率的衍生轉換）的二階衍生值，見 getInventoryDaysProvenance.ts
@@ -16,8 +17,8 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 // 存貨/應收帳款/應付帳款），methodologyNote 說明完整的推導鏈。共用
 // resolveTurnoverRatioProvenanceInputs（一次查詢就有齊全部 5 個欄位）。
 
-export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query);
+export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'cashConversionCycle', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

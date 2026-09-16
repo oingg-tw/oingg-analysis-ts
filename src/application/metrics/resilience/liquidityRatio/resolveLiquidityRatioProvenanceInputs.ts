@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——currentRatio/quickRatio/cashRatio 三支都是純資產負債表
 // 時點快照（只有 Q 一種 basis，沒有 TTM 概念，見 computeLiquidityRatioPit.ts 的編排說明），
@@ -17,10 +17,10 @@ export interface LiquidityRatioProvenanceInputs {
   cashAndEquivalents: bigint | null;
 }
 
-export const resolveLiquidityRatioProvenanceInputs = async (query: QuarterlyMetricQuery): Promise<LiquidityRatioProvenanceInputs | null> => {
+export const resolveLiquidityRatioProvenanceInputs = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<LiquidityRatioProvenanceInputs | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) return null;
 
@@ -29,7 +29,7 @@ export const resolveLiquidityRatioProvenanceInputs = async (query: QuarterlyMetr
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const balanceSheet = await getQuarterlyBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
 
   return {
     symbol,

@@ -558,6 +558,7 @@ const rewriteCompute = (original: string): ComputeRewrite => {
 
 const buildShim = (metricName: string, computeName: string, oldFunctionName: string, extras: string[], newFileBase: string): string => {
   const pitOutcomeImports = ['StandardBasisPitOutcome', 'QuarterlyPitOutcomeBase', 'BasisOutcome'].filter((name) => extras.some((e) => new RegExp(`\\b${name}\\b`).test(e)));
+  const outcomeTypeName = extras.map((e) => /export (?:type|interface) (\w+)/.exec(e)?.[1]).find(Boolean) ?? null;
   return [
     `import { runLegacyPit } from '@/application/metrics/legacyBridge';`,
     `import { ${computeName} } from './${newFileBase}';`,
@@ -570,7 +571,11 @@ const buildShim = (metricName: string, computeName: string, oldFunctionName: str
     '',
     ...extras.map((e) => e.trim()),
     ...(extras.length > 0 ? [''] : []),
-    `export const ${oldFunctionName} = runLegacyPit(${computeName});`,
+    // 連舊的回傳「型別」也保留（StandardBasisPitOutcome 的 q/ttm/fy 都是選填，scripts 有讀不存在欄位的寫法，
+    // 精確的 PersistedBatch 型別會讓它們編不過）。
+    outcomeTypeName
+      ? `export const ${oldFunctionName} = runLegacyPit(${computeName}) as (query: Parameters<typeof ${computeName}>[0]) => Promise<${outcomeTypeName}>;`
+      : `export const ${oldFunctionName} = runLegacyPit(${computeName});`,
     '',
   ].join('\n');
 };
@@ -652,6 +657,8 @@ const rewriteProvenance = (original: string, computeFileBase: string | null, dep
       if (!arrow) continue;
       const params = arrow.getParameters();
       if (params.some((p) => p.getName() === 'deps')) continue;
+      // 只有本體真的用到 deps 的函式才加參數——同檔匯出的純 helper（growthPct 之類）不能被塞一個沒人用的參數。
+      if (!/\bdeps\b/.test(arrow.getBody().getText())) continue;
       const last = params[params.length - 1];
       if (!last) {
         manual.push(`${decl.getName()} 沒有參數，deps 要手動加`);

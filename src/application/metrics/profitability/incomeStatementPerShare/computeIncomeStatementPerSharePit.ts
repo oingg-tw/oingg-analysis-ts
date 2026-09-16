@@ -14,4 +14,4 @@ export interface IncomeStatementPerSharePitOutcome extends QuarterlyPitOutcomeBa
   operatingIncomePerShareTtm: BasisOutcome;
 }
 
-export const computeAndWriteIncomeStatementPerSharePit = runLegacyPit(computeIncomeStatementPerShare);
+export const computeAndWriteIncomeStatementPerSharePit = runLegacyPit(computeIncomeStatementPerShare) as (query: Parameters<typeof computeIncomeStatementPerShare>[0]) => Promise<IncomeStatementPerSharePitOutcome>;

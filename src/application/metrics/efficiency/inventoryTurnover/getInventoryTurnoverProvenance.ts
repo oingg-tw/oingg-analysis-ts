@@ -3,12 +3,13 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateInventoryTurnover } from '../../../../domain/metrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——inventoryTurnover = 營業成本(TTM) / 本季期末存貨，
 // 見 resolveTurnoverRatioProvenanceInputs.ts 的共用查詢說明。固定回傳 TTM。
 
-export const getInventoryTurnoverProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query);
+export const getInventoryTurnoverProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'inventoryTurnover', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }

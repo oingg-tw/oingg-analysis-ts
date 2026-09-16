@@ -1,116 +1,12 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { runLegacyPit } from '@/application/metrics/legacyBridge';
+import { computeOwnerEarnings } from './computeOwnerEarnings';
+import type { StandardBasisPitOutcome } from '@/application/metrics/pitOutcome';
 
-import { writeOrSkip, writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
-import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
-import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-
-// 這份檔案是 src/domainMetrics/ownerEarnings.ts 的獨立重新實作。股東盈餘 = 淨利+折舊+攤銷
-// +資本支出（資本支出來源資料是負值/流出，用加法），結構跟 eps/revenuePerShare 一樣，只是
-// 分子組成不同。
+// **暫時性 shim**（2026-09-17 Phase 3）：ownerEarnings 的計算本體搬到 computeOwnerEarnings.ts（純計算、deps 注入），這裡只保留舊名稱
+// computeAndWriteOwnerEarningsPit(query) 給 scripts/ 跟既有整合測試用，回傳形狀跟以前完全一樣（persistComputations 攤平後的結果）。
+// Phase 3 收尾時 scripts 改 import bootstrap 綁定好的版本，這支檔案刪除。
+export * from './computeOwnerEarnings';
 
 export type OwnerEarningsPitOutcome = StandardBasisPitOutcome;
 
-export const computeAndWriteOwnerEarningsPit = async (query: QuarterlyMetricQuery): Promise<OwnerEarningsPitOutcome> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement']);
-
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [incomeStatement, cashFlowStatement] = await Promise.all([getQuarterlyIncomeStatement(key), getQuarterlyCashFlowStatement(key)]);
-  const netIncome = pickNetIncome(incomeStatement);
-  const depreciation = cashFlowStatement?.depreciation ?? null;
-  const amortization = cashFlowStatement?.amortization ?? null;
-  const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
-  const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
-
-  const shares = reportDate ? await getPaidInSharesAsOf(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
-
-  const currentOwnerEarnings =
-    netIncome.value !== null && depreciation !== null && amortization !== null && capitalExpenditures !== null
-      ? netIncome.value + depreciation + amortization + capitalExpenditures
-      : null;
-
-  const quarterly = currentOwnerEarnings !== null && sharesValue !== null ? toPerShare(currentOwnerEarnings, sharesValue) : null;
-  const quarterlyNullReason: MetricNullReason | null = quarterly === null ? determineNullReason(currentOwnerEarnings, sharesValue) : null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
-  const coordinateBase = { symbol, metricCode: 'ownerEarnings', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
-
-  // TTM：各分項（淨利、折舊+攤銷、資本支出）各自加總近四季（含本季），全部齊全才算。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        getQuarterlyIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        getQuarterlyCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
-
-  let ownerEarningsTtmSum = 0n;
-  let ttmComplete = true;
-  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
-    const picked = pickNetIncome(incomeRecord);
-    if (picked.value === null || cashFlowRecord === null || cashFlowRecord.depreciation === null || cashFlowRecord.amortization === null || cashFlowRecord.capitalExpenditures === null) {
-      ttmComplete = false;
-    } else {
-      ownerEarningsTtmSum += picked.value + cashFlowRecord.depreciation + cashFlowRecord.amortization + cashFlowRecord.capitalExpenditures;
-    }
-  }
-
-  const ttmValue = ttmComplete && sharesValue !== null ? toPerShare(ownerEarningsTtmSum, sharesValue) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(ownerEarningsTtmSum, sharesValue) : 'insufficient_history';
-
-  let ttm: BasisOutcome;
-  if (ttmComplete) {
-    const ttmAnchor = await resolveKnowledgeDate(
-      symbol,
-      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]![0]?.reportDate ?? null }))
-    );
-    if (!ttmAnchor) {
-      ttm = { action: 'skipped_no_knowledge_date' };
-    } else {
-      ttm = await writeMetricValue({
-        ...coordinateBase,
-        ...periodTypeGroup('TTM'),
-        value: ttmValue,
-        nullReason: ttmNullReason,
-        knowledgeDate: ttmAnchor.knowledgeDate,
-        knowledgeDateIsFallback: ttmAnchor.isFallback,
-      });
-    }
-  } else if (mainAnchor) {
-    ttm = await writeMetricValue({
-      ...coordinateBase,
-      ...periodTypeGroup('TTM'),
-      value: null,
-      nullReason: 'insufficient_history',
-      knowledgeDate: mainAnchor.knowledgeDate,
-      knowledgeDateIsFallback: mainAnchor.isFallback,
-    });
-  } else {
-    ttm = { action: 'skipped_no_knowledge_date' };
-  }
-
-  return { symbol, rocYear: year, season, q, ttm };
-};
+export const computeAndWriteOwnerEarningsPit = runLegacyPit(computeOwnerEarnings) as (query: Parameters<typeof computeOwnerEarnings>[0]) => Promise<OwnerEarningsPitOutcome>;

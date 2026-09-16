@@ -1,10 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——financialLeverageDegree(DFL)/totalLeverageDegree(DTL)
 // 都是「本季 vs 去年同季」的 YoY 比較，且都需要先組出 EPS（淨利/流通股數）當分子，
@@ -32,10 +31,10 @@ export interface LeverageDegreeProvenanceInputs {
   prior: QuarterSnapshot;
 }
 
-export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetricQuery): Promise<LeverageDegreeProvenanceInputs | null> => {
+export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<LeverageDegreeProvenanceInputs | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) return null;
 
@@ -45,11 +44,11 @@ export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetr
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const currentIncomeStatement = await getQuarterlyIncomeStatement(key);
+  const currentIncomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = currentIncomeStatement?.reportDate ?? null;
 
   const priorQuarter = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await getQuarterlyIncomeStatement({
+  const priorIncomeStatement = await deps.statements.getIncomeStatement({
     symbol,
     year: Number(priorQuarter.year),
     quarter: Number(priorQuarter.season),
@@ -58,8 +57,8 @@ export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetr
   });
 
   const [currentShares, priorShares] = await Promise.all([
-    reportDate ? getPaidInSharesAsOf(symbol, reportDate) : null,
-    priorIncomeStatement?.reportDate ? getPaidInSharesAsOf(symbol, priorIncomeStatement.reportDate) : null,
+    reportDate ? deps.shares.getPaidInShares(symbol, reportDate) : null,
+    priorIncomeStatement?.reportDate ? deps.shares.getPaidInShares(symbol, priorIncomeStatement.reportDate) : null,
   ]);
 
   const currentNetIncome = pickNetIncome(currentIncomeStatement);

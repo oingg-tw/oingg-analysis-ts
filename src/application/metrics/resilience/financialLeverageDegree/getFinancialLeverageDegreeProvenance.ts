@@ -1,6 +1,7 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveLeverageDegreeProvenanceInputs, growthPct, type QuarterSnapshot } from '../leverageDegreeFamily/resolveLeverageDegreeProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——financialLeverageDegree(DFL) = EPS 年增率 ÷ EBIT(=營業
 // 利益)年增率，本季 vs 去年同季。共用 resolveLeverageDegreeProvenanceInputs。
@@ -38,8 +39,8 @@ const buildQuarterEntries = (snapshot: QuarterSnapshot, label: string): Provenan
   },
 ];
 
-export const getFinancialLeverageDegreeProvenance = async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveLeverageDegreeProvenanceInputs(query);
+export const getFinancialLeverageDegreeProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveLeverageDegreeProvenanceInputs(query, deps);
   if (!resolution) {
     return { symbol: query.symbol, metricCode: 'financialLeverageDegree', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
