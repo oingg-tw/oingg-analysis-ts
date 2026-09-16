@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteZmijewskiScorePit } from '@/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
+import { computeAndWriteZmijewskiScorePit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';

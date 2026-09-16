@@ -8,8 +8,7 @@
 // 做「該日期或之前」最新一筆的查詢（剛好對到精確日期本身，等於直接抓那天的值）。
 //
 // 用法：pnpm tsx scripts/backfillMarketRatiosPit.ts
-
-import { computeAndWriteMarketRatiosPit } from '../src/application/metrics/shared/marketRatios/computeMarketRatiosPit';
+import { computeAndWriteMarketRatiosPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

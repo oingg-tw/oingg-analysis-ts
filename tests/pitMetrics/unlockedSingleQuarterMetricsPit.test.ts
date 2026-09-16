@@ -1,8 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteNonOperatingIncomeRatioPit } from '@/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
-import { computeAndWriteEquityRatioPit } from '@/application/metrics/resilience/equityRatio/computeEquityRatioPit';
-import { computeAndWriteCashToAssetsRatioPit } from '@/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
+import { computeAndWriteCashToAssetsRatioPit, computeAndWriteEquityRatioPit, computeAndWriteNonOperatingIncomeRatioPit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';

@@ -10,8 +10,7 @@
 // MarketRatios 那支慢很多——這是 Beta 計算本身的成本，不是腳本寫法的問題。
 //
 // 用法：pnpm tsx scripts/backfillBetaPit.ts
-
-import { computeAndWriteBetaPit } from '../src/application/metrics/valuation/beta/computeBetaPit';
+import { computeAndWriteBetaPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWritePbRatioPit } from '@/application/metrics/valuation/pbRatio/computePbRatioPit';
+import { computeAndWritePbRatioPit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';

@@ -6,10 +6,7 @@
 // 之後要更新只要重跑這支腳本，不需要額外參數）。
 //
 // 用法：pnpm tsx scripts/backfillLiveValuationMetricsFullMarketPit.ts
-
-import { computeAndWriteLiveGrahamNumberPit } from '../src/application/metrics/valuation/liveGrahamNumber/computeLiveGrahamNumberPit';
-import { computeAndWriteLivePegRatioPit } from '../src/application/metrics/valuation/livePegRatio/computeLivePegRatioPit';
-import { computeAndWriteLiveMarketCapPit } from '../src/application/metrics/valuation/liveMarketCap/computeLiveMarketCapPit';
+import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePegRatioPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

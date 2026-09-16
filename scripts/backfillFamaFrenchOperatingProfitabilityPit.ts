@@ -1,8 +1,7 @@
 // 2026-09-10 使用者要求：Fama-French RMW 因子背後的單一公司營業獲利力比率。只回補 2330 最新一筆驗證。
 //
 // 用法：pnpm tsx scripts/backfillFamaFrenchOperatingProfitabilityPit.ts
-
-import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
+import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

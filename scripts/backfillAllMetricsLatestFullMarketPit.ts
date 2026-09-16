@@ -58,9 +58,42 @@ const getBankSymbols = async (): Promise<string[]> => {
   return rows.map((r) => r.symbol);
 };
 
-const computeGeneralSymbol = (symbol: string): Promise<{ failures: { label: string; error: unknown }[] }> => runTasks(buildGeneralTasks(symbol));
+type SymbolResult = { failures: { label: string; error: unknown }[]; outcomes: { label: string; outcome: unknown }[] };
 
-const computeBankSymbol = (symbol: string): Promise<{ failures: { label: string; error: unknown }[] }> => runTasks(buildBankTasks(symbol));
+const computeGeneralSymbol = (symbol: string): Promise<SymbolResult> => runTasks(buildGeneralTasks(symbol));
+
+const computeBankSymbol = (symbol: string): Promise<SymbolResult> => runTasks(buildBankTasks(symbol));
+
+// 2026-09-17 clean architecture 重構 Phase 3 的 exit proof：全市場重跑後每個 basis 的 action 統計——
+// 遷移後的程式碼算出來的值如果跟 DB 一樣，寫入層會回 skipped_unchanged；updated_same_knowledge_date
+// = 值變了、rejected = 座標/註冊出問題，兩者都是回歸訊號；inserted 只有「新交易日/新一季資料出現」
+// 才合理（逐日型 label 每天都會，季報型只有上游有新季度時）。跟 scripts/verifyMetricEquivalencePit.ts
+// 同一套遞迴收集法（outcome 形狀各家不同，遇到帶字串 action 的物件就收一筆）。
+const REGRESSION_ACTIONS = new Set(['updated_same_knowledge_date', 'rejected']);
+
+const collectActions = (value: unknown, out: string[]): void => {
+  if (!value || typeof value !== 'object') return;
+  const record = value as Record<string, unknown>;
+  if (typeof record.action === 'string') {
+    out.push(record.action);
+    return;
+  }
+  for (const inner of Object.values(record)) collectActions(inner, out);
+};
+
+type ActionCounts = Record<string, number>;
+
+const writeActionSummary = (slug: string, total: ActionCounts, byLabel: Record<string, ActionCounts>): void => {
+  const dir = join(process.cwd(), 'tmp');
+  mkdirSync(dir, { recursive: true });
+  const filePath = join(dir, `full-market-actions-${slug}.json`);
+  writeFileSync(filePath, JSON.stringify({ generatedAt: new Date().toISOString(), total, byLabel }, null, 2));
+  const regressions = Object.entries(total).filter(([action]) => REGRESSION_ACTIONS.has(action));
+  console.log(`[full-market-latest-pit] ${slug} action 統計：${JSON.stringify(total)}（明細 ${filePath}）`);
+  if (regressions.length > 0) {
+    console.error(`[full-market-latest-pit] ${slug} 出現回歸訊號：${JSON.stringify(Object.fromEntries(regressions))}——請對照 byLabel 找出是哪幾支指標`);
+  }
+};
 
 // 固定併發池：同時處理 SYMBOL_CONCURRENCY 家公司，不是無上限一次送出全部——避免瞬間
 // 打爆 Neon DB 連線數（見檔頭 2026-09-11 平行化改動的說明）。
@@ -86,12 +119,14 @@ const runBatch = async (
   label: string,
   slug: string,
   symbols: string[],
-  fn: (symbol: string) => Promise<{ failures: { label: string; error: unknown }[] }>
+  fn: (symbol: string) => Promise<SymbolResult>
 ): Promise<void> => {
   console.log(`[full-market-latest-pit] ${label}：共 ${symbols.length} 家，併發數 ${SYMBOL_CONCURRENCY}`);
   const t0 = Date.now();
   let done = 0;
   const errors: BackfillFailure[] = [];
+  const totalActions: ActionCounts = {};
+  const actionsByLabel: Record<string, ActionCounts> = {};
 
   let cursor = 0;
   const worker = async (): Promise<void> => {
@@ -99,11 +134,20 @@ const runBatch = async (
       const symbol = symbols[cursor]!;
       cursor += 1;
       try {
-        const { failures } = await fn(symbol);
+        const { failures, outcomes } = await fn(symbol);
         for (const failure of failures) {
           const message = failure.error instanceof Error ? failure.error.message : String(failure.error);
           errors.push({ symbol, label: failure.label, message });
           console.error(`[full-market-latest-pit] ${label} ${symbol} ${failure.label} 失敗：`, failure.error);
+        }
+        for (const { label: taskLabel, outcome } of outcomes) {
+          const actions: string[] = [];
+          collectActions(outcome, actions);
+          const perLabel = (actionsByLabel[taskLabel] ??= {});
+          for (const action of actions) {
+            totalActions[action] = (totalActions[action] ?? 0) + 1;
+            perLabel[action] = (perLabel[action] ?? 0) + 1;
+          }
         }
       } catch (error) {
         errors.push({ symbol, label: '(whole-symbol)', message: error instanceof Error ? error.message : String(error) });
@@ -131,6 +175,7 @@ const runBatch = async (
     console.log(`[full-market-latest-pit] ${label} 錯誤清單：`, [...new Set(errors.map((e) => e.symbol))].join(','));
   }
   writeFailuresFile(slug, errors);
+  writeActionSummary(slug, totalActions, actionsByLabel);
 };
 
 const main = async () => {

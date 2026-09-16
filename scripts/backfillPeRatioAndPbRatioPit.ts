@@ -18,11 +18,7 @@
 // 去重語意），不會壞掉既有資料。
 //
 // 用法：pnpm tsx scripts/backfillPeRatioAndPbRatioPit.ts
-
-import { computeAndWriteEpsPit } from '../src/application/metrics/profitability/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/application/metrics/valuation/bvps/computeBvpsPit';
-import { computeAndWritePeRatioPit } from '../src/application/metrics/valuation/peRatio/computePeRatioPit';
-import { computeAndWritePbRatioPit } from '../src/application/metrics/valuation/pbRatio/computePbRatioPit';
+import { computeAndWriteBvpsPit, computeAndWriteEpsPit, computeAndWritePbRatioPit, computeAndWritePeRatioPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

@@ -4,10 +4,7 @@
 // 最新一筆驗證。
 //
 // 用法：pnpm tsx scripts/backfillQuickWinsPit.ts
-
-import { computeAndWriteAssetGrowthPit } from '../src/application/metrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
-import { computeAndWriteEarningsYieldPit } from '../src/application/metrics/valuation/earningsYield/computeEarningsYieldPit';
+import { computeAndWriteAssetGrowthPit, computeAndWriteConsecutiveProfitYearsPit, computeAndWriteEarningsYieldPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

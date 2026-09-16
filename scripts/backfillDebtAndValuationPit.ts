@@ -6,18 +6,7 @@
 //
 // 用法：pnpm tsx scripts/backfillDebtAndValuationPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前幾批 backfill 腳本同一組）。
-
-import { computeAndWriteDebtRatioPit } from '../src/application/metrics/resilience/debtRatio/computeDebtRatioPit';
-import { computeAndWriteLiquidityRatioPit } from '../src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit';
-import { computeAndWriteDeRatioPit } from '../src/application/metrics/resilience/deRatio/computeDeRatioPit';
-import { computeAndWriteInterestCoveragePit } from '../src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit';
-import { computeAndWriteNetDebtToEbitdaPit } from '../src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
-import { computeAndWriteCapexToRevenuePit } from '../src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit';
-import { computeAndWritePsrPit } from '../src/application/metrics/valuation/psr/computePsrPit';
-import { computeAndWritePFcfPit } from '../src/application/metrics/valuation/pFcf/computePFcfPit';
-import { computeAndWriteEvEbitdaPit } from '../src/application/metrics/valuation/evEbitda/computeEvEbitdaPit';
-import { computeAndWriteRoicPit } from '../src/application/metrics/profitability/roic/computeRoicPit';
-import { computeAndWriteRocePit } from '../src/application/metrics/profitability/roce/computeRocePit';
+import { computeAndWriteCapexToRevenuePit, computeAndWriteDebtRatioPit, computeAndWriteDeRatioPit, computeAndWriteEvEbitdaPit, computeAndWriteInterestCoveragePit, computeAndWriteLiquidityRatioPit, computeAndWriteNetDebtToEbitdaPit, computeAndWritePFcfPit, computeAndWritePsrPit, computeAndWriteRocePit, computeAndWriteRoicPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
@@ -49,19 +38,19 @@ const main = async () => {
       console.log(`[interest-coverage-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(interestCoverageOutcome.q)} ttm=${JSON.stringify(interestCoverageOutcome.ttm)}`);
 
       const netDebtToEbitdaOutcome = await computeAndWriteNetDebtToEbitdaPit(query);
-      console.log(`[net-debt-to-ebitda-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(netDebtToEbitdaOutcome.q)} ttm=${JSON.stringify(netDebtToEbitdaOutcome.ttm)}`);
+      console.log(`[net-debt-to-ebitda-pit] ${symbol} ${year}Q${season}: ttm=${JSON.stringify(netDebtToEbitdaOutcome.ttm)}`);
 
       const capexToRevenueOutcome = await computeAndWriteCapexToRevenuePit(query);
       console.log(`[capex-to-revenue-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(capexToRevenueOutcome.q)} ttm=${JSON.stringify(capexToRevenueOutcome.ttm)}`);
 
       const psrOutcome = await computeAndWritePsrPit(query);
-      console.log(`[psr-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(psrOutcome.q)} ttm=${JSON.stringify(psrOutcome.ttm)}`);
+      console.log(`[psr-pit] ${symbol} ${year}Q${season}: ttm=${JSON.stringify(psrOutcome.ttm)}`);
 
       const pFcfOutcome = await computeAndWritePFcfPit(query);
-      console.log(`[p-fcf-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(pFcfOutcome.q)} ttm=${JSON.stringify(pFcfOutcome.ttm)}`);
+      console.log(`[p-fcf-pit] ${symbol} ${year}Q${season}: ttm=${JSON.stringify(pFcfOutcome.ttm)}`);
 
       const evEbitdaOutcome = await computeAndWriteEvEbitdaPit(query);
-      console.log(`[ev-ebitda-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(evEbitdaOutcome.q)} ttm=${JSON.stringify(evEbitdaOutcome.ttm)}`);
+      console.log(`[ev-ebitda-pit] ${symbol} ${year}Q${season}: ttm=${JSON.stringify(evEbitdaOutcome.ttm)}`);
 
       const roicOutcome = await computeAndWriteRoicPit(query);
       console.log(`[roic-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roicOutcome.q)} ttm=${JSON.stringify(roicOutcome.ttm)}`);

@@ -1,8 +1,7 @@
 // 2026-09-10：Titman, Wei & Xie (2004) 異常資本投資比率，只回補 2330 最新一筆。
 //
 // 用法：pnpm tsx scripts/backfillAbnormalCapexRatioPit.ts
-
-import { computeAndWriteAbnormalCapexRatioPit } from '../src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
+import { computeAndWriteAbnormalCapexRatioPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

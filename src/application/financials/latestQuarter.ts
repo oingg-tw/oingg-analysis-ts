@@ -1,4 +1,3 @@
-import { xbrlQuarterResolver } from '@/infrastructure/repositories/mops/financialStatementPorts';
 import type { QuarterResolverPort, StatementSource } from '@/application/ports/quarterResolver';
 import type { Season } from '@/domain/calendar/rocQuarter';
 
@@ -8,9 +7,8 @@ import type { Season } from '@/domain/calendar/rocQuarter';
 // 自己的最新一季，否則會誤判成有資料、實際上缺欄位那一季，一樣算不出來，等於沒解決問題。
 //
 // 2026-09-17 clean architecture 重構 Phase 3：單張表的「最新一季」查詢改透過 QuarterResolverPort
-// 注入（StatementSource 型別一起搬到 application/ports/quarterResolver.ts，這裡 re-export）。
-// 最後一個參數的預設值是遷移期間的過渡——165 支還沒遷移的 compute*Pit.ts 不帶第三個參數，
-// 已遷移的傳 deps.quarters；全部遷完後拿掉預設值，型別檢查會揪出任何漏網的呼叫端。
+// 注入（StatementSource 型別一起搬到 application/ports/quarterResolver.ts，這裡 re-export），呼叫端
+// 傳 deps.quarters；真實實作由 src/bootstrap/pitDeps.ts 綁定。
 export type { StatementSource };
 
 // 指標不給 year/season 時，用這支自動解析「這家公司、這幾張表都有資料的最新一季」。
@@ -22,7 +20,7 @@ export const getLatestAvailableQuarter = async (
   dataType: string,
   subsidiaryCompanyId: string,
   sources: StatementSource[],
-  quarters: QuarterResolverPort = xbrlQuarterResolver
+  quarters: QuarterResolverPort
 ): Promise<{ year: string; season: Season } | null> => {
   const latests = await Promise.all(sources.map((source) => quarters.latestQuarterWith(source, symbol, dataType, subsidiaryCompanyId)));
 
@@ -41,7 +39,7 @@ export const getLatestAvailableQuarter = async (
 export const resolveQuarterOrLatest = async (
   query: { symbol: string; year?: string; season?: Season; dataType: string; subsidiaryCompanyId: string },
   sources: StatementSource[],
-  quarters: QuarterResolverPort = xbrlQuarterResolver
+  quarters: QuarterResolverPort
 ): Promise<{ year: string; season: Season } | null> => {
   if (query.year !== undefined && query.season !== undefined) {
     return { year: query.year, season: query.season };

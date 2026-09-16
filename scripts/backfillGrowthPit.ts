@@ -9,13 +9,7 @@
 // 不是 bug。
 //
 // 用法：pnpm tsx scripts/backfillGrowthPit.ts
-
-import { computeAndWriteRevenueGrowthRatePit } from '../src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit';
-import { computeAndWriteEpsGrowthRatePit } from '../src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit';
-import { computeAndWriteNetIncomeGrowthRatePit } from '../src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit';
-import { computeAndWriteOperatingIncomeGrowthRatePit } from '../src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit';
-import { computeAndWriteEquityGrowthRatePit } from '../src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit';
-import { computeAndWriteBvpsGrowthRatePit } from '../src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit';
+import { computeAndWriteBvpsGrowthRatePit, computeAndWriteEpsGrowthRatePit, computeAndWriteEquityGrowthRatePit, computeAndWriteNetIncomeGrowthRatePit, computeAndWriteOperatingIncomeGrowthRatePit, computeAndWriteRevenueGrowthRatePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

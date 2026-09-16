@@ -7,9 +7,7 @@
 // 有 XBRL 合併報表資料的公司）、同一種固定併發池寫法（SYMBOL_CONCURRENCY=8）。
 //
 // 用法：pnpm tsx scripts/backfillWaterfallPerSharePit.ts
-
-import { computeAndWriteCashFlowPerSharePit } from '../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWritePretaxIncomePerSharePit } from '../src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
+import { computeAndWriteCashFlowPerSharePit, computeAndWritePretaxIncomePerSharePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

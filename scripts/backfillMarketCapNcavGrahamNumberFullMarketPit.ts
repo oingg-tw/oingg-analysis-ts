@@ -12,11 +12,7 @@
 // 有財報可以算」的公司清單。
 //
 // 用法：pnpm tsx scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts
-
-import { computeAndWriteMarketCapPit } from '../src/application/metrics/valuation/marketCap/computeMarketCapPit';
-import { computeAndWritePegRatioPit } from '../src/application/metrics/valuation/pegRatio/computePegRatioPit';
-import { computeAndWriteNcavPit } from '../src/application/metrics/valuation/ncav/computeNcavPit';
-import { computeAndWriteGrahamNumberPit } from '../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit';
+import { computeAndWriteGrahamNumberPit, computeAndWriteMarketCapPit, computeAndWriteNcavPit, computeAndWritePegRatioPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

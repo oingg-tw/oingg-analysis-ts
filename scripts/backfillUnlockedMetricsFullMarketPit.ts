@@ -6,13 +6,7 @@
 //
 // 用法：pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts
 //      PILOT_LIMIT=30 pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts（小批次測試）
-
-import { computeAndWriteCashFlowValuationFamilyPit } from '../src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
-import { computeAndWriteLeverageDegreeFamilyPit } from '../src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
-import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
-import { computeAndWriteEquityRatioPit } from '../src/application/metrics/resilience/equityRatio/computeEquityRatioPit';
-import { computeAndWriteCashToAssetsRatioPit } from '../src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
-import { computeAndWriteTurnoverRatioFamilyPit } from '../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
+import { computeAndWriteCashFlowValuationFamilyPit, computeAndWriteCashToAssetsRatioPit, computeAndWriteEquityRatioPit, computeAndWriteLeverageDegreeFamilyPit, computeAndWriteNonOperatingIncomeRatioPit, computeAndWriteTurnoverRatioFamilyPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

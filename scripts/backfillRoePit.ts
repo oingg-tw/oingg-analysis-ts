@@ -14,8 +14,7 @@
 //   會自然湊不齊，同時驗證 fallback 標記跟 insufficient_history 兩種真實案例。
 // - 季度範圍：113Q3~115Q2 共 8 季/家。
 // - dataType 只做 '2'（合併報表）。
-
-import { computeAndWriteRoePit } from '../src/application/metrics/profitability/roe/computeRoePit';
+import { computeAndWriteRoePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

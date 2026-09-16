@@ -10,12 +10,7 @@
 // 受影響的指標。
 //
 // 用法：pnpm tsx scripts/backfillFinancialIndustryExclusionPit.ts
-
-import { computeAndWriteAltmanZScorePit } from '../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
-import { computeAndWriteZmijewskiScorePit } from '../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
+import { computeAndWriteAltmanZDoublePrimeScorePit, computeAndWriteAltmanZScorePit, computeAndWriteBeneishMScorePit, computeAndWriteOhlsonOScorePit, computeAndWriteZmijewskiScorePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { listCompaniesBySectorCodes } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';

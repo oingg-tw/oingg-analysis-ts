@@ -3,10 +3,7 @@
 // 資料邊界不是 bug。
 //
 // 用法：pnpm tsx scripts/backfillCagrFamiliesPit.ts
-
-import { computeAndWriteRevenueCagrFamilyPit } from '../src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
-import { computeAndWriteEpsCagrFamilyPit } from '../src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit';
-import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
+import { computeAndWriteDividendGrowthRateFamilyPit, computeAndWriteEpsCagrFamilyPit, computeAndWriteRevenueCagrFamilyPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

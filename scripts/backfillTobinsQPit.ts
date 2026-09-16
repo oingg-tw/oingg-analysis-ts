@@ -1,8 +1,7 @@
 // 2026-09-11：托賓Q值，只回補 2330 最新一筆驗證。
 //
 // 用法：pnpm tsx scripts/backfillTobinsQPit.ts
-
-import { computeAndWriteTobinsQPit } from '../src/application/metrics/valuation/tobinsQ/computeTobinsQPit';
+import { computeAndWriteTobinsQPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

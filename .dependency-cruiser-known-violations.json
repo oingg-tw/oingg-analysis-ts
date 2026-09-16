@@ -1,20 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/application/financials/latestQuarter.ts",
-    "to": "src/infrastructure/repositories/mops/financialStatementPorts.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/financialStatementPorts",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/application/macro/equityRiskPremium/service.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
@@ -85,20 +71,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/application/metrics/knowledgeDate.ts",
-    "to": "src/infrastructure/repositories/mops/reportAnnouncementDate.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/reportAnnouncementDate",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/application/metrics/legacyBridge.ts",
     "to": "src/bootstrap/pitDeps.ts",
     "unresolvedTo": "@/bootstrap/pitDeps",
@@ -119,104 +91,6 @@
     "dependencyTypes": [
       "undetermined",
       "export"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/metricValueWriter.ts",
-    "to": "src/infrastructure/repositories/analysis/metricValueRepository.ts",
-    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueRepository",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/mops/balanceSheetXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/balanceSheetXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/mops/capitalStock.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/capitalStock",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/mops/cashFlowStatementXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/ports/financialDataPorts.ts",
-    "to": "src/infrastructure/repositories/twse/marketCap.ts",
-    "unresolvedTo": "@/infrastructure/repositories/twse/marketCap",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
     ],
     "rule": {
       "severity": "error",
@@ -3488,20 +3362,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillAbnormalCapexRatioPit.ts",
-    "to": "src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillAbnormalCapexRatioPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -3600,20 +3460,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillAltmanZVariantsPit.ts",
-    "to": "src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillAltmanZVariantsPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -3644,20 +3490,6 @@
     "from": "scripts/backfillBankIncomeWaterfallPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillBankIncomeWaterfallPit.ts",
-    "to": "src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -3740,34 +3572,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillBankRegulatoryPit.ts",
-    "to": "src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillBankRegulatoryPit.ts",
-    "to": "src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillBankRegulatoryPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -3810,20 +3614,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillBetaPit.ts",
-    "to": "src/application/metrics/valuation/beta/computeBetaPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/beta/computeBetaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillBetaPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -3840,20 +3630,6 @@
     "from": "scripts/backfillBetaPit.ts",
     "to": "src/infrastructure/prisma/twseExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillBuybackYieldScaleFixPit.ts",
-    "to": "src/application/metrics/dividend/buybackYield/computeBuybackYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -3922,48 +3698,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillCagrFamiliesPit.ts",
-    "to": "src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillCagrFamiliesPit.ts",
-    "to": "src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillCagrFamiliesPit.ts",
-    "to": "src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillCagrFamiliesPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
     "dependencyTypes": [
@@ -3994,20 +3728,6 @@
     "from": "scripts/backfillCagrFamiliesPit.ts",
     "to": "src/infrastructure/prisma/mopsExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillChowderNumberPit.ts",
-    "to": "src/application/metrics/dividend/chowderNumber/computeChowderNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/chowderNumber/computeChowderNumberPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -4076,20 +3796,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillConsecutiveDividendYearsPit.ts",
-    "to": "src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillConsecutiveDividendYearsPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
     "dependencyTypes": [
@@ -4132,162 +3838,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/profitability/roce/computeRocePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roce/computeRocePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/profitability/roic/computeRoicPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roic/computeRoicPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/resilience/debtRatio/computeDebtRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/debtRatio/computeDebtRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/resilience/deRatio/computeDeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/deRatio/computeDeRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/valuation/evEbitda/computeEvEbitdaPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/evEbitda/computeEvEbitdaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/valuation/pFcf/computePFcfPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pFcf/computePFcfPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDebtAndValuationPit.ts",
-    "to": "src/application/metrics/valuation/psr/computePsrPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/psr/computePsrPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -4316,20 +3868,6 @@
     "from": "scripts/backfillDebtAndValuationPit.ts",
     "to": "src/infrastructure/prisma/mopsExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillDividendDistributionCountPit.ts",
-    "to": "src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -4412,20 +3950,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillFamaFrenchOperatingProfitabilityPit.ts",
-    "to": "src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFamaFrenchOperatingProfitabilityPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -4456,76 +3980,6 @@
     "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/application/metrics/quality/beneishMScore/computeBeneishMScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit",
     "dependencyTypes": [
       "local",
       "import"
@@ -4664,90 +4118,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
-    "to": "src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGrowthPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
     "dependencyTypes": [
@@ -4804,132 +4174,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/quality/beneishMScore/computeBeneishMScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
-    "to": "src/application/metrics/valuation/ncav/computeNcavPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/ncav/computeNcavPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillGuruPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -4958,36 +4202,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillIncomeStatementDividendPerSharePit.ts",
-    "to": "src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillIncomeStatementDividendPerSharePit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillIncomeStatementDividendPerSharePit.ts",
-    "to": "src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5056,48 +4272,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillLiveValuationMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/liveGrahamNumber/computeLiveGrahamNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/liveGrahamNumber/computeLiveGrahamNumberPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillLiveValuationMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/liveMarketCap/computeLiveMarketCapPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/liveMarketCap/computeLiveMarketCapPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillLiveValuationMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/livePegRatio/computeLivePegRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/livePegRatio/computeLivePegRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillLiveValuationMetricsFullMarketPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -5154,20 +4328,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillLongTermDebtToNetCurrentAssetsPit.ts",
-    "to": "src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillLongTermDebtToNetCurrentAssetsPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -5212,48 +4372,6 @@
     "from": "scripts/backfillMagicFormulaRankPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMagicFormulaRankPit.ts",
-    "to": "src/application/metrics/metricValueWriter.ts",
-    "unresolvedTo": "../src/application/metrics/metricValueWriter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMagicFormulaRankPit.ts",
-    "to": "src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMagicFormulaRankPit.ts",
-    "to": "src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5350,20 +4468,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillMargins5YearPit.ts",
-    "to": "src/application/metrics/profitability/margins/computeMarginsFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/margins/computeMarginsFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMargins5YearPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -5392,36 +4496,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillMarginsAndTurnoverPit.ts",
-    "to": "src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarginsAndTurnoverPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarginsAndTurnoverPit.ts",
-    "to": "src/application/metrics/profitability/margins/computeMarginsFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/margins/computeMarginsFamilyPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5476,62 +4552,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/marketCap/computeMarketCapPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/marketCap/computeMarketCapPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/ncav/computeNcavPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/ncav/computeNcavPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts",
-    "to": "src/application/metrics/valuation/pegRatio/computePegRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pegRatio/computePegRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -5562,20 +4582,6 @@
     "from": "scripts/backfillMarketCapPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketCapPit.ts",
-    "to": "src/application/metrics/valuation/marketCap/computeMarketCapPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/marketCap/computeMarketCapPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5618,20 +4624,6 @@
     "from": "scripts/backfillMarketRatiosPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillMarketRatiosPit.ts",
-    "to": "src/application/metrics/shared/marketRatios/computeMarketRatiosPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/marketRatios/computeMarketRatiosPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5728,20 +4720,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillOperatingExpenseRatioPit.ts",
-    "to": "src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillOperatingExpenseRatioPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
     "dependencyTypes": [
@@ -5798,20 +4776,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillPegRatioPit.ts",
-    "to": "src/application/metrics/valuation/pegRatio/computePegRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pegRatio/computePegRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPegRatioPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -5842,62 +4806,6 @@
     "from": "scripts/backfillPeRatioAndPbRatioPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPeRatioAndPbRatioPit.ts",
-    "to": "src/application/metrics/profitability/eps/computeEpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/eps/computeEpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPeRatioAndPbRatioPit.ts",
-    "to": "src/application/metrics/valuation/bvps/computeBvpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/bvps/computeBvpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPeRatioAndPbRatioPit.ts",
-    "to": "src/application/metrics/valuation/pbRatio/computePbRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pbRatio/computePbRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPeRatioAndPbRatioPit.ts",
-    "to": "src/application/metrics/valuation/peRatio/computePeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/peRatio/computePeRatioPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -5952,134 +4860,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/growth/sgr/computeSgrPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/sgr/computeSgrPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/profitability/eps/computeEpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/eps/computeEpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/valuation/bvps/computeBvpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/bvps/computeBvpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPerShareAndCashFlowPit.ts",
-    "to": "src/application/metrics/valuation/fcfYield/computeFcfYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/fcfYield/computeFcfYieldPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -6162,34 +4944,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillProfitabilityFamilyPit.ts",
-    "to": "src/application/metrics/profitability/roa/computeRoaPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roa/computeRoaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillProfitabilityFamilyPit.ts",
-    "to": "src/application/metrics/shared/dupont/computeDupontFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/dupont/computeDupontFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillProfitabilityFamilyPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -6218,50 +4972,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillQuickWinsPit.ts",
-    "to": "src/application/metrics/growth/assetGrowth/computeAssetGrowthPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/assetGrowth/computeAssetGrowthPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillQuickWinsPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillQuickWinsPit.ts",
-    "to": "src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillQuickWinsPit.ts",
-    "to": "src/application/metrics/valuation/earningsYield/computeEarningsYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/earningsYield/computeEarningsYieldPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -6304,20 +5016,6 @@
     "from": "scripts/backfillQuickWinsPit.ts",
     "to": "src/infrastructure/prisma/twseExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillRdIntensityPit.ts",
-    "to": "src/application/metrics/growth/rdIntensity/computeRdIntensityPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/rdIntensity/computeRdIntensityPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -6386,20 +5084,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillRoePit.ts",
-    "to": "src/application/metrics/profitability/roe/computeRoePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roe/computeRoePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillRoePit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -6442,48 +5126,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillRoeRoaDupont5YearPit.ts",
-    "to": "src/application/metrics/profitability/roa/computeRoaPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roa/computeRoaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillRoeRoaDupont5YearPit.ts",
-    "to": "src/application/metrics/profitability/roe/computeRoePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roe/computeRoePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillRoeRoaDupont5YearPit.ts",
-    "to": "src/application/metrics/shared/dupont/computeDupontFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/dupont/computeDupontFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillRoeRoaDupont5YearPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -6514,48 +5156,6 @@
     "from": "scripts/backfillRoeRoaDupont5YearPit.ts",
     "to": "src/infrastructure/prisma/twseExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillShareholderPolicyPit.ts",
-    "to": "src/application/metrics/dividend/buybackYield/computeBuybackYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillShareholderPolicyPit.ts",
-    "to": "src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillShareholderPolicyPit.ts",
-    "to": "src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit",
     "dependencyTypes": [
       "local",
       "import"
@@ -6638,20 +5238,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillStockPricePit.ts",
-    "to": "src/application/metrics/valuation/stockPrice/computeStockPricePit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/stockPrice/computeStockPricePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillStockPricePit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
@@ -6694,20 +5280,6 @@
   {
     "type": "dependency",
     "from": "scripts/backfillSuePit.ts",
-    "to": "src/application/metrics/growth/sue/computeSuePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/sue/computeSuePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillSuePit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
     "dependencyTypes": [
@@ -6749,1325 +5321,9 @@
   },
   {
     "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/buybackYield/computeBuybackYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/chowderNumber/computeChowderNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/chowderNumber/computeChowderNumberPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/dividend/shareholderYield/computeShareholderYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/dividend/shareholderYield/computeShareholderYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/assetGrowth/computeAssetGrowthPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/assetGrowth/computeAssetGrowthPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/priceToResearchRatio/computePriceToResearchRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/priceToResearchRatio/computePriceToResearchRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/rdIntensity/computeRdIntensityPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/rdIntensity/computeRdIntensityPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/ruleOf40/computeRuleOf40Pit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/ruleOf40/computeRuleOf40Pit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/sgr/computeSgrPit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/sgr/computeSgrPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/growth/sue/computeSuePit.ts",
-    "unresolvedTo": "../src/application/metrics/growth/sue/computeSuePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/croci/computeCrociPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/croci/computeCrociPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/eps/computeEpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/eps/computeEpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/margins/computeMarginsFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/margins/computeMarginsFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/novyMarxGpToAssets/computeNovyMarxGpToAssetsPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/novyMarxGpToAssets/computeNovyMarxGpToAssetsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/oneDollarTest/computeOneDollarTestPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/oneDollarTest/computeOneDollarTestPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/roa/computeRoaPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roa/computeRoaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/roce/computeRocePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roce/computeRocePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/roe/computeRoePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roe/computeRoePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/profitability/roic/computeRoicPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/roic/computeRoicPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/beneishAqi/computeBeneishAqiPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/beneishAqi/computeBeneishAqiPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/beneishDsri/computeBeneishDsriPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/beneishDsri/computeBeneishDsriPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/beneishMScore/computeBeneishMScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/fcfMargin/computeFcfMarginPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/fcfMargin/computeFcfMarginPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/debtRatio/computeDebtRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/debtRatio/computeDebtRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/deRatio/computeDeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/deRatio/computeDeRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/equityRatio/computeEquityRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/equityRatio/computeEquityRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/netWorkingCapitalToAssets/computeNetWorkingCapitalToAssetsPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/netWorkingCapitalToAssets/computeNetWorkingCapitalToAssetsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/totalDebtToCapital/computeTotalDebtToCapitalPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/totalDebtToCapital/computeTotalDebtToCapitalPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/shared/dupont/computeDupontFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/dupont/computeDupontFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/shared/marketRatios/computeMarketRatiosPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/marketRatios/computeMarketRatiosPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/beta/computeBetaPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/beta/computeBetaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/bvps/computeBvpsPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/bvps/computeBvpsPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/earningsYield/computeEarningsYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/earningsYield/computeEarningsYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/evEbitda/computeEvEbitdaPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/evEbitda/computeEvEbitdaPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/evToEbit/computeEvToEbitPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/evToEbit/computeEvToEbitPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/evToFcf/computeEvToFcfPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/evToFcf/computeEvToFcfPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/fcfYield/computeFcfYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/fcfYield/computeFcfYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/marketCap/computeMarketCapPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/marketCap/computeMarketCapPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/ncav/computeNcavPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/ncav/computeNcavPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/pbRatio/computePbRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pbRatio/computePbRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/pegRatio/computePegRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pegRatio/computePegRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/peRatio/computePeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/peRatio/computePeRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/pFcf/computePFcfPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/pFcf/computePFcfPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/psr/computePsrPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/psr/computePsrPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/stockPrice/computeStockPricePit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/stockPrice/computeStockPricePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTaskDefinitions.ts",
-    "to": "src/application/metrics/valuation/tobinsQ/computeTobinsQPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/tobinsQ/computeTobinsQPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillTobinsQPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillTobinsQPit.ts",
-    "to": "src/application/metrics/valuation/tobinsQ/computeTobinsQPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/tobinsQ/computeTobinsQPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -8122,92 +5378,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/resilience/equityRatio/computeEquityRatioPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/equityRatio/computeEquityRatioPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillUnlockedMetricsFullMarketPit.ts",
-    "to": "src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit",
     "dependencyTypes": [
       "local",
       "import"
@@ -8264,34 +5436,6 @@
     "from": "scripts/backfillWaterfallPerSharePit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillWaterfallPerSharePit.ts",
-    "to": "src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillWaterfallPerSharePit.ts",
-    "to": "src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit.ts",
-    "unresolvedTo": "../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit",
     "dependencyTypes": [
       "local",
       "import"
@@ -8348,20 +5492,6 @@
     "from": "scripts/backfillZDoublePrimeManufacturingExclusionPit.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillZDoublePrimeManufacturingExclusionPit.ts",
-    "to": "src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit.ts",
-    "unresolvedTo": "../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit",
     "dependencyTypes": [
       "local",
       "import"
@@ -8614,34 +5744,6 @@
     "from": "scripts/validateFormulaLatex.ts",
     "to": "src/application/metrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/application/metrics/metricDefinitionRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/verifyMetricEquivalencePit.ts",
-    "to": "src/application/metrics/shared/marketRatios/computeMarketRatiosPit.ts",
-    "unresolvedTo": "../src/application/metrics/shared/marketRatios/computeMarketRatiosPit",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/verifyMetricEquivalencePit.ts",
-    "to": "src/application/metrics/valuation/beta/computeBetaPit.ts",
-    "unresolvedTo": "../src/application/metrics/valuation/beta/computeBetaPit",
     "dependencyTypes": [
       "local",
       "import"

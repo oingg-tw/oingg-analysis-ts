@@ -4,8 +4,7 @@
 // 只做 2330（目前唯一有這批擴充範圍資料的公司）。
 //
 // 用法：pnpm tsx scripts/backfillStockPricePit.ts
-
-import { computeAndWriteStockPricePit } from '../src/application/metrics/valuation/stockPrice/computeStockPricePit';
+import { computeAndWriteStockPricePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

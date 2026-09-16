@@ -3,8 +3,7 @@
 // 季度為準，往回數的連續配息年數」，不需要逐季回補歷史）。
 //
 // 用法：pnpm tsx scripts/backfillConsecutiveDividendYearsPit.ts
-
-import { computeAndWriteConsecutiveDividendYearsPit } from '../src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
+import { computeAndWriteConsecutiveDividendYearsPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

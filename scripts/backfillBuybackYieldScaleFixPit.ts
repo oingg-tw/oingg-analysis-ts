@@ -4,8 +4,7 @@
 // backfillFullHistoryFullMarketPit.ts 同一個範圍），修正舊公式已寫入的錯誤值。
 //
 // 用法：pnpm tsx scripts/backfillBuybackYieldScaleFixPit.ts
-
-import { computeAndWriteBuybackYieldPit } from '../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit';
+import { computeAndWriteBuybackYieldPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

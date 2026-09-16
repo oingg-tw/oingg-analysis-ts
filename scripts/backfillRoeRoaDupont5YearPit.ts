@@ -11,10 +11,7 @@
 // 限制，這裡純粹是為了跟 peRatio/pbRatio 保持一致範圍，不是這批指標自己卡到什麼瓶頸。
 //
 // 用法：pnpm tsx scripts/backfillRoeRoaDupont5YearPit.ts
-
-import { computeAndWriteRoePit } from '../src/application/metrics/profitability/roe/computeRoePit';
-import { computeAndWriteRoaPit } from '../src/application/metrics/profitability/roa/computeRoaPit';
-import { computeAndWriteDupontFamilyPit } from '../src/application/metrics/shared/dupont/computeDupontFamilyPit';
+import { computeAndWriteDupontFamilyPit, computeAndWriteRoaPit, computeAndWriteRoePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

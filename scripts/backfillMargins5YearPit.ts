@@ -6,8 +6,7 @@
 // （使用者這次沒有要求擴大到其他股票），不動 2887/2317 這兩個既有對照組。
 //
 // 用法：pnpm tsx scripts/backfillMargins5YearPit.ts
-
-import { computeAndWriteMarginsFamilyPit } from '../src/application/metrics/profitability/margins/computeMarginsFamilyPit';
+import { computeAndWriteMarginsFamilyPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

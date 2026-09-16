@@ -1,7 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteBankIncomeWaterfallPit } from '@/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
-import { computeAndWritePretaxIncomePerSharePit } from '@/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
+import { computeAndWriteBankIncomeWaterfallPit, computeAndWritePretaxIncomePerSharePit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';

@@ -5,16 +5,7 @@
 //
 // 用法：pnpm tsx scripts/backfillPerShareAndCashFlowPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前兩批 backfill 腳本同一組）。
-
-import { computeAndWriteEpsPit } from '../src/application/metrics/profitability/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/application/metrics/valuation/bvps/computeBvpsPit';
-import { computeAndWriteRevenuePerSharePit } from '../src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit';
-import { computeAndWriteDividendPayoutRatioPit } from '../src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { computeAndWriteSgrPit } from '../src/application/metrics/growth/sgr/computeSgrPit';
-import { computeAndWriteCashFlowPerSharePit } from '../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWriteOcfToNetIncomePit } from '../src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
-import { computeAndWriteAccrualsRatioPit } from '../src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit';
-import { computeAndWriteFcfYieldPit } from '../src/application/metrics/valuation/fcfYield/computeFcfYieldPit';
+import { computeAndWriteAccrualsRatioPit, computeAndWriteBvpsPit, computeAndWriteCashFlowPerSharePit, computeAndWriteDividendPayoutRatioPit, computeAndWriteEpsPit, computeAndWriteFcfYieldPit, computeAndWriteOcfToNetIncomePit, computeAndWriteRevenuePerSharePit, computeAndWriteSgrPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
@@ -64,7 +55,7 @@ const main = async () => {
       );
 
       const fcfYieldOutcome = await computeAndWriteFcfYieldPit(query);
-      console.log(`[fcf-yield-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(fcfYieldOutcome.q)} ttm=${JSON.stringify(fcfYieldOutcome.ttm)}`);
+      console.log(`[fcf-yield-pit] ${symbol} ${year}Q${season}: ttm=${JSON.stringify(fcfYieldOutcome.ttm)}`);
     }
   }
 };

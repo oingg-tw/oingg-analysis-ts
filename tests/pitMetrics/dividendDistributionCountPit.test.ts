@@ -1,6 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteDividendDistributionCountPit } from '@/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
+import { computeAndWriteDividendDistributionCountPit } from '@/bootstrap/pitMetrics';
 import { getSymbolsWithDividendDistribution } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';

@@ -5,16 +5,7 @@
 //
 // 用法：pnpm tsx scripts/backfillGuruPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts。
-
-import { computeAndWriteGrahamNumberPit } from '../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit';
-import { computeAndWriteNcavPit } from '../src/application/metrics/valuation/ncav/computeNcavPit';
-import { computeAndWriteOwnerEarningsPit } from '../src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit';
-import { computeAndWriteAltmanZScorePit } from '../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { computeAndWritePiotroskiFScorePit } from '../src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteNissimPenmanRnoaPit } from '../src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
-import { computeAndWriteZmijewskiScorePit } from '../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
+import { computeAndWriteAltmanZScorePit, computeAndWriteBeneishMScorePit, computeAndWriteGrahamNumberPit, computeAndWriteNcavPit, computeAndWriteNissimPenmanRnoaPit, computeAndWriteOhlsonOScorePit, computeAndWriteOwnerEarningsPit, computeAndWritePiotroskiFScorePit, computeAndWriteZmijewskiScorePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

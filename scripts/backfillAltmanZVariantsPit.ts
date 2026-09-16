@@ -4,8 +4,7 @@
 // 成立，全面標記 not_applicable_industry 只是延後死刑，不如直接下線），這支腳本只剩 Z″。
 //
 // 用法：pnpm tsx scripts/backfillAltmanZVariantsPit.ts
-
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
+import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

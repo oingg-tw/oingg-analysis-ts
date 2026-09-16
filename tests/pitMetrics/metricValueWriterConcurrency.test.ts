@@ -1,9 +1,11 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { writeMetricValue, periodTypeGroup } from '@/application/metrics/metricValueWriter';
+import { persistMetricValue } from '@/bootstrap/pitMetrics';
+import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
-// 2026-09-11：全市場 backfill 平行化後真實發生過的 race condition——writeMetricValue
+// 2026-09-11：全市場 backfill 平行化後真實發生過的 race condition——writeMetricValue（2026-09-17 Phase 3
+// 起是 persistComputations.persistOne，這裡走 bootstrap 綁好真實 repository 的 persistMetricValue）
 // 原本是「findFirst 查有沒有既有列，查無資料才 create」，兩個併發呼叫剛好同時查到
 // 「沒有」、同時嘗試 create 同一個座標，第二個會撞 metric_values_identity_key 唯一鍵
 // 拋出 UniqueConstraintViolation（symbol=2104 metricCode=revenuePerShare 那次真實案例）。
@@ -28,8 +30,8 @@ const buildInput = (value: number) => ({
   knowledgeDateIsFallback: false,
 });
 
-test('writeMetricValue: 兩個併發呼叫寫入完全相同的新座標，不應該拋出 UniqueConstraintViolation，且最終只有一列', async () => {
-  const [resultA, resultB] = await Promise.all([writeMetricValue(buildInput(12.34)), writeMetricValue(buildInput(12.34))]);
+test('persistOne: 兩個併發呼叫寫入完全相同的新座標，不應該拋出 UniqueConstraintViolation，且最終只有一列', async () => {
+  const [resultA, resultB] = await Promise.all([persistMetricValue(buildInput(12.34)), persistMetricValue(buildInput(12.34))]);
 
   // 兩個都應該正常完成（inserted 或 updated_same_knowledge_date 都算正常，不能是 rejected
   // 或直接拋出例外中斷整個 Promise.all）。

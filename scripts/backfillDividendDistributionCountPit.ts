@@ -5,8 +5,7 @@
 // 不用等他們全市場批次跑完才能先把有資料的公司算起來。
 //
 // 用法：pnpm tsx scripts/backfillDividendDistributionCountPit.ts
-
-import { computeAndWriteDividendDistributionCountPit } from '../src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
+import { computeAndWriteDividendDistributionCountPit } from '../src/bootstrap/pitMetrics';
 import { getSymbolsWithDividendDistribution } from '../src/infrastructure/repositories/mops/dividendDistribution';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';

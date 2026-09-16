@@ -4,107 +4,14 @@
 // 主腳本會連帶觸發整批全市場 backfill 重跑——這是一個真的會發生的 bug，不是假設情境。
 // 抽成獨立、沒有任何 top-level 執行副作用的模組，兩支腳本都從這裡 import，才是安全的
 // 「精準回補」機制。
+import { computeAndWriteAbnormalCapexRatioPit, computeAndWriteAccrualsRatioPit, computeAndWriteAltmanZDoublePrimeScorePit, computeAndWriteAltmanZScorePit, computeAndWriteAssetGrowthPit, computeAndWriteBankAssetQualityFamilyPit, computeAndWriteBankCapitalAdequacyFamilyPit, computeAndWriteBankIncomeWaterfallPit, computeAndWriteBeneishAqiPit, computeAndWriteBeneishDsriPit, computeAndWriteBeneishMScorePit, computeAndWriteBetaPit, computeAndWriteBuybackYieldPit, computeAndWriteBvpsGrowthRatePit, computeAndWriteBvpsPit, computeAndWriteCapexToRevenuePit, computeAndWriteCashFlowPerSharePit, computeAndWriteCashFlowValuationFamilyPit, computeAndWriteCashToAssetsRatioPit, computeAndWriteChowderNumberPit, computeAndWriteConsecutiveDividendYearsPit, computeAndWriteConsecutiveProfitYearsPit, computeAndWriteCrociPit, computeAndWriteDebtRatioPit, computeAndWriteDeRatioPit, computeAndWriteDividendCoverageRatioPit, computeAndWriteDividendDistributionCountPit, computeAndWriteDividendGrowthRateFamilyPit, computeAndWriteDividendPayoutRatioPit, computeAndWriteDividendPerSharePit, computeAndWriteDupontFamilyPit, computeAndWriteEarningsYieldPit, computeAndWriteEpsCagrFamilyPit, computeAndWriteEpsGrowthRatePit, computeAndWriteEpsPit, computeAndWriteEquityGrowthRatePit, computeAndWriteEquityRatioPit, computeAndWriteEvEbitdaPit, computeAndWriteEvToEbitPit, computeAndWriteEvToFcfPit, computeAndWriteFamaFrenchOperatingProfitabilityPit, computeAndWriteFcfMarginPit, computeAndWriteFcfYieldPit, computeAndWriteGrahamNumberPit, computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRocPit, computeAndWriteIncomeStatementPerSharePit, computeAndWriteInterestCoveragePit, computeAndWriteLeverageDegreeFamilyPit, computeAndWriteLiquidityRatioPit, computeAndWriteLongTermDebtToNetCurrentAssetsPit, computeAndWriteMarginsFamilyPit, computeAndWriteMarketCapPit, computeAndWriteMarketRatiosPit, computeAndWriteNcavPit, computeAndWriteNetDebtToEbitdaPit, computeAndWriteNetIncomeGrowthRatePit, computeAndWriteNetWorkingCapitalToAssetsPit, computeAndWriteNissimPenmanRnoaPit, computeAndWriteNonOperatingIncomeRatioPit, computeAndWriteNovyMarxGpToAssetsPit, computeAndWriteOcfToNetIncomePit, computeAndWriteOhlsonOScorePit, computeAndWriteOneDollarTestPit, computeAndWriteOperatingExpenseRatioPit, computeAndWriteOperatingIncomeGrowthRatePit, computeAndWriteOwnerEarningsPit, computeAndWritePbRatioPit, computeAndWritePegRatioPit, computeAndWritePeRatioPit, computeAndWritePFcfPit, computeAndWritePiotroskiFScorePit, computeAndWritePretaxIncomePerSharePit, computeAndWritePriceToResearchRatioPit, computeAndWritePsrPit, computeAndWriteRdIntensityPit, computeAndWriteRevenueCagrFamilyPit, computeAndWriteRevenueGrowthRatePit, computeAndWriteRevenuePerSharePit, computeAndWriteRoaPit, computeAndWriteRocePit, computeAndWriteRoePit, computeAndWriteRoicPit, computeAndWriteRuleOf40Pit, computeAndWriteSgrPit, computeAndWriteShareCountChangeRatePit, computeAndWriteShareholderYieldPit, computeAndWriteStockPricePit, computeAndWriteSuePit, computeAndWriteTobinsQPit, computeAndWriteTotalDebtToCapitalPit, computeAndWriteTurnoverRatioFamilyPit, computeAndWriteZmijewskiScorePit } from '../src/bootstrap/pitMetrics';
 
-import { computeAndWriteRoePit } from '../src/application/metrics/profitability/roe/computeRoePit';
-import { computeAndWriteRoaPit } from '../src/application/metrics/profitability/roa/computeRoaPit';
-import { computeAndWriteDupontFamilyPit } from '../src/application/metrics/shared/dupont/computeDupontFamilyPit';
-import { computeAndWriteGrahamNumberPit } from '../src/application/metrics/valuation/grahamNumber/computeGrahamNumberPit';
-import { computeAndWriteOwnerEarningsPit } from '../src/application/metrics/quality/ownerEarnings/computeOwnerEarningsPit';
-import { computeAndWriteAltmanZScorePit } from '../src/application/metrics/resilience/altmanZScore/computeAltmanZScorePit';
-import { computeAndWritePiotroskiFScorePit } from '../src/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit';
-import { computeAndWriteBeneishMScorePit } from '../src/application/metrics/quality/beneishMScore/computeBeneishMScorePit';
-import { computeAndWriteNissimPenmanRnoaPit } from '../src/application/metrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
-import { computeAndWriteZmijewskiScorePit } from '../src/application/metrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
-import { computeAndWriteOhlsonOScorePit } from '../src/application/metrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
-import { computeAndWriteMarginsFamilyPit } from '../src/application/metrics/profitability/margins/computeMarginsFamilyPit';
-import { computeAndWriteTurnoverRatioFamilyPit } from '../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
-import { computeAndWriteEpsPit } from '../src/application/metrics/profitability/eps/computeEpsPit';
-import { computeAndWriteIncomeStatementPerSharePit } from '../src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit';
-import { computeAndWritePretaxIncomePerSharePit } from '../src/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
-import { computeAndWriteBvpsPit } from '../src/application/metrics/valuation/bvps/computeBvpsPit';
-import { computeAndWriteRevenuePerSharePit } from '../src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit';
-import { computeAndWriteDividendPayoutRatioPit } from '../src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { computeAndWriteDividendPerSharePit } from '../src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit';
-import { computeAndWriteSgrPit } from '../src/application/metrics/growth/sgr/computeSgrPit';
-import { computeAndWriteCashFlowPerSharePit } from '../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWriteOcfToNetIncomePit } from '../src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
-import { computeAndWriteAccrualsRatioPit } from '../src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit';
-import { computeAndWriteFcfYieldPit } from '../src/application/metrics/valuation/fcfYield/computeFcfYieldPit';
-import { computeAndWriteDebtRatioPit } from '../src/application/metrics/resilience/debtRatio/computeDebtRatioPit';
-import { computeAndWriteLiquidityRatioPit } from '../src/application/metrics/resilience/liquidityRatio/computeLiquidityRatioPit';
-import { computeAndWriteDeRatioPit } from '../src/application/metrics/resilience/deRatio/computeDeRatioPit';
-import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit';
-import { computeAndWriteInterestCoveragePit } from '../src/application/metrics/resilience/interestCoverage/computeInterestCoveragePit';
-import { computeAndWriteNetDebtToEbitdaPit } from '../src/application/metrics/resilience/netDebtToEbitda/computeNetDebtToEbitdaPit';
-import { computeAndWriteCapexToRevenuePit } from '../src/application/metrics/efficiency/capexToRevenue/computeCapexToRevenuePit';
-import { computeAndWritePsrPit } from '../src/application/metrics/valuation/psr/computePsrPit';
-import { computeAndWritePFcfPit } from '../src/application/metrics/valuation/pFcf/computePFcfPit';
-import { computeAndWriteEvEbitdaPit } from '../src/application/metrics/valuation/evEbitda/computeEvEbitdaPit';
-import { computeAndWriteRoicPit } from '../src/application/metrics/profitability/roic/computeRoicPit';
-import { computeAndWriteRocePit } from '../src/application/metrics/profitability/roce/computeRocePit';
-import { computeAndWriteRevenueGrowthRatePit } from '../src/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRatePit';
-import { computeAndWriteEpsGrowthRatePit } from '../src/application/metrics/growth/epsGrowthRate/computeEpsGrowthRatePit';
-import { computeAndWriteNetIncomeGrowthRatePit } from '../src/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRatePit';
-import { computeAndWriteOperatingIncomeGrowthRatePit } from '../src/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRatePit';
-import { computeAndWriteEquityGrowthRatePit } from '../src/application/metrics/growth/equityGrowthRate/computeEquityGrowthRatePit';
-import { computeAndWriteBvpsGrowthRatePit } from '../src/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRatePit';
-import { computeAndWriteAssetGrowthPit } from '../src/application/metrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
-import { computeAndWriteEarningsYieldPit } from '../src/application/metrics/valuation/earningsYield/computeEarningsYieldPit';
-import { computeAndWriteBuybackYieldPit } from '../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit';
-import { computeAndWriteDividendCoverageRatioPit } from '../src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
-import { computeAndWriteShareholderYieldPit } from '../src/application/metrics/dividend/shareholderYield/computeShareholderYieldPit';
-import { computeAndWriteShareCountChangeRatePit } from '../src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
-import { computeAndWriteStockPricePit } from '../src/application/metrics/valuation/stockPrice/computeStockPricePit';
-import { computeAndWritePeRatioPit } from '../src/application/metrics/valuation/peRatio/computePeRatioPit';
-import { computeAndWritePbRatioPit } from '../src/application/metrics/valuation/pbRatio/computePbRatioPit';
-import { computeAndWriteAbnormalCapexRatioPit } from '../src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
-import { computeAndWriteChowderNumberPit } from '../src/application/metrics/dividend/chowderNumber/computeChowderNumberPit';
-import { computeAndWriteConsecutiveDividendYearsPit } from '../src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
-import { computeAndWriteDividendDistributionCountPit } from '../src/application/metrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
-import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
-import { computeAndWriteRdIntensityPit } from '../src/application/metrics/growth/rdIntensity/computeRdIntensityPit';
-import { computeAndWriteSuePit } from '../src/application/metrics/growth/sue/computeSuePit';
-import { computeAndWriteRevenueCagrFamilyPit } from '../src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
-import { computeAndWriteOneDollarTestPit } from '../src/application/metrics/profitability/oneDollarTest/computeOneDollarTestPit';
-import { computeAndWriteEpsCagrFamilyPit } from '../src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit';
-import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
-import { computeAndWriteOperatingExpenseRatioPit } from '../src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit';
-import { computeAndWriteBetaPit } from '../src/application/metrics/valuation/beta/computeBetaPit';
-import { computeAndWriteMarketRatiosPit } from '../src/application/metrics/shared/marketRatios/computeMarketRatiosPit';
-import { computeAndWriteBankAssetQualityFamilyPit } from '../src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
-import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit';
-import { computeAndWriteBankIncomeWaterfallPit } from '../src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
-import { computeAndWriteNcavPit } from '../src/application/metrics/valuation/ncav/computeNcavPit';
-import { computeAndWriteMarketCapPit } from '../src/application/metrics/valuation/marketCap/computeMarketCapPit';
-import { computeAndWritePegRatioPit } from '../src/application/metrics/valuation/pegRatio/computePegRatioPit';
 // 2026-09-14 使用者發現：這份清單在 2026-09-11「全市場六季財報深度解鎖」批次跟
 // 2026-09-13「量化選股法則」批次各自新增指標時，都沒有回頭更新這份清單（兩份清單之間
 // 沒有型別系統強制同步，純粹手動維護），導致全市場歷史回補（backfillFullHistoryFullMarketPit.ts）
 // 從一開始就沒涵蓋到這 19 支指標（含 2 個家族函式）。這裡一次補齊。
-import { computeAndWriteEvToEbitPit } from '../src/application/metrics/valuation/evToEbit/computeEvToEbitPit';
-import { computeAndWriteEvToFcfPit } from '../src/application/metrics/valuation/evToFcf/computeEvToFcfPit';
-import { computeAndWriteGreenblattRocPit } from '../src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit';
-import { computeAndWriteGreenblattEarningsYieldPit } from '../src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
 // greenblattEarningsYield 先不註冊/不回填（2026-09-14 使用者要求，等神奇公式上線再合併
 // 進來），見 metricDefinitionRegistry.ts 同一則說明。
-import { computeAndWriteTobinsQPit } from '../src/application/metrics/valuation/tobinsQ/computeTobinsQPit';
-import { computeAndWritePriceToResearchRatioPit } from '../src/application/metrics/growth/priceToResearchRatio/computePriceToResearchRatioPit';
-import { computeAndWriteNovyMarxGpToAssetsPit } from '../src/application/metrics/profitability/novyMarxGpToAssets/computeNovyMarxGpToAssetsPit';
-import { computeAndWriteCrociPit } from '../src/application/metrics/profitability/croci/computeCrociPit';
-import { computeAndWriteFcfMarginPit } from '../src/application/metrics/quality/fcfMargin/computeFcfMarginPit';
-import { computeAndWriteRuleOf40Pit } from '../src/application/metrics/growth/ruleOf40/computeRuleOf40Pit';
-import { computeAndWriteNetWorkingCapitalToAssetsPit } from '../src/application/metrics/resilience/netWorkingCapitalToAssets/computeNetWorkingCapitalToAssetsPit';
-import { computeAndWriteTotalDebtToCapitalPit } from '../src/application/metrics/resilience/totalDebtToCapital/computeTotalDebtToCapitalPit';
-import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
-import { computeAndWriteEquityRatioPit } from '../src/application/metrics/resilience/equityRatio/computeEquityRatioPit';
-import { computeAndWriteCashToAssetsRatioPit } from '../src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
-import { computeAndWriteBeneishAqiPit } from '../src/application/metrics/quality/beneishAqi/computeBeneishAqiPit';
-import { computeAndWriteBeneishDsriPit } from '../src/application/metrics/quality/beneishDsri/computeBeneishDsriPit';
-import { computeAndWriteCashFlowValuationFamilyPit } from '../src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
-import { computeAndWriteLeverageDegreeFamilyPit } from '../src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
-
 export const GENERAL_METRIC_CODES = [
   'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden', 'netProfitMargin', 'equityMultiplier',
   'grahamNumber', 'ownerEarnings', 'altmanZScore', 'piotroskiFScore', 'beneishMScore', 'nissimPenmanRnoa', 'zmijewskiScore', 'ohlsonOScore',

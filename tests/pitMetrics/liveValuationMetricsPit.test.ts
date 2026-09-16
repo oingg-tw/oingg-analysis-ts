@@ -1,8 +1,6 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteLiveGrahamNumberPit } from '@/application/metrics/valuation/liveGrahamNumber/computeLiveGrahamNumberPit';
-import { computeAndWriteLivePegRatioPit } from '@/application/metrics/valuation/livePegRatio/computeLivePegRatioPit';
-import { computeAndWriteLiveMarketCapPit } from '@/application/metrics/valuation/liveMarketCap/computeLiveMarketCapPit';
+import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePegRatioPit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';

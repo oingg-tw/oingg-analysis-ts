@@ -3,9 +3,7 @@
 // backfillWaterfallPerSharePit.ts 的併發池寫法。
 //
 // 用法：pnpm tsx scripts/backfillIncomeStatementDividendPerSharePit.ts
-
-import { computeAndWriteIncomeStatementPerSharePit } from '../src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit';
-import { computeAndWriteDividendPerSharePit } from '../src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit';
+import { computeAndWriteDividendPerSharePit, computeAndWriteIncomeStatementPerSharePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

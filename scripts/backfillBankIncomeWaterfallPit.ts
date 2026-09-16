@@ -10,8 +10,7 @@
 // 才不會漏掉「有損益表資料但沒有資本適足率監理揭露」的銀行/金控。
 //
 // 用法：pnpm tsx scripts/backfillBankIncomeWaterfallPit.ts
-
-import { computeAndWriteBankIncomeWaterfallPit } from '../src/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
+import { computeAndWriteBankIncomeWaterfallPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

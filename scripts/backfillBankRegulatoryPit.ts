@@ -6,9 +6,7 @@
 // 改用這批自己的銀行股清單——2026-09-06 直接查 mops-ts export DB 驗證過都有真實資料。
 // 季度範圍沿用共用的 PIT_BACKFILL_QUARTERS（113Q3~115Q2）；銀行 XBRL 資料目前只回填到
 // 114Q1 左右，更早的季度會自然寫出 missing_input 的 null 列，不是錯誤，是預期的優雅降級。
-
-import { computeAndWriteBankAssetQualityFamilyPit } from '../src/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
-import { computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamilyPit';
+import { computeAndWriteBankAssetQualityFamilyPit, computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

@@ -1,8 +1,7 @@
 // 2026-09-10：市值指標，只回補 2330 最新一筆——理由跟這個 session 其他 backfill 腳本一致。
 //
 // 用法：pnpm tsx scripts/backfillMarketCapPit.ts
-
-import { computeAndWriteMarketCapPit } from '../src/application/metrics/valuation/marketCap/computeMarketCapPit';
+import { computeAndWriteMarketCapPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

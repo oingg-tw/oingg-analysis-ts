@@ -5,10 +5,7 @@
 // 的根因，不是資料源缺口），改成跟 backfillPeRatioAndPbRatioPit.ts 同一個季度範圍逐季回補。
 //
 // 用法：pnpm tsx scripts/backfillShareholderPolicyPit.ts
-
-import { computeAndWriteBuybackYieldPit } from '../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit';
-import { computeAndWriteDividendCoverageRatioPit } from '../src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
-import { computeAndWriteShareCountChangeRatePit } from '../src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
+import { computeAndWriteBuybackYieldPit, computeAndWriteDividendCoverageRatioPit, computeAndWriteShareCountChangeRatePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

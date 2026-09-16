@@ -1,8 +1,7 @@
 // 2026-09-11：本益成長比（PEG），只回補 2330 最新一筆。
 //
 // 用法：pnpm tsx scripts/backfillPegRatioPit.ts
-
-import { computeAndWritePegRatioPit } from '../src/application/metrics/valuation/pegRatio/computePegRatioPit';
+import { computeAndWritePegRatioPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

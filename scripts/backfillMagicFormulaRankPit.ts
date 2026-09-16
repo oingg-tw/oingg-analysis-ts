@@ -16,12 +16,11 @@
 //    的簡化，不是 Greenblatt 原書逐一討論的精確並列規則）後相加，寫入 magicFormulaRank。
 //
 // 用法：pnpm tsx scripts/backfillMagicFormulaRankPit.ts
-
-import { computeAndWriteGreenblattRocPit } from '../src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit';
-import { computeAndWriteGreenblattEarningsYieldPit } from '../src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
+import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRocPit } from '../src/bootstrap/pitMetrics';
 import { isFinancialIndustryCompany } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { writeMetricValue, periodTypeGroup } from '../src/application/metrics/metricValueWriter';
+import { persistMetricValue } from '../src/bootstrap/pitMetrics';
+import { periodTypeGroup } from '../src/domain/metrics/coordinate';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
@@ -117,7 +116,7 @@ const main = async () => {
     // （兩支底層指標理論上會落在同一季，這裡固定取其中一支當錨點，避免兩支座標不一致
     // 時無所適從——如果之後發現兩支經常落在不同季，要再檢討這個簡化）。
     const roc = rocValues.get(symbol)!;
-    const outcome = await writeMetricValue({
+    const outcome = await persistMetricValue({
       symbol,
       metricCode: 'magicFormulaRank',
       ...periodTypeGroup('TTM'),

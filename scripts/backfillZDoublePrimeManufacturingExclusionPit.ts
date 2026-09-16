@@ -12,8 +12,7 @@
 // Zmijewski 都只排除金融業，沒有製造業限制，不受影響，不需要重算）。
 //
 // 用法：pnpm tsx scripts/backfillZDoublePrimeManufacturingExclusionPit.ts
-
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
+import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { govExportPrisma } from '../src/infrastructure/prisma/govExportClient';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';

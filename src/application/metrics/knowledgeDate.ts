@@ -1,4 +1,3 @@
-import { mopsAnnouncementDates } from '@/infrastructure/repositories/mops/reportAnnouncementDate';
 import type { AnnouncementDatePort, PriceAnchorSource } from '@/application/ports/announcementDates';
 
 export interface QuarterAnchorInput {
@@ -17,12 +16,12 @@ export interface KnowledgeDateResolution {
 // 回傳「這些財報全部公告完畢、市場才真正知道這個衍生值」的日期（= 各自公告日的最大值）。
 // 任一份財報連 reportDate 都查不到（財報本身不存在）就回傳 null，呼叫端視為「沒有可用的
 // knowledge_date，不寫入」。之後其他指標接 knowledge_date 傳染都呼叫這支，不要各自重寫。
-// 2026-09-17 Phase 3：公告日查詢改透過 AnnouncementDatePort 注入；最後一個參數的預設值是遷移期間
-// 的過渡（107 支還沒遷移的 compute*Pit.ts 不帶它，已遷移的傳 deps.announcements），全部遷完後拿掉。
+// 2026-09-17 Phase 3：公告日查詢透過 AnnouncementDatePort 注入（呼叫端傳 deps.announcements，真實實作由
+// src/bootstrap/pitDeps.ts 綁定），這支本身不碰任何 I/O 實作。
 export const resolveKnowledgeDate = async (
   symbol: string,
   quarters: QuarterAnchorInput[],
-  announcements: AnnouncementDatePort = mopsAnnouncementDates
+  announcements: AnnouncementDatePort
 ): Promise<KnowledgeDateResolution | null> => {
   const anchors = await Promise.all(quarters.map((q) => announcements.getPriceAnchorDate(symbol, q.rocYear, q.season, q.reportDate)));
   if (anchors.some((a) => a === null)) return null;

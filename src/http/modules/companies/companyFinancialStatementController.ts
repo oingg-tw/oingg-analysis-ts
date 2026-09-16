@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getLatestAvailableQuarter, type StatementSource } from '@/application/financials/latestQuarter';
+import { legacyPitDeps } from '@/application/metrics/legacyBridge';
 import { getBalanceSheetXbrlFull } from '@/infrastructure/repositories/mops/balanceSheetXbrlFull';
 import { getIncomeStatementXbrlFull } from '@/infrastructure/repositories/mops/incomeStatementXbrlFull';
 import { getXbrlCashFlowQuarterly } from '@/infrastructure/repositories/mops/xbrlCashFlowQuarterly';
@@ -94,7 +95,8 @@ export const getCompanyFinancialStatement = async (req: Request, res: Response, 
     const resolvedQuarter =
       year !== undefined && season !== undefined
         ? { year, season: season as Season }
-        : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, [statementType as StatementSource]);
+        : // Phase 3 遷移期間先綁 legacyPitDeps 的 quarters port；Phase 4 controller 改收 bootstrap 綁定好的 use case。
+          await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, [statementType as StatementSource], legacyPitDeps.quarters);
 
     if (!resolvedQuarter) {
       return res.status(200).json({ symbol, statementType, dataType, subsidiaryCompanyId, year: null, season: null, reportDate: null, found: false, statement: null });

@@ -4,8 +4,7 @@
 // （SYMBOL_CONCURRENCY=8，避免打爆 Neon DB 連線數）。
 //
 // 用法：pnpm tsx scripts/backfillLongTermDebtToNetCurrentAssetsPit.ts
-
-import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit';
+import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

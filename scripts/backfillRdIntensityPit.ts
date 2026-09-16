@@ -1,8 +1,7 @@
 // 2026-09-10 使用者要求：研發費用率。只回補 2330 最新一筆驗證。
 //
 // 用法：pnpm tsx scripts/backfillRdIntensityPit.ts
-
-import { computeAndWriteRdIntensityPit } from '../src/application/metrics/growth/rdIntensity/computeRdIntensityPit';
+import { computeAndWriteRdIntensityPit } from '../src/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
