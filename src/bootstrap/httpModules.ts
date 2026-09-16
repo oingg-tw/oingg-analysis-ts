@@ -7,7 +7,7 @@ import batchRouter from '@/http/batch/route';
 import { registerBatchOpenApi } from '@/http/batch/openapi';
 import metricsRouter from '@/http/modules/metrics/route';
 import { registerFiltersOpenApi } from '@/http/modules/metrics/openapi';
-import companiesRouter from '@/http/modules/companies/route';
+import { createCompaniesRouter } from '@/http/modules/companies/route';
 import { registerCompaniesOpenApi } from '@/http/modules/companies/openapi';
 import { createSecuritiesRouter } from '@/http/modules/securities/route';
 import { registerSecuritiesOpenApi } from '@/http/modules/securities/openapi';
@@ -64,7 +64,7 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
   { name: 'batch', auth: 'batch', router: batchRouter, registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: metricsRouter, registerOpenApi: registerFiltersOpenApi },
-  { name: 'companies', auth: 'bff', router: companiesRouter, registerOpenApi: registerCompaniesOpenApi },
+  { name: 'companies', auth: 'bff', router: createCompaniesRouter(deps), registerOpenApi: registerCompaniesOpenApi },
   { name: 'securities', auth: 'bff', router: createSecuritiesRouter(deps), registerOpenApi: registerSecuritiesOpenApi },
   { name: 'preferredStock', auth: 'bff', router: createPreferredStockRouter(deps), registerOpenApi: registerPreferredStockOpenApi },
   { name: 'industries', auth: 'bff', router: createIndustriesRouter(deps), registerOpenApi: registerIndustriesOpenApi },

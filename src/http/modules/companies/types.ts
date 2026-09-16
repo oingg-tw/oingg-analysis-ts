@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { CompanyNameEntry } from '@/application/ports/companyProfiles';
+import type { CapitalStockChangeSource, CapitalStockHistoryEntry } from '@/application/ports/capitalStock';
+import type { MonthlyRevenueEntry } from '@/application/ports/monthlyRevenue';
 import type { CompanyProfileDetail } from '@/application/companies/types';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
@@ -82,6 +84,47 @@ export const companiesCountOnlyResultSchema = z.object({
   count: z.number().meta({ description: '全部公司總筆數' }),
 });
 export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
+
+// 2026-09-17 Phase 4：以下兩組 entry schema 從 infrastructure 的 repository 檔案搬來（http 直接 import
+// infrastructure 是分層違規），型別真理來源是 application/ports 的介面，用 satisfies 釘住。
+// 五種結構化的股本變動原因，bigint 序列化成字串——2026-09-04 應 web-nuxt 要求新增，實測過
+// capital_stock_history 沒有庫藏股/可轉債轉換的獨立欄位，這兩種變動反而是寫在 remarks
+// 自由格式文字裡（例如「註銷庫藏股3,249,000股」），不是結構化數字欄位，見 remarks 說明。
+export const capitalStockChangeSourceSchema = z.object({
+  cashIncrease: z.string().nullable(),
+  capitalReserveTransfer: z.string().nullable(),
+  retainedEarningsTransfer: z.string().nullable(),
+  mergerIncrease: z.string().nullable(),
+  capitalReduction: z.string().nullable(),
+  other: z.string().nullable().meta({ description: '自由格式文字，例如「發行限制員工權利新股2,353,000股」，不是這五種結構化原因之一時才會有值' }),
+}) satisfies z.ZodType<CapitalStockChangeSource>;
+
+export const capitalStockHistoryEntrySchema = z.object({
+  effectiveDate: z.string().meta({ description: '"YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆' }),
+  paidInShares: z.string().meta({ description: '實際流通股數（不是千股），bigint 序列化成字串' }),
+  paidInCapital: z.string().nullable().meta({ description: '實收資本額（元）' }),
+  sharesChangePercent: z.number().nullable().meta({
+    description: '跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。',
+  }),
+  changeSource: capitalStockChangeSourceSchema,
+  remarks: z.string().nullable().meta({ description: '自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位' }),
+}) satisfies z.ZodType<CapitalStockHistoryEntry>;
+
+export const monthlyRevenueEntrySchema = z.object({
+  yearMonth: z.string().meta({ description: '"YYYY-MM"' }),
+  reportDate: z.string().nullable().meta({ description: '公告日 "YYYY-MM-DD"' }),
+  industry: z.string().nullable(),
+  currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
+  lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),
+  yoyChangePercent: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
+  momChangePercent: z.number().nullable().meta({
+    description: '月增率（%）——來源這批一次性回填的資料沒有算這個欄位，本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆（沒有更早的月份可比較）固定 null',
+  }),
+  cumulativeRevenue: z.string().nullable().meta({ description: '本年累計營收（新台幣千元）' }),
+  cumulativeLastYearRevenue: z.string().nullable().meta({ description: '去年累計營收（新台幣千元）' }),
+  cumulativeChangePercent: z.number().nullable().meta({ description: '累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
+  note: z.string().nullable(),
+}) satisfies z.ZodType<MonthlyRevenueEntry>;
 
 // 2026-09-05 新增，2026-09-14 資料源換成 oingg-playwright-py 供應鏈分類，2026-09-15
 // 第二次改版——「產業同業比較」演算法改用產業追蹤樹的葉節點當第一選擇（不再用 33 類

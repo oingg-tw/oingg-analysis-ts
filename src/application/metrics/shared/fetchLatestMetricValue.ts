@@ -1,6 +1,6 @@
 import { ValidationError } from '@/application/errors';
 import { resolveTimeframeForMetric } from '../resolveTimeframeForMetric';
-import { getMetricHistory } from './queryMetricHistory';
+import { getMetricHistory, type MetricHistoryDeps } from './queryMetricHistory';
 import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
 import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
 
@@ -9,7 +9,7 @@ import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
 // evaluateCompanyMetricCompleteness.ts（指標完整度掃描）也需要同一段邏輯，這裡開始有第二個
 // 消費者，抽成共用模組。
 // 2026-09-17：timeframe 解析改用 application 自己的 resolveTimeframeForMetric（原本反過來
-// import HTTP 層的 screener/fieldResolver，是依賴反轉）。
+// import HTTP 層的 screener/fieldResolver，是依賴反轉）；Phase 4 起歷史查詢透過 deps 注入。
 
 const DATA_TYPE = '2'; // 既有 metric-history 端點的既定慣例：'2' = 合併口徑，不分子公司
 const SUBSIDIARY_COMPANY_ID = '';
@@ -26,7 +26,7 @@ export interface LatestMetricValue {
 // timeframe 不合法（例如已排除的 metricCode，或呼叫端傳了這支 metricCode 不支援的 timeframe）回傳
 // null，不 throw——呼叫端（一次掃很多 metricCode 的情境）不應該因為單一 metricCode 的 timeframe
 // 問題整批失敗。
-export const fetchLatestMetricValue = async (symbol: string, metricCode: string, timeframe: string): Promise<LatestMetricValue | null> => {
+export const fetchLatestMetricValue = async (symbol: string, metricCode: string, timeframe: string, deps: MetricHistoryDeps): Promise<LatestMetricValue | null> => {
   let fieldRef;
   try {
     fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
@@ -36,8 +36,8 @@ export const fetchLatestMetricValue = async (symbol: string, metricCode: string,
   }
 
   const result = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1);
+    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1, deps)
+    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1, deps);
 
   const latest = result.entries.at(-1);
   if (!latest) return { value: null, nullReason: null, knowledgeDate: null, knowledgeDateIsFallback: null };

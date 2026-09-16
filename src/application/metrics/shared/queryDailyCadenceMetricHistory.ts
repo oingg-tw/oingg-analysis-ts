@@ -1,12 +1,7 @@
-import { listDailyCadenceMetricHistoryRows } from '@/infrastructure/repositories/analysis/metricValueRepository';
-import type { LookbackRange, SamplingInterval, SnapshotCadence } from '../../../domain/metrics/metricBasis';
-import type { MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
+import type { DailyCadenceCoordinateGroup } from '@/application/ports/metricValueQueries';
+import type { MetricHistoryDeps, MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
 
-export interface DailyCadenceCoordinateGroup {
-  lookbackRange: LookbackRange;
-  samplingInterval: SamplingInterval;
-  snapshotCadence: SnapshotCadence;
-}
+export type { DailyCadenceCoordinateGroup };
 
 // 2026-09-09 新增：queryMetricHistory.ts 的逐日型版本——查 metric_daily_cadence_values
 // （Beta/exchangePeRatio/exchangePbRatio/dividendYield 這批指標拆表後的新家）。刻意不是
@@ -24,9 +19,10 @@ export const getDailyCadenceMetricHistory = async (
   coordinate: DailyCadenceCoordinateGroup,
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
-  limit: number
+  limit: number,
+  deps: MetricHistoryDeps
 ): Promise<MetricHistoryResult> => {
-  const rows = await listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType, subsidiaryCompanyId);
+  const rows = await deps.metricValueQueries.listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType, subsidiaryCompanyId);
 
   // 依 tradeDate 去重取最大 knowledgeDate 那筆——理論上同一個 tradeDate 只會有一筆
   // （每個交易日只重算一次），這裡跟季報型的 dedup 邏輯一致，防禦同一天重編疊加的情境。

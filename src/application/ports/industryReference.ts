@@ -84,6 +84,24 @@ export interface SecuritiesIndustrySector {
   companyCount: number;
 }
 
+// 這家公司的「產業標籤」（category/coarseGroup/source）——2026-09-15 起降級為純資訊性欄位，不再是同業比較
+// 演算法的一部分（那個改走 findPeerGroupByTree）。updatedAt 是資料本身的新鮮度，不是快取抓取時間。
+export interface CompanyCategoryInfo {
+  category: string | null;
+  source: 'keyword' | 'gemini' | null;
+  coarseGroup: string | null;
+  updatedAt: Date | null;
+}
+
+export interface TreePeerGroupResult {
+  found: boolean;
+  nodeId: string | null; // 實際用到的層級的 node_id
+  nodeType: IndustryChainTreeNodeType | null; // 恆不會是 'misc'（misc 桶本身不當同業池）
+  label: string | null;
+  peers: string[]; // 含目標公司自己；found=false 時是 []
+  notFoundReason: 'not_classified' | 'insufficient_peers' | null;
+}
+
 export interface IndustryReferenceDataPort {
   // ---- gov-ts 稅籍五層分類（純瀏覽語意，不做動態層級回退）
   // code=null 代表樹根，一定回傳成功；code 給了但字典查無此代碼回 null（呼叫端轉 found:false）。
@@ -99,6 +117,9 @@ export interface IndustryReferenceDataPort {
   listIndustryClusters(): ClusterNode[];
   getExternalCompanyName(code: string): ExternalCompanyEntry | undefined;
   listIndustryTree(): IndustryChainTreeNode[];
+  getCompanyCategoryInfo(symbol: string): CompanyCategoryInfo | undefined;
+  // 從這家公司所在的葉節點往上找，直到同業數（含自己、且在 candidatePool 內）達到 minPeers；見 industryTree.ts 的完整說明。
+  findPeerGroupByTree(symbol: string, candidatePool: ReadonlySet<string>, minPeers: number): TreePeerGroupResult;
   // ---- 證交所類股
   listSecuritiesIndustrySectors(): Promise<SecuritiesIndustrySector[]>;
 }

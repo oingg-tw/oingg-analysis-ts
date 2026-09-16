@@ -1,32 +1,12 @@
-import { z } from 'zod';
 import { twseExportDevPrisma } from '@/infrastructure/prisma/twseExportDevClient';
+import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
 
 // twse-ts export.monthly_revenue——目前只有 2330 有資料（一次性回填，2021-08~2026-07
 // 共 60 個月，見 twseExportDevClient.ts 檔頭說明）。查無資料（不是 2330）回傳空陣列，
 // 是正常情境不是錯誤，呼叫端不用特別判斷。
-
-export const monthlyRevenueEntrySchema = z.object({
-  yearMonth: z.string().meta({ description: '"YYYY-MM"' }),
-  reportDate: z.string().nullable().meta({ description: '公告日 "YYYY-MM-DD"' }),
-  industry: z.string().nullable(),
-  currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
-  lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),
-  yoyChangePercent: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
-  momChangePercent: z.number().nullable().meta({
-    description: '月增率（%）——來源這批一次性回填的資料沒有算這個欄位，本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆（沒有更早的月份可比較）固定 null',
-  }),
-  cumulativeRevenue: z.string().nullable().meta({ description: '本年累計營收（新台幣千元）' }),
-  cumulativeLastYearRevenue: z.string().nullable().meta({ description: '去年累計營收（新台幣千元）' }),
-  cumulativeChangePercent: z.number().nullable().meta({ description: '累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
-  note: z.string().nullable(),
-});
-export type MonthlyRevenueEntry = z.infer<typeof monthlyRevenueEntrySchema>;
-
-export interface MonthlyRevenueHistoryResult {
-  entries: MonthlyRevenueEntry[];
-  total: number;
-  hasMore: boolean;
-}
+// DTO 型別 2026-09-17 Phase 4 搬到 application/ports/monthlyRevenue.ts（對外回應的 zod schema 在
+// http/modules/companies/types.ts），這裡 re-export 給既有 import 路徑。
+export type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult };
 
 interface RawMonthlyRevenueRow {
   year_month: Date;
@@ -92,3 +72,6 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
 
   return { entries, total, hasMore: total > entries.length };
 };
+
+// application/ports/monthlyRevenue.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const twseDevMonthlyRevenue: MonthlyRevenuePort = { getMonthlyRevenueHistory };

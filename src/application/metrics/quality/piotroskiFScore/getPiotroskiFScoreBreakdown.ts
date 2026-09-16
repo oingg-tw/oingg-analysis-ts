@@ -44,7 +44,7 @@ export interface PiotroskiFScoreBreakdown {
   signalLabels: Readonly<Record<string, string>>;
 }
 
-// 2026-09-17 Phase 3：跟 computePiotroskiFScore 共用同一份 resolver，所以也收同一組 deps（controller 遷移期間綁 legacyPitDeps）。
+// 2026-09-17 Phase 3：跟 computePiotroskiFScore 共用同一份 resolver，所以也收同一組 deps（Phase 4 起由 application/companies/insights.ts 傳入 AppDeps）。
 export const getPiotroskiFScoreBreakdown = async (query: QuarterlyMetricQuery, deps: PiotroskiFScoreDeps): Promise<PiotroskiFScoreBreakdown> => {
   const resolution = await resolvePiotroskiFScoreSignals(query, deps);
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, type MetricHistoryResult } from '../../shared/queryMetricHistory';
+import { getMetricHistory, type MetricHistoryDeps, type MetricHistoryResult } from '../../shared/queryMetricHistory';
 import type { PeriodType } from '../../../../domain/metrics/metricBasis';
 
 export const roeHistoryEntrySchema = z.object({
@@ -33,5 +33,5 @@ export type RoeHistoryEntry = z.infer<typeof roeHistoryEntrySchema>;
 // 這兩個內部細節維度。
 // ROE 只落在季報型（periodType，值域 Q/Q_ANN/TTM），2026-09-09 拆表後 getMetricHistory
 // 已經是純季報型函式，直接傳 periodType 即可，不用再組四欄位的 basisGroup。
-export const getRoeHistory = (symbol: string, periodType: PeriodType, limit: number): Promise<MetricHistoryResult> =>
-  getMetricHistory(symbol, 'roe', periodType, '2', '', limit);
+export const getRoeHistory = (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<MetricHistoryResult> =>
+  getMetricHistory(symbol, 'roe', periodType, '2', '', limit, deps);

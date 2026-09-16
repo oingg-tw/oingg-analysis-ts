@@ -1,6 +1,10 @@
 import { z } from 'zod';
-import { listPeriodMetricHistoryRows } from '@/infrastructure/repositories/analysis/metricValueRepository';
+import type { AppDeps } from '@/application/deps';
 import type { PeriodType } from '../../../domain/metrics/metricBasis';
+
+// 讀取端 use case 共用的 deps 形狀——2026-09-17 Phase 4 起歷史查詢改透過 MetricValueQueryPort 注入，
+// 不再靜態 import infrastructure 的 repository。
+export type MetricHistoryDeps = Pick<AppDeps, 'metricValueQueries'>;
 
 export const metricHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),
@@ -50,9 +54,10 @@ export const getMetricHistory = async (
   periodType: PeriodType,
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
-  limit: number
+  limit: number,
+  deps: MetricHistoryDeps
 ): Promise<MetricHistoryResult> => {
-  const rows = await listPeriodMetricHistoryRows(symbol, metricCode, periodType, dataType, subsidiaryCompanyId);
+  const rows = await deps.metricValueQueries.listPeriodMetricHistoryRows(symbol, metricCode, periodType, dataType, subsidiaryCompanyId);
 
   const latestPerPeriod = new Map<string, (typeof rows)[number]>();
   for (const row of rows) {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, metricHistoryEntrySchema } from './queryMetricHistory';
+import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryDeps } from './queryMetricHistory';
 import type { PeriodType } from '../../../domain/metrics/metricBasis';
 
 // 2026-09-07 使用者要「一次抓多個指標」（例如三率：grossMargin/operatingMargin/
@@ -47,9 +47,10 @@ export const getMultiMetricHistory = async (
   periodType: PeriodType,
   dataType: '1' | '2',
   subsidiaryCompanyId: string,
-  limit: number
+  limit: number,
+  deps: MetricHistoryDeps
 ): Promise<MultiMetricHistoryResult> => {
-  const results = await Promise.all(metricCodes.map((metricCode) => getMetricHistory(symbol, metricCode, periodType, dataType, subsidiaryCompanyId, limit)));
+  const results = await Promise.all(metricCodes.map((metricCode) => getMetricHistory(symbol, metricCode, periodType, dataType, subsidiaryCompanyId, limit, deps)));
 
   const rowsByCodeByPeriod = metricCodes.map((_, i) => new Map(results[i]!.entries.map((row) => [periodKey(row), row])));
 

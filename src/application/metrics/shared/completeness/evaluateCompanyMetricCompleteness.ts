@@ -1,5 +1,6 @@
 import { scanMetricFolderCatalog } from '@/application/metrics/metricFolderCatalog';
 import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
+import type { MetricHistoryDeps } from '../queryMetricHistory';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 
 // 2026-09-13 使用者問「有機制可以掃描每間公司的指標完整度嗎」——當時沒有，只有
@@ -31,7 +32,7 @@ export interface CompanyMetricCompletenessCategory {
   totalCount: number; // 這個分類的指標總數
 }
 
-export const evaluateCompanyMetricCompleteness = async (symbol: string): Promise<CompanyMetricCompletenessCategory[]> => {
+export const evaluateCompanyMetricCompleteness = async (symbol: string, deps: MetricHistoryDeps): Promise<CompanyMetricCompletenessCategory[]> => {
   const catalog = scanMetricFolderCatalog();
 
   return Promise.all(
@@ -43,7 +44,7 @@ export const evaluateCompanyMetricCompleteness = async (symbol: string): Promise
             return { metricCode: metric.metricCode, name: metric.name, nameEn: metric.nameEn, timeframe: null, hasValue: false, nullReason: null };
           }
 
-          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe);
+          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, deps);
           return {
             metricCode: metric.metricCode,
             name: metric.name,

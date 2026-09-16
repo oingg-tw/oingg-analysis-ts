@@ -1,5 +1,6 @@
 import { scanMetricFolderCatalog } from '@/application/metrics/metricFolderCatalog';
 import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
+import type { MetricHistoryDeps } from '../queryMetricHistory';
 import type { MetricBadge } from '../../../../domain/metrics/metricDefinitionSpec';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 
@@ -71,7 +72,7 @@ const evaluateComparator = (threshold: MetricBadge['threshold'], value: number, 
   }
 };
 
-export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadgeCategory[]> => {
+export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryDeps): Promise<CompanyBadgeCategory[]> => {
   const catalog = scanMetricFolderCatalog();
 
   const categories = await Promise.all(
@@ -85,7 +86,7 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult | null> => {
           const badge = metric.badge!;
           const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge（目前只有 piotroskiFScore）
-          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe);
+          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, deps);
 
           // 2026-09-15 使用者要求新增：像 bankCarRatio/bankCet1Ratio/bankTier1Ratio 這種
           // 只對特定產業（銀行/金控）有意義的指標，非銀行公司（例如台積電）從來不會有任何
@@ -102,7 +103,7 @@ export const evaluateCompanyBadges = async (symbol: string): Promise<CompanyBadg
           let compareValue: number | null = null;
           if (badge.threshold.compareAgainstFieldId) {
             const [compareMetricCode, compareTimeframe] = badge.threshold.compareAgainstFieldId.split('.');
-            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareTimeframe!);
+            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareTimeframe!, deps);
             compareValue = compareFetched?.value ?? null;
           }
 
