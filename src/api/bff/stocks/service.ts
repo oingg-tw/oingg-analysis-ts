@@ -81,7 +81,7 @@ export const getStockQuote = async (symbol: string): Promise<StockQuoteResult | 
 // 漲跌用 daily_price 最近兩個交易日的收盤價自己算（limit=2），跟 price/volume 同一次查詢、
 // 保證同一組交易日，不會有「price 是今天、change 卻拿舊資料算」的不同步問題。
 export const getStockSummary = async (symbol: string): Promise<StockSummaryResult | null> => {
-  const [exists, priceEntries, peRatioRow, pbRatioRow, dividendYieldRow, marketCapRow] = await Promise.all([
+  const [exists, priceHistory, peRatioRow, pbRatioRow, dividendYieldRow, marketCapRow] = await Promise.all([
     companyExists(symbol),
     getDailyPriceHistoryFromSource(symbol, 2),
     getLatestMarketRatioValue(symbol, 'exchangePeRatio'),
@@ -92,6 +92,7 @@ export const getStockSummary = async (symbol: string): Promise<StockSummaryResul
 
   if (!exists) return null;
 
+  const priceEntries = priceHistory.entries;
   const latest = priceEntries.at(-1) ?? null;
   const previous = priceEntries.length >= 2 ? priceEntries.at(-2)! : null;
   const change =
@@ -173,6 +174,6 @@ export const getStockPledgeRatioHistory = async (symbol: string, limit: number):
 // twse-ts/tpex-ts 的 daily_price，不經過 pitMetrics（那套架構是給「隨財報更新知識時點」的
 // 指標用，逐日股價沒有這個概念，直接查表就好，不需要 knowledgeDate 解析）。
 export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<DailyPriceHistoryResult> => {
-  const entries = await getDailyPriceHistoryFromSource(symbol, limit);
-  return { symbol, entries };
+  const { entries, earliestAvailableTradeDate } = await getDailyPriceHistoryFromSource(symbol, limit);
+  return { symbol, entries, earliestAvailableTradeDate };
 };

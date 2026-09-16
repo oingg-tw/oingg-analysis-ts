@@ -106,5 +106,10 @@ export type DailyPriceHistoryEntry = z.infer<typeof dailyPriceHistoryEntrySchema
 export const dailyPriceHistoryResultSchema = z.object({
   symbol: z.string(),
   entries: z.array(dailyPriceHistoryEntrySchema).meta({ description: '依交易日由舊到新排序（畫線圖方便直接照順序畫，不用前端自己反轉）' }),
+  earliestAvailableTradeDate: z.string().nullable().meta({
+    description:
+      '"YYYY-MM-DD"，這檔股票在資料庫裡最早的交易日——這是這檔股票全部歷史的範圍，不受這次查詢的 limit 影響（即使 entries 因為 limit 被截斷，這欄還是回傳真正最早的日期）。' +
+      '用來精確判斷「這檔股票實際有多少年價格歷史」（例如近期 IPO 公司歷史不到 5 年），不用再用「250 交易日≈1年」概估，直接拿這個日期跟今天算天數/年數即可；查無任何資料時為 null。',
+  }),
 });
 export type DailyPriceHistoryResult = z.infer<typeof dailyPriceHistoryResultSchema>;

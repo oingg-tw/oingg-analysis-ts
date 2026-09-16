@@ -172,7 +172,12 @@ export const registerStocksOpenApi = (): void => {
       '「隨財報更新知識時點」的概念，不需要 knowledgeDate 解析）。一家公司只會在 TWSE/TPEx' +
       '其中一邊掛牌，本服務內部自己判斷、查兩邊，呼叫端不用先知道是上市還是上櫃。依交易日' +
       '由舊到新排序（畫線圖方便直接照順序畫）。查無資料（例如代號不存在）entries 是空陣列，' +
-      '不是 404。',
+      '不是 404。\n\n' +
+      'earliestAvailableTradeDate（2026-09-16 新增）：這檔股票在資料庫裡最早的交易日，' +
+      '不受這次查詢的 limit 影響（即使 entries 因為 limit 被截斷，這欄還是回傳真正最早的' +
+      '日期）——給「切換近1/2/3/5/8年」這類視窗選擇器用，直接拿這個日期跟今天算精確天數/' +
+      '年數，判斷這檔股票夠不夠長的歷史（例如近期 IPO 公司），不用再用「250 交易日≈1年」' +
+      '概估。',
     tags: ['Stocks'],
     request: { params: getDailyPriceHistoryParamsSchema, query: getDailyPriceHistoryQuerySchema },
     responses: {

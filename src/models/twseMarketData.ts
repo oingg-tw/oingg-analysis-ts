@@ -123,7 +123,14 @@ interface RawDailyPriceHistoryRow {
 // getLatestDailyPrice 同一種判斷。依交易日新到舊排序、取最近 limit 筆——跟
 // getForeignShareholdingHistory 同一種「limit=最近幾筆」慣例，不是日期區間參數，呼叫端
 // 不用自己換算日期。
-export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<DailyPriceHistoryEntry[]> => {
+//
+// 2026-09-16 應 web-nuxt 要求新增 earliestAvailableTradeDate——「大盤連動程度」比較圖
+// 讓使用者切換近1/2/3/5/8年，前端原本只能拿 entries 陣列長度用「250 交易日/年」概估
+// 這檔股票夠不夠長的歷史，近期 IPO 這類公司會被概估誤判。改成額外查一次這檔股票在
+// daily_price 裡最早的交易日（不受 limit 影響，是這檔股票的全部歷史範圍，不是這次
+// 查詢實際回傳的範圍），前端可以直接用「今天 − earliestAvailableTradeDate」算出精確
+// 天數/年數，不用再概估。
+export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<{ entries: DailyPriceHistoryEntry[]; earliestAvailableTradeDate: string | null }> => {
   const toEntries = (rows: RawDailyPriceHistoryRow[]): DailyPriceHistoryEntry[] =>
     rows.map((row) => ({
       tradeDate: row.trade_date.toISOString().slice(0, 10),
@@ -139,14 +146,26 @@ export const getDailyPriceHistory = async (symbol: string, limit: number): Promi
     WHERE symbol = ${symbol}
     ORDER BY trade_date DESC LIMIT ${limit}
   `;
-  if (twseRows.length > 0) return toEntries(twseRows).reverse();
+  if (twseRows.length > 0) {
+    const earliestRows = await twseExportPrisma.$queryRaw<{ earliest: Date | null }[]>`
+      SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}
+    `;
+    const earliestAvailableTradeDate = earliestRows[0]?.earliest?.toISOString().slice(0, 10) ?? null;
+    return { entries: toEntries(twseRows).reverse(), earliestAvailableTradeDate };
+  }
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawDailyPriceHistoryRow[]>`
     SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
     WHERE symbol = ${symbol}
     ORDER BY trade_date DESC LIMIT ${limit}
   `;
-  return toEntries(tpexRows).reverse();
+  if (tpexRows.length === 0) return { entries: [], earliestAvailableTradeDate: null };
+
+  const earliestRows = await tpexExportPrisma.$queryRaw<{ earliest: Date | null }[]>`
+    SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}
+  `;
+  const earliestAvailableTradeDate = earliestRows[0]?.earliest?.toISOString().slice(0, 10) ?? null;
+  return { entries: toEntries(tpexRows).reverse(), earliestAvailableTradeDate };
 };
 
 // 一次查多家公司的最新股價（GET /stocks/prices?symbols=... 用）——不知道每個 symbol 掛在哪個
