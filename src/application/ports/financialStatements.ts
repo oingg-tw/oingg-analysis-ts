@@ -79,4 +79,48 @@ export interface InsuranceIncomeStatementPort {
   getInsuranceIncomeStatement(key: QuarterlyKey): Promise<InsuranceIncomeStatementFields | null>;
 }
 
-export type FinancialStatementsPort = IncomeStatementPort & BalanceSheetPort & CashFlowStatementPort & InsuranceIncomeStatementPort;
+// ---- 銀行監理揭露（bank_asset_quality_xbrl / bank_capital_adequacy_detail_xbrl / bank_income_statement_detail_xbrl）----
+// 對指標核心來說就是「另外三張按季的表」，跟一般三大表同一種 QuarterlyKey 查詢形狀，所以放同一個 port 家族。
+// 比率欄位是 number（Postgres numeric 在 repository 內統一 Number() 轉換），金額仍是 bigint 千元。
+
+export interface BankAssetQualityFields {
+  reportDate: Date;
+  nonPerformingLoansRatio: number | null;
+  coverageRatio: number | null;
+}
+
+export interface BankCapitalAdequacyFields {
+  reportDate: Date;
+  eligibleCapital: bigint | null;
+  riskWeightedAssets: bigint | null;
+  ratioOrdinaryShareEquityToRwa: number | null;
+  ratioTierICapitalToRwa: number | null;
+}
+
+export interface BankIncomeStatementFields {
+  reportDate: Date;
+  netInterestIncome: bigint | null; // 利息淨收益（net_income_loss_of_interest，已經是利息收入減利息費用後的淨額）
+  netNonInterestIncome: bigint | null; // 非利息淨收益（net_non_interest_income_loss，含手續費/投資/匯兌等全部非利息項目淨額）
+  badDebtProvision: bigint | null; // 呆帳費用及保證責任準備（官方單一總計欄位，不拆子項）
+  profitBeforeTax: bigint | null; // 稅前淨利，跟一般三大表（xbrl_three_statements_long）的 profit_loss_before_tax 是同一份文件的同一個數字，可交叉驗證
+}
+
+export interface BankAssetQualityPort {
+  getBankAssetQuality(key: QuarterlyKey): Promise<BankAssetQualityFields | null>;
+}
+
+export interface BankCapitalAdequacyPort {
+  getBankCapitalAdequacy(key: QuarterlyKey): Promise<BankCapitalAdequacyFields | null>;
+}
+
+export interface BankIncomeStatementPort {
+  getBankIncomeStatement(key: QuarterlyKey): Promise<BankIncomeStatementFields | null>;
+}
+
+export type FinancialStatementsPort = IncomeStatementPort &
+  BalanceSheetPort &
+  CashFlowStatementPort &
+  InsuranceIncomeStatementPort &
+  BankAssetQualityPort &
+  BankCapitalAdequacyPort &
+  BankIncomeStatementPort;

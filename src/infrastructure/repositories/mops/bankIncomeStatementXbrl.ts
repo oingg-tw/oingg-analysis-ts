@@ -22,13 +22,11 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { BankRegulatoryKey } from './bankRegulatoryXbrl';
 
-export interface BankIncomeStatementQuarterRow {
-  reportDate: Date;
-  netInterestIncome: bigint | null; // 利息淨收益（net_income_loss_of_interest，已經是利息收入減利息費用後的淨額）
-  netNonInterestIncome: bigint | null; // 非利息淨收益（net_non_interest_income_loss，含手續費/投資/匯兌等全部非利息項目淨額）
-  badDebtProvision: bigint | null; // 呆帳費用及保證責任準備（官方單一總計欄位，不拆子項）
-  profitBeforeTax: bigint | null; // 稅前淨利，跟一般三大表（xbrl_three_statements_long）的 profit_loss_before_tax 是同一份文件的同一個數字，可交叉驗證
-}
+import type { BankIncomeStatementFields } from '@/application/ports/financialStatements';
+
+// 回傳列型別 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts 的 BankIncomeStatementFields（port 的 DTO，
+// 各欄位對應的 XBRL 欄位說明在那裡），這裡沿用舊名 re-export。
+export type BankIncomeStatementQuarterRow = BankIncomeStatementFields;
 
 interface RawBankIncomeStatementQuarterRow {
   report_date: Date;

@@ -3,6 +3,9 @@ import type { QuarterResolverPort } from '@/application/ports/quarterResolver';
 import type { AnnouncementDatePort } from '@/application/ports/announcementDates';
 import type { PaidInSharesPort } from '@/application/ports/capitalStock';
 import type { MarketDataPort } from '@/application/ports/marketData';
+import type { XbrlAccountsPort } from '@/application/ports/xbrlAccounts';
+import type { IndustryPort } from '@/application/ports/industry';
+import type { DividendEventsPort } from '@/application/ports/dividendEvents';
 import type { MetricValueRepository } from '@/application/ports/metricValues';
 import type { MetricDefinitionLookup } from '@/application/ports/metricDefinitions';
 
@@ -11,14 +14,17 @@ import type { MetricDefinitionLookup } from '@/application/ports/metricDefinitio
 // 單方法介面是同一個精神），由 src/bootstrap/pitDeps.ts 綁定真實實作一次、tests/fakes/pit/
 // createTestPitDeps.ts 綁假的。不用 DI 容器，就是一個明確傳遞的物件。
 //
-// 欄位隨 family 遷移逐步增加（beta 的價格序列、研發費用、產業別、銀行監理資料、股利事件…），
-// 每加一個 port 就同步補 bootstrap 的綁定跟 fakes 的預設 stub。
+// 每個欄位對應一個上游關注點（application/ports/ 一檔一個）；加新 port 時同步補 bootstrap 的綁定
+// 跟 fakes 的預設 stub。
 export interface PitDeps {
-  statements: FinancialStatementsPort;
-  quarters: QuarterResolverPort;
-  announcements: AnnouncementDatePort;
-  shares: PaidInSharesPort;
-  market: MarketDataPort;
-  metricValues: MetricValueRepository;
-  definitions: MetricDefinitionLookup;
+  statements: FinancialStatementsPort; // 三大表 + 保險業損益表 + 銀行三張監理表（按季，QuarterlyKey）
+  quarters: QuarterResolverPort; // 各張表「最新到哪一季」
+  announcements: AnnouncementDatePort; // 財報公告日（knowledge_date 傳染）
+  shares: PaidInSharesPort; // 流通股數（股本異動）
+  market: MarketDataPort; // 股價/市值/每日估值/價格序列
+  xbrlAccounts: XbrlAccountsPort; // 寬表沒有的 XBRL 原始科目
+  industry: IndustryPort; // 產業別 gating
+  dividendEvents: DividendEventsPort; // 股利分派事件
+  metricValues: MetricValueRepository; // metric_values / metric_daily_cadence_values 讀寫
+  definitions: MetricDefinitionLookup; // 寫入前座標驗證用的 definition 查詢
 }

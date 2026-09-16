@@ -1,5 +1,7 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getPaidInSharesAsOf } from '../mops/capitalStock';
+import { getDailyValuationAsOf, getLatestDailyPrice } from '../exchange/twseMarketData';
+import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
 
 // 兩個回傳型別 2026-09-17 Phase 3 搬到 application/ports/marketData.ts，這裡 re-export 給既有 import 路徑。
@@ -66,7 +68,17 @@ export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<
   };
 };
 
-export const twseMarketData: MarketDataPort = { getStockPrice: getStockPriceAsOf, getMarketCap: getMarketCapAsOf };
+// application/ports/marketData.ts 的實作——組合這支檔案的 asOf 查詢、exchange/twseMarketData.ts 的
+// 每日估值/最新股價（twse 查無再查 tpex）、twse/dailyPriceSeries.ts 的收盤價序列。
+export const twseMarketData: MarketDataPort = {
+  getStockPrice: getStockPriceAsOf,
+  getMarketCap: getMarketCapAsOf,
+  getDailyValuation: getDailyValuationAsOf,
+  getLatestDailyPrice,
+  listDailyClosesSince,
+  listTaiexClosesSince,
+  getEarliestTradeDate,
+};
 
 // 這家公司在 oingg-twse daily_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性
 // 不在覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端

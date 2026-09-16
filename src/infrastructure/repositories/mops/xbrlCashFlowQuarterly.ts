@@ -11,6 +11,8 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
+import type { XbrlCashFlowAccounts } from '@/application/ports/xbrlAccounts';
+
 export interface XbrlThreeStatementsLongKey {
   symbol: string;
   year: number;
@@ -19,12 +21,9 @@ export interface XbrlThreeStatementsLongKey {
   subsidiaryCompanyId: string;
 }
 
-export interface XbrlCashFlowQuarterlyRow {
-  reportDate: Date;
-  // account_code -> 金額（千元，bigint）——跟三大表其他查詢層（mopsQuarterlyStatements.ts）
-  // 的金額欄位型別一致。長表本身 value 欄位是 text，這裡統一轉成 bigint。
-  accounts: Record<string, bigint>;
-}
+// 回傳列型別 2026-09-17 Phase 3 搬到 application/ports/xbrlAccounts.ts 的 XbrlCashFlowAccounts（port 的 DTO），這裡沿用舊名 re-export。
+// account_code -> 金額（千元，bigint）——跟三大表其他查詢層的金額欄位型別一致，長表本身 value 欄位是 text，這裡統一轉成 bigint。
+export type XbrlCashFlowQuarterlyRow = XbrlCashFlowAccounts;
 
 interface RawLongRow {
   fiscal_period_end_date: Date;

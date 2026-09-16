@@ -1,12 +1,9 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import type { DailyPriceAsOf, DailyValuationAsOf } from '@/application/ports/marketData';
 
-export interface DailyValuationAsOf {
-  tradeDate: Date;
-  peRatio: number | null;
-  pbRatio: number | null;
-  dividendYield: number | null;
-}
+// DailyValuationAsOf / DailyPriceAsOf 2026-09-17 Phase 3 搬到 application/ports/marketData.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { DailyPriceAsOf, DailyValuationAsOf };
 
 interface RawTpexDailyValuationRow {
   trade_date: Date;
@@ -72,11 +69,6 @@ export const getDailyValuationAsOf = async (symbol: string, asOfDate?: Date): Pr
     dividendYield: toNullableNumber(tpexRecord.dividend_yield),
   };
 };
-
-export interface DailyPriceAsOf {
-  tradeDate: Date;
-  close: number | null;
-}
 
 interface RawTpexDailyPriceRow {
   trade_date: Date;

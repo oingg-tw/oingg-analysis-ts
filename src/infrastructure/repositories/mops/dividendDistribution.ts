@@ -12,11 +12,10 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
-export interface DividendDistributionEvent {
-  exDividendDate: Date;
-  announcementDate: Date | null;
-  rocFiscalYear: number;
-}
+import type { DividendDistributionEvent, DividendEventsPort } from '@/application/ports/dividendEvents';
+
+// DividendDistributionEvent 2026-09-17 Phase 3 搬到 application/ports/dividendEvents.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { DividendDistributionEvent };
 
 interface RawDividendDistributionRow {
   ex_dividend_date: Date | null;
@@ -49,3 +48,5 @@ export const getSymbolsWithDividendDistribution = async (): Promise<string[]> =>
   `;
   return rows.map((r) => r.symbol);
 };
+
+export const mopsDividendEvents: DividendEventsPort = { getDividendDistributionEvents };

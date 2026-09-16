@@ -8,6 +8,8 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
+import type { BankAssetQualityFields, BankCapitalAdequacyFields } from '@/application/ports/financialStatements';
+
 export interface BankRegulatoryKey {
   symbol: string;
   year: number;
@@ -25,11 +27,9 @@ const toDecimalNumber = (value: unknown): number | null => (value === null || va
 // bank_asset_quality_xbrl（逾放比／備抵呆帳覆蓋率）
 // ---------------------------------------------------------------------------
 
-export interface BankAssetQualityRow {
-  reportDate: Date;
-  nonPerformingLoansRatio: number | null;
-  coverageRatio: number | null;
-}
+// 兩個回傳列型別 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（BankAssetQualityFields /
+// BankCapitalAdequacyFields，port 的 DTO），這裡沿用舊名 re-export。
+export type BankAssetQualityRow = BankAssetQualityFields;
 
 interface RawBankAssetQualityRow {
   report_date: Date;
@@ -75,13 +75,7 @@ export const getLatestQuarterWithBankAssetQuality = async (symbol: string, dataT
 // bank_capital_adequacy_detail_xbrl（資本適足率／CET1／Tier1）
 // ---------------------------------------------------------------------------
 
-export interface BankCapitalAdequacyRow {
-  reportDate: Date;
-  eligibleCapital: bigint | null;
-  riskWeightedAssets: bigint | null;
-  ratioOrdinaryShareEquityToRwa: number | null;
-  ratioTierICapitalToRwa: number | null;
-}
+export type BankCapitalAdequacyRow = BankCapitalAdequacyFields;
 
 interface RawBankCapitalAdequacyRow {
   report_date: Date;

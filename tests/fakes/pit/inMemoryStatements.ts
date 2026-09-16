@@ -1,5 +1,8 @@
 import type {
   BalanceSheetFields,
+  BankAssetQualityFields,
+  BankCapitalAdequacyFields,
+  BankIncomeStatementFields,
   CashFlowFields,
   FinancialStatementsPort,
   IncomeStatementFields,
@@ -10,15 +13,19 @@ import type { QuarterlyKey } from '@/domain/financials/quarterlyKey';
 
 // 財報 port 的記憶體版（FinancialStatementsPort & QuarterResolverPort 一起實作，因為「最新一季」
 // 本來就該跟「有哪幾季的哪幾張表」同一份資料推得出來）。seed 用 `{ [symbol]: { '115Q2': { income?,
-// balance?, cashFlow?, insurance? } } }` 描述，沒給的欄位一律 null（跟 XBRL 缺科目時 repository 回傳
-// null 一致），reportDate 沒給就用該季的期末日。dataType/subsidiaryCompanyId 刻意不納入 seed 的鍵
-// ——單元測試只需要區分 symbol 跟季度，真實資料的合併/個體維度由整合測試涵蓋。
+// balance?, cashFlow?, insurance?, bankAssetQuality?, bankCapitalAdequacy?, bankIncome? } } }` 描述，
+// 沒給的欄位一律 null（跟 XBRL 缺科目時 repository 回傳 null 一致），reportDate 沒給就用該季的期末日。
+// dataType/subsidiaryCompanyId 刻意不納入 seed 的鍵——單元測試只需要區分 symbol 跟季度，真實資料的
+// 合併/個體維度由整合測試涵蓋。
 
 export interface QuarterStatementSeed {
   income?: Partial<IncomeStatementFields>;
   balance?: Partial<BalanceSheetFields>;
   cashFlow?: Partial<CashFlowFields>;
   insurance?: Partial<InsuranceIncomeStatementFields> & Pick<InsuranceIncomeStatementFields, 'insuranceRevenue'>;
+  bankAssetQuality?: Partial<BankAssetQualityFields>;
+  bankCapitalAdequacy?: Partial<BankCapitalAdequacyFields>;
+  bankIncome?: Partial<BankIncomeStatementFields>;
 }
 
 export type StatementsSeed = Record<string, Record<string, QuarterStatementSeed>>;
@@ -81,38 +88,53 @@ const emptyCashFlow = (reportDate: Date): CashFlowFields => ({
   netCashFromInvestingActivities: null,
 });
 
+const emptyBankAssetQuality = (reportDate: Date): BankAssetQualityFields => ({ reportDate, nonPerformingLoansRatio: null, coverageRatio: null });
+
+const emptyBankCapitalAdequacy = (reportDate: Date): BankCapitalAdequacyFields => ({
+  reportDate,
+  eligibleCapital: null,
+  riskWeightedAssets: null,
+  ratioOrdinaryShareEquityToRwa: null,
+  ratioTierICapitalToRwa: null,
+});
+
+const emptyBankIncome = (reportDate: Date): BankIncomeStatementFields => ({
+  reportDate,
+  netInterestIncome: null,
+  netNonInterestIncome: null,
+  badDebtProvision: null,
+  profitBeforeTax: null,
+});
+
 const sourceOf: Record<StatementSource, keyof QuarterStatementSeed> = {
   balanceSheet: 'balance',
   incomeStatement: 'income',
   cashFlowStatement: 'cashFlow',
+  insuranceIncomeStatement: 'insurance',
+  bankAssetQuality: 'bankAssetQuality',
+  bankCapitalAdequacy: 'bankCapitalAdequacy',
+  bankIncomeStatement: 'bankIncome',
 };
 
 export const createInMemoryStatements = (seed: StatementsSeed): FinancialStatementsPort & QuarterResolverPort => {
   const lookup = (key: QuarterlyKey): QuarterStatementSeed | undefined => seed[key.symbol]?.[quarterKey(key.year, key.quarter)];
 
+  // 有 seed 該張表才回傳（缺欄位補 null、reportDate 補期末日），沒 seed 就是 null。
+  const statement = <T extends { reportDate: Date }>(key: QuarterlyKey, partial: Partial<T> | undefined, empty: (reportDate: Date) => T): T | null =>
+    partial ? { ...empty(quarterEndDate(key.year, key.quarter)), ...partial } : null;
+
   return {
-    getIncomeStatement: async (key) => {
-      const income = lookup(key)?.income;
-      return income ? { ...emptyIncome(quarterEndDate(key.year, key.quarter)), ...income } : null;
-    },
-    getBalanceSheet: async (key) => {
-      const balance = lookup(key)?.balance;
-      return balance ? { ...emptyBalance(quarterEndDate(key.year, key.quarter)), ...balance } : null;
-    },
-    getCashFlowStatement: async (key) => {
-      const cashFlow = lookup(key)?.cashFlow;
-      return cashFlow ? { ...emptyCashFlow(quarterEndDate(key.year, key.quarter)), ...cashFlow } : null;
-    },
+    getIncomeStatement: async (key) => statement(key, lookup(key)?.income, emptyIncome),
+    getBalanceSheet: async (key) => statement(key, lookup(key)?.balance, emptyBalance),
+    getCashFlowStatement: async (key) => statement(key, lookup(key)?.cashFlow, emptyCashFlow),
     getInsuranceIncomeStatement: async (key) => {
       const insurance = lookup(key)?.insurance;
       if (!insurance) return null;
-      return {
-        reportDate: quarterEndDate(key.year, key.quarter),
-        insuranceServiceResult: null,
-        netOperatingIncomeLoss: null,
-        ...insurance,
-      };
+      return { reportDate: quarterEndDate(key.year, key.quarter), insuranceServiceResult: null, netOperatingIncomeLoss: null, ...insurance };
     },
+    getBankAssetQuality: async (key) => statement(key, lookup(key)?.bankAssetQuality, emptyBankAssetQuality),
+    getBankCapitalAdequacy: async (key) => statement(key, lookup(key)?.bankCapitalAdequacy, emptyBankCapitalAdequacy),
+    getBankIncomeStatement: async (key) => statement(key, lookup(key)?.bankIncome, emptyBankIncome),
     // 該張表有資料的最大 (year, quarter)，任何一季都沒有這張表就 null——跟 XBRL 寬表的
     // `ORDER BY year DESC, quarter DESC LIMIT 1` 同義。
     latestQuarterWith: async (source, symbol) => {

@@ -1,12 +1,11 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import type { DailyCloseRow } from '@/application/ports/marketData';
 
 // Beta 計算用的個股/大盤收盤價序列（export.daily_price / export.daily_taiex_index）——2026-09-17
 // 重構 Phase 2 從 application/metrics/valuation/beta/computeBetaPit.ts 搬來的 raw SQL（逐字，
 // 含「有指定 until 才加 <= 條件」的兩種變體），回傳原始列形狀（close 是 Decimal 物件）。
-export interface RawDailyCloseRow {
-  trade_date: Date;
-  close: unknown;
-}
+// 列型別 Phase 3 搬到 application/ports/marketData.ts 的 DailyCloseRow，這裡沿用舊名 re-export。
+export type RawDailyCloseRow = DailyCloseRow;
 
 // 個股自 since 起（含）依日期升冪的收盤價；until 有給就只取到 until（含）。
 export const listDailyClosesSince = (symbol: string, since: Date, until?: Date): Promise<RawDailyCloseRow[]> =>

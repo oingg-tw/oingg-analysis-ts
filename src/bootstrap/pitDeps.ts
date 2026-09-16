@@ -1,9 +1,11 @@
 import type { PitDeps } from '@/application/metrics/deps';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
-import { xbrlFinancialStatements, xbrlQuarterResolver } from '@/infrastructure/repositories/mops/financialStatementPorts';
+import { xbrlAccounts, xbrlFinancialStatements, xbrlQuarterResolver } from '@/infrastructure/repositories/mops/financialStatementPorts';
 import { mopsAnnouncementDates } from '@/infrastructure/repositories/mops/reportAnnouncementDate';
 import { mopsCapitalStockShares } from '@/infrastructure/repositories/mops/capitalStock';
+import { mopsDividendEvents } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { twseMarketData } from '@/infrastructure/repositories/twse/marketCap';
+import { exchangeIndustry } from '@/infrastructure/repositories/exchange/industryPort';
 import { prismaMetricValueRepository } from '@/infrastructure/repositories/analysis/metricValueRepository';
 
 // 指標核心的 composition root：把 infrastructure 的實作綁到 application 宣告的 port 上，組成
@@ -15,6 +17,9 @@ export const createPitDeps = (): PitDeps => ({
   announcements: mopsAnnouncementDates,
   shares: mopsCapitalStockShares,
   market: twseMarketData,
+  xbrlAccounts,
+  industry: exchangeIndustry,
+  dividendEvents: mopsDividendEvents,
   metricValues: prismaMetricValueRepository,
   definitions: { get: (metricCode) => metricDefinitionRegistry[metricCode] },
 });
