@@ -46,10 +46,9 @@ export default defineConfig({
           include: ['tests/integration/**/*.test.ts'],
           exclude: ['**/*.flaky.test.ts', '**/node_modules/**'],
           setupFiles: ['tests/integration/setup.ts'],
-          // 整合測試共用同一個 Postgres，有些會刪除+重算同一批資料列（例如
-          // tests/domains/companies/metrics.test.ts）——關掉檔案間平行化依序跑，避免互相踩到。
-          // Phase 5 測試改用唯一 symbol、且整合測試改打專用的 Neon branch 之後可以打開。
-          fileParallelism: false,
+          // 2026-09-17 起整合測試打專用的 Neon branch（SIT）、會寫 DB 的測試各自用唯一 symbol 或只清自己的列，
+          // 檔案間可以平行；之前因為共用 dev DB 且有測試刪除+重算同一批資料列而關掉。
+          fileParallelism: true,
         },
       },
       {

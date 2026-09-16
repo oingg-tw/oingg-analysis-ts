@@ -6,13 +6,11 @@ import 'dotenv/config';
 // 不再直接寫開發資料庫——這裡在 analysisClient.ts 讀 process.env 之前把連線字串換掉。
 // 其餘六個 export DB（mops/gov/twse/tpex/sitca/playwright）全部唯讀，維持用開發環境的連線。
 //
-// 過渡期（Neon branch 還沒建好時）退回開發 DB 並大聲警告，跟 Phase 0 之前的行為一樣；
-// branch 建好、.env 加上 ANALYSIS_DATABASE_URL_TEST 之後要把這個 fallback 改成直接 throw，
-// 防止之後有人在沒設定的環境誤寫開發資料。
+// 2026-09-17 使用者已建好 Neon branch（SIT，從 dev 分出來）：沒設 ANALYSIS_DATABASE_URL_TEST 直接 throw，
+// 不再退回開發 DB——防止之後有人在沒設定的環境誤寫開發資料。
 const testUrl = process.env.ANALYSIS_DATABASE_URL_TEST;
-if (testUrl) {
-  process.env.ANALYSIS_DATABASE_URL = testUrl;
-} else {
-  console.warn('[tests/integration/setup] ANALYSIS_DATABASE_URL_TEST 未設定，整合測試將直接寫入開發用的 analysis DB——請建立 Neon branch 並設定這個變數。');
+if (!testUrl) {
+  throw new Error('[tests/integration/setup] ANALYSIS_DATABASE_URL_TEST 未設定：整合測試只能打 analysis DB 的測試用 Neon branch，請在 .env 設定後再跑。');
 }
+process.env.ANALYSIS_DATABASE_URL = testUrl;
 process.env.LOG_LEVEL ??= 'silent';

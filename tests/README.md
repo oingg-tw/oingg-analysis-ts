@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | `unit` | `tests/unit/**`（鏡射 `src/`：`unit/domain`、`unit/application`、`unit/http`） | 不需要 | 是 | 純單元測試：domain 純函式、application use case 搭配 `tests/fakes/` 的記憶體 port 實作、http middleware/helper 用假的 req/res。dependency-cruiser 禁止這裡 import infrastructure/bootstrap/Prisma（`unit-tests-no-io`），`src/http` 只有 `unit/http/` 可以碰。 |
 | `contract` | `tests/contract/**` | `.env` 的 DB（唯讀） | 否 | **對外契約守門**：`openapi.test.ts` 把 `/api-docs` 的 OpenAPI 文件 deep key-sort 後跟 `openapi.snapshot.json` 逐字比對；`http/goldens.test.ts` 對 bff-ts 實際消費的 45 支端點各打一次，把 `{status, body 形狀}` 釘進 `http/__snapshots__/goldens/`。 |
-| `integration` | `tests/integration/**`（鏡射 `src/`：`integration/application/<module>`、`integration/infrastructure/repositories/<source>`、`integration/infrastructure/prisma`） | analysis 用 **Neon branch**（見下），其餘 export DB 用 `.env` | 否 | 打真實資料庫的整合測試：repository 契約、釘真實財報數字的指標測試、writer 併發。use case 一律傳 `@/bootstrap/deps` 的 `appDeps`。 |
+| `integration` | `tests/integration/**`（鏡射 `src/`：`integration/application/<module>`、`integration/infrastructure/repositories/<source>`、`integration/infrastructure/prisma`） | analysis 用 **Neon branch**（見下），其餘 export DB 用 `.env` | 是 | 打真實資料庫的整合測試：repository 契約、釘真實財報數字的指標測試、writer 併發。use case 一律傳 `@/bootstrap/deps` 的 `appDeps`。 |
 | `flaky` | `tests/**/*.flaky.test.ts` | 同 integration | 否，retry 2 | 隔離區，見下方政策。 |
 
 ```bash
@@ -31,9 +31,9 @@ pnpm typecheck          # src + tests + scripts 三份 tsconfig 都過型別檢�
 ## 整合測試（integration）的資料庫
 
 整合測試會對 analysis DB **寫入/刪除**資料列（例如 `metricValueWriterConcurrency`、`completenessCheck` 會刪 2801 的列再重算），2026-09-17 決定改打 analysis DB 的專用 **Neon branch**：在 `.env` 設 `ANALYSIS_DATABASE_URL_TEST`，`tests/integration/setup.ts` 會在 Prisma client 讀取之前把 `ANALYSIS_DATABASE_URL` 換掉。其餘六個 export DB（mops/gov/twse/tpex/sitca/playwright）全部唯讀，維持用開發環境的連線。
-過渡期沒設 `ANALYSIS_DATABASE_URL_TEST` 會退回開發 DB 並大聲警告；branch 建好之後要把那個 fallback 改成直接 throw。
+2026-09-17 起 branch 已建好（SIT，從 dev 分出來）：沒設 `ANALYSIS_DATABASE_URL_TEST` 直接 throw，不會退回開發 DB。
 
-`vitest.config.ts` 對 integration 關掉檔案間平行化（`fileParallelism: false`）——多支測試會操作同一批資料列；Phase 5 測試改用唯一 symbol 之後可以打開。
+`vitest.config.ts` 對 integration 打開檔案間平行化（`fileParallelism: true`，2026-09-17 起）：44 檔 210 個從序列的 102 秒降到 8 秒。前提是會寫 DB 的測試各自用唯一 symbol 或只清自己的列——新增會寫入的測試要守這條，不要跟別的檔案共用同一批資料列。
 
 ## 慣例
 
