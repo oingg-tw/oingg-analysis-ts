@@ -178,7 +178,10 @@ const main = async () => {
   const [generalSymbolsFull, bankSymbolsFull] = await Promise.all([getFullMarketSymbols(), getBankSymbols()]);
   // PILOT_LIMIT：暫時性測試開關，驗證平行版本穩定後移除（見 2026-09-11 稳定性驗證要求）。
   const PILOT_LIMIT = process.env.PILOT_LIMIT ? Number(process.env.PILOT_LIMIT) : undefined;
-  const generalSymbols = PILOT_LIMIT ? generalSymbolsFull.slice(0, PILOT_LIMIT) : generalSymbolsFull;
+  // SYMBOL_OFFSET：從第 N 家（0-based，依 symbol 排序）開始跑——2026-09-17 全市場重跑在 1700/2058 被環境重啟殺掉時補跑剩下的公司用，
+  // 預設 0 = 全部；跟 PILOT_LIMIT 一樣只是切 symbols 陣列，不影響每家公司的計算。
+  const SYMBOL_OFFSET = process.env.SYMBOL_OFFSET ? Number(process.env.SYMBOL_OFFSET) : 0;
+  const generalSymbols = (PILOT_LIMIT ? generalSymbolsFull.slice(0, PILOT_LIMIT) : generalSymbolsFull).slice(SYMBOL_OFFSET);
   const bankSymbols = PILOT_LIMIT ? bankSymbolsFull.slice(0, Math.min(PILOT_LIMIT, bankSymbolsFull.length)) : bankSymbolsFull;
 
   await runBatch('一般指標（含逐日型最新快照）', 'general', generalSymbols, computeGeneralSymbol);

@@ -47,4 +47,4 @@ pnpm typecheck          # src + tests + scripts 三份 tsconfig 都過型別檢�
 
 ## flaky 政策
 
-會間歇失敗的測試改名成 `*.flaky.test.ts`，檔頭註明**原因**跟**到期日**，從 `test:integration` 排除、改由 `test:flaky` 跑（retry 2 次）；兩週內修好搬回去或刪除，不能無限期隔離。目前已知：`tests/pitMetrics/metricValueWriterConcurrency.test.ts`（共用 ZZTEST9999 這個 symbol，應改成每次執行唯一 symbol + afterAll 清理）、`tests/domains/screener/service.test.ts`（排序穩定性）、`tests/twse/marketCap.test.ts`（上游 ingest 時機）。
+會間歇失敗的測試改名成 `*.flaky.test.ts`，檔頭註明**原因**跟**到期日**，從 `test:integration` 排除、改由 `test:flaky` 跑（retry 2 次）；兩週內修好搬回去或刪除，不能無限期隔離。目前隔離中：`tests/integration/infrastructure/repositories/twse/marketCap.flaky.test.ts`（上游 ingest 時機）。已修好的：`tests/integration/infrastructure/repositories/analysis/metricValueRepositoryConcurrency.test.ts`（2026-09-17 起每次執行用唯一的 ZZT 開頭假 symbol + afterAll 只清自己的列，不再共用 ZZTEST9999）。觀察中：`tests/integration/application/screener/service.test.ts`（排序穩定性，再間歇失敗就改 `.flaky`）。

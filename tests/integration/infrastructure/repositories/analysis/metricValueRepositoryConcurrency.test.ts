@@ -12,7 +12,9 @@ import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 // 這支測試直接模擬「兩個併發呼叫寫入完全相同的新座標」，驗證改用 upsert 後不會再拋出
 // 例外，且最終只會有一列（不會重複，也不會漏寫）。
 
-const TEST_SYMBOL = 'ZZTEST9999';
+// 2026-09-17 Phase 5 flaky 政策：每次執行用唯一的假 symbol（跟既有的 ZZTEST9999 一樣是 10 碼、不會撞真實代號），
+// 兩個 vitest worker 或上一次中斷沒清乾淨的殘留列都不會互相干擾；afterAll 只清自己這次寫的列。
+const TEST_SYMBOL = `ZZT${Math.random().toString(36).slice(2, 9).toUpperCase().padEnd(7, '0')}`;
 const TEST_FISCAL_YEAR = 2019;
 const TEST_FISCAL_QUARTER = 1;
 
