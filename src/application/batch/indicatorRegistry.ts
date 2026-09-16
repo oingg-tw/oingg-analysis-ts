@@ -11,9 +11,6 @@
 // filterCatalog/screener 整套機制一起退場，不再有 API 端點消費這份清單。
 // `macro/equityRiskPremium`（全市場單一值，沒有 symbol）跟 `valuation/ranking`（本身是
 // 跨公司排行端點）不適用「單一公司」這個模式，兩份 registry 都沒有列進來。
-export { dailyIndicatorJobs } from './daily/indicatorRegistry';
-export { quarterlyIndicatorJobs } from './quarterly/indicatorRegistry';
-export type { IndicatorJob, IndicatorResult } from './indicatorJob';
 
 import { dailyIndicatorJobs } from './daily/indicatorRegistry';
 import { quarterlyIndicatorJobs } from './quarterly/indicatorRegistry';

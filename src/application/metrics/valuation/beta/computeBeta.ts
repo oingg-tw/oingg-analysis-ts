@@ -24,7 +24,6 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 假裝有意義的欄位——跟 MarketRatios（computeMarketRatiosPit.ts）同一套逐日型指標
 // 寫入慣例。
 
-export type { BetaSamplingFrequency } from '@/domain/metrics/valuation/beta/calculateBeta';
 
 export interface BetaPitQuery {
   symbol: string;

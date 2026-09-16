@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { attentionCriteriaDetailSchema, type AttentionCriteriaDetail } from '@/domain/market/attentionStocks/parseCriteria';
+import { attentionCriteriaDetailSchema } from '@/domain/market/attentionStocks/parseCriteria';
 
-export type { AttentionCriteriaDetail };
 
 export const attentionStocksQuerySchema = z.object({
   limit: z.number().meta({ description: '1~50，預設 20' }),

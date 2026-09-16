@@ -38,12 +38,6 @@ export const exponentialMovingAverageSeries = (values: number[], window: number)
   return result;
 };
 
-// 只要最新一個 EMA 值時的簡便包裝。
-export const exponentialMovingAverage = (values: number[], window: number): number | null => {
-  const series = exponentialMovingAverageSeries(values, window);
-  return series[series.length - 1] ?? null;
-};
-
 // 母體標準差（分母是 N，不是 N-1）——布林通道的業界慣例算法，不是統計課本的樣本標準差。
 export const populationStdDev = (values: number[]): number => {
   const mean = values.reduce((acc, v) => acc + v, 0) / values.length;

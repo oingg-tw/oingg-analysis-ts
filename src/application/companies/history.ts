@@ -13,7 +13,6 @@ import type { PeriodType } from '@/domain/metrics/metricBasis';
 // 2026-09-17 Phase 4：從 http/modules/companies/companyMetricHistoryController.ts 搬來——歷史查詢改走
 // deps 注入，原本 controller 手寫的 `res.status(400).json({ message })` 改成丟 ValidationError（errorHandler
 // 對 AppError 產生一模一樣的 `{ message }` body），邏輯逐字不變。
-export type CompanyHistoryDeps = Pick<AppDeps, 'capitalStockHistory' | 'monthlyRevenue' | 'metricValueQueries'>;
 
 // 查無資料回傳空陣列，不是 404——mops 這批資料目前不是每家公司都有覆蓋，「查無股本異動
 // 歷史」是正常情境，不代表這家公司不存在（公司存不存在是 /companies/profile 負責判斷的事）。

@@ -6,7 +6,7 @@ import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePo
 // 是正常情境不是錯誤，呼叫端不用特別判斷。
 // DTO 型別 2026-09-17 Phase 4 搬到 application/ports/monthlyRevenue.ts（對外回應的 zod schema 在
 // http/modules/companies/types.ts），這裡 re-export 給既有 import 路徑。
-export type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult };
+export type { MonthlyRevenueHistoryResult };
 
 interface RawMonthlyRevenueRow {
   year_month: Date;

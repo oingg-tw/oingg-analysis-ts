@@ -1,4 +1,4 @@
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 import type { EtfDataPort } from '@/application/ports/etfData';
 import { buildEtfScreenerSql } from './etfScreenerQuery';
 import type { Prisma } from '#generated/sitca-export-client';

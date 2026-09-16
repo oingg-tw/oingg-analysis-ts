@@ -10,19 +10,6 @@ import type { ComputationSkip } from '@/domain/metrics/computation';
 // （多了逐日型指標用的 skipped_no_trade_date），persistComputations 攤平後的結果就是這個型別。
 export type BasisOutcome = MetricValueWriteOutcome | ComputationSkip;
 
-export interface QuarterlyPitOutcomeBase {
-  symbol: string;
-  rocYear: string | null;
-  season: string | null;
-}
-
-// 只用到 q/ttm/fy 這組通用命名的指標直接用這個型別（例如
-// `export type RoaPitOutcome = StandardBasisPitOutcome;`），不用各自宣告一份幾乎相同的
-// interface。用多個 metric_code 拆出自訂欄位名稱的家族檔案（turnoverRatio/margins/
-// dupont 等）欄位名稱本來就跟 basis 概念脫鉤，不適用這個型別，繼續各自宣告 interface，
-// 但仍可 extend QuarterlyPitOutcomeBase 拿掉 symbol/rocYear/season 三行重複。
-export interface StandardBasisPitOutcome extends QuarterlyPitOutcomeBase {
-  q?: BasisOutcome;
-  ttm?: BasisOutcome;
-  fy?: BasisOutcome;
-}
+// 2026-09-17 Phase 3/6：原本還有 `QuarterlyPitOutcomeBase`（symbol/rocYear/season）跟
+// `StandardBasisPitOutcome`（再加 q/ttm/fy 三個選填 basis）兩個 outcome 型別，bootstrap/pitMetrics.ts 的
+// runPit/runPitNested 回傳精確的 PersistedBatch<...> 之後沒有消費端，已刪。

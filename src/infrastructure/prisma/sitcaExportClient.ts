@@ -26,4 +26,3 @@ export const connectSitcaExportDb = async () => {
   }
 };
 
-export default sitcaExportPrisma;

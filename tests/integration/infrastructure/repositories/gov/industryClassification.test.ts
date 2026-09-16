@@ -2,7 +2,7 @@ import { test, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/infrastructure/repositories/gov/industryClassification';
 
 beforeAll(async () => {

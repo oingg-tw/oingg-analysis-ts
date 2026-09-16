@@ -6,7 +6,6 @@ import { z } from 'zod';
 // 三選一的列舉，現在只剩一個合法值，維持 z.enum 而不是拿掉這個欄位，是為了不破壞既有
 // 呼叫端已經在傳的 metric=yoy 這個參數形狀。
 export const revenueRankingMetricSchema = z.enum(['yoy']);
-export type RevenueRankingMetric = z.infer<typeof revenueRankingMetricSchema>;
 
 export const revenueRankingQuerySchema = z.object({
   metric: revenueRankingMetricSchema,

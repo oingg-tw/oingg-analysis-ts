@@ -25,4 +25,3 @@ export const connectTpexExportDb = async () => {
   }
 };
 
-export default tpexExportPrisma;

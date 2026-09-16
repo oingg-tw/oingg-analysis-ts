@@ -11,7 +11,6 @@ export const rankingMetricSchema = z.enum(['peRatio', 'pbRatio', 'dividendYield'
 export type RankingMetric = z.infer<typeof rankingMetricSchema>;
 
 export const rankingOrderSchema = z.enum(['asc', 'desc']);
-export type RankingOrder = z.infer<typeof rankingOrderSchema>;
 
 export const rankingQuerySchema = z.object({
   metric: rankingMetricSchema,

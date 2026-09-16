@@ -2,8 +2,8 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listAllCompanyNames, countAllCompanyNames, listAllSecurityNames, countAllSecurityNames } from '@/infrastructure/repositories/exchange/companyProfile';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 
 // 2026-09-01 bff-ts 實測抓到 GET /companies 回應裡 7914/7932 這兩檔公司各自出現兩次（TWSE、
 // TPEx 的 company_profile 剛好都有登記，資料內容一樣），害他們那邊 upsert 撞到「ON CONFLICT

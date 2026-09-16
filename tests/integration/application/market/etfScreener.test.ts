@@ -2,7 +2,7 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from '@/application/market/etfScreener/service';
 import { appDeps } from '@/bootstrap/deps';
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 
 test('runEtfScreener: 數字 filter 應該只保留落在範圍內的值，null 排除', async () => {
   const result = await runEtfScreener({ filters: [{ field: 'aum', min: 10_000_000_000, max: null }], columns: [{ field: 'aum' }], page: 1, pageSize: 50 }, appDeps);

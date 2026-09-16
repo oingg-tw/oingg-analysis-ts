@@ -3,7 +3,7 @@ import { z } from 'zod';
 // GET /stocks/* 的請求 schema（路徑參數 / query）。2026-09-17 Phase 4 從 controller.ts 搬來，openapi.ts
 // 文件化的是「沒有 transform」的匯出版本（跟以前一樣），route.ts 執行期驗證用的是帶 transform 的版本。
 
-export const getQuoteParamsSchema = z.object({
+export const symbolParamsSchema = z.object({
   symbol: z.string().min(1).meta({ description: '公司代號', example: '2330' }),
 });
 
@@ -38,7 +38,6 @@ export const getExDividendCalendarQuerySchema = z.object({
 // 其他 symbol 一律回傳空陣列，不是 404——這不是「查無資料待補」的錯誤情境，是覆蓋率
 // 限制，之後 twse-ts 擴大到全市場會自動生效。
 const MAX_FOREIGN_SHAREHOLDING_LIMIT = 1500; // 2330 目前累積約 1224 筆（2021-09~2026-09），留一點餘裕
-export const getForeignShareholdingHistoryParamsSchema = getQuoteParamsSchema;
 export const getForeignShareholdingHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_FOREIGN_SHAREHOLDING_LIMIT).default(250).meta({ description: `取最近幾個交易日，預設 250（約 1 年），上限 ${MAX_FOREIGN_SHAREHOLDING_LIMIT}。` }),
 });
@@ -48,7 +47,6 @@ export const getForeignShareholdingHistoryQuerySchema = z.object({
 // 其他 symbol 一律回傳空陣列——覆蓋率限制，不是查詢失敗，跟 MAX_FOREIGN_SHAREHOLDING_LIMIT
 // 同一種「取最近幾筆」慣例，只是這裡的「筆」是不定期的公告次數，不是固定交易日數。
 const MAX_STOCK_PLEDGE_RATIO_LIMIT = 500;
-export const getStockPledgeRatioHistoryParamsSchema = getQuoteParamsSchema;
 export const getStockPledgeRatioHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_STOCK_PLEDGE_RATIO_LIMIT).default(100).meta({ description: `取最近幾筆公告，預設 100，上限 ${MAX_STOCK_PLEDGE_RATIO_LIMIT}。` }),
 });
@@ -57,7 +55,6 @@ export const getStockPledgeRatioHistoryQuerySchema = z.object({
 // （2020-11~2026-09，約 5 年），上限留一點餘裕，跟 MAX_FOREIGN_SHAREHOLDING_LIMIT 同一種
 // 「取最近幾個交易日」慣例，不是日期區間參數。
 const MAX_DAILY_PRICE_HISTORY_LIMIT = 2000;
-export const getDailyPriceHistoryParamsSchema = getQuoteParamsSchema;
 export const getDailyPriceHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_DAILY_PRICE_HISTORY_LIMIT).default(250).meta({ description: `取最近幾個交易日，預設 250（約 1 年），上限 ${MAX_DAILY_PRICE_HISTORY_LIMIT}。` }),
 });

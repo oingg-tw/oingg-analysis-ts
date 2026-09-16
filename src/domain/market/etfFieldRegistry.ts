@@ -9,7 +9,6 @@
 // 原本也是這樣猜的，2026-09-04 起 sitca-ts 開了權威欄位 is_actively_managed，直接讀那個，
 // 不用再猜，見 queryBuilder.ts 的說明。
 
-export type EtfFieldKind = 'numeric' | 'categorical' | 'date';
 
 // 2026-09-11 使用者要求比照股票 GET /filters 的巢狀分類建立指標選單——五組跟股票端
 // 因子分類同一種精神（依財務分析面向分組，不是資料表來源分組）：

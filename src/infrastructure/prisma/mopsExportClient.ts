@@ -24,4 +24,3 @@ export const connectMopsExportDb = async () => {
   }
 };
 
-export default mopsExportPrisma;

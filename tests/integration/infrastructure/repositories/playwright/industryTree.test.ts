@@ -2,7 +2,7 @@ import { test, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 import { loadIndustryTree, listIndustryTree, findPeerGroupByTree } from '@/infrastructure/repositories/playwright/industryTree';
 

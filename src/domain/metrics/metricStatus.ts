@@ -21,7 +21,6 @@ export const metricStatusCodeSchema = z.enum(['no_data', 'not_applicable', 'calc
     'not_applicable=這個指標對查詢對象結構性不適用，不會因為時間過去而自己變成可以算；' +
     'calculation_error=資料都有，但套公式時數學上算不出有意義的值（除以零、分母不合理⋯⋯）。',
 });
-export type MetricStatusCode = z.infer<typeof metricStatusCodeSchema>;
 
 export const metricStatusSchema = z.object({
   status: metricStatusCodeSchema,
@@ -29,13 +28,8 @@ export const metricStatusSchema = z.object({
 });
 export type MetricStatus = z.infer<typeof metricStatusSchema>;
 
-// domainMetrics 底下指標 Result 收尾共用的欄位——2026-09-05 從 36 支指標的 types.ts
-// 逐字重複中抽出來，`XxxResult extends MetricResultMeta` 取代手寫這行。原本還有
-// `fieldStatuses`，2026-09-05 稍晚確認 domainMetrics 的 Result 從不直接回應給使用者後
-// 移除（見上方說明）。
-export interface MetricResultMeta {
-  warnings: string[];
-}
+// （原本還有 domainMetrics 指標 Result 共用的 `MetricResultMeta { warnings }`，2026-09-08 舊架構指標
+// 整批退場後沒有消費端，2026-09-17 Phase 6 死碼清理刪除。）
 
 // 建構回應裡的 fieldStatuses 物件時的小工具——只放「值是 null」的欄位，算出值的欄位不需要出現在這裡
 // （沒有出現 = 正常算出來了），維持 payload 精簡，也不用每個欄位都寫一個 'ok' 進去。

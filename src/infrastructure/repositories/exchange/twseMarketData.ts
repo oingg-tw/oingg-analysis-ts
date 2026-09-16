@@ -1,5 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { DailyPriceAsOf, DailyValuationAsOf } from '@/application/ports/marketData';
 
 // DailyValuationAsOf / DailyPriceAsOf 2026-09-17 Phase 3 搬到 application/ports/marketData.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。

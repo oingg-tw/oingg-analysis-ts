@@ -83,7 +83,6 @@ export type PreferredStockFieldCatalogEntry = z.infer<typeof preferredStockField
 export const preferredStockFieldCatalogResponseSchema = z.object({
   fields: z.array(preferredStockFieldCatalogEntrySchema),
 });
-export type PreferredStockFieldCatalogResponse = z.infer<typeof preferredStockFieldCatalogResponseSchema>;
 
 export const preferredStocksResultSchema = z.object({
   count: z.number().meta({ description: '符合條件（套用 symbol 篩選後）的總筆數，不受 limit/offset 影響' }),

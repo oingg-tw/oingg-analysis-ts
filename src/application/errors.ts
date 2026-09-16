@@ -5,7 +5,7 @@
 // 狀態碼；Error subclass 是這個 codebase 唯一允許用 class 的地方（要 stack trace + instanceof）。
 //
 // 訊息文字是對外契約的一部分（bff-ts 會把 400 的 message 直接顯示），改分類時訊息不能變。
-export type AppErrorCode = 'VALIDATION' | 'NOT_FOUND' | 'UPSTREAM_UNAVAILABLE';
+export type AppErrorCode = 'VALIDATION' | 'NOT_FOUND';
 
 export class AppError extends Error {
   constructor(
@@ -33,11 +33,7 @@ export class NotFoundError extends AppError {
   }
 }
 
-// 上游資料源（export DB、view 還沒開）暫時拿不到 → 503。
-export class UpstreamDataError extends AppError {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super('UPSTREAM_UNAVAILABLE', 503, message, options);
-  }
-}
+// 2026-09-17 Phase 6 死碼清理：原本還有 UpstreamDataError（503）的預留分類，沒有任何 use case 丟過，
+// 已刪；真的需要時再加（errorHandler 對任何 AppError 子類別都是 res.status(err.status).json({ message })）。
 
 export const isAppError = (error: unknown): error is AppError => error instanceof AppError;

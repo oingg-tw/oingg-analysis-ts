@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { MarketListsPort } from '@/application/ports/marketLists';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 
 // 2026-09-17 clean architecture 重構 Phase 2：全市場排行/清單類端點（market/*）原本各自在 HTTP
 // 層的 service.ts 內嵌 raw SQL 直接打 twse-ts/tpex-ts 的 export view——SQL 逐字搬到這裡，

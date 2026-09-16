@@ -2,7 +2,7 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCompanyProfileDetail } from '@/infrastructure/repositories/exchange/companyProfile';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 
 test('getCompanyProfileDetail: TWSE 公司（2330）應該回傳完整基本資料，市場標記正確', async () => {
   const result = await getCompanyProfileDetail('2330');

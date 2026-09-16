@@ -55,9 +55,9 @@ export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise
 // mops 那張表消失的問題，也讓歷史回溯能力變得更好（可以查到這幾家公司歷史上幾乎每一季的市值，
 // 不是只有最新一季）。
 //
-// 覆蓋率限於這 6 家種子公司（歷史深度）+ 其他公司近幾個月（2026-06 起，見 hasStockPriceCoverage
-// 的說明）——查詢時請用 `hasStockPriceCoverage` 現查現算，不要在呼叫端寫死特定公司代號判斷
-// 「這家公司有沒有股價資料」，覆蓋率之後還會繼續變。
+// 覆蓋率限於這 6 家種子公司（歷史深度）+ 其他公司近幾個月（2026-06 起）——不要在呼叫端寫死特定
+// 公司代號判斷「這家公司有沒有股價資料」，覆蓋率之後還會繼續變（查無資料就回 null 讓指標記
+// missing_input）。
 export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null> => {
   const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getPaidInSharesAsOf(symbol, asOfDate)]);
 
@@ -87,12 +87,4 @@ export const twseMarketData: MarketDataPort = {
   getExDividendCalendar,
   getForeignShareholdingHistory,
   getStockPledgeRatioHistory,
-};
-
-// 這家公司在 oingg-twse daily_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性
-// 不在覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端
-// 寫死特定公司代號判斷，覆蓋率會持續成長（見上方 getMarketCapAsOf 的說明）。
-export const hasStockPriceCoverage = async (symbol: string): Promise<boolean> => {
-  const rows = await twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."daily_price" WHERE symbol = ${symbol} LIMIT 1`;
-  return rows.length > 0;
 };

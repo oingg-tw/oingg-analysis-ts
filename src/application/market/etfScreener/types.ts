@@ -6,13 +6,11 @@ export const etfNumericFilterInputSchema = z.object({
   max: z.number().nullable(),
   exclude: z.boolean().optional(),
 });
-export type EtfNumericFilterInput = z.infer<typeof etfNumericFilterInputSchema>;
 
 export const etfCategoricalFilterInputSchema = z.object({
   field: z.string(),
   values: z.array(z.string()),
 });
-export type EtfCategoricalFilterInput = z.infer<typeof etfCategoricalFilterInputSchema>;
 
 // 日期欄位（目前只有 establishedDate）——跟數字欄位同一種 min/max/exclude 形狀，只是
 // min/max 是 'YYYY-MM-DD' 字串不是數字，zod union 靠這個型別差異區分跟 numeric 的請求。
@@ -22,7 +20,6 @@ export const etfDateFilterInputSchema = z.object({
   max: z.string().nullable(),
   exclude: z.boolean().optional(),
 });
-export type EtfDateFilterInput = z.infer<typeof etfDateFilterInputSchema>;
 
 export const etfFilterInputSchema = z.union([etfNumericFilterInputSchema, etfDateFilterInputSchema, etfCategoricalFilterInputSchema]);
 export type EtfFilterInput = z.infer<typeof etfFilterInputSchema>;
@@ -32,15 +29,8 @@ export const etfColumnInputSchema = z.object({
 });
 export type EtfColumnInput = z.infer<typeof etfColumnInputSchema>;
 
-export const etfScreenerRequestSchema = z.object({
-  filters: z.array(etfFilterInputSchema),
-  columns: z.array(etfColumnInputSchema),
-  page: z.number().optional(),
-  pageSize: z.number().optional(),
-  sortField: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).optional(),
-});
-export type EtfScreenerRequest = z.infer<typeof etfScreenerRequestSchema>;
+// 請求 schema（filters/columns/page/pageSize/sortField/sortOrder）在 http/modules/market/etfScreener/schemas.ts，
+// use case 收的是 service.ts 的 EtfScreenerRequest 介面。
 
 export const etfScreenerRowSchema = z.object({
   symbol: z.string(),
@@ -78,7 +68,6 @@ export const etfFilterCategorySchema = z.object({
   categoryDisplayName: z.string(),
   fields: z.array(etfFilterFieldCatalogEntrySchema),
 });
-export type EtfFilterCategory = z.infer<typeof etfFilterCategorySchema>;
 
 export const etfFilterCatalogResponseSchema = z.object({
   categories: z.array(etfFilterCategorySchema),

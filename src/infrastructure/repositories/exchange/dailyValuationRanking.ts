@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { ValuationRankingPort } from '@/application/ports/valuationRanking';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { Prisma } from '#generated/tpex-export-client';
 import { Prisma as TwsePrisma } from '#generated/twse-export-client';
 import type { Market } from './marketLists';

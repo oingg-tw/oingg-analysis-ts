@@ -24,4 +24,3 @@ export const connectPlaywrightExportDb = async () => {
   }
 };
 
-export default playwrightExportPrisma;

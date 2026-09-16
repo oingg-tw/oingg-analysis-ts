@@ -2,7 +2,7 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEtfRanking } from '@/application/market/etfRanking/service';
 import { appDeps } from '@/bootstrap/deps';
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 
 test('calculateEtfRanking: aum desc 應該由大到小排序', async () => {
   const result = await calculateEtfRanking({ metric: 'aum', order: 'desc', limit: 10 }, appDeps);

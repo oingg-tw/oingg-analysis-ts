@@ -30,4 +30,3 @@ export const connectAnalysisDb = async () => {
   }
 };
 
-export default analysisPrisma;

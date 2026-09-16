@@ -13,14 +13,11 @@ import {
 } from '@/application/stocks/service';
 import { jsonRoute } from '@/http/route';
 import {
-  getQuoteParamsSchema,
+  symbolParamsSchema,
   symbolsListQuerySchema,
   getExDividendCalendarQuerySchema,
-  getForeignShareholdingHistoryParamsSchema,
   getForeignShareholdingHistoryQuerySchema,
-  getStockPledgeRatioHistoryParamsSchema,
   getStockPledgeRatioHistoryQuerySchema,
-  getDailyPriceHistoryParamsSchema,
   getDailyPriceHistoryQuerySchema,
 } from './schemas';
 
@@ -33,12 +30,12 @@ export const createStocksRouter = (deps: StocksDeps): Router => {
 
   router.get(
     '/stocks/:symbol/quote',
-    ...jsonRoute({ params: getQuoteParamsSchema }, async ({ params }) => (await getStockQuote(params.symbol, deps)) ?? Promise.reject(notFound(params.symbol)))
+    ...jsonRoute({ params: symbolParamsSchema }, async ({ params }) => (await getStockQuote(params.symbol, deps)) ?? Promise.reject(notFound(params.symbol)))
   );
   // 2026-09-13 新增：個股頁組合端點，見 application/stocks/service.ts 的 getStockSummary 說明。跟 quote 共用同一組 params schema。
   router.get(
     '/stocks/:symbol/summary',
-    ...jsonRoute({ params: getQuoteParamsSchema }, async ({ params }) => (await getStockSummary(params.symbol, deps)) ?? Promise.reject(notFound(params.symbol)))
+    ...jsonRoute({ params: symbolParamsSchema }, async ({ params }) => (await getStockSummary(params.symbol, deps)) ?? Promise.reject(notFound(params.symbol)))
   );
   router.get('/stocks/prices', ...jsonRoute({ query: symbolsListQuerySchema }, ({ query }) => getStockPrices(query.symbols, deps)));
   router.get('/stocks/ex-dividend-notices', ...jsonRoute({ query: symbolsListQuerySchema }, ({ query }) => getExDividendNotices(query.symbols, deps)));
@@ -53,19 +50,19 @@ export const createStocksRouter = (deps: StocksDeps): Router => {
   );
   router.get(
     '/stocks/:symbol/foreign-shareholding-history',
-    ...jsonRoute({ params: getForeignShareholdingHistoryParamsSchema, query: getForeignShareholdingHistoryQuerySchema }, ({ params, query }) =>
+    ...jsonRoute({ params: symbolParamsSchema, query: getForeignShareholdingHistoryQuerySchema }, ({ params, query }) =>
       getForeignShareholdingHistory(params.symbol, query.limit, deps)
     )
   );
   router.get(
     '/stocks/:symbol/pledge-ratio-history',
-    ...jsonRoute({ params: getStockPledgeRatioHistoryParamsSchema, query: getStockPledgeRatioHistoryQuerySchema }, ({ params, query }) =>
+    ...jsonRoute({ params: symbolParamsSchema, query: getStockPledgeRatioHistoryQuerySchema }, ({ params, query }) =>
       getStockPledgeRatioHistory(params.symbol, query.limit, deps)
     )
   );
   router.get(
     '/stocks/:symbol/daily-price-history',
-    ...jsonRoute({ params: getDailyPriceHistoryParamsSchema, query: getDailyPriceHistoryQuerySchema }, ({ params, query }) =>
+    ...jsonRoute({ params: symbolParamsSchema, query: getDailyPriceHistoryQuerySchema }, ({ params, query }) =>
       getDailyPriceHistory(params.symbol, query.limit, deps)
     )
   );

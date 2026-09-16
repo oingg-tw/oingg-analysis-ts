@@ -1,4 +1,4 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { MaterialAnnouncementPort } from '@/application/ports/materialAnnouncements';
 
 // 上市公司每日重大訊息（export.material_announcement）——2026-09-17 重構 Phase 2 從

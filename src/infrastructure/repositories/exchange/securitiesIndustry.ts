@@ -1,5 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getIndustryCodes } from './industryCodes';
 
 // 證交所類股分類（跟 industryClassification.ts 的財政部稅籍五層階層是完全不同的分類系統，

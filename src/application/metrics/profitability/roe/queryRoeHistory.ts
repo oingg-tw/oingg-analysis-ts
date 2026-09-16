@@ -15,7 +15,6 @@ export const roeHistoryEntrySchema = z.object({
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),
 });
-export type RoeHistoryEntry = z.infer<typeof roeHistoryEntrySchema>;
 
 // 給前端畫圖用：單一公司 ROE 歷史時序，第一支直接對外曝露 metric_values（不是
 // profitability_roe）的端點。實際查詢邏輯 2026-09-06 抽成通用的 src/domainPitMetrics/queryMetricHistory.ts

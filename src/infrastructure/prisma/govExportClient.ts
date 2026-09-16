@@ -25,4 +25,3 @@ export const connectGovExportDb = async () => {
   }
 };
 
-export default govExportPrisma;

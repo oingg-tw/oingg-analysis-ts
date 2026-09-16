@@ -78,12 +78,10 @@ export const companiesListResultSchema = z.object({
   offset: z.number(),
   entries: z.array(companyNameEntrySchema),
 });
-export type CompaniesListResult = z.infer<typeof companiesListResultSchema>;
 
 export const companiesCountOnlyResultSchema = z.object({
   count: z.number().meta({ description: '全部公司總筆數' }),
 });
-export type CompaniesCountOnlyResult = z.infer<typeof companiesCountOnlyResultSchema>;
 
 // 2026-09-17 Phase 4：以下兩組 entry schema 從 infrastructure 的 repository 檔案搬來（http 直接 import
 // infrastructure 是分層違規），型別真理來源是 application/ports 的介面，用 satisfies 釘住。
@@ -156,7 +154,6 @@ export const companyPeerGroupResultSchema = z.object({
   peers: z.array(companyPeerEntrySchema).meta({ description: '同業清單，含目標公司自己；只有代號跟名稱，指標數值請另外呼叫 POST /screener/values' }),
   warnings: z.array(z.string()),
 });
-export type CompanyPeerGroupResult = z.infer<typeof companyPeerGroupResultSchema>;
 
 // 2026-09-06 新增——「會計模式」單一公司單張財報表查詢（資產負債表/損益表/現金流量表整列
 // 透傳，不是算好的比率），見 controller.ts 的 getCompanyFinancialStatement。
@@ -174,7 +171,6 @@ export const financialStatementResultSchema = z.object({
     .nullable()
     .meta({ description: '該表全部科目欄位（camelCase key），金額欄位皆序列化成字串避免 JS 數字精度問題；found=false 時為 null' }),
 });
-export type FinancialStatementResult = z.infer<typeof financialStatementResultSchema>;
 
 // 2026-09-10 web-nuxt 要求：piotroskiFScore 只寫入最終 0-9 分，9 個子訊號依 Piotroski
 // (2000) 原始論文分組現查現算回傳，不是新的 metric_code，見 controller.ts 的
@@ -224,14 +220,12 @@ export const piotroskiFScoreBreakdownResultSchema = z.object({
     .record(z.string(), z.string())
     .meta({ description: '2026-09-11 新增：9 個訊號 key（positiveRoa/positiveCfo/...）各自的中文顯示標籤，純靜態文字，found=false 時仍會回傳' }),
 });
-export type PiotroskiFScoreBreakdownResult = z.infer<typeof piotroskiFScoreBreakdownResultSchema>;
 
 // 2026-09-10：GET /companies/:symbol/metric-provenance 的回應 schema——跟寫入路徑
 // （resolveRoeQuarterData/getAnnualDividendPerShareProxy/resolveSueInputs 三個 resolver）
 // 都由 domainPitMetrics/shared/provenance/provenanceTypes.ts 共用，schema 定義留在
 // domain 層、這裡只 re-export，避免跟 domainPitMetrics 之間產生循環依賴。
-export { metricProvenanceResultSchema, provenanceEntrySchema } from '@/application/metrics/shared/provenance/provenanceTypes';
-export type { MetricProvenanceResult, ProvenanceEntry } from '@/application/metrics/shared/provenance/provenanceTypes';
+export { metricProvenanceResultSchema } from '@/application/metrics/shared/provenance/provenanceTypes';
 
 // 2026-09-13：GET /companies/badges 的回應 schema——後端統一算好每支 badge 的 passed，
 // 前端不用再拿 GET /metrics 的 badge.threshold 自己跟 metric-history 的數值比較，見
@@ -250,20 +244,17 @@ export const companyBadgeResultSchema = z.object({
   knowledgeDateIsFallback: z.boolean().nullable().meta({ description: '2026-09-14 新增：true 代表 knowledgeDate 是用財報期末日頂替的（沒有真實公告日），有 look-ahead bias 風險；查無資料時是 null' }),
   passed: z.boolean().nullable().meta({ description: '是否達成門檻；value 為 null 時 passed 也一定是 null（無法判定，不是「未達成」）' }),
 });
-export type CompanyBadgeResult = z.infer<typeof companyBadgeResultSchema>;
 
 export const companyBadgeCategorySchema = z.object({
   categoryKey: z.string().meta({ description: '對應 GET /metrics 的 categoryKey' }),
   categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「財務韌性」' }),
   badges: z.array(companyBadgeResultSchema),
 });
-export type CompanyBadgeCategory = z.infer<typeof companyBadgeCategorySchema>;
 
 export const companyBadgesResultSchema = z.object({
   symbol: z.string(),
   categories: z.array(companyBadgeCategorySchema).meta({ description: '只列出至少有 1 支 badge 的分類；沒有 badge 的分類（例如 profitability）不會出現' }),
 });
-export type CompanyBadgesResult = z.infer<typeof companyBadgesResultSchema>;
 
 // 2026-09-13：GET /companies/metric-completeness 的回應 schema——跟 companyBadgeResultSchema
 // 不同的是範圍涵蓋 GET /metrics 全部指標（不限有 badge 的 15 支），且不判定「達成/未達成」
@@ -280,7 +271,6 @@ export const companyMetricCompletenessEntrySchema = z.object({
     .nullable()
     .meta({ description: 'hasValue 為 false 時的原因；hasValue 為 true 時一律是 null。timeframe 為 null 時也一律是 null' }),
 });
-export type CompanyMetricCompletenessEntry = z.infer<typeof companyMetricCompletenessEntrySchema>;
 
 export const companyMetricCompletenessCategorySchema = z.object({
   categoryKey: z.string().meta({ description: '對應 GET /metrics 的 categoryKey' }),
@@ -289,7 +279,6 @@ export const companyMetricCompletenessCategorySchema = z.object({
   coveredCount: z.number().int().meta({ description: '這個分類裡 hasValue 為 true 的指標數' }),
   totalCount: z.number().int().meta({ description: '這個分類的指標總數' }),
 });
-export type CompanyMetricCompletenessCategory = z.infer<typeof companyMetricCompletenessCategorySchema>;
 
 export const companyMetricCompletenessResultSchema = z.object({
   symbol: z.string(),
@@ -297,4 +286,3 @@ export const companyMetricCompletenessResultSchema = z.object({
   totalCount: z.number().int().meta({ description: '全部分類加總的指標總數' }),
   categories: z.array(companyMetricCompletenessCategorySchema),
 });
-export type CompanyMetricCompletenessResult = z.infer<typeof companyMetricCompletenessResultSchema>;

@@ -3,7 +3,6 @@ import type { IndustryLevel } from '@/application/ports/industryReference';
 import type {
   ChainClassificationResult,
   ChainClustersResult,
-  IndustryChainTreeResult,
   IndustryFlatResult,
   IndustryTreeNodeResult,
   SecuritiesIndustrySectorsResult,
@@ -146,7 +145,6 @@ export const industryTreeNodeSchema = z.object({
 export const industryTreeResultSchema = z.object({
   roots: z.array(industryTreeNodeSchema).meta({ description: '全部頂層節點（粗分類），含完整子樹跟葉節點成員，一次回傳整棵樹；children 內部形狀跟 roots 的元素完全一致，遞迴到底' }),
 });
-export type IndustryTreeResult = IndustryChainTreeResult;
 
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是

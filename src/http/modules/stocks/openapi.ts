@@ -1,13 +1,10 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import {
-  getQuoteParamsSchema,
+  symbolParamsSchema,
   symbolsQuerySchema,
   getExDividendCalendarQuerySchema,
-  getForeignShareholdingHistoryParamsSchema,
   getForeignShareholdingHistoryQuerySchema,
-  getStockPledgeRatioHistoryParamsSchema,
   getStockPledgeRatioHistoryQuerySchema,
-  getDailyPriceHistoryParamsSchema,
   getDailyPriceHistoryQuerySchema,
 } from './schemas';
 import {
@@ -30,7 +27,7 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
       '給 bff-ts 用，取代他們拆掉直連 twse/tpex DB 後留的 503——本服務不想讓呼叫端知道一檔股票是上市還是上櫃，這支內部自己判斷、查兩邊。' +
       'price/valuation 個別是 null 代表「公司存在，但查無股價/估值資料」（例如剛上市還沒有交易紀錄），跟「公司根本不存在」（回 404）是不同情境。',
     tags: ['Stocks'],
-    request: { params: getQuoteParamsSchema },
+    request: { params: symbolParamsSchema },
     responses: {
       200: { description: '最新報價，price/valuation 個別可能是 null。', content: { 'application/json': { schema: stockQuoteResultSchema } } },
       404: { description: '公司代號在上市、上櫃都查無登記資料。' },
@@ -53,7 +50,7 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
       'price/volume 同一次查詢、保證同一組交易日；查無前一個交易日資料（例如剛掛牌）時' +
       'change 整體是 null。',
     tags: ['Stocks'],
-    request: { params: getQuoteParamsSchema },
+    request: { params: symbolParamsSchema },
     responses: {
       200: { description: '個股頁摘要，price/valuation/marketCap 個別可能是 null。', content: { 'application/json': { schema: stockSummaryResultSchema } } },
       404: { description: '公司代號在上市、上櫃都查無登記資料。' },
@@ -132,7 +129,7 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
       '改任何呼叫方式。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - ' +
       'sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。',
     tags: ['Stocks'],
-    request: { params: getForeignShareholdingHistoryParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
+    request: { params: symbolParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
     responses: {
       200: { description: '依日期新到舊排序的外資持股歷史，查無資料的公司 entries 是空陣列。', content: { 'application/json': { schema: foreignShareholdingHistoryResultSchema } } },
       400: { description: '請求的參數格式錯誤。' },
@@ -151,7 +148,7 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
       '比包一層「指標」抽象更利於使用者核對來源。剛開放，目前只回填了少數幾檔驗證用資料，其他公司會回傳' +
       '空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。',
     tags: ['Stocks'],
-    request: { params: getStockPledgeRatioHistoryParamsSchema, query: getStockPledgeRatioHistoryQuerySchema },
+    request: { params: symbolParamsSchema, query: getStockPledgeRatioHistoryQuerySchema },
     responses: {
       200: {
         description: '依日期新到舊排序的董監事質押比例歷史，查無資料的公司 entries 是空陣列。',
@@ -179,7 +176,7 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
       '年數，判斷這檔股票夠不夠長的歷史（例如近期 IPO 公司），不用再用「250 交易日≈1年」' +
       '概估。',
     tags: ['Stocks'],
-    request: { params: getDailyPriceHistoryParamsSchema, query: getDailyPriceHistoryQuerySchema },
+    request: { params: symbolParamsSchema, query: getDailyPriceHistoryQuerySchema },
     responses: {
       200: { description: '依交易日由舊到新排序的逐日股價，查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dailyPriceHistoryResultSchema } } },
       400: { description: '請求的參數格式錯誤。' },

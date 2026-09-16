@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/application/companies/types';
 import type { CompanyNameEntry, CompanyProfilePort, SecurityEntry, SecurityType } from '@/application/ports/companyProfiles';
 
@@ -14,24 +14,14 @@ interface RawTwseCompanyProfileRow {
   short_name: string | null;
 }
 
-// 只查公司簡稱，給單一公司端點補 companyName 用——company_profile 目前只鏡像了
-// symbol/name/shortName 幾個欄位（見 prisma/twseExport/schema.prisma、prisma/tpexExport/schema.prisma
-// 開頭說明）。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料才回傳 null，不拋錯——
-// 呼叫端要把這個當作「查不到名稱」的正常情境。
+// company_profile 目前只鏡像了 symbol/name/shortName 幾個欄位（見 prisma/twseExport/schema.prisma、
+// prisma/tpexExport/schema.prisma 開頭說明）。這裡的查詢一律上市（TWSE）查無資料再查上櫃（TPEx），
+// 兩邊都查無資料才回傳 null/false，不拋錯——呼叫端要把這個當作正常情境。
 //
 // 2026-09-03 使用者決定 curated 中台層現階段太早，TWSE 這邊改回直接查 twseExportPrisma——跟
 // TPEx 同一種模式（export schema 沒有唯一識別欄位，走 $queryRaw）。
-export const getCompanyName = async (symbol: string): Promise<string | null> => {
-  const twseRows = await twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`
-    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
-  `;
-  if (twseRows[0]) return twseRows[0].short_name;
-
-  const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`
-    SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
-  `;
-  return tpexRows[0]?.short_name ?? null;
-};
+// （原本還有單筆的 getCompanyName，單一公司端點都改用 getCompanyNamesForSymbols 之後沒有消費端，
+// 2026-09-17 Phase 6 死碼清理刪除。）
 
 // GET /stocks/:symbol/quote 用——判斷這家公司到底存不存在（上市或上櫃任一邊有登記），
 // 不存在才回 404；存在但查無股價/估值資料是另一回事（回 200，欄位是 null）。
@@ -413,7 +403,7 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
 
 // 2026-09-17 Phase 4：entry 型別搬到 application/ports/companyProfiles.ts（對外回應的 zod schema 在
 // http/modules/{companies,securities}/types.ts），這裡 re-export 給既有 import 路徑。
-export type { CompanyNameEntry, SecurityEntry, SecurityType };
+export type { CompanyNameEntry, SecurityEntry };
 
 // 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
 // 自己快取。現在 screener/ranking 這類多公司陣列結果已經直接帶 companyName（見

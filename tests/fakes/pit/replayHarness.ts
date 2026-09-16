@@ -95,4 +95,3 @@ export const createPitReplay = (cassetteName: string) => {
   };
 };
 
-export type PitReplay = ReturnType<typeof createPitReplay>;

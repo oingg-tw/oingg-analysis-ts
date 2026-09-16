@@ -1,0 +1,14 @@
+{
+  // 2026-09-17 clean architecture 重構 Phase 6：死碼偵測（未使用的檔案/匯出/依賴）。用法：pnpm lint:dead。
+  // - entry：每支 scripts/*.ts 都是獨立的 CLI 入口（tsx 直接跑）、codemod、cassette 錄製器；src/index.ts
+  //   由 package.json 的 dev script 自動偵測，tests 由 vitest plugin 自動當入口。
+  // - ignoreDependencies：generated/ 的 Prisma client 在執行期 require @prisma/client*（generated/ 不在
+  //   project 內，knip 看不到）；@swc/core 是 .dependency-cruiser.cjs 的 parser；pino-pretty 是 logger 的
+  //   transport target 字串；jscpd 是手動跑的重複程式碼掃描 CLI，沒有 script 也沒有設定檔。
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["scripts/*.ts", "scripts/codemods/*.ts", "tests/fixtures/pit/capture.ts"],
+  "project": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+  "ignoreDependencies": ["@prisma/client", "@prisma/client-runtime-utils", "@swc/core", "pino-pretty", "jscpd"],
+  "ignoreExportsUsedInFile": true,
+  "vitest": { "config": ["vitest.config.ts"] }
+}

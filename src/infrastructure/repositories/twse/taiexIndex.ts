@@ -1,4 +1,4 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { TaiexIndexPort } from '@/application/ports/taiexIndex';
 
 // 大盤加權指數（export.daily_taiex_index）——2026-09-17 重構 Phase 2 從 http/modules/market/

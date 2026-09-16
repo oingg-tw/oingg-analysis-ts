@@ -31,4 +31,3 @@ export const connectTwseExportDevDb = async () => {
   }
 };
 
-export default twseExportDevPrisma;

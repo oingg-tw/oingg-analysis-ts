@@ -12,19 +12,5 @@ export interface QuarterlyMetricQuery {
   subsidiaryCompanyId: string;
 }
 
-// 季度財報類指標 Result 開頭共用的「查詢身分」欄位。
-export interface QuarterlyMetricIdentity {
-  symbol: string;
-  // 實際使用的季度（不論是查詢時指定的，還是自動抓最新的）；查無任何季度資料時為 null。
-  year: string | null;
-  season: Season | null;
-  dataType: '1' | '2';
-  subsidiaryCompanyId: string;
-  reportDate: string | null;
-}
-
-// 需要回報 TTM 用了哪幾季、缺了哪幾季的指標共用這個形狀。
-export interface QuarterlyMetricTtmInfo {
-  quartersUsed: string[];
-  quartersMissing: string[];
-}
+// （原本還有舊架構指標 Result 共用的 QuarterlyMetricIdentity / QuarterlyMetricTtmInfo，2026-09-08 那批
+// 指標退場後沒有消費端，2026-09-17 Phase 6 死碼清理刪除。）

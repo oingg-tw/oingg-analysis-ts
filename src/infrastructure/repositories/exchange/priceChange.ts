@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { cumulativeChangePercentKey as buildKeyFromPort, type PriceChangePort } from '@/application/ports/priceChange';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 
 export interface ChangeLookupKey {
   symbol: string;

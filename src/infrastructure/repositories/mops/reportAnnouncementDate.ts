@@ -1,8 +1,8 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
-import type { AnnouncementDatePort, PriceAnchorDate, PriceAnchorSource } from '@/application/ports/announcementDates';
+import type { AnnouncementDatePort, PriceAnchorDate } from '@/application/ports/announcementDates';
 
 // 型別 2026-09-17 Phase 3 搬到 application/ports/announcementDates.ts，這裡 re-export 給既有 import 路徑。
-export type { PriceAnchorDate, PriceAnchorSource };
+export type { PriceAnchorDate };
 
 interface RawAnnouncementRow {
   announcement_date: Date;

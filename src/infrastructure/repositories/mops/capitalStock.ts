@@ -1,12 +1,12 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
-import type { CapitalStockChangeSource, CapitalStockHistoryEntry, CapitalStockHistoryPort, PaidInSharesAsOf, PaidInSharesPort } from '@/application/ports/capitalStock';
+import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, PaidInSharesAsOf, PaidInSharesPort } from '@/application/ports/capitalStock';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
 // CapitalStockChangeSource 在 Phase 4 跟進（對外回應的 zod schema 在 http/modules/companies/types.ts），
 // 這裡 re-export 給既有 import 路徑。
-export type { CapitalStockChangeSource, CapitalStockHistoryEntry, PaidInSharesAsOf };
+export type { CapitalStockHistoryEntry, PaidInSharesAsOf };
 
 interface RawCapitalStockRow {
   effective_year: number;
