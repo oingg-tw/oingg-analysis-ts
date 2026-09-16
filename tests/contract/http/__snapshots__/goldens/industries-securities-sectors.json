@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "sectors": [
+      {
+        "code": "<numeric-string>",
+        "companyCount": "<number>",
+        "name": "<string>"
+      }
+    ]
+  }
+}

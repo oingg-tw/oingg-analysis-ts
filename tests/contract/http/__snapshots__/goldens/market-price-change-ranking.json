@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": {
+    "gainers": [
+      {
+        "changeAmount": "<number>",
+        "changePercent": "<number>",
+        "close": "<number>",
+        "companyName": "<string>",
+        "market": "TPEx",
+        "previousClose": "<number>",
+        "previousTradeDate": "<date>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>",
+        "tradeDate": "<date>"
+      }
+    ],
+    "limit": "<number>",
+    "losers": [
+      {
+        "changeAmount": "<number>",
+        "changePercent": "<number>",
+        "close": "<number>",
+        "companyName": "<string>",
+        "market": "TPEx",
+        "previousClose": "<number>",
+        "previousTradeDate": "<date>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>",
+        "tradeDate": "<date>"
+      }
+    ],
+    "warnings": []
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "status": 200,
+  "body": {
+    "count": "<number>",
+    "dataSources": [
+      {
+        "name": "<string>",
+        "note": "<string>",
+        "url": "<string>"
+      }
+    ],
+    "entries": [
+      {
+        "conversionStartDate": "<null>",
+        "convertible": "<boolean>",
+        "cumulativeDividend": "<boolean>",
+        "currentYieldPct": "<number>",
+        "dividendRate": "<number>",
+        "isinCode": "TW0001101B05",
+        "issueDate": "<date>",
+        "issuePrice": "<number>",
+        "latestClosePrice": "<number>",
+        "latestPriceDate": "<date>",
+        "liquidationPreference": "<boolean>",
+        "listedDate": "<date>",
+        "marketType": "<string>",
+        "name": "<string>",
+        "nominalDividendRatePct": "<number>",
+        "participatingExcessDividend": "<boolean>",
+        "premiumRatePct": "<number>",
+        "redeemable": "<boolean>",
+        "redemptionConditions": "<string>",
+        "redemptionDate": "<date>",
+        "redemptionVerified": "<boolean>",
+        "symbol": "<string>",
+        "votingRights": "<boolean>",
+        "ytcAssumption": "<string>",
+        "ytcPct": "<number>",
+        "ytwPct": "<number>"
+      }
+    ],
+    "limit": "<number>",
+    "offset": "<number>"
+  }
+}

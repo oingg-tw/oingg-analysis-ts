@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "categories": [
+      {
+        "categoryDisplayName": "<string>",
+        "categoryKey": "identity",
+        "fields": [
+          {
+            "field": "market",
+            "kind": "categorical",
+            "label": "<string>",
+            "values": [
+              "TWSE"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

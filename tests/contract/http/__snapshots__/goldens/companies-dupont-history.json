@@ -1,0 +1,27 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "assetTurnover": "<number>",
+        "decomposedRoePct": "<number>",
+        "dupontEbitMarginPct": "<number>",
+        "dupontExtendedRoeNullReason": "<null>",
+        "dupontExtendedRoePct": "<number>",
+        "dupontInterestBurdenPct": "<number>",
+        "dupontTaxBurdenPct": "<number>",
+        "equityMultiplier": "<number>",
+        "fiscalQuarter": "<number>",
+        "fiscalYear": "<number>",
+        "knowledgeDate": "<date>",
+        "knowledgeDateIsFallback": "<boolean>",
+        "netProfitMarginPct": "<number>",
+        "nullReason": "<null>"
+      }
+    ],
+    "hasMore": "<boolean>",
+    "periodType": "Q",
+    "symbol": "<numeric-string>",
+    "total": "<number>"
+  }
+}

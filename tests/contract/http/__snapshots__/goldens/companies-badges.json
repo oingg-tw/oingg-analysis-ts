@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "body": {
+    "categories": [
+      {
+        "badges": [
+          {
+            "knowledgeDate": "<date>",
+            "knowledgeDateIsFallback": "<boolean>",
+            "metricCode": "liveGrahamNumber",
+            "name": "<string>",
+            "nameEn": "<string>",
+            "nullReason": "<null>",
+            "passed": "<boolean>",
+            "timeframe": "EOD",
+            "value": "<number>"
+          }
+        ],
+        "categoryDisplayName": "<string>",
+        "categoryKey": "valuation"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

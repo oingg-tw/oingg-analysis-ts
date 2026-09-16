@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "cumulativeChangePercent": "<number>",
+        "cumulativeLastYearRevenue": "<numeric-string>",
+        "cumulativeRevenue": "<numeric-string>",
+        "currentMonthRevenue": "<numeric-string>",
+        "industry": "<string>",
+        "lastYearSameMonthRevenue": "<numeric-string>",
+        "momChangePercent": "<number>",
+        "note": "<null>",
+        "reportDate": "<date>",
+        "yearMonth": "<string>",
+        "yoyChangePercent": "<number>"
+      }
+    ],
+    "hasMore": "<boolean>",
+    "symbol": "<numeric-string>",
+    "total": "<number>"
+  }
+}

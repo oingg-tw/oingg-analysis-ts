@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "children": [
+      {
+        "code": "A",
+        "companyCount": "<number>",
+        "hasChildren": "<boolean>",
+        "level": "section",
+        "name": "<string>"
+      }
+    ],
+    "code": "<null>",
+    "companies": [],
+    "companyCount": "<number>",
+    "found": "<boolean>",
+    "level": "<null>",
+    "name": "<null>"
+  }
+}

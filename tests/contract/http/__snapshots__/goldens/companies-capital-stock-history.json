@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "changeSource": {
+          "capitalReduction": "<numeric-string>",
+          "capitalReserveTransfer": "<numeric-string>",
+          "cashIncrease": "<numeric-string>",
+          "mergerIncrease": "<numeric-string>",
+          "other": "<null>",
+          "retainedEarningsTransfer": "<numeric-string>"
+        },
+        "effectiveDate": "<string>",
+        "paidInCapital": "<numeric-string>",
+        "paidInShares": "<numeric-string>",
+        "remarks": "<string>",
+        "sharesChangePercent": "<number>"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

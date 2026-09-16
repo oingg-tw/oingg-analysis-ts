@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "notices": {
+      "2330": [
+        {
+          "cashDividend": "<number>",
+          "exDate": "<date>",
+          "exType": "<string>",
+          "sharesEmpOwner": "<null>",
+          "sharesholderOwner": "<null>",
+          "sharesOffered": "<null>",
+          "stockDividendRatio": "<null>",
+          "stockHoldingRatio": "<null>",
+          "subscriptionPricePerShare": "<null>",
+          "subscriptionRatio": "<null>"
+        }
+      ]
+    }
+  }
+}

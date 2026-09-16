@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "excludedNonPositiveCount": "<number>",
+    "limit": "<number>",
+    "metric": "peRatio",
+    "order": "desc",
+    "rankings": [
+      {
+        "companyName": "<string>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>",
+        "value": "<number>"
+      }
+    ],
+    "tradeDate": "<date>",
+    "warnings": [
+      "<string>"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "fiscalQuarter": "<number>",
+        "fiscalYear": "<number>",
+        "knowledgeDate": "<date>",
+        "knowledgeDateIsFallback": "<boolean>",
+        "nullReason": "<null>",
+        "value": "<number>"
+      }
+    ],
+    "hasMore": "<boolean>",
+    "metricCode": "eps",
+    "symbol": "<numeric-string>",
+    "timeframe": "TTM",
+    "total": "<number>"
+  }
+}

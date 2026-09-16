@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "body": {
+    "companies": [
+      {
+        "category": "<string>",
+        "coarseGroup": "<string>",
+        "companyName": "<string>",
+        "source": "gemini",
+        "symbol": "<numeric-string>",
+        "updatedAt": "<date>"
+      }
+    ],
+    "groups": [
+      {
+        "coarseGroup": "<string>",
+        "fineCategories": [
+          "<string>"
+        ]
+      }
+    ]
+  }
+}

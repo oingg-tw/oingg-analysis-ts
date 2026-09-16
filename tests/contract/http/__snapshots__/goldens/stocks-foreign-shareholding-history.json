@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "availableInvestPercent": "<number>",
+        "foreignLimitPercent": "<number>",
+        "sharesHeldPercent": "<number>",
+        "tradeDate": "<date>"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

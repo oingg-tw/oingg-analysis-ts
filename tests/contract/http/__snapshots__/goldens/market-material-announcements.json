@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "items": [
+      {
+        "announcementDate": "<date>",
+        "announcementTime": "<numeric-string>",
+        "clause": "<string>",
+        "companyName": "<string>",
+        "description": "<string>",
+        "factDate": "<date>",
+        "reportDate": "<date>",
+        "subject": "<string>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "limit": "<number>",
+    "warnings": []
+  }
+}

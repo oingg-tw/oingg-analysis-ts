@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "clusters": [
+      {
+        "clusterId": "<number>",
+        "directMembers": [
+          {
+            "code": "<numeric-string>",
+            "isListed": "<boolean>",
+            "name": "<string>"
+          }
+        ],
+        "label": "<string>",
+        "metaGroup": "<string>",
+        "subClusters": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "earliestAvailableTradeDate": "<date>",
+    "entries": [
+      {
+        "close": "<number>",
+        "high": "<number>",
+        "low": "<number>",
+        "open": "<number>",
+        "tradeDate": "<date>",
+        "volume": "<number>"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

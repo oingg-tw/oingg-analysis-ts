@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "field": "dividendYield.EOD",
+    "found": "<boolean>",
+    "rank": "<number>",
+    "symbol": "<numeric-string>",
+    "topPercent": "<number>",
+    "totalCount": "<number>",
+    "value": "<number>"
+  }
+}

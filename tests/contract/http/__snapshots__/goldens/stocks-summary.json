@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "body": {
+    "marketCap": {
+      "tradeDate": "<date>",
+      "value": "<number>"
+    },
+    "price": {
+      "change": {
+        "amount": "<number>",
+        "percent": "<number>"
+      },
+      "close": "<number>",
+      "tradeDate": "<date>",
+      "volume": "<number>"
+    },
+    "symbol": "<numeric-string>",
+    "valuation": {
+      "dividendYield": "<number>",
+      "pbRatio": "<number>",
+      "peRatio": "<number>",
+      "tradeDate": "<date>"
+    }
+  }
+}

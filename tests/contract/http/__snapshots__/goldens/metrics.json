@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "body": {
+    "categories": [
+      {
+        "categoryDisplayName": "<string>",
+        "categoryKey": "valuation",
+        "metrics": [
+          {
+            "academicSourceUrl": "<string>",
+            "formulaLatex": "<string>",
+            "hasProvenance": "<boolean>",
+            "metricCode": "beta",
+            "name": "Beta",
+            "referenceUrl": "<string>",
+            "sources": [
+              "<string>"
+            ],
+            "tier": "composite",
+            "unit": "<string>",
+            "validTimeframes": [
+              "<string>"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

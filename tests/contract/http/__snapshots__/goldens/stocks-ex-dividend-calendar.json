@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "cashDividend": "<number>",
+        "companyName": "<null>",
+        "exDate": "<date>",
+        "exType": "<string>",
+        "sharesEmpOwner": "<null>",
+        "sharesholderOwner": "<null>",
+        "sharesOffered": "<null>",
+        "stockDividendRatio": "<null>",
+        "stockHoldingRatio": "<null>",
+        "subscriptionPricePerShare": "<null>",
+        "subscriptionRatio": "<null>",
+        "symbol": "<numeric-string>"
+      }
+    ]
+  }
+}

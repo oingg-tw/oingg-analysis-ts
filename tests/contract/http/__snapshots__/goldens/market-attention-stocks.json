@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "body": {
+    "items": [
+      {
+        "companyName": "<string>",
+        "criteria": "<string>",
+        "criteriaDetails": [
+          {
+            "endDate": "<date>",
+            "observationDays": "<null>",
+            "startDate": "<date>",
+            "times": "<number>"
+          }
+        ],
+        "market": "TWSE",
+        "sixDayChangePercent": "<number>",
+        "symbol": "<numeric-string>",
+        "tradeDate": "<date>"
+      }
+    ],
+    "limit": "<number>",
+    "warnings": []
+  }
+}

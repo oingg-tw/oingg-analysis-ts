@@ -1,0 +1,50 @@
+{
+  "status": 200,
+  "body": {
+    "fiscalQuarter": "<number>",
+    "fiscalYear": "<number>",
+    "found": "<boolean>",
+    "groupMetadata": [
+      {
+        "denominator": "<number>",
+        "detail": "<string>",
+        "key": "profitability",
+        "name": "<string>",
+        "nameEn": "Profitability",
+        "summary": "<string>"
+      }
+    ],
+    "groups": {
+      "leverageLiquidity": {
+        "leverageDecreased": "<boolean>",
+        "liquidityImproved": "<boolean>",
+        "noDilution": "<boolean>"
+      },
+      "operatingEfficiency": {
+        "assetTurnoverImproved": "<boolean>",
+        "grossMarginImproved": "<boolean>"
+      },
+      "profitability": {
+        "accrualQuality": "<boolean>",
+        "positiveCfo": "<boolean>",
+        "positiveRoa": "<boolean>",
+        "roaImproved": "<boolean>"
+      }
+    },
+    "knowledgeDate": "<date>",
+    "knowledgeDateIsFallback": "<boolean>",
+    "signalLabels": {
+      "accrualQuality": "<string>",
+      "assetTurnoverImproved": "<string>",
+      "grossMarginImproved": "<string>",
+      "leverageDecreased": "<string>",
+      "liquidityImproved": "<string>",
+      "noDilution": "<string>",
+      "positiveCfo": "<string>",
+      "positiveRoa": "<string>",
+      "roaImproved": "<string>"
+    },
+    "symbol": "<numeric-string>",
+    "totalScore": "<number>"
+  }
+}

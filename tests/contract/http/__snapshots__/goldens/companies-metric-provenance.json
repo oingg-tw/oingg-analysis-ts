@@ -1,0 +1,24 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "fieldKey": "<string>",
+        "fiscalQuarter": "<number>",
+        "fiscalYear": "<number>",
+        "role": "<string>",
+        "sourceDescription": "<null>",
+        "statementType": "incomeStatement",
+        "type": "statementField",
+        "value": "<numeric-string>"
+      }
+    ],
+    "fiscalQuarter": "<number>",
+    "fiscalYear": "<number>",
+    "found": "<boolean>",
+    "methodologyNote": "<null>",
+    "metricCode": "roe",
+    "symbol": "<numeric-string>",
+    "value": "<number>"
+  }
+}

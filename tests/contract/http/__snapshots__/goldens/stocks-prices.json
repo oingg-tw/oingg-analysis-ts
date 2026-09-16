@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "prices": {
+      "2317": {
+        "close": "<number>",
+        "tradeDate": "<date>"
+      },
+      "2330": {
+        "close": "<number>",
+        "tradeDate": "<date>"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "message": "Invalid query parameters.",
+  "errors": {
+    "_errors": [],
+    "symbol": {
+      "_errors": [
+        "symbol is required."
+      ]
+    },
+    "metricCode": {
+      "_errors": [
+        "metricCode is required."
+      ]
+    },
+    "timeframe": {
+      "_errors": [
+        "timeframe is required."
+      ]
+    }
+  }
+}

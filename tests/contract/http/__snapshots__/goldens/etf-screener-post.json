@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "count": "<number>",
+    "page": "<number>",
+    "pageSize": "<number>",
+    "results": [
+      {
+        "category": "<string>",
+        "companyName": "<string>",
+        "fundName": "<string>",
+        "shortName": "<string>",
+        "symbol": "<string>",
+        "values": {
+          "aum": "<number>"
+        }
+      }
+    ],
+    "totalPages": "<number>"
+  }
+}

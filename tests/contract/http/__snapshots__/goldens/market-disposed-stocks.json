@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "body": {
+    "items": [
+      {
+        "announceDate": "<date>",
+        "announcementCount": "<number>",
+        "companyName": "<string>",
+        "detail": "<string>",
+        "dispositionEndDate": "<date>",
+        "dispositionMeasures": "<string>",
+        "dispositionPeriod": "<string>",
+        "dispositionStartDate": "<date>",
+        "linkInformation": "<string>",
+        "market": "TWSE",
+        "reason": "<string>",
+        "reasonShort": "<null>",
+        "reasonTimes": "<null>",
+        "sixDayChangePercent": "<number>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "limit": "<number>",
+    "warnings": []
+  }
+}

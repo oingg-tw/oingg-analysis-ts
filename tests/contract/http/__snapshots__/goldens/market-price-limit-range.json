@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": {
+    "narrowest": [
+      {
+        "allowOddLotTrade": "<string>",
+        "companyName": "<string>",
+        "limitDown": "<number>",
+        "limitRange": "<number>",
+        "limitUp": "<number>",
+        "market": "TWSE",
+        "openingRefPrice": "<number>",
+        "previousDayPrice": "<number>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "tradeDate": "<date>",
+    "warnings": [],
+    "widest": [
+      {
+        "allowOddLotTrade": "<string>",
+        "companyName": "<string>",
+        "limitDown": "<number>",
+        "limitRange": "<number>",
+        "limitUp": "<number>",
+        "market": "TWSE",
+        "openingRefPrice": "<number>",
+        "previousDayPrice": "<number>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>"
+      }
+    ]
+  }
+}

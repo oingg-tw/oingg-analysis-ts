@@ -1,0 +1,24 @@
+{
+  "status": 200,
+  "body": {
+    "rankings": [
+      {
+        "change": "<number>",
+        "changePercent": "<number>",
+        "close": "<number>",
+        "companyName": "<string>",
+        "dir": "<string>",
+        "high": "<number>",
+        "low": "<number>",
+        "market": "TWSE",
+        "open": "<number>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>",
+        "transaction": "<numeric-string>",
+        "volume": "<numeric-string>"
+      }
+    ],
+    "tradeDate": "<date>",
+    "warnings": []
+  }
+}

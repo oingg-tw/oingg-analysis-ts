@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "limit": "<number>",
+    "metric": "yoy",
+    "order": "desc",
+    "rankings": [
+      {
+        "companyName": "<string>",
+        "currentMonthRevenue": "<numeric-string>",
+        "market": "TWSE",
+        "momChangePercent": "<number>",
+        "rank": "<number>",
+        "symbol": "<numeric-string>",
+        "yoyChangePercent": "<number>"
+      }
+    ],
+    "warnings": [],
+    "yearMonth": "<string>"
+  }
+}

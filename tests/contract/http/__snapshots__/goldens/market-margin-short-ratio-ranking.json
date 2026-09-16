@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "limit": "<number>",
+    "rankings": [
+      {
+        "companyName": "<string>",
+        "marginTodayBalance": "<numeric-string>",
+        "market": "TPEx",
+        "rank": "<number>",
+        "shortTodayBalance": "<numeric-string>",
+        "shortToMarginRatioPct": "<number>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "tradeDate": "<date>",
+    "warnings": [
+      "<string>"
+    ]
+  }
+}

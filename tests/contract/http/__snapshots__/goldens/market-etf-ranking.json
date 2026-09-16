@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "body": {
+    "limit": "<number>",
+    "metric": "aum",
+    "order": "desc",
+    "rankings": [
+      {
+        "asOf": "<string>",
+        "assetClass": "<string>",
+        "belowStatutoryThreshold": "<boolean>",
+        "category": "<string>",
+        "companyName": "<string>",
+        "distributionFrequency": "<string>",
+        "fundName": "<string>",
+        "isActive": "<boolean>",
+        "market": "TWSE",
+        "rank": "<number>",
+        "shortName": "<string>",
+        "symbol": "<numeric-string>",
+        "value": "<number>"
+      }
+    ],
+    "warnings": []
+  }
+}

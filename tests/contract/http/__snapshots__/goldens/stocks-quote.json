@@ -1,0 +1,16 @@
+{
+  "status": 200,
+  "body": {
+    "price": {
+      "close": "<number>",
+      "tradeDate": "<date>"
+    },
+    "symbol": "<numeric-string>",
+    "valuation": {
+      "dividendYield": "<number>",
+      "pbRatio": "<number>",
+      "peRatio": "<number>",
+      "tradeDate": "<date>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "body": {
+    "category": "<string>",
+    "coarseGroup": "<string>",
+    "companyName": "<string>",
+    "found": "<boolean>",
+    "notFoundReason": "<null>",
+    "peerGroupLabel": "<string>",
+    "peerGroupLevel": "segment",
+    "peerGroupNodeId": "<string>",
+    "peers": [
+      {
+        "companyName": "<string>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "source": "gemini",
+    "symbol": "<numeric-string>",
+    "updatedAt": "<date>",
+    "warnings": []
+  }
+}

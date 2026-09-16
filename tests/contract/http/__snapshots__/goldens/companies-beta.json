@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "metricCode": "beta",
+    "symbol": "<numeric-string>",
+    "windows": [
+      {
+        "knowledgeDate": "<date>",
+        "knowledgeDateIsFallback": "<boolean>",
+        "nullReason": "<null>",
+        "timeframe": "<string>",
+        "tradeDate": "<date>",
+        "value": "<number>"
+      }
+    ]
+  }
+}

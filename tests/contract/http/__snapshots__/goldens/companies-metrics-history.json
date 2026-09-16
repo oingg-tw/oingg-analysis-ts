@@ -1,0 +1,32 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "fiscalQuarter": "<number>",
+        "fiscalYear": "<number>",
+        "values": {
+          "eps": {
+            "knowledgeDate": "<date>",
+            "knowledgeDateIsFallback": "<boolean>",
+            "nullReason": "<null>",
+            "value": "<number>"
+          },
+          "roe": {
+            "knowledgeDate": "<date>",
+            "knowledgeDateIsFallback": "<boolean>",
+            "nullReason": "<null>",
+            "value": "<number>"
+          }
+        }
+      }
+    ],
+    "hasMore": "<boolean>",
+    "metricCodes": [
+      "roe"
+    ],
+    "symbol": "<numeric-string>",
+    "timeframe": "TTM",
+    "total": "<number>"
+  }
+}

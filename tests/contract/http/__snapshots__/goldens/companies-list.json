@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "count": "<number>",
+    "entries": [
+      {
+        "companyName": "<string>",
+        "symbol": "<numeric-string>"
+      }
+    ],
+    "limit": "<number>",
+    "offset": "<number>"
+  }
+}
