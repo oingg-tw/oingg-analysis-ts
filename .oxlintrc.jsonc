@@ -23,14 +23,31 @@
     // Postgres Decimal 物件（有正確的 toString()）、Date、或字串，`String(value)` 是刻意的
     // 通用轉換，不是忘記處理型別。已經人工核對過這次型別感知掃描抓到的 4 個案例都是這個模式，
     // 不是真的 bug，關掉整條規則比在 4 個地方各自加 disable 註解更不會漂移。
-    "typescript/no-base-to-string": "off"
+    "typescript/no-base-to-string": "off",
+    // 2026-09-17 clean architecture 重構：process.env 只准在 config 讀一次（之後是
+    // src/infrastructure/config.ts，用 zod 驗證全部環境變數），其餘程式碼從 config 拿值——
+    // 8 個 Prisma client 各自讀裸 process.env、缺變數要到連線時才炸的問題就是這樣來的。
+    // 這條規則 dependency-cruiser 做不到（那是 import graph 層級），所以留在 oxlint。
+    "no-restricted-properties": [
+      "error",
+      { "object": "process", "property": "env", "message": "只能在 config 模組讀 process.env（src/shared/config.ts → 之後的 src/infrastructure/config.ts）。" }
+    ]
   },
   "overrides": [
     {
       "files": ["tests/**", "scripts/**"],
       "rules": {
         // 測試/腳本裡常故意用寬鬆型別組測試資料，不用套用跟 src/ 一樣嚴格的 any 規則。
-        "typescript/no-explicit-any": "off"
+        "typescript/no-explicit-any": "off",
+        "no-restricted-properties": "off"
+      }
+    },
+    {
+      // 現在合法讀 process.env 的地方；Phase 1 把 8 個 Prisma client 的 URL 改從 config 拿之後，
+      // 這份清單縮到只剩 config 一個檔案（見計畫 Phase 1 退出條件）。
+      "files": ["src/shared/config.ts", "src/infrastructure/config.ts", "src/adapters/prisma/**", "scripts/pitBackfillFixtures.ts"],
+      "rules": {
+        "no-restricted-properties": "off"
       }
     }
   ],
