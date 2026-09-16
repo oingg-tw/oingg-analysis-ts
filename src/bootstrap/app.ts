@@ -3,9 +3,10 @@ import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { logger } from '@/infrastructure/logger';
+import { config } from '@/infrastructure/config';
 import { swaggerUi, swaggerSpec } from '@/bootstrap/openapi';
 import routes from '@/http/routes';
-import errorHandler from '@/http/middleware/errorHandler';
+import { createErrorHandler } from '@/http/middleware/errorHandler';
 
 // 2026-09-17 clean architecture 重構 Phase 0：把「組 express app」從 src/index.ts 抽出來，
 // 跟「連 DB / 載快取 / listen」分開——HTTP 契約測試（tests/contract/http/）需要一個不會
@@ -38,7 +39,7 @@ export const createApp = () => {
   app.use(routes);
 
   // 一定要是最後一個 middleware，才接得到前面所有路由丟出來的錯誤。
-  app.use(errorHandler);
+  app.use(createErrorHandler({ isProduction: config.isProduction }));
 
   return app;
 };

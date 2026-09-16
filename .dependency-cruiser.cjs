@@ -90,9 +90,16 @@ module.exports = {
     {
       name: 'unit-tests-no-io',
       severity: 'error',
-      comment: 'tests/unit 只能靠 fakes：不得 import infrastructure/http/bootstrap 或 Prisma。',
+      comment: 'tests/unit 只能靠 fakes：不得 import infrastructure/bootstrap 或 Prisma。',
       from: { path: '^tests/unit/' },
-      to: { path: `^src/(infrastructure|http|bootstrap)/|${PRISMA}` },
+      to: { path: `^src/(infrastructure|bootstrap)/|${PRISMA}` },
+    },
+    {
+      name: 'unit-tests-no-http-outside-http-tests',
+      severity: 'error',
+      comment: 'src/http 只有 tests/unit/http/ 可以 import（純 middleware/helper 的單元測試，用假的 req/res），其餘 tests/unit 不碰。',
+      from: { path: '^tests/unit/', pathNot: '^tests/unit/http/' },
+      to: { path: '^src/http/' },
     },
   ],
   options: {
