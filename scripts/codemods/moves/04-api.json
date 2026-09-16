@@ -1,0 +1,6 @@
+{
+  "src/api/bff/bffAuth.ts": "src/http/middleware/bffAuth.ts",
+  "src/api/bff": "src/http/modules",
+  "src/api/batch": "src/http/batch",
+  "src/routes.ts": "src/http/routes.ts"
+}

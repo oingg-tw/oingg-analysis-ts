@@ -1,0 +1,14 @@
+{
+  "src/models/mops": "src/infrastructure/repositories/mops",
+  "src/models/twse": "src/infrastructure/repositories/twse",
+  "src/models/gov": "src/infrastructure/repositories/gov",
+  "src/models/playwright": "src/infrastructure/repositories/playwright",
+  "src/models/companyProfile.ts": "src/infrastructure/repositories/exchange/companyProfile.ts",
+  "src/models/twseMarketData.ts": "src/infrastructure/repositories/exchange/twseMarketData.ts",
+  "src/models/priceChange.ts": "src/infrastructure/repositories/exchange/priceChange.ts",
+  "src/models/securitiesIndustry.ts": "src/infrastructure/repositories/exchange/securitiesIndustry.ts",
+  "src/models/preferredStock.ts": "src/infrastructure/repositories/exchange/preferredStock.ts",
+  "src/models/industryCodes.ts": "src/infrastructure/repositories/exchange/industryCodes.ts",
+  "src/models/latestQuarter.ts": "src/application/financials/latestQuarter.ts",
+  "src/models/quarterlyKey.ts": "src/domain/financials/quarterlyKey.ts"
+}

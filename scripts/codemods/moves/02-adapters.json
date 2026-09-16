@@ -1,0 +1,5 @@
+{
+  "src/adapters/prisma": "src/infrastructure/prisma",
+  "src/adapters/swagger/registry.ts": "src/infrastructure/swagger/registry.ts",
+  "src/adapters/swagger/index.ts": "src/bootstrap/openapi.ts"
+}
