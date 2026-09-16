@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteDividendDistributionCountPit } from '@/domainPitMetrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
-import { getSymbolsWithDividendDistribution } from '@/models/mops/dividendDistribution';
+import { getSymbolsWithDividendDistribution } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';

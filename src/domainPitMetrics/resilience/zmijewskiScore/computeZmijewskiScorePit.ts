@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domainPitMetrics/shared/pickers';
 import { financialDataAdapter, type IncomeStatementPort, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 
@@ -9,7 +9,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
+import { isFinancialIndustryCompany } from '@/infrastructure/repositories/exchange/securitiesIndustry';
 
 // 這份檔案是 src/domainMetrics/zmijewskiScore.ts 的獨立重新實作。Probit 財務危機預警模型：
 // X = -4.3 - 4.5*(NI_TTM/總資產) + 5.7*(總負債/總資產) - 0.004*(流動資產/流動負債)。

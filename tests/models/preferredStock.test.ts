@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/models/preferredStock';
+import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/infrastructure/repositories/exchange/preferredStock';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 

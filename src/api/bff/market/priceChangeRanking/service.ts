@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
+import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
 
 interface RawChangeRow {

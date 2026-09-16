@@ -1,11 +1,11 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getCompanyNamesForSymbols } from '@/models/companyProfile';
-import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/models/gov/industryClassification';
-import { listAllCompanyCategories, listCategoryGroups } from '@/models/playwright/industryChainClassification';
-import { listIndustryClusters, getExternalCompanyName } from '@/models/playwright/industryClusters';
-import { listIndustryTree, type IndustryTreeNode } from '@/models/playwright/industryTree';
-import { listSecuritiesIndustrySectors } from '@/models/securitiesIndustry';
+import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/infrastructure/repositories/gov/industryClassification';
+import { listAllCompanyCategories, listCategoryGroups } from '@/infrastructure/repositories/playwright/industryChainClassification';
+import { listIndustryClusters, getExternalCompanyName } from '@/infrastructure/repositories/playwright/industryClusters';
+import { listIndustryTree, type IndustryTreeNode } from '@/infrastructure/repositories/playwright/industryTree';
+import { listSecuritiesIndustrySectors } from '@/infrastructure/repositories/exchange/securitiesIndustry';
 
 export const getIndustryTreeQuerySchema = z.object({
   code: z.string().min(1).optional().meta({

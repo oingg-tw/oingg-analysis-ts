@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';

@@ -1,13 +1,13 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getCapitalStockHistory } from '@/models/mops/capitalStock';
+import { getCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
 import { getRoeHistory } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
 import { getRoaHistory } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
 import { getDupontHistory } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
 import { getMetricHistory } from '@/domainPitMetrics/shared/queryMetricHistory';
 import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
-import { getMonthlyRevenueHistory } from '@/models/twse/monthlyRevenue';
+import { getMonthlyRevenueHistory } from '@/infrastructure/repositories/twse/monthlyRevenue';
 import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
 import type { PeriodType, LookbackRange, SamplingInterval } from '@/domainPitMetrics/metricBasis';
 

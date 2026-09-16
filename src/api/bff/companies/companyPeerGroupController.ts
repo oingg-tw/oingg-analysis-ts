@@ -1,8 +1,8 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/models/companyProfile';
-import { findPeerGroupByTree } from '@/models/playwright/industryTree';
-import { getCompanyCategoryInfo } from '@/models/playwright/industryChainClassification';
+import { getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
+import { findPeerGroupByTree } from '@/infrastructure/repositories/playwright/industryTree';
+import { getCompanyCategoryInfo } from '@/infrastructure/repositories/playwright/industryChainClassification';
 
 // 2026-09-14：資料源從 gov-ts 財政部稅籍行業標準分類換成 oingg-playwright-py 的供應鏈
 // 分類；2026-09-15 第二次改版：同業比較演算法改用「產業追蹤」樹（見

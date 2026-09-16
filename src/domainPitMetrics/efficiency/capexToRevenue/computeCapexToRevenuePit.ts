@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { financialDataAdapter, type IncomeStatementPort, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { absBigint, determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';

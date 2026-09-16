@@ -1,7 +1,7 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toMultipleFromThousands } from '@/domainPitMetrics/shared/numericHelpers';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { getMarketCapAsOf } from '@/models/twse/marketCap';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
+import { getMarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';

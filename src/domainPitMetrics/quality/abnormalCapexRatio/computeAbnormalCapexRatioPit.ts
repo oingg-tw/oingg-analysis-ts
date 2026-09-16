@@ -1,4 +1,4 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { financialDataAdapter, type CashFlowStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { absBigint } from '@/domainPitMetrics/shared/numericHelpers';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';

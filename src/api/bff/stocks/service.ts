@@ -1,10 +1,10 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
-import { companyExists } from '@/models/companyProfile';
-import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/models/twseMarketData';
-import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/models/twse/exDividendNotice';
-import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/models/twse/foreignShareholding';
-import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/models/twse/stockPledgeRatio';
-import { getCompanyNamesForSymbols } from '@/models/companyProfile';
+import { companyExists } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/infrastructure/repositories/exchange/twseMarketData';
+import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/infrastructure/repositories/twse/exDividendNotice';
+import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/infrastructure/repositories/twse/foreignShareholding';
+import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/infrastructure/repositories/twse/stockPledgeRatio';
+import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
 import type {
   StockPricesResult,
   StockQuoteResult,

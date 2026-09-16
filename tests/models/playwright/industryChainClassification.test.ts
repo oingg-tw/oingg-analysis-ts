@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import { loadIndustryChainClassification, listAllCompanyCategories, listCategoryGroups } from '@/models/playwright/industryChainClassification';
+import { loadIndustryChainClassification, listAllCompanyCategories, listCategoryGroups } from '@/infrastructure/repositories/playwright/industryChainClassification';
 
 beforeAll(async () => {
   await loadIndustryChainClassification();

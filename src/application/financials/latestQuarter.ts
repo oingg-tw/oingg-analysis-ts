@@ -1,6 +1,6 @@
-import { getLatestQuarterWithBalanceSheetXbrl } from '@/models/mops/balanceSheetXbrlFirst';
-import { getLatestQuarterWithIncomeStatementXbrl } from '@/models/mops/incomeStatementXbrlFirst';
-import { getLatestQuarterWithXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
+import { getLatestQuarterWithBalanceSheetXbrl } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
+import { getLatestQuarterWithIncomeStatementXbrl } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
+import { getLatestQuarterWithXbrlCashFlowQuarterly } from '@/infrastructure/repositories/mops/xbrlCashFlowQuarterly';
 import type { Season } from '@/domain/calendar/rocQuarter';
 
 // 不同公司財報申報進度不同步（不是理論上的擔心，是實測驗證過的：2887 資產負債表/現金流量表已經到

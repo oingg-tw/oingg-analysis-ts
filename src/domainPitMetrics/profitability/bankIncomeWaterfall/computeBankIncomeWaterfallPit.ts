@@ -1,6 +1,6 @@
-import { getBankIncomeStatementQuarter, getLatestQuarterWithBankIncomeStatement } from '@/models/mops/bankIncomeStatementXbrl';
-import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
+import { getBankIncomeStatementQuarter, getLatestQuarterWithBankIncomeStatement } from '@/infrastructure/repositories/mops/bankIncomeStatementXbrl';
+import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
+import { isFinancialIndustryCompany } from '@/infrastructure/repositories/exchange/securitiesIndustry';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';

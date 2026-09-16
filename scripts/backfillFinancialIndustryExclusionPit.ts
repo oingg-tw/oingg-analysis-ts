@@ -17,7 +17,7 @@ import { computeAndWriteBeneishMScorePit } from '../src/domainPitMetrics/quality
 import { computeAndWriteOhlsonOScorePit } from '../src/domainPitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
 import { computeAndWriteZmijewskiScorePit } from '../src/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { listCompaniesBySectorCodes } from '../src/models/securitiesIndustry';
+import { listCompaniesBySectorCodes } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';

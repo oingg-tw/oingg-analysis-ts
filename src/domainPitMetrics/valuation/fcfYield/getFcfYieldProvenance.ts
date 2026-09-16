@@ -1,8 +1,8 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
-import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getStockPriceAsOf } from '@/models/twse/marketCap';
+import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
+import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';

@@ -1,6 +1,6 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
-import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
-import { getStockPriceAsOf } from '@/models/twse/marketCap';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
+import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';

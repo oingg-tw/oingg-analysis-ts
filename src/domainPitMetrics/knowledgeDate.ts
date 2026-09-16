@@ -1,4 +1,4 @@
-import { getPriceAnchorDate, type PriceAnchorSource } from '@/models/mops/reportAnnouncementDate';
+import { getPriceAnchorDate, type PriceAnchorSource } from '@/infrastructure/repositories/mops/reportAnnouncementDate';
 
 export interface QuarterAnchorInput {
   rocYear: number; // 民國年——沿用 getPriceAnchorDate 現有呼叫慣例（altmanZScore.ts 等皆傳民國年）。

@@ -1,7 +1,7 @@
 import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/models/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
+import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
 import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
 

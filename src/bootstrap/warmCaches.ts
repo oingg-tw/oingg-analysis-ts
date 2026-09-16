@@ -1,8 +1,8 @@
-import { loadIndustryCodes } from '@/models/industryCodes';
-import { loadIndustryClassification } from '@/models/gov/industryClassification';
-import { loadIndustryChainClassification } from '@/models/playwright/industryChainClassification';
-import { loadIndustryClusters } from '@/models/playwright/industryClusters';
-import { loadIndustryTree } from '@/models/playwright/industryTree';
+import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
+import { loadIndustryClassification } from '@/infrastructure/repositories/gov/industryClassification';
+import { loadIndustryChainClassification } from '@/infrastructure/repositories/playwright/industryChainClassification';
+import { loadIndustryClusters } from '@/infrastructure/repositories/playwright/industryClusters';
+import { loadIndustryTree } from '@/infrastructure/repositories/playwright/industryTree';
 
 // 啟動時要載進記憶體的五個輔助性快取，集中在一處——每一個 loadXxx 都自己吞掉失敗只記 log
 // （失敗只影響對應的那幾支端點，不擋伺服器啟動），所以這裡用 allSettled 不會有 reject。

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { companyNameEntrySchema } from '@/models/companyProfile';
+import { companyNameEntrySchema } from '@/infrastructure/repositories/exchange/companyProfile';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
 // 純 TypeScript interface，跟 Swagger 文件（原本手寫 JSDoc）是兩份要手動保持同步的東西，

@@ -1,7 +1,7 @@
 import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
-import { getCompanyNamesForSymbols } from '@/models/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
+import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
 import type { VolumeTop20Result, VolumeTop20Row } from './types';
 
 const ONE_DAY_CHANGE_TRADING_DAYS = 1;

@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { exDividendNoticeEntrySchema, exDividendCalendarEntrySchema } from '@/models/twse/exDividendNotice';
-import { foreignShareholdingEntrySchema } from '@/models/twse/foreignShareholding';
-import { stockPledgeRatioEntrySchema } from '@/models/twse/stockPledgeRatio';
+import { exDividendNoticeEntrySchema, exDividendCalendarEntrySchema } from '@/infrastructure/repositories/twse/exDividendNotice';
+import { foreignShareholdingEntrySchema } from '@/infrastructure/repositories/twse/foreignShareholding';
+import { stockPledgeRatioEntrySchema } from '@/infrastructure/repositories/twse/stockPledgeRatio';
 
 export const stockQuotePriceSchema = z.object({
   tradeDate: z.string(),

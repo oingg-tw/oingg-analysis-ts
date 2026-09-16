@@ -19,7 +19,7 @@
 
 import { computeAndWriteGreenblattRocPit } from '../src/domainPitMetrics/profitability/greenblattRoc/computeGreenblattRocPit';
 import { computeAndWriteGreenblattEarningsYieldPit } from '../src/domainPitMetrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
-import { isFinancialIndustryCompany } from '../src/models/securitiesIndustry';
+import { isFinancialIndustryCompany } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { writeMetricValue, periodTypeGroup } from '../src/domainPitMetrics/metricValueWriter';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';

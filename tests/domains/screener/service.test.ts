@@ -2,7 +2,7 @@ import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/api/bff/screener/service';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
-import { loadIndustryCodes } from '@/models/industryCodes';
+import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
 
 // sectorCodes 篩選（resolveIndustryCandidateSymbols）依賴模組層級的 sectorCodes 快取，
 // 跟正式環境靠 src/index.ts 在伺服器啟動時載入一次不同，測試檔案各自獨立的模組實例需要自己

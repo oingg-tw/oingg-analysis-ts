@@ -1,6 +1,48 @@
 [
   {
     "type": "dependency",
+    "from": "src/application/financials/latestQuarter.ts",
+    "to": "src/infrastructure/repositories/mops/balanceSheetXbrlFirst.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/balanceSheetXbrlFirst",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-only-domain"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/application/financials/latestQuarter.ts",
+    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlFirst.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlFirst",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-only-domain"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/application/financials/latestQuarter.ts",
+    "to": "src/infrastructure/repositories/mops/xbrlCashFlowQuarterly.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/xbrlCashFlowQuarterly",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-only-domain"
+    }
+  },
+  {
+    "type": "dependency",
     "from": "src/infrastructure/prisma/analysisClient.ts",
     "to": "node_modules/.pnpm/dotenv@17.4.2/node_modules/dotenv/config.js",
     "unresolvedTo": "dotenv/config",
@@ -114,8 +156,8 @@
   {
     "type": "cycle",
     "from": "src/api/bff/companies/types.ts",
-    "to": "src/models/companyProfile.ts",
-    "unresolvedTo": "@/models/companyProfile",
+    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -126,7 +168,7 @@
     },
     "cycle": [
       {
-        "name": "src/models/companyProfile.ts",
+        "name": "src/infrastructure/repositories/exchange/companyProfile.ts",
         "dependencyTypes": [
           "undetermined",
           "import"
@@ -2515,468 +2557,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/models/companyProfile.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/companyProfile.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/companyProfile.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/gov/industryClassification.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/industryCodes.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/industryCodes.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/balanceSheetXbrlFirst.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/balanceSheetXbrlFull.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/bankIncomeStatementXbrl.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/bankRegulatoryXbrl.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/capitalStock.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/dividendDistribution.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/incomeStatementXbrlFirst.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/incomeStatementXbrlFull.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/insuranceIncomeStatementXbrlFirst.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/reportAnnouncementDate.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/mops/xbrlCashFlowQuarterly.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/playwright/industryChainClassification.ts",
-    "to": "src/infrastructure/prisma/playwrightExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/playwrightExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/playwright/industryClusters.ts",
-    "to": "src/infrastructure/prisma/playwrightExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/playwrightExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/playwright/industryTree.ts",
-    "to": "src/infrastructure/prisma/playwrightExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/playwrightExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/preferredStock.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/preferredStock.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/priceChange.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/priceChange.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/securitiesIndustry.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/securitiesIndustry.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twse/exDividendNotice.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twse/foreignShareholding.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twse/marketCap.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twse/monthlyRevenue.ts",
-    "to": "src/infrastructure/prisma/twseExportDevClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportDevClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twse/stockPledgeRatio.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twseMarketData.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/models/twseMarketData.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillAbnormalCapexRatioPit.ts",
     "to": "src/domainPitMetrics/metricDefinitionRegistry.ts",
     "unresolvedTo": "../src/domainPitMetrics/metricDefinitionRegistry",
@@ -3888,8 +3468,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillDividendDistributionCountPit.ts",
-    "to": "src/models/mops/dividendDistribution.ts",
-    "unresolvedTo": "../src/models/mops/dividendDistribution",
+    "to": "src/infrastructure/repositories/mops/dividendDistribution.ts",
+    "unresolvedTo": "../src/infrastructure/repositories/mops/dividendDistribution",
     "dependencyTypes": [
       "local",
       "import"
@@ -4098,8 +3678,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillFinancialIndustryExclusionPit.ts",
-    "to": "src/models/securitiesIndustry.ts",
-    "unresolvedTo": "../src/models/securitiesIndustry",
+    "to": "src/infrastructure/repositories/exchange/securitiesIndustry.ts",
+    "unresolvedTo": "../src/infrastructure/repositories/exchange/securitiesIndustry",
     "dependencyTypes": [
       "local",
       "import"
@@ -4826,8 +4406,8 @@
   {
     "type": "dependency",
     "from": "scripts/backfillMagicFormulaRankPit.ts",
-    "to": "src/models/securitiesIndustry.ts",
-    "unresolvedTo": "../src/models/securitiesIndustry",
+    "to": "src/infrastructure/repositories/exchange/securitiesIndustry.ts",
+    "unresolvedTo": "../src/infrastructure/repositories/exchange/securitiesIndustry",
     "dependencyTypes": [
       "local",
       "import"

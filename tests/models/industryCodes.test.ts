@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import { loadIndustryCodes, getIndustryCodes } from '@/models/industryCodes';
+import { loadIndustryCodes, getIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
 
 // 2026-09-04 改用 twse-ts 的 export.industry_code view 取代 localhost:8081 + TASK_SECRET
 // 的 dev-only HTTP 機制，這裡驗證新機制的基本行為。

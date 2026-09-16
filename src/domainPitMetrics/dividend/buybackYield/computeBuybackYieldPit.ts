@@ -1,5 +1,5 @@
-import { resolveQuarterOrLatest } from '@/models/latestQuarter';
-import { getXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { getXbrlCashFlowQuarterly } from '@/infrastructure/repositories/mops/xbrlCashFlowQuarterly';
 import { financialDataAdapter, type CashFlowStatementPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';

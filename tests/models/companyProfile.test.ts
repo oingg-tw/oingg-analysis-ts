@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { listAllCompanyNames, countAllCompanyNames, listAllSecurityNames, countAllSecurityNames } from '@/models/companyProfile';
+import { listAllCompanyNames, countAllCompanyNames, listAllSecurityNames, countAllSecurityNames } from '@/infrastructure/repositories/exchange/companyProfile';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';

@@ -7,7 +7,7 @@
 
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
-import { isUndefinedTableError } from './mops/prismaErrors';
+import { isUndefinedTableError } from '../mops/prismaErrors';
 import { logger } from '@/infrastructure/logger';
 
 export interface PreferredStockSecurity {

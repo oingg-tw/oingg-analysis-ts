@@ -1,7 +1,7 @@
 import { test, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
-import { loadIndustryClusters, listIndustryClusters, getExternalCompanyName } from '@/models/playwright/industryClusters';
+import { loadIndustryClusters, listIndustryClusters, getExternalCompanyName } from '@/infrastructure/repositories/playwright/industryClusters';
 
 beforeAll(async () => {
   await loadIndustryClusters();

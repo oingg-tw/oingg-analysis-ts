@@ -1,4 +1,4 @@
-import { getDividendDistributionEvents } from '@/models/mops/dividendDistribution';
+import { getDividendDistributionEvents } from '@/infrastructure/repositories/mops/dividendDistribution';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome } from '../../pitOutcome';

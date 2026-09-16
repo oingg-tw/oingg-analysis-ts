@@ -15,13 +15,13 @@
 // 跟寫入（writeMetricValue）維持直接依賴具體實作，跟 ROE 範例的既有說明一致，這兩層的
 // DIP 是否要做是另一個決定，這次沒有涵蓋。
 
-import { getBalanceSheetXbrlFirst, type BalanceSheetFields } from '@/models/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst, type IncomeStatementFields } from '@/models/mops/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst, type CashFlowFields } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { getInsuranceIncomeStatementXbrlFirst, type InsuranceIncomeStatementFields } from '@/models/mops/insuranceIncomeStatementXbrlFirst';
-import { getPaidInSharesAsOf, type PaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getStockPriceAsOf, getMarketCapAsOf, type StockPriceAsOf, type MarketCapAsOf } from '@/models/twse/marketCap';
-import type { QuarterlyKey } from '@/models/quarterlyKey';
+import { getBalanceSheetXbrlFirst, type BalanceSheetFields } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst, type IncomeStatementFields } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst, type CashFlowFields } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
+import { getInsuranceIncomeStatementXbrlFirst, type InsuranceIncomeStatementFields } from '@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst';
+import { getPaidInSharesAsOf, type PaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
+import { getStockPriceAsOf, getMarketCapAsOf, type StockPriceAsOf, type MarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
+import type { QuarterlyKey } from '@/domain/financials/quarterlyKey';
 
 export interface IncomeStatementPort {
   getIncomeStatement(key: QuarterlyKey): Promise<IncomeStatementFields | null>;

@@ -2,7 +2,7 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listDisposedStocks } from '@/api/bff/market/disposedStocks/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import { getSecuritySymbolSet } from '@/models/companyProfile';
+import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('listDisposedStocks: 應該依公告日期由新到舊排序，且不超過 limit 筆', async () => {
   const result = await listDisposedStocks({ limit: 20 });

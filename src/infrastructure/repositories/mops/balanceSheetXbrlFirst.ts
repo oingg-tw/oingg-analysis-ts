@@ -15,7 +15,7 @@
 // reportDate（capitalStock 完全沒有任何檔案存取，這裡不處理——流通股數需求走獨立的
 // @/models/mops/capitalStock.ts）。
 
-import type { QuarterlyKey } from '../quarterlyKey';
+import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface BalanceSheetFields {

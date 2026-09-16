@@ -1,5 +1,5 @@
-import { getLatestAvailableQuarter } from '@/models/latestQuarter';
-import { getLatestQuarterWithInsuranceIncomeStatement } from '@/models/mops/insuranceIncomeStatementXbrlFirst';
+import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
+import { getLatestQuarterWithInsuranceIncomeStatement } from '@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst';
 import { getMarginInputs } from '../margins/computeMarginsFamilyPit';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';

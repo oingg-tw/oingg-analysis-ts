@@ -2,7 +2,7 @@ import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateRevenueRanking } from '@/api/bff/market/revenueRanking/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import { getSecuritySymbolSet } from '@/models/companyProfile';
+import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上市或上櫃公司', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([

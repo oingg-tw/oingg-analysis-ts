@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { listAllSecurityNames, countAllSecurityNames } from '@/models/companyProfile';
+import { listAllSecurityNames, countAllSecurityNames } from '@/infrastructure/repositories/exchange/companyProfile';
 
 // 2026-09-11 應 web-nuxt 要求新增——「公司」（GET /companies，company_profile 完整登記
 // 範疇）跟「證券」（真正能交易的標的，含特別股）是刻意分開的兩個概念，不共用同一支端點，
