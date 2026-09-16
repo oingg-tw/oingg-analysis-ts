@@ -4,9 +4,9 @@
 
 | project | 位置 | 需要 DB | 平行 | 用途 |
 |---|---|---|---|---|
-| `unit` | `tests/unit/**` | 不需要 | 是 | 純單元測試：domain 純函式、application use case 搭配 `tests/fakes/` 的記憶體 port 實作。Phase 5 之前還是空的。 |
+| `unit` | `tests/unit/**`（鏡射 `src/`：`unit/domain`、`unit/application`、`unit/http`） | 不需要 | 是 | 純單元測試：domain 純函式、application use case 搭配 `tests/fakes/` 的記憶體 port 實作、http middleware/helper 用假的 req/res。dependency-cruiser 禁止這裡 import infrastructure/bootstrap/Prisma（`unit-tests-no-io`），`src/http` 只有 `unit/http/` 可以碰。 |
 | `contract` | `tests/contract/**` | `.env` 的 DB（唯讀） | 否 | **對外契約守門**：`openapi.test.ts` 把 `/api-docs` 的 OpenAPI 文件 deep key-sort 後跟 `openapi.snapshot.json` 逐字比對；`http/goldens.test.ts` 對 bff-ts 實際消費的 45 支端點各打一次，把 `{status, body 形狀}` 釘進 `http/__snapshots__/goldens/`。 |
-| `integration` | `tests/integration/**` + 舊資料夾 `tests/{pitMetrics,models,domains,api,adapters,shared,twse}/**`（Phase 5 搬完前） | analysis 用 **Neon branch**（見下），其餘 export DB 用 `.env` | 否 | 打真實資料庫的整合測試：repository 契約、釘真實財報數字的指標測試、writer 併發。 |
+| `integration` | `tests/integration/**`（鏡射 `src/`：`integration/application/<module>`、`integration/infrastructure/repositories/<source>`、`integration/infrastructure/prisma`） | analysis 用 **Neon branch**（見下），其餘 export DB 用 `.env` | 否 | 打真實資料庫的整合測試：repository 契約、釘真實財報數字的指標測試、writer 併發。use case 一律傳 `@/bootstrap/deps` 的 `appDeps`。 |
 | `flaky` | `tests/**/*.flaky.test.ts` | 同 integration | 否，retry 2 | 隔離區，見下方政策。 |
 
 ```bash

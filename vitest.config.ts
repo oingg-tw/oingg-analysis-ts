@@ -11,8 +11,8 @@ import path from 'node:path';
 // 2026-09-17 clean architecture 重構 Phase 0：拆成四個 project（見 tests/README.md）——
 // - unit：純單元測試，不碰 DB，檔案間可平行；`pnpm test` 日常跑這個。
 // - contract：對外契約守門（OpenAPI snapshot + HTTP golden），需要 .env 的 DB（唯讀）。
-// - integration：打真實資料庫的整合測試；既有的 tests/{pitMetrics,models,domains,...} 舊資料夾
-//   在 Phase 5 搬完之前都算在這個 project 裡。序列跑（見下方 fileParallelism 說明）。
+// - integration：打真實資料庫的整合測試（tests/integration/ 鏡射 src/ 的分層）。序列跑（見下方 fileParallelism 說明）。
+//   Phase 5（2026-09-17）起舊的 tests/{pitMetrics,models,domains,api,adapters,shared,twse} 資料夾已全部搬進 unit/integration。
 // - flaky：隔離區，檔名 *.flaky.test.ts，retry 2 次，不算在 test:integration 裡。
 export default defineConfig({
   test: {
@@ -28,8 +28,6 @@ export default defineConfig({
           name: 'unit',
           include: ['tests/unit/**/*.test.ts'],
           fileParallelism: true,
-          // Phase 5 之前 tests/unit/ 還是空的，`pnpm test` 不能因此失敗；Phase 5 搬入單元測試後移除。
-          passWithNoTests: true,
         },
       },
       {
@@ -45,7 +43,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'integration',
-          include: ['tests/integration/**/*.test.ts', 'tests/{pitMetrics,models,domains,api,adapters,shared,twse}/**/*.test.ts'],
+          include: ['tests/integration/**/*.test.ts'],
           exclude: ['**/*.flaky.test.ts', '**/node_modules/**'],
           setupFiles: ['tests/integration/setup.ts'],
           // 整合測試共用同一個 Postgres，有些會刪除+重算同一批資料列（例如
