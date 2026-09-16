@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteInterestCoveragePit } from '@/domainPitMetrics/resilience/interestCoverage/computeInterestCoveragePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 beforeAll(async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.interestCoverage!);

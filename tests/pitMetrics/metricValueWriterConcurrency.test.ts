@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { writeMetricValue, periodTypeGroup } from '@/domainPitMetrics/metricValueWriter';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-11：全市場 backfill 平行化後真實發生過的 race condition——writeMetricValue
 // 原本是「findFirst 查有沒有既有列，查無資料才 create」，兩個併發呼叫剛好同時查到

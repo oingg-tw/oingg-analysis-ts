@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteStockPricePit } from '@/domainPitMetrics/valuation/stockPrice/computeStockPricePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 給 web-nuxt 河流圖用：peRatio/pbRatio 該期實際用來算比率的股價本身，不用反推。
 // knowledge_date 解析只用資產負債表（跟 bvps/pbRatio 完全同步）。2026-09-07 用 2330

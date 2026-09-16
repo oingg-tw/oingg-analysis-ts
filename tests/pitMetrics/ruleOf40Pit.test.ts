@@ -2,10 +2,10 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteRuleOf40Pit } from '@/domainPitMetrics/growth/ruleOf40/computeRuleOf40Pit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { tpexExportPrisma } from '@/adapters/prisma/tpexExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // Rule of 40 = 營收成長率(TTM vs 去年同期TTM) + FCF利潤率(TTM)，只適用軟體/SaaS 商業模式
 // （twse-ts industry='30'資訊服務業/'36'數位雲端），實測 2026-09-14 全市場掃描確認

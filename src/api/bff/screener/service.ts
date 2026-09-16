@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/models/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';

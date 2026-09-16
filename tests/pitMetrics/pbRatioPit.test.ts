@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWritePbRatioPit } from '@/domainPitMetrics/valuation/pbRatio/computePbRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 本淨比 = 股價(knowledge_date) / BVPS(Q)，獨立重新算 BVPS（跟 bvps metric_code 算法相同，
 // 但不讀取 bvps 已寫入的 metric_value）。2026-09-07 用 2330 115Q2 真實資料交叉驗證：

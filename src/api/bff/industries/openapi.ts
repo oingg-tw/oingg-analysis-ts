@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getIndustryTreeQuerySchema } from './controller';
 import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, industryTreeResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 

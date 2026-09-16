@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { volumeTop20ResultSchema } from './types';
 
 export const registerVolumeTop20OpenApi = (): void => {

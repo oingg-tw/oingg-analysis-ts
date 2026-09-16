@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getMaterialAnnouncementsQuerySchema } from './controller';
 import { materialAnnouncementsResultSchema } from './types';
 

@@ -11,9 +11,9 @@ import { computeAndWriteLiveGrahamNumberPit } from '../src/domainPitMetrics/valu
 import { computeAndWriteLivePegRatioPit } from '../src/domainPitMetrics/valuation/livePegRatio/computeLivePegRatioPit';
 import { computeAndWriteLiveMarketCapPit } from '../src/domainPitMetrics/valuation/liveMarketCap/computeLiveMarketCapPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap'];
 const PROGRESS_EVERY = 50;

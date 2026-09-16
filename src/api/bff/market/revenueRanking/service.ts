@@ -1,5 +1,5 @@
-import twseExportPrisma from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
 

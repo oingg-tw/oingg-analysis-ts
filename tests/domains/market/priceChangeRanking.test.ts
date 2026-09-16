@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculatePriceChangeRanking } from '@/api/bff/market/priceChangeRanking/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/models/companyProfile';
 
 test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排序，且不超過 limit 筆', async () => {

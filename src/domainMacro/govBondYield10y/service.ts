@@ -1,4 +1,4 @@
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { buildFieldStatuses } from '@/domain/metrics/metricStatus';
 import type { GovBondYield10yResult } from './types';
 

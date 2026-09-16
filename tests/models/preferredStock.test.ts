@@ -1,8 +1,8 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/models/preferredStock';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 全新的特別股功能——跟 2026-09-06 規劃時直接查 export DB 驗證過的真實資料交叉驗證。
 

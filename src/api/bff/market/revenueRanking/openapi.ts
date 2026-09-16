@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getRevenueRankingQuerySchema } from './controller';
 import { revenueRankingResultSchema } from './types';
 

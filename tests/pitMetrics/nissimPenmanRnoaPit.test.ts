@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteNissimPenmanRnoaPit } from '@/domainPitMetrics/profitability/nissimPenmanRnoa/computeNissimPenmanRnoaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——只遷移 RNOA 本身（NOPAT/NOA），不遷移
 // FLEV/NBC/SPREAD/reconstructedRoe，跟 tests/domains/metrics/nissimPenmanRnoa.test.ts 的

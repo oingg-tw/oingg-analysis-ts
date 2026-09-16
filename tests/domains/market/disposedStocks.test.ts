@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listDisposedStocks } from '@/api/bff/market/disposedStocks/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/models/companyProfile';
 
 test('listDisposedStocks: 應該依公告日期由新到舊排序，且不超過 limit 筆', async () => {

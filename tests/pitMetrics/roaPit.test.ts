@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteRoaPit } from '@/domainPitMetrics/profitability/roa/computeRoaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第二批遷移（ROA）——src/domainPitMetrics/profitability/roa/computeRoaPit.ts 是 src/domainMetrics/roa.ts 的
 // 獨立重新實作（不呼叫 calculateRoa()，見 computeRoaPit.ts 檔頭說明），這裡拿

@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteSgrPit } from '@/domainPitMetrics/growth/sgr/computeSgrPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第三批遷移（sgr）——獨立重新計算 ROE TTM + 配息率 TTM（不依賴 roe/dividendPayoutRatio
 // 這兩個 metric_code 已寫入的值），跟 tests/domains/metrics/sgr.test.ts 的既有基準數字

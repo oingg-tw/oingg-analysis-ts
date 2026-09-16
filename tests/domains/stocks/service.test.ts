@@ -1,8 +1,8 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from '@/api/bff/stocks/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 // 2330（台積電）長期都有股價/估值資料，跟本服務其他測試（capitalStock 等）同一個慣例選這檔。
 test('getStockQuote: 已知的上市公司（2330）應該同時有 price 跟 valuation', async () => {

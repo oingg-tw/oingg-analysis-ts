@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteTobinsQPit } from '@/domainPitMetrics/valuation/tobinsQ/computeTobinsQPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 托賓Q值 = (市值 + 總負債) / 總資產，純資產負債表時點快照，只有 Q 一種 basis。
 

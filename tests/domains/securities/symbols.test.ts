@@ -1,8 +1,8 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getSecuritySymbols } from '@/models/companyProfile';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 interface CompanyProfileSymbolRow {
   symbol: string;

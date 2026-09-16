@@ -1,9 +1,9 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/domainMacro/equityRiskPremium/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // TAIEX/公債殖利率都是逐日/逐月更新的活資料（不是季度財報那種固定快照），所以這裡不釘死確切數值，
 // 只驗證「合理性」跟「結構」，避免資料每天更新就讓測試炸掉——跟 beta.test.ts 同一種理由。

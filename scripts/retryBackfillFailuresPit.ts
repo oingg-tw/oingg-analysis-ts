@@ -11,9 +11,9 @@
 import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillFailure } from './backfillTaskDefinitions';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const SLUGS_BY_ARG: Record<string, ('general' | 'bank')[]> = {
   general: ['general'],

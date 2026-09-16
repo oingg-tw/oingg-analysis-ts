@@ -16,8 +16,8 @@ import { computeAndWriteOcfToNetIncomePit } from '../src/domainPitMetrics/qualit
 import { computeAndWriteAccrualsRatioPit } from '../src/domainPitMetrics/quality/accrualsRatio/computeAccrualsRatioPit';
 import { computeAndWriteFcfYieldPit } from '../src/domainPitMetrics/valuation/fcfYield/computeFcfYieldPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 
 const main = async () => {

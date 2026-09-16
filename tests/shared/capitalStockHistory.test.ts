@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/models/mops/capitalStock';
 
 // 沒有唯一識別欄位，Prisma Client 不會產生存取子，一律走 $queryRaw（見

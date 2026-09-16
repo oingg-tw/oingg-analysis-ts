@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
 

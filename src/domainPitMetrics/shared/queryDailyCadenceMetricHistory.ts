@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { LookbackRange, SamplingInterval, SnapshotCadence } from '../metricBasis';
 import type { MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
 

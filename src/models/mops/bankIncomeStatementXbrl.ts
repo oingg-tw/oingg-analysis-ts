@@ -19,7 +19,7 @@
 // （淨收益 − 呆帳費用及保證責任準備 − 稅前淨利），保證每一步都加總得起來，不需要
 // 逐一列舉銀行損益表底下數十個費用科目。
 
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { BankRegulatoryKey } from './bankRegulatoryXbrl';
 
 export interface BankIncomeStatementQuarterRow {

@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteMarketRatiosPit } from '@/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // MarketRatios 遷入 pitMetrics 的第一批真正的 compute 檔案（前提條件都已經在別的批次
 // 鋪好）：直接 passthrough TWSE/TPEx 官方每日公布數字，不自己重算，見

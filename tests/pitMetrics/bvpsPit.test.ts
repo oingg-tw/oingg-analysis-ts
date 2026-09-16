@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteBvpsPit } from '@/domainPitMetrics/valuation/bvps/computeBvpsPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第三批遷移（bvps）——跟 tests/domains/metrics/bvps.test.ts 的既有基準數字交叉驗證。
 

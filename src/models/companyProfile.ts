@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/api/bff/companies/types';
 
 interface RawTpexCompanyProfileRow {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './controller';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如

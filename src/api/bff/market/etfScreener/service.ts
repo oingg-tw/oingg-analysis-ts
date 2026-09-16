@@ -1,4 +1,4 @@
-import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
+import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import {
   NUMERIC_FIELDS,
   CATEGORICAL_FIELDS,

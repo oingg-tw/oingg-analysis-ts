@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { checkJobCompleteness } from '@/api/batch/completenessCheck';
 import { computeAndWriteBankAssetQualityFamilyPit } from '@/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { IndicatorJob } from '@/api/batch/indicatorJob';
 
 // checkJobCompleteness 現在只走 pitMetrics 的 metric_values 這一條路徑（舊架構「一指標

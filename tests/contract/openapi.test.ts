@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { swaggerSpec } from '@/adapters/swagger';
+import { swaggerSpec } from '@/bootstrap/openapi';
 
 // 對外契約守門（clean architecture 重構 Phase 0）：/api-docs 產出的 OpenAPI 文件是 bff-ts
 // 看到的全部契約（路徑、參數、回應 schema、狀態碼），整份 deep key-sort 之後跟

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { computeAndWriteDividendDistributionCountPit } from '@/domainPitMetrics/dividend/dividendDistributionCount/computeDividendDistributionCountPit';
 import { getSymbolsWithDividendDistribution } from '@/models/mops/dividendDistribution';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-15 應使用者要求新增——「過去一年配息次數」，反推自 mops-ts 的股利分派公告
 // （見 src/models/mops/dividendDistribution.ts 的完整說明）。2330（台積電）是使用者

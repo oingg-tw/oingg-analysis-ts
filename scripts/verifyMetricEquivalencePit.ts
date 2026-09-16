@@ -29,7 +29,7 @@ import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from '
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { computeAndWriteBetaPit } from '../src/domainPitMetrics/valuation/beta/computeBetaPit';
 import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const BANK_SYMBOLS = ['2801', '2812'];

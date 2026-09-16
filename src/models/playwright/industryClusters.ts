@@ -1,4 +1,4 @@
-import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
+import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
 import { logger } from '@/infrastructure/logger';
 
 // 2026-09-14：給重建版「產業追蹤」頁面的 drill-down 樹用——playwright-py 的供應鏈聚落分群

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getMonthlyRevenueHistory } from '@/models/twse/monthlyRevenue';
-import { twseExportDevPrisma } from '@/adapters/prisma/twseExportDevClient';
+import { twseExportDevPrisma } from '@/infrastructure/prisma/twseExportDevClient';
 
 // 2330 月營收——twse-ts 2026-09-07 一次性手動回填，2021-08~2026-07 共 60 個月，只有
 // 這一檔公司有資料（見 twseExportDevClient.ts 的完整說明）。momChangePercent 是本服務

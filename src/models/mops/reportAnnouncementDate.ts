@@ -1,4 +1,4 @@
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export type PriceAnchorSource = 'announcement' | 'report_date_fallback';
 

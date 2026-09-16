@@ -18,10 +18,10 @@ import { computeAndWriteOhlsonOScorePit } from '../src/domainPitMetrics/resilien
 import { computeAndWriteZmijewskiScorePit } from '../src/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
 import { listCompaniesBySectorCodes } from '../src/models/securitiesIndustry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const AFFECTED_METRIC_CODES = ['altmanZScore', 'altmanZDoublePrimeScore', 'beneishMScore', 'ohlsonOScore', 'zmijewskiScore'] as const;
 

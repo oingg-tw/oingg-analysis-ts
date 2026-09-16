@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteBeneishMScorePit } from '@/domainPitMetrics/quality/beneishMScore/computeBeneishMScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——本季 vs 去年同季 8 變量比較，跟
 // tests/domains/metrics/beneishMScore.test.ts 的既有基準數字交叉驗證。要查兩組季度各

@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteMarginsFamilyPit } from '@/domainPitMetrics/profitability/margins/computeMarginsFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第五批遷移（margins 補完整：grossMargin/operatingMargin）——跟
 // tests/domains/metrics/margins.test.ts 的既有基準數字交叉驗證（該測試檔案只釘了

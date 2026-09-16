@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { twseExportDevPrisma } from '@/adapters/prisma/twseExportDevClient';
+import { twseExportDevPrisma } from '@/infrastructure/prisma/twseExportDevClient';
 
 // twse-ts export.monthly_revenue——目前只有 2330 有資料（一次性回填，2021-08~2026-07
 // 共 60 個月，見 twseExportDevClient.ts 檔頭說明）。查無資料（不是 2330）回傳空陣列，

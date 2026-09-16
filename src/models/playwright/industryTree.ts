@@ -1,4 +1,4 @@
-import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
+import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
 import { logger } from '@/infrastructure/logger';
 
 // 2026-09-15：playwright-py 重建的「產業追蹤」逐層點開瀏覽樹，取代

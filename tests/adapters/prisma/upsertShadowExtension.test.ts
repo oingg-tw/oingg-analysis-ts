@@ -1,9 +1,9 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/domainMacro/equityRiskPremium/service';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 
 // 驗證 P0 止血機制（src/adapters/prisma/upsertShadowExtension.ts）：upsert 覆蓋既有列前
 // 先把舊值存進 metric_upsert_shadow，值沒變則跳過（不無限疊加重複快照）。這支測試本身在驗證

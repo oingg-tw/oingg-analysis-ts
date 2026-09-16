@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteOneDollarTestPit } from '@/domainPitMetrics/profitability/oneDollarTest/computeOneDollarTestPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 一美元原則（Warren Buffett, 1983）= 近 5 年市值淨變化 / 近 5 年累計保留盈餘。實測
 // 2026-09-14 確認 2330 有完整 5 年（20 季）資料，算出 7.21（市值成長遠超過保留盈餘，跟

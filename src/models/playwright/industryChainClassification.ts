@@ -1,4 +1,4 @@
-import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
+import { playwrightExportPrisma } from '@/infrastructure/prisma/playwrightExportClient';
 import { logger } from '@/infrastructure/logger';
 
 // 2026-09-14：GET /companies/peer-group（findPeerGroup）的資料源，從 gov-ts 財政部稅籍

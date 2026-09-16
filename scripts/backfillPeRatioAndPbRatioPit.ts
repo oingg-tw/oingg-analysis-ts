@@ -24,9 +24,9 @@ import { computeAndWriteBvpsPit } from '../src/domainPitMetrics/valuation/bvps/c
 import { computeAndWritePeRatioPit } from '../src/domainPitMetrics/valuation/peRatio/computePeRatioPit';
 import { computeAndWritePbRatioPit } from '../src/domainPitMetrics/valuation/pbRatio/computePbRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const SYMBOLS = ['2330'];
 

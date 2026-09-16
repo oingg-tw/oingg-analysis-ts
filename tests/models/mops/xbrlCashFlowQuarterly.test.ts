@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getXbrlCashFlowQuarterly, getLatestQuarterWithXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // mops-ts 2026-09-06 新增 export.xbrl_three_statements_long 的 statement_type=
 // 'cash_flow_quarterly'（單季反推現金流量表，用累計數相減自己算出來的），回填後跟既有

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-07 使用者要「五年三率」（毛利率/營業利益率/淨利率）一次抓齊，新增泛化版
 // 多指標歷史查詢。用 2330 已知的三率真實資料交叉驗證：115Q2 三個值分別是

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDailyCadenceMetricHistory';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-09 拆表要修的正是這個 bug 的 regression test：拆表前 getMetricHistory() 用
 // `${fiscalYear}-${fiscalQuarter}` 當去重鍵，逐日型指標的 fiscalQuarter 固定是 sentinel

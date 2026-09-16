@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { logger } from '@/infrastructure/logger';
-import { swaggerUi, swaggerSpec } from '@/adapters/swagger';
+import { swaggerUi, swaggerSpec } from '@/bootstrap/openapi';
 import routes from '@/routes';
 import errorHandler from '@/http/middleware/errorHandler';
 

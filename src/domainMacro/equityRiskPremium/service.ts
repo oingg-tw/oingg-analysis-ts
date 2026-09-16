@@ -1,6 +1,6 @@
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { buildFieldStatuses, type MetricStatus } from '@/domain/metrics/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
 import { logger } from '@/infrastructure/logger';

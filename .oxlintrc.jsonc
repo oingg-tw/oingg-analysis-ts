@@ -45,7 +45,7 @@
     {
       // 現在合法讀 process.env 的地方；Phase 1 把 8 個 Prisma client 的 URL 改從 config 拿之後，
       // 這份清單縮到只剩 config 一個檔案（見計畫 Phase 1 退出條件）。
-      "files": ["src/shared/config.ts", "src/infrastructure/config.ts", "src/adapters/prisma/**", "scripts/pitBackfillFixtures.ts"],
+      "files": ["src/infrastructure/config.ts", "src/infrastructure/prisma/**", "scripts/pitBackfillFixtures.ts"],
       "rules": {
         "no-restricted-properties": "off"
       }

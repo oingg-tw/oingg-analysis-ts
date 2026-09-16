@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteDupontFamilyPit } from '@/domainPitMetrics/shared/dupont/computeDupontFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第二批遷移（Dupont 拆解家族）——src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts 是
 // src/domainMetrics/margins.ts（僅 netProfitMargin）/turnoverRatio.ts（僅 assetTurnover）/

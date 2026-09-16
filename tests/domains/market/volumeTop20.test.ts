@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getVolumeTop20 } from '@/api/bff/market/volumeTop20/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 這支端點刻意不排除 ETF/衍生性商品（跟本服務其他排行不一樣，2026-09-01 應使用者要求維持
 // twse-ts 官方原始排名），所以這裡不驗證 ETF 排除，只驗證排名本身的完整性跟一致性。

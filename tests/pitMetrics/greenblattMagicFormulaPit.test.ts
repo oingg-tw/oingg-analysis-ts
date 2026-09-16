@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteGreenblattRocPit } from '@/domainPitMetrics/profitability/greenblattRoc/computeGreenblattRocPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // Joel Greenblatt「神奇公式」的兩個組成指標：EBIT(TTM)/EV（Greenblatt 盈餘收益率）跟
 // EBIT(TTM)/(淨營運資金+淨固定資產)（Greenblatt 資本報酬率）。只有 TTM 一種 basis。

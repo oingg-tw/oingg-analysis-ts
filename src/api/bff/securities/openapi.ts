@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getSecuritiesQuerySchema } from './controller';
 import { securitiesListResultSchema, securitiesCountOnlyResultSchema } from './types';
 

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCashFlowStatementXbrlFirst } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 2026-09-07 規劃這批換源時逐欄位用 2330 115Q2 交叉驗證過。2026-09-11 舊三大表
 // （quarterly_cash_flow_statement）已退役，這支現在單純查 XBRL（xbrl_three_statements_long

@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { metricDefinitionRegistry } from './metricDefinitionRegistry';
 import type { PeriodType, LookbackRange, SamplingInterval, SnapshotCadence, MetricNullReason } from './metricBasis';
 import type { KnowledgeDateResolution } from './knowledgeDate';

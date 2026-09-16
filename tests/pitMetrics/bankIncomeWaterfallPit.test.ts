@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { computeAndWriteBankIncomeWaterfallPit } from '@/domainPitMetrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
 import { computeAndWritePretaxIncomePerSharePit } from '@/domainPitMetrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-15 應「銀行業營收到股利去了哪裡」瀑布圖卡片需求新增——跟 mops-ts 來回驗證過
 // export.bank_income_statement_detail_xbrl 的科目語意（見 computeBankIncomeWaterfallPit.ts

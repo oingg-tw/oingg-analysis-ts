@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { Prisma } from '#generated/analysis-client';
-import { serializePrismaRow } from '@/adapters/prisma/serializePrismaRow';
+import { serializePrismaRow } from '@/infrastructure/prisma/serializePrismaRow';
 
 // 純邏輯測試，不連 DB——見 src/adapters/prisma/serializePrismaRow.ts 的說明，這支函式要把
 // Prisma 回傳的一列資料轉成能塞進 Json 欄位的純 JSON 值，逐一驗證每種型別的轉換規則。

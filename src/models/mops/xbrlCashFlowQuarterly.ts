@@ -9,7 +9,7 @@
 // 資料源——是否要把既有現金流量表依賴的指標換源到這裡，是另一個更大的決定（見
 // UBIQUITOUS_LANGUAGE.md／技術債清單裡「XBRL 遷移」那個項目），這裡先不動任何既有計算。
 
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface XbrlThreeStatementsLongKey {
   symbol: string;

@@ -10,7 +10,7 @@
 // 從歷史紀錄反推（見 dividendDistributionCount 指標的說明）。fiscal_quarter 只有季配
 // 公司才有值，年配公司這欄是 null（不代表資料缺漏，是那次分派案本來就沒有對應到特定季度）。
 
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface DividendDistributionEvent {
   exDividendDate: Date;

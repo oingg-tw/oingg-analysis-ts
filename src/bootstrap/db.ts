@@ -1,11 +1,11 @@
-import { analysisPrisma, connectAnalysisDb } from '@/adapters/prisma/analysisClient';
-import { mopsExportPrisma, connectMopsExportDb } from '@/adapters/prisma/mopsExportClient';
-import { govExportPrisma, connectGovExportDb } from '@/adapters/prisma/govExportClient';
-import { playwrightExportPrisma, connectPlaywrightExportDb } from '@/adapters/prisma/playwrightExportClient';
-import { tpexExportPrisma, connectTpexExportDb } from '@/adapters/prisma/tpexExportClient';
-import { sitcaExportPrisma, connectSitcaExportDb } from '@/adapters/prisma/sitcaExportClient';
-import { twseExportPrisma, connectTwseExportDb } from '@/adapters/prisma/twseExportClient';
-import { twseExportDevPrisma, connectTwseExportDevDb } from '@/adapters/prisma/twseExportDevClient';
+import { analysisPrisma, connectAnalysisDb } from '@/infrastructure/prisma/analysisClient';
+import { mopsExportPrisma, connectMopsExportDb } from '@/infrastructure/prisma/mopsExportClient';
+import { govExportPrisma, connectGovExportDb } from '@/infrastructure/prisma/govExportClient';
+import { playwrightExportPrisma, connectPlaywrightExportDb } from '@/infrastructure/prisma/playwrightExportClient';
+import { tpexExportPrisma, connectTpexExportDb } from '@/infrastructure/prisma/tpexExportClient';
+import { sitcaExportPrisma, connectSitcaExportDb } from '@/infrastructure/prisma/sitcaExportClient';
+import { twseExportPrisma, connectTwseExportDb } from '@/infrastructure/prisma/twseExportClient';
+import { twseExportDevPrisma, connectTwseExportDevDb } from '@/infrastructure/prisma/twseExportDevClient';
 
 // 八個資料庫的連線/斷線集中在一處——順序跟抽出前的 src/index.ts 完全一樣（依序 await，
 // 不是平行），純搬移不改行為。disconnectAllDbs 給測試 harness 跟腳本收尾用，讓 process

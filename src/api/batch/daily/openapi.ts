@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 
 const responseSchema = z.object({ message: z.string() });
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 2026-09-08 twse-ts 新建的 export.foreign_shareholding view——全市場個股層級外資/陸資
 // 持股統計（來源 TWSE MI_QFIIS 端點，selectType=ALLBUT0999），取代已退役的

@@ -1,4 +1,4 @@
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { logger } from '@/infrastructure/logger';
 
 // 資料源是 gov-ts 的財政部稅籍行業標準分類（export.company_industry_classification +

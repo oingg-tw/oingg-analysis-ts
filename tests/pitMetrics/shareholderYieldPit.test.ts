@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteShareholderYieldPit } from '@/domainPitMetrics/dividend/shareholderYield/computeShareholderYieldPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // Shareholder Yield（Mebane Faber, 2013）= 股利殖利率 + 買回殖利率，獨立重新計算不依賴
 // dividendYield/buybackYield 已寫入的值。實測 2026-09-14 確認 2330（沒有庫藏股買回）算出

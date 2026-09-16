@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteNcavPit } from '@/domainPitMetrics/valuation/ncav/computeNcavPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——純資產負債表時點快照。2026-09-10 改回公司總額（不除以
 // 股數，跟 marketCap 比較用「總額 vs 總額」，見 ncavDefinition.ts 的說明），基準數字

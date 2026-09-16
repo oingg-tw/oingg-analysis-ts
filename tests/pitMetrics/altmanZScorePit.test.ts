@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteAltmanZScorePit } from '@/domainPitMetrics/resilience/altmanZScore/computeAltmanZScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——ALTMAN_Z_SCORE 用到逐日更新的市值資料（X4），數值每天在變，
 // zScore/X4 不釘死確切數字，只驗證合理性；X1/X2/X3/X5 不靠市值，跟

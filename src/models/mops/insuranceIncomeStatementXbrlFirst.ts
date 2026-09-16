@@ -22,7 +22,7 @@
 // grossMargin/operatingMargin 硬套替代科目，這是使用者確認過的決定，不要在這支
 // 檔案的模式上依樣畫葫蘆加金控業支援。
 
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { QuarterlyKey } from '../quarterlyKey';
 
 export interface InsuranceIncomeStatementFields {

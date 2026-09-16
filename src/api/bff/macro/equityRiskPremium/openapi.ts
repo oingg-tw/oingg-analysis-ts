@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getEquityRiskPremiumQuerySchema } from './controller';
 import { equityRiskPremiumResultSchema } from '@/domainMacro/equityRiskPremium/types';
 

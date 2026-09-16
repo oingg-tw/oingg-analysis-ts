@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteGrahamNumberPit } from '@/domainPitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——獨立重新計算 EPS(TTM)/BVPS（不依賴 eps/bvps 這兩個
 // metric_code 已寫入的值）。2026-09-10 公式改成 PER(TTM) × PBR（不再是

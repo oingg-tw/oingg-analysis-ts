@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteFcfYieldPit } from '@/domainPitMetrics/valuation/fcfYield/computeFcfYieldPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第三批遷移（fcfYield）——用到逐日更新的股價資料，數值每天在變，不釘死確切數字，只驗證
 // 合理性，跟 tests/domains/metrics/fcfYield.test.ts 同一種測試風格。

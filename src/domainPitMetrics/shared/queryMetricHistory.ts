@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { PeriodType } from '../metricBasis';
 
 export const metricHistoryEntrySchema = z.object({

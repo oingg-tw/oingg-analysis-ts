@@ -42,9 +42,9 @@ import { mkdirSync, writeFileSync, existsSync, rmSync, readFileSync } from 'node
 import { join } from 'node:path';
 import { GENERAL_METRIC_CODES, BANK_METRIC_CODES, buildGeneralTasks, buildBankTasks, runTasks, type BackfillFailure } from './backfillTaskDefinitions';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import type { Season } from '../src/domain/calendar/rocQuarter';
 
 const PROGRESS_EVERY = 50;

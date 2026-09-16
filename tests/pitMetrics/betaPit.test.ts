@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { computeAndWriteBetaPit } from '@/domainPitMetrics/valuation/beta/computeBetaPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import type { LookbackRange, SamplingInterval } from '@/domainPitMetrics/metricBasis';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 獨立重新實作 src/domainMetrics/beta.ts 的 pitMetrics 版本，同一套公式跟降頻邏輯，
 // 只是寫入形狀改成「一個 metricCode='beta'，三個 (lookbackRange, samplingInterval)

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getIncomeStatementXbrlFull } from '@/models/mops/incomeStatementXbrlFull';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 跟 balanceSheetXbrlFull.test.ts 同一個目的、同一種驗證方式，見那支檔案的檔頭說明。
 

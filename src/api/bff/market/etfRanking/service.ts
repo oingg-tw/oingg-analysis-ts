@@ -1,4 +1,4 @@
-import sitcaExportPrisma from '@/adapters/prisma/sitcaExportClient';
+import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import { parseEtfCategory } from './parseCategory';
 import { parseDistributionFrequency } from './parseDistribution';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';

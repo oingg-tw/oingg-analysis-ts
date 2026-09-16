@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getLatestGovBondYield10y } from '@/domainMacro/govBondYield10y/service';
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 
 interface LatestGovBondYieldRow {
   year: number;

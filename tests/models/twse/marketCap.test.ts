@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getStockPriceAsOf } from '@/models/twse/marketCap';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 2026-09-06 修正：daily_price 對每個交易日都會有一列，沒成交的那天 close 是 null（不是
 // 沒有這一天的紀錄）。原本 getPriceRowAsOf 只抓「最新一列」，冷門股票好幾天沒成交時會直接

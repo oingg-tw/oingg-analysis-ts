@@ -29,9 +29,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { GENERAL_METRIC_CODES, BANK_METRIC_CODES } from './backfillTaskDefinitions';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import type { Season } from '../src/domain/calendar/rocQuarter';
 
 // 逐日型指標沒有「這一季」的概念，指定 quarter 回填時本來就會跳過（見

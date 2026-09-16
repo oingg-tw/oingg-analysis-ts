@@ -1,8 +1,8 @@
 import { test, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { govExportPrisma } from '@/adapters/prisma/govExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { loadIndustryClassification, getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies } from '@/models/gov/industryClassification';
 
 beforeAll(async () => {

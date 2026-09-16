@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWritePiotroskiFScorePit } from '@/domainPitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——本季 vs 去年同季 9 訊號比較，去年同季座標用
 // getPastNQuarters({rocYear,season},5)[0]，跟 tests/domains/metrics/piotroskiFScore.test.ts

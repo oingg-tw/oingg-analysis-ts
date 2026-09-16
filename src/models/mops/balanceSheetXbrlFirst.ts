@@ -16,7 +16,7 @@
 // @/models/mops/capitalStock.ts）。
 
 import type { QuarterlyKey } from '../quarterlyKey';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface BalanceSheetFields {
   reportDate: Date;

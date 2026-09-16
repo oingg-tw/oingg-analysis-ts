@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWritePeRatioPit } from '@/domainPitMetrics/valuation/peRatio/computePeRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 本益比 = 股價(knowledge_date) / EPS(TTM)，獨立重新算 EPS_TTM（跟 eps metric_code 的
 // TTM 算法相同，但不讀取 eps 已寫入的 metric_value）。2026-09-07 用 2330 115Q2 真實資料

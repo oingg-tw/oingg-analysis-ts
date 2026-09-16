@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listMaterialAnnouncements } from '@/api/bff/market/materialAnnouncements/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 test('listMaterialAnnouncements: 應該依公告日期由新到舊排序，且不超過 limit 筆', async () => {
   const result = await listMaterialAnnouncements({ limit: 20 });

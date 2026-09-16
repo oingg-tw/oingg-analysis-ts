@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteOhlsonOScorePit } from '@/domainPitMetrics/resilience/ohlsonOScore/computeOhlsonOScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——Logit 財務危機預警模型，NITA/FUTL/INTWO/CHIN 需要「本年 TTM」
 // 跟「去年同季 TTM」兩個窗口，去年同季錨點用 getPastNQuarters({rocYear,season},5)[0]。

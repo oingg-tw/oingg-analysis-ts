@@ -13,10 +13,10 @@
 
 import { computeAndWriteBankIncomeWaterfallPit } from '../src/domainPitMetrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const getBankIncomeStatementSymbols = async (): Promise<string[]> => {
   const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`

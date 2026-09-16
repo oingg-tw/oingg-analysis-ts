@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getBalanceSheetXbrlFull } from '@/models/mops/balanceSheetXbrlFull';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 2026-09-07 使用者發現 currentFinancialAssetsAtFairValueThroughProfitOrLoss
 // （current_fin_assets_fvtpl）沒有出現在既有的 balanceSheetXbrlFirst.ts（服務內部計算

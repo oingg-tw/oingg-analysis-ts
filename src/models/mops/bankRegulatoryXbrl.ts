@@ -6,7 +6,7 @@
 // 銀行/金控股、每季都有資料；`bank_capital_adequacy_detail_xbrl` 只覆蓋 6-7 檔，且只有
 // Q2/Q4 有真實值（監理揭露本來就半年一次，不是資料缺漏）。
 
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface BankRegulatoryKey {
   symbol: string;

@@ -11,8 +11,8 @@
 
 import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const SYMBOLS = ['2330'];
 

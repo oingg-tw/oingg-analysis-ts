@@ -2,8 +2,8 @@ import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { loadIndustryCodes } from '@/models/industryCodes';
 import { isValidSecuritiesSectorCode, listSecuritiesIndustrySectors, listCompaniesBySectorCodes } from '@/models/securitiesIndustry';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 // 證交所類股分類（twse-ts/tpex-ts company_profile.industry）——跟 industryClassification.ts
 // 的財政部稅籍五層分類是完全不同的體系，這裡用實測真實資料驗證：2330（台積電）屬於 24

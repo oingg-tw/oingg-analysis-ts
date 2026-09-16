@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 2026-09-10 twse-ts 新建的 export.stock_pledge_ratio view——全市場「董監事及大股東股權
 // 質押比例」統計（來源 TWSE t187ap09_L），跟 export.foreign_shareholding 同一套模式

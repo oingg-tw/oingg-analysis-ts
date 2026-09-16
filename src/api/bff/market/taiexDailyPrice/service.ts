@@ -1,4 +1,4 @@
-import twseExportPrisma from '@/adapters/prisma/twseExportClient';
+import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
 import type { TaiexDailyPriceEntry, TaiexDailyPriceResult } from './types';
 
 interface RawTaiexDailyPriceRow {

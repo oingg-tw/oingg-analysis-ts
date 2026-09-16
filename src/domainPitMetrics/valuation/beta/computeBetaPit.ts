@@ -1,4 +1,4 @@
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, rollingWindowGroup } from '../../metricValueWriter';
 import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../metricBasis';

@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getIncomeStatementXbrlFirst } from '@/models/mops/incomeStatementXbrlFirst';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 2026-09-07 規劃這批換源時逐欄位用 2330 115Q2 交叉驗證過。2026-09-11 舊三大表
 // （quarterly_income_statement）已退役，這支現在單純查 XBRL 寬表，不再有 fallback 分支。

@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getEtfRankingQuerySchema } from './controller';
 import { etfRankingResultSchema } from './types';
 

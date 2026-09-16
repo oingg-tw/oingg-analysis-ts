@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { govBondYield10yResultSchema } from '@/domainMacro/govBondYield10y/types';
 
 export const registerGovBondYield10yOpenApi = (): void => {

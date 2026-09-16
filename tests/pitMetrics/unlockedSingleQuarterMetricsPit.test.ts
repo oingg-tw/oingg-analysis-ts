@@ -4,8 +4,8 @@ import { computeAndWriteNonOperatingIncomeRatioPit } from '@/domainPitMetrics/pr
 import { computeAndWriteEquityRatioPit } from '@/domainPitMetrics/resilience/equityRatio/computeEquityRatioPit';
 import { computeAndWriteCashToAssetsRatioPit } from '@/domainPitMetrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 「全市場六季財報深度解鎖的指標」批次——單季即可的三支獨立指標（不需要歷史深度，
 // 純粹是先前沒做而已）。用 2330 真實資料驗證。

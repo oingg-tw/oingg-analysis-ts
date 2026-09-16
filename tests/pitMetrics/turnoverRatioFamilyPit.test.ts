@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteTurnoverRatioFamilyPit } from '@/domainPitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第五批遷移（turnoverRatio 補完整：4 個周轉率 + DIO/DSO/DPO + CCC）——跟
 // tests/domains/metrics/turnoverRatio.test.ts 的既有基準數字交叉驗證。

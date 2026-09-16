@@ -11,7 +11,7 @@
 // 淨利/流通股數重新算的，不是讀這張表現成的 eps 欄位）。
 
 import type { QuarterlyKey } from '../quarterlyKey';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 export interface IncomeStatementFields {
   reportDate: Date;

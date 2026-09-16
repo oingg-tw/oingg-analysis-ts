@@ -1,5 +1,5 @@
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { logger } from '@/infrastructure/logger';
 
 // 證交所類股代碼對照表——2026-09-11 起已被 securitiesIndustry.ts 使用（screener 的

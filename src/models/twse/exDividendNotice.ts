@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 上市股票/ETF 除權除息預告——2026-09-04 twse-ts 新開的 export.ex_dividend_notice view
 // （來源：TWSE TWT48U_ALL），109 筆，只有上市（TWSE）有，TPEx 沒有對應資料源。

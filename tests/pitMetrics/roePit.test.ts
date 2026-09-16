@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { computeAndWriteRoePit, resolveRoeQuarterData } from '@/domainPitMetrics/profitability/roe/computeRoePit';
 import type { IncomeStatementPort, BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // ROE spike 驗證——src/domainPitMetrics/profitability/roe/computeRoePit.ts 是 src/domainMetrics/roe.ts 的獨立
 // 重新實作（不呼叫 calculateRoe()，見 computeRoePit.ts 檔頭說明），這裡拿 tests/domains/metrics/roe.test.ts

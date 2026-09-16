@@ -1,5 +1,5 @@
-import twseExportPrisma from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/models/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
 import { parseAttentionCriteria } from './parseCriteria';

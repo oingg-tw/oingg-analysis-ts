@@ -1,7 +1,7 @@
 import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/api/bff/screener/service';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { loadIndustryCodes } from '@/models/industryCodes';
 
 // sectorCodes 篩選（resolveIndustryCandidateSymbols）依賴模組層級的 sectorCodes 快取，

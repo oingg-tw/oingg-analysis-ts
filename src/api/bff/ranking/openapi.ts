@@ -1,4 +1,4 @@
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { getRankingQuerySchema } from './controller';
 import { rankingResultSchema } from './calculateRanking';
 

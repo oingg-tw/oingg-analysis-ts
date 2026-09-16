@@ -4,9 +4,9 @@ import { computeAndWriteLiveGrahamNumberPit } from '@/domainPitMetrics/valuation
 import { computeAndWriteLivePegRatioPit } from '@/domainPitMetrics/valuation/livePegRatio/computeLivePegRatioPit';
 import { computeAndWriteLiveMarketCapPit } from '@/domainPitMetrics/valuation/liveMarketCap/computeLiveMarketCapPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // liveGrahamNumber/livePegRatio/liveMarketCap——grahamNumber/pegRatio/marketCap 的即時
 // 版本，見各自 compute*Pit.ts 檔頭說明：基本面維持用最新已申報財報，股價改用當下最新

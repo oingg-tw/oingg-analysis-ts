@@ -5,8 +5,8 @@
 // （已用 2026-09-06 實測資料驗證過：目前 28 檔上市中的特別股全部對得上）。TPEx（上櫃）目前
 // 沒有 isin_securities 這張表，這批只能涵蓋上市（TWSE）。
 
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './mops/prismaErrors';
 import { logger } from '@/infrastructure/logger';
 

@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteLeverageDegreeFamilyPit } from '@/domainPitMetrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 「全市場六季財報深度解鎖的指標」批次——財務槓桿度(DFL)/總槓桿度(DTL)，YoY（本季 vs
 // 去年同季），只需要 5 季。用 2330 真實資料驗證。

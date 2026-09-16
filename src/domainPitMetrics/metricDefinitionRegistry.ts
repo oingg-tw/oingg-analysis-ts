@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { MetricDefinitionSpec } from './metricDefinitionSpec';
 import { roeDefinition } from '@/domainPitMetrics/profitability/roe/roeDefinition';
 import { novyMarxGpToAssetsDefinition } from '@/domainPitMetrics/profitability/novyMarxGpToAssets/novyMarxGpToAssetsDefinition';

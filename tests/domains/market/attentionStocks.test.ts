@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listAttentionStocks } from '@/api/bff/market/attentionStocks/service';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/models/companyProfile';
 
 test('listAttentionStocks: 應該依交易日由新到舊排序，且不超過 limit 筆', async () => {

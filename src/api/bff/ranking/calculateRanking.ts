@@ -1,5 +1,5 @@
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '@/adapters/prisma/tpexExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { Prisma } from '#generated/tpex-export-client';
 import { Prisma as TwsePrisma } from '#generated/twse-export-client';

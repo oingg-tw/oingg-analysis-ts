@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteDividendPayoutRatioPit } from '@/domainPitMetrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第三批遷移（dividendPayoutRatio）——跟 tests/domains/metrics/dividendPayoutRatio.test.ts
 // 的既有基準數字交叉驗證。

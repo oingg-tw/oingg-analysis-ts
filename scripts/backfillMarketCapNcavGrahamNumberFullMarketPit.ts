@@ -18,8 +18,8 @@ import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pe
 import { computeAndWriteNcavPit } from '../src/domainPitMetrics/valuation/ncav/computeNcavPit';
 import { computeAndWriteGrahamNumberPit } from '../src/domainPitMetrics/valuation/grahamNumber/computeGrahamNumberPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 const PROGRESS_EVERY = 50;
 

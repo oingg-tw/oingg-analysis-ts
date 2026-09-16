@@ -26,7 +26,7 @@
 // 避免之後真的有人註冊逐日型 job 時悄悄查錯表（查 metric_values 永遠 written=0，
 // coverageRatio 永遠 0，會誤判成「這支指標完全沒寫入」）。
 
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { logger } from '@/infrastructure/logger';
 import type { IndicatorJob } from './indicatorJob';

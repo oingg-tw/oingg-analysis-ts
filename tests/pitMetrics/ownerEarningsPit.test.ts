@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteOwnerEarningsPit } from '@/domainPitMetrics/quality/ownerEarnings/computeOwnerEarningsPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——股東盈餘（淨利+折舊攤銷+資本支出）/流通股數，跟
 // tests/domains/metrics/ownerEarnings.test.ts 的既有基準數字交叉驗證，Q/TTM 兩個

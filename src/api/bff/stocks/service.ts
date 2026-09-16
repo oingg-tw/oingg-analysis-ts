@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { companyExists } from '@/models/companyProfile';
 import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/models/twseMarketData';
 import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/models/twse/exDividendNotice';

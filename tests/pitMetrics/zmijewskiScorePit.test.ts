@@ -2,8 +2,8 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteZmijewskiScorePit } from '@/domainPitMetrics/resilience/zmijewskiScore/computeZmijewskiScorePit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 第四批（guru 分類）遷移——Probit 財務危機預警模型，淨利用 TTM、其餘資產負債表科目是
 // 本季期末快照，沒有 YoY，跟 tests/domains/metrics/zmijewskiScore.test.ts 的既有基準

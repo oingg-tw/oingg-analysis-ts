@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registry } from '@/adapters/swagger/registry';
+import { registry } from '@/infrastructure/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/models/mops/capitalStock';
 import { roeHistoryEntrySchema } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';

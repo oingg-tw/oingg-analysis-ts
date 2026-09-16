@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/models/priceChange';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 interface DistinctTradeDateRow {
   trade_date: Date;

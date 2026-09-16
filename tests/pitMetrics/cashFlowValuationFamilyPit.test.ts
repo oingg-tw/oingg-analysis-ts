@@ -2,9 +2,9 @@ import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { computeAndWriteCashFlowValuationFamilyPit } from '@/domainPitMetrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
-import { analysisPrisma } from '@/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 「全市場六季財報深度解鎖的指標」批次——一次查詢拆 8 個 TTM-only metricCode，見
 // computeCashFlowValuationFamilyPit.ts 檔頭說明。用 2330 真實資料驗證。

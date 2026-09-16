@@ -12,10 +12,10 @@
 
 import { runBatchCompute } from '../src/api/batch/runner';
 import { indicatorJobs } from '../src/api/batch/indicatorRegistry';
-import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import tpexExportPrisma from '../src/adapters/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
+import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
+import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
+import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
+import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 
 runBatchCompute(indicatorJobs)
   .catch((error) => {
