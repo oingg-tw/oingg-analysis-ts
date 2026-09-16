@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { companyNameEntrySchema } from '@/infrastructure/repositories/exchange/companyProfile';
+import type { CompanyNameEntry } from '@/application/ports/companyProfiles';
 import type { CompanyProfileDetail } from '@/application/companies/types';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
@@ -61,6 +61,13 @@ export const companyProfileDetailSchema = z.object({
   // 欄位對不上會編譯失敗。
 }) satisfies z.ZodType<CompanyProfileDetail>;
 export type { CompanyProfileDetail };
+
+// 2026-09-17 Phase 4：entry schema 從 infrastructure 的 companyProfile.ts 搬來，型別真理來源是
+// application/ports/companyProfiles.ts 的 CompanyNameEntry。
+export const companyNameEntrySchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().nullable(),
+}) satisfies z.ZodType<CompanyNameEntry>;
 
 // 2026-09-01 應 bff-ts 要求新增的 GET /companies 兩種回應形狀（依 countOnly 決定回哪一種）。
 export const companiesListResultSchema = z.object({

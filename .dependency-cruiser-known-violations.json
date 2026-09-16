@@ -253,104 +253,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/companies/types.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/exchange/securitiesIndustry.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/securitiesIndustry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/gov/industryClassification.ts",
-    "unresolvedTo": "@/infrastructure/repositories/gov/industryClassification",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/playwright/industryChainClassification.ts",
-    "unresolvedTo": "@/infrastructure/repositories/playwright/industryChainClassification",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/playwright/industryClusters.ts",
-    "unresolvedTo": "@/infrastructure/repositories/playwright/industryClusters",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/industries/controller.ts",
-    "to": "src/infrastructure/repositories/playwright/industryTree.ts",
-    "unresolvedTo": "@/infrastructure/repositories/playwright/industryTree",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/market/attentionStocks/controller.ts",
     "to": "src/infrastructure/logger.ts",
     "unresolvedTo": "@/infrastructure/logger",
@@ -841,34 +743,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/modules/preferredStock/controller.ts",
-    "to": "src/infrastructure/repositories/exchange/preferredStock.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/preferredStock",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/preferredStock/controller.ts",
-    "to": "src/infrastructure/repositories/twse/marketCap.ts",
-    "unresolvedTo": "@/infrastructure/repositories/twse/marketCap",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/http/modules/ranking/calculateRanking.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
@@ -970,34 +844,6 @@
     "from": "src/http/modules/screener/service.ts",
     "to": "src/infrastructure/repositories/exchange/securitiesIndustry.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/securitiesIndustry",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/securities/controller.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/securities/types.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
     "dependencyTypes": [
       "undetermined",
       "import"

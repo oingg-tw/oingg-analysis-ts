@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getSecuritiesQuerySchema } from './controller';
+import { getSecuritiesQuerySchema } from './schemas';
 import { securitiesListResultSchema, securitiesCountOnlyResultSchema } from './types';
 
 export const registerSecuritiesOpenApi = (registry: OpenAPIRegistry): void => {

@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import type { PreferredStockDataSource, PreferredStockEntry, PreferredStocksResult } from '@/application/preferredStock/types';
 
-// 2026-09-06 新增——特別股清單，見 controller.ts 的 getPreferredStocks 說明。
+// 2026-09-06 新增——特別股清單，見 application/preferredStock/listPreferredStocks.ts 的說明。
+// 2026-09-17 Phase 4：形狀的真理來源是 application/preferredStock/types.ts 的介面，這裡用 satisfies 釘住。
 export const preferredStockEntrySchema = z.object({
   symbol: z.string().meta({ description: '特別股本身的證券代號，例如 "1101B"，跟發行公司的普通股代號（"1101"）不同' }),
   name: z.string(),
@@ -50,11 +52,11 @@ export const preferredStockEntrySchema = z.object({
   premiumRatePct: z.number().nullable().meta({
     description: '溢價率 = (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回（redeemable=true）時才計算——現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失；不可贖回或查無股價時為 null',
   }),
-});
-export type PreferredStockEntry = z.infer<typeof preferredStockEntrySchema>;
+}) satisfies z.ZodType<PreferredStockEntry>;
+export type { PreferredStockEntry };
 
 // 顆粒度只到「來源」，不到逐欄位——每個 entry 都是同樣這三個上游來源合併出來的，逐欄位
-// 標記對這批資料來說是不必要的重複資訊，見 controller.ts 的 PREFERRED_STOCK_DATA_SOURCES。
+// 標記對這批資料來說是不必要的重複資訊，見 listPreferredStocks.ts 的 PREFERRED_STOCK_DATA_SOURCES。
 // 逐欄位對照表留在 README.md（人看的文件），這裡只回答「查證時要去哪個公開頁面對」。
 //
 // 2026-09-07 原本用內部 table 名稱（例如 export.preferred_stock_right），使用者指出這對
@@ -66,8 +68,8 @@ export const preferredStockDataSourceSchema = z.object({
   name: z.string().meta({ description: '這個公開查證來源的名稱', example: 'MOPS 特別股權利基本資料查詢' }),
   url: z.string().meta({ description: '公開查證頁面網址', example: 'https://mopsov.twse.com.tw/mops/web/t47sb12' }),
   note: z.string().nullable().meta({ description: '查證時的補充說明（例如是互動查詢頁、需要自行輸入哪些條件，不是深連結）' }),
-});
-export type PreferredStockDataSource = z.infer<typeof preferredStockDataSourceSchema>;
+}) satisfies z.ZodType<PreferredStockDataSource>;
+export type { PreferredStockDataSource };
 
 // 2026-09-08 新增——GET /preferred-stocks/field-catalog 用，給前端 hover 顯示公式說明。
 export const preferredStockFieldCatalogEntrySchema = z.object({
@@ -91,5 +93,5 @@ export const preferredStocksResultSchema = z.object({
     .array(preferredStockDataSourceSchema)
     .meta({ description: '這份清單合併自哪些上游資料表——顆粒度到表，不到逐欄位（逐欄位對照見 README.md），每個 entry 都是同一組來源組成的' }),
   entries: z.array(preferredStockEntrySchema),
-});
-export type PreferredStocksResult = z.infer<typeof preferredStocksResultSchema>;
+}) satisfies z.ZodType<PreferredStocksResult>;
+export type { PreferredStocksResult };

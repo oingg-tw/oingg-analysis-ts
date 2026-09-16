@@ -9,14 +9,10 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from '../mops/prismaErrors';
 import { logger } from '@/infrastructure/logger';
+import type { PreferredStockPort, PreferredStockRight, PreferredStockSecurity } from '@/application/ports/preferredStocks';
 
-export interface PreferredStockSecurity {
-  symbol: string;
-  name: string;
-  isinCode: string;
-  listedDate: Date;
-  marketType: string;
-}
+// DTO 型別 2026-09-17 Phase 4 搬到 application/ports/preferredStocks.ts，這裡 re-export 給既有 import 路徑。
+export type { PreferredStockRight, PreferredStockSecurity };
 
 interface RawIsinSecuritiesRow {
   symbol: string;
@@ -42,26 +38,6 @@ export const getPreferredStockSecurities = async (): Promise<PreferredStockSecur
     marketType: row.market_type,
   }));
 };
-
-export interface PreferredStockRight {
-  issueDate: Date;
-  issuePrice: number | null;
-  dividendRate: number | null; // 每股固定配息金額（新台幣元），不是百分比——2026-09-06 逐檔實測驗證過，欄位名稱容易誤會
-  cumulativeDividend: boolean;
-  participatingExcessDividend: boolean;
-  liquidationPreference: boolean;
-  votingRights: boolean;
-  convertible: boolean;
-  conversionStartDate: Date | null;
-  redeemable: boolean;
-  redemptionDate: Date | null;
-  redemptionConditions: string | null;
-  // 2026-09-08 mops-ts 新增：這檔是否在人工驗證覆寫表裡有記錄，跟 redemptionDate 是否為
-  // null 是兩件事——1312A/2002A 這種「已查證章程、確認有收回權但條款本身沒有固定收回日」
-  // 跟「自動化資料，沒有人查證過」原本混在一起分不清，這個欄位解決這個問題。null 代表
-  // mops-ts 這批資料還沒有這個欄位或查無記錄，前端不應該當成「已查證為 false」。
-  redemptionVerified: boolean | null;
-}
 
 interface RawPreferredStockRightRow {
   issue_date: Date;
@@ -121,3 +97,6 @@ export const getLatestPreferredStockRight = async (preferredStockCode: string): 
     redemptionVerified: row.redemption_verified,
   };
 };
+
+// application/ports/preferredStocks.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const exchangePreferredStocks: PreferredStockPort = { getPreferredStockSecurities, getLatestPreferredStockRight };

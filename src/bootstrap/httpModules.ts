@@ -9,11 +9,11 @@ import metricsRouter from '@/http/modules/metrics/route';
 import { registerFiltersOpenApi } from '@/http/modules/metrics/openapi';
 import companiesRouter from '@/http/modules/companies/route';
 import { registerCompaniesOpenApi } from '@/http/modules/companies/openapi';
-import securitiesRouter from '@/http/modules/securities/route';
+import { createSecuritiesRouter } from '@/http/modules/securities/route';
 import { registerSecuritiesOpenApi } from '@/http/modules/securities/openapi';
-import preferredStockRouter from '@/http/modules/preferredStock/route';
+import { createPreferredStockRouter } from '@/http/modules/preferredStock/route';
 import { registerPreferredStockOpenApi } from '@/http/modules/preferredStock/openapi';
-import industriesRouter from '@/http/modules/industries/route';
+import { createIndustriesRouter } from '@/http/modules/industries/route';
 import { registerIndustriesOpenApi } from '@/http/modules/industries/openapi';
 import { createStocksRouter } from '@/http/modules/stocks/route';
 import { registerStocksOpenApi } from '@/http/modules/stocks/openapi';
@@ -65,9 +65,9 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'batch', auth: 'batch', router: batchRouter, registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: metricsRouter, registerOpenApi: registerFiltersOpenApi },
   { name: 'companies', auth: 'bff', router: companiesRouter, registerOpenApi: registerCompaniesOpenApi },
-  { name: 'securities', auth: 'bff', router: securitiesRouter, registerOpenApi: registerSecuritiesOpenApi },
-  { name: 'preferredStock', auth: 'bff', router: preferredStockRouter, registerOpenApi: registerPreferredStockOpenApi },
-  { name: 'industries', auth: 'bff', router: industriesRouter, registerOpenApi: registerIndustriesOpenApi },
+  { name: 'securities', auth: 'bff', router: createSecuritiesRouter(deps), registerOpenApi: registerSecuritiesOpenApi },
+  { name: 'preferredStock', auth: 'bff', router: createPreferredStockRouter(deps), registerOpenApi: registerPreferredStockOpenApi },
+  { name: 'industries', auth: 'bff', router: createIndustriesRouter(deps), registerOpenApi: registerIndustriesOpenApi },
   { name: 'stocks', auth: 'bff', router: createStocksRouter(deps), registerOpenApi: registerStocksOpenApi },
   { name: 'screener', auth: 'bff', router: screenerRouter, registerOpenApi: registerScreenerOpenApi },
   { name: 'marginShortRatioRanking', auth: 'bff', router: marginShortRatioRankingRouter, registerOpenApi: registerMarginShortRatioRankingOpenApi },

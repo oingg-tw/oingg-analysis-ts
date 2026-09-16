@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getIndustryTreeQuerySchema } from './controller';
+import { getIndustryTreeQuerySchema } from './schemas';
 import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, industryTreeResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {

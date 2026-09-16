@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getPreferredStocksQuerySchema } from './controller';
+import { getPreferredStocksQuerySchema } from './schemas';
 import { preferredStocksResultSchema, preferredStockFieldCatalogResponseSchema } from './types';
 
 export const registerPreferredStockOpenApi = (registry: OpenAPIRegistry): void => {

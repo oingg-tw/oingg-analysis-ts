@@ -1,8 +1,13 @@
 import { Router } from 'ultimate-express';
-import { getSecurities } from './controller';
+import type { AppDeps } from '@/application/deps';
+import { listSecurities } from '@/application/securities/listSecurities';
+import { jsonRoute } from '@/http/route';
+import { getSecuritiesQuerySchema } from './schemas';
 
-const router = Router();
+export const createSecuritiesRouter = (deps: Pick<AppDeps, 'companyProfiles'>): Router => {
+  const router = Router();
 
-router.get('/securities', getSecurities);
+  router.get('/securities', ...jsonRoute({ query: getSecuritiesQuerySchema }, ({ query }) => listSecurities(query, deps)));
 
-export default router;
+  return router;
+};

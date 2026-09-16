@@ -1,9 +1,8 @@
-import { z } from 'zod';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/application/companies/types';
-import type { CompanyProfilePort } from '@/application/ports/companyProfiles';
+import type { CompanyNameEntry, CompanyProfilePort, SecurityEntry, SecurityType } from '@/application/ports/companyProfiles';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;
@@ -412,11 +411,9 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
   return result;
 };
 
-export const companyNameEntrySchema = z.object({
-  symbol: z.string(),
-  companyName: z.string().nullable(),
-});
-export type CompanyNameEntry = z.infer<typeof companyNameEntrySchema>;
+// 2026-09-17 Phase 4：entry 型別搬到 application/ports/companyProfiles.ts（對外回應的 zod schema 在
+// http/modules/{companies,securities}/types.ts），這裡 re-export 給既有 import 路徑。
+export type { CompanyNameEntry, SecurityEntry, SecurityType };
 
 // 給 GET /companies 用——2026-09-01 應 bff-ts 要求新增，讓他們可以拿全部公司代號/名稱對照表
 // 自己快取。現在 screener/ranking 這類多公司陣列結果已經直接帶 companyName（見
@@ -468,20 +465,9 @@ export const countAllCompanyNames = async (): Promise<number> => {
 // etfScreener/queryBuilder.ts 既有的查詢慣例）。預設 filter 給空物件——不排除興櫃（真正
 // 公司）、不排除 KY、不排除特別股、不排除全額交割股，是「這個市場上所有能交易的證券」
 // 最大範圍，跟 GET /securities/symbols（2026-09-02，已於後續版本移除）當初的預設語意一致。
-export const securityTypeSchema = z.enum(['COMMON', 'PREFERRED', 'ETF']);
-export type SecurityType = z.infer<typeof securityTypeSchema>;
-
-// 2026-09-11 應 bff-ts 要求新增 type 欄位——web-nuxt 要靠這個做導頁判斷（普通股/特別股/ETF
-// 三種詳情頁路由不同），不想靠 symbol 格式猜（怕誤判）。跟 companyNameEntrySchema（GET
-// /companies 用，沒有 type 概念）刻意分開一組 schema，不要為了共用把 type 塞成 optional
-// 污染 companies 那邊的形狀。
-export const securityEntrySchema = z.object({
-  symbol: z.string(),
-  companyName: z.string().nullable(),
-  type: securityTypeSchema,
-});
-export type SecurityEntry = z.infer<typeof securityEntrySchema>;
-
+// 2026-09-11 應 bff-ts 要求新增 type 欄位（SecurityType：COMMON/PREFERRED/ETF）——web-nuxt 要靠這個做導頁判斷
+// （普通股/特別股/ETF 三種詳情頁路由不同），不想靠 symbol 格式猜（怕誤判）。跟 CompanyNameEntry（GET
+// /companies 用，沒有 type 概念）刻意分開一組形狀，不要為了共用把 type 塞成 optional 污染 companies 那邊的形狀。
 interface RawTypedSecurityRow {
   symbol: string;
   shortName: string | null;
