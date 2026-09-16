@@ -1,0 +1,34 @@
+{
+  "status": 200,
+  "body": {
+    "avgRiskFreeRate": "<number>",
+    "clippedToAvailableData": "<boolean>",
+    "dataCoverage": {
+      "riskFreeRateDateRange": {
+        "max": "<string>",
+        "min": "<string>"
+      },
+      "taiexDateRange": {
+        "max": "<string>",
+        "min": "<string>"
+      }
+    },
+    "erpArithmetic": "<number>",
+    "erpGeometric": "<number>",
+    "fieldStatuses": {},
+    "marketReturnArithmetic": "<number>",
+    "marketReturnGeometric": "<number>",
+    "months": "<number>",
+    "requestedWindow": {
+      "endMonth": "<number>",
+      "endYear": "<number>",
+      "startMonth": "<number>",
+      "startYear": "<number>"
+    },
+    "warnings": [
+      "<string>"
+    ],
+    "windowEnd": "<string>",
+    "windowStart": "<string>"
+  }
+}

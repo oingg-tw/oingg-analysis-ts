@@ -65,6 +65,9 @@ const cases: GoldenCase[] = [
   { slug: 'market-taiex-daily-price', method: 'get', path: '/market/taiex-daily-price?limit=5' },
   { slug: 'etf-screener-filters', method: 'get', path: '/etf-screener/filters' },
   { slug: 'etf-screener-post', method: 'post', path: '/etf-screener', body: { filters: [], columns: [{ field: 'aum' }], page: 1, pageSize: 5 } },
+  // 不在 bff-ts 的 45 支清單裡，但 Phase 4 逐模組改寫前一併釘住（macro 兩支是第一個改寫的範本模組）。
+  { slug: 'macro-equity-risk-premium', method: 'get', path: '/macro/equity-risk-premium?startYear=2020&startMonth=1&endYear=2025&endMonth=12' },
+  { slug: 'macro-gov-bond-yield-10y', method: 'get', path: '/macro/gov-bond-yield-10y' },
 ];
 
 let harness: Awaited<ReturnType<typeof startApp>>;

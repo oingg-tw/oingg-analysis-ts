@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "body": {
+    "asOfMonth": "<string>",
+    "fieldStatuses": {},
+    "warnings": [],
+    "yieldPct": "<number>"
+  }
+}
