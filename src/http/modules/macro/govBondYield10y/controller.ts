@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { getLatestGovBondYield10y } from '@/application/macro/govBondYield10y/service';
 import { logger } from '@/infrastructure/logger';
 

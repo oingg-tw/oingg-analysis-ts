@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { runBatchCompute } from '../runner';
 import { dailyIndicatorJobs } from './indicatorRegistry';
 

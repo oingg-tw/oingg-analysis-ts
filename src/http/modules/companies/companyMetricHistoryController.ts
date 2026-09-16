@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
 import { getRoeHistory } from '@/application/metrics/profitability/roe/queryRoeHistory';

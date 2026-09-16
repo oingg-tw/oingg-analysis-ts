@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getLatestAvailableQuarter, type StatementSource } from '@/application/financials/latestQuarter';
 import { getBalanceSheetXbrlFull } from '@/infrastructure/repositories/mops/balanceSheetXbrlFull';

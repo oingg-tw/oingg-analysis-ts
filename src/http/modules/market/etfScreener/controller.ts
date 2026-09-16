@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from './service';
 import { logger } from '@/infrastructure/logger';

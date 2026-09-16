@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
 import { getIndustryNodeInfo, listIndustryChildren, listIndustryCompanies, listAllCompanyIndustryPaths } from '@/infrastructure/repositories/gov/industryClassification';

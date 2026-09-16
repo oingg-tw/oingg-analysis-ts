@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getCompanyProfileDetail, getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 import { findPeerGroupByTree } from '@/infrastructure/repositories/playwright/industryTree';

@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'ultimate-express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/infrastructure/repositories/exchange/preferredStock';
 import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
