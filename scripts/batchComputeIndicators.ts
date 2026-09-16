@@ -11,10 +11,7 @@
 // 共用，不能讓它幫忙斷線），見 runner.ts 的說明。
 
 import { runAllIndicatorJobs } from '../src/bootstrap/batch';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 runAllIndicatorJobs()
   .catch((error) => {
@@ -22,8 +19,5 @@ runAllIndicatorJobs()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await tpexExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

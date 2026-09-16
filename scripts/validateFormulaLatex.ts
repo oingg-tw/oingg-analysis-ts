@@ -11,7 +11,7 @@
 // 用法：pnpm tsx scripts/validateFormulaLatex.ts
 
 import { ComputeEngine } from '@cortex-js/compute-engine';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '../src/bootstrap/metricDefinitions';
 import { badgeRegistry } from '../src/domain/metrics/badgeRegistry';
 
 const ce = new ComputeEngine();

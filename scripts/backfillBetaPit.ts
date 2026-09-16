@@ -11,17 +11,14 @@
 //
 // 用法：pnpm tsx scripts/backfillBetaPit.ts
 import { computeAndWriteBetaPit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOLS = ['2330'];
 
 const getTradeDates = async (symbol: string): Promise<Date[]> => {
-  const rows = await twseExportPrisma.$queryRaw<Array<{ trade_date: Date }>>`
-    SELECT DISTINCT trade_date FROM "export"."daily_price" WHERE symbol = ${symbol} ORDER BY trade_date ASC
-  `;
+  const rows = await backfillUniverse.listDailyPriceTradeDates(symbol);
   return rows.map((r) => r.trade_date);
 };
 
@@ -60,6 +57,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await twseExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

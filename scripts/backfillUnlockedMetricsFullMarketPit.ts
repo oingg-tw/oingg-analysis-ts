@@ -7,11 +7,9 @@
 // 用法：pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts
 //      PILOT_LIMIT=30 pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts（小批次測試）
 import { computeAndWriteCashFlowValuationFamilyPit, computeAndWriteCashToAssetsRatioPit, computeAndWriteEquityRatioPit, computeAndWriteLeverageDegreeFamilyPit, computeAndWriteNonOperatingIncomeRatioPit, computeAndWriteTurnoverRatioFamilyPit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const METRIC_CODES = [
   'evToOcf', 'evToSales', 'priceToOcf', 'debtToFcf', 'capexToOcfRatio', 'croic', 'ocfMargin', 'fcfConversionRate',
@@ -23,11 +21,7 @@ const PROGRESS_EVERY = 50;
 const SYMBOL_CONCURRENCY = 8;
 
 const getFullMarketSymbols = async (): Promise<string[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."quarterly_income_statement_xbrl"
-    WHERE year = '115' AND quarter = '2' AND data_type = '2'
-    ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listSymbolsWithIncomeStatement('115', '2');
   return rows.map((r) => r.symbol);
 };
 
@@ -99,7 +93,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

@@ -11,9 +11,7 @@
 import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillFailure } from './backfillTaskDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SLUGS_BY_ARG: Record<string, ('general' | 'bank')[]> = {
   general: ['general'],
@@ -109,7 +107,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

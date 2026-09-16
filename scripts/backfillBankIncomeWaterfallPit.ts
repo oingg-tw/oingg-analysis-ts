@@ -11,19 +11,12 @@
 //
 // 用法：pnpm tsx scripts/backfillBankIncomeWaterfallPit.ts
 import { computeAndWriteBankIncomeWaterfallPit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const getBankIncomeStatementSymbols = async (): Promise<string[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."bank_income_statement_detail_xbrl"
-    WHERE net_income_loss_of_interest_quarter IS NOT NULL
-    ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listSymbolsWithBankIncomeStatement();
   return rows.map((r) => r.symbol);
 };
 
@@ -63,5 +56,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await Promise.all([mopsExportPrisma.$disconnect(), twseExportPrisma.$disconnect(), tpexExportPrisma.$disconnect(), analysisPrisma.$disconnect()]);
+    await disconnectAllDbs();
   });

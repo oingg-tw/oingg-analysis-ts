@@ -6,18 +6,16 @@
 //
 // 用法：pnpm tsx scripts/backfillDividendDistributionCountPit.ts
 import { computeAndWriteDividendDistributionCountPit } from '../src/bootstrap/pitMetrics';
-import { getSymbolsWithDividendDistribution } from '../src/infrastructure/repositories/mops/dividendDistribution';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
 
 const main = async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.dividendDistributionCount!);
 
-  const symbols = await getSymbolsWithDividendDistribution();
+  const symbols = await backfillUniverse.listSymbolsWithDividendDistribution();
   console.log(`[dividend-distribution-count-pit] 共 ${symbols.length} 家有股利分派紀錄的公司，併發數 ${SYMBOL_CONCURRENCY}`);
 
   const t0 = Date.now();
@@ -62,5 +60,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await Promise.all([mopsExportPrisma.$disconnect(), analysisPrisma.$disconnect()]);
+    await disconnectAllDbs();
   });

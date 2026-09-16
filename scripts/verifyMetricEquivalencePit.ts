@@ -28,7 +28,7 @@ import { join } from 'node:path';
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { computeAndWriteBetaPit, computeAndWriteMarketRatiosPit } from '../src/bootstrap/pitMetrics';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { analysisQueries } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const BANK_SYMBOLS = ['2801', '2812'];
@@ -62,7 +62,7 @@ const parseArgs = (argv: string[]): { label: string; compare: string | null } =>
   return { label, compare };
 };
 
-// 每個 compute 函式的 outcome 形狀都不一樣（StandardBasisPitOutcome 的 q/ttm/fy、family 的
+// 每個 compute 函式的 outcome 形狀都不一樣（單一指標的 q/ttm/fy、family 的
 // 具名欄位、beta 的多個窗口…），但共同點是：每個 basis 的結果都是一個帶字串 action 的物件。
 // 遞迴走訪、遇到 action 就收一筆，不用知道每支指標的具體形狀。
 const collectActions = (value: unknown, path: string[], out: { key: string; action: string }[]): void => {
@@ -113,7 +113,7 @@ const main = async (): Promise<void> => {
     console.log(`[verify-equivalence] ${symbol}（銀行）完成，累計 ${entries.length} 筆 basis outcome`);
   }
 
-  const shadowRowsDuringRun = await analysisPrisma.metricUpsertShadow.count({ where: { capturedAt: { gte: startedAt } } });
+  const shadowRowsDuringRun = await analysisQueries.countShadowRowsSince(startedAt);
 
   const counts: Record<string, number> = {};
   for (const entry of entries) counts[entry.action] = (counts[entry.action] ?? 0) + 1;

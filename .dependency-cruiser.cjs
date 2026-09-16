@@ -5,10 +5,10 @@
 // repositories/config/logger）→ src/http（express）→ src/bootstrap（composition root）。
 // scripts/ 只能 import bootstrap + domain。
 //
-// 規則從第 0 天就是 error，但既有程式碼還沒搬家、必然大量違規——用 dependency-cruiser 內建的
-// baseline 機制（`pnpm lint:deps:baseline` 產生 .dependency-cruiser-known-violations.json，
-// `pnpm lint:deps` 用 --ignore-known 忽略已知違規）。紀律：baseline 只能縮小不能變大——搬家
-// commit 讓它變大時要在同一個 commit 重產；每個 phase 收尾檢查 diff 只有刪除；Phase 6 歸零刪檔。
+// 規則從第 0 天就是 error。重構期間（Phase 0 → 6）靠 dependency-cruiser 內建的 baseline 機制
+// （.dependency-cruiser-known-violations.json + --ignore-known）讓既有違規逐 phase 歸零；2026-09-17
+// Phase 6 baseline 歸零後已刪檔、`pnpm lint:deps` 不再帶 --ignore-known——從此任何新違規直接擋在
+// pre-commit hook。
 //
 // 為什麼不用 oxlint 的 no-restricted-imports：沒有 baseline 機制、規則是「每個目錄一組 override」
 // 很難表達 from/to 的組合、也抓不到 circular。oxlint 留一件這裡做不到的事：process.env 只准
@@ -112,8 +112,6 @@ module.exports = {
     tsPreCompilationDeps: true,
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '^(dist|generated|coverage|tmp|docs)/' },
-    // baseline 檔（.dependency-cruiser-known-violations.json）不是 options 的欄位，由 CLI 的
-    // --ignore-known 讀預設路徑（見 package.json 的 lint:deps / lint:deps:baseline）。
     cache: true,
     enhancedResolveOptions: {
       exportsFields: ['exports'],

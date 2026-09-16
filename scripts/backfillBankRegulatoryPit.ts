@@ -7,11 +7,9 @@
 // 季度範圍沿用共用的 PIT_BACKFILL_QUARTERS（113Q3~115Q2）；銀行 XBRL 資料目前只回填到
 // 114Q1 左右，更早的季度會自然寫出 missing_input 的 null 列，不是錯誤，是預期的優雅降級。
 import { computeAndWriteBankAssetQualityFamilyPit, computeAndWriteBankCapitalAdequacyFamilyPit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const BANK_SYMBOLS = ['2801', '2812', '2834'];
 
@@ -43,6 +41,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

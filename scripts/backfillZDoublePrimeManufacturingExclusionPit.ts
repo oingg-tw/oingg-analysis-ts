@@ -13,20 +13,14 @@
 //
 // 用法：pnpm tsx scripts/backfillZDoublePrimeManufacturingExclusionPit.ts
 import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { govExportPrisma } from '../src/infrastructure/prisma/govExportClient';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
 
 const getManufacturingSymbols = async (): Promise<string[]> => {
-  const rows = await govExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."company_industry_classification" WHERE section_code = 'C' AND rank = 0 ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listManufacturingSymbols();
   return rows.map((r) => r.symbol);
 };
 
@@ -72,9 +66,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await govExportPrisma.$disconnect();
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await tpexExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

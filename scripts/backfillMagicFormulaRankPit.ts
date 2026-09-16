@@ -17,43 +17,23 @@
 //
 // 用法：pnpm tsx scripts/backfillMagicFormulaRankPit.ts
 import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRocPit } from '../src/bootstrap/pitMetrics';
-import { isFinancialIndustryCompany } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { persistMetricValue } from '../src/bootstrap/pitMetrics';
 import { periodTypeGroup } from '../src/domain/metrics/coordinate';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { backfillUniverse, analysisQueries, type LatestTtmMetricRow } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
 
-interface LatestMetricRow {
-  symbol: string;
-  value: number;
-  fiscal_year: number;
-  fiscal_quarter: number;
-  knowledge_date: Date;
-  knowledge_date_is_fallback: boolean;
-}
+type LatestMetricRow = LatestTtmMetricRow;
 
 const getFullMarketSymbols = async (): Promise<string[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."quarterly_income_statement_xbrl"
-    WHERE year = '115' AND quarter = '2' AND data_type = '2'
-    ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listSymbolsWithIncomeStatement('115', '2');
   return rows.map((r) => r.symbol);
 };
 
 const getLatestMetricValues = async (metricCode: string): Promise<Map<string, LatestMetricRow>> => {
-  const rows = await analysisPrisma.$queryRaw<LatestMetricRow[]>`
-    SELECT DISTINCT ON (symbol) symbol, value::float AS value, fiscal_year, fiscal_quarter, knowledge_date, knowledge_date_is_fallback
-    FROM metric_values
-    WHERE metric_code = ${metricCode} AND period_type = 'TTM' AND data_type = '2' AND subsidiary_company_id = '' AND value IS NOT NULL
-    ORDER BY symbol, fiscal_year DESC, fiscal_quarter DESC, knowledge_date DESC
-  `;
+  const rows = await analysisQueries.listLatestTtmValuesAcrossMarket(metricCode);
   return new Map(rows.map((r) => [r.symbol, r]));
 };
 
@@ -101,7 +81,7 @@ const main = async () => {
   const [rocValues, eyValues] = await Promise.all([getLatestMetricValues('greenblattRoc'), getLatestMetricValues('greenblattEarningsYield')]);
 
   const eligibleSymbols = [...rocValues.keys()].filter((s) => eyValues.has(s));
-  const financialFlags = await Promise.all(eligibleSymbols.map((s) => isFinancialIndustryCompany(s)));
+  const financialFlags = await Promise.all(eligibleSymbols.map((s) => backfillUniverse.isFinancialIndustryCompany(s)));
   const rankableSymbols = eligibleSymbols.filter((_, i) => !financialFlags[i]);
   console.log(`[magic-formula-rank-pit] 兩指標皆非null：${eligibleSymbols.length} 家，排除金融保險業後可排名：${rankableSymbols.length} 家`);
 
@@ -142,5 +122,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await Promise.all([mopsExportPrisma.$disconnect(), twseExportPrisma.$disconnect(), tpexExportPrisma.$disconnect(), analysisPrisma.$disconnect()]);
+    await disconnectAllDbs();
   });

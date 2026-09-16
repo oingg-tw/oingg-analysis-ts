@@ -10,10 +10,8 @@
 //
 // 用法：pnpm tsx scripts/backfillGrowthPit.ts
 import { computeAndWriteBvpsGrowthRatePit, computeAndWriteEpsGrowthRatePit, computeAndWriteEquityGrowthRatePit, computeAndWriteNetIncomeGrowthRatePit, computeAndWriteOperatingIncomeGrowthRatePit, computeAndWriteRevenueGrowthRatePit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOLS = ['2330'];
 
@@ -72,6 +70,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

@@ -15,11 +15,9 @@
 // - 季度範圍：113Q3~115Q2 共 8 季/家。
 // - dataType 只做 '2'（合併報表）。
 import { computeAndWriteRoePit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const main = async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.roe!);
@@ -38,6 +36,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

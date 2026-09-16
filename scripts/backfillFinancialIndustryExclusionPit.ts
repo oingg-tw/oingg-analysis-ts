@@ -6,18 +6,14 @@
 //
 // 不重跑 backfillAllMetricsLatestFullMarketPit.ts 全市場 61 支指標（2058 家 x 61 支太重，
 // 而且非金融業公司的這 5 支指標邏輯沒變，重算也是拿一樣的值，純粹浪費時間）——這支腳本
-// 用 listCompaniesBySectorCodes(['17']) 直接查金融保險業公司清單，只對這批公司重算這 5 支
+// 用 backfillUniverse.listCompaniesBySectorCodes(['17']) 直接查金融保險業公司清單，只對這批公司重算這 5 支
 // 受影響的指標。
 //
 // 用法：pnpm tsx scripts/backfillFinancialIndustryExclusionPit.ts
 import { computeAndWriteAltmanZDoublePrimeScorePit, computeAndWriteAltmanZScorePit, computeAndWriteBeneishMScorePit, computeAndWriteOhlsonOScorePit, computeAndWriteZmijewskiScorePit } from '../src/bootstrap/pitMetrics';
-import { metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
-import { upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { listCompaniesBySectorCodes } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
+import { backfillUniverse } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const AFFECTED_METRIC_CODES = ['altmanZScore', 'altmanZDoublePrimeScore', 'beneishMScore', 'ohlsonOScore', 'zmijewskiScore'] as const;
 
@@ -39,7 +35,7 @@ const computeSymbol = async (symbol: string): Promise<{ label: string; error: un
 const main = async () => {
   await Promise.all(AFFECTED_METRIC_CODES.map((code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)));
 
-  const symbols = [...(await listCompaniesBySectorCodes(['17']))].sort();
+  const symbols = [...(await backfillUniverse.listCompaniesBySectorCodes(['17']))].sort();
   console.log(`[financial-industry-exclusion-pit] 金融保險業（industry=17）共 ${symbols.length} 家，開始重算 ${AFFECTED_METRIC_CODES.join('/')}`);
 
   const t0 = Date.now();
@@ -75,8 +71,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await tpexExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

@@ -29,10 +29,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { GENERAL_METRIC_CODES, BANK_METRIC_CODES } from './backfillTaskDefinitions';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import type { Season } from '../src/domain/calendar/rocQuarter';
+import { backfillUniverse, analysisQueries } from '../src/bootstrap/scripts';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 // 逐日型指標沒有「這一季」的概念，指定 quarter 回填時本來就會跳過（見
 // backfillTaskDefinitions.ts buildGeneralTasks 的說明），這裡也排除，不然會被誤判成
@@ -51,20 +50,12 @@ const QUARTERS: { year: string; season: Season; fiscalYear: number }[] = [
 ];
 
 const getGeneralSymbolsForQuarter = async (year: string, season: Season): Promise<string[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."quarterly_income_statement_xbrl"
-    WHERE year = ${year} AND quarter = ${season} AND data_type = '2'
-    ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listSymbolsWithIncomeStatement(year, season);
   return rows.map((r) => r.symbol);
 };
 
 const getBankSymbolsForQuarter = async (year: string, season: Season): Promise<string[]> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."bank_capital_adequacy_detail_xbrl"
-    WHERE year = ${year} AND quarter = ${season} AND eligible_capital IS NOT NULL
-    ORDER BY symbol
-  `;
+  const rows = await backfillUniverse.listBankSymbolsForQuarter(year, season);
   return rows.map((r) => r.symbol);
 };
 
@@ -81,17 +72,7 @@ const findGapSymbols = async (
   expectedSymbols: string[],
   metricCodes: string[]
 ): Promise<{ gapSymbols: string[]; gapCountByMetric: Record<string, number> }> => {
-  const rows = await analysisPrisma.metricValue.findMany({
-    where: {
-      metricCode: { in: metricCodes },
-      fiscalYear,
-      fiscalQuarter,
-      dataType: '2',
-      subsidiaryCompanyId: '',
-      symbol: { in: expectedSymbols },
-    },
-    select: { symbol: true, metricCode: true, value: true, nullReason: true },
-  });
+  const rows = await analysisQueries.listMetricValuesForGapScan({ metricCodes, fiscalYear, fiscalQuarter, symbols: expectedSymbols });
 
   // symbol -> metricCode -> 是否至少有一筆非 null 值 / 是否至少有一筆可重試的 null 原因
   const bySymbol = new Map<string, Map<string, { hasValue: boolean; hasRetryableNull: boolean }>>();
@@ -196,7 +177,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await twseExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });

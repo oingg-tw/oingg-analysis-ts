@@ -16,7 +16,7 @@
 // 對照表格式：{ "src/shared/rocQuarter.ts": "src/domain/calendar/rocQuarter.ts",
 //               "src/models": "src/infrastructure/repositories" }（value 是資料夾時整棵搬、保留相對結構）
 //
-// 搬完之後照慣例：pnpm typecheck、pnpm test、pnpm lint:deps:baseline（同一個 commit 重產）。
+// 搬完之後照慣例：pnpm typecheck、pnpm test、pnpm lint:deps（Phase 6 起沒有 baseline，違規要當場修）。
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
@@ -151,7 +151,7 @@ const main = (): void => {
     mkdirSync(dirname(to), { recursive: true });
     execFileSync('git', ['mv', toPosix(relative(ROOT, from)), toPosix(relative(ROOT, to))], { cwd: ROOT, stdio: 'inherit' });
   }
-  console.log('[move-modules] 完成。接著：pnpm typecheck && pnpm test && pnpm lint:deps:baseline');
+  console.log('[move-modules] 完成。接著：pnpm typecheck && pnpm test && pnpm lint:deps');
 };
 
 main();

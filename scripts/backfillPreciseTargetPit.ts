@@ -33,9 +33,8 @@
 //     → 兩家公司，不指定季度（只算各自最新一筆），全部一般指標。
 
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
-import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
-import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import type { Season } from '../src/domain/calendar/rocQuarter';
+import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const parseCsv = (value: string | undefined): string[] | undefined => {
   if (!value) return undefined;
@@ -116,6 +115,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mopsExportPrisma.$disconnect();
-    await analysisPrisma.$disconnect();
+    await disconnectAllDbs();
   });
