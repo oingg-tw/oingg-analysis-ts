@@ -1,15 +1,6 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getLatestMonthlyRevenueYearMonth, listMonthlyRevenueForMonth, type RawMonthlyRevenueRow } from '@/infrastructure/repositories/exchange/marketLists';
 import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
-
-interface RawMonthlyRevenueRow {
-  symbol: string;
-  year_month: Date;
-  current_month_revenue: bigint | null;
-  mom_change_percent: number | null;
-  yoy_change_percent: number | null;
-}
 
 interface EligibleRow extends RawMonthlyRevenueRow {
   market: 'TWSE' | 'TPEx';
@@ -45,11 +36,8 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
 
 const getLatestYearMonth = async (): Promise<Date | null> => {
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
-    tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`,
-  ]);
-  const candidates = [twseRows[0]?.year_month, tpexRows[0]?.year_month].filter((d): d is Date => d != null);
+  const [twseLatest, tpexLatest] = await Promise.all([getLatestMonthlyRevenueYearMonth('TWSE'), getLatestMonthlyRevenueYearMonth('TPEx')]);
+  const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) return null;
   return candidates.reduce((latest, current) => (current > latest ? current : latest));
 };
@@ -65,16 +53,8 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
   }
 
   const [twseRows, tpexRows, twseSymbols, tpexSymbols] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
-      SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
-      FROM "export"."monthly_revenue"
-      WHERE year_month = ${yearMonth}
-    `,
-    tpexExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
-      SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
-      FROM "export"."monthly_revenue"
-      WHERE year_month = ${yearMonth}
-    `,
+    listMonthlyRevenueForMonth('TWSE', yearMonth),
+    listMonthlyRevenueForMonth('TPEx', yearMonth),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);

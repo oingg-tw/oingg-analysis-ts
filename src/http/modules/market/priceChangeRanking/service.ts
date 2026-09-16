@@ -1,6 +1,5 @@
-import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getLatestTwoTradeDates, listClosesForDate } from '@/infrastructure/repositories/exchange/marketLists';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
 
 interface RawChangeRow {
@@ -28,25 +27,11 @@ interface RawChangeRow {
 // src/models/companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
 // 維持這支排行原本的行為。
 //
-// 交易日改查 daily_taiex_index（一天一筆、tradeDate 是 PK），不對 daily_price 查 DISTINCT
-// tradeDate——2026-09-02 實測發現 daily_price 150萬筆只有 (symbol, tradeDate) 複合 PK，沒有
-// 單獨對 tradeDate 的索引，這種不帶 symbol 條件的查詢近乎全表掃描，單次 3~7 秒，是這支端點
-// 回應緩慢（4~4.6秒）的根因，見 src/models/priceChange.ts 同樣的修法。
-const getLatestTwoTradeDatesTwse = async (): Promise<[Date, Date] | null> => {
-  const rows = await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-    SELECT trade_date FROM "export"."daily_taiex_index" ORDER BY trade_date DESC LIMIT 2
-  `;
-  if (rows.length < 2) return null;
-  return [rows[0]!.trade_date, rows[1]!.trade_date];
-};
+// 交易日的取法（TWSE 查 daily_taiex_index、TPEx 才 DISTINCT daily_price，效能理由）見
+// infrastructure/repositories/exchange/marketLists.ts 的 getLatestTwoTradeDates。
+const getLatestTwoTradeDatesTwse = (): Promise<[Date, Date] | null> => getLatestTwoTradeDates('TWSE');
 
-const getLatestTwoTradeDatesTpex = async (): Promise<[Date, Date] | null> => {
-  const rows = await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-    SELECT DISTINCT trade_date FROM "export"."daily_price" ORDER BY trade_date DESC LIMIT 2
-  `;
-  if (rows.length < 2) return null;
-  return [rows[0]!.trade_date, rows[1]!.trade_date];
-};
+const getLatestTwoTradeDatesTpex = (): Promise<[Date, Date] | null> => getLatestTwoTradeDates('TPEx');
 
 const computeChanges = (
   market: 'TWSE' | 'TPEx',
@@ -92,8 +77,8 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   if (twseDates) {
     const [tradeDate, previousTradeDate] = twseDates;
     const [todayRows, prevRows, companySymbols] = await Promise.all([
-      twseExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`,
-      twseExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${previousTradeDate}`,
+      listClosesForDate('TWSE', tradeDate),
+      listClosesForDate('TWSE', previousTradeDate),
       getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     ]);
     pool.push(
@@ -111,8 +96,8 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   if (tpexDates) {
     const [tradeDate, previousTradeDate] = tpexDates;
     const [todayRows, prevRows, companySymbols] = await Promise.all([
-      tpexExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`,
-      tpexExportPrisma.$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${previousTradeDate}`,
+      listClosesForDate('TPEx', tradeDate),
+      listClosesForDate('TPEx', previousTradeDate),
       getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
     ]);
     pool.push(

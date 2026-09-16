@@ -1,8 +1,8 @@
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { runAnalysisRawQuery } from '@/infrastructure/repositories/analysis/metricValueQueries';
 import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
 import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/infrastructure/repositories/exchange/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';
-import { buildScreenerSql, buildRankingSql, buildValuesSql, buildCompanyRankSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
+import { buildScreenerSql, buildRankingSql, buildValuesSql, buildCompanyRankSql, type FilterCondition, type IndexedField, type SortSpec } from '@/infrastructure/repositories/analysis/screenerQueries';
 import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason, CompanyRankResult } from './types';
 
 export { ScreenerValidationError };
@@ -89,7 +89,7 @@ export const runScreener = async (request: {
   }
 
   const sql = buildScreenerSql(filters, columns, page, pageSize, sort, candidateSymbols);
-  const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
+  const rows = await runAnalysisRawQuery<Record<string, unknown>>(sql);
 
   const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
   const results = await attachCompanyNames(parseRows(rows, indexedColumns));
@@ -110,7 +110,7 @@ export const runScreenerRanking = async (request: {
   const candidateSymbols = await resolveSectorCandidateSymbols(request.sectorCodes);
 
   const sql = buildRankingSql(rankedField, request.direction, request.limit, columns, candidateSymbols);
-  const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
+  const rows = await runAnalysisRawQuery<Record<string, unknown>>(sql);
 
   const combinedFields: IndexedField[] = [rankedField, ...columns].map((c, index) => ({ ...c, index }));
   return { results: await attachCompanyNames(parseRows(rows, combinedFields)) };
@@ -128,7 +128,7 @@ export const getCompanyRank = async (symbol: string, fieldInput: string, directi
   const field = resolveFieldOrThrow(fieldInput);
 
   const sql = buildCompanyRankSql(symbol, field, direction);
-  const rows = await analysisPrisma.$queryRaw<{ symbol: string; value: unknown; rank: bigint; total_count: bigint }[]>(sql);
+  const rows = await runAnalysisRawQuery<{ symbol: string; value: unknown; rank: bigint; total_count: bigint }>(sql);
 
   const row = rows[0];
   if (!row) {
@@ -159,7 +159,7 @@ export const runScreenerValues = async (request: { symbols: string[]; columns: S
   if (symbols.length === 0) return { results: [] };
 
   const sql = buildValuesSql(symbols, columns);
-  const rows = await analysisPrisma.$queryRaw<Record<string, unknown>[]>(sql);
+  const rows = await runAnalysisRawQuery<Record<string, unknown>>(sql);
 
   const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
   return { results: await attachCompanyNames(parseRows(rows, indexedColumns)) };

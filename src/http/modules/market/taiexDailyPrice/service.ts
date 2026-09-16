@@ -1,10 +1,5 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import { listLatestTaiexDailyPrices } from '@/infrastructure/repositories/twse/taiexIndex';
 import type { TaiexDailyPriceEntry, TaiexDailyPriceResult } from './types';
-
-interface RawTaiexDailyPriceRow {
-  trade_date: Date;
-  close: unknown;
-}
 
 const toNullableNumber = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
 
@@ -14,10 +9,7 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 // 開放出來，不做任何額外加工——回應形狀比照既有 daily-price-history（tradeDate+close，
 // 舊到新排序），只是沒有 symbol（大盤只有一條序列）也沒有 OHLV（大盤沒有適用場景）。
 export const getTaiexDailyPrice = async (limit: number): Promise<TaiexDailyPriceResult> => {
-  const rows = await twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
-    SELECT trade_date, close FROM "export"."daily_taiex_index"
-    ORDER BY trade_date DESC LIMIT ${limit}
-  `;
+  const rows = await listLatestTaiexDailyPrices(limit);
 
   const entries: TaiexDailyPriceEntry[] = rows
     .map((row) => ({

@@ -1,26 +1,6 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getLatestPriceLimitRangeTradeDate, listPriceLimitRangeTwse, listPriceLimitRangeTpex } from '@/infrastructure/repositories/exchange/marketLists';
 import type { PriceLimitRangeResult, PriceLimitRangeRow } from './types';
-
-interface RawTwsePriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-  opening_ref_price: number | null;
-  previous_day_price: number | null;
-  allow_odd_lot_trade: string | null;
-}
-
-interface RawTpexPriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-}
 
 interface PoolRow {
   market: 'TWSE' | 'TPEx';
@@ -45,29 +25,15 @@ interface PoolRow {
 export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
   const warnings: string[] = [];
 
-  const [twseDateRows, tpexDateRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`,
-    tpexExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`,
-  ]);
-  const candidates = [twseDateRows[0]?.trade_date, tpexDateRows[0]?.trade_date].filter((d): d is Date => d != null);
+  const [twseLatest, tpexLatest] = await Promise.all([getLatestPriceLimitRangeTradeDate('TWSE'), getLatestPriceLimitRangeTradeDate('TPEx')]);
+  const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) {
     warnings.push('查無漲跌停幅度資料。');
     return { tradeDate: '', widest: [], narrowest: [], warnings };
   }
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawTwsePriceLimitRangeRow[]>`
-      SELECT symbol, rank_group, limit_up, limit_down, limit_range, opening_ref_price, previous_day_price, allow_odd_lot_trade
-      FROM "export"."price_limit_range"
-      WHERE trade_date = ${tradeDate}
-    `,
-    tpexExportPrisma.$queryRaw<RawTpexPriceLimitRangeRow[]>`
-      SELECT symbol, rank_group, limit_up, limit_down, limit_range
-      FROM "export"."price_limit_range"
-      WHERE trade_date = ${tradeDate}
-    `,
-  ]);
+  const [twseRows, tpexRows] = await Promise.all([listPriceLimitRangeTwse(tradeDate), listPriceLimitRangeTpex(tradeDate)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),

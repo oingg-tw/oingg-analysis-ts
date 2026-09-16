@@ -1,5 +1,8 @@
 import { Prisma } from '#generated/sitca-export-client';
-import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './fieldRegistry';
+import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './etfFieldRegistry';
+
+// 2026-09-17 重構 Phase 2：從 http/modules/market/etfScreener/queryBuilder.ts 搬來——只有 Prisma.sql
+// 的組裝（純函式、寫死 sitca export view 的表名欄位名），執行交給 ./etfQueries.ts 的 runEtfRawQuery。
 
 // 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
 // （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated

@@ -1,5 +1,9 @@
 import { Prisma } from '#generated/analysis-client';
-import type { FieldRef } from './fieldResolver';
+import type { FieldRef } from '@/domain/metrics/timeframe';
+
+// 2026-09-17 重構 Phase 2：從 http/modules/screener/queryBuilder.ts 搬來——這裡只有 Prisma.sql
+// 的組裝（純函式、寫死 metric_values / metric_daily_cadence_values 的表名欄位名，是 infrastructure
+// 的知識），執行交給 ./metricValueQueries.ts 的 runAnalysisRawQuery。
 
 // 核心查詢組裝邏輯——2026-09-08 重建，改成對 pitMetrics 共用的 metric_values 表查詢，取代
 // 已刪除的 metricTableRegistry 那套「一指標一表」解析機制。metricCode/四個 basis 相關欄位

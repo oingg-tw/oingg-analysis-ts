@@ -1,13 +1,6 @@
-import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import { getLatestMarginBalanceTradeDate, listMarginBalanceForRatio } from '@/infrastructure/repositories/exchange/marketLists';
 import type { MarginShortRatioRankingQuery, MarginShortRatioRankingResult, MarginShortRatioRow } from './types';
-
-interface RawMarginBalanceRow {
-  symbol: string;
-  margin_today_balance: bigint | null;
-  short_today_balance: bigint | null;
-}
 
 interface RatioRow {
   market: 'TWSE' | 'TPEx';
@@ -33,22 +26,13 @@ interface RatioRow {
 // 「當日新鮮度」還在觀察，這裡沒有另外檢查 export.ingestion_runs——沿用本服務其他市場資料
 // 「直接取有資料的最新一天」的一貫作法，不對這個 dataset 特殊處理，之後穩定了也不用回頭改。
 // 上櫃檔數（~920 檔）遠少於上市，合併排行時上市會自然佔多數，是市場規模差異，不是 bug。
-const resolveTwseMarginDate = async (): Promise<Date | null> => {
-  const rows = await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."margin_balance" ORDER BY trade_date DESC LIMIT 1`;
-  return rows[0]?.trade_date ?? null;
-};
+const resolveTwseMarginDate = (): Promise<Date | null> => getLatestMarginBalanceTradeDate('TWSE');
 
-const resolveTpexMarginDate = async (): Promise<Date | null> => {
-  const rows = await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."margin_balance" ORDER BY trade_date DESC LIMIT 1`;
-  return rows[0]?.trade_date ?? null;
-};
+const resolveTpexMarginDate = (): Promise<Date | null> => getLatestMarginBalanceTradeDate('TPEx');
 
 const queryTwseMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
   const [rows, companySymbols] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawMarginBalanceRow[]>`
-      SELECT symbol, margin_today_balance, short_today_balance FROM "export"."margin_balance"
-      WHERE trade_date = ${tradeDate} AND margin_today_balance > 0 AND short_today_balance IS NOT NULL
-    `,
+    listMarginBalanceForRatio('TWSE', tradeDate),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
   ]);
   return rows
@@ -64,10 +48,7 @@ const queryTwseMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
 
 const queryTpexMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
   const [rows, companySymbols] = await Promise.all([
-    tpexExportPrisma.$queryRaw<RawMarginBalanceRow[]>`
-      SELECT symbol, margin_today_balance, short_today_balance FROM "export"."margin_balance"
-      WHERE trade_date = ${tradeDate} AND margin_today_balance > 0 AND short_today_balance IS NOT NULL
-    `,
+    listMarginBalanceForRatio('TPEx', tradeDate),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   return rows

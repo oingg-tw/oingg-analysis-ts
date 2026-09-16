@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { findLatestSnapshotValue } from '@/infrastructure/repositories/analysis/metricValueQueries';
 import { companyExists } from '@/infrastructure/repositories/exchange/companyProfile';
 import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/infrastructure/repositories/exchange/twseMarketData';
 import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/infrastructure/repositories/twse/exDividendNotice';
@@ -30,14 +30,8 @@ import type {
 const MARKET_RATIOS_DATA_TYPE = '2';
 const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 
-const getLatestMarketRatioValue = async (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> => {
-  const row = await analysisPrisma.metricDailyCadenceValue.findFirst({
-    where: { symbol, metricCode, snapshotCadence: 'EOD', dataType: MARKET_RATIOS_DATA_TYPE, subsidiaryCompanyId: MARKET_RATIOS_SUBSIDIARY_COMPANY_ID },
-    orderBy: { knowledgeDate: 'desc' },
-  });
-  if (!row) return null;
-  return { tradeDate: row.tradeDate, value: row.value !== null ? Number(row.value) : null };
-};
+const getLatestMarketRatioValue = (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
+  findLatestSnapshotValue(symbol, metricCode, 'EOD', MARKET_RATIOS_DATA_TYPE, MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
 
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無

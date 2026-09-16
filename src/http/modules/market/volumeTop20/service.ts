@@ -1,27 +1,9 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
+import { getLatestVolumeTop20TradeDate, listVolumeTop20Twse, listVolumeTop20Tpex } from '@/infrastructure/repositories/exchange/marketLists';
 import type { VolumeTop20Result, VolumeTop20Row } from './types';
 
 const ONE_DAY_CHANGE_TRADING_DAYS = 1;
-
-interface RawTwseVolumeTop20Row {
-  symbol: string;
-  volume: bigint;
-  transaction: bigint;
-  open: number | null;
-  high: number | null;
-  low: number | null;
-  close: number | null;
-  dir: string | null;
-  change: number | null;
-}
-
-interface RawTpexVolumeTop20Row {
-  symbol: string;
-  volume: bigint;
-}
 
 interface PoolRow {
   market: 'TWSE' | 'TPEx';
@@ -54,29 +36,15 @@ interface PoolRow {
 export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   const warnings: string[] = [];
 
-  const [twseDateRows, tpexDateRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`,
-    tpexExportPrisma.$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`,
-  ]);
-  const candidates = [twseDateRows[0]?.trade_date, tpexDateRows[0]?.trade_date].filter((d): d is Date => d != null);
+  const [twseLatest, tpexLatest] = await Promise.all([getLatestVolumeTop20TradeDate('TWSE'), getLatestVolumeTop20TradeDate('TPEx')]);
+  const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) {
     warnings.push('查無成交量前20名資料。');
     return { tradeDate: '', rankings: [], warnings };
   }
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawTwseVolumeTop20Row[]>`
-      SELECT symbol, volume, transaction, open, high, low, close, dir, change
-      FROM "export"."volume_top20"
-      WHERE trade_date = ${tradeDate}
-    `,
-    tpexExportPrisma.$queryRaw<RawTpexVolumeTop20Row[]>`
-      SELECT symbol, volume
-      FROM "export"."volume_top20"
-      WHERE trade_date = ${tradeDate}
-    `,
-  ]);
+  const [twseRows, tpexRows] = await Promise.all([listVolumeTop20Twse(tradeDate), listVolumeTop20Tpex(tradeDate)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),

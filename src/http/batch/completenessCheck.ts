@@ -26,7 +26,7 @@
 // 避免之後真的有人註冊逐日型 job 時悄悄查錯表（查 metric_values 永遠 written=0，
 // coverageRatio 永遠 0，會誤判成「這支指標完全沒寫入」）。
 
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { countMetricRowsWrittenSince } from '@/infrastructure/repositories/analysis/metricValueQueries';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { logger } from '@/infrastructure/logger';
 import type { IndicatorJob } from './indicatorJob';
@@ -55,9 +55,7 @@ export const checkJobCompleteness = async (job: IndicatorJob, companyIds: string
   try {
     const definition = metricDefinitionRegistry[job.name]!;
     const isDailyCadence = definition.group !== 'period';
-    const written = isDailyCadence
-      ? await analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } })
-      : await analysisPrisma.metricValue.count({ where: { metricCode: job.name, symbol: { in: companyIds }, computedAt: { gte: batchStartedAt } } });
+    const written = await countMetricRowsWrittenSince(job.name, companyIds, batchStartedAt, isDailyCadence);
     return { metricKey: job.name, attempted: companyIds.length, written, coverageRatio: written / companyIds.length };
   } catch (error) {
     logger.error({ err: error, metricKey: job.name }, '[completeness-check]: 查詢寫入列數失敗，本次跳過完整性檢查，不影響批次本身結果。');

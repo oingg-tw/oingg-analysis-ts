@@ -1,17 +1,10 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
+import { listAttentionNotesTwse, listAttentionNotesTpex, type RawAttentionHistoryNoteRow } from '@/infrastructure/repositories/exchange/marketLists';
 import { parseAttentionCriteria } from './parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
 
 const SIX_DAY_CHANGE_TRADING_DAYS = 6;
-
-interface RawAttentionHistoryNoteRow {
-  symbol: string;
-  trade_date: Date;
-  criteria: string | null;
-}
 
 interface PoolRow extends RawAttentionHistoryNoteRow {
   market: 'TWSE' | 'TPEx';
@@ -36,22 +29,7 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
   // schema 查 public.company_profile，改成先取 getSecuritySymbolSet 再用 ANY(${symbols})。
   const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
-      SELECT symbol, trade_date, criteria
-      FROM "export"."attention_history_note"
-      WHERE symbol = ANY(${twseEligibleSymbols})
-      ORDER BY trade_date DESC
-      LIMIT ${limit}
-    `,
-    tpexExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
-      SELECT symbol, trade_date, criteria
-      FROM "export"."attention_history_note"
-      WHERE symbol IN (SELECT symbol FROM "export"."company_profile")
-      ORDER BY trade_date DESC
-      LIMIT ${limit}
-    `,
-  ]);
+  const [twseRows, tpexRows] = await Promise.all([listAttentionNotesTwse(twseEligibleSymbols, limit), listAttentionNotesTpex(limit)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),

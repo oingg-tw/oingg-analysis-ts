@@ -1,30 +1,10 @@
-import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
-import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
+import { listDisposedStocksTwse, listDisposedStocksTpex } from '@/infrastructure/repositories/exchange/marketLists';
 import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from './parseReason';
 import type { DisposedStocksQuery, DisposedStocksResult, DisposedStockRow } from './types';
 
 const SIX_DAY_CHANGE_TRADING_DAYS = 6;
-
-interface RawTwseDisposedStockRow {
-  symbol: string;
-  announce_date: Date;
-  announcement_count: number | null;
-  reason: string | null;
-  disposition_period: string | null;
-  disposition_measures: string | null;
-  detail: string | null;
-  link_information: string | null;
-}
-
-interface RawTpexDisposedStockRow {
-  symbol: string;
-  announce_date: Date;
-  reason: string | null;
-  disposition_period: string | null;
-  detail: string | null;
-}
 
 interface PoolRow {
   market: 'TWSE' | 'TPEx';
@@ -78,22 +58,7 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
   // （source = 'COMPANY_PROFILE'，KY/興櫃都算真正公司）維持跟原本完全一樣，只是換了取得方式。
   const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawTwseDisposedStockRow[]>`
-      SELECT symbol, announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
-      FROM "export"."disposed_stock"
-      WHERE symbol = ANY(${twseEligibleSymbols})
-      ORDER BY announce_date DESC
-      LIMIT ${limit}
-    `,
-    tpexExportPrisma.$queryRaw<RawTpexDisposedStockRow[]>`
-      SELECT symbol, announce_date, reason, disposition_period, detail
-      FROM "export"."disposed_stock"
-      WHERE symbol IN (SELECT symbol FROM "export"."company_profile")
-      ORDER BY announce_date DESC
-      LIMIT ${limit}
-    `,
-  ]);
+  const [twseRows, tpexRows] = await Promise.all([listDisposedStocksTwse(twseEligibleSymbols, limit), listDisposedStocksTpex(limit)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),

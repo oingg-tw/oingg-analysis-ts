@@ -3128,8 +3128,8 @@
   {
     "type": "dependency",
     "from": "src/http/batch/completenessCheck.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueQueries",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3562,36 +3562,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/attentionStocks/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/attentionStocks/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/attentionStocks/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/attentionStocks/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3646,36 +3632,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/disposedStocks/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/disposedStocks/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/disposedStocks/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/disposedStocks/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3730,8 +3702,8 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/etfRanking/service.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
+    "to": "src/infrastructure/repositories/sitca/etfQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/sitca/etfQueries",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3772,8 +3744,36 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/etfScreener/service.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
+    "to": "src/infrastructure/repositories/sitca/etfFieldRegistry.ts",
+    "unresolvedTo": "@/infrastructure/repositories/sitca/etfFieldRegistry",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/etfScreener/service.ts",
+    "to": "src/infrastructure/repositories/sitca/etfQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/sitca/etfQueries",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/etfScreener/service.ts",
+    "to": "src/infrastructure/repositories/sitca/etfScreenerQuery.ts",
+    "unresolvedTo": "@/infrastructure/repositories/sitca/etfScreenerQuery",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3814,36 +3814,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3884,8 +3870,8 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/materialAnnouncements/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
+    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3898,8 +3884,8 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/materialAnnouncements/service.ts",
-    "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
-    "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "to": "src/infrastructure/repositories/twse/materialAnnouncement.ts",
+    "unresolvedTo": "@/infrastructure/repositories/twse/materialAnnouncement",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -3940,36 +3926,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/priceChangeRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceChangeRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceChangeRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/priceChangeRanking/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4010,36 +3982,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/priceLimitRange/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceLimitRange/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceLimitRange/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/priceLimitRange/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4080,36 +4038,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/revenueRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/revenueRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/revenueRanking/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/revenueRanking/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4150,8 +4094,8 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/taiexDailyPrice/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
+    "to": "src/infrastructure/repositories/twse/taiexIndex.ts",
+    "unresolvedTo": "@/infrastructure/repositories/twse/taiexIndex",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4192,36 +4136,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/market/volumeTop20/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/volumeTop20/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/volumeTop20/service.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/market/volumeTop20/service.ts",
+    "to": "src/infrastructure/repositories/exchange/marketLists.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/marketLists",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4304,36 +4234,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/ranking/calculateRanking.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/ranking/calculateRanking.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/ranking/calculateRanking.ts",
     "to": "src/infrastructure/repositories/exchange/companyProfile.ts",
     "unresolvedTo": "@/infrastructure/repositories/exchange/companyProfile",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/ranking/calculateRanking.ts",
+    "to": "src/infrastructure/repositories/exchange/dailyValuationRanking.ts",
+    "unresolvedTo": "@/infrastructure/repositories/exchange/dailyValuationRanking",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4402,8 +4318,22 @@
   {
     "type": "dependency",
     "from": "src/http/modules/screener/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueQueries",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "http-not-infrastructure"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/http/modules/screener/service.ts",
+    "to": "src/infrastructure/repositories/analysis/screenerQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/screenerQueries",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -4514,8 +4444,8 @@
   {
     "type": "dependency",
     "from": "src/http/modules/stocks/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueQueries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueQueries",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -6672,328 +6602,6 @@
     "from": "src/bootstrap/db.ts",
     "to": "src/infrastructure/prisma/twseExportDevClient.ts",
     "unresolvedTo": "@/infrastructure/prisma/twseExportDevClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/batch/completenessCheck.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/attentionStocks/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/attentionStocks/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/disposedStocks/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/disposedStocks/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/etfRanking/service.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/etfScreener/service.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/marginShortRatioRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/materialAnnouncements/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceChangeRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceChangeRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceLimitRange/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/priceLimitRange/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/revenueRanking/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/revenueRanking/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/taiexDailyPrice/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/volumeTop20/service.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/market/volumeTop20/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/ranking/calculateRanking.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/ranking/calculateRanking.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/screener/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/stocks/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
       "undetermined",
       "import"

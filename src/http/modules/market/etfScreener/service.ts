@@ -1,4 +1,3 @@
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import { ValidationError } from '@/application/errors';
 import {
   NUMERIC_FIELDS,
@@ -10,20 +9,16 @@ import {
   type NumericFieldDefinition,
   type CategoricalFieldDefinition,
   type DateFieldDefinition,
-} from './fieldRegistry';
-import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from './queryBuilder';
+} from '@/infrastructure/repositories/sitca/etfFieldRegistry';
+import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from '@/infrastructure/repositories/sitca/etfScreenerQuery';
+import { getLatestEtfYearMonth, runEtfRawQuery, listDistinctEtfAssetClasses, listDistinctEtfDistributionFrequencies } from '@/infrastructure/repositories/sitca/etfQueries';
 import type { EtfFilterInput, EtfColumnInput, EtfScreenerResponse, EtfScreenerRow, EtfFilterCatalogResponse, EtfFilterFieldCatalogEntry } from './types';
 
 // 2026-09-17 clean architecture 重構 Phase 1：改用 application 共用的 ValidationError（同一個
 // class，controller/測試的 instanceof 判斷不變），這個名稱只是給既有呼叫端的別名。
 export { ValidationError as EtfScreenerValidationError };
 
-const getLatestYearMonth = async (): Promise<string | null> => {
-  const rows = await sitcaExportPrisma.$queryRaw<{ year_month: string | null }[]>`
-    SELECT MAX(year_month) as year_month FROM "export"."etf_basic_info"
-  `;
-  return rows[0]?.year_month ?? null;
-};
+const getLatestYearMonth = (): Promise<string | null> => getLatestEtfYearMonth();
 
 // filter 的形狀（min/max vs values）要跟欄位登記的 kind 一致，不接受「數字欄位給 values」
 // 或「類別欄位給 min/max」這種形狀不對的請求——這裡當成請求格式錯誤直接擋掉，不猜測意圖。
@@ -113,7 +108,7 @@ export const runEtfScreener = async (request: {
   }
 
   const sql = buildEtfScreenerSql(yearMonth, filters, columns, page, pageSize, sort);
-  const rows = await sitcaExportPrisma.$queryRaw<Record<string, unknown>[]>(sql);
+  const rows = await runEtfRawQuery<Record<string, unknown>>(sql);
 
   const results: EtfScreenerRow[] = rows.map((row) => {
     const values: Record<string, number | string | boolean | null> = {};
@@ -138,26 +133,8 @@ export const runEtfScreener = async (request: {
 // 查詢邏輯（assetClass 跟 distributionFrequency 從不同欄位、不同表達式拆出來），
 // getEtfFilterCatalog 找不到登記會直接 throw，不會悄悄回傳錯的選項清單。
 const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
-  assetClass: async () => {
-    const rows = await sitcaExportPrisma.$queryRaw<{ value: string | null }[]>`
-      SELECT DISTINCT substring(category from 'ETF_(.+)ETF') as value
-      FROM "export"."etf_basic_info"
-      WHERE category ~ 'ETF_.+ETF$'
-      ORDER BY 1
-    `;
-    return rows.map((r) => r.value).filter((v): v is string => v !== null);
-  },
-  distributionFrequency: async () => {
-    const rows = await sitcaExportPrisma.$queryRaw<{ value: string | null }[]>`
-      SELECT DISTINCT CASE
-        WHEN distribution_class_info LIKE '%不分配%' THEN '不分配'
-        ELSE substring(distribution_class_info from '分配\\((.+)\\)')
-      END as value
-      FROM "export"."etf_basic_info"
-      ORDER BY 1
-    `;
-    return rows.map((r) => r.value).filter((v): v is string => v !== null);
-  },
+  assetClass: listDistinctEtfAssetClasses,
+  distributionFrequency: listDistinctEtfDistributionFrequencies,
 };
 
 // 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /metrics（股票那邊）同一種

@@ -1,40 +1,16 @@
-import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import {
+  getLatestEtfYearMonth,
+  listEtfBasicInfo,
+  listEtfMonthlyStatement,
+  listEtfStatementThresholdFlags,
+  listEtfStatementTaxIdAndThreshold,
+  listEtfPerformance,
+  listFullYearExpenseRatios,
+  type RawEtfPerformanceRow,
+} from '@/infrastructure/repositories/sitca/etfQueries';
 import { parseEtfCategory } from './parseCategory';
 import { parseDistributionFrequency } from './parseDistribution';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';
-
-interface RawBasicInfoRow {
-  symbol: string;
-  fund_name: string | null;
-  security_short_name: string | null;
-  company_name: string | null;
-  category: string | null;
-  distribution_class_info: string | null;
-  is_actively_managed: boolean | null;
-}
-
-interface RawStatementRow {
-  symbol: string;
-  fund_tax_id: string | null;
-  aum_twd: bigint | null;
-  total_holders: bigint | null;
-  subscription_amount_twd: bigint | null;
-  redemption_amount_twd: bigint | null;
-  dca_amount_twd: bigint | null;
-  aum_below_statutory_threshold: boolean | null;
-}
-
-interface RawPerformanceRow {
-  symbol: string;
-  return_3m: number | null;
-  return_6m: number | null;
-  return_1y: number | null;
-  return_2y: number | null;
-  return_3y: number | null;
-  return_5y: number | null;
-  return_ytd: number | null;
-  return_10y: number | null;
-}
 
 interface ResolvedRow {
   symbol: string;
@@ -50,7 +26,7 @@ interface ResolvedRow {
 }
 
 const SNAPSHOT_METRICS = new Set<EtfRankingMetric>(['aum', 'holders', 'netFlow', 'dcaAmount']);
-const RETURN_COLUMN: Partial<Record<EtfRankingMetric, keyof RawPerformanceRow>> = {
+const RETURN_COLUMN: Partial<Record<EtfRankingMetric, keyof RawEtfPerformanceRow>> = {
   return3m: 'return_3m',
   return6m: 'return_6m',
   return1y: 'return_1y',
@@ -63,29 +39,11 @@ const RETURN_COLUMN: Partial<Record<EtfRankingMetric, keyof RawPerformanceRow>> 
 
 const formatYearMonth = (yearMonth: string): string => `${yearMonth.slice(0, 4)}-${yearMonth.slice(4, 6)}`;
 
-const getLatestYearMonth = async (): Promise<string | null> => {
-  const rows = await sitcaExportPrisma.$queryRaw<{ year_month: string | null }[]>`
-    SELECT MAX(year_month) as year_month FROM "export"."etf_basic_info"
-  `;
-  return rows[0]?.year_month ?? null;
-};
-
 // 規模/受益人數/淨申購贖回/定期定額——都是 etf_monthly_statement 當月快照的欄位（或欄位組合），
 // join etf_basic_info 補基金名稱/投信公司/分類。netFlow = 申購金額 - 贖回金額，是本服務算的，
 // 不是來源現成欄位。
 const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string): Promise<ResolvedRow[]> => {
-  const [basicRows, statementRows] = await Promise.all([
-    sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
-      FROM "export"."etf_basic_info"
-      WHERE year_month = ${yearMonth}
-    `,
-    sitcaExportPrisma.$queryRaw<RawStatementRow[]>`
-      SELECT symbol, fund_tax_id, aum_twd, total_holders, subscription_amount_twd, redemption_amount_twd, dca_amount_twd, aum_below_statutory_threshold
-      FROM "export"."etf_monthly_statement"
-      WHERE year_month = ${yearMonth}
-    `,
-  ]);
+  const [basicRows, statementRows] = await Promise.all([listEtfBasicInfo(yearMonth), listEtfMonthlyStatement(yearMonth)]);
 
   const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
   const rows: ResolvedRow[] = [];
@@ -139,21 +97,9 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
   if (!column) return [];
 
   const [basicRows, performanceRows, statementRows] = await Promise.all([
-    sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
-      FROM "export"."etf_basic_info"
-      WHERE year_month = ${yearMonth}
-    `,
-    sitcaExportPrisma.$queryRaw<RawPerformanceRow[]>`
-      SELECT symbol, return_3m, return_6m, return_1y, return_2y, return_3y, return_5y, return_ytd, return_10y
-      FROM "export"."etf_performance"
-      WHERE year_month = ${yearMonth}
-    `,
-    sitcaExportPrisma.$queryRaw<{ symbol: string; aum_below_statutory_threshold: boolean | null }[]>`
-      SELECT symbol, aum_below_statutory_threshold
-      FROM "export"."etf_monthly_statement"
-      WHERE year_month = ${yearMonth}
-    `,
+    listEtfBasicInfo(yearMonth),
+    listEtfPerformance(yearMonth),
+    listEtfStatementThresholdFlags(yearMonth),
   ]);
 
   const performanceBySymbol = new Map(performanceRows.map((row) => [row.symbol, row]));
@@ -191,21 +137,9 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
   const latestCompleteYear = new Date().getFullYear() - 1;
 
   const [basicRows, statementRows, expenseRows] = await Promise.all([
-    sitcaExportPrisma.$queryRaw<RawBasicInfoRow[]>`
-      SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
-      FROM "export"."etf_basic_info"
-      WHERE year_month = ${yearMonth}
-    `,
-    sitcaExportPrisma.$queryRaw<{ symbol: string; fund_tax_id: string | null; aum_below_statutory_threshold: boolean | null }[]>`
-      SELECT symbol, fund_tax_id, aum_below_statutory_threshold
-      FROM "export"."etf_monthly_statement"
-      WHERE year_month = ${yearMonth}
-    `,
-    sitcaExportPrisma.$queryRaw<{ fund_tax_id: string; total_rate: number | null }[]>`
-      SELECT fund_tax_id, total_rate
-      FROM "export"."fund_expense_ratio_annual_full_year"
-      WHERE year = ${latestCompleteYear}
-    `,
+    listEtfBasicInfo(yearMonth),
+    listEtfStatementTaxIdAndThreshold(yearMonth),
+    listFullYearExpenseRatios(latestCompleteYear),
   ]);
 
   const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
@@ -240,7 +174,7 @@ export const calculateEtfRanking = async (query: EtfRankingQuery): Promise<EtfRa
   const { metric, order, limit } = query;
   const warnings: string[] = [];
 
-  const yearMonth = await getLatestYearMonth();
+  const yearMonth = await getLatestEtfYearMonth();
   if (!yearMonth) {
     warnings.push('查無任何 ETF 資料。');
     return { metric, order, limit, rankings: [], warnings };
