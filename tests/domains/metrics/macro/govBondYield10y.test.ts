@@ -1,6 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getLatestGovBondYield10y } from '@/application/macro/govBondYield10y/service';
+import { appDeps } from '@/bootstrap/deps';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 
 interface LatestGovBondYieldRow {
@@ -11,7 +12,7 @@ interface LatestGovBondYieldRow {
 
 test('getLatestGovBondYield10y: 應該回傳最新一個月的殖利率，跟資料庫直接查一致', async () => {
   const [result, latestRows] = await Promise.all([
-    getLatestGovBondYield10y(),
+    getLatestGovBondYield10y(appDeps),
     govExportPrisma.$queryRaw<LatestGovBondYieldRow[]>`
       SELECT year, month, yield_rate FROM "export"."monthly_gov_bond_yield_10y"
       ORDER BY year DESC, month DESC LIMIT 1

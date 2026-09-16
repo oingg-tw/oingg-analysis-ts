@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getEquityRiskPremiumQuerySchema } from './controller';
+import { getEquityRiskPremiumQuerySchema } from './schemas';
 import { equityRiskPremiumResultSchema } from '@/application/macro/equityRiskPremium/types';
 
 export const registerEquityRiskPremiumOpenApi = (registry: OpenAPIRegistry): void => {

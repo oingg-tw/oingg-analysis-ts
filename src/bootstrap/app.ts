@@ -9,7 +9,8 @@ import { createBffAuth } from '@/http/middleware/bffAuth';
 import { createErrorHandler } from '@/http/middleware/errorHandler';
 import { logger } from '@/infrastructure/logger';
 import { config } from '@/infrastructure/config';
-import { httpModules } from './httpModules';
+import { createHttpModules } from './httpModules';
+import { appDeps } from './deps';
 import { buildOpenApiDocument } from './openapi';
 
 // 2026-09-17 clean architecture 重構：Phase 0 把「組 express app」從 src/index.ts 抽出來，跟「連 DB /
@@ -25,13 +26,16 @@ export interface AppOptions {
 }
 
 // 正式進場點跟契約測試都用這組預設值（config 已在 import 時驗證完環境變數）。
-export const defaultAppOptions = (): AppOptions => ({
-  modules: httpModules,
-  logger,
-  isProduction: config.isProduction,
-  bffApiKey: config.bffApiKey,
-  openApiDocument: buildOpenApiDocument(httpModules, { port: config.port }),
-});
+export const defaultAppOptions = (): AppOptions => {
+  const modules = createHttpModules(appDeps);
+  return {
+    modules,
+    logger,
+    isProduction: config.isProduction,
+    bffApiKey: config.bffApiKey,
+    openApiDocument: buildOpenApiDocument(modules, { port: config.port }),
+  };
+};
 
 export const createApp = (options: AppOptions = defaultAppOptions()) => {
   const app = express();

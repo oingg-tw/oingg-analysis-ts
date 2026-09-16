@@ -1,19 +1,10 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import type { EquityRiskPremiumCacheRow } from '@/application/ports/macroData';
 
 // 股權風險溢酬（ERP）計算結果快取（analysis DB 的 macro_equity_risk_premium）——PK 是
 // windowStart+windowEnd，同一組窗口重算就覆蓋同一列。2026-09-17 重構 Phase 2 從
-// application/macro/equityRiskPremium/service.ts 搬來。
-export interface EquityRiskPremiumCacheRow {
-  windowStart: string;
-  windowEnd: string;
-  months: number;
-  marketReturnGeometric: number;
-  marketReturnArithmetic: number;
-  avgRiskFreeRate: number;
-  erpGeometric: number;
-  erpArithmetic: number;
-  warnings: string[];
-}
+// application/macro/equityRiskPremium/service.ts 搬來；列型別 Phase 4 搬到 application/ports/macroData.ts。
+export type { EquityRiskPremiumCacheRow };
 
 export const upsertEquityRiskPremiumResult = async (row: EquityRiskPremiumCacheRow): Promise<void> => {
   const { windowStart, windowEnd, ...values } = row;

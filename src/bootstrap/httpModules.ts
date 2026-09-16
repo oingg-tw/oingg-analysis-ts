@@ -1,4 +1,5 @@
 import type { HttpModule } from '@/http/module';
+import type { AppDeps } from '@/application/deps';
 import { getStartupTime } from './serverInfo';
 import { createSystemRouter } from '@/http/modules/system/root';
 import { registerSystemOpenApi } from '@/http/modules/system/openapi';
@@ -42,9 +43,9 @@ import taiexDailyPriceRouter from '@/http/modules/market/taiexDailyPrice/route';
 import { registerTaiexDailyPriceOpenApi } from '@/http/modules/market/taiexDailyPrice/openapi';
 import rankingRouter from '@/http/modules/ranking/route';
 import { registerValuationRankingOpenApi } from '@/http/modules/ranking/openapi';
-import equityRiskPremiumRouter from '@/http/modules/macro/equityRiskPremium/route';
+import { createEquityRiskPremiumRouter } from '@/http/modules/macro/equityRiskPremium/route';
 import { registerEquityRiskPremiumOpenApi } from '@/http/modules/macro/equityRiskPremium/openapi';
-import govBondYield10yRouter from '@/http/modules/macro/govBondYield10y/route';
+import { createGovBondYield10yRouter } from '@/http/modules/macro/govBondYield10y/route';
 import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYield10y/openapi';
 
 // 2026-09-17 clean architecture 重構 Phase 4：**唯一**知道「全部路由有哪些」的地方——取代 src/http/routes.ts
@@ -56,7 +57,10 @@ import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYiel
 // （ranking 的 route 是 /ranking，對外是 /valuation/ranking；macro 兩支同理）。
 //
 // 新增端點：在對應模組的 route.ts/openapi.ts 加，然後在這裡加一筆——只有一個地方要改。
-export const httpModules: readonly HttpModule[] = [
+//
+// Phase 4-3 逐模組改成 createXxxRouter(deps) 工廠（薄 controller + application use case），還沒改的模組
+// 仍是 default export 的 router；全部改完後這裡就是唯一把 deps 交給 http 層的地方。
+export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
   { name: 'batch', auth: 'batch', router: batchRouter, registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: metricsRouter, registerOpenApi: registerFiltersOpenApi },
@@ -78,6 +82,6 @@ export const httpModules: readonly HttpModule[] = [
   { name: 'etfScreener', auth: 'bff', router: etfScreenerRouter, registerOpenApi: registerEtfScreenerOpenApi },
   { name: 'taiexDailyPrice', auth: 'bff', router: taiexDailyPriceRouter, registerOpenApi: registerTaiexDailyPriceOpenApi },
   { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: rankingRouter, registerOpenApi: registerValuationRankingOpenApi },
-  { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: equityRiskPremiumRouter, registerOpenApi: registerEquityRiskPremiumOpenApi },
-  { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: govBondYield10yRouter, registerOpenApi: registerGovBondYield10yOpenApi },
+  { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },
+  { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: createGovBondYield10yRouter(deps), registerOpenApi: registerGovBondYield10yOpenApi },
 ];

@@ -1,9 +1,10 @@
-import { listAllTaiexDailyPricesAsc } from '@/infrastructure/repositories/twse/taiexIndex';
-import { listAllGovBondYields10yAsc } from '@/infrastructure/repositories/gov/govBondYield';
-import { upsertEquityRiskPremiumResult } from '@/infrastructure/repositories/analysis/equityRiskPremiumCache';
 import { buildFieldStatuses, type MetricStatus } from '@/domain/metrics/metricStatus';
+import type { AppDeps } from '@/application/deps';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
-import { logger } from '@/infrastructure/logger';
+
+// 2026-09-17 Phase 4：資料查詢跟結果快取寫入透過 MacroDataPort 注入、log 透過 LoggerPort 注入
+//（Decimal → number 的轉換搬進 repository）。
+export type EquityRiskPremiumDeps = Pick<AppDeps, 'macroData' | 'logger'>;
 
 // 至少要有 2 個月才能算出 1 筆報酬率——低於這個數字連「算得出但不可靠」都談不上，直接回傳
 // calculation_error（跟 beta 的 MIN_OBSERVATIONS 門檻同一種「樣本太少不計算」的處理方式）。
@@ -20,29 +21,29 @@ const toKey = (year: number, month: number): string => `${year}-${pad2(month)}`;
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 const mean = (xs: number[]): number => xs.reduce((sum, x) => sum + x, 0) / xs.length;
 
-const getTaiexMonthEndCloses = async (): Promise<Record<string, number>> => {
-  const rows = await listAllTaiexDailyPricesAsc();
+const getTaiexMonthEndCloses = async (deps: EquityRiskPremiumDeps): Promise<Record<string, number>> => {
+  const rows = await deps.macroData.listTaiexDailyClosesAsc();
   const monthEnd: Record<string, number> = {};
   for (const row of rows) {
     if (row.close === null) continue;
-    const key = toKey(row.trade_date.getUTCFullYear(), row.trade_date.getUTCMonth() + 1);
-    monthEnd[key] = Number(row.close); // 依日期升冪走訪，同一個月份會被後面較晚的交易日覆寫，最後留下的就是該月最後一個收盤價
+    const key = toKey(row.tradeDate.getUTCFullYear(), row.tradeDate.getUTCMonth() + 1);
+    monthEnd[key] = row.close; // 依日期升冪走訪，同一個月份會被後面較晚的交易日覆寫，最後留下的就是該月最後一個收盤價
   }
   return monthEnd;
 };
 
-const getRiskFreeRateByMonth = async (): Promise<Record<string, number>> => {
-  const rows = await listAllGovBondYields10yAsc();
+const getRiskFreeRateByMonth = async (deps: EquityRiskPremiumDeps): Promise<Record<string, number>> => {
+  const rows = await deps.macroData.listGovBondYields10yAsc();
   const byMonth: Record<string, number> = {};
   for (const row of rows) {
-    byMonth[toKey(row.year, row.month)] = Number(row.yield_rate);
+    byMonth[toKey(row.year, row.month)] = row.yieldRate;
   }
   return byMonth;
 };
 
-export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery): Promise<EquityRiskPremiumResult> => {
+export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, deps: EquityRiskPremiumDeps): Promise<EquityRiskPremiumResult> => {
   const warnings: string[] = [];
-  const [taiex, riskFreeRate] = await Promise.all([getTaiexMonthEndCloses(), getRiskFreeRateByMonth()]);
+  const [taiex, riskFreeRate] = await Promise.all([getTaiexMonthEndCloses(deps), getRiskFreeRateByMonth(deps)]);
 
   const taiexKeys = Object.keys(taiex).sort();
   const riskFreeKeys = Object.keys(riskFreeRate).sort();
@@ -157,7 +158,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery):
   // 重算會覆蓋同一列，跟 beta 用 symbol+asOfDate 同一種「結果快取」模式。存檔失敗不應該讓已經
   // 算好的結果回傳失敗（跟 beta/service.ts 的 try/catch 同一種容錯方式）。
   try {
-    await upsertEquityRiskPremiumResult({
+    await deps.macroData.saveEquityRiskPremiumResult({
       windowStart: overlapKeys[0]!,
       windowEnd: overlapKeys[months - 1]!,
       months,
@@ -169,7 +170,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery):
       warnings,
     });
   } catch (error) {
-    logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。');
+    deps.logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。');
   }
 
   return {

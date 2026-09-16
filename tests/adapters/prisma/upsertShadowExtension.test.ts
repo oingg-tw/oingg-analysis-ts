@@ -1,6 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/application/macro/equityRiskPremium/service';
+import { appDeps } from '@/bootstrap/deps';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
@@ -28,7 +29,7 @@ const QUERY = { startYear: 2010, startMonth: 1, endYear: 2020, endMonth: 12 };
 test('upsertShadowExtension: upsert 覆蓋既有列時正確產生快照，值不變時正確跳過（去重）', async () => {
   // 先跑一次拿到這組窗口實際對應的 windowStart/windowEnd（可能因為資料涵蓋範圍被裁切，
   // 不等於請求的 2010-01/2020-12）。
-  const initial = await calculateEquityRiskPremium(QUERY);
+  const initial = await calculateEquityRiskPremium(QUERY, appDeps);
   assert.ok(initial.windowStart !== null && initial.windowEnd !== null, '應該有足夠的重疊月份算出窗口');
   assert.ok(initial.erpGeometric !== null, '應該算得出 ERP');
 
@@ -40,7 +41,7 @@ test('upsertShadowExtension: upsert 覆蓋既有列時正確產生快照，值�
 
   // 1. 再算一次確認正確值（來源資料不變，重跑會得到同一個答案），且剛清空基準、值沒變，
   //    這次重算不應該產生快照。
-  const correct = await calculateEquityRiskPremium(QUERY);
+  const correct = await calculateEquityRiskPremium(QUERY, appDeps);
   const correctErp = correct.erpGeometric;
   assert.equal(await countShadows(), 0, '剛清空基準，這次重算值沒變（跟資料庫裡已有的正確值相同），不應該產生快照');
 
@@ -51,7 +52,7 @@ test('upsertShadowExtension: upsert 覆蓋既有列時正確產生快照，值�
   });
 
   // 3. 重跑：來源資料沒變，會重新算出跟步驟 1 相同的正確值，觸發覆蓋 999.99 -> correctErp。
-  const afterFix = await calculateEquityRiskPremium(QUERY);
+  const afterFix = await calculateEquityRiskPremium(QUERY, appDeps);
   assert.equal(afterFix.erpGeometric, correctErp);
   assert.equal(await countShadows(), 1, `值從 999.99 覆蓋回 ${correctErp}，應該產生剛好一筆快照`);
 
@@ -60,7 +61,7 @@ test('upsertShadowExtension: upsert 覆蓋既有列時正確產生快照，值�
   assert.equal(previousRow.erpGeometric, '999.99', '快照記下的應該是被覆蓋前的錯誤值');
 
   // 4. 再跑一次：這次值沒變（已經回到 correctErp），去重邏輯應該跳過，不新增快照。
-  await calculateEquityRiskPremium(QUERY);
+  await calculateEquityRiskPremium(QUERY, appDeps);
   assert.equal(await countShadows(), 1, '值沒變不應該再新增快照');
 
   // 清理這次測試產生的快照，不留殘留資料影響下次執行的基準判斷。

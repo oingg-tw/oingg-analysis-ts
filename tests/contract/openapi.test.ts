@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { buildOpenApiDocument } from '@/bootstrap/openapi';
-import { httpModules } from '@/bootstrap/httpModules';
+import { createHttpModules } from '@/bootstrap/httpModules';
+import { appDeps } from '@/bootstrap/deps';
 
 // 對外契約守門（clean architecture 重構 Phase 0）：/api-docs 產出的 OpenAPI 文件是 bff-ts
 // 看到的全部契約（路徑、參數、回應 schema、狀態碼），整份 deep key-sort 之後跟
@@ -26,6 +27,6 @@ const sortKeys = (value: unknown): unknown => {
 
 test('OpenAPI 文件（對外契約）跟 snapshot 一致', async () => {
   // port 只影響 servers（下面就拿掉），用固定值讓 spec 跟環境無關。
-  const { servers: _servers, ...document } = buildOpenApiDocument(httpModules, { port: 3000 }) as unknown as Record<string, unknown>;
+  const { servers: _servers, ...document } = buildOpenApiDocument(createHttpModules(appDeps), { port: 3000 }) as unknown as Record<string, unknown>;
   await expect(JSON.stringify(sortKeys(document), null, 2)).toMatchFileSnapshot('./openapi.snapshot.json');
 });

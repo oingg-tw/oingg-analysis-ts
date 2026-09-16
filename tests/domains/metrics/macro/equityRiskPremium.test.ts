@@ -1,6 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateEquityRiskPremium } from '@/application/macro/equityRiskPremium/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
@@ -8,7 +9,7 @@ import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 // TAIEX/公債殖利率都是逐日/逐月更新的活資料（不是季度財報那種固定快照），所以這裡不釘死確切數值，
 // 只驗證「合理性」跟「結構」，避免資料每天更新就讓測試炸掉——跟 beta.test.ts 同一種理由。
 test('equityRiskPremium: 不指定窗口，用完整重疊區間，算出的 ERP 落在合理範圍', async () => {
-  const result = await calculateEquityRiskPremium({});
+  const result = await calculateEquityRiskPremium({}, appDeps);
 
   assert.ok(result.windowStart !== null && result.windowEnd !== null, '應該要有可用的重疊區間');
   assert.ok(result.months > 240, '完整歷史窗口目前應該已經超過 20 年（240 個月）');
@@ -27,7 +28,7 @@ test('equityRiskPremium: 不指定窗口，用完整重疊區間，算出的 ERP
 });
 
 test('equityRiskPremium: 指定短窗口時會算出結果，但帶可信度警告', async () => {
-  const result = await calculateEquityRiskPremium({ startYear: 2021, startMonth: 9, endYear: 2026, endMonth: 6 });
+  const result = await calculateEquityRiskPremium({ startYear: 2021, startMonth: 9, endYear: 2026, endMonth: 6 }, appDeps);
 
   assert.equal(result.windowStart, '2021-09');
   assert.equal(result.windowEnd, '2026-06');
@@ -40,7 +41,7 @@ test('equityRiskPremium: 指定短窗口時會算出結果，但帶可信度警�
 });
 
 test('equityRiskPremium: 指定超出資料涵蓋範圍的窗口時，會裁切並標記 clippedToAvailableData', async () => {
-  const result = await calculateEquityRiskPremium({ startYear: 1900, startMonth: 1 });
+  const result = await calculateEquityRiskPremium({ startYear: 1900, startMonth: 1 }, appDeps);
 
   assert.equal(result.clippedToAvailableData, true);
   assert.ok(result.windowStart! >= '1994-12', '起始月應該被裁切到無風險利率資料涵蓋範圍內');
@@ -49,7 +50,7 @@ test('equityRiskPremium: 指定超出資料涵蓋範圍的窗口時，會裁切�
 
 test('equityRiskPremium: 窗口內重疊月份不足 2 個月時回傳 calculation_error，欄位為 null', async () => {
   // 用同一個月當起訖，重疊月份只有 1 個，不足以算出任何報酬率。
-  const result = await calculateEquityRiskPremium({ startYear: 2020, startMonth: 1, endYear: 2020, endMonth: 1 });
+  const result = await calculateEquityRiskPremium({ startYear: 2020, startMonth: 1, endYear: 2020, endMonth: 1 }, appDeps);
 
   assert.equal(result.months, 1);
   assert.equal(result.erpGeometric, null);

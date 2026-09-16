@@ -1,76 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/logger.ts",
-    "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/repositories/analysis/equityRiskPremiumCache.ts",
-    "unresolvedTo": "@/infrastructure/repositories/analysis/equityRiskPremiumCache",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/repositories/gov/govBondYield.ts",
-    "unresolvedTo": "@/infrastructure/repositories/gov/govBondYield",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/repositories/twse/taiexIndex.ts",
-    "unresolvedTo": "@/infrastructure/repositories/twse/taiexIndex",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/govBondYield10y/service.ts",
-    "to": "src/infrastructure/repositories/gov/govBondYield.ts",
-    "unresolvedTo": "@/infrastructure/repositories/gov/govBondYield",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/application/metrics/legacyBridge.ts",
     "to": "src/bootstrap/pitDeps.ts",
     "unresolvedTo": "@/bootstrap/pitDeps",
@@ -410,34 +340,6 @@
     "from": "src/http/modules/industries/controller.ts",
     "to": "src/infrastructure/repositories/playwright/industryTree.ts",
     "unresolvedTo": "@/infrastructure/repositories/playwright/industryTree",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/macro/equityRiskPremium/controller.ts",
-    "to": "src/infrastructure/logger.ts",
-    "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/modules/macro/govBondYield10y/controller.ts",
-    "to": "src/infrastructure/logger.ts",
-    "unresolvedTo": "@/infrastructure/logger",
     "dependencyTypes": [
       "undetermined",
       "import"
