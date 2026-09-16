@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { getResearchAndDevelopmentExpense as getRdExpenseXbrl } from '@/infrastructure/repositories/mops/incomeStatementXbrlExtra';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -23,13 +23,7 @@ const getResearchAndDevelopmentExpense = async (key: {
   dataType: string;
   subsidiaryCompanyId: string;
 }): Promise<bigint | null> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ research_and_development_expense: bigint | null }[]>`
-    SELECT research_and_development_expense FROM "export"."quarterly_income_statement_xbrl"
-    WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
-      AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}
-    LIMIT 1
-  `;
-  return rows[0]?.research_and_development_expense ?? null;
+  return getRdExpenseXbrl(key);
 };
 
 export type RdIntensityPitOutcome = StandardBasisPitOutcome;

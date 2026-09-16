@@ -15,3 +15,9 @@ export const listLatestTaiexDailyPrices = (limit: number): Promise<RawTaiexDaily
     SELECT trade_date, close FROM "export"."daily_taiex_index"
     ORDER BY trade_date DESC LIMIT ${limit}
   `;
+
+// 全部歷史，依日期升冪（equityRiskPremium 取每月最後一個收盤價用）。
+export const listAllTaiexDailyPricesAsc = (): Promise<RawTaiexDailyPriceRow[]> =>
+  twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
+    SELECT trade_date, close FROM "export"."daily_taiex_index" ORDER BY trade_date ASC
+  `;

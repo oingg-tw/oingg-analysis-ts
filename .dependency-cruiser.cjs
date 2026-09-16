@@ -76,8 +76,8 @@ module.exports = {
     {
       name: 'prisma-only-in-infrastructure',
       severity: 'error',
-      comment: 'Prisma client（含 generated/ 跟 #generated/* subpath）只准 infrastructure 碰。',
-      from: { path: '^(src|scripts)/', pathNot: layer('infrastructure') },
+      comment: 'Prisma client（含 generated/ 跟 #generated/* subpath）只准 infrastructure 碰；bootstrap 是 composition root，負責連線/斷線，例外。',
+      from: { path: '^(src|scripts)/', pathNot: '^src/(infrastructure|bootstrap)/' },
       to: { path: PRISMA },
     },
     {

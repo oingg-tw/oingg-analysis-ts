@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { listPeriodMetricHistoryRows } from '@/infrastructure/repositories/analysis/metricValueRepository';
 import type { PeriodType } from '../../../domain/metrics/metricBasis';
 
 export const metricHistoryEntrySchema = z.object({
@@ -52,10 +52,7 @@ export const getMetricHistory = async (
   subsidiaryCompanyId: string,
   limit: number
 ): Promise<MetricHistoryResult> => {
-  const rows = await analysisPrisma.metricValue.findMany({
-    where: { symbol, metricCode, periodType, dataType, subsidiaryCompanyId },
-    orderBy: [{ fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { knowledgeDate: 'desc' }],
-  });
+  const rows = await listPeriodMetricHistoryRows(symbol, metricCode, periodType, dataType, subsidiaryCompanyId);
 
   const latestPerPeriod = new Map<string, (typeof rows)[number]>();
   for (const row of rows) {

@@ -1,20 +1,9 @@
-import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
-import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
+import { listAllTaiexDailyPricesAsc } from '@/infrastructure/repositories/twse/taiexIndex';
+import { listAllGovBondYields10yAsc } from '@/infrastructure/repositories/gov/govBondYield';
+import { upsertEquityRiskPremiumResult } from '@/infrastructure/repositories/analysis/equityRiskPremiumCache';
 import { buildFieldStatuses, type MetricStatus } from '@/domain/metrics/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
 import { logger } from '@/infrastructure/logger';
-
-interface RawGovBondYieldRow {
-  year: number;
-  month: number;
-  yield_rate: unknown;
-}
-
-interface RawTaiexRow {
-  trade_date: Date;
-  close: unknown;
-}
 
 // 至少要有 2 個月才能算出 1 筆報酬率——低於這個數字連「算得出但不可靠」都談不上，直接回傳
 // calculation_error（跟 beta 的 MIN_OBSERVATIONS 門檻同一種「樣本太少不計算」的處理方式）。
@@ -32,9 +21,7 @@ const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 const mean = (xs: number[]): number => xs.reduce((sum, x) => sum + x, 0) / xs.length;
 
 const getTaiexMonthEndCloses = async (): Promise<Record<string, number>> => {
-  const rows = await twseExportPrisma.$queryRaw<RawTaiexRow[]>`
-    SELECT trade_date, close FROM "export"."daily_taiex_index" ORDER BY trade_date ASC
-  `;
+  const rows = await listAllTaiexDailyPricesAsc();
   const monthEnd: Record<string, number> = {};
   for (const row of rows) {
     if (row.close === null) continue;
@@ -45,9 +32,7 @@ const getTaiexMonthEndCloses = async (): Promise<Record<string, number>> => {
 };
 
 const getRiskFreeRateByMonth = async (): Promise<Record<string, number>> => {
-  const rows = await govExportPrisma.$queryRaw<RawGovBondYieldRow[]>`
-    SELECT year, month, yield_rate FROM "export"."monthly_gov_bond_yield_10y" ORDER BY year ASC, month ASC
-  `;
+  const rows = await listAllGovBondYields10yAsc();
   const byMonth: Record<string, number> = {};
   for (const row of rows) {
     byMonth[toKey(row.year, row.month)] = Number(row.yield_rate);
@@ -172,28 +157,16 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery):
   // 重算會覆蓋同一列，跟 beta 用 symbol+asOfDate 同一種「結果快取」模式。存檔失敗不應該讓已經
   // 算好的結果回傳失敗（跟 beta/service.ts 的 try/catch 同一種容錯方式）。
   try {
-    await analysisPrisma.equityRiskPremiumResult.upsert({
-      where: { windowStart_windowEnd: { windowStart: overlapKeys[0]!, windowEnd: overlapKeys[months - 1]! } },
-      create: {
-        windowStart: overlapKeys[0]!,
-        windowEnd: overlapKeys[months - 1]!,
-        months,
-        marketReturnGeometric,
-        marketReturnArithmetic,
-        avgRiskFreeRate,
-        erpGeometric,
-        erpArithmetic,
-        warnings,
-      },
-      update: {
-        months,
-        marketReturnGeometric,
-        marketReturnArithmetic,
-        avgRiskFreeRate,
-        erpGeometric,
-        erpArithmetic,
-        warnings,
-      },
+    await upsertEquityRiskPremiumResult({
+      windowStart: overlapKeys[0]!,
+      windowEnd: overlapKeys[months - 1]!,
+      months,
+      marketReturnGeometric,
+      marketReturnArithmetic,
+      avgRiskFreeRate,
+      erpGeometric,
+      erpArithmetic,
+      warnings,
     });
   } catch (error) {
     logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。');

@@ -1,4 +1,3 @@
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { MetricDefinitionSpec } from '../../domain/metrics/metricDefinitionSpec';
 import { roeDefinition } from '@/domain/metrics/profitability/roe/roeDefinition';
 import { novyMarxGpToAssetsDefinition } from '@/domain/metrics/profitability/novyMarxGpToAssets/novyMarxGpToAssetsDefinition';
@@ -292,13 +291,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityDefinition,
 };
 
-// 冪等，backfill 腳本開跑前呼叫一次即可。2026-09-09 起 metric_definitions 只有一個
-// spec JSON 欄位，直接存整個 MetricDefinitionSpec——不用再做任何形狀轉換（原本的
-// legacyAllowedArrays() adapter 已經整個刪除，這是它唯一的消費端）。
-export const upsertMetricDefinition = async (spec: MetricDefinitionSpec): Promise<void> => {
-  await analysisPrisma.metricDefinition.upsert({
-    where: { metricCode: spec.metricCode },
-    create: { metricCode: spec.metricCode, spec },
-    update: { spec },
-  });
-};
+// 2026-09-17 重構 Phase 2：metric_definitions 的 upsert 搬到 infrastructure/repositories/analysis/
+// metricDefinitionRepository.ts（registry 本身從此不碰 Prisma），這裡 re-export 給既有的
+// backfill 腳本/測試呼叫端；Phase 3 改由 bootstrap 綁定後這個 re-export 會拿掉。
+export { upsertMetricDefinition } from '@/infrastructure/repositories/analysis/metricDefinitionRepository';

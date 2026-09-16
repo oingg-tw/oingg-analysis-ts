@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toMultipleFromThousands } from '@/domain/metrics/shared/numericHelpers';
 import { financialDataAdapter, type IncomeStatementPort, type MarketCapPort } from '@/application/metrics/shared/ports/financialDataPorts';
-import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { getResearchAndDevelopmentExpense as getRdExpenseXbrl } from '@/infrastructure/repositories/mops/incomeStatementXbrlExtra';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -14,13 +14,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 // 舊表沒有 fallback）；市值查詢邏輯同 evEbitda/psr。只有 TTM 一種 basis。
 
 const getResearchAndDevelopmentExpense = async (key: { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string }): Promise<bigint | null> => {
-  const rows = await mopsExportPrisma.$queryRaw<{ research_and_development_expense: bigint | null }[]>`
-    SELECT research_and_development_expense FROM "export"."quarterly_income_statement_xbrl"
-    WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
-      AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}
-    LIMIT 1
-  `;
-  return rows[0]?.research_and_development_expense ?? null;
+  return getRdExpenseXbrl(key);
 };
 
 export type PriceToResearchRatioPitOutcome = StandardBasisPitOutcome;

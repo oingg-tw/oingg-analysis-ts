@@ -1,4 +1,4 @@
-import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { listDailyCadenceMetricHistoryRows } from '@/infrastructure/repositories/analysis/metricValueRepository';
 import type { LookbackRange, SamplingInterval, SnapshotCadence } from '../../../domain/metrics/metricBasis';
 import type { MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
 
@@ -26,10 +26,7 @@ export const getDailyCadenceMetricHistory = async (
   subsidiaryCompanyId: string,
   limit: number
 ): Promise<MetricHistoryResult> => {
-  const rows = await analysisPrisma.metricDailyCadenceValue.findMany({
-    where: { symbol, metricCode, ...coordinate, dataType, subsidiaryCompanyId },
-    orderBy: [{ tradeDate: 'desc' }, { knowledgeDate: 'desc' }],
-  });
+  const rows = await listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType, subsidiaryCompanyId);
 
   // 依 tradeDate 去重取最大 knowledgeDate 那筆——理論上同一個 tradeDate 只會有一筆
   // （每個交易日只重算一次），這裡跟季報型的 dedup 邏輯一致，防禦同一天重編疊加的情境。

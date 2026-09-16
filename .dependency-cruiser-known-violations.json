@@ -58,8 +58,8 @@
   {
     "type": "dependency",
     "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/equityRiskPremiumCache.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/equityRiskPremiumCache",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -72,8 +72,8 @@
   {
     "type": "dependency",
     "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
+    "to": "src/infrastructure/repositories/gov/govBondYield.ts",
+    "unresolvedTo": "@/infrastructure/repositories/gov/govBondYield",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -86,8 +86,8 @@
   {
     "type": "dependency",
     "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
+    "to": "src/infrastructure/repositories/twse/taiexIndex.ts",
+    "unresolvedTo": "@/infrastructure/repositories/twse/taiexIndex",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -100,8 +100,8 @@
   {
     "type": "dependency",
     "from": "src/application/macro/govBondYield10y/service.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
+    "to": "src/infrastructure/repositories/gov/govBondYield.ts",
+    "unresolvedTo": "@/infrastructure/repositories/gov/govBondYield",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -563,8 +563,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/growth/priceToResearchRatio/computePriceToResearchRatioPit.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
+    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlExtra.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlExtra",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -577,8 +577,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/growth/rdIntensity/computeRdIntensityPit.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
+    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlExtra.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlExtra",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -605,8 +605,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/growth/rdIntensity/getRdIntensityProvenance.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
+    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlExtra.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlExtra",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -731,11 +731,11 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/metricDefinitionRegistry.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricDefinitionRepository.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricDefinitionRepository",
     "dependencyTypes": [
       "undetermined",
-      "import"
+      "export"
     ],
     "rule": {
       "severity": "error",
@@ -745,8 +745,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/metricValueWriter.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueRepository.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueRepository",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -2175,8 +2175,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/shared/queryDailyCadenceMetricHistory.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueRepository.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueRepository",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -2189,8 +2189,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/shared/queryMetricHistory.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
+    "to": "src/infrastructure/repositories/analysis/metricValueRepository.ts",
+    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueRepository",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -2203,8 +2203,8 @@
   {
     "type": "dependency",
     "from": "src/application/metrics/valuation/beta/computeBetaPit.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
+    "to": "src/infrastructure/repositories/twse/dailyPriceSeries.ts",
+    "unresolvedTo": "@/infrastructure/repositories/twse/dailyPriceSeries",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -6324,286 +6324,6 @@
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
     "dependencyTypes": [
       "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/equityRiskPremium/service.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/macro/govBondYield10y/service.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/growth/priceToResearchRatio/computePriceToResearchRatioPit.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/growth/rdIntensity/computeRdIntensityPit.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/growth/rdIntensity/getRdIntensityProvenance.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/metricDefinitionRegistry.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/metricValueWriter.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/queryDailyCadenceMetricHistory.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/shared/queryMetricHistory.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/metrics/valuation/beta/computeBetaPit.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/analysisClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/analysisClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/govExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/govExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/mopsExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/mopsExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/playwrightExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/playwrightExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/sitcaExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/sitcaExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/tpexExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/tpexExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/twseExportClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "prisma-only-in-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/bootstrap/db.ts",
-    "to": "src/infrastructure/prisma/twseExportDevClient.ts",
-    "unresolvedTo": "@/infrastructure/prisma/twseExportDevClient",
-    "dependencyTypes": [
-      "undetermined",
       "import"
     ],
     "rule": {

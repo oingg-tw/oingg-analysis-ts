@@ -1,4 +1,4 @@
-import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { listDailyClosesSince, listTaiexClosesSince, getEarliestTradeDate } from '@/infrastructure/repositories/twse/dailyPriceSeries';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import { writeMetricValue, type MetricValueWriteOutcome, rollingWindowGroup } from '../../metricValueWriter';
 import type { LookbackRange, SamplingInterval, MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -47,15 +47,6 @@ export interface BetaPitQuery {
   date?: Date; // 選填，格式對齊舊架構的 asOfDate；不給就抓「股價跟指數都有資料的最新一個重疊交易日」
   dataType: '1' | '2';
   subsidiaryCompanyId: string;
-}
-
-interface RawDailyPriceCloseRow {
-  trade_date: Date;
-  close: unknown;
-}
-
-interface RawDateRangeRow {
-  min_date: Date | null;
 }
 
 interface OverlapPoint {
@@ -175,33 +166,14 @@ export const computeAndWriteBetaPit = async (query: BetaPitQuery): Promise<BetaP
 
   const fiveYearsBack = subtractYears(date ?? new Date(), 5);
 
-  const [stockRows, indexRows, stockRangeRows] = await Promise.all([
-    date
-      ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
-          SELECT trade_date, close FROM "export"."daily_price"
-          WHERE symbol = ${symbol} AND trade_date >= ${fiveYearsBack} AND trade_date <= ${date}
-          ORDER BY trade_date ASC
-        `
-      : twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
-          SELECT trade_date, close FROM "export"."daily_price"
-          WHERE symbol = ${symbol} AND trade_date >= ${fiveYearsBack}
-          ORDER BY trade_date ASC
-        `,
-    date
-      ? twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
-          SELECT trade_date, close FROM "export"."daily_taiex_index"
-          WHERE trade_date >= ${fiveYearsBack} AND trade_date <= ${date}
-          ORDER BY trade_date ASC
-        `
-      : twseExportPrisma.$queryRaw<RawDailyPriceCloseRow[]>`
-          SELECT trade_date, close FROM "export"."daily_taiex_index"
-          WHERE trade_date >= ${fiveYearsBack}
-          ORDER BY trade_date ASC
-        `,
-    twseExportPrisma.$queryRaw<RawDateRangeRow[]>`SELECT MIN(trade_date) AS min_date FROM "export"."daily_price" WHERE symbol = ${symbol}`,
+  // 價格序列的 raw SQL 在 infrastructure/repositories/twse/dailyPriceSeries.ts（有指定 date 才加 <= 條件）。
+  const [stockRows, indexRows, earliestTradeDate] = await Promise.all([
+    listDailyClosesSince(symbol, fiveYearsBack, date),
+    listTaiexClosesSince(fiveYearsBack, date),
+    getEarliestTradeDate(symbol),
   ]);
 
-  if (stockRangeRows[0]?.min_date === null || stockRangeRows[0] === undefined) return skippedNoTradeDate;
+  if (earliestTradeDate === null) return skippedNoTradeDate;
 
   const indexByDate = new Map<string, number>();
   for (const row of indexRows) {
