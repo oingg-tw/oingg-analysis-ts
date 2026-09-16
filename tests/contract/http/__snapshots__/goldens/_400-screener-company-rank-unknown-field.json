@@ -1,0 +1,3 @@
+{
+  "message": "\"nope.TTM\" 不是可查詢的欄位——\"nope\" 不是已註冊的 metricCode，見 GET /metrics 確認可用清單。"
+}

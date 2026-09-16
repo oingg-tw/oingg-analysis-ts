@@ -1,0 +1,11 @@
+{
+  "message": "Invalid query parameters.",
+  "errors": {
+    "_errors": [],
+    "symbols": {
+      "_errors": [
+        "symbols is required."
+      ]
+    }
+  }
+}

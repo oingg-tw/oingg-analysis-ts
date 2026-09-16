@@ -112,4 +112,22 @@ describe('固定案例（精確 body，不是形狀）', () => {
     expect(res.status).toBe(400);
     expect(Object.keys(res.body)).toEqual(['message']);
   });
+
+  // 2026-09-17 Phase 4（薄 controller / validate middleware / errorHandler 接 AppError）之前補的精確 body 案例：
+  // 這幾種回應今天是各 controller 手寫的 res.status(...).json(...)，重構後改由 middleware/errorHandler 統一產出，
+  // 狀態碼跟 body 一個 byte 都不能變。
+  const exactCases: { slug: string; path: string; status: number }[] = [
+    { slug: '_404-stocks-quote-unknown-symbol', path: '/stocks/9999/quote', status: 404 },
+    { slug: '_404-companies-profile-unknown-symbol', path: '/companies/profile?symbol=9999', status: 404 },
+    { slug: '_400-stocks-prices-empty-symbols', path: '/stocks/prices?symbols=', status: 400 },
+    { slug: '_400-query-after-params', path: '/stocks/2330/foreign-shareholding-history?limit=0', status: 400 },
+    { slug: '_400-screener-company-rank-unknown-field', path: '/screener/company-rank?symbol=2330&field=nope.TTM&direction=desc', status: 400 },
+  ];
+  for (const c of exactCases) {
+    test(`${c.path} → ${c.status} 精確 body`, async () => {
+      const res = await harness.api.get(c.path).set('X-Api-Key', API_KEY);
+      expect(res.status).toBe(c.status);
+      await expect(JSON.stringify(res.body, null, 2)).toMatchFileSnapshot(`./__snapshots__/goldens/${c.slug}.json`);
+    });
+  }
 });
