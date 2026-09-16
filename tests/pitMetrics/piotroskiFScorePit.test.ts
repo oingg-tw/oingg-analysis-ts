@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWritePiotroskiFScorePit } from '@/domainPitMetrics/quality/piotroskiFScore/computePiotroskiFScorePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWritePiotroskiFScorePit } from '@/application/metrics/quality/piotroskiFScore/computePiotroskiFScorePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

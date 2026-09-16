@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillRdIntensityPit.ts
 
-import { computeAndWriteRdIntensityPit } from '../src/domainPitMetrics/growth/rdIntensity/computeRdIntensityPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRdIntensityPit } from '../src/application/metrics/growth/rdIntensity/computeRdIntensityPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

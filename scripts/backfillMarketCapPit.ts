@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillMarketCapPit.ts
 
-import { computeAndWriteMarketCapPit } from '../src/domainPitMetrics/valuation/marketCap/computeMarketCapPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteMarketCapPit } from '../src/application/metrics/valuation/marketCap/computeMarketCapPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

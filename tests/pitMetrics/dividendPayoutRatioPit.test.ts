@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteDividendPayoutRatioPit } from '@/domainPitMetrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteDividendPayoutRatioPit } from '@/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

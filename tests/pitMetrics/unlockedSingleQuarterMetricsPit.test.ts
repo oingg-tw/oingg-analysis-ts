@@ -1,9 +1,9 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteNonOperatingIncomeRatioPit } from '@/domainPitMetrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
-import { computeAndWriteEquityRatioPit } from '@/domainPitMetrics/resilience/equityRatio/computeEquityRatioPit';
-import { computeAndWriteCashToAssetsRatioPit } from '@/domainPitMetrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteNonOperatingIncomeRatioPit } from '@/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
+import { computeAndWriteEquityRatioPit } from '@/application/metrics/resilience/equityRatio/computeEquityRatioPit';
+import { computeAndWriteCashToAssetsRatioPit } from '@/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

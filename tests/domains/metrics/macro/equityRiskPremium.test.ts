@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateEquityRiskPremium } from '@/domainMacro/equityRiskPremium/service';
+import { calculateEquityRiskPremium } from '@/application/macro/equityRiskPremium/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';

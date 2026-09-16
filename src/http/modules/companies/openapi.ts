@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { registry } from '@/infrastructure/swagger/registry';
 import { capitalStockHistoryEntrySchema } from '@/infrastructure/repositories/mops/capitalStock';
-import { roeHistoryEntrySchema } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
-import { roaHistoryEntrySchema } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
-import { dupontHistoryEntrySchema } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
-import { metricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMetricHistory';
-import { multiMetricHistoryEntrySchema } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
+import { roeHistoryEntrySchema } from '@/application/metrics/profitability/roe/queryRoeHistory';
+import { roaHistoryEntrySchema } from '@/application/metrics/profitability/roa/queryRoaHistory';
+import { dupontHistoryEntrySchema } from '@/application/metrics/shared/dupont/queryDupontHistory';
+import { metricHistoryEntrySchema } from '@/application/metrics/shared/queryMetricHistory';
+import { multiMetricHistoryEntrySchema } from '@/application/metrics/shared/queryMultiMetricHistory';
 import { monthlyRevenueEntrySchema } from '@/infrastructure/repositories/twse/monthlyRevenue';
-import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
 import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,

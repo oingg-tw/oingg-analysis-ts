@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getMetricHistory } from '@/domainPitMetrics/shared/queryMetricHistory';
+import { getMetricHistory } from '@/application/metrics/shared/queryMetricHistory';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-07 使用者要求：total/hasMore 讓前端判斷要不要提供「看更長區間」的選項（例如

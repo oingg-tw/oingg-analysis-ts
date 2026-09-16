@@ -1,5 +1,5 @@
 import { registry } from '@/infrastructure/swagger/registry';
-import { govBondYield10yResultSchema } from '@/domainMacro/govBondYield10y/types';
+import { govBondYield10yResultSchema } from '@/application/macro/govBondYield10y/types';
 
 export const registerGovBondYield10yOpenApi = (): void => {
   registry.registerPath({

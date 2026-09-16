@@ -1,8 +1,8 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteBankIncomeWaterfallPit } from '@/domainPitMetrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
-import { computeAndWritePretaxIncomePerSharePit } from '@/domainPitMetrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteBankIncomeWaterfallPit } from '@/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfallPit';
+import { computeAndWritePretaxIncomePerSharePit } from '@/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerSharePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';

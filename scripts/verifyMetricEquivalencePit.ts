@@ -27,8 +27,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
-import { computeAndWriteBetaPit } from '../src/domainPitMetrics/valuation/beta/computeBetaPit';
-import { computeAndWriteMarketRatiosPit } from '../src/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
+import { computeAndWriteBetaPit } from '../src/application/metrics/valuation/beta/computeBetaPit';
+import { computeAndWriteMarketRatiosPit } from '../src/application/metrics/shared/marketRatios/computeMarketRatiosPit';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 

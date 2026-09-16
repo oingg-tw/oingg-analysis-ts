@@ -1,15 +1,15 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
-import { getRoeHistory } from '@/domainPitMetrics/profitability/roe/queryRoeHistory';
-import { getRoaHistory } from '@/domainPitMetrics/profitability/roa/queryRoaHistory';
-import { getDupontHistory } from '@/domainPitMetrics/shared/dupont/queryDupontHistory';
-import { getMetricHistory } from '@/domainPitMetrics/shared/queryMetricHistory';
-import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDailyCadenceMetricHistory';
-import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
+import { getRoeHistory } from '@/application/metrics/profitability/roe/queryRoeHistory';
+import { getRoaHistory } from '@/application/metrics/profitability/roa/queryRoaHistory';
+import { getDupontHistory } from '@/application/metrics/shared/dupont/queryDupontHistory';
+import { getMetricHistory } from '@/application/metrics/shared/queryMetricHistory';
+import { getDailyCadenceMetricHistory } from '@/application/metrics/shared/queryDailyCadenceMetricHistory';
+import { getMultiMetricHistory } from '@/application/metrics/shared/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/infrastructure/repositories/twse/monthlyRevenue';
 import { resolveTimeframeForMetric, ScreenerValidationError } from '@/http/modules/screener/fieldResolver';
-import type { PeriodType, LookbackRange, SamplingInterval } from '@/domainPitMetrics/metricBasis';
+import type { PeriodType, LookbackRange, SamplingInterval } from '@/domain/metrics/metricBasis';
 
 // 查無資料回傳空陣列，不是 404——mops 這批資料目前不是每家公司都有覆蓋，「查無股本異動
 // 歷史」是正常情境，不代表這家公司不存在（公司存不存在是 /companies/profile 負責判斷的事）。

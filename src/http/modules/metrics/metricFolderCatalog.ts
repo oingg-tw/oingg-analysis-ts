@@ -1,10 +1,10 @@
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { validTimeframesForMetric } from '@/http/modules/screener/fieldResolver';
-import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
-import { getBadgeForMetric } from '@/domainPitMetrics/badgeRegistry';
-import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
+import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
+import { getBadgeForMetric } from '@/domain/metrics/badgeRegistry';
+import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
 // 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
@@ -27,7 +27,10 @@ import type { MetricBadge } from '@/domainPitMetrics/metricDefinitionSpec';
 // metric_code」的編排資料夾（turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/
 // cashFlowPerShare/liquidityRatio，資料夾名稱本身都不是 metricCode，也沒有任何 metricCode
 // 宣告 folderName 指向它們）會被自然濾掉，不用額外維護排除清單。
-const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domainPitMetrics');
+// 2026-09-17 重構 Phase 0.5：指標定義（*Definition.ts）搬到 src/domain/metrics/<分類>/<指標>/，
+// 資料夾結構不變，掃描根目錄跟著改（這是 [move-only] commit 裡唯一允許的非 import 修改）。
+// Phase 3 會把這個執行期資料夾掃描整個換成 registry 推導（prod image 就不用再帶 src/）。
+const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domain', 'metrics');
 
 // 2026-09-09 web-nuxt 回報：指標本身已經有 displayName，但分類這一層完全沒有中文（前端只能
 // 顯示 categoryKey 這種英文字串當資料夾名稱，跟旁邊指標的中文名稱並排很突兀）。這裡補上

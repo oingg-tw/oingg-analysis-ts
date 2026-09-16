@@ -1,7 +1,7 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { scanMetricFolderCatalog } from '@/http/modules/metrics/metricFolderCatalog';
-import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { validTimeframesForMetric } from '@/http/modules/screener/fieldResolver';
 
 // 2026-09-08：取代舊架構的 filterCatalog.csv（連同整套 filterCatalog/screener/

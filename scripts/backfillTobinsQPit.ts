@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillTobinsQPit.ts
 
-import { computeAndWriteTobinsQPit } from '../src/domainPitMetrics/valuation/tobinsQ/computeTobinsQPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteTobinsQPit } from '../src/application/metrics/valuation/tobinsQ/computeTobinsQPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

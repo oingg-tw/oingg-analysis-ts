@@ -13,8 +13,8 @@
 //
 // 用法：pnpm tsx scripts/backfillZDoublePrimeManufacturingExclusionPit.ts
 
-import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/domainPitMetrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/application/metrics/resilience/altmanZDoublePrimeScore/computeAltmanZDoublePrimeScorePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { govExportPrisma } from '../src/infrastructure/prisma/govExportClient';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';

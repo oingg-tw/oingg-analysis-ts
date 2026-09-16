@@ -6,16 +6,16 @@
 // 用法：pnpm tsx scripts/backfillPerShareAndCashFlowPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前兩批 backfill 腳本同一組）。
 
-import { computeAndWriteEpsPit } from '../src/domainPitMetrics/profitability/eps/computeEpsPit';
-import { computeAndWriteBvpsPit } from '../src/domainPitMetrics/valuation/bvps/computeBvpsPit';
-import { computeAndWriteRevenuePerSharePit } from '../src/domainPitMetrics/profitability/revenuePerShare/computeRevenuePerSharePit';
-import { computeAndWriteDividendPayoutRatioPit } from '../src/domainPitMetrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
-import { computeAndWriteSgrPit } from '../src/domainPitMetrics/growth/sgr/computeSgrPit';
-import { computeAndWriteCashFlowPerSharePit } from '../src/domainPitMetrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
-import { computeAndWriteOcfToNetIncomePit } from '../src/domainPitMetrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
-import { computeAndWriteAccrualsRatioPit } from '../src/domainPitMetrics/quality/accrualsRatio/computeAccrualsRatioPit';
-import { computeAndWriteFcfYieldPit } from '../src/domainPitMetrics/valuation/fcfYield/computeFcfYieldPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteEpsPit } from '../src/application/metrics/profitability/eps/computeEpsPit';
+import { computeAndWriteBvpsPit } from '../src/application/metrics/valuation/bvps/computeBvpsPit';
+import { computeAndWriteRevenuePerSharePit } from '../src/application/metrics/profitability/revenuePerShare/computeRevenuePerSharePit';
+import { computeAndWriteDividendPayoutRatioPit } from '../src/application/metrics/dividend/dividendPayoutRatio/computeDividendPayoutRatioPit';
+import { computeAndWriteSgrPit } from '../src/application/metrics/growth/sgr/computeSgrPit';
+import { computeAndWriteCashFlowPerSharePit } from '../src/application/metrics/quality/cashFlowPerShare/computeCashFlowPerSharePit';
+import { computeAndWriteOcfToNetIncomePit } from '../src/application/metrics/quality/ocfToNetIncome/computeOcfToNetIncomePit';
+import { computeAndWriteAccrualsRatioPit } from '../src/application/metrics/quality/accrualsRatio/computeAccrualsRatioPit';
+import { computeAndWriteFcfYieldPit } from '../src/application/metrics/valuation/fcfYield/computeFcfYieldPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';

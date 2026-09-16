@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillPegRatioPit.ts
 
-import { computeAndWritePegRatioPit } from '../src/domainPitMetrics/valuation/pegRatio/computePegRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWritePegRatioPit } from '../src/application/metrics/valuation/pegRatio/computePegRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

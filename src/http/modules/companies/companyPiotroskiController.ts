@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { getPiotroskiFScoreBreakdown } from '@/domainPitMetrics/quality/piotroskiFScore/getPiotroskiFScoreBreakdown';
+import { getPiotroskiFScoreBreakdown } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreBreakdown';
 
 export const getCompanyPiotroskiBreakdownQuerySchema = z
   .object({

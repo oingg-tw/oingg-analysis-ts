@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteMarketRatiosPit } from '@/domainPitMetrics/shared/marketRatios/computeMarketRatiosPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteMarketRatiosPit } from '@/application/metrics/shared/marketRatios/computeMarketRatiosPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

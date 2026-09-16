@@ -4,10 +4,10 @@
 //
 // 用法：pnpm tsx scripts/backfillCagrFamiliesPit.ts
 
-import { computeAndWriteRevenueCagrFamilyPit } from '../src/domainPitMetrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
-import { computeAndWriteEpsCagrFamilyPit } from '../src/domainPitMetrics/growth/epsCagr/computeEpsCagrFamilyPit';
-import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/domainPitMetrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRevenueCagrFamilyPit } from '../src/application/metrics/growth/revenueCagr/computeRevenueCagrFamilyPit';
+import { computeAndWriteEpsCagrFamilyPit } from '../src/application/metrics/growth/epsCagr/computeEpsCagrFamilyPit';
+import { computeAndWriteDividendGrowthRateFamilyPit } from '../src/application/metrics/dividend/dividendGrowthRate/computeDividendGrowthRateFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

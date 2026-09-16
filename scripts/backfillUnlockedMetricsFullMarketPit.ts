@@ -7,13 +7,13 @@
 // 用法：pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts
 //      PILOT_LIMIT=30 pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts（小批次測試）
 
-import { computeAndWriteCashFlowValuationFamilyPit } from '../src/domainPitMetrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
-import { computeAndWriteLeverageDegreeFamilyPit } from '../src/domainPitMetrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
-import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/domainPitMetrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
-import { computeAndWriteEquityRatioPit } from '../src/domainPitMetrics/resilience/equityRatio/computeEquityRatioPit';
-import { computeAndWriteCashToAssetsRatioPit } from '../src/domainPitMetrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
-import { computeAndWriteTurnoverRatioFamilyPit } from '../src/domainPitMetrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteCashFlowValuationFamilyPit } from '../src/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamilyPit';
+import { computeAndWriteLeverageDegreeFamilyPit } from '../src/application/metrics/resilience/leverageDegreeFamily/computeLeverageDegreeFamilyPit';
+import { computeAndWriteNonOperatingIncomeRatioPit } from '../src/application/metrics/profitability/nonOperatingIncomeRatio/computeNonOperatingIncomeRatioPit';
+import { computeAndWriteEquityRatioPit } from '../src/application/metrics/resilience/equityRatio/computeEquityRatioPit';
+import { computeAndWriteCashToAssetsRatioPit } from '../src/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatioPit';
+import { computeAndWriteTurnoverRatioFamilyPit } from '../src/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

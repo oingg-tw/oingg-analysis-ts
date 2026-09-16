@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { evaluateCompanyMetricCompleteness } from '@/domainPitMetrics/shared/completeness/evaluateCompanyMetricCompleteness';
+import { evaluateCompanyMetricCompleteness } from '@/application/metrics/shared/completeness/evaluateCompanyMetricCompleteness';
 
 export const getCompanyMetricCompletenessQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),

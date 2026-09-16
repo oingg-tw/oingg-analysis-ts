@@ -5,10 +5,10 @@
 //
 // 用法：pnpm tsx scripts/backfillQuickWinsPit.ts
 
-import { computeAndWriteAssetGrowthPit } from '../src/domainPitMetrics/growth/assetGrowth/computeAssetGrowthPit';
-import { computeAndWriteConsecutiveProfitYearsPit } from '../src/domainPitMetrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
-import { computeAndWriteEarningsYieldPit } from '../src/domainPitMetrics/valuation/earningsYield/computeEarningsYieldPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteAssetGrowthPit } from '../src/application/metrics/growth/assetGrowth/computeAssetGrowthPit';
+import { computeAndWriteConsecutiveProfitYearsPit } from '../src/application/metrics/quality/consecutiveProfitYears/computeConsecutiveProfitYearsPit';
+import { computeAndWriteEarningsYieldPit } from '../src/application/metrics/valuation/earningsYield/computeEarningsYieldPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

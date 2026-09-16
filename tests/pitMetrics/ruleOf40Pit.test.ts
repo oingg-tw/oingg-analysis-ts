@@ -1,7 +1,7 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRuleOf40Pit } from '@/domainPitMetrics/growth/ruleOf40/computeRuleOf40Pit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRuleOf40Pit } from '@/application/metrics/growth/ruleOf40/computeRuleOf40Pit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';

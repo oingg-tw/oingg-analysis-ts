@@ -4,9 +4,9 @@
 //
 // 用法：pnpm tsx scripts/backfillIncomeStatementDividendPerSharePit.ts
 
-import { computeAndWriteIncomeStatementPerSharePit } from '../src/domainPitMetrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit';
-import { computeAndWriteDividendPerSharePit } from '../src/domainPitMetrics/dividend/dividendPerShare/computeDividendPerSharePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteIncomeStatementPerSharePit } from '../src/application/metrics/profitability/incomeStatementPerShare/computeIncomeStatementPerSharePit';
+import { computeAndWriteDividendPerSharePit } from '../src/application/metrics/dividend/dividendPerShare/computeDividendPerSharePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

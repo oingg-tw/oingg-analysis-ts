@@ -6,10 +6,10 @@
 //
 // 用法：pnpm tsx scripts/backfillShareholderPolicyPit.ts
 
-import { computeAndWriteBuybackYieldPit } from '../src/domainPitMetrics/dividend/buybackYield/computeBuybackYieldPit';
-import { computeAndWriteDividendCoverageRatioPit } from '../src/domainPitMetrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
-import { computeAndWriteShareCountChangeRatePit } from '../src/domainPitMetrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteBuybackYieldPit } from '../src/application/metrics/dividend/buybackYield/computeBuybackYieldPit';
+import { computeAndWriteDividendCoverageRatioPit } from '../src/application/metrics/dividend/dividendCoverageRatio/computeDividendCoverageRatioPit';
+import { computeAndWriteShareCountChangeRatePit } from '../src/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRatePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

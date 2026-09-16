@@ -1,8 +1,8 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { computeAndWriteRoePit, resolveRoeQuarterData } from '@/domainPitMetrics/profitability/roe/computeRoePit';
-import type { IncomeStatementPort, BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteRoePit, resolveRoeQuarterData } from '@/application/metrics/profitability/roe/computeRoePit';
+import type { IncomeStatementPort, BalanceSheetPort } from '@/application/metrics/shared/ports/financialDataPorts';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 

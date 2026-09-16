@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
+import { getMultiMetricHistory } from '@/application/metrics/shared/queryMultiMetricHistory';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-07 使用者要「五年三率」（毛利率/營業利益率/淨利率）一次抓齊，新增泛化版

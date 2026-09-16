@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { PILOT_PROVENANCE_METRIC_CODES } from '@/domainPitMetrics/shared/provenance/provenanceTypes';
-import { PROVENANCE_RESOLVERS } from '@/domainPitMetrics/shared/provenance/provenanceResolvers';
+import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
+import { PROVENANCE_RESOLVERS } from '@/application/metrics/shared/provenance/provenanceResolvers';
 
 export const getCompanyMetricProvenanceQuerySchema = z
   .object({

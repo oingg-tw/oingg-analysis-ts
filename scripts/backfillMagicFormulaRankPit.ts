@@ -17,11 +17,11 @@
 //
 // 用法：pnpm tsx scripts/backfillMagicFormulaRankPit.ts
 
-import { computeAndWriteGreenblattRocPit } from '../src/domainPitMetrics/profitability/greenblattRoc/computeGreenblattRocPit';
-import { computeAndWriteGreenblattEarningsYieldPit } from '../src/domainPitMetrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
+import { computeAndWriteGreenblattRocPit } from '../src/application/metrics/profitability/greenblattRoc/computeGreenblattRocPit';
+import { computeAndWriteGreenblattEarningsYieldPit } from '../src/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYieldPit';
 import { isFinancialIndustryCompany } from '../src/infrastructure/repositories/exchange/securitiesIndustry';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
-import { writeMetricValue, periodTypeGroup } from '../src/domainPitMetrics/metricValueWriter';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
+import { writeMetricValue, periodTypeGroup } from '../src/application/metrics/metricValueWriter';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';

@@ -4,8 +4,8 @@
 //
 // 用法：pnpm tsx scripts/backfillConsecutiveDividendYearsPit.ts
 
-import { computeAndWriteConsecutiveDividendYearsPit } from '../src/domainPitMetrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteConsecutiveDividendYearsPit } from '../src/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYearsPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

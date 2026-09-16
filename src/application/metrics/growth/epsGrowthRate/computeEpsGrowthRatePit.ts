@@ -1,0 +1,64 @@
+import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { calculateYoyGrowthRate } from '@/domain/metrics/shared/numericHelpers';
+import { pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { financialDataAdapter, type IncomeStatementPort, type PaidInSharesPort } from '@/application/metrics/shared/ports/financialDataPorts';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
+import { resolveKnowledgeDate } from '../../knowledgeDate';
+
+import { writeOrSkip } from '../../metricValueWriter';
+import type { StandardBasisPitOutcome } from '../../pitOutcome';
+
+// 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 一致）。
+const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
+  if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
+  return Math.round(((Number(netIncomeInThousands) * 1000) / Number(shares)) * 100) / 100;
+};
+
+export type EpsGrowthRatePitOutcome = StandardBasisPitOutcome;
+
+// EPS 成長率（單季年增率）= (本季 EPS - 去年同季 EPS) / |去年同季 EPS| * 100——獨立重新計算
+// 本季/去年同季各自的 EPS（不依賴 eps 這個 metric_code 已寫入的值，跟 sgr 對 roe/
+// dividendPayoutRatio 的既有做法一致），流通股數各自用當下報告日對應的股本（不是固定用
+// 本季股本回推去年，避免股本異動時失真）。只有 Q 一種 basis。
+export const computeAndWriteEpsGrowthRatePit = async (query: QuarterlyMetricQuery, statements: IncomeStatementPort & PaidInSharesPort = financialDataAdapter): Promise<EpsGrowthRatePitOutcome> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement']);
+
+  if (!resolvedQuarter) {
+    return { symbol, rocYear: null, season: null, q: { action: 'skipped_no_quarter' } };
+  }
+
+  const { year, season } = resolvedQuarter;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
+  const fiscalYear = rocYearToGregorian(rocYear);
+
+  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
+  const incomeStatement = await statements.getIncomeStatement(key);
+  const reportDate = incomeStatement?.reportDate ?? null;
+  const currentShares = reportDate ? (await statements.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentEps = toEps(pickNetIncome(incomeStatement).value, currentShares);
+
+  const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
+  const priorIncomeStatement = await statements.getIncomeStatement({
+    symbol,
+    year: Number(prior.year),
+    quarter: Number(prior.season),
+    dataType,
+    subsidiaryCompanyId,
+  });
+  const priorReportDate = priorIncomeStatement?.reportDate ?? null;
+  const priorShares = priorReportDate ? (await statements.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorEps = toEps(pickNetIncome(priorIncomeStatement).value, priorShares);
+
+  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps);
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }]);
+  const coordinateBase = { symbol, metricCode: 'epsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = await writeOrSkip(mainAnchor, coordinateBase, 'Q', growthRate, nullReason);
+
+  return { symbol, rocYear: year, season, q };
+};

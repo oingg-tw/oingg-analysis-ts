@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillOperatingExpenseRatioPit.ts
 
-import { computeAndWriteOperatingExpenseRatioPit } from '../src/domainPitMetrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteOperatingExpenseRatioPit } from '../src/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

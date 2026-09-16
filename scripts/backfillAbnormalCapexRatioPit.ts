@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillAbnormalCapexRatioPit.ts
 
-import { computeAndWriteAbnormalCapexRatioPit } from '../src/domainPitMetrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteAbnormalCapexRatioPit } from '../src/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatioPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

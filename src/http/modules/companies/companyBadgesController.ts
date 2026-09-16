@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { evaluateCompanyBadges } from '@/domainPitMetrics/shared/badges/evaluateCompanyBadges';
+import { evaluateCompanyBadges } from '@/application/metrics/shared/badges/evaluateCompanyBadges';
 
 export const getCompanyBadgesQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),

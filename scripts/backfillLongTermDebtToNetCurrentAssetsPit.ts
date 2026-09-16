@@ -5,8 +5,8 @@
 //
 // 用法：pnpm tsx scripts/backfillLongTermDebtToNetCurrentAssetsPit.ts
 
-import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/domainPitMetrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/application/metrics/resilience/longTermDebtToNetCurrentAssets/computeLongTermDebtToNetCurrentAssetsPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';

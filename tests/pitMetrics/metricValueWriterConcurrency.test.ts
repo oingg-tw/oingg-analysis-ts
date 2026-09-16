@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { writeMetricValue, periodTypeGroup } from '@/domainPitMetrics/metricValueWriter';
+import { writeMetricValue, periodTypeGroup } from '@/application/metrics/metricValueWriter';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 
 // 2026-09-11：全市場 backfill 平行化後真實發生過的 race condition——writeMetricValue

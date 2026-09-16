@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillFamaFrenchOperatingProfitabilityPit.ts
 
-import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/domainPitMetrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitabilityPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

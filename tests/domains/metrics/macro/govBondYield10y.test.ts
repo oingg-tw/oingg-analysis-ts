@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getLatestGovBondYield10y } from '@/domainMacro/govBondYield10y/service';
+import { getLatestGovBondYield10y } from '@/application/macro/govBondYield10y/service';
 import { govExportPrisma } from '@/infrastructure/prisma/govExportClient';
 
 interface LatestGovBondYieldRow {

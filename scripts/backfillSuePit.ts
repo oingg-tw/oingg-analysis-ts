@@ -2,8 +2,8 @@
 //
 // 用法：pnpm tsx scripts/backfillSuePit.ts
 
-import { computeAndWriteSuePit } from '../src/domainPitMetrics/growth/sue/computeSuePit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteSuePit } from '../src/application/metrics/growth/sue/computeSuePit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/infrastructure/prisma/analysisClient';
 

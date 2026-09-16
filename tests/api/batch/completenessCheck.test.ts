@@ -1,8 +1,8 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { checkJobCompleteness } from '@/http/batch/completenessCheck';
-import { computeAndWriteBankAssetQualityFamilyPit } from '@/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
-import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
+import { computeAndWriteBankAssetQualityFamilyPit } from '@/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
+import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { IndicatorJob } from '@/http/batch/indicatorJob';
