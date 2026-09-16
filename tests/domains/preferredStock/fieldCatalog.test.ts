@@ -1,6 +1,6 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { PREFERRED_STOCK_FIELD_CATALOG, FORMULA_MAX_LENGTH, findOverlongFormulas } from '@/api/bff/preferredStock/fieldCatalog';
+import { PREFERRED_STOCK_FIELD_CATALOG, FORMULA_MAX_LENGTH, findOverlongFormulas } from '@/http/modules/preferredStock/fieldCatalog';
 
 describe('PREFERRED_STOCK_FIELD_CATALOG', () => {
   test('真正的 catalog 裡每一筆 formula 文案都不超過長度上限（module 載入時已經檢查過一次，這裡再驗證一次讓失敗原因在測試報告裡看得到）', () => {

@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { compareBySortField } from '@/api/bff/preferredStock/controller';
+import { compareBySortField } from '@/http/modules/preferredStock/controller';
 
 test('compareBySortField: 數值欄位 asc/desc 排序', () => {
   const a = { ytcPct: 3 };

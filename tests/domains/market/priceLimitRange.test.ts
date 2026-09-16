@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getPriceLimitRange } from '@/api/bff/market/priceLimitRange/service';
+import { getPriceLimitRange } from '@/http/modules/market/priceLimitRange/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 test('getPriceLimitRange: widest/narrowest 都應該依 rank 遞增，且不超過 20 筆', async () => {

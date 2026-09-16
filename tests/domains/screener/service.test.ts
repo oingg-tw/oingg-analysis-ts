@@ -1,6 +1,6 @@
 import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/api/bff/screener/service';
+import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from '@/http/modules/screener/service';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
 

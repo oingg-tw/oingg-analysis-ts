@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { PREFERRED_STOCK_FIELD_CATALOG } from '@/api/bff/preferredStock/fieldCatalog';
-import { preferredStockFieldCatalogEntrySchema } from '@/api/bff/preferredStock/types';
+import { PREFERRED_STOCK_FIELD_CATALOG } from '@/http/modules/preferredStock/fieldCatalog';
+import { preferredStockFieldCatalogEntrySchema } from '@/http/modules/preferredStock/types';
 
 test('PREFERRED_STOCK_FIELD_CATALOG: 每一筆都符合 schema，field/formula/inputs 都不是空字串', () => {
   assert.ok(PREFERRED_STOCK_FIELD_CATALOG.length > 0);

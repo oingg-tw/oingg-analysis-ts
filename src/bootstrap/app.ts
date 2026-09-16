@@ -4,7 +4,7 @@ import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { logger } from '@/infrastructure/logger';
 import { swaggerUi, swaggerSpec } from '@/bootstrap/openapi';
-import routes from '@/routes';
+import routes from '@/http/routes';
 import errorHandler from '@/http/middleware/errorHandler';
 
 // 2026-09-17 clean architecture 重構 Phase 0：把「組 express app」從 src/index.ts 抽出來，

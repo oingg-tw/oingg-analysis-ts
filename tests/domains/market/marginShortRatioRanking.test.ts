@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateMarginShortRatioRanking } from '@/api/bff/market/marginShortRatioRanking/service';
+import { calculateMarginShortRatioRanking } from '@/http/modules/market/marginShortRatioRanking/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';

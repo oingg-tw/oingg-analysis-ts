@@ -1,11 +1,11 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { checkJobCompleteness } from '@/api/batch/completenessCheck';
+import { checkJobCompleteness } from '@/http/batch/completenessCheck';
 import { computeAndWriteBankAssetQualityFamilyPit } from '@/domainPitMetrics/resilience/bankAssetQuality/computeBankAssetQualityFamilyPit';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
-import type { IndicatorJob } from '@/api/batch/indicatorJob';
+import type { IndicatorJob } from '@/http/batch/indicatorJob';
 
 // checkJobCompleteness 現在只走 pitMetrics 的 metric_values 這一條路徑（舊架構「一指標
 // 一張獨立 Result 表」的 model 已經全部退場，連同 filterCatalog/metricTableRegistry 這套

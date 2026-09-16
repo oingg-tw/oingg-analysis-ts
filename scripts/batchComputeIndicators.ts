@@ -10,8 +10,8 @@
 // 結束——runBatchCompute() 本身刻意不管連線生命週期（也被跑在長駐伺服器裡的 HTTP route
 // 共用，不能讓它幫忙斷線），見 runner.ts 的說明。
 
-import { runBatchCompute } from '../src/api/batch/runner';
-import { indicatorJobs } from '../src/api/batch/indicatorRegistry';
+import { runBatchCompute } from '../src/http/batch/runner';
+import { indicatorJobs } from '../src/http/batch/indicatorRegistry';
 import { mopsExportPrisma } from '../src/infrastructure/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '../src/infrastructure/prisma/tpexExportClient';

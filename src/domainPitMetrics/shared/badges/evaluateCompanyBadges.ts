@@ -1,4 +1,4 @@
-import { scanMetricFolderCatalog } from '@/api/bff/metrics/metricFolderCatalog';
+import { scanMetricFolderCatalog } from '@/http/modules/metrics/metricFolderCatalog';
 import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
 import type { MetricBadge } from '../../metricDefinitionSpec';
 import type { MetricNullReason } from '../../metricBasis';

@@ -1,4 +1,4 @@
-import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
+import { resolveTimeframeForMetric, ScreenerValidationError } from '@/http/modules/screener/fieldResolver';
 import { getMetricHistory } from './queryMetricHistory';
 import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
 import type { MetricNullReason } from '../metricBasis';

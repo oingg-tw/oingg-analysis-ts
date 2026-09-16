@@ -8,7 +8,7 @@ import { getMetricHistory } from '@/domainPitMetrics/shared/queryMetricHistory';
 import { getDailyCadenceMetricHistory } from '@/domainPitMetrics/shared/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/domainPitMetrics/shared/queryMultiMetricHistory';
 import { getMonthlyRevenueHistory } from '@/infrastructure/repositories/twse/monthlyRevenue';
-import { resolveTimeframeForMetric, ScreenerValidationError } from '@/api/bff/screener/fieldResolver';
+import { resolveTimeframeForMetric, ScreenerValidationError } from '@/http/modules/screener/fieldResolver';
 import type { PeriodType, LookbackRange, SamplingInterval } from '@/domainPitMetrics/metricBasis';
 
 // 查無資料回傳空陣列，不是 404——mops 這批資料目前不是每家公司都有覆蓋，「查無股本異動

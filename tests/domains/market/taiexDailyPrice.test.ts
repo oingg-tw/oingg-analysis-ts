@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getTaiexDailyPrice } from '@/api/bff/market/taiexDailyPrice/service';
+import { getTaiexDailyPrice } from '@/http/modules/market/taiexDailyPrice/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 test('getTaiexDailyPrice: 應該回傳依交易日由舊到新排序的序列，且限制筆數', async () => {

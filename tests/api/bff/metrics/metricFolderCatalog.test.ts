@@ -1,8 +1,8 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { scanMetricFolderCatalog } from '@/api/bff/metrics/metricFolderCatalog';
+import { scanMetricFolderCatalog } from '@/http/modules/metrics/metricFolderCatalog';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { validTimeframesForMetric } from '@/api/bff/screener/fieldResolver';
+import { validTimeframesForMetric } from '@/http/modules/screener/fieldResolver';
 
 // 2026-09-08：取代舊架構的 filterCatalog.csv（連同整套 filterCatalog/screener/
 // metricsService 機制一起退場，見 abstract-crafting-journal.md）——這支直接掃描

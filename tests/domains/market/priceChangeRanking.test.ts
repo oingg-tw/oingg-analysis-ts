@@ -1,6 +1,6 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculatePriceChangeRanking } from '@/api/bff/market/priceChangeRanking/service';
+import { calculatePriceChangeRanking } from '@/http/modules/market/priceChangeRanking/service';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
