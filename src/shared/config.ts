@@ -11,4 +11,7 @@ export const config = {
   // （見 api/batch/daily/controller.ts、api/batch/quarterly/controller.ts 的說明），
   // /（健康檢查）跟 /api-docs 也不需要。
   bffApiKey: process.env.BFF_API_KEY || null,
+  // 沒設就依環境決定（正式 info、開發 debug，見 logger.ts）；測試 harness 設成 'silent'
+  // 讓 supertest 打進來的請求不要洗版。
+  logLevel: process.env.LOG_LEVEL || null,
 };

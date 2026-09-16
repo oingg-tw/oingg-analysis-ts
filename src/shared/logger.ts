@@ -7,8 +7,9 @@ import { config } from './config';
 // 進度、src/index.ts 的啟動流程）；HTTP 請求本身的存取記錄走 pino-http（見 index.ts），
 // 兩者共用同一個 pino instance 才會是同一份 log stream。
 export const logger = pino({
-  level: config.isProduction ? 'info' : 'debug',
-  transport: config.isProduction
+  level: config.logLevel ?? (config.isProduction ? 'info' : 'debug'),
+  // silent 時連 pino-pretty 的 worker thread 都不要開，測試 process 才能乾淨結束。
+  transport: config.isProduction || config.logLevel === 'silent'
     ? undefined
     : {
         target: 'pino-pretty',

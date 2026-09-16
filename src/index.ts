@@ -2,62 +2,16 @@ import 'dotenv/config'; // Load environment variables from .env file
 
 const startTime = process.hrtime(); // Start timing before any other imports
 
-import express from 'ultimate-express';
-import helmet from 'helmet';
-import cors from 'cors';
-import pinoHttp from 'pino-http';
 import { logger } from './shared/logger';
-import { connectAnalysisDb } from './adapters/prisma/analysisClient';
-import { connectMopsExportDb } from './adapters/prisma/mopsExportClient';
-import { connectGovExportDb } from './adapters/prisma/govExportClient';
-import { connectPlaywrightExportDb } from './adapters/prisma/playwrightExportClient';
-import { connectTpexExportDb } from './adapters/prisma/tpexExportClient';
-import { connectSitcaExportDb } from './adapters/prisma/sitcaExportClient';
-import { connectTwseExportDb } from './adapters/prisma/twseExportClient';
-import { connectTwseExportDevDb } from './adapters/prisma/twseExportDevClient';
-import { swaggerUi, swaggerSpec } from './adapters/swagger';
 import { config } from './shared/config';
 import { setStartupTime } from './shared/serverInfo';
-import routes from './routes';
-import errorHandler from './shared/errorHandler';
-import { loadIndustryCodes } from './models/industryCodes';
-import { loadIndustryClassification } from './models/gov/industryClassification';
-import { loadIndustryChainClassification } from './models/playwright/industryChainClassification';
-import { loadIndustryClusters } from './models/playwright/industryClusters';
-import { loadIndustryTree } from './models/playwright/industryTree';
+import { createApp } from './bootstrap/app';
+import { connectAllDbs } from './bootstrap/db';
+import { warmCaches } from './bootstrap/warmCaches';
 
-const app = express();
-
-// --- Middleware ---
-app.use(helmet()); // Apply basic security headers
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging——2026-09-05 從 morgan 換成 pino-http：原本 morgan 只在開發模式開（正式環境
-// 完全沒有任何請求記錄），改用 pino-http 之後正式環境也會記錄，輸出結構化 JSON 讓 Cloud Run
-// 部署後可以直接用 Cloud Logging 依欄位查詢（例如篩某個 route 的 5xx），不用整段文字裡面找。
-//
-// customSuccessMessage 是必要的、不是美化：pino-http 預設判斷「completed」還是「aborted」
-// 靠 Node 原生的 req.readableAborted / res.writableEnded 這兩個屬性，但 ultimate-express
-// 是包 uWebSockets.js 的自訂 Request/Response（見 node_modules 原始碼確認過），從來不會設定
-// 這兩個屬性——結果是預設訊息**每一個成功的請求都會被標成「request aborted」**，log 等級/
-// 錯誤判斷（res.statusCode >= 500 那條路徑）本身沒受影響，只有這個文字判斷是錯的，但錯到會
-// 讓人誤判系統一直在出錯，一定要覆蓋掉。走到這個 callback 代表 pino-http 自己已經判定不是
-// 5xx/沒有 err（那條路走 customErrorMessage），直接回「request completed」就對了。
-app.use(pinoHttp({ logger, customSuccessMessage: () => 'request completed' }));
-
-// --- API Docs ---
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// --- Routes ---
-app.use(routes);
-
-// --- Error Handler ---
-// This must be the last piece of middleware to catch all errors.
-app.use(errorHandler);
-
-// --- Server Start ---
+// 2026-09-17 clean architecture 重構 Phase 0：這支只剩「進場點」的職責——組 app、連 DB、
+// 載快取、listen 各自抽到 src/bootstrap/ 底下（HTTP 契約測試要能拿到不 listen 的 app），
+// 行為跟抽出前完全一樣，見 src/bootstrap/app.ts 的說明。
 const startServer = async () => {
   try {
     // 正式環境沒設 BFF_API_KEY 就直接讓伺服器啟動失敗——不要悄悄退化成「正式環境也不驗證」
@@ -66,33 +20,12 @@ const startServer = async () => {
     if (config.isProduction && !config.bffApiKey) {
       throw new Error('BFF_API_KEY 未設定——正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/api/bff/bffAuth.ts。');
     }
-    await connectAnalysisDb();
-    await connectMopsExportDb();
-    await connectGovExportDb();
-    await connectPlaywrightExportDb();
-    await connectTpexExportDb();
-    await connectSitcaExportDb();
-    await connectTwseExportDb();
-    await connectTwseExportDevDb();
-    // 背景嘗試抓產業代碼對照表——輔助性質，失敗最多重試一次就放棄，不 await（不能因為
-    // export DB 連線問題拖慢或擋住伺服器啟動），見 models/industryCodes.ts 的說明。
-    void loadIndustryCodes();
-    // 背景載入 gov-ts 產業分類資料（產業樹狀瀏覽功能用，GET /industries/tree、/industries/flat）
-    // ——同樣輔助性質，不 await，失敗只影響這兩支瀏覽端點，不擋伺服器啟動，見
-    // models/gov/industryClassification.ts。
-    void loadIndustryClassification();
-    // 背景載入 playwright-py 供應鏈分類資料（同業比較 GET /companies/peer-group 用，
-    // 2026-09-14 起取代上面 gov-ts 版本的 findPeerGroup）——同樣輔助性質，不 await，見
-    // models/playwright/industryChainClassification.ts。
-    void loadIndustryChainClassification();
-    // 背景載入 playwright-py 供應鏈聚落分群（「產業追蹤」頁面 drill-down 樹用，
-    // GET /industries/chain-clusters）——同樣輔助性質，不 await，見
-    // models/playwright/industryClusters.ts（cluster_id 不穩定的重要說明）。
-    void loadIndustryClusters();
-    // 背景載入 playwright-py 產業追蹤逐層點開瀏覽樹（GET /industries/chain-tree，取代
-    // chain-classification 原本的扁平兩層瀏覽用途）——同樣輔助性質，不 await，見
-    // models/playwright/industryTree.ts（node_id 不穩定的重要說明）。
-    void loadIndustryTree();
+    await connectAllDbs();
+    // 五個輔助性快取在背景載入，不 await（不能因為 export DB 連線問題拖慢或擋住伺服器啟動），
+    // 各自失敗只影響對應端點，見 src/bootstrap/warmCaches.ts。
+    void warmCaches();
+
+    const app = createApp();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
     // IPv4（127.0.0.1）連不上——Node 的 fetch 解析 localhost 有時候先試 IPv4，導致間歇性
     // connection refused。改成明確的 IPv4 位址，不讓 Node 自己決定要 bind 哪個位址族。
