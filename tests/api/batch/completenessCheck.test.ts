@@ -1,11 +1,12 @@
 import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { checkJobCompleteness } from '@/http/batch/completenessCheck';
+import { checkJobCompleteness } from '@/application/batch/completenessCheck';
+import { appDeps } from '@/bootstrap/deps';
 import { computeAndWriteBankAssetQualityFamilyPit } from '@/bootstrap/pitMetrics';
 import { upsertMetricDefinition, metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
-import type { IndicatorJob } from '@/http/batch/indicatorJob';
+import type { IndicatorJob } from '@/application/batch/indicatorJob';
 
 // checkJobCompleteness 現在只走 pitMetrics 的 metric_values 這一條路徑（舊架構「一指標
 // 一張獨立 Result 表」的 model 已經全部退場，連同 filterCatalog/metricTableRegistry 這套
@@ -43,7 +44,7 @@ test('completenessCheck: 剛寫入的一列，時間窗設在寫入之前，應�
   const batchStartedAt = new Date();
   await bankNplRatioJob.run('2801');
 
-  const result = await checkJobCompleteness(bankNplRatioJob, ['2801'], batchStartedAt);
+  const result = await checkJobCompleteness(bankNplRatioJob, ['2801'], batchStartedAt, appDeps);
 
   assert.equal(result.attempted, 1);
   assert.equal(result.written, 1);
@@ -55,7 +56,7 @@ test('completenessCheck: 時間窗設在寫入之後，應該算不到（驗證�
   await bankNplRatioJob.run('2801');
   const batchStartedAtInTheFuture = new Date(Date.now() + 60_000);
 
-  const result = await checkJobCompleteness(bankNplRatioJob, ['2801'], batchStartedAtInTheFuture);
+  const result = await checkJobCompleteness(bankNplRatioJob, ['2801'], batchStartedAtInTheFuture, appDeps);
 
   assert.equal(result.written, 0);
   assert.equal(result.coverageRatio, 0);
@@ -64,13 +65,13 @@ test('completenessCheck: 時間窗設在寫入之後，應該算不到（驗證�
 test('completenessCheck: 不是已註冊 pitMetrics metricCode 的 metricKey，應該回傳 skipped 而不是 throw', async () => {
   const bogusJob: IndicatorJob = { ...bankNplRatioJob, name: '__not_a_real_metric_key__' };
 
-  const result = await checkJobCompleteness(bogusJob, ['2801'], new Date());
+  const result = await checkJobCompleteness(bogusJob, ['2801'], new Date(), appDeps);
 
   assert.ok(result.skipped, 'metricKey 不是已註冊的 metricCode 時應該回傳 skipped 原因');
 });
 
 test('completenessCheck: 空的 companyIds 視為完整（沒有攻打對象，無所謂完整度）', async () => {
-  const result = await checkJobCompleteness(bankNplRatioJob, [], new Date());
+  const result = await checkJobCompleteness(bankNplRatioJob, [], new Date(), appDeps);
 
   assert.equal(result.attempted, 0);
   assert.equal(result.written, 0);

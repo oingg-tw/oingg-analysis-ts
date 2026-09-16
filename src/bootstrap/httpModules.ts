@@ -3,7 +3,7 @@ import type { AppDeps } from '@/application/deps';
 import { getStartupTime } from './serverInfo';
 import { createSystemRouter } from '@/http/modules/system/root';
 import { registerSystemOpenApi } from '@/http/modules/system/openapi';
-import batchRouter from '@/http/batch/route';
+import { createBatchRouter } from '@/http/batch/route';
 import { registerBatchOpenApi } from '@/http/batch/openapi';
 import { createMetricsRouter } from '@/http/modules/metrics/route';
 import { registerFiltersOpenApi } from '@/http/modules/metrics/openapi';
@@ -58,11 +58,11 @@ import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYiel
 //
 // 新增端點：在對應模組的 route.ts/openapi.ts 加，然後在這裡加一筆——只有一個地方要改。
 //
-// Phase 4-3 逐模組改成 createXxxRouter(deps) 工廠（薄 controller + application use case），還沒改的模組
-// 仍是 default export 的 router；全部改完後這裡就是唯一把 deps 交給 http 層的地方。
+// Phase 4-3 起每個模組都是 createXxxRouter(deps) 工廠（薄 controller + application use case），這裡是唯一把
+// deps 交給 http 層的地方。
 export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
-  { name: 'batch', auth: 'batch', router: batchRouter, registerOpenApi: registerBatchOpenApi },
+  { name: 'batch', auth: 'batch', router: createBatchRouter(deps), registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: createMetricsRouter(), registerOpenApi: registerFiltersOpenApi },
   { name: 'companies', auth: 'bff', router: createCompaniesRouter(deps), registerOpenApi: registerCompaniesOpenApi },
   { name: 'securities', auth: 'bff', router: createSecuritiesRouter(deps), registerOpenApi: registerSecuritiesOpenApi },

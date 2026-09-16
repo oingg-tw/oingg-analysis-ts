@@ -15,48 +15,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/http/batch/completenessCheck.ts",
-    "to": "src/infrastructure/logger.ts",
-    "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/batch/completenessCheck.ts",
-    "to": "src/infrastructure/repositories/analysis/metricValueQueries.ts",
-    "unresolvedTo": "@/infrastructure/repositories/analysis/metricValueQueries",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/http/batch/runner.ts",
-    "to": "src/infrastructure/logger.ts",
-    "unresolvedTo": "@/infrastructure/logger",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "http-not-infrastructure"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillAbnormalCapexRatioPit.ts",
     "to": "src/infrastructure/prisma/analysisClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/analysisClient",
@@ -4008,34 +3966,6 @@
     "from": "scripts/backfillZDoublePrimeManufacturingExclusionPit.ts",
     "to": "src/infrastructure/prisma/twseExportClient.ts",
     "unresolvedTo": "../src/infrastructure/prisma/twseExportClient",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/batchComputeIndicators.ts",
-    "to": "src/http/batch/indicatorRegistry.ts",
-    "unresolvedTo": "../src/http/batch/indicatorRegistry",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/batchComputeIndicators.ts",
-    "to": "src/http/batch/runner.ts",
-    "unresolvedTo": "../src/http/batch/runner",
     "dependencyTypes": [
       "local",
       "import"
