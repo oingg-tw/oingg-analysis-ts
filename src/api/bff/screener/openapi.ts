@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { registry } from '@/adapters/swagger/registry';
-import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema } from './controller';
+import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './controller';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如
 // "roe.TTM"），對應 GET /metrics（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。
@@ -48,6 +48,16 @@ const screenerValuesResultSchema = z.object({
   results: z.array(screenerRowSchema),
 });
 
+const companyRankResultSchema = z.object({
+  symbol: z.string(),
+  field: z.string(),
+  found: z.boolean().meta({ description: 'false 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時 rank/totalCount/topPercent/value 皆為 null' }),
+  value: z.number().nullable(),
+  rank: z.number().int().nullable().meta({ description: '1-based，並列名次共用同一個名次（RANK() 語意，不是連續序號）' }),
+  totalCount: z.number().int().nullable().meta({ description: '全市場這個欄位有值（非 null）的公司總數' }),
+  topPercent: z.number().nullable().meta({ description: 'rank÷totalCount×100，四捨五入到小數點後一位。數字越小代表排名越前面，例如 5 代表排在全市場前 5%（不是「百分位」那種越高越好的敘述方向，刻意選這個命名貼近「贏過前 X%」的中文口語問法）' }),
+});
+
 export const registerScreenerOpenApi = (): void => {
   registry.registerPath({
     method: 'post',
@@ -83,6 +93,28 @@ export const registerScreenerOpenApi = (): void => {
     responses: {
       200: { description: '依 field 排序的前 N 筆結果。', content: { 'application/json': { schema: screenerRankingResultSchema } } },
       400: { description: 'field 格式錯誤或查不到、sectorCodes 有不合法的代碼。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/screener/company-rank',
+    summary: '單一公司在全市場某個欄位的排名/百分位',
+    description:
+      '跟 GET /screener/ranking（取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾、' +
+      '贏過全市場前百分之多少」，不需要先知道前 N 名是誰，也不用自己抓全市場清單再數名次——' +
+      'rank/totalCount 是在同一次查詢裡用 window function 對全市場一次算完，只回傳目標 symbol 那一列。' +
+      'direction=desc：數值越高排名越前面（例如殖利率）；direction=asc：數值越低排名越前面（例如本益比）。' +
+      'totalCount 只計入這個欄位有值（非 null）的公司；並列數值共用同一個名次（RANK() 語意）。' +
+      'topPercent 是 rank÷totalCount×100（四捨五入到小數點後一位），數字越小代表排名越前面，' +
+      '例如 5 代表排在全市場前 5%——跟「百分位」是相反的敘述方向（百分位越高代表越好），' +
+      '刻意選這個命名貼近「贏過前 X%」的中文口語問法。found:false 代表這家公司這個欄位查無資料' +
+      '（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPercent 皆為 null。',
+    tags: ['Screener'],
+    request: { query: getCompanyRankQuerySchema },
+    responses: {
+      200: { description: '該公司在此欄位的排名/百分位（或 found:false）。', content: { 'application/json': { schema: companyRankResultSchema } } },
+      400: { description: 'symbol 為空、field 格式錯誤或查不到、direction 不合法。' },
     },
   });
 

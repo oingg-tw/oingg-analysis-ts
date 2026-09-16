@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { runScreener, runScreenerRanking, runScreenerValues, ScreenerValidationError } from './service';
+import { runScreener, runScreenerRanking, runScreenerValues, getCompanyRank as getCompanyRankService, ScreenerValidationError } from './service';
 import { logger } from '@/shared/logger';
 
 const filterSchema = z.object({
@@ -79,6 +79,33 @@ export const getScreenerRanking = async (req: Request, res: Response, next: Next
       return res.status(400).json({ message: error.message });
     }
     logger.error({ err: error }, 'Screener ranking query failed:');
+    next(error);
+  }
+};
+
+// 2026-09-16 新增——查單一公司在全市場某個欄位的排名/百分位，跟 GET /screener/ranking
+// （取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾」，不需要先知道
+// 前 N 名是誰。
+export const getCompanyRankQuerySchema = z.object({
+  symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
+  field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.basis" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
+  direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }).meta({ description: 'desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
+});
+
+export const getCompanyRank = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getCompanyRankQuerySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      return res.status(400).json({ message: 'Invalid query parameters.', errors: validationResult.error.format() });
+    }
+    const { symbol, field, direction } = validationResult.data;
+    const result = await getCompanyRankService(symbol, field, direction);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof ScreenerValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    logger.error({ err: error }, 'Screener company-rank query failed:');
     next(error);
   }
 };

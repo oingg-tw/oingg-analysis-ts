@@ -281,6 +281,39 @@ export const buildRankingSql = (
   `;
 };
 
+// 查單一公司在全市場某個欄位的排名——跟 buildRankingSql（取前 N 名清單）是互補的兩種查詢，
+// 這支不是「抓全市場清單再自己數」，是用 RANK() window function 在同一次查詢裡對全市場
+// 算好名次跟總數，最後只取目標 symbol 那一列。RANK()（不是 ROW_NUMBER()）讓並列數值拿到
+// 同一個名次（例如兩家公司殖利率並列第 3，都回傳 rank=3，不會被迫拆成 3/4），跟業界排行榜
+// 慣例一致。
+export const buildCompanyRankSql = (symbol: string, field: FieldRef, direction: 'asc' | 'desc', candidateSymbols: string[] | null = null): Prisma.Sql => {
+  const filterCteRefs = dedupCtes([field]);
+  const ctes = [...filterCteRefs.values()].map(buildCte);
+  const alias = Prisma.raw(filterCteRefs.get(basisGroupKeyFor(field))!.alias);
+  const valueCol = Prisma.sql`${alias}.${q('value')}`;
+
+  const directionSql = direction === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+
+  const whereConditions = [Prisma.sql`${valueCol} IS NOT NULL`];
+  if (candidateSymbols !== null) {
+    whereConditions.push(Prisma.sql`${alias}.${q('symbol')} = ANY(${candidateSymbols}::text[])`);
+  }
+
+  return Prisma.sql`
+    WITH ${Prisma.join(ctes, ', ')},
+    ranked AS (
+      SELECT
+        ${alias}.${q('symbol')} AS symbol,
+        ${valueCol} AS value,
+        RANK() OVER (ORDER BY ${valueCol} ${directionSql}) AS rank,
+        COUNT(*) OVER() AS total_count
+      FROM ${alias}
+      WHERE ${Prisma.join(whereConditions, ' AND ')}
+    )
+    SELECT symbol, value, rank, total_count FROM ranked WHERE symbol = ${symbol}
+  `;
+};
+
 // GET 一批明確列出的 symbol 各自的欄位值——給「已經在畫面上的這幾檔股票，補一個新欄位」這種
 // 情境用，不是篩選查詢。基準是呼叫端直接給的 symbol 清單本身（unnest 出一列一個），不是任何
 // 一個 CTE 的內容——這樣每個要求的 symbol 都保證會出現在結果裡，即使所有欄位都沒有資料。

@@ -2,8 +2,8 @@ import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { getCompanyNamesForSymbols } from '@/models/companyProfile';
 import { isValidSecuritiesSectorCode, listCompaniesBySectorCodes } from '@/models/securitiesIndustry';
 import { resolveFieldOrThrow, ScreenerValidationError, type FieldRef } from './fieldResolver';
-import { buildScreenerSql, buildRankingSql, buildValuesSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
-import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason } from './types';
+import { buildScreenerSql, buildRankingSql, buildValuesSql, buildCompanyRankSql, type FilterCondition, type IndexedField, type SortSpec } from './queryBuilder';
+import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason, CompanyRankResult } from './types';
 
 export { ScreenerValidationError };
 
@@ -114,6 +114,40 @@ export const runScreenerRanking = async (request: {
 
   const combinedFields: IndexedField[] = [rankedField, ...columns].map((c, index) => ({ ...c, index }));
   return { results: await attachCompanyNames(parseRows(rows, combinedFields)) };
+};
+
+// 查單一公司在全市場某個欄位的排名——跟 runScreenerRanking（取前 N 名清單）是互補的
+//兩種查詢，這支回答「這家公司自己排第幾/贏過幾%」，不是「前 N 名是誰」。found:false
+// 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時 rank/totalCount/
+// topPercent 皆為 null。topPercent 是「這家公司排在全市場前百分之多少」（rank ÷
+// totalCount × 100，四捨五入到小數點後一位）——數字越小代表排名越前面，例如 5 代表
+// 排在全市場前 5%；跟「百分位（percentile）」是相反方向的敘述習慣（百分位越高代表越好，
+// topPercent 越低代表越好），刻意選 topPercent 這個命名是因為比較貼近「贏過前 X%」這種
+// 中文口語問法。
+export const getCompanyRank = async (symbol: string, fieldInput: string, direction: 'asc' | 'desc'): Promise<CompanyRankResult> => {
+  const field = resolveFieldOrThrow(fieldInput);
+
+  const sql = buildCompanyRankSql(symbol, field, direction);
+  const rows = await analysisPrisma.$queryRaw<{ symbol: string; value: unknown; rank: bigint; total_count: bigint }[]>(sql);
+
+  const row = rows[0];
+  if (!row) {
+    return { symbol, field: fieldInput, found: false, value: null, rank: null, totalCount: null, topPercent: null };
+  }
+
+  const totalCount = Number(row.total_count);
+  const rank = Number(row.rank);
+  const topPercent = Math.round((rank / totalCount) * 1000) / 10;
+
+  return {
+    symbol,
+    field: fieldInput,
+    found: true,
+    value: row.value !== null && row.value !== undefined ? Number(row.value) : null,
+    rank,
+    totalCount,
+    topPercent,
+  };
 };
 
 // 給「已經在畫面上的這幾檔股票，補一個新欄位」用，不是篩選查詢——每個要求的 symbol 都保證
