@@ -1,30 +1,17 @@
-import { getLatestQuarterWithBalanceSheetXbrl } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getLatestQuarterWithIncomeStatementXbrl } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getLatestQuarterWithXbrlCashFlowQuarterly } from '@/infrastructure/repositories/mops/xbrlCashFlowQuarterly';
+import { xbrlQuarterResolver } from '@/infrastructure/repositories/mops/financialStatementPorts';
+import type { QuarterResolverPort, StatementSource } from '@/application/ports/quarterResolver';
 import type { Season } from '@/domain/calendar/rocQuarter';
 
 // 不同公司財報申報進度不同步（不是理論上的擔心，是實測驗證過的：2887 資產負債表/現金流量表已經到
 // 115Q1，損益表卻卡在 114Q2，中間差 3 季），所以「這家公司財報最新到哪一季」不能只查單一張表——
 // 要看呼叫端這支指標實際會用到哪幾張表，取這幾張表「都有資料」的最新一季（交集），不是任一張表
 // 自己的最新一季，否則會誤判成有資料、實際上缺欄位那一季，一樣算不出來，等於沒解決問題。
-export type StatementSource = 'balanceSheet' | 'incomeStatement' | 'cashFlowStatement';
-
-// 2026-09-11：舊三大表（mopsQuarterlyStatements.ts）已退役，這支現在單純查 XBRL 寬表
-// 最新一季，不再跟舊表的最新一季取較新值——退役後舊表已經不存在於查詢路徑上了。
-const findLatestQuarterFor = async (
-  source: StatementSource,
-  symbol: string,
-  dataType: string,
-  subsidiaryCompanyId: string
-): Promise<{ year: number; quarter: number } | null> => {
-  if (source === 'balanceSheet') {
-    return getLatestQuarterWithBalanceSheetXbrl(symbol, dataType, subsidiaryCompanyId);
-  }
-  if (source === 'incomeStatement') {
-    return getLatestQuarterWithIncomeStatementXbrl(symbol, dataType, subsidiaryCompanyId);
-  }
-  return getLatestQuarterWithXbrlCashFlowQuarterly(symbol, dataType, subsidiaryCompanyId);
-};
+//
+// 2026-09-17 clean architecture 重構 Phase 3：單張表的「最新一季」查詢改透過 QuarterResolverPort
+// 注入（StatementSource 型別一起搬到 application/ports/quarterResolver.ts，這裡 re-export）。
+// 最後一個參數的預設值是遷移期間的過渡——165 支還沒遷移的 compute*Pit.ts 不帶第三個參數，
+// 已遷移的傳 deps.quarters；全部遷完後拿掉預設值，型別檢查會揪出任何漏網的呼叫端。
+export type { StatementSource };
 
 // 指標不給 year/season 時，用這支自動解析「這家公司、這幾張表都有資料的最新一季」。
 // sources 由呼叫端指定這支指標實際需要哪幾張表（例如 roe 需要 ['balanceSheet', 'incomeStatement']，
@@ -34,9 +21,10 @@ export const getLatestAvailableQuarter = async (
   symbol: string,
   dataType: string,
   subsidiaryCompanyId: string,
-  sources: StatementSource[]
+  sources: StatementSource[],
+  quarters: QuarterResolverPort = xbrlQuarterResolver
 ): Promise<{ year: string; season: Season } | null> => {
-  const latests = await Promise.all(sources.map((source) => findLatestQuarterFor(source, symbol, dataType, subsidiaryCompanyId)));
+  const latests = await Promise.all(sources.map((source) => quarters.latestQuarterWith(source, symbol, dataType, subsidiaryCompanyId)));
 
   if (latests.some((l) => l === null)) return null;
 
@@ -52,10 +40,11 @@ export const getLatestAvailableQuarter = async (
 // 只需要傳 query 本身（不用先解構出 symbol/dataType/subsidiaryCompanyId）跟 sources。
 export const resolveQuarterOrLatest = async (
   query: { symbol: string; year?: string; season?: Season; dataType: string; subsidiaryCompanyId: string },
-  sources: StatementSource[]
+  sources: StatementSource[],
+  quarters: QuarterResolverPort = xbrlQuarterResolver
 ): Promise<{ year: string; season: Season } | null> => {
   if (query.year !== undefined && query.season !== undefined) {
     return { year: query.year, season: query.season };
   }
-  return getLatestAvailableQuarter(query.symbol, query.dataType, query.subsidiaryCompanyId, sources);
+  return getLatestAvailableQuarter(query.symbol, query.dataType, query.subsidiaryCompanyId, sources, quarters);
 };

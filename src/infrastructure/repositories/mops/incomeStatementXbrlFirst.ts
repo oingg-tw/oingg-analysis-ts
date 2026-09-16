@@ -12,21 +12,10 @@
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 
-export interface IncomeStatementFields {
-  reportDate: Date;
-  operatingRevenue: bigint | null;
-  grossProfit: bigint | null;
-  operatingIncome: bigint | null;
-  profitBeforeTax: bigint | null;
-  netIncome: bigint | null;
-  adminExpenses: bigint | null;
-  financeCosts: bigint | null;
-  incomeTaxExpense: bigint | null;
-  netIncomeAttributableToParent: bigint | null;
-  operatingCost: bigint | null;
-  sellingExpenses: bigint | null;
-}
+// IncomeStatementFields 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { IncomeStatementFields };
 
 interface RawIncomeStatementXbrlRow {
   report_date: Date;

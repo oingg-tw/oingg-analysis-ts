@@ -2,36 +2,8 @@
   {
     "type": "dependency",
     "from": "src/application/financials/latestQuarter.ts",
-    "to": "src/infrastructure/repositories/mops/balanceSheetXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/balanceSheetXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/financials/latestQuarter.ts",
-    "to": "src/infrastructure/repositories/mops/incomeStatementXbrlFirst.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/incomeStatementXbrlFirst",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "application-only-domain"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/application/financials/latestQuarter.ts",
-    "to": "src/infrastructure/repositories/mops/xbrlCashFlowQuarterly.ts",
-    "unresolvedTo": "@/infrastructure/repositories/mops/xbrlCashFlowQuarterly",
+    "to": "src/infrastructure/repositories/mops/financialStatementPorts.ts",
+    "unresolvedTo": "@/infrastructure/repositories/mops/financialStatementPorts",
     "dependencyTypes": [
       "undetermined",
       "import"
@@ -719,6 +691,20 @@
     "from": "src/application/metrics/knowledgeDate.ts",
     "to": "src/infrastructure/repositories/mops/reportAnnouncementDate.ts",
     "unresolvedTo": "@/infrastructure/repositories/mops/reportAnnouncementDate",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-only-domain"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/application/metrics/legacyBridge.ts",
+    "to": "src/bootstrap/pitDeps.ts",
+    "unresolvedTo": "@/bootstrap/pitDeps",
     "dependencyTypes": [
       "undetermined",
       "import"

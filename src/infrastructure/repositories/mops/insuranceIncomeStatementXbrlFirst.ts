@@ -24,13 +24,10 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
+import type { InsuranceIncomeStatementFields } from '@/application/ports/financialStatements';
 
-export interface InsuranceIncomeStatementFields {
-  reportDate: Date;
-  insuranceRevenue: bigint;
-  insuranceServiceResult: bigint | null;
-  netOperatingIncomeLoss: bigint | null;
-}
+// InsuranceIncomeStatementFields 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { InsuranceIncomeStatementFields };
 
 interface RawInsuranceIncomeStatementRow {
   report_date: Date;

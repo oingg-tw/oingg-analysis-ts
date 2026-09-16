@@ -1,11 +1,8 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import type { AnnouncementDatePort, PriceAnchorDate, PriceAnchorSource } from '@/application/ports/announcementDates';
 
-export type PriceAnchorSource = 'announcement' | 'report_date_fallback';
-
-export interface PriceAnchorDate {
-  date: Date;
-  source: PriceAnchorSource;
-}
+// 型別 2026-09-17 Phase 3 搬到 application/ports/announcementDates.ts，這裡 re-export 給既有 import 路徑。
+export type { PriceAnchorDate, PriceAnchorSource };
 
 interface RawAnnouncementRow {
   announcement_date: Date;
@@ -36,3 +33,5 @@ export const getPriceAnchorDate = async (
   if (reportDate) return { date: reportDate, source: 'report_date_fallback' };
   return null;
 };
+
+export const mopsAnnouncementDates: AnnouncementDatePort = { getPriceAnchorDate };

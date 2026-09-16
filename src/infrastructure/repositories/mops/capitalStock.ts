@@ -2,12 +2,10 @@ import { z } from 'zod';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
+import type { PaidInSharesAsOf, PaidInSharesPort } from '@/application/ports/capitalStock';
 
-export interface PaidInSharesAsOf {
-  paidInShares: bigint;
-  effectiveYear: number; // 西元年，對應 capital_stock_history.effectiveYear
-  effectiveMonth: number;
-}
+// PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts，這裡 re-export 給既有 import 路徑。
+export type { PaidInSharesAsOf };
 
 interface RawCapitalStockRow {
   effective_year: number;
@@ -48,6 +46,8 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   if (!record || record.paid_in_shares === null) return null;
   return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
 };
+
+export const mopsCapitalStockShares: PaidInSharesPort = { getPaidInShares: getPaidInSharesAsOf };
 
 // 五種結構化的股本變動原因，bigint 序列化成字串——2026-09-04 應 web-nuxt 要求新增，實測過
 // capital_stock_history 沒有庫藏股/可轉債轉換的獨立欄位，這兩種變動反而是寫在 remarks

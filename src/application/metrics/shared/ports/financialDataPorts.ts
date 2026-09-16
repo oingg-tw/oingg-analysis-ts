@@ -1,55 +1,25 @@
-// 2026-09-13 依存反轉（DIP）全面鋪開的共用抽象層——先在 ROE 做過一次範例（見
-// profitability/roe/computeRoePit.ts 的說明），使用者拍板全面鋪開到其餘 116 支指標後
-// 抽出這個共用模組，理由：87 支 compute*Pit.ts 檔案的資料依賴只用到 6 種原始查詢（損益表/
-// 資產負債表/現金流量表/流通股數/股價/市值），每支各自定義一份幾乎一樣的單方法介面沒有
-// 意義，只會重複 87 次。
+// 2026-09-13 依存反轉（DIP）全面鋪開的共用抽象層——先在 ROE 做過一次範例，使用者拍板全面
+// 鋪開到其餘 116 支指標後抽出這個共用模組：87 支 compute*Pit.ts 的資料依賴只用到 7 種原始
+// 查詢，每支各自定義一份幾乎一樣的單方法介面沒有意義。每個 Port 是「只有一個方法」的最小
+// 介面（ISP），各 compute*Pit.ts 用交集型別組合出自己真正需要的子集。
 //
-// 每個 Port 是「只有一個方法」的最小介面（Interface Segregation Principle：一支指標只需要
-// 損益表就只依賴 IncomeStatementPort，不會被迫依賴它用不到的資產負債表方法）。各
-// compute*Pit.ts 用交集型別組合出自己真正需要的子集（例如 IncomeStatementPort &
-// BalanceSheetPort），不是每支都依賴同一個大介面。financialDataAdapter 是唯一一個具體
-// 實作，用結構型別（structural typing）天生就能滿足任何子集交集型別，所以全部 87 支
-// 檔案共用同一個 adapter 常數當預設值，不用各自組裝。
-//
-// 這一層只涵蓋「查財報/股價/股本」這個依賴——knowledgeDate 解析（resolveKnowledgeDate）
-// 跟寫入（writeMetricValue）維持直接依賴具體實作，跟 ROE 範例的既有說明一致，這兩層的
-// DIP 是否要做是另一個決定，這次沒有涵蓋。
+// 2026-09-17 clean architecture 重構 Phase 3：介面本身搬到 application/ports/{financialStatements,
+// capitalStock,marketData}.ts（DTO 型別一起搬，application 不再 import infrastructure 的型別），
+// 這裡只 re-export 讓還沒遷移的 compute*Pit.ts 的 import 不用改。financialDataAdapter 是遷移期間
+// 「用預設參數注入」的過渡實作——已遷移的 compute 改收顯式的 deps（見 metrics/deps.ts 的 PitDeps，
+// 由 src/bootstrap/pitDeps.ts 綁定），全部 family 遷完後整支檔案刪除。
 
-import { getBalanceSheetXbrlFirst, type BalanceSheetFields } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
-import { getIncomeStatementXbrlFirst, type IncomeStatementFields } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
-import { getCashFlowStatementXbrlFirst, type CashFlowFields } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
-import { getInsuranceIncomeStatementXbrlFirst, type InsuranceIncomeStatementFields } from '@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst';
-import { getPaidInSharesAsOf, type PaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
-import { getStockPriceAsOf, getMarketCapAsOf, type StockPriceAsOf, type MarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
-import type { QuarterlyKey } from '@/domain/financials/quarterlyKey';
+import type { IncomeStatementPort, BalanceSheetPort, CashFlowStatementPort, InsuranceIncomeStatementPort } from '@/application/ports/financialStatements';
+import type { PaidInSharesPort } from '@/application/ports/capitalStock';
+import type { StockPricePort, MarketCapPort } from '@/application/ports/marketData';
+import { getBalanceSheetXbrlFirst } from '@/infrastructure/repositories/mops/balanceSheetXbrlFirst';
+import { getIncomeStatementXbrlFirst } from '@/infrastructure/repositories/mops/incomeStatementXbrlFirst';
+import { getCashFlowStatementXbrlFirst } from '@/infrastructure/repositories/mops/cashFlowStatementXbrlFirst';
+import { getInsuranceIncomeStatementXbrlFirst } from '@/infrastructure/repositories/mops/insuranceIncomeStatementXbrlFirst';
+import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
+import { getStockPriceAsOf, getMarketCapAsOf } from '@/infrastructure/repositories/twse/marketCap';
 
-export interface IncomeStatementPort {
-  getIncomeStatement(key: QuarterlyKey): Promise<IncomeStatementFields | null>;
-}
-
-export interface BalanceSheetPort {
-  getBalanceSheet(key: QuarterlyKey): Promise<BalanceSheetFields | null>;
-}
-
-export interface CashFlowStatementPort {
-  getCashFlowStatement(key: QuarterlyKey): Promise<CashFlowFields | null>;
-}
-
-export interface InsuranceIncomeStatementPort {
-  getInsuranceIncomeStatement(key: QuarterlyKey): Promise<InsuranceIncomeStatementFields | null>;
-}
-
-export interface PaidInSharesPort {
-  getPaidInShares(symbol: string, asOfDate: Date): Promise<PaidInSharesAsOf | null>;
-}
-
-export interface StockPricePort {
-  getStockPrice(symbol: string, asOfDate: Date): Promise<StockPriceAsOf | null>;
-}
-
-export interface MarketCapPort {
-  getMarketCap(symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null>;
-}
+export type { IncomeStatementPort, BalanceSheetPort, CashFlowStatementPort, InsuranceIncomeStatementPort, PaidInSharesPort, StockPricePort, MarketCapPort };
 
 // 唯一的具體實作（XBRL + 股本申報 + 每日行情），用交集型別宣告型別，讓 TypeScript
 // 結構型別驗證這個物件同時滿足全部 7 個 Port——任何一支 compute*Pit.ts 不管需要

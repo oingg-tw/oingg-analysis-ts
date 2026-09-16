@@ -17,26 +17,10 @@
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import type { BalanceSheetFields } from '@/application/ports/financialStatements';
 
-export interface BalanceSheetFields {
-  reportDate: Date;
-  totalAssets: bigint | null;
-  totalLiabilities: bigint | null;
-  currentAssets: bigint | null;
-  currentLiabilities: bigint | null;
-  inventory: bigint | null;
-  longTermBorrowings: bigint | null;
-  propertyPlantEquipment: bigint | null;
-  retainedEarnings: bigint | null;
-  cashAndEquivalents: bigint | null;
-  equityAttributableToParent: bigint | null;
-  totalEquity: bigint | null;
-  accountsPayable: bigint | null;
-  accountsReceivable: bigint | null;
-  bondsPayable: bigint | null;
-  shortTermBorrowings: bigint | null;
-  preferredStockCapital: bigint | null;
-}
+// BalanceSheetFields 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { BalanceSheetFields };
 
 interface RawBalanceSheetXbrlRow {
   report_date: Date;

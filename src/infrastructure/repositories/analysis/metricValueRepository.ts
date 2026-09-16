@@ -1,47 +1,21 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { LookbackRange, PeriodType, SamplingInterval, SnapshotCadence } from '@/domain/metrics/metricBasis';
+import type {
+  DailyCadenceCoordinateWhere,
+  ExistingMetricRow,
+  MetricRowValues,
+  MetricValueRepository,
+  PeriodCoordinateWhere,
+} from '@/application/ports/metricValues';
 
 // metric_values（季報型）/ metric_daily_cadence_values（逐日型）兩張表的讀寫——2026-09-17 重構
 // Phase 2 從 application/metrics/{metricValueWriter,shared/queryMetricHistory,
 // shared/queryDailyCadenceMetricHistory}.ts 搬來的 Prisma 呼叫，逐字保留語意（identity 唯一鍵、
-// orderBy、upsert 的原子性），「比對既有列決定要不要寫」的決策留在 application 的 writer。
-// 回傳型別刻意用結構型別描述需要的欄位，不外洩 Prisma 的 model 型別；value 是 Decimal 物件，
-// 轉換維持在呼叫端。
-
-export interface PeriodCoordinateWhere {
-  symbol: string;
-  metricCode: string;
-  periodType: PeriodType;
-  fiscalYear: number;
-  fiscalQuarter: number;
-  dataType: string;
-  subsidiaryCompanyId: string;
-}
-
-export interface DailyCadenceCoordinateWhere {
-  symbol: string;
-  metricCode: string;
-  lookbackRange: LookbackRange;
-  samplingInterval: SamplingInterval;
-  snapshotCadence: SnapshotCadence;
-  dataType: string;
-  subsidiaryCompanyId: string;
-  tradeDate: Date;
-}
-
-export interface ExistingMetricRow {
-  value: unknown;
-  nullReason: string | null;
-  knowledgeDate: Date;
-}
-
-export interface MetricRowValues {
-  value: number | null;
-  nullReason: string | null;
-  knowledgeDate: Date;
-  knowledgeDateIsFallback: boolean;
-  formulaVersion: number;
-}
+// orderBy、upsert 的原子性），「比對既有列決定要不要寫」的決策留在 application
+// （persistComputations.ts）。回傳型別刻意用結構型別描述需要的欄位，不外洩 Prisma 的 model
+// 型別；value 是 Decimal 物件，轉換維持在呼叫端。Phase 3 起這四個型別住在
+// application/ports/metricValues.ts（port 的 DTO），這裡 re-export。
+export type { DailyCadenceCoordinateWhere, ExistingMetricRow, MetricRowValues, PeriodCoordinateWhere };
 
 // 用「座標」（不含 knowledgeDate）查最新一列（orderBy knowledgeDate desc）——「目前市場最後所知」的那一列。
 export const findLatestPeriodMetricRow = (where: PeriodCoordinateWhere): Promise<ExistingMetricRow | null> =>
@@ -71,6 +45,14 @@ export const upsertDailyCadenceMetricRow = async (where: DailyCadenceCoordinateW
     create: { ...where, ...values },
     update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion },
   });
+};
+
+// application/ports/metricValues.ts 的 MetricValueRepository 實作——src/bootstrap/pitDeps.ts 綁進 PitDeps。
+export const prismaMetricValueRepository: MetricValueRepository = {
+  findLatestPeriodRow: findLatestPeriodMetricRow,
+  upsertPeriodRow: upsertPeriodMetricRow,
+  findLatestDailyCadenceRow: findLatestDailyCadenceMetricRow,
+  upsertDailyCadenceRow: upsertDailyCadenceMetricRow,
 };
 
 // ---- 歷史時序（GET /companies/metric-history 等）----

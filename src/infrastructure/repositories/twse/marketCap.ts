@@ -1,17 +1,9 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getPaidInSharesAsOf } from '../mops/capitalStock';
+import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
 
-export interface MarketCapAsOf {
-  marketCap: number; // 股價 x 流通股數（元）
-  tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
-  closePrice: number;
-  paidInShares: bigint;
-}
-
-export interface StockPriceAsOf {
-  closePrice: number;
-  tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
-}
+// 兩個回傳型別 2026-09-17 Phase 3 搬到 application/ports/marketData.ts，這裡 re-export 給既有 import 路徑。
+export type { MarketCapAsOf, StockPriceAsOf };
 
 interface RawPriceRow {
   trade_date: Date;
@@ -73,6 +65,8 @@ export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<
     paidInShares: shares.paidInShares,
   };
 };
+
+export const twseMarketData: MarketDataPort = { getStockPrice: getStockPriceAsOf, getMarketCap: getMarketCapAsOf };
 
 // 這家公司在 oingg-twse daily_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性
 // 不在覆蓋範圍內」（not_applicable）跟「有覆蓋，但這次查詢缺別的東西」（no_data），不要在呼叫端

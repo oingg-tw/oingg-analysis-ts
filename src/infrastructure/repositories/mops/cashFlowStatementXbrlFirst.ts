@@ -19,16 +19,10 @@
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
+import type { CashFlowFields } from '@/application/ports/financialStatements';
 
-export interface CashFlowFields {
-  reportDate: Date;
-  netCashFromOperatingActivities: bigint | null;
-  capitalExpenditures: bigint | null;
-  depreciation: bigint | null;
-  amortization: bigint | null;
-  dividendsPaid: bigint | null;
-  netCashFromInvestingActivities: bigint | null;
-}
+// CashFlowFields 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
+export type { CashFlowFields };
 
 const deriveNetCashFromInvestingActivities = (accounts: Record<string, bigint>): bigint | null => {
   const netChangeInCash = accounts.increase_decrease_in_cash_and_cash_equivalents;
