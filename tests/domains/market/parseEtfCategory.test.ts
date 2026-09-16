@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { parseEtfCategory } from '@/http/modules/market/etfRanking/parseCategory';
+import { parseEtfCategory } from '@/domain/market/etfRanking/parseCategory';
 
 test('parseEtfCategory: null 回傳 null', () => {
   assert.equal(parseEtfCategory(null), null);

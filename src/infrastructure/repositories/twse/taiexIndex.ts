@@ -1,4 +1,5 @@
 import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import type { TaiexIndexPort } from '@/application/ports/taiexIndex';
 
 // 大盤加權指數（export.daily_taiex_index）——2026-09-17 重構 Phase 2 從 http/modules/market/
 // taiexDailyPrice/service.ts 搬來的 raw SQL（逐字），回傳原始列形狀（close 是 Decimal 物件），
@@ -21,3 +22,6 @@ export const listAllTaiexDailyPricesAsc = (): Promise<RawTaiexDailyPriceRow[]> =
   twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
     SELECT trade_date, close FROM "export"."daily_taiex_index" ORDER BY trade_date ASC
   `;
+
+// application/ports/taiexIndex.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const twseTaiexIndex: TaiexIndexPort = { listLatestTaiexDailyPrices };

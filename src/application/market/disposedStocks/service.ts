@@ -1,8 +1,10 @@
-import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
-import { listDisposedStocksTwse, listDisposedStocksTpex } from '@/infrastructure/repositories/exchange/marketLists';
-import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from './parseReason';
+import type { AppDeps } from '@/application/deps';
+import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
+import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from '@/domain/market/disposedStocks/parseReason';
 import type { DisposedStocksQuery, DisposedStocksResult, DisposedStockRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/disposedStocks/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type DisposedStocksDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles' | 'priceChange'>;
 
 const SIX_DAY_CHANGE_TRADING_DAYS = 6;
 
@@ -32,7 +34,7 @@ interface PoolRow {
 // 後剩不到 limit 筆的問題，見 valuation/ranking 的 COMPANY_SYMBOL_SUBQUERY 同樣的考量。
 //
 // TWSE 這邊額外篩 source = 'COMPANY_PROFILE'，排除證券商登記等非交易性質的
-// 'COMPANY_PROFILE_PUBLIC'（見 src/models/companyProfile.ts 的說明）；KY 股跟
+// 'COMPANY_PROFILE_PUBLIC'（見 companyProfile.ts 的說明）；KY 股跟
 // 興櫃都算真正公司，不篩掉。TPEx 沒有對應的非公司性質分類，維持原樣不加條件。
 //
 // sixDayChangePercent：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
@@ -48,7 +50,7 @@ interface PoolRow {
 // dispositionStartDate/dispositionEndDate：2026-09-02 應使用者要求，把 dispositionPeriod
 // 拆成兩個西元日期欄位（見 parseReason.ts 的 parseDispositionPeriod），dispositionPeriod
 // 原始字串仍然保留。
-export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<DisposedStocksResult> => {
+export const listDisposedStocks = async (query: DisposedStocksQuery, deps: DisposedStocksDeps): Promise<DisposedStocksResult> => {
   const { limit } = query;
   const warnings: string[] = [];
 
@@ -56,9 +58,9 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
   // 用同一條 SQL 跨 schema 查 public.company_profile 篩「真正上市公司」——改成先查
   // getSecuritySymbolSet 拿到符合的 symbol 清單，再用 ANY(${symbols}) 帶進查詢，篩選邏輯
   // （source = 'COMPANY_PROFILE'，KY/興櫃都算真正公司）維持跟原本完全一樣，只是換了取得方式。
-  const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
+  const twseEligibleSymbols = [...(await deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
 
-  const [twseRows, tpexRows] = await Promise.all([listDisposedStocksTwse(twseEligibleSymbols, limit), listDisposedStocksTpex(limit)]);
+  const [twseRows, tpexRows] = await Promise.all([deps.marketLists.listDisposedStocksTwse(twseEligibleSymbols, limit), deps.marketLists.listDisposedStocksTpex(limit)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),
@@ -84,8 +86,8 @@ export const listDisposedStocks = async (query: DisposedStocksQuery): Promise<Di
   }
 
   const [companyNames, sixDayChanges] = await Promise.all([
-    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
-    getCumulativeChangePercent(
+    deps.companyProfiles.getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    deps.priceChange.getCumulativeChangePercent(
       sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: row.announce_date })),
       SIX_DAY_CHANGE_TRADING_DAYS
     ),

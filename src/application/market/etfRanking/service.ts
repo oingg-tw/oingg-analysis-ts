@@ -1,16 +1,11 @@
-import {
-  getLatestEtfYearMonth,
-  listEtfBasicInfo,
-  listEtfMonthlyStatement,
-  listEtfStatementThresholdFlags,
-  listEtfStatementTaxIdAndThreshold,
-  listEtfPerformance,
-  listFullYearExpenseRatios,
-  type RawEtfPerformanceRow,
-} from '@/infrastructure/repositories/sitca/etfQueries';
-import { parseEtfCategory } from './parseCategory';
-import { parseDistributionFrequency } from './parseDistribution';
+import type { AppDeps } from '@/application/deps';
+import type { RawEtfPerformanceRow } from '@/application/ports/etfData';
+import { parseEtfCategory } from '@/domain/market/etfRanking/parseCategory';
+import { parseDistributionFrequency } from '@/domain/market/etfRanking/parseDistribution';
 import type { EtfRankingMetric, EtfRankingQuery, EtfRankingResult, EtfRankingRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/etfRanking/service.ts 搬來，sitca 查詢改走 deps.etfData，邏輯逐字不變。
+export type EtfRankingDeps = Pick<AppDeps, 'etfData'>;
 
 interface ResolvedRow {
   symbol: string;
@@ -42,8 +37,8 @@ const formatYearMonth = (yearMonth: string): string => `${yearMonth.slice(0, 4)}
 // 規模/受益人數/淨申購贖回/定期定額——都是 etf_monthly_statement 當月快照的欄位（或欄位組合），
 // join etf_basic_info 補基金名稱/投信公司/分類。netFlow = 申購金額 - 贖回金額，是本服務算的，
 // 不是來源現成欄位。
-const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string): Promise<ResolvedRow[]> => {
-  const [basicRows, statementRows] = await Promise.all([listEtfBasicInfo(yearMonth), listEtfMonthlyStatement(yearMonth)]);
+const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string, deps: EtfRankingDeps): Promise<ResolvedRow[]> => {
+  const [basicRows, statementRows] = await Promise.all([deps.etfData.listEtfBasicInfo(yearMonth), deps.etfData.listEtfMonthlyStatement(yearMonth)]);
 
   const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
   const rows: ResolvedRow[] = [];
@@ -92,14 +87,14 @@ const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string
 // 報酬率——etf_performance 是累積報酬率（百分比），不是年化報酬率，join etf_basic_info 補
 // 基金名稱/投信公司/分類；join etf_monthly_statement 只為了補 belowStatutoryThreshold 這個
 // 額外顯示欄位，報酬率本身跟月快照無關。
-const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string): Promise<ResolvedRow[]> => {
+const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string, deps: EtfRankingDeps): Promise<ResolvedRow[]> => {
   const column = RETURN_COLUMN[metric];
   if (!column) return [];
 
   const [basicRows, performanceRows, statementRows] = await Promise.all([
-    listEtfBasicInfo(yearMonth),
-    listEtfPerformance(yearMonth),
-    listEtfStatementThresholdFlags(yearMonth),
+    deps.etfData.listEtfBasicInfo(yearMonth),
+    deps.etfData.listEtfPerformance(yearMonth),
+    deps.etfData.listEtfStatementThresholdFlags(yearMonth),
   ]);
 
   const performanceBySymbol = new Map(performanceRows.map((row) => [row.symbol, row]));
@@ -133,13 +128,13 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string):
 // 只涵蓋部分期間的情況；sitca-ts 這個 view 用他們自己的 is_partial_year 判斷，涵蓋範圍
 // 更完整（PROD 已驗證：17233/18444 列，1211 列被標記 is_partial_year 排除掉），不需要
 // 再自己另外判斷發行日期。
-const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow[]> => {
+const resolveExpenseRatioMetric = async (yearMonth: string, deps: EtfRankingDeps): Promise<ResolvedRow[]> => {
   const latestCompleteYear = new Date().getFullYear() - 1;
 
   const [basicRows, statementRows, expenseRows] = await Promise.all([
-    listEtfBasicInfo(yearMonth),
-    listEtfStatementTaxIdAndThreshold(yearMonth),
-    listFullYearExpenseRatios(latestCompleteYear),
+    deps.etfData.listEtfBasicInfo(yearMonth),
+    deps.etfData.listEtfStatementTaxIdAndThreshold(yearMonth),
+    deps.etfData.listFullYearExpenseRatios(latestCompleteYear),
   ]);
 
   const statementBySymbol = new Map(statementRows.map((row) => [row.symbol, row]));
@@ -170,17 +165,17 @@ const resolveExpenseRatioMetric = async (yearMonth: string): Promise<ResolvedRow
 
 // market/assetClass/isActive：2026-09-02 應使用者要求，把 category（例如「上市ETF_國外
 // 成分證券ETF」）拆成獨立欄位，見 parseCategory.ts 的說明。
-export const calculateEtfRanking = async (query: EtfRankingQuery): Promise<EtfRankingResult> => {
+export const calculateEtfRanking = async (query: EtfRankingQuery, deps: EtfRankingDeps): Promise<EtfRankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [];
 
-  const yearMonth = await getLatestEtfYearMonth();
+  const yearMonth = await deps.etfData.getLatestEtfYearMonth();
   if (!yearMonth) {
     warnings.push('查無任何 ETF 資料。');
     return { metric, order, limit, rankings: [], warnings };
   }
 
-  const resolved = metric === 'expenseRatio' ? await resolveExpenseRatioMetric(yearMonth) : SNAPSHOT_METRICS.has(metric) ? await resolveSnapshotMetric(metric, yearMonth) : await resolveReturnMetric(metric, yearMonth);
+  const resolved = metric === 'expenseRatio' ? await resolveExpenseRatioMetric(yearMonth, deps) : SNAPSHOT_METRICS.has(metric) ? await resolveSnapshotMetric(metric, yearMonth, deps) : await resolveReturnMetric(metric, yearMonth, deps);
 
   if (resolved.length === 0) {
     warnings.push(`查無符合條件（${metric} 有值）的 ETF，無法排行。`);

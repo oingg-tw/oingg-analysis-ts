@@ -1,6 +1,8 @@
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getLatestTwoTradeDates, listClosesForDate } from '@/infrastructure/repositories/exchange/marketLists';
+import type { AppDeps } from '@/application/deps';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/priceChangeRanking/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type PriceChangeRankingDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles'>;
 
 interface RawChangeRow {
   market: 'TWSE' | 'TPEx';
@@ -24,14 +26,14 @@ interface RawChangeRow {
 // 只是「少幾筆」。所以這裡每一列都帶自己的 tradeDate/previousTradeDate，兩個市場可能不同。
 //
 // 排除 ETF/衍生性商品——這是主打上市公司證券的排行榜功能，見
-// src/models/companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
+// companyProfile.ts 的 getAllSecurityRows 說明。preferredStock: 'exclude'
 // 維持這支排行原本的行為。
 //
 // 交易日的取法（TWSE 查 daily_taiex_index、TPEx 才 DISTINCT daily_price，效能理由）見
 // infrastructure/repositories/exchange/marketLists.ts 的 getLatestTwoTradeDates。
-const getLatestTwoTradeDatesTwse = (): Promise<[Date, Date] | null> => getLatestTwoTradeDates('TWSE');
+const getLatestTwoTradeDatesTwse = (deps: PriceChangeRankingDeps): Promise<[Date, Date] | null> => deps.marketLists.getLatestTwoTradeDates('TWSE');
 
-const getLatestTwoTradeDatesTpex = (): Promise<[Date, Date] | null> => getLatestTwoTradeDates('TPEx');
+const getLatestTwoTradeDatesTpex = (deps: PriceChangeRankingDeps): Promise<[Date, Date] | null> => deps.marketLists.getLatestTwoTradeDates('TPEx');
 
 const computeChanges = (
   market: 'TWSE' | 'TPEx',
@@ -64,11 +66,11 @@ const computeChanges = (
   return changes;
 };
 
-export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery): Promise<PriceChangeRankingResult> => {
+export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery, deps: PriceChangeRankingDeps): Promise<PriceChangeRankingResult> => {
   const { limit } = query;
   const warnings: string[] = [];
 
-  const [twseDates, tpexDates] = await Promise.all([getLatestTwoTradeDatesTwse(), getLatestTwoTradeDatesTpex()]);
+  const [twseDates, tpexDates] = await Promise.all([getLatestTwoTradeDatesTwse(deps), getLatestTwoTradeDatesTpex(deps)]);
   if (!twseDates) warnings.push('twse daily_price 資料不足兩個交易日，無法計算上市個股漲跌幅。');
   if (!tpexDates) warnings.push('tpex daily_price 資料不足兩個交易日，無法計算上櫃個股漲跌幅。');
 
@@ -77,9 +79,9 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   if (twseDates) {
     const [tradeDate, previousTradeDate] = twseDates;
     const [todayRows, prevRows, companySymbols] = await Promise.all([
-      listClosesForDate('TWSE', tradeDate),
-      listClosesForDate('TWSE', previousTradeDate),
-      getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+      deps.marketLists.listClosesForDate('TWSE', tradeDate),
+      deps.marketLists.listClosesForDate('TWSE', previousTradeDate),
+      deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     ]);
     pool.push(
       ...computeChanges(
@@ -96,9 +98,9 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   if (tpexDates) {
     const [tradeDate, previousTradeDate] = tpexDates;
     const [todayRows, prevRows, companySymbols] = await Promise.all([
-      listClosesForDate('TPEx', tradeDate),
-      listClosesForDate('TPEx', previousTradeDate),
-      getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
+      deps.marketLists.listClosesForDate('TPEx', tradeDate),
+      deps.marketLists.listClosesForDate('TPEx', previousTradeDate),
+      deps.companyProfiles.getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
     ]);
     pool.push(
       ...computeChanges(
@@ -119,7 +121,7 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
   const gainers = [...pool].sort((a, b) => b.changePercent - a.changePercent).slice(0, limit);
   const losers = [...pool].sort((a, b) => a.changePercent - b.changePercent).slice(0, limit);
 
-  const companyNames = await getCompanyNamesForSymbols([...new Set([...gainers, ...losers].map((row) => row.symbol))]);
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols([...new Set([...gainers, ...losers].map((row) => row.symbol))]);
   const toRow = (row: RawChangeRow, index: number): PriceChangeRow => ({
     rank: index + 1,
     symbol: row.symbol,

@@ -1,4 +1,5 @@
 import twseExportPrisma from '@/infrastructure/prisma/twseExportClient';
+import type { MaterialAnnouncementPort } from '@/application/ports/materialAnnouncements';
 
 // 上市公司每日重大訊息（export.material_announcement）——2026-09-17 重構 Phase 2 從
 // http/modules/market/materialAnnouncements/service.ts 搬來的 raw SQL（逐字），回傳原始列形狀。
@@ -21,3 +22,6 @@ export const listLatestMaterialAnnouncements = (limit: number): Promise<RawMater
     ORDER BY announcement_date DESC, announcement_time DESC
     LIMIT ${limit}
   `;
+
+// application/ports/materialAnnouncements.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const twseMaterialAnnouncements: MaterialAnnouncementPort = { listLatestMaterialAnnouncements };

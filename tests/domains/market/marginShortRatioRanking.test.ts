@@ -1,12 +1,13 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateMarginShortRatioRanking } from '@/http/modules/market/marginShortRatioRanking/service';
+import { calculateMarginShortRatioRanking } from '@/application/market/marginShortRatioRanking/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('calculateMarginShortRatioRanking: 應該依券資比由高到低排序，且不含融資餘額 <= 0 的公司', async () => {
-  const result = await calculateMarginShortRatioRanking({ limit: 20 });
+  const result = await calculateMarginShortRatioRanking({ limit: 20 }, appDeps);
   assert.ok(result.tradeDate !== '', '應該找得到最新一個交易日');
   assert.ok(result.rankings.length > 0, '應該至少排得出幾筆');
 
@@ -23,7 +24,7 @@ test('calculateMarginShortRatioRanking: 應該依券資比由高到低排序，�
 });
 
 test('calculateMarginShortRatioRanking: limit 應該限制回傳筆數', async () => {
-  const result = await calculateMarginShortRatioRanking({ limit: 3 });
+  const result = await calculateMarginShortRatioRanking({ limit: 3 }, appDeps);
   assert.ok(result.rankings.length <= 3);
 });
 
@@ -31,7 +32,7 @@ test('calculateMarginShortRatioRanking: limit 應該限制回傳筆數', async (
 // 2026-09-04 合併進上櫃後，兩個市場的「真正公司」清單分開查，依每一列自己的 market 判斷。
 test('calculateMarginShortRatioRanking: 排行裡不應該出現 ETF/衍生性商品', async () => {
   const [result, twseCompanySymbols, tpexCompanySymbols] = await Promise.all([
-    calculateMarginShortRatioRanking({ limit: 100 }),
+    calculateMarginShortRatioRanking({ limit: 100 }, appDeps),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
@@ -45,7 +46,7 @@ test('calculateMarginShortRatioRanking: 排行裡不應該出現 ETF/衍生性�
 // tpex_mainboard_margin_balance），驗證合併結果裡真的看得到上櫃公司，不是只查了上市。
 test('calculateMarginShortRatioRanking: 取夠大的 limit 時，應該同時看得到上市跟上櫃', async () => {
   const [result, tpexCountRows] = await Promise.all([
-    calculateMarginShortRatioRanking({ limit: 100 }),
+    calculateMarginShortRatioRanking({ limit: 100 }, appDeps),
     tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."margin_balance"`,
   ]);
   const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);

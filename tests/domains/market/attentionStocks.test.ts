@@ -1,11 +1,12 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { listAttentionStocks } from '@/http/modules/market/attentionStocks/service';
+import { listAttentionStocks } from '@/application/market/attentionStocks/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('listAttentionStocks: 應該依交易日由新到舊排序，且不超過 limit 筆', async () => {
-  const result = await listAttentionStocks({ limit: 20 });
+  const result = await listAttentionStocks({ limit: 20 }, appDeps);
   for (let i = 1; i < result.items.length; i++) {
     assert.ok(result.items[i - 1]!.tradeDate >= result.items[i]!.tradeDate, '應該由新到舊排序');
   }
@@ -13,13 +14,13 @@ test('listAttentionStocks: 應該依交易日由新到舊排序，且不超過 l
 });
 
 test('listAttentionStocks: limit 應該限制回傳筆數', async () => {
-  const result = await listAttentionStocks({ limit: 1 });
+  const result = await listAttentionStocks({ limit: 1 }, appDeps);
   assert.ok(result.items.length <= 1);
 });
 
 test('listAttentionStocks: 清單裡不應該出現非上市/上櫃公司', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([
-    listAttentionStocks({ limit: 50 }),
+    listAttentionStocks({ limit: 50 }, appDeps),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);

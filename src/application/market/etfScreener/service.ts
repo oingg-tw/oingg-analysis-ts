@@ -1,4 +1,6 @@
+import type { AppDeps } from '@/application/deps';
 import { ValidationError } from '@/application/errors';
+import type { EtfColumnRef, EtfFilterCondition, EtfSortSpec } from '@/application/ports/etfData';
 import {
   NUMERIC_FIELDS,
   CATEGORICAL_FIELDS,
@@ -9,20 +11,22 @@ import {
   type NumericFieldDefinition,
   type CategoricalFieldDefinition,
   type DateFieldDefinition,
-} from '@/infrastructure/repositories/sitca/etfFieldRegistry';
-import { buildEtfScreenerSql, type FilterCondition, type ColumnRef, type SortSpec } from '@/infrastructure/repositories/sitca/etfScreenerQuery';
-import { getLatestEtfYearMonth, runEtfRawQuery, listDistinctEtfAssetClasses, listDistinctEtfDistributionFrequencies } from '@/infrastructure/repositories/sitca/etfQueries';
+} from '@/domain/market/etfFieldRegistry';
 import type { EtfFilterInput, EtfColumnInput, EtfScreenerResponse, EtfScreenerRow, EtfFilterCatalogResponse, EtfFilterFieldCatalogEntry } from './types';
 
 // 2026-09-17 clean architecture 重構 Phase 1：改用 application 共用的 ValidationError（同一個
 // class，controller/測試的 instanceof 判斷不變），這個名稱只是給既有呼叫端的別名。
 export { ValidationError as EtfScreenerValidationError };
 
-const getLatestYearMonth = (): Promise<string | null> => getLatestEtfYearMonth();
+// 2026-09-17 Phase 4：從 http/modules/market/etfScreener/service.ts 搬來，SQL 組裝+執行藏進 deps.etfData.screenEtfs
+// （Prisma.Sql 不再出 infrastructure）、欄位白名單搬到 domain/market/etfFieldRegistry.ts，邏輯逐字不變。
+export type EtfScreenerDeps = Pick<AppDeps, 'etfData'>;
+
+const getLatestYearMonth = (deps: EtfScreenerDeps): Promise<string | null> => deps.etfData.getLatestEtfYearMonth();
 
 // filter 的形狀（min/max vs values）要跟欄位登記的 kind 一致，不接受「數字欄位給 values」
 // 或「類別欄位給 min/max」這種形狀不對的請求——這裡當成請求格式錯誤直接擋掉，不猜測意圖。
-const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
+const resolveFilterCondition = (input: EtfFilterInput): EtfFilterCondition => {
   const definition = resolveEtfField(input.field);
   if (!definition) {
     throw new ValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
@@ -54,7 +58,7 @@ const resolveFilterCondition = (input: EtfFilterInput): FilterCondition => {
   return { kind: 'categorical', definition, values: input.values };
 };
 
-const resolveColumn = (input: EtfColumnInput): ColumnRef => {
+const resolveColumn = (input: EtfColumnInput): EtfColumnRef => {
   const definition = resolveEtfField(input.field);
   if (!definition) {
     throw new ValidationError(`"${input.field}" 不是 GET /etf-screener/filters 列出的欄位。`);
@@ -64,7 +68,7 @@ const resolveColumn = (input: EtfColumnInput): ColumnRef => {
 
 // 跟股票 screener 同一條規則：不給就照 symbol 排序（保證分頁穩定），排序目標要嘛是 symbol
 // 要嘛要先出現在 columns 裡（不然回應看不到排序依據的數值，沒有意義）。
-const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | undefined, columns: ColumnRef[]): SortSpec | null => {
+const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | undefined, columns: EtfColumnRef[]): EtfSortSpec | null => {
   if (!sortField) return null;
   if (!sortOrder) {
     throw new ValidationError('有給 sortField 就要一起給 sortOrder。');
@@ -84,14 +88,16 @@ const parseValue = (raw: unknown, definition: NumericFieldDefinition | Categoric
   return String(raw);
 };
 
-export const runEtfScreener = async (request: {
+export interface EtfScreenerRequest {
   filters: EtfFilterInput[];
   columns: EtfColumnInput[];
   page: number;
   pageSize: number;
-  sortField?: string;
-  sortOrder?: 'asc' | 'desc';
-}): Promise<EtfScreenerResponse> => {
+  sortField?: string | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
+}
+
+export const runEtfScreener = async (request: EtfScreenerRequest, deps: EtfScreenerDeps): Promise<EtfScreenerResponse> => {
   const { filters: filterInputs, columns: columnInputs, page, pageSize } = request;
 
   const filters = filterInputs.map(resolveFilterCondition);
@@ -102,13 +108,12 @@ export const runEtfScreener = async (request: {
     throw new ValidationError('filters 跟 columns 至少要提供一個。');
   }
 
-  const yearMonth = await getLatestYearMonth();
+  const yearMonth = await getLatestYearMonth(deps);
   if (!yearMonth) {
     return { count: 0, page, pageSize, totalPages: 0, results: [] };
   }
 
-  const sql = buildEtfScreenerSql(yearMonth, filters, columns, page, pageSize, sort);
-  const rows = await runEtfRawQuery<Record<string, unknown>>(sql);
+  const rows = await deps.etfData.screenEtfs(yearMonth, filters, columns, page, pageSize, sort);
 
   const results: EtfScreenerRow[] = rows.map((row) => {
     const values: Record<string, number | string | boolean | null> = {};
@@ -132,10 +137,10 @@ export const runEtfScreener = async (request: {
 // 每個沒有 staticValues 的類別欄位都要在這裡登記自己的 distinct 值查詢——不能共用同一段
 // 查詢邏輯（assetClass 跟 distributionFrequency 從不同欄位、不同表達式拆出來），
 // getEtfFilterCatalog 找不到登記會直接 throw，不會悄悄回傳錯的選項清單。
-const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
-  assetClass: listDistinctEtfAssetClasses,
-  distributionFrequency: listDistinctEtfDistributionFrequencies,
-};
+const categoricalDistinctValues = (deps: EtfScreenerDeps): Record<string, () => Promise<string[]>> => ({
+  assetClass: () => deps.etfData.listDistinctEtfAssetClasses(),
+  distributionFrequency: () => deps.etfData.listDistinctEtfDistributionFrequencies(),
+});
 
 // 給前端動態畫篩選 UI 用——2026-09-02 應使用者要求新增，跟 GET /metrics（股票那邊）同一種
 // 精神。2026-09-11 改成比照股票 GET /filters 的巢狀分類（categoryKey +
@@ -143,7 +148,7 @@ const CATEGORICAL_DISTINCT_VALUES: Record<string, () => Promise<string[]>> = {
 // 數字欄位額外帶 unit；類別欄位裡 market/isActive 選項固定已知，assetClass/
 // distributionFrequency 現查 distinct 值（不寫死，之後 sitca-ts 分類異動會直接反映，不用
 // 改程式碼）。
-const buildFieldCatalogEntry = async (def: EtfFieldDefinition): Promise<EtfFilterFieldCatalogEntry> => {
+const buildFieldCatalogEntry = async (def: EtfFieldDefinition, deps: EtfScreenerDeps): Promise<EtfFilterFieldCatalogEntry> => {
   if (def.kind === 'numeric') {
     return { field: def.field, label: def.label, unit: def.unit, kind: 'numeric' };
   }
@@ -153,19 +158,19 @@ const buildFieldCatalogEntry = async (def: EtfFieldDefinition): Promise<EtfFilte
   if (def.staticValues) {
     return { field: def.field, label: def.label, kind: 'categorical', values: def.staticValues };
   }
-  const getValues = CATEGORICAL_DISTINCT_VALUES[def.field];
+  const getValues = categoricalDistinctValues(deps)[def.field];
   if (!getValues) {
-    throw new Error(`getEtfFilterCatalog: 類別欄位 "${def.field}" 沒有 staticValues 也沒有登記 distinct 值查詢方式，忘記在 CATEGORICAL_DISTINCT_VALUES 補上了。`);
+    throw new Error(`getEtfFilterCatalog: 類別欄位 "${def.field}" 沒有 staticValues 也沒有登記 distinct 值查詢方式，忘記在 categoricalDistinctValues 補上了。`);
   }
   return { field: def.field, label: def.label, kind: 'categorical', values: await getValues() };
 };
 
-export const getEtfFilterCatalog = async (): Promise<EtfFilterCatalogResponse> => {
+export const getEtfFilterCatalog = async (deps: EtfScreenerDeps): Promise<EtfFilterCatalogResponse> => {
   const allDefinitions: EtfFieldDefinition[] = [...Object.values(NUMERIC_FIELDS), ...Object.values(CATEGORICAL_FIELDS), ...Object.values(DATE_FIELDS)];
 
   const categories = await Promise.all(
     ETF_CATEGORIES.map(async ({ key: categoryKey, displayName: categoryDisplayName }) => {
-      const fields = await Promise.all(allDefinitions.filter((def) => def.categoryKey === categoryKey).map(buildFieldCatalogEntry));
+      const fields = await Promise.all(allDefinitions.filter((def) => def.categoryKey === categoryKey).map((def) => buildFieldCatalogEntry(def, deps)));
       return { categoryKey, categoryDisplayName, fields };
     })
   );

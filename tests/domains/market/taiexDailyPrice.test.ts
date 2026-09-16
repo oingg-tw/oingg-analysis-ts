@@ -1,10 +1,11 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getTaiexDailyPrice } from '@/http/modules/market/taiexDailyPrice/service';
+import { getTaiexDailyPrice } from '@/application/market/taiexDailyPrice/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 test('getTaiexDailyPrice: 應該回傳依交易日由舊到新排序的序列，且限制筆數', async () => {
-  const result = await getTaiexDailyPrice(10);
+  const result = await getTaiexDailyPrice(10, appDeps);
   assert.ok(result.entries.length > 0, '應該至少有資料');
   assert.ok(result.entries.length <= 10, '不應超過 limit');
 

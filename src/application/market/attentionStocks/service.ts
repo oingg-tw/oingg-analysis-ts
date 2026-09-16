@@ -1,8 +1,11 @@
-import { getCompanyNamesForSymbols, getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
-import { listAttentionNotesTwse, listAttentionNotesTpex, type RawAttentionHistoryNoteRow } from '@/infrastructure/repositories/exchange/marketLists';
-import { parseAttentionCriteria } from './parseCriteria';
+import type { AppDeps } from '@/application/deps';
+import type { RawAttentionHistoryNoteRow } from '@/application/ports/marketLists';
+import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
+import { parseAttentionCriteria } from '@/domain/market/attentionStocks/parseCriteria';
 import type { AttentionStocksQuery, AttentionStocksResult, AttentionStockRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/attentionStocks/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type AttentionStocksDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles' | 'priceChange'>;
 
 const SIX_DAY_CHANGE_TRADING_DAYS = 6;
 
@@ -19,17 +22,17 @@ interface PoolRow extends RawAttentionHistoryNoteRow {
 // 後剩不到 limit 筆的問題，見 valuation/ranking 的 COMPANY_SYMBOL_SUBQUERY 同樣的考量。
 //
 // TWSE 這邊額外篩 source = 'COMPANY_PROFILE'，排除證券商登記等非交易性質的
-// 'COMPANY_PROFILE_PUBLIC'（見 src/models/companyProfile.ts 的說明）；KY 股跟
+// 'COMPANY_PROFILE_PUBLIC'（見 companyProfile.ts 的說明）；KY 股跟
 // 興櫃都算真正公司，不篩掉。TPEx 沒有對應的非公司性質分類，維持原樣不加條件。
-export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<AttentionStocksResult> => {
+export const listAttentionStocks = async (query: AttentionStocksQuery, deps: AttentionStocksDeps): Promise<AttentionStocksResult> => {
   const { limit } = query;
   const warnings: string[] = [];
 
   // 理由同 disposedStocks/service.ts——twseExportPrisma 是實體隔離的獨立 Neon 專案，不能再跨
   // schema 查 public.company_profile，改成先取 getSecuritySymbolSet 再用 ANY(${symbols})。
-  const twseEligibleSymbols = [...(await getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
+  const twseEligibleSymbols = [...(await deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }))];
 
-  const [twseRows, tpexRows] = await Promise.all([listAttentionNotesTwse(twseEligibleSymbols, limit), listAttentionNotesTpex(limit)]);
+  const [twseRows, tpexRows] = await Promise.all([deps.marketLists.listAttentionNotesTwse(twseEligibleSymbols, limit), deps.marketLists.listAttentionNotesTpex(limit)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),
@@ -43,8 +46,8 @@ export const listAttentionStocks = async (query: AttentionStocksQuery): Promise<
   }
 
   const [companyNames, sixDayChanges] = await Promise.all([
-    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
-    getCumulativeChangePercent(
+    deps.companyProfiles.getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    deps.priceChange.getCumulativeChangePercent(
       sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: row.trade_date })),
       SIX_DAY_CHANGE_TRADING_DAYS
     ),

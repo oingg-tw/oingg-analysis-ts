@@ -1,12 +1,13 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateRevenueRanking } from '@/http/modules/market/revenueRanking/service';
+import { calculateRevenueRanking } from '@/application/market/revenueRanking/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上市或上櫃公司', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([
-    calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 20 }),
+    calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 20 }, appDeps),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
@@ -23,7 +24,7 @@ test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上�
 });
 
 test('calculateRevenueRanking: limit 應該限制回傳筆數', async () => {
-  const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 3 });
+  const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 3 }, appDeps);
   assert.ok(result.rankings.length <= 3);
 });
 
@@ -32,7 +33,7 @@ test('calculateRevenueRanking: limit 應該限制回傳筆數', async () => {
 // 正的那一側（分母趨近零時比值趨近正無限大，分子趨近零時比值只會趨近 -100%，本身有界），
 // 所以只驗證上界，不驗證下界。
 test('calculateRevenueRanking: yoy 排行不應該出現超過 300% 的公司（基期趨近於零的統計失真）', async () => {
-  const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 50 });
+  const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 50 }, appDeps);
   assert.ok(result.rankings.length > 0);
   for (const row of result.rankings) {
     assert.ok(row.yoyChangePercent! <= 300, `${row.symbol} 的 yoyChangePercent (${row.yoyChangePercent}) 應該已經被排除`);

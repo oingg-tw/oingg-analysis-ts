@@ -1,8 +1,10 @@
 import { Router } from 'ultimate-express';
-import { getDisposedStocks } from './controller';
+import { listDisposedStocks, type DisposedStocksDeps } from '@/application/market/disposedStocks/service';
+import { jsonRoute } from '@/http/route';
+import { getDisposedStocksQuerySchema } from './schemas';
 
-const router = Router();
-
-router.get('/market/disposed-stocks', getDisposedStocks);
-
-export default router;
+export const createDisposedStocksRouter = (deps: DisposedStocksDeps): Router => {
+  const router = Router();
+  router.get('/market/disposed-stocks', ...jsonRoute({ query: getDisposedStocksQuerySchema }, ({ query }) => listDisposedStocks(query, deps)));
+  return router;
+};

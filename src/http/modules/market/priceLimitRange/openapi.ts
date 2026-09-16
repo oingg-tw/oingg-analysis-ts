@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { priceLimitRangeResultSchema } from './types';
+import { priceLimitRangeResultSchema } from '@/application/market/priceLimitRange/types';
 
 export const registerPriceLimitRangeOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

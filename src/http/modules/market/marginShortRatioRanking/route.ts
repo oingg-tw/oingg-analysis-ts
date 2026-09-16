@@ -1,8 +1,10 @@
 import { Router } from 'ultimate-express';
-import { getMarginShortRatioRanking } from './controller';
+import { calculateMarginShortRatioRanking, type MarginShortRatioRankingDeps } from '@/application/market/marginShortRatioRanking/service';
+import { jsonRoute } from '@/http/route';
+import { getMarginShortRatioRankingQuerySchema } from './schemas';
 
-const router = Router();
-
-router.get('/market/margin-short-ratio-ranking', getMarginShortRatioRanking);
-
-export default router;
+export const createMarginShortRatioRankingRouter = (deps: MarginShortRatioRankingDeps): Router => {
+  const router = Router();
+  router.get('/market/margin-short-ratio-ranking', ...jsonRoute({ query: getMarginShortRatioRankingQuerySchema }, ({ query }) => calculateMarginShortRatioRanking(query, deps)));
+  return router;
+};

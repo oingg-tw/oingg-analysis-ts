@@ -1,5 +1,5 @@
 import { Prisma } from '#generated/sitca-export-client';
-import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from './etfFieldRegistry';
+import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type CategoricalFieldDefinition, type DateFieldDefinition } from '@/domain/market/etfFieldRegistry';
 
 // 2026-09-17 重構 Phase 2：從 http/modules/market/etfScreener/queryBuilder.ts 搬來——只有 Prisma.sql
 // 的組裝（純函式、寫死 sitca export view 的表名欄位名），執行交給 ./etfQueries.ts 的 runEtfRawQuery。

@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { cumulativeChangePercentKey as buildKeyFromPort, type PriceChangePort } from '@/application/ports/priceChange';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 export interface ChangeLookupKey {
@@ -7,7 +8,8 @@ export interface ChangeLookupKey {
   asOfDate: Date; // 以這一天（或更早的最近一個交易日）當基準日，往前數 tradingDaysBack 個交易日
 }
 
-const buildKey = (market: 'TWSE' | 'TPEx', symbol: string, asOfDate: Date): string => `${market}:${symbol}:${asOfDate.toISOString().slice(0, 10)}`;
+// key 格式的定義權在 application port（呼叫端用同一支拼 key），這裡直接沿用。
+const buildKey = buildKeyFromPort;
 
 // 上市/上櫃分開查——交易所警示股票的「近N日累積漲跌幅」是點對點比較，不是逐日漲跌幅加總：
 // 累積漲跌幅 = (基準日收盤 - 往前數N個交易日收盤) / 往前數N個交易日收盤 x 100%
@@ -101,3 +103,6 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
 };
 
 export const cumulativeChangePercentKey = buildKey;
+
+// application/ports/priceChange.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const exchangePriceChange: PriceChangePort = { getCumulativeChangePercent };

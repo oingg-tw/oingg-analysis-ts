@@ -1,6 +1,8 @@
-import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getLatestPriceLimitRangeTradeDate, listPriceLimitRangeTwse, listPriceLimitRangeTpex } from '@/infrastructure/repositories/exchange/marketLists';
+import type { AppDeps } from '@/application/deps';
 import type { PriceLimitRangeResult, PriceLimitRangeRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/priceLimitRange/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type PriceLimitRangeDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles'>;
 
 interface PoolRow {
   market: 'TWSE' | 'TPEx';
@@ -22,10 +24,10 @@ interface PoolRow {
 //
 // TPEx 版本欄位比 TWSE 精簡（沒有 opening_ref_price/previous_day_price/allow_odd_lot_trade），
 // 沒有的欄位回傳 null。twse-ts/tpex-ts 都已經先過濾成只留真正上市/上櫃公司，這裡不用再濾。
-export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
+export const getPriceLimitRange = async (deps: PriceLimitRangeDeps): Promise<PriceLimitRangeResult> => {
   const warnings: string[] = [];
 
-  const [twseLatest, tpexLatest] = await Promise.all([getLatestPriceLimitRangeTradeDate('TWSE'), getLatestPriceLimitRangeTradeDate('TPEx')]);
+  const [twseLatest, tpexLatest] = await Promise.all([deps.marketLists.getLatestPriceLimitRangeTradeDate('TWSE'), deps.marketLists.getLatestPriceLimitRangeTradeDate('TPEx')]);
   const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) {
     warnings.push('查無漲跌停幅度資料。');
@@ -33,7 +35,7 @@ export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
   }
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
-  const [twseRows, tpexRows] = await Promise.all([listPriceLimitRangeTwse(tradeDate), listPriceLimitRangeTpex(tradeDate)]);
+  const [twseRows, tpexRows] = await Promise.all([deps.marketLists.listPriceLimitRangeTwse(tradeDate), deps.marketLists.listPriceLimitRangeTpex(tradeDate)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),
@@ -52,7 +54,7 @@ export const getPriceLimitRange = async (): Promise<PriceLimitRangeResult> => {
     ),
   ];
 
-  const companyNames = await getCompanyNamesForSymbols(pool.map((row) => row.symbol));
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols(pool.map((row) => row.symbol));
   // limit_up/limit_down/limit_range/opening_ref_price/previous_day_price 是 DB 的 Decimal
   // 欄位，$queryRaw 撈出來是 Decimal 物件不是原生 number，直接塞進 JSON.stringify 會變成
   // 字串，要用 Number() 轉。

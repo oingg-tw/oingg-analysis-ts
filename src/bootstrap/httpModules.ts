@@ -19,27 +19,27 @@ import { createStocksRouter } from '@/http/modules/stocks/route';
 import { registerStocksOpenApi } from '@/http/modules/stocks/openapi';
 import { createScreenerRouter } from '@/http/modules/screener/route';
 import { registerScreenerOpenApi } from '@/http/modules/screener/openapi';
-import marginShortRatioRankingRouter from '@/http/modules/market/marginShortRatioRanking/route';
+import { createMarginShortRatioRankingRouter } from '@/http/modules/market/marginShortRatioRanking/route';
 import { registerMarginShortRatioRankingOpenApi } from '@/http/modules/market/marginShortRatioRanking/openapi';
-import revenueRankingRouter from '@/http/modules/market/revenueRanking/route';
+import { createRevenueRankingRouter } from '@/http/modules/market/revenueRanking/route';
 import { registerRevenueRankingOpenApi } from '@/http/modules/market/revenueRanking/openapi';
-import volumeTop20Router from '@/http/modules/market/volumeTop20/route';
+import { createVolumeTop20Router } from '@/http/modules/market/volumeTop20/route';
 import { registerVolumeTop20OpenApi } from '@/http/modules/market/volumeTop20/openapi';
-import disposedStocksRouter from '@/http/modules/market/disposedStocks/route';
+import { createDisposedStocksRouter } from '@/http/modules/market/disposedStocks/route';
 import { registerDisposedStocksOpenApi } from '@/http/modules/market/disposedStocks/openapi';
-import attentionStocksRouter from '@/http/modules/market/attentionStocks/route';
+import { createAttentionStocksRouter } from '@/http/modules/market/attentionStocks/route';
 import { registerAttentionStocksOpenApi } from '@/http/modules/market/attentionStocks/openapi';
-import priceLimitRangeRouter from '@/http/modules/market/priceLimitRange/route';
+import { createPriceLimitRangeRouter } from '@/http/modules/market/priceLimitRange/route';
 import { registerPriceLimitRangeOpenApi } from '@/http/modules/market/priceLimitRange/openapi';
-import materialAnnouncementsRouter from '@/http/modules/market/materialAnnouncements/route';
+import { createMaterialAnnouncementsRouter } from '@/http/modules/market/materialAnnouncements/route';
 import { registerMaterialAnnouncementsOpenApi } from '@/http/modules/market/materialAnnouncements/openapi';
-import priceChangeRankingRouter from '@/http/modules/market/priceChangeRanking/route';
+import { createPriceChangeRankingRouter } from '@/http/modules/market/priceChangeRanking/route';
 import { registerPriceChangeRankingOpenApi } from '@/http/modules/market/priceChangeRanking/openapi';
-import etfRankingRouter from '@/http/modules/market/etfRanking/route';
+import { createEtfRankingRouter } from '@/http/modules/market/etfRanking/route';
 import { registerEtfRankingOpenApi } from '@/http/modules/market/etfRanking/openapi';
-import etfScreenerRouter from '@/http/modules/market/etfScreener/route';
+import { createEtfScreenerRouter } from '@/http/modules/market/etfScreener/route';
 import { registerEtfScreenerOpenApi } from '@/http/modules/market/etfScreener/openapi';
-import taiexDailyPriceRouter from '@/http/modules/market/taiexDailyPrice/route';
+import { createTaiexDailyPriceRouter } from '@/http/modules/market/taiexDailyPrice/route';
 import { registerTaiexDailyPriceOpenApi } from '@/http/modules/market/taiexDailyPrice/openapi';
 import { createRankingRouter } from '@/http/modules/ranking/route';
 import { registerValuationRankingOpenApi } from '@/http/modules/ranking/openapi';
@@ -70,17 +70,17 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'industries', auth: 'bff', router: createIndustriesRouter(deps), registerOpenApi: registerIndustriesOpenApi },
   { name: 'stocks', auth: 'bff', router: createStocksRouter(deps), registerOpenApi: registerStocksOpenApi },
   { name: 'screener', auth: 'bff', router: createScreenerRouter(deps), registerOpenApi: registerScreenerOpenApi },
-  { name: 'marginShortRatioRanking', auth: 'bff', router: marginShortRatioRankingRouter, registerOpenApi: registerMarginShortRatioRankingOpenApi },
-  { name: 'revenueRanking', auth: 'bff', router: revenueRankingRouter, registerOpenApi: registerRevenueRankingOpenApi },
-  { name: 'volumeTop20', auth: 'bff', router: volumeTop20Router, registerOpenApi: registerVolumeTop20OpenApi },
-  { name: 'disposedStocks', auth: 'bff', router: disposedStocksRouter, registerOpenApi: registerDisposedStocksOpenApi },
-  { name: 'attentionStocks', auth: 'bff', router: attentionStocksRouter, registerOpenApi: registerAttentionStocksOpenApi },
-  { name: 'priceLimitRange', auth: 'bff', router: priceLimitRangeRouter, registerOpenApi: registerPriceLimitRangeOpenApi },
-  { name: 'materialAnnouncements', auth: 'bff', router: materialAnnouncementsRouter, registerOpenApi: registerMaterialAnnouncementsOpenApi },
-  { name: 'priceChangeRanking', auth: 'bff', router: priceChangeRankingRouter, registerOpenApi: registerPriceChangeRankingOpenApi },
-  { name: 'etfRanking', auth: 'bff', router: etfRankingRouter, registerOpenApi: registerEtfRankingOpenApi },
-  { name: 'etfScreener', auth: 'bff', router: etfScreenerRouter, registerOpenApi: registerEtfScreenerOpenApi },
-  { name: 'taiexDailyPrice', auth: 'bff', router: taiexDailyPriceRouter, registerOpenApi: registerTaiexDailyPriceOpenApi },
+  { name: 'marginShortRatioRanking', auth: 'bff', router: createMarginShortRatioRankingRouter(deps), registerOpenApi: registerMarginShortRatioRankingOpenApi },
+  { name: 'revenueRanking', auth: 'bff', router: createRevenueRankingRouter(deps), registerOpenApi: registerRevenueRankingOpenApi },
+  { name: 'volumeTop20', auth: 'bff', router: createVolumeTop20Router(deps), registerOpenApi: registerVolumeTop20OpenApi },
+  { name: 'disposedStocks', auth: 'bff', router: createDisposedStocksRouter(deps), registerOpenApi: registerDisposedStocksOpenApi },
+  { name: 'attentionStocks', auth: 'bff', router: createAttentionStocksRouter(deps), registerOpenApi: registerAttentionStocksOpenApi },
+  { name: 'priceLimitRange', auth: 'bff', router: createPriceLimitRangeRouter(deps), registerOpenApi: registerPriceLimitRangeOpenApi },
+  { name: 'materialAnnouncements', auth: 'bff', router: createMaterialAnnouncementsRouter(deps), registerOpenApi: registerMaterialAnnouncementsOpenApi },
+  { name: 'priceChangeRanking', auth: 'bff', router: createPriceChangeRankingRouter(deps), registerOpenApi: registerPriceChangeRankingOpenApi },
+  { name: 'etfRanking', auth: 'bff', router: createEtfRankingRouter(deps), registerOpenApi: registerEtfRankingOpenApi },
+  { name: 'etfScreener', auth: 'bff', router: createEtfScreenerRouter(deps), registerOpenApi: registerEtfScreenerOpenApi },
+  { name: 'taiexDailyPrice', auth: 'bff', router: createTaiexDailyPriceRouter(deps), registerOpenApi: registerTaiexDailyPriceOpenApi },
   { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: createRankingRouter(deps), registerOpenApi: registerValuationRankingOpenApi },
   { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },
   { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: createGovBondYield10yRouter(deps), registerOpenApi: registerGovBondYield10yOpenApi },

@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getMarginShortRatioRankingQuerySchema } from './controller';
-import { marginShortRatioRankingResultSchema } from './types';
+import { getMarginShortRatioRankingQuerySchema } from './schemas';
+import { marginShortRatioRankingResultSchema } from '@/application/market/marginShortRatioRanking/types';
 
 export const registerMarginShortRatioRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

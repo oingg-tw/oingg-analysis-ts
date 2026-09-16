@@ -1,6 +1,9 @@
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getLatestMonthlyRevenueYearMonth, listMonthlyRevenueForMonth, type RawMonthlyRevenueRow } from '@/infrastructure/repositories/exchange/marketLists';
+import type { AppDeps } from '@/application/deps';
+import type { RawMonthlyRevenueRow } from '@/application/ports/marketLists';
 import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/revenueRanking/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type RevenueRankingDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles'>;
 
 interface EligibleRow extends RawMonthlyRevenueRow {
   market: 'TWSE' | 'TPEx';
@@ -13,7 +16,7 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來當排序依據。
 //
 // monthly_revenue 的範圍是「公開發行公司」，不是只有上市櫃（dev 樣本看過 000xxx 開頭的代號），
-// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 src/models/companyProfile.ts
+// 應使用者要求只留上市（TWSE）或上櫃（TPEx）公司，見 companyProfile.ts
 // 的 getAllSecurityRows 說明。preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-01 tpex-ts 也開了自己的 monthly_revenue（欄位跟 TWSE 那份一致）——上市/上櫃各自
@@ -35,28 +38,28 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // 現在唯一適用的 metric=yoy 情境。
 const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
 
-const getLatestYearMonth = async (): Promise<Date | null> => {
-  const [twseLatest, tpexLatest] = await Promise.all([getLatestMonthlyRevenueYearMonth('TWSE'), getLatestMonthlyRevenueYearMonth('TPEx')]);
+const getLatestYearMonth = async (deps: RevenueRankingDeps): Promise<Date | null> => {
+  const [twseLatest, tpexLatest] = await Promise.all([deps.marketLists.getLatestMonthlyRevenueYearMonth('TWSE'), deps.marketLists.getLatestMonthlyRevenueYearMonth('TPEx')]);
   const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) return null;
   return candidates.reduce((latest, current) => (current > latest ? current : latest));
 };
 
-export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promise<RevenueRankingResult> => {
+export const calculateRevenueRanking = async (query: RevenueRankingQuery, deps: RevenueRankingDeps): Promise<RevenueRankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [];
 
-  const yearMonth = await getLatestYearMonth();
+  const yearMonth = await getLatestYearMonth(deps);
   if (!yearMonth) {
     warnings.push('查無任何月營收資料。');
     return { yearMonth: '', metric, order, limit, rankings: [], warnings };
   }
 
   const [twseRows, tpexRows, twseSymbols, tpexSymbols] = await Promise.all([
-    listMonthlyRevenueForMonth('TWSE', yearMonth),
-    listMonthlyRevenueForMonth('TPEx', yearMonth),
-    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
-    getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
+    deps.marketLists.listMonthlyRevenueForMonth('TWSE', yearMonth),
+    deps.marketLists.listMonthlyRevenueForMonth('TPEx', yearMonth),
+    deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+    deps.companyProfiles.getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
 
   const bySymbol = new Map<string, EligibleRow>();
@@ -81,7 +84,7 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery): Promi
     warnings.push(`${yearMonth.toISOString().slice(0, 7)} 查無符合條件（上市或上櫃、${metric} 有值）的公司，無法排行。`);
   }
 
-  const companyNames = await getCompanyNamesForSymbols(sorted.map((row) => row.symbol));
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols(sorted.map((row) => row.symbol));
   const rankings: RevenueRankingRow[] = sorted.map((row, index) => ({
     rank: index + 1,
     symbol: row.symbol,

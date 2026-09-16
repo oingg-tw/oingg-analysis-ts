@@ -1,8 +1,10 @@
 import { Router } from 'ultimate-express';
-import { getRevenueRanking } from './controller';
+import { calculateRevenueRanking, type RevenueRankingDeps } from '@/application/market/revenueRanking/service';
+import { jsonRoute } from '@/http/route';
+import { getRevenueRankingQuerySchema } from './schemas';
 
-const router = Router();
-
-router.get('/market/revenue-ranking', getRevenueRanking);
-
-export default router;
+export const createRevenueRankingRouter = (deps: RevenueRankingDeps): Router => {
+  const router = Router();
+  router.get('/market/revenue-ranking', ...jsonRoute({ query: getRevenueRankingQuerySchema }, ({ query }) => calculateRevenueRanking(query, deps)));
+  return router;
+};

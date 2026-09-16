@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { attentionCriteriaDetailSchema, type AttentionCriteriaDetail } from './parseCriteria';
+import { attentionCriteriaDetailSchema, type AttentionCriteriaDetail } from '@/domain/market/attentionStocks/parseCriteria';
 
 export type { AttentionCriteriaDetail };
 

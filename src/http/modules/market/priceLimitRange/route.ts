@@ -1,8 +1,9 @@
 import { Router } from 'ultimate-express';
-import { getPriceLimitRangeRanking } from './controller';
+import { getPriceLimitRange, type PriceLimitRangeDeps } from '@/application/market/priceLimitRange/service';
+import { jsonRoute } from '@/http/route';
 
-const router = Router();
-
-router.get('/market/price-limit-range', getPriceLimitRangeRanking);
-
-export default router;
+export const createPriceLimitRangeRouter = (deps: PriceLimitRangeDeps): Router => {
+  const router = Router();
+  router.get('/market/price-limit-range', ...jsonRoute({}, () => getPriceLimitRange(deps)));
+  return router;
+};

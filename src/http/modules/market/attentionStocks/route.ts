@@ -1,8 +1,10 @@
 import { Router } from 'ultimate-express';
-import { getAttentionStocks } from './controller';
+import { listAttentionStocks, type AttentionStocksDeps } from '@/application/market/attentionStocks/service';
+import { jsonRoute } from '@/http/route';
+import { getAttentionStocksQuerySchema } from './schemas';
 
-const router = Router();
-
-router.get('/market/attention-stocks', getAttentionStocks);
-
-export default router;
+export const createAttentionStocksRouter = (deps: AttentionStocksDeps): Router => {
+  const router = Router();
+  router.get('/market/attention-stocks', ...jsonRoute({ query: getAttentionStocksQuerySchema }, ({ query }) => listAttentionStocks(query, deps)));
+  return router;
+};

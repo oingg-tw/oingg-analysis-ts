@@ -1,21 +1,23 @@
-import { listLatestMaterialAnnouncements } from '@/infrastructure/repositories/twse/materialAnnouncement';
-import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import type { AppDeps } from '@/application/deps';
 import type { MaterialAnnouncementsQuery, MaterialAnnouncementsResult, MaterialAnnouncementRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/materialAnnouncements/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type MaterialAnnouncementsDeps = Pick<AppDeps, 'materialAnnouncements' | 'companyProfiles'>;
 
 // 上市公司每日重大訊息——2026-09-01 應使用者要求新增。範圍本身就是「上市公司」，不用額外
 // 排除 ETF/衍生性商品。取最近公告的前 limit 筆（依公告日期、公告時間由新到舊），不是固定
 // 某一天的資料，跟 disposedStocks/attentionStocks 同一種「清單」風格。
-export const listMaterialAnnouncements = async (query: MaterialAnnouncementsQuery): Promise<MaterialAnnouncementsResult> => {
+export const listMaterialAnnouncements = async (query: MaterialAnnouncementsQuery, deps: MaterialAnnouncementsDeps): Promise<MaterialAnnouncementsResult> => {
   const { limit } = query;
   const warnings: string[] = [];
 
-  const rows = await listLatestMaterialAnnouncements(limit);
+  const rows = await deps.materialAnnouncements.listLatestMaterialAnnouncements(limit);
 
   if (rows.length === 0) {
     warnings.push('查無重大訊息資料。');
   }
 
-  const companyNames = await getCompanyNamesForSymbols(rows.map((row) => row.symbol));
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols(rows.map((row) => row.symbol));
   const items: MaterialAnnouncementRow[] = rows.map((row) => ({
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,

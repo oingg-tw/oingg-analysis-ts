@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import type { MarketListsPort } from '@/application/ports/marketLists';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 // 2026-09-17 clean architecture 重構 Phase 2：全市場排行/清單類端點（market/*）原本各自在 HTTP
@@ -220,3 +221,23 @@ export const listDisposedStocksTpex = (limit: number): Promise<RawTpexDisposedSt
     ORDER BY announce_date DESC
     LIMIT ${limit}
   `;
+
+// application/ports/marketLists.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const exchangeMarketLists: MarketListsPort = {
+  getLatestVolumeTop20TradeDate,
+  listVolumeTop20Twse,
+  listVolumeTop20Tpex,
+  getLatestPriceLimitRangeTradeDate,
+  listPriceLimitRangeTwse,
+  listPriceLimitRangeTpex,
+  getLatestMonthlyRevenueYearMonth,
+  listMonthlyRevenueForMonth,
+  getLatestMarginBalanceTradeDate,
+  listMarginBalanceForRatio,
+  getLatestTwoTradeDates,
+  listClosesForDate,
+  listAttentionNotesTwse,
+  listAttentionNotesTpex,
+  listDisposedStocksTwse,
+  listDisposedStocksTpex,
+};

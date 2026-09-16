@@ -1,8 +1,9 @@
 import { Router } from 'ultimate-express';
-import { getVolumeTop20Ranking } from './controller';
+import { getVolumeTop20, type VolumeTop20Deps } from '@/application/market/volumeTop20/service';
+import { jsonRoute } from '@/http/route';
 
-const router = Router();
-
-router.get('/market/volume-top20', getVolumeTop20Ranking);
-
-export default router;
+export const createVolumeTop20Router = (deps: VolumeTop20Deps): Router => {
+  const router = Router();
+  router.get('/market/volume-top20', ...jsonRoute({}, () => getVolumeTop20(deps)));
+  return router;
+};

@@ -9,6 +9,11 @@ import { mopsCapitalStockHistory } from '@/infrastructure/repositories/mops/capi
 import { twseDevMonthlyRevenue } from '@/infrastructure/repositories/twse/monthlyRevenue';
 import { mopsFinancialStatementRows } from '@/infrastructure/repositories/mops/financialStatementRows';
 import { exchangeValuationRanking } from '@/infrastructure/repositories/exchange/dailyValuationRanking';
+import { exchangeMarketLists } from '@/infrastructure/repositories/exchange/marketLists';
+import { exchangePriceChange } from '@/infrastructure/repositories/exchange/priceChange';
+import { twseTaiexIndex } from '@/infrastructure/repositories/twse/taiexIndex';
+import { twseMaterialAnnouncements } from '@/infrastructure/repositories/twse/materialAnnouncement';
+import { sitcaEtfData } from '@/infrastructure/repositories/sitca/etfQueries';
 import { createPitDeps } from './pitDeps';
 
 // 整個服務的 composition root：指標核心的 pitDeps 加上 HTTP use case 用的 port。全 repo 只有這裡（跟測試的
@@ -25,6 +30,11 @@ export const createAppDeps = (): AppDeps => ({
   monthlyRevenue: twseDevMonthlyRevenue,
   statementRows: mopsFinancialStatementRows,
   valuationRanking: exchangeValuationRanking,
+  marketLists: exchangeMarketLists,
+  priceChange: exchangePriceChange,
+  taiexIndex: twseTaiexIndex,
+  materialAnnouncements: twseMaterialAnnouncements,
+  etfData: sitcaEtfData,
 });
 
 export const appDeps: AppDeps = createAppDeps();

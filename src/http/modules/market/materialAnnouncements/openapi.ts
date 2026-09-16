@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getMaterialAnnouncementsQuerySchema } from './controller';
-import { materialAnnouncementsResultSchema } from './types';
+import { getMaterialAnnouncementsQuerySchema } from './schemas';
+import { materialAnnouncementsResultSchema } from '@/application/market/materialAnnouncements/types';
 
 export const registerMaterialAnnouncementsOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

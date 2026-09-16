@@ -1,10 +1,11 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getPriceLimitRange } from '@/http/modules/market/priceLimitRange/service';
+import { getPriceLimitRange } from '@/application/market/priceLimitRange/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 test('getPriceLimitRange: widest/narrowest 都應該依 rank 遞增，且不超過 20 筆', async () => {
-  const result = await getPriceLimitRange();
+  const result = await getPriceLimitRange(appDeps);
   assert.ok(result.tradeDate !== '', '應該找得到最新一個交易日');
   assert.ok(result.widest.length <= 20);
   assert.ok(result.narrowest.length <= 20);

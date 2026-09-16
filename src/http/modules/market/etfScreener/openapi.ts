@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { postEtfScreenerBodySchema } from './controller';
-import { etfScreenerResponseSchema, etfFilterCatalogResponseSchema } from './types';
+import { postEtfScreenerBodySchema } from './schemas';
+import { etfScreenerResponseSchema, etfFilterCatalogResponseSchema } from '@/application/market/etfScreener/types';
 
 export const registerEtfScreenerOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

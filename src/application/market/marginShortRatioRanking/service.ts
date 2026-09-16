@@ -1,6 +1,8 @@
-import { getSecuritySymbolSet, getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getLatestMarginBalanceTradeDate, listMarginBalanceForRatio } from '@/infrastructure/repositories/exchange/marketLists';
+import type { AppDeps } from '@/application/deps';
 import type { MarginShortRatioRankingQuery, MarginShortRatioRankingResult, MarginShortRatioRow } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/marginShortRatioRanking/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type MarginShortRatioRankingDeps = Pick<AppDeps, 'marketLists' | 'companyProfiles'>;
 
 interface RatioRow {
   market: 'TWSE' | 'TPEx';
@@ -16,24 +18,24 @@ interface RatioRow {
 // 無限大處理。
 //
 // 排除 ETF/衍生性商品（例如槓桿/反向 ETF）——這是主打上市公司證券的排行榜功能，不是全部有
-// 融資融券資料的標的都要排進來，見 src/models/companyProfile.ts 的
+// 融資融券資料的標的都要排進來，見 companyProfile.ts 的
 // getAllSecurityRows 說明。preferredStock: 'exclude' 維持這支排行原本的行為。
 //
 // 2026-09-04 應要求合併上櫃（tpex-ts 開了 export.margin_balance，source 是他們內部的
 // tpex_mainboard_margin_balance）——兩個市場各自找自己的最新交易日，不是強迫用同一天（跟
-// valuation/ranking/service.ts 同一個修法：export 資料新鮮度不保證同步，強迫同一天會讓比較舊
+// valuation/ranking 同一個修法：export 資料新鮮度不保證同步，強迫同一天會讓比較舊
 // 的那個市場整個消失）。tpex-ts 提醒這個 dataset 的 Cloud Scheduler 剛排上、22:10 觸發，這幾天
 // 「當日新鮮度」還在觀察，這裡沒有另外檢查 export.ingestion_runs——沿用本服務其他市場資料
 // 「直接取有資料的最新一天」的一貫作法，不對這個 dataset 特殊處理，之後穩定了也不用回頭改。
 // 上櫃檔數（~920 檔）遠少於上市，合併排行時上市會自然佔多數，是市場規模差異，不是 bug。
-const resolveTwseMarginDate = (): Promise<Date | null> => getLatestMarginBalanceTradeDate('TWSE');
+const resolveTwseMarginDate = (deps: MarginShortRatioRankingDeps): Promise<Date | null> => deps.marketLists.getLatestMarginBalanceTradeDate('TWSE');
 
-const resolveTpexMarginDate = (): Promise<Date | null> => getLatestMarginBalanceTradeDate('TPEx');
+const resolveTpexMarginDate = (deps: MarginShortRatioRankingDeps): Promise<Date | null> => deps.marketLists.getLatestMarginBalanceTradeDate('TPEx');
 
-const queryTwseMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
+const queryTwseMargin = async (tradeDate: Date, deps: MarginShortRatioRankingDeps): Promise<RatioRow[]> => {
   const [rows, companySymbols] = await Promise.all([
-    listMarginBalanceForRatio('TWSE', tradeDate),
-    getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+    deps.marketLists.listMarginBalanceForRatio('TWSE', tradeDate),
+    deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
   ]);
   return rows
     .filter((row) => companySymbols.has(row.symbol))
@@ -46,10 +48,10 @@ const queryTwseMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
     }));
 };
 
-const queryTpexMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
+const queryTpexMargin = async (tradeDate: Date, deps: MarginShortRatioRankingDeps): Promise<RatioRow[]> => {
   const [rows, companySymbols] = await Promise.all([
-    listMarginBalanceForRatio('TPEx', tradeDate),
-    getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
+    deps.marketLists.listMarginBalanceForRatio('TPEx', tradeDate),
+    deps.companyProfiles.getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   return rows
     .filter((row) => companySymbols.has(row.symbol))
@@ -62,11 +64,11 @@ const queryTpexMargin = async (tradeDate: Date): Promise<RatioRow[]> => {
     }));
 };
 
-export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRankingQuery): Promise<MarginShortRatioRankingResult> => {
+export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRankingQuery, deps: MarginShortRatioRankingDeps): Promise<MarginShortRatioRankingResult> => {
   const { limit } = query;
   const warnings: string[] = [];
 
-  const [twseTradeDate, tpexTradeDate] = await Promise.all([resolveTwseMarginDate(), resolveTpexMarginDate()]);
+  const [twseTradeDate, tpexTradeDate] = await Promise.all([resolveTwseMarginDate(deps), resolveTpexMarginDate(deps)]);
 
   if (!twseTradeDate && !tpexTradeDate) {
     warnings.push('查無任何一天的 margin_balance 資料，無法計算券資比排行。');
@@ -74,8 +76,8 @@ export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRa
   }
 
   const [twseRatios, tpexRatios] = await Promise.all([
-    twseTradeDate ? queryTwseMargin(twseTradeDate) : Promise.resolve([]),
-    tpexTradeDate ? queryTpexMargin(tpexTradeDate) : Promise.resolve([]),
+    twseTradeDate ? queryTwseMargin(twseTradeDate, deps) : Promise.resolve([]),
+    tpexTradeDate ? queryTpexMargin(tpexTradeDate, deps) : Promise.resolve([]),
   ]);
 
   const resolvedDates = [twseTradeDate, tpexTradeDate].filter((d): d is Date => d !== null);
@@ -96,7 +98,7 @@ export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRa
     warnings.push('查無融資餘額大於 0 且有融券餘額的公司，無法計算排行。');
   }
 
-  const companyNames = await getCompanyNamesForSymbols(ratios.map((row) => row.symbol));
+  const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols(ratios.map((row) => row.symbol));
   const rankings: MarginShortRatioRow[] = ratios.map((row, index) => ({
     rank: index + 1,
     symbol: row.symbol,

@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { volumeTop20ResultSchema } from './types';
+import { volumeTop20ResultSchema } from '@/application/market/volumeTop20/types';
 
 export const registerVolumeTop20OpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

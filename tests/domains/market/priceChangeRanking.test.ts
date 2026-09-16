@@ -1,11 +1,12 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculatePriceChangeRanking } from '@/http/modules/market/priceChangeRanking/service';
+import { calculatePriceChangeRanking } from '@/application/market/priceChangeRanking/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getSecuritySymbolSet } from '@/infrastructure/repositories/exchange/companyProfile';
 
 test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排序，且不超過 limit 筆', async () => {
-  const result = await calculatePriceChangeRanking({ limit: 20 });
+  const result = await calculatePriceChangeRanking({ limit: 20 }, appDeps);
 
   for (let i = 1; i < result.gainers.length; i++) {
     assert.ok(result.gainers[i - 1]!.changePercent >= result.gainers[i]!.changePercent, 'gainers 應該由大到小排序');
@@ -25,7 +26,7 @@ test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排
 
 test('calculatePriceChangeRanking: 排行裡不應該出現 ETF/衍生性商品', async () => {
   const [result, twseSymbols, tpexSymbols] = await Promise.all([
-    calculatePriceChangeRanking({ limit: 50 }),
+    calculatePriceChangeRanking({ limit: 50 }, appDeps),
     getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
@@ -36,7 +37,7 @@ test('calculatePriceChangeRanking: 排行裡不應該出現 ETF/衍生性商品'
 });
 
 test('calculatePriceChangeRanking: limit 應該限制回傳筆數', async () => {
-  const result = await calculatePriceChangeRanking({ limit: 3 });
+  const result = await calculatePriceChangeRanking({ limit: 3 }, appDeps);
   assert.ok(result.gainers.length <= 3);
   assert.ok(result.losers.length <= 3);
 });

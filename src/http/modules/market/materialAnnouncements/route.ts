@@ -1,8 +1,10 @@
 import { Router } from 'ultimate-express';
-import { getMaterialAnnouncements } from './controller';
+import { listMaterialAnnouncements, type MaterialAnnouncementsDeps } from '@/application/market/materialAnnouncements/service';
+import { jsonRoute } from '@/http/route';
+import { getMaterialAnnouncementsQuerySchema } from './schemas';
 
-const router = Router();
-
-router.get('/market/material-announcements', getMaterialAnnouncements);
-
-export default router;
+export const createMaterialAnnouncementsRouter = (deps: MaterialAnnouncementsDeps): Router => {
+  const router = Router();
+  router.get('/market/material-announcements', ...jsonRoute({ query: getMaterialAnnouncementsQuerySchema }, ({ query }) => listMaterialAnnouncements(query, deps)));
+  return router;
+};

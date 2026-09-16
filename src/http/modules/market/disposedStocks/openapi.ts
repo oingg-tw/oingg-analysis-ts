@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getDisposedStocksQuerySchema } from './controller';
-import { disposedStocksResultSchema } from './types';
+import { getDisposedStocksQuerySchema } from './schemas';
+import { disposedStocksResultSchema } from '@/application/market/disposedStocks/types';
 
 export const registerDisposedStocksOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

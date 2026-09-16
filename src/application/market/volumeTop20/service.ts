@@ -1,7 +1,9 @@
-import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
-import { getLatestVolumeTop20TradeDate, listVolumeTop20Twse, listVolumeTop20Tpex } from '@/infrastructure/repositories/exchange/marketLists';
+import type { AppDeps } from '@/application/deps';
+import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
 import type { VolumeTop20Result, VolumeTop20Row } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/volumeTop20/service.ts 搬來，資料存取改走 deps，邏輯逐字不變。
+export type VolumeTop20Deps = Pick<AppDeps, 'marketLists' | 'companyProfiles' | 'priceChange'>;
 
 const ONE_DAY_CHANGE_TRADING_DAYS = 1;
 
@@ -33,10 +35,10 @@ interface PoolRow {
 // changePercent：2026-09-02 應使用者要求新增，不是用 TWSE 原生的 dir/change（那個只有 TWSE
 // 有、TPEx 沒有，兩邊算法不一定一致），統一改用 daily_price 自己算的單日漲跌幅（點對點，
 // tradingDaysBack=1，見 priceChange.ts），確保兩個市場算法一致；資料不足時是 null。
-export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
+export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20Result> => {
   const warnings: string[] = [];
 
-  const [twseLatest, tpexLatest] = await Promise.all([getLatestVolumeTop20TradeDate('TWSE'), getLatestVolumeTop20TradeDate('TPEx')]);
+  const [twseLatest, tpexLatest] = await Promise.all([deps.marketLists.getLatestVolumeTop20TradeDate('TWSE'), deps.marketLists.getLatestVolumeTop20TradeDate('TPEx')]);
   const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
   if (candidates.length === 0) {
     warnings.push('查無成交量前20名資料。');
@@ -44,7 +46,7 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   }
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
 
-  const [twseRows, tpexRows] = await Promise.all([listVolumeTop20Twse(tradeDate), listVolumeTop20Tpex(tradeDate)]);
+  const [twseRows, tpexRows] = await Promise.all([deps.marketLists.listVolumeTop20Twse(tradeDate), deps.marketLists.listVolumeTop20Tpex(tradeDate)]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),
@@ -54,8 +56,8 @@ export const getVolumeTop20 = async (): Promise<VolumeTop20Result> => {
   const sorted = [...pool].sort((a, b) => (b.volume > a.volume ? 1 : b.volume < a.volume ? -1 : 0)).slice(0, 20);
 
   const [companyNames, changePercents] = await Promise.all([
-    getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
-    getCumulativeChangePercent(
+    deps.companyProfiles.getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
+    deps.priceChange.getCumulativeChangePercent(
       sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: tradeDate })),
       ONE_DAY_CHANGE_TRADING_DAYS
     ),

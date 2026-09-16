@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getEtfRankingQuerySchema } from './controller';
-import { etfRankingResultSchema } from './types';
+import { getEtfRankingQuerySchema } from './schemas';
+import { etfRankingResultSchema } from '@/application/market/etfRanking/types';
 
 export const registerEtfRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

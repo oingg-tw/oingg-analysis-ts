@@ -1,5 +1,8 @@
-import { listLatestTaiexDailyPrices } from '@/infrastructure/repositories/twse/taiexIndex';
+import type { AppDeps } from '@/application/deps';
 import type { TaiexDailyPriceEntry, TaiexDailyPriceResult } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/market/taiexDailyPrice/service.ts 搬來，查詢改走 deps.taiexIndex，邏輯逐字不變。
+export type TaiexDailyPriceDeps = Pick<AppDeps, 'taiexIndex'>;
 
 const toNullableNumber = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
 
@@ -8,8 +11,8 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 // 算 Beta 用的同一張表（見 computeBetaPit.ts 的市場報酬率基準），這裡直接查詢同一張表
 // 開放出來，不做任何額外加工——回應形狀比照既有 daily-price-history（tradeDate+close，
 // 舊到新排序），只是沒有 symbol（大盤只有一條序列）也沒有 OHLV（大盤沒有適用場景）。
-export const getTaiexDailyPrice = async (limit: number): Promise<TaiexDailyPriceResult> => {
-  const rows = await listLatestTaiexDailyPrices(limit);
+export const getTaiexDailyPrice = async (limit: number, deps: TaiexDailyPriceDeps): Promise<TaiexDailyPriceResult> => {
+  const rows = await deps.taiexIndex.listLatestTaiexDailyPrices(limit);
 
   const entries: TaiexDailyPriceEntry[] = rows
     .map((row) => ({

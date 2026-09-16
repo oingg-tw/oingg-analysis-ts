@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getPriceChangeRankingQuerySchema } from './controller';
-import { priceChangeRankingResultSchema } from './types';
+import { getPriceChangeRankingQuerySchema } from './schemas';
+import { priceChangeRankingResultSchema } from '@/application/market/priceChangeRanking/types';
 
 export const registerPriceChangeRankingOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

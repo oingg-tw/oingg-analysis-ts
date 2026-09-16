@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getTaiexDailyPriceQuerySchema } from './controller';
-import { taiexDailyPriceResultSchema } from './types';
+import { getTaiexDailyPriceQuerySchema } from './schemas';
+import { taiexDailyPriceResultSchema } from '@/application/market/taiexDailyPrice/types';
 
 export const registerTaiexDailyPriceOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({

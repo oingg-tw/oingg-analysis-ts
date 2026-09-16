@@ -1,4 +1,6 @@
 import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
+import type { EtfDataPort } from '@/application/ports/etfData';
+import { buildEtfScreenerSql } from './etfScreenerQuery';
 import type { Prisma } from '#generated/sitca-export-client';
 
 // 執行 ./etfScreenerQuery.ts 組出來的 Prisma.Sql。
@@ -119,4 +121,19 @@ export const listDistinctEtfDistributionFrequencies = async (): Promise<string[]
     ORDER BY 1
   `;
   return rows.map((r) => r.value).filter((v): v is string => v !== null);
+};
+
+// application/ports/etfData.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。screenEtfs = ./etfScreenerQuery.ts 組 SQL + 這裡執行，
+// Prisma.Sql 不出 infrastructure。
+export const sitcaEtfData: EtfDataPort = {
+  getLatestEtfYearMonth,
+  listEtfBasicInfo,
+  listEtfMonthlyStatement,
+  listEtfStatementThresholdFlags,
+  listEtfStatementTaxIdAndThreshold,
+  listEtfPerformance,
+  listFullYearExpenseRatios,
+  listDistinctEtfAssetClasses,
+  listDistinctEtfDistributionFrequencies,
+  screenEtfs: (yearMonth, filters, columns, page, pageSize, sort) => runEtfRawQuery<Record<string, unknown>>(buildEtfScreenerSql(yearMonth, filters, columns, page, pageSize, sort)),
 };

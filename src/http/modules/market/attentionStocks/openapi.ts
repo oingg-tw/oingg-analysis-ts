@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getAttentionStocksQuerySchema } from './controller';
-import { attentionStocksResultSchema } from './types';
+import { getAttentionStocksQuerySchema } from './schemas';
+import { attentionStocksResultSchema } from '@/application/market/attentionStocks/types';
 
 export const registerAttentionStocksOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
