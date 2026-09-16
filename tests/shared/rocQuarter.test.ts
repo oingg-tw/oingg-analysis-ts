@@ -1,6 +1,6 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { formatRocYearSeasonAsOfDate } from '@/shared/rocQuarter';
+import { formatRocYearSeasonAsOfDate } from '@/domain/calendar/rocQuarter';
 
 describe('formatRocYearSeasonAsOfDate', () => {
   test('民國 115 年 Q2 -> 西元 2026 -> "26Q2"', () => {

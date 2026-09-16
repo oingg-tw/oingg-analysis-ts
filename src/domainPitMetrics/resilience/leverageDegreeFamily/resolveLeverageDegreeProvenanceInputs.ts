@@ -3,8 +3,8 @@ import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domainPitMetrics/shared/pickers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 
 // 2026-09-13 使用者要求擴大稽核鏈——financialLeverageDegree(DFL)/totalLeverageDegree(DTL)
 // 都是「本季 vs 去年同季」的 YoY 比較，且都需要先組出 EPS（淨利/流通股數）當分子，

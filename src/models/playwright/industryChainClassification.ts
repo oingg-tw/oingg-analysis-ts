@@ -1,5 +1,5 @@
 import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 2026-09-14：GET /companies/peer-group（findPeerGroup）的資料源，從 gov-ts 財政部稅籍
 // 行業標準分類換成 oingg-playwright-py 的供應鏈分類（industry_chain，Gemini 解析真實供應

@@ -2,9 +2,9 @@ import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toRatio4FromNumbers as toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
 import { getMarketCapAsOf } from '@/models/twse/marketCap';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——tobinsQ = (市值 + 總負債) / 總資產（簡化版 Tobin's

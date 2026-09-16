@@ -1,5 +1,5 @@
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
-import { buildFieldStatuses } from '@/shared/metricStatus';
+import { buildFieldStatuses } from '@/domain/metrics/metricStatus';
 import type { GovBondYield10yResult } from './types';
 
 interface RawGovBondYieldRow {

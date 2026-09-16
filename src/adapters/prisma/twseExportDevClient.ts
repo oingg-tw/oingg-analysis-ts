@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/twse-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // **這支只給月營收功能用，不是給既有 twseExportPrisma（固定連 PROD）換源或補充用**——
 // 2026-09-07 拿到 twse-ts 的 TWSE_EXPORT_DATABASE_URL_DEV（host ep-damp-butterfly，

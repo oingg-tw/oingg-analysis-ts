@@ -1,5 +1,5 @@
-import { rocYearToGregorian } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateReceivablesTurnover } from '../receivablesTurnover/calculateReceivablesTurnover';
 import { calculateReceivablesDays } from './calculateReceivablesDays';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';

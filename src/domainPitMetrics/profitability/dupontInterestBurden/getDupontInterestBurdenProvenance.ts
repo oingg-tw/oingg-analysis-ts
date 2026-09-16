@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateEbit } from '../../shared/dupont/ebit';
 import { calculateDupontInterestBurden } from './calculateDupontInterestBurden';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';

@@ -1,7 +1,7 @@
 import { getLatestQuarterWithBalanceSheetXbrl } from '@/models/mops/balanceSheetXbrlFirst';
 import { getLatestQuarterWithIncomeStatementXbrl } from '@/models/mops/incomeStatementXbrlFirst';
 import { getLatestQuarterWithXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
-import type { Season } from '@/shared/rocQuarter';
+import type { Season } from '@/domain/calendar/rocQuarter';
 
 // 不同公司財報申報進度不同步（不是理論上的擔心，是實測驗證過的：2887 資產負債表/現金流量表已經到
 // 115Q1，損益表卻卡在 114Q2，中間差 3 季），所以「這家公司財報最新到哪一季」不能只查單一張表——

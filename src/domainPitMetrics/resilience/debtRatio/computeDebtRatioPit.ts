@@ -1,13 +1,13 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { determineNullReason, toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/debtRatio.ts 的獨立重新實作。純資產負債表時點快照，只有
 // Q 一種 basis，跟 equityMultiplier/bvps 同一種形狀。

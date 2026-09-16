@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { getPastNQuarters, rocYearToGregorian } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——consecutiveDividendYears = 從最近一個完整會計年度

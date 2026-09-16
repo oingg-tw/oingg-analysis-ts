@@ -1,8 +1,8 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
 import { getDailyValuationAsOf } from '@/models/twseMarketData';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult } from './computeChowderNumberPit';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';

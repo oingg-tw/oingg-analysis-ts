@@ -32,7 +32,7 @@ import { GENERAL_METRIC_CODES, BANK_METRIC_CODES } from './backfillTaskDefinitio
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
-import type { Season } from '../src/shared/rocQuarter';
+import type { Season } from '../src/domain/calendar/rocQuarter';
 
 // 逐日型指標沒有「這一季」的概念，指定 quarter 回填時本來就會跳過（見
 // backfillTaskDefinitions.ts buildGeneralTasks 的說明），這裡也排除，不然會被誤判成

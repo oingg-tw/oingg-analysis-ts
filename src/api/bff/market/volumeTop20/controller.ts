@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { getVolumeTop20 } from './service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getVolumeTop20Ranking = async (_req: Request, res: Response, next: NextFunction) => {
   try {

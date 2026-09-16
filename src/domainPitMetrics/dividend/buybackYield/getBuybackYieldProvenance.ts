@@ -2,8 +2,8 @@ import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
 import { getXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
 import { getMarketCapAsOf } from '@/models/twse/marketCap';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——buybackYield(TTM) = 近四季買回庫藏股支付現金加總

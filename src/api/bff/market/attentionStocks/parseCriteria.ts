@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseChineseOrArabicNumber } from '@/shared/parseChineseOrArabicNumber';
+import { parseChineseOrArabicNumber } from '@/domain/shared/parseChineseOrArabicNumber';
 
 export const attentionCriteriaDetailSchema = z.object({
   startDate: z.string().meta({ description: 'YYYY-MM-DD（西元）' }),

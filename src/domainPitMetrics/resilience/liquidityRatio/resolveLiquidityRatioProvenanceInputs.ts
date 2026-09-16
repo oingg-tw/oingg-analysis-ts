@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 
 // 2026-09-13 使用者要求擴大稽核鏈——currentRatio/quickRatio/cashRatio 三支都是純資產負債表
 // 時點快照（只有 Q 一種 basis，沒有 TTM 概念，見 computeLiquidityRatioPit.ts 的編排說明），

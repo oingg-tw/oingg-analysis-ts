@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/analysis-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 import { upsertShadowExtension } from './upsertShadowExtension';
 
 // oingg-analysis DB：本服務自己擁有 schema/migration，跟唯讀鏡像的 mops DB（見 ./index.ts）

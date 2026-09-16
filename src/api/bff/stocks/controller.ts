@@ -10,7 +10,7 @@ import {
   getStockPledgeRatioHistory,
   getDailyPriceHistory,
 } from './service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getQuoteParamsSchema = z.object({
   symbol: z.string().min(1).meta({ description: '公司代號', example: '2330' }),

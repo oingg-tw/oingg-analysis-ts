@@ -28,7 +28,7 @@
 
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { metricDefinitionRegistry } from '@/domainPitMetrics/metricDefinitionRegistry';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 import type { IndicatorJob } from './indicatorJob';
 
 export interface CompletenessResult {

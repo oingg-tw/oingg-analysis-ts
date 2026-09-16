@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——deRatio(負債權益比) 分子刻意不是總負債，是「有息負債」

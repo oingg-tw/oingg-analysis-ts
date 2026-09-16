@@ -1,4 +1,4 @@
-import type { Season } from './rocQuarter';
+import type { Season } from '../calendar/rocQuarter';
 
 // 季度財報類指標共用的查詢介面——year/season 選填但要成對，不給就自動抓「該指標實際依賴的
 // 財報表都有資料」的最新一季（見 models/latestQuarter.ts），只給其中一個視為無效

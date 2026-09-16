@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 證交所類股代碼對照表——2026-09-11 起已被 securitiesIndustry.ts 使用（screener 的
 // industryCodes 產業篩選、GET /industries/securities-sectors 瀏覽），伺服器啟動時抓下來

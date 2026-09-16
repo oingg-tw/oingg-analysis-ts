@@ -1,9 +1,9 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——

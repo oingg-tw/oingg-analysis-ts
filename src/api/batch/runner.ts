@@ -27,7 +27,7 @@
 //   已隨功能刪除連同表一起清掉）。
 
 import type { IndicatorJob } from './indicatorRegistry';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 import { checkJobCompleteness } from './completenessCheck';
 
 // 小併發，對齊現有 Prisma client 的 connection_limit=5 池大小設定，不要一次打爆連線池。

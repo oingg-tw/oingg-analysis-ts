@@ -1,8 +1,8 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——equityRatio(股東權益比率) = 權益(整體口徑) / 總資產 × 100。

@@ -5,7 +5,7 @@ import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/m
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
 import { getLatestDailyPrice } from '@/models/twseMarketData';
-import { getPastNQuarters, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, type MetricValueWriteOutcome, snapshotCadenceGroup } from '../../metricValueWriter';

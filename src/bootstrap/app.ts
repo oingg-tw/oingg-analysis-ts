@@ -2,10 +2,10 @@ import express from 'ultimate-express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 import { swaggerUi, swaggerSpec } from '@/adapters/swagger';
 import routes from '@/routes';
-import errorHandler from '@/shared/errorHandler';
+import errorHandler from '@/http/middleware/errorHandler';
 
 // 2026-09-17 clean architecture 重構 Phase 0：把「組 express app」從 src/index.ts 抽出來，
 // 跟「連 DB / 載快取 / listen」分開——HTTP 契約測試（tests/contract/http/）需要一個不會

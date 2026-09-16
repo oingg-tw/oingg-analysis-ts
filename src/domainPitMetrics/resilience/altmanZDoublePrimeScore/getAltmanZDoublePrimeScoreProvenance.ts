@@ -2,8 +2,8 @@ import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——Z″ = 6.56*X1+3.26*X2+6.72*X3+1.05*X4，

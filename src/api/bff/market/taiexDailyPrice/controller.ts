@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getTaiexDailyPrice } from './service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 上限/預設值比照 stocks/daily-price-history 的既有慣例（見 controller.ts 的
 // MAX_DAILY_PRICE_HISTORY_LIMIT 註解），大盤指數跟個股股價同樣是逐日資料，沒有理由

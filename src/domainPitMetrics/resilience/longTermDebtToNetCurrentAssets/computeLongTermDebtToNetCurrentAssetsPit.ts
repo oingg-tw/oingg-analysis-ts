@@ -1,13 +1,13 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPercent } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 2026-09-15 使用者要求新增——Benjamin Graham《The Intelligent Investor》防禦型投資者
 // 「財務體質健全」測試的後半條件（前半是流動比率 ≥200%，已經是 currentRatio 這支指標，

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'ultimate-express';
-import { config } from '@/shared/config';
+import { config } from '@/infrastructure/config';
 
 // api/bff 目前只有 bff-ts 會呼叫（2026-09-05 使用者確認）——共用密鑰是這個情境下最簡單、
 // 成本最低的驗證方式，不需要 OAuth/JWT 那種多方發放/撤銷憑證的複雜度。bff-ts 每次請求要帶

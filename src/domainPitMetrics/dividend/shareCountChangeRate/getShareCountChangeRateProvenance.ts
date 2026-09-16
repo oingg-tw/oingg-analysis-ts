@@ -1,8 +1,8 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——shareCountChangeRate（YoY）= (本季流通股數 - 去年

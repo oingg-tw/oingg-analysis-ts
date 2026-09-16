@@ -1,8 +1,8 @@
 import { getLatestAvailableQuarter } from '@/models/latestQuarter';
 import { getLatestQuarterWithInsuranceIncomeStatement } from '@/models/mops/insuranceIncomeStatementXbrlFirst';
 import { financialDataAdapter, type IncomeStatementPort, type InsuranceIncomeStatementPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';

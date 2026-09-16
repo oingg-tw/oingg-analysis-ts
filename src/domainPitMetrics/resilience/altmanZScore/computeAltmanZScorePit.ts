@@ -3,8 +3,8 @@ import { toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement, type IncomeStatementFields } from '@/models/mops/incomeStatementXbrlFirst';
 import { getMarketCapAsOf, type MarketCapAsOf } from '@/models/twse/marketCap';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';

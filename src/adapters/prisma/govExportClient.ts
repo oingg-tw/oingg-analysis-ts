@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/gov-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // gov-ts 的 export schema——數據中台同步用的唯讀連線，只看得到 export schema（etl_reader
 // role 限制，gov-ts 實測驗證過連 INSERT/CREATE TABLE 都會被拒絕），跟主要的 gov 唯讀鏡像

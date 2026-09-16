@@ -2,9 +2,9 @@ import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity } from '@/domainPitMetrics/shared/pickers';
 import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/mops/balanceSheetXbrlFirst';
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toRatio } from '@/domainPitMetrics/shared/numericHelpers';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——croic(TTM) = FCF(TTM，OCF+資本支出加總) / 投入資本

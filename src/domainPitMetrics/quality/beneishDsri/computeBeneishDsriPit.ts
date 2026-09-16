@@ -1,4 +1,4 @@
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveBeneishMScoreInputs, resolveVariableNullReason, type BasisOutcome } from '../beneishMScore/computeBeneishMScorePit';
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 

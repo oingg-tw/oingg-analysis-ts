@@ -1,13 +1,13 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toRatio4FromNumbers as toRatio4 } from '@/domainPitMetrics/shared/numericHelpers';
 import { financialDataAdapter, type BalanceSheetPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 托賓Q值（Tobin's Q）= (市值 + 總負債) / 總資產（Tobin, 1969 的簡化版，市場對負債的評價
 // 假設等於帳面值——跟 Wikipedia「Tobin's q = (Equity Market Value + Liabilities Book

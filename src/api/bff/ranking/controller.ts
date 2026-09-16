@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateRanking } from './calculateRanking';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getRankingQuerySchema = z.object({
   metric: z.enum(['peRatio', 'pbRatio', 'dividendYield'], { error: 'metric is required.' }).meta({ description: '要排行的欄位' }),

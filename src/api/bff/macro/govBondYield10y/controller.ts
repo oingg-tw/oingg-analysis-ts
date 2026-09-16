@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { getLatestGovBondYield10y } from '@/domainMacro/govBondYield10y/service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getGovBondYield10y = async (_req: Request, res: Response, next: NextFunction) => {
   try {

@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/twse-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // twse-ts 的 export schema——實體隔離的獨立 Neon 專案（跟主要的 twse 唯讀鏡像
 // ../prisma/twseClient.ts 連的是完全不同的專案/憑證），只看得到 export schema（etl_reader

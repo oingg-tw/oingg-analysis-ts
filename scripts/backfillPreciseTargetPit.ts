@@ -35,7 +35,7 @@
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
-import type { Season } from '../src/shared/rocQuarter';
+import type { Season } from '../src/domain/calendar/rocQuarter';
 
 const parseCsv = (value: string | undefined): string[] | undefined => {
   if (!value) return undefined;

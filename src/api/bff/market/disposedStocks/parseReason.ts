@@ -1,4 +1,4 @@
-import { parseChineseOrArabicNumber } from '@/shared/parseChineseOrArabicNumber';
+import { parseChineseOrArabicNumber } from '@/domain/shared/parseChineseOrArabicNumber';
 
 // disposed_stock.reason 的句型比 attention_history_note.criteria 雜——實測看過的樣本：
 // 「連續五次」「連續三次」（中文數字+次）、「連續5個營業日」「因連續3個營業日達本中心作業

@@ -1,9 +1,9 @@
 import { twseExportPrisma } from '@/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '@/adapters/prisma/analysisClient';
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
-import { buildFieldStatuses, type MetricStatus } from '@/shared/metricStatus';
+import { buildFieldStatuses, type MetricStatus } from '@/domain/metrics/metricStatus';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 interface RawGovBondYieldRow {
   year: number;

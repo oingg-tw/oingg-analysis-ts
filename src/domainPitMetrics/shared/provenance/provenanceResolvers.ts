@@ -1,4 +1,4 @@
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { getRoeProvenance } from '@/domainPitMetrics/profitability/roe/getRoeProvenance';
 import { getChowderNumberProvenance } from '@/domainPitMetrics/dividend/chowderNumber/getChowderNumberProvenance';
 import { getSueProvenance } from '@/domainPitMetrics/growth/sue/getSueProvenance';

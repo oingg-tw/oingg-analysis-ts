@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate } from '@/domain/preferredStock/preferredStockYield';
 
 // n=1 有封閉解可以交叉驗證：P0 = (D+CallPrice)/(1+y) => y = (D+CallPrice)/P0 - 1。
 test('solveYieldToCall: n=1 時應該精確等於封閉解', () => {

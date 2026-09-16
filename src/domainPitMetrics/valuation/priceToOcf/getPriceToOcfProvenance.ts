@@ -3,9 +3,9 @@ import { getBalanceSheetXbrlFirst as getQuarterlyBalanceSheet } from '@/models/m
 import { getCashFlowStatementXbrlFirst as getQuarterlyCashFlowStatement } from '@/models/mops/cashFlowStatementXbrlFirst';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
 import { getMarketCapAsOf } from '@/models/twse/marketCap';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——priceToOcf(TTM) = 市值(本季知識時點，不是企業價值)

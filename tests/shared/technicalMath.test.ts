@@ -9,7 +9,7 @@ import {
   stochasticKD,
   bias,
   onBalanceVolume,
-} from '@/shared/technicalMath';
+} from '@/domain/math/technicalMath';
 
 test('simpleMovingAverage: 資料筆數不足回傳 null', () => {
   assert.equal(simpleMovingAverage([1, 2, 3], 5), null);

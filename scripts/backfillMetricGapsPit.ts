@@ -13,7 +13,7 @@ import { upsertMetricDefinition, metricDefinitionRegistry } from '../src/domainP
 import { mopsExportPrisma } from '../src/adapters/prisma/mopsExportClient';
 import { twseExportPrisma } from '../src/adapters/prisma/twseExportClient';
 import { analysisPrisma } from '../src/adapters/prisma/analysisClient';
-import type { Season } from '../src/shared/rocQuarter';
+import type { Season } from '../src/domain/calendar/rocQuarter';
 
 const SYMBOL_CONCURRENCY = 8;
 const PROGRESS_EVERY = 50;

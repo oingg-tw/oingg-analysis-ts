@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/mops-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // mops-ts 的 export schema——數據中台同步用的唯讀連線，只看得到 export schema（etl_reader
 // role 限制），跟主要的 mops 唯讀鏡像（../prisma/index.ts，連的是 public schema）是完全不同的

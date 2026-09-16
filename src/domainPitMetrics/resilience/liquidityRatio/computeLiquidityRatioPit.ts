@@ -1,11 +1,11 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { calculateCurrentRatio } from '@/domainPitMetrics/resilience/currentRatio/calculateCurrentRatio';
 import { calculateQuickRatio } from '@/domainPitMetrics/resilience/quickRatio/calculateQuickRatio';
 import { calculateCashRatio } from '@/domainPitMetrics/resilience/cashRatio/calculateCashRatio';

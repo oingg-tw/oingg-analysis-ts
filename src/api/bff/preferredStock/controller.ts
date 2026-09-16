@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { getPreferredStockSecurities, getLatestPreferredStockRight } from '@/models/preferredStock';
 import { getStockPriceAsOf } from '@/models/twse/marketCap';
-import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate, type YtcAssumption } from '@/shared/preferredStockYield';
+import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate, type YtcAssumption } from '@/domain/preferredStock/preferredStockYield';
 import type { PreferredStockDataSource } from './types';
 import { PREFERRED_STOCK_FIELD_CATALOG } from './fieldCatalog';
 

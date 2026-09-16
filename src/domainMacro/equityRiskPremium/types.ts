@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { metricStatusSchema } from '@/shared/metricStatus';
+import { metricStatusSchema } from '@/domain/metrics/metricStatus';
 
 export const equityRiskPremiumQuerySchema = z.object({
   // 全部選填，格式 YYYY-MM；不給任一組就用「TAIEX 月底收盤與無風險利率都有資料」的完整重疊區間

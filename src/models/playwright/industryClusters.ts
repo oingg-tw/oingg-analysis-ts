@@ -1,5 +1,5 @@
 import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 2026-09-14：給重建版「產業追蹤」頁面的 drill-down 樹用——playwright-py 的供應鏈聚落分群
 // （人工中文標籤，不是 Gemini 生成），跟同資料夾 industryChainClassification.ts 的

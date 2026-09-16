@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/playwright-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // playwright-py 的 export schema——供應鏈分類資料同步用的唯讀連線，只看得到 export schema
 // （etl_reader role 限制，見 prisma/playwrightExport/schema.prisma 的說明），跟其他

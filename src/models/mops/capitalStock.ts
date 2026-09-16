@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { mopsExportPrisma } from '@/adapters/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export interface PaidInSharesAsOf {
   paidInShares: bigint;

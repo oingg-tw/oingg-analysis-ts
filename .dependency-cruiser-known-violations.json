@@ -3565,21 +3565,6 @@
   },
   {
     "type": "dependency",
-    "from": "scripts/backfillBuybackYieldScaleFixPit.ts",
-    "to": "src/shared/rocQuarter.ts",
-    "unresolvedTo": "../src/shared/rocQuarter",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillCagrFamiliesPit.ts",
     "to": "src/adapters/prisma/analysisClient.ts",
     "unresolvedTo": "../src/adapters/prisma/analysisClient",
@@ -4314,21 +4299,6 @@
     "dependencyTypes": [
       "local",
       "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillFullHistoryFullMarketPit.ts",
-    "to": "src/shared/rocQuarter.ts",
-    "unresolvedTo": "../src/shared/rocQuarter",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
     ],
     "rule": {
       "severity": "error",
@@ -5401,21 +5371,6 @@
   },
   {
     "type": "dependency",
-    "from": "scripts/backfillMetricGapsPit.ts",
-    "to": "src/shared/rocQuarter.ts",
-    "unresolvedTo": "../src/shared/rocQuarter",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/backfillOperatingExpenseRatioPit.ts",
     "to": "src/adapters/prisma/analysisClient.ts",
     "unresolvedTo": "../src/adapters/prisma/analysisClient",
@@ -5828,21 +5783,6 @@
     "dependencyTypes": [
       "local",
       "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "scripts/backfillPreciseTargetPit.ts",
-    "to": "src/shared/rocQuarter.ts",
-    "unresolvedTo": "../src/shared/rocQuarter",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
     ],
     "rule": {
       "severity": "error",
@@ -8315,21 +8255,6 @@
   },
   {
     "type": "dependency",
-    "from": "scripts/scanMetricGapsPit.ts",
-    "to": "src/shared/rocQuarter.ts",
-    "unresolvedTo": "../src/shared/rocQuarter",
-    "dependencyTypes": [
-      "local",
-      "import",
-      "type-only"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "scripts-only-bootstrap"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "scripts/validateFormulaLatex.ts",
     "to": "src/domainPitMetrics/badgeRegistry.ts",
     "unresolvedTo": "../src/domainPitMetrics/badgeRegistry",
@@ -8813,35 +8738,6 @@
     "dependencyTypes": [
       "npm",
       "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "web-framework-only-in-http"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/shared/errorHandler.ts",
-    "to": "node_modules/.pnpm/ultimate-express@2.2.1/node_modules/ultimate-express/src/index.js",
-    "unresolvedTo": "ultimate-express",
-    "dependencyTypes": [
-      "npm",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "web-framework-only-in-http"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/shared/registerCompanyRoute.ts",
-    "to": "node_modules/.pnpm/ultimate-express@2.2.1/node_modules/ultimate-express/src/index.js",
-    "unresolvedTo": "ultimate-express",
-    "dependencyTypes": [
-      "npm",
-      "import",
-      "type-only"
     ],
     "rule": {
       "severity": "error",

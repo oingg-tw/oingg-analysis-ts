@@ -1,4 +1,4 @@
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateQuickRatio } from './calculateQuickRatio';
 import { resolveLiquidityRatioProvenanceInputs } from '../liquidityRatio/resolveLiquidityRatioProvenanceInputs';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';

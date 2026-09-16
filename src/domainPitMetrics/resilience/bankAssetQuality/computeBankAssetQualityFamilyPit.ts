@@ -1,11 +1,11 @@
 import { getBankAssetQualityTotalLoans, getLatestQuarterWithBankAssetQuality } from '@/models/mops/bankRegulatoryXbrl';
 import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { calculateBankNplRatio } from '@/domainPitMetrics/resilience/bankNplRatio/calculateBankNplRatio';
 import { calculateBankNplCoverageRatio } from '@/domainPitMetrics/resilience/bankNplCoverageRatio/calculateBankNplCoverageRatio';
 

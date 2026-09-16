@@ -1,5 +1,5 @@
 import { govExportPrisma } from '@/adapters/prisma/govExportClient';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 資料源是 gov-ts 的財政部稅籍行業標準分類（export.company_industry_classification +
 // export.industry_codes），五層階層 section/division/group/class/subclass，每家公司最多

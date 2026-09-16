@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateEquityRiskPremium } from '@/domainMacro/equityRiskPremium/service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getEquityRiskPremiumQuerySchema = z.object({
   startYear: z.coerce.number().int().optional().meta({ description: '選填，窗口起始年（西元），要跟 startMonth 一起給', example: 1999 }),

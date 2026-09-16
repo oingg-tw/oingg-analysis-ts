@@ -1,11 +1,11 @@
 import { getBankCapitalAdequacy, getLatestQuarterWithBankCapitalAdequacy } from '@/models/mops/bankRegulatoryXbrl';
 import { isFinancialIndustryCompany } from '@/models/securitiesIndustry';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, QuarterlyPitOutcomeBase } from '../../pitOutcome';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { calculateBankCarRatio } from '@/domainPitMetrics/resilience/bankCarRatio/calculateBankCarRatio';
 import { calculateBankCet1Ratio } from '@/domainPitMetrics/resilience/bankCet1Ratio/calculateBankCet1Ratio';
 import { calculateBankTier1Ratio } from '@/domainPitMetrics/resilience/bankTier1Ratio/calculateBankTier1Ratio';

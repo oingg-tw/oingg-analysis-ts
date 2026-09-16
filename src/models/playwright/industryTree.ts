@@ -1,5 +1,5 @@
 import { playwrightExportPrisma } from '@/adapters/prisma/playwrightExportClient';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 2026-09-15：playwright-py 重建的「產業追蹤」逐層點開瀏覽樹，取代
 // industryChainClassification.ts 原本給 GET /industries/chain-classification 用的扁平

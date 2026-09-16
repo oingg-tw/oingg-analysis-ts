@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { runEtfScreener, getEtfFilterCatalog, EtfScreenerValidationError } from './service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 // 數字/類別兩種 filter 形狀用 z.union 分辨——數字要有 min/max（可以是 null），類別要有
 // values 陣列，兩者都缺或都給的畸形請求會被 union 擋在 zod 這層（400），不會進到 service.ts。

@@ -1,5 +1,5 @@
 import { Prisma } from '#generated/analysis-client';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 import { serializePrismaRow } from './serializePrismaRow';
 
 const toAccessorName = (model: string): string => model.charAt(0).toLowerCase() + model.slice(1);

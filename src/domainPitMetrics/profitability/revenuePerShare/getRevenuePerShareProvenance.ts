@@ -2,8 +2,8 @@ import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { toPerShare } from '@/domainPitMetrics/shared/numericHelpers';
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——revenuePerShare(TTM) = 近四季營收加總×1000 / 流通股數。

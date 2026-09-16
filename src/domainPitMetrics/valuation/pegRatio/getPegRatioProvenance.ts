@@ -4,9 +4,9 @@ import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/
 import { getIncomeStatementXbrlFirst as getQuarterlyIncomeStatement } from '@/models/mops/incomeStatementXbrlFirst';
 import { getPaidInSharesAsOf } from '@/models/mops/capitalStock';
 import { getStockPriceAsOf } from '@/models/twse/marketCap';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/shared/rocQuarter';
+import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——pegRatio(TTM) = PER(TTM) / EPS 5年複合成長率(%)。

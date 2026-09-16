@@ -2,9 +2,9 @@ import 'dotenv/config'; // Load environment variables from .env file
 
 const startTime = process.hrtime(); // Start timing before any other imports
 
-import { logger } from './shared/logger';
-import { config } from './shared/config';
-import { setStartupTime } from './shared/serverInfo';
+import { logger } from './infrastructure/logger';
+import { config } from './infrastructure/config';
+import { setStartupTime } from './bootstrap/serverInfo';
 import { createApp } from './bootstrap/app';
 import { connectAllDbs } from './bootstrap/db';
 import { warmCaches } from './bootstrap/warmCaches';

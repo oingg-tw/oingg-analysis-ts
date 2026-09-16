@@ -1,6 +1,6 @@
 import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import swaggerUi from 'swagger-ui-express';
-import { config } from '@/shared/config';
+import { config } from '@/infrastructure/config';
 import { registry } from './registry';
 import { registerCompaniesOpenApi } from '@/api/bff/companies/openapi';
 import { registerSecuritiesOpenApi } from '@/api/bff/securities/openapi';

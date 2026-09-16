@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { calculateMarginShortRatioRanking } from './service';
-import { logger } from '@/shared/logger';
+import { logger } from '@/infrastructure/logger';
 
 export const getMarginShortRatioRankingQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).meta({ description: '預設 20，上限 100。' }),

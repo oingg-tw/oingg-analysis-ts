@@ -1,12 +1,12 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 這份檔案是 src/domainMetrics/ncav.ts 的獨立重新實作。純資產負債表時點快照，只有 Q 一種
 // basis。2026-09-10 改回公司總額（不除以股數），理由見 ncavDefinition.ts 的說明——跟

@@ -1,4 +1,4 @@
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolvePiotroskiFScoreSignals } from './computePiotroskiFScorePit';
 import { PIOTROSKI_GROUP_METADATA, PIOTROSKI_SIGNAL_LABELS, type PiotroskiGroupMetadata } from './piotroskiFScoreGroupMetadata';
 

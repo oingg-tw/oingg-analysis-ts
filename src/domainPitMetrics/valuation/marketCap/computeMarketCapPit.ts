@@ -1,12 +1,12 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort, type MarketCapPort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { roundToSignificantFigures } from '../../shared/numericHelpers';
 
 // 市值 = 收盤價 × 流通股數，獨立立出 metric_code 的理由見 marketCapDefinition.ts 檔頭

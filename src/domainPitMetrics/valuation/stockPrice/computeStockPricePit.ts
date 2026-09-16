@@ -1,12 +1,12 @@
 import { resolveQuarterOrLatest } from '@/models/latestQuarter';
 import { financialDataAdapter, type BalanceSheetPort, type StockPricePort } from '@/domainPitMetrics/shared/ports/financialDataPorts';
-import type { QuarterlyMetricQuery } from '@/shared/quarterlyMetric';
+import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 
 import { writeMetricValue, periodTypeGroup } from '../../metricValueWriter';
 import type { BasisOutcome, StandardBasisPitOutcome } from '../../pitOutcome';
 import type { MetricNullReason } from '../../metricBasis';
-import { rocYearToGregorian } from '@/shared/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 2026-09-07 web-nuxt 要求：peRatio/pbRatio 河流圖需要「該期實際用來算比率的股價」本身，
 // 不要用 peRatio×eps 反推（會累積四捨五入誤差，且 peRatio 為 null 時——例如 TTM 虧損——

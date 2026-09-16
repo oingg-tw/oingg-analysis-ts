@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { metricStatusSchema } from '@/shared/metricStatus';
+import { metricStatusSchema } from '@/domain/metrics/metricStatus';
 
 export const govBondYield10yResultSchema = z.object({
   yieldPct: z.number().nullable().meta({ description: '百分比，例如 1.9 代表 1.9%' }),

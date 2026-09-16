@@ -3,8 +3,8 @@
 import 'dotenv/config';
 import { PrismaClient } from '#generated/sitca-export-client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '@/shared/config';
-import { logger } from '@/shared/logger';
+import { config } from '@/infrastructure/config';
+import { logger } from '@/infrastructure/logger';
 
 // sitca-ts 的 export schema——跟 mops/gov export 不同，sitca-ts 給的是 dev/prod 兩個獨立 Neon
 // 專案（不是同一個專案的 pooler/direct 兩種連線方式），2026-09-01 使用者定調「dev 對 dev、

@@ -4,7 +4,7 @@ import { getLatestAvailableQuarter, type StatementSource } from '@/models/latest
 import { getBalanceSheetXbrlFull } from '@/models/mops/balanceSheetXbrlFull';
 import { getIncomeStatementXbrlFull } from '@/models/mops/incomeStatementXbrlFull';
 import { getXbrlCashFlowQuarterly } from '@/models/mops/xbrlCashFlowQuarterly';
-import type { Season } from '@/shared/rocQuarter';
+import type { Season } from '@/domain/calendar/rocQuarter';
 
 const FINANCIAL_STATEMENT_TYPES = ['balanceSheet', 'incomeStatement', 'cashFlowStatement'] as const;
 
