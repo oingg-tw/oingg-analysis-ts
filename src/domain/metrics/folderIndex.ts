@@ -1,0 +1,15 @@
+import type { MetricCategoryKey } from './categories';
+
+// ⚠️ 產生的檔案，不要手改——內容 = src/domain/metrics/<分類>/ 底下的子資料夾名稱（每個資料夾對應一個或
+// 一組 metricCode，見 application/metrics/metricFolderCatalog.ts 的 metricCodesForFolder）。
+// 重新產生：npx tsx scripts/codemods/generateMetricFolderIndex.ts；tests/unit/domain/metrics/folderIndex.test.ts
+// 會比對這份索引跟實際資料夾，忘記重跑就會紅。
+export const METRIC_FOLDER_INDEX: Readonly<Record<MetricCategoryKey, readonly string[]>> = {
+  valuation: ['beta', 'bvps', 'earningsYield', 'evEbitda', 'evToEbit', 'evToFcf', 'evToOcf', 'evToSales', 'exchangePbRatio', 'exchangePeRatio', 'fcfYield', 'grahamNumber', 'greenblattEarningsYield', 'liveGrahamNumber', 'liveMarketCap', 'livePegRatio', 'magicFormulaRank', 'marketCap', 'ncav', 'pFcf', 'pbRatio', 'peRatio', 'pegRatio', 'priceToOcf', 'psr', 'stockPrice', 'tobinsQ'],
+  dividend: ['buybackYield', 'chowderNumber', 'consecutiveDividendYears', 'dividendCoverageRatio', 'dividendDistributionCount', 'dividendGrowthRate', 'dividendPayoutRatio', 'dividendPerShare', 'dividendYield', 'shareCountChangeRate', 'shareholderYield'],
+  resilience: ['altmanZDoublePrimeScore', 'altmanZScore', 'bankCarRatio', 'bankCet1Ratio', 'bankNplCoverageRatio', 'bankNplRatio', 'bankTier1Ratio', 'cashRatio', 'cashToAssetsRatio', 'currentRatio', 'deRatio', 'debtRatio', 'debtToFcf', 'equityMultiplier', 'equityRatio', 'financialLeverageDegree', 'interestCoverage', 'longTermDebtToNetCurrentAssets', 'netDebtToEbitda', 'netWorkingCapitalToAssets', 'ohlsonOScore', 'quickRatio', 'totalDebtToCapital', 'totalLeverageDegree', 'zmijewskiScore'],
+  quality: ['abnormalCapexRatio', 'accrualsRatio', 'beneishAqi', 'beneishDsri', 'beneishMScore', 'consecutiveProfitYears', 'depreciationAmortizationPerShare', 'fcfConversionRate', 'fcfMargin', 'fcfPerShare', 'ocfMargin', 'ocfPerShare', 'ocfToNetIncome', 'ownerEarnings', 'piotroskiFScore'],
+  profitability: ['bankBadDebtProvisionPerShare', 'bankNetInterestIncomePerShare', 'bankNetNonInterestIncomePerShare', 'bankOtherOperatingExpensePerShare', 'croci', 'croic', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden', 'eps', 'famaFrenchOperatingProfitability', 'greenblattRoc', 'grossMargin', 'grossProfitPerShare', 'netProfitMargin', 'nissimPenmanRnoa', 'nonOperatingIncomeRatio', 'novyMarxGpToAssets', 'oneDollarTest', 'operatingIncomePerShare', 'operatingMargin', 'pretaxIncomePerShare', 'revenuePerShare', 'roa', 'roce', 'roe', 'roic'],
+  efficiency: ['assetTurnover', 'capexToOcfRatio', 'capexToRevenue', 'cashConversionCycle', 'fixedAssetTurnover', 'inventoryDays', 'inventoryToRevenueRatio', 'inventoryTurnover', 'netWorkingCapitalTurnover', 'operatingCycle', 'operatingExpenseRatio', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesToRevenueRatio', 'receivablesTurnover'],
+  growth: ['assetGrowth', 'bvpsGrowthRate', 'epsCagr', 'epsGrowthRate', 'equityGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'priceToResearchRatio', 'rdIntensity', 'revenueCagr', 'revenueGrowthRate', 'ruleOf40', 'sgr', 'sue'],
+};

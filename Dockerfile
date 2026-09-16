@@ -67,17 +67,16 @@ COPY --from=builder /app/dist ./dist
 # package.json 一定要留著——Node.js 執行期解析 "#generated/*" 這個 subpath import
 # （見 package.json 的 "imports" 欄位）要靠它，不是單純的 metadata。
 COPY --from=builder /app/package.json ./package.json
-# filterCatalogCheck.ts/metricTableRegistry.ts 在執行期直接讀 prisma/analysis/schema.prisma
-# 的原始文字（用來檢查 filterCatalog.ts 跟 schema 是否一致，不是走 Prisma Client 查詢），
-# 這是啟動時就會做的檢查，不是只在 `prisma generate` 那個 build 步驟用得到，執行期沒有這個
-# 檔案會直接啟動失敗。
-COPY prisma ./prisma
-# swagger-jsdoc 在執行期直接讀 src/**/*.ts 原始檔解析 JSDoc 註解（不是讀編譯後的 .js），
-# 見 src/adapters/swagger/index.ts 的說明——執行期一定要留著原始碼，不是編譯疏漏。
-COPY src ./src
+# 2026-09-17 clean architecture 重構 Phase 6 起 runtime 只需要 dist/ + generated/ + node_modules：
+# - 以前要 COPY prisma 是因為 filterCatalogCheck.ts/metricTableRegistry.ts 在執行期讀 schema.prisma 原始文字，
+#   那兩支 2026-09-08 已隨 filterCatalog 整套退場；Prisma Client 執行期只靠 generated/ 跟 node_modules 裡產生好的
+#   client，不讀 .prisma 檔（builder 階段的 COPY prisma 是給 `prisma generate` 用的，仍然要留）。
+# - 以前要 COPY src 是因為 swagger-jsdoc 在執行期讀 .ts 原始檔（已換成 zod-to-openapi）、GET /metrics 在執行期
+#   readdirSync 掃 src/domain/metrics 的資料夾（已換成 build 前產生的 src/domain/metrics/folderIndex.ts）。
+#   全 repo 沒有任何執行期讀 src/ 或 prisma/ 的程式碼（tests/unit/domain/metrics/folderIndex.test.ts 守住索引一致）。
 
-# Cloud Run 會自動注入 PORT（服務預設 8080），src/shared/config.ts 已經在讀 process.env.PORT，
-# 不用額外處理。健康檢查固定打 GET / （src/domains/system/root.ts），不要用 /healthz——
+# Cloud Run 會自動注入 PORT（服務預設 8080），src/infrastructure/config.ts 已經在讀 process.env.PORT，
+# 不用額外處理。健康檢查固定打 GET / （src/http/modules/system/root.ts），不要用 /healthz——
 # 那是 Cloud Run 保留路徑，會被平台攔截，打不到我們自己的 handler。
 EXPOSE 8080
 

@@ -1,22 +1,19 @@
-import { readdirSync, statSync } from 'fs';
-import { join } from 'path';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { validTimeframesForMetric } from './resolveTimeframeForMetric';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
 import { getBadgeForMetric } from '@/domain/metrics/badgeRegistry';
+import { METRIC_CATEGORIES } from '@/domain/metrics/categories';
+import { METRIC_FOLDER_INDEX } from '@/domain/metrics/folderIndex';
 import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
-// 脫節）——這份改成直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構（2026-09-08
-// 那批拆分之後，
-// 每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），比對
-// metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 timeframe 清單，組出分類清單。
+// 脫節）——這份改成以 src/domain/metrics/<分類>/<指標>/ 資料夾結構為準（2026-09-08
+// 那批拆分之後，每個資料夾都嚴格對應一個獨立 metricCode，見 abstract-crafting-journal.md），
+// 比對 metricDefinitionRegistry.ts 取得每個 metricCode 實際支援的 timeframe 清單，組出分類清單。
 //
-// 用 process.cwd() 而不是 import.meta.url + __dirname，理由跟 filterCatalogCheck.ts（已退場）
-// 當初的說明一致：正式環境 build 產物是 CommonJS，import.meta 在那個模式下是編譯期錯誤；
-// process.cwd() 兩邊都能動，前提是進場點永遠從專案根目錄啟動（Dockerfile 的 runtime 階段
-// 有把 src/ 一併複製進 image，不是只有 build 產物 dist/，見 Dockerfile 的說明——swagger-jsdoc
-// 本來就靠這個前提在執行期讀 .ts 原始檔解析 JSDoc，這裡是同一個前提的第二個消費者）。
+// 2026-09-17 Phase 6：資料夾清單不再在執行期 readdirSync（那個做法讓 prod image 必須帶著 src/），改讀
+// build 前產生的靜態索引 src/domain/metrics/folderIndex.ts（scripts/codemods/generateMetricFolderIndex.ts），
+// tests/unit/domain/metrics/folderIndex.test.ts 在測試期比對索引跟實際資料夾——「掃資料夾」從執行期搬到測試期。
 //
 // 刻意排除的兩個分類：`shared/`（dupont/marketRatios 這兩個資料夾底下放的是「一次查詢、
 // 拆多個 metric_code」的編排邏輯，資料夾名稱本身不是 metricCode，過濾條件自然排除）、
@@ -27,24 +24,9 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // metric_code」的編排資料夾（turnoverRatio/margins/bankAssetQuality/bankCapitalAdequacy/
 // cashFlowPerShare/liquidityRatio，資料夾名稱本身都不是 metricCode，也沒有任何 metricCode
 // 宣告 folderName 指向它們）會被自然濾掉，不用額外維護排除清單。
-// 2026-09-17 重構 Phase 0.5：指標定義（*Definition.ts）搬到 src/domain/metrics/<分類>/<指標>/，
-// 資料夾結構不變，掃描根目錄跟著改（這是 [move-only] commit 裡唯一允許的非 import 修改）。
-// Phase 3 會把這個執行期資料夾掃描整個換成 registry 推導（prod image 就不用再帶 src/）。
-const PIT_METRICS_ROOT = join(process.cwd(), 'src', 'domain', 'metrics');
-
-// 2026-09-09 web-nuxt 回報：指標本身已經有 displayName，但分類這一層完全沒有中文（前端只能
-// 顯示 categoryKey 這種英文字串當資料夾名稱，跟旁邊指標的中文名稱並排很突兀）。這裡補上
-// categoryDisplayName，直接跟 CATEGORY_DIR_NAMES 用同一個物件宣告，避免兩份清單各自維護
-// 卻漏改其中一份的風險。
-const CATEGORIES: { key: string; displayName: string }[] = [
-  { key: 'valuation', displayName: '市場評價' },
-  { key: 'dividend', displayName: '股東政策' },
-  { key: 'resilience', displayName: '財務韌性' },
-  { key: 'quality', displayName: '獲利品質' },
-  { key: 'profitability', displayName: '獲利能力' },
-  { key: 'efficiency', displayName: '營運效率' },
-  { key: 'growth', displayName: '成長動能' },
-];
+//
+// 分類的 key/中文名稱（categoryDisplayName，2026-09-09 應 web-nuxt 要求補上）在 domain/metrics/categories.ts
+// 同一份宣告，順序即回應順序。
 
 export interface MetricFolderCatalogEntry {
   metricCode: string;
@@ -110,16 +92,6 @@ export interface MetricFolderCatalogCategory {
   metrics: MetricFolderCatalogEntry[];
 }
 
-const listSubdirectoryNames = (dir: string): string[] => {
-  try {
-    return readdirSync(dir).filter((name) => statSync(join(dir, name)).isDirectory());
-  } catch {
-    // 分類資料夾不存在（理論上不該發生，CATEGORY_DIR_NAMES 是硬寫死對照現有資料夾結構）——
-    // 優雅降級成空清單，不讓整個 GET /metrics 因為單一分類的路徑問題而掛掉。
-    return [];
-  }
-};
-
 // 2026-09-14 新增：epsCagr/revenueCagr/dividendGrowthRate 這三個「家族」資料夾各自用一個
 // buildDefinition(years) 從同一個資料夾產生多個 metricCode（例如 epsCagr3y/5y/8y 全部放在
 // growth/epsCagr/ 底下），靠 registry 裡的 folderName 欄位（見 metricDefinitionSpec.ts 的
@@ -131,8 +103,8 @@ const metricCodesForFolder = (folderName: string): string[] => {
 };
 
 export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
-  CATEGORIES.map(({ key: categoryKey, displayName: categoryDisplayName }) => {
-    const metrics = listSubdirectoryNames(join(PIT_METRICS_ROOT, categoryKey))
+  METRIC_CATEGORIES.map(({ key: categoryKey, displayName: categoryDisplayName }) => {
+    const metrics = METRIC_FOLDER_INDEX[categoryKey]
       .flatMap(metricCodesForFolder)
       .filter((metricCode) => !metricDefinitionRegistry[metricCode]!.excludeFromFilterCatalog)
       .sort()
