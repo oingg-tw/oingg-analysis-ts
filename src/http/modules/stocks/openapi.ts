@@ -9,7 +9,7 @@ import {
   getStockPledgeRatioHistoryQuerySchema,
   getDailyPriceHistoryParamsSchema,
   getDailyPriceHistoryQuerySchema,
-} from './controller';
+} from './schemas';
 import {
   stockQuoteResultSchema,
   stockSummaryResultSchema,

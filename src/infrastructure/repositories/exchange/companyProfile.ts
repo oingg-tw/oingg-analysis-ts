@@ -3,6 +3,7 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 import sitcaExportPrisma from '@/infrastructure/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/application/companies/types';
+import type { CompanyProfilePort } from '@/application/ports/companyProfiles';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;
@@ -515,4 +516,16 @@ export const listAllSecurityNames = async (limit: number, offset: number): Promi
 export const countAllSecurityNames = async (): Promise<number> => {
   const [securityRows, etfRows] = await Promise.all([getAllSecurityRows({}), getEtfRows()]);
   return new Set([...securityRows.map((r) => r.symbol), ...etfRows.map((r) => r.symbol)]).size;
+};
+
+// application/ports/companyProfiles.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
+export const exchangeCompanyProfiles: CompanyProfilePort = {
+  getCompanyNamesForSymbols,
+  getSecuritySymbolSet,
+  companyExists,
+  getCompanyProfileDetail,
+  listAllCompanyNames,
+  countAllCompanyNames,
+  listAllSecurityNames,
+  countAllSecurityNames,
 };

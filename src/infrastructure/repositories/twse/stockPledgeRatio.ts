@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import type { StockPledgeRatioEntry } from '@/application/ports/marketData';
 
 // 2026-09-10 twse-ts 新建的 export.stock_pledge_ratio view——全市場「董監事及大股東股權
 // 質押比例」統計（來源 TWSE t187ap09_L），跟 export.foreign_shareholding 同一套模式
@@ -10,11 +10,8 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 // 風險警訊，直接把 TWSE 公告的原始數字序列攤開給前端，比包一層「指標」抽象更利於使用者對照
 // 原始公告本身，因此這支刻意不走 pitMetrics 的 metricCode/knowledgeDate 架構（跟
 // foreignShareholding/dailyPriceHistory 同一個判斷）。
-export const stockPledgeRatioEntrySchema = z.object({
-  reportDate: z.string().meta({ description: '"YYYY-MM-DD"，TWSE 出表日期，不定期更新' }),
-  pledgePercent: z.number().nullable().meta({ description: '董監事及大股東股權質押比例（%）' }),
-});
-export type StockPledgeRatioEntry = z.infer<typeof stockPledgeRatioEntrySchema>;
+// entry 型別 2026-09-17 Phase 4 搬到 application/ports/marketData.ts（zod schema 在 http/modules/stocks/types.ts）。
+export type { StockPledgeRatioEntry };
 
 interface RawStockPledgeRatioRow {
   report_date: Date;

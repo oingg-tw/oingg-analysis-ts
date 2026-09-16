@@ -1,7 +1,10 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { getPaidInSharesAsOf } from '../mops/capitalStock';
-import { getDailyValuationAsOf, getLatestDailyPrice } from '../exchange/twseMarketData';
+import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
 import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
+import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividendNotice';
+import { getForeignShareholdingHistory } from './foreignShareholding';
+import { getStockPledgeRatioHistory } from './stockPledgeRatio';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
 
 // 兩個回傳型別 2026-09-17 Phase 3 搬到 application/ports/marketData.ts，這裡 re-export 給既有 import 路徑。
@@ -78,6 +81,12 @@ export const twseMarketData: MarketDataPort = {
   listDailyClosesSince,
   listTaiexClosesSince,
   getEarliestTradeDate,
+  getLatestDailyPricesBatch,
+  getDailyPriceHistory,
+  getUpcomingExDividendNotices,
+  getExDividendCalendar,
+  getForeignShareholdingHistory,
+  getStockPledgeRatioHistory,
 };
 
 // 這家公司在 oingg-twse daily_price 裡有沒有任何一筆資料（不分日期）——用來區分「這家公司結構性

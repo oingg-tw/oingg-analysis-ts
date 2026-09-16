@@ -1,12 +1,13 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from '@/http/modules/stocks/service';
+import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from '@/application/stocks/service';
+import { appDeps } from '@/bootstrap/deps';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import tpexExportPrisma from '@/infrastructure/prisma/tpexExportClient';
 
 // 2330（台積電）長期都有股價/估值資料，跟本服務其他測試（capitalStock 等）同一個慣例選這檔。
 test('getStockQuote: 已知的上市公司（2330）應該同時有 price 跟 valuation', async () => {
-  const result = await getStockQuote('2330');
+  const result = await getStockQuote('2330', appDeps);
   assert.ok(result !== null, '2330 應該存在');
   assert.equal(result!.symbol, '2330');
   assert.ok(result!.price !== null, '2330 應該查得到股價');
@@ -15,7 +16,7 @@ test('getStockQuote: 已知的上市公司（2330）應該同時有 price 跟 va
 
 // 查無公司代號（上市、上櫃都沒有登記資料）應該回傳 null，讓 controller 轉成 404。
 test('getStockQuote: 查無此代號的公司應該回傳 null', async () => {
-  const result = await getStockQuote('0000');
+  const result = await getStockQuote('0000', appDeps);
   assert.equal(result, null);
 });
 
@@ -28,7 +29,7 @@ test('getStockQuote: 上櫃公司查得到公司資料時，不該被誤判成�
   const tpexCompany = tpexCompanies[0];
   if (!tpexCompany) return; // TPEx company_profile 目前沒資料時無從驗證，跳過。
 
-  const result = await getStockQuote(tpexCompany.symbol);
+  const result = await getStockQuote(tpexCompany.symbol, appDeps);
   assert.ok(result !== null, '上櫃公司應該存在，不該回 404');
   if (result!.price) {
     assert.match(result!.price.tradeDate, /^\d{4}-\d{2}-\d{2}$/);
@@ -36,13 +37,13 @@ test('getStockQuote: 上櫃公司查得到公司資料時，不該被誤判成�
 });
 
 test('getStockPrices: 查得到的 symbol 才會出現在 prices 裡，查不到的直接不出現（不是回傳 null 值）', async () => {
-  const result = await getStockPrices(['2330', '0000']);
+  const result = await getStockPrices(['2330', '0000'], appDeps);
   assert.ok('2330' in result.prices, '2330 應該查得到股價');
   assert.ok(!('0000' in result.prices), '查無資料的 symbol 不應該出現在 prices 物件裡');
 });
 
 test('getStockPrices: 空陣列應該回傳空物件，不拋錯', async () => {
-  const result = await getStockPrices([]);
+  const result = await getStockPrices([], appDeps);
   assert.deepEqual(result.prices, {});
 });
 
@@ -54,7 +55,7 @@ test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，�
   `;
   if (!sample[0]) return; // 表裡目前沒有未來事件時無從驗證，跳過（資料量小、每天變動）。
 
-  const result = await getExDividendNotices([sample[0].symbol, '__NOT_A_REAL_SYMBOL__']);
+  const result = await getExDividendNotices([sample[0].symbol, '__NOT_A_REAL_SYMBOL__'], appDeps);
   assert.ok(sample[0].symbol in result.notices, `${sample[0].symbol} 應該查得到除權息預告`);
   assert.ok(!('__NOT_A_REAL_SYMBOL__' in result.notices), '查無資料的 symbol 不應該出現在 notices 物件裡');
 
@@ -74,14 +75,14 @@ test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，�
 });
 
 test('getExDividendNotices: 空陣列應該回傳空物件，不拋錯', async () => {
-  const result = await getExDividendNotices([]);
+  const result = await getExDividendNotices([], appDeps);
   assert.deepEqual(result.notices, {});
 });
 
 // 2026-09-08 新增：外資持股歷史，目前只有 2330 一檔有真實資料（twse-ts 一次性回填
 // 2021-09~2026-09），其他公司回傳空陣列不是錯誤。
 test('getForeignShareholdingHistory: 2330 應該有真實的外資持股歷史資料', async () => {
-  const result = await getForeignShareholdingHistory('2330', 5);
+  const result = await getForeignShareholdingHistory('2330', 5, appDeps);
   assert.equal(result.symbol, '2330');
   assert.ok(result.entries.length > 0, '2330 應該查得到外資持股歷史');
   assert.ok(result.entries.length <= 5, 'limit=5 應該最多回傳 5 筆');
@@ -97,7 +98,7 @@ test('getForeignShareholdingHistory: 2330 應該有真實的外資持股歷史�
 });
 
 test('getForeignShareholdingHistory: 目前沒有回填的公司應該回傳空陣列，不是拋錯', async () => {
-  const result = await getForeignShareholdingHistory('__NOT_A_REAL_SYMBOL__', 250);
+  const result = await getForeignShareholdingHistory('__NOT_A_REAL_SYMBOL__', 250, appDeps);
   assert.equal(result.symbol, '__NOT_A_REAL_SYMBOL__');
   assert.deepEqual(result.entries, []);
 });

@@ -1,10 +1,4 @@
-import { findLatestSnapshotValue } from '@/infrastructure/repositories/analysis/metricValueQueries';
-import { companyExists } from '@/infrastructure/repositories/exchange/companyProfile';
-import { getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory as getDailyPriceHistoryFromSource } from '@/infrastructure/repositories/exchange/twseMarketData';
-import { getUpcomingExDividendNotices, getExDividendCalendar as getExDividendCalendarFromSource } from '@/infrastructure/repositories/twse/exDividendNotice';
-import { getForeignShareholdingHistory as getForeignShareholdingHistoryFromSource } from '@/infrastructure/repositories/twse/foreignShareholding';
-import { getStockPledgeRatioHistory as getStockPledgeRatioHistoryFromSource } from '@/infrastructure/repositories/twse/stockPledgeRatio';
-import { getCompanyNamesForSymbols } from '@/infrastructure/repositories/exchange/companyProfile';
+import type { AppDeps } from '@/application/deps';
 import type {
   StockPricesResult,
   StockQuoteResult,
@@ -15,6 +9,10 @@ import type {
   StockPledgeRatioHistoryResult,
   DailyPriceHistoryResult,
 } from './types';
+
+// 2026-09-17 Phase 4：從 http/modules/stocks/service.ts 搬來，資料存取改透過 deps 的 port
+// （companyProfiles/market/metricValueQueries）注入，邏輯逐字不變。
+export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries'>;
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -30,20 +28,20 @@ import type {
 const MARKET_RATIOS_DATA_TYPE = '2';
 const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 
-const getLatestMarketRatioValue = (symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
-  findLatestSnapshotValue(symbol, metricCode, 'EOD', MARKET_RATIOS_DATA_TYPE, MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
+const getLatestMarketRatioValue = (deps: StocksDeps, symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
+  deps.metricValueQueries.findLatestSnapshotValue(symbol, metricCode, 'EOD', MARKET_RATIOS_DATA_TYPE, MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
 
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無
 // 股價/估值資料是另一回事，price/valuation 個別是 null，仍然是 200——bff-ts 的規格明確要求
 // 這兩種情境要分開。
-export const getStockQuote = async (symbol: string): Promise<StockQuoteResult | null> => {
+export const getStockQuote = async (symbol: string, deps: StocksDeps): Promise<StockQuoteResult | null> => {
   const [exists, price, peRatioRow, pbRatioRow, dividendYieldRow] = await Promise.all([
-    companyExists(symbol),
-    getLatestDailyPrice(symbol),
-    getLatestMarketRatioValue(symbol, 'exchangePeRatio'),
-    getLatestMarketRatioValue(symbol, 'exchangePbRatio'),
-    getLatestMarketRatioValue(symbol, 'dividendYield'),
+    deps.companyProfiles.companyExists(symbol),
+    deps.market.getLatestDailyPrice(symbol),
+    getLatestMarketRatioValue(deps, symbol, 'exchangePeRatio'),
+    getLatestMarketRatioValue(deps, symbol, 'exchangePbRatio'),
+    getLatestMarketRatioValue(deps, symbol, 'dividendYield'),
   ]);
 
   if (!exists) return null;
@@ -74,14 +72,14 @@ export const getStockQuote = async (symbol: string): Promise<StockQuoteResult | 
 // web-nuxt 可以整個換掉那份寫死清單。
 // 漲跌用 daily_price 最近兩個交易日的收盤價自己算（limit=2），跟 price/volume 同一次查詢、
 // 保證同一組交易日，不會有「price 是今天、change 卻拿舊資料算」的不同步問題。
-export const getStockSummary = async (symbol: string): Promise<StockSummaryResult | null> => {
+export const getStockSummary = async (symbol: string, deps: StocksDeps): Promise<StockSummaryResult | null> => {
   const [exists, priceHistory, peRatioRow, pbRatioRow, dividendYieldRow, marketCapRow] = await Promise.all([
-    companyExists(symbol),
-    getDailyPriceHistoryFromSource(symbol, 2),
-    getLatestMarketRatioValue(symbol, 'exchangePeRatio'),
-    getLatestMarketRatioValue(symbol, 'exchangePbRatio'),
-    getLatestMarketRatioValue(symbol, 'dividendYield'),
-    getLatestMarketRatioValue(symbol, 'liveMarketCap'),
+    deps.companyProfiles.companyExists(symbol),
+    deps.market.getDailyPriceHistory(symbol, 2),
+    getLatestMarketRatioValue(deps, symbol, 'exchangePeRatio'),
+    getLatestMarketRatioValue(deps, symbol, 'exchangePbRatio'),
+    getLatestMarketRatioValue(deps, symbol, 'dividendYield'),
+    getLatestMarketRatioValue(deps, symbol, 'liveMarketCap'),
   ]);
 
   if (!exists) return null;
@@ -117,8 +115,8 @@ export const getStockSummary = async (symbol: string): Promise<StockSummaryResul
 // 給 bff-ts 的 GET /stocks/prices?symbols=... 用——他們的用法是「給我這確切幾檔的股價」
 // （一次最多幾十檔，screener 一頁的量），不是開放式查詢，所以這支刻意不做 limit/count_only：
 // 查不到的 symbol 就不會出現在 prices 物件裡，不是靜默截斷成某個數量以內。
-export const getStockPrices = async (symbols: string[]): Promise<StockPricesResult> => {
-  const priceMap = await getLatestDailyPricesBatch(symbols);
+export const getStockPrices = async (symbols: string[], deps: StocksDeps): Promise<StockPricesResult> => {
+  const priceMap = await deps.market.getLatestDailyPricesBatch(symbols);
 
   const prices: StockPricesResult['prices'] = {};
   for (const [symbol, price] of priceMap) {
@@ -130,10 +128,10 @@ export const getStockPrices = async (symbols: string[]): Promise<StockPricesResu
 // 給個股頁面「下次除權息」提示、觀察清單「近期除權息」卡片用——2026-09-04 應 web-nuxt
 // 要求新增，同一個 symbol 參數同時支援單一公司（個股頁面）跟多公司批次查詢（觀察清單），
 // 跟 getStockPrices 同一種慣例。只有 TWSE 有這份資料（見
-// src/models/twse/exDividendNotice.ts 的說明），沒有除權息預告的 symbol 直接不會
+// infrastructure/repositories/twse/exDividendNotice.ts 的說明），沒有除權息預告的 symbol 直接不會
 // 出現在回傳的 notices 裡，不是空陣列。
-export const getExDividendNotices = async (symbols: string[]): Promise<ExDividendNoticesResult> => {
-  const notices = await getUpcomingExDividendNotices(symbols);
+export const getExDividendNotices = async (symbols: string[], deps: StocksDeps): Promise<ExDividendNoticesResult> => {
+  const notices = await deps.market.getUpcomingExDividendNotices(symbols);
   return { notices };
 };
 
@@ -141,25 +139,25 @@ export const getExDividendNotices = async (symbols: string[]): Promise<ExDividen
 // symbol 清單查——跟上面 getExDividendNotices 用同一份 export.ex_dividend_notice 資料源，
 // 差別是不帶 symbol 篩選、改用日期區間，並附上 companyName（月曆情境需要顯示公司名稱，
 // 不只是代號）。
-export const getExDividendCalendar = async (startDate: Date, endDate: Date): Promise<ExDividendCalendarResult> => {
-  const rows = await getExDividendCalendarFromSource(startDate, endDate);
-  const nameMap = await getCompanyNamesForSymbols(rows.map((r) => r.symbol));
+export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps: StocksDeps): Promise<ExDividendCalendarResult> => {
+  const rows = await deps.market.getExDividendCalendar(startDate, endDate);
+  const nameMap = await deps.companyProfiles.getCompanyNamesForSymbols(rows.map((r) => r.symbol));
   return { entries: rows.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null })) };
 };
 
 // 2026-09-08 web-nuxt 轉達使用者需求：個股頁面外資持股卡片。目前只有 2330 有真實資料
 // （twse-ts 一次性回填，不是常態排程），其他 symbol 會回傳空陣列——前端顯示「尚未提供」
 // 是前端自己的降級處理，這支不需要特別區分「查無資料」跟「這家公司真的沒有外資持股」。
-export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingHistoryResult> => {
-  const entries = await getForeignShareholdingHistoryFromSource(symbol, limit);
+export const getForeignShareholdingHistory = async (symbol: string, limit: number, deps: StocksDeps): Promise<ForeignShareholdingHistoryResult> => {
+  const entries = await deps.market.getForeignShareholdingHistory(symbol, limit);
   return { symbol, entries };
 };
 
 // 2026-09-10 使用者要求：個股頁面董監事質押比例卡片，比照 getForeignShareholdingHistory
 // 同一種「回傳完整歷史陣列，查無資料就是空陣列」的模式——不進 pitMetrics，讓前端直接對照
 // TWSE 公告原始數字序列（見 stockPledgeRatio.ts 的說明）。
-export const getStockPledgeRatioHistory = async (symbol: string, limit: number): Promise<StockPledgeRatioHistoryResult> => {
-  const entries = await getStockPledgeRatioHistoryFromSource(symbol, limit);
+export const getStockPledgeRatioHistory = async (symbol: string, limit: number, deps: StocksDeps): Promise<StockPledgeRatioHistoryResult> => {
+  const entries = await deps.market.getStockPledgeRatioHistory(symbol, limit);
   return { symbol, entries };
 };
 
@@ -167,7 +165,7 @@ export const getStockPledgeRatioHistory = async (symbol: string, limit: number):
 // 既有 PE/PB 河流圖裡的 stockPrice metricCode 是季報型（每季一個點），不是逐日。這支直接查
 // twse-ts/tpex-ts 的 daily_price，不經過 pitMetrics（那套架構是給「隨財報更新知識時點」的
 // 指標用，逐日股價沒有這個概念，直接查表就好，不需要 knowledgeDate 解析）。
-export const getDailyPriceHistory = async (symbol: string, limit: number): Promise<DailyPriceHistoryResult> => {
-  const { entries, earliestAvailableTradeDate } = await getDailyPriceHistoryFromSource(symbol, limit);
+export const getDailyPriceHistory = async (symbol: string, limit: number, deps: StocksDeps): Promise<DailyPriceHistoryResult> => {
+  const { entries, earliestAvailableTradeDate } = await deps.market.getDailyPriceHistory(symbol, limit);
   return { symbol, entries, earliestAvailableTradeDate };
 };

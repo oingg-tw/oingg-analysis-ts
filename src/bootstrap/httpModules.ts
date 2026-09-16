@@ -15,7 +15,7 @@ import preferredStockRouter from '@/http/modules/preferredStock/route';
 import { registerPreferredStockOpenApi } from '@/http/modules/preferredStock/openapi';
 import industriesRouter from '@/http/modules/industries/route';
 import { registerIndustriesOpenApi } from '@/http/modules/industries/openapi';
-import stocksRouter from '@/http/modules/stocks/route';
+import { createStocksRouter } from '@/http/modules/stocks/route';
 import { registerStocksOpenApi } from '@/http/modules/stocks/openapi';
 import screenerRouter from '@/http/modules/screener/route';
 import { registerScreenerOpenApi } from '@/http/modules/screener/openapi';
@@ -68,7 +68,7 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'securities', auth: 'bff', router: securitiesRouter, registerOpenApi: registerSecuritiesOpenApi },
   { name: 'preferredStock', auth: 'bff', router: preferredStockRouter, registerOpenApi: registerPreferredStockOpenApi },
   { name: 'industries', auth: 'bff', router: industriesRouter, registerOpenApi: registerIndustriesOpenApi },
-  { name: 'stocks', auth: 'bff', router: stocksRouter, registerOpenApi: registerStocksOpenApi },
+  { name: 'stocks', auth: 'bff', router: createStocksRouter(deps), registerOpenApi: registerStocksOpenApi },
   { name: 'screener', auth: 'bff', router: screenerRouter, registerOpenApi: registerScreenerOpenApi },
   { name: 'marginShortRatioRanking', auth: 'bff', router: marginShortRatioRankingRouter, registerOpenApi: registerMarginShortRatioRankingOpenApi },
   { name: 'revenueRanking', auth: 'bff', router: revenueRankingRouter, registerOpenApi: registerRevenueRankingOpenApi },

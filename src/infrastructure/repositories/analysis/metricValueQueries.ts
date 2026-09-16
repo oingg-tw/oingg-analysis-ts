@@ -1,6 +1,7 @@
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { Prisma } from '#generated/analysis-client';
 import type { SnapshotCadence } from '@/domain/metrics/metricBasis';
+import type { MetricValueQueryPort } from '@/application/ports/metricValueQueries';
 
 // 執行 ./screenerQueries.ts 組出來的 Prisma.Sql（screener 的四種查詢共用）。
 export const runAnalysisRawQuery = <T>(sql: Prisma.Sql): Promise<T[]> => analysisPrisma.$queryRaw<T[]>(sql);
@@ -32,3 +33,6 @@ export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[
   isDailyCadence
     ? analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } })
     : analysisPrisma.metricValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } });
+
+// application/ports/metricValueQueries.ts 的實作（screener 的查詢之後併進來）。
+export const analysisMetricValueQueries: MetricValueQueryPort = { findLatestSnapshotValue, countMetricRowsWrittenSince };

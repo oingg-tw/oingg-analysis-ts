@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import type { ForeignShareholdingEntry } from '@/application/ports/marketData';
 
 // 2026-09-08 twse-ts 新建的 export.foreign_shareholding view——全市場個股層級外資/陸資
 // 持股統計（來源 TWSE MI_QFIIS 端點，selectType=ALLBUT0999），取代已退役的
@@ -13,13 +13,8 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 // 一起帶不多花成本）——不帶 name/isinCode/issuedShares/availableShares/sharesHeld/
 // chinaLimitPercent/changeReason/lastReportDate 這些欄位，個股頁面已經有公司名稱等
 // 基本資料來源，不需要這裡重複給。
-export const foreignShareholdingEntrySchema = z.object({
-  tradeDate: z.string().meta({ description: '"YYYY-MM-DD"' }),
-  sharesHeldPercent: z.number().nullable().meta({ description: '外資/陸資持股比例（%）' }),
-  foreignLimitPercent: z.number().nullable().meta({ description: '法定外資/陸資持股上限（%），大多數股票是 100（無限制）' }),
-  availableInvestPercent: z.number().nullable().meta({ description: '尚可投資比例（%）= foreignLimitPercent - sharesHeldPercent，理論上的關係，不保證逐筆對得上（資料源自己算的）' }),
-});
-export type ForeignShareholdingEntry = z.infer<typeof foreignShareholdingEntrySchema>;
+// entry 型別 2026-09-17 Phase 4 搬到 application/ports/marketData.ts（zod schema 在 http/modules/stocks/types.ts）。
+export type { ForeignShareholdingEntry };
 
 interface RawForeignShareholdingRow {
   trade_date: Date;

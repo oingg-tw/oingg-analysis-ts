@@ -60,4 +60,68 @@ export interface DailyPriceSeriesPort {
   getEarliestTradeDate(symbol: string): Promise<Date | null>;
 }
 
-export type MarketDataPort = StockPricePort & MarketCapPort & DailyValuationPort & LatestDailyPricePort & DailyPriceSeriesPort;
+// ---- 個股頁面用的歷史序列（GET /stocks/*）——以下 DTO 就是對外回應裡的 entry 形狀，日期一律 YYYY-MM-DD 字串，
+// 數字欄位在 repository 內從 Decimal/字串轉成 number | null。對應的 zod schema（OpenAPI 文件）在
+// http/modules/stocks/types.ts 用 satisfies 釘住。
+
+export interface DailyPriceHistoryEntry {
+  tradeDate: string; // "YYYY-MM-DD"
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+export interface DailyPriceHistory {
+  entries: DailyPriceHistoryEntry[]; // 依交易日由舊到新
+  earliestAvailableTradeDate: string | null; // 這檔股票全部歷史的最早交易日，不受 limit 影響
+}
+
+// 息=純除息、權=純除權、權息=合併發放，是同一筆事件用這個欄位標示類型。
+export type ExDividendType = '息' | '權' | '權息';
+
+export interface ExDividendNoticeEntry {
+  exDate: string; // "YYYY-MM-DD"，除權息基準日
+  exType: ExDividendType;
+  stockDividendRatio: number | null;
+  subscriptionRatio: number | null;
+  subscriptionPricePerShare: number | null;
+  cashDividend: number | null;
+  sharesOffered: number | null;
+  sharesEmpOwner: number | null;
+  sharesholderOwner: number | null;
+  stockHoldingRatio: number | null;
+}
+
+export interface ExDividendCalendarEntry extends ExDividendNoticeEntry {
+  symbol: string;
+}
+
+export interface ForeignShareholdingEntry {
+  tradeDate: string; // "YYYY-MM-DD"
+  sharesHeldPercent: number | null;
+  foreignLimitPercent: number | null;
+  availableInvestPercent: number | null;
+}
+
+export interface StockPledgeRatioEntry {
+  reportDate: string; // "YYYY-MM-DD"，TWSE 出表日期，不定期更新
+  pledgePercent: number | null;
+}
+
+export interface StockHistoryPort {
+  // 一次查多家公司的最新股價，查不到的 symbol 不會出現在 Map 裡。
+  getLatestDailyPricesBatch(symbols: string[]): Promise<Map<string, DailyPriceAsOf>>;
+  // 依交易日新到舊取最近 limit 筆再反轉成舊到新。
+  getDailyPriceHistory(symbol: string, limit: number): Promise<DailyPriceHistory>;
+  // 只回「今天（含）以後」的除權息預告，查不到的 symbol 不會出現在物件裡。
+  getUpcomingExDividendNotices(symbols: string[]): Promise<Record<string, ExDividendNoticeEntry[]>>;
+  // 日期區間內全市場的除權息事件（不篩未來），依 exDate、symbol 升冪。
+  getExDividendCalendar(startDate: Date, endDate: Date): Promise<ExDividendCalendarEntry[]>;
+  // 依日期新到舊取最近 limit 筆。
+  getForeignShareholdingHistory(symbol: string, limit: number): Promise<ForeignShareholdingEntry[]>;
+  getStockPledgeRatioHistory(symbol: string, limit: number): Promise<StockPledgeRatioEntry[]>;
+}
+
+export type MarketDataPort = StockPricePort & MarketCapPort & DailyValuationPort & LatestDailyPricePort & DailyPriceSeriesPort & StockHistoryPort;
