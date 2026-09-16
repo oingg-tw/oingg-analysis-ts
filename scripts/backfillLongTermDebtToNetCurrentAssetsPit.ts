@@ -41,7 +41,7 @@ const main = async () => {
       cursor += 1;
       try {
         const outcome = await computeAndWriteLongTermDebtToNetCurrentAssetsPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
-        const action = outcome.q.action;
+        const action = outcome.q?.action ?? 'missing_q';
         actionCounts[action] = (actionCounts[action] ?? 0) + 1;
       } catch (error) {
         errors.push({ symbol, message: error instanceof Error ? error.message : String(error) });

@@ -130,7 +130,7 @@ const main = async () => {
       knowledgeDate: roc.knowledge_date,
       knowledgeDateIsFallback: roc.knowledge_date_is_fallback,
     });
-    if (outcome.action === 'skipped_no_knowledge_date') skippedNoKnowledgeDate += 1;
+    if (outcome.action === 'rejected') skippedNoKnowledgeDate += 1;
     else inserted += 1;
   }
   console.log(`[magic-formula-rank-pit] 完成，寫入 ${inserted} 家，${skippedNoKnowledgeDate} 家因故跳過`);

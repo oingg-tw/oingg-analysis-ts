@@ -34,7 +34,7 @@ const main = async () => {
   for (const symbol of PIT_BACKFILL_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
       const roaOutcome = await computeAndWriteRoaPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
-      console.log(`[roa-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roaOutcome.q)} qAnn=${JSON.stringify(roaOutcome.qAnn)} ttm=${JSON.stringify(roaOutcome.ttm)}`);
+      console.log(`[roa-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roaOutcome.q)} ttm=${JSON.stringify(roaOutcome.ttm)}`);
 
       const dupontOutcome = await computeAndWriteDupontFamilyPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
       console.log(

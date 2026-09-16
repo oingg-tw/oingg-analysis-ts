@@ -27,7 +27,7 @@ const main = async () => {
   for (const symbol of PIT_BACKFILL_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
       const outcome = await computeAndWriteRoePit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
-      console.log(`[roe-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(outcome.q)} qAnn=${JSON.stringify(outcome.qAnn)} ttm=${JSON.stringify(outcome.ttm)}`);
+      console.log(`[roe-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(outcome.q)} ttm=${JSON.stringify(outcome.ttm)}`);
     }
   }
 };

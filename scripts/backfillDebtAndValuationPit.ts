@@ -49,25 +49,25 @@ const main = async () => {
       console.log(`[interest-coverage-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(interestCoverageOutcome.q)} ttm=${JSON.stringify(interestCoverageOutcome.ttm)}`);
 
       const netDebtToEbitdaOutcome = await computeAndWriteNetDebtToEbitdaPit(query);
-      console.log(`[net-debt-to-ebitda-pit] ${symbol} ${year}Q${season}: qAnn=${JSON.stringify(netDebtToEbitdaOutcome.qAnn)} ttm=${JSON.stringify(netDebtToEbitdaOutcome.ttm)}`);
+      console.log(`[net-debt-to-ebitda-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(netDebtToEbitdaOutcome.q)} ttm=${JSON.stringify(netDebtToEbitdaOutcome.ttm)}`);
 
       const capexToRevenueOutcome = await computeAndWriteCapexToRevenuePit(query);
       console.log(`[capex-to-revenue-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(capexToRevenueOutcome.q)} ttm=${JSON.stringify(capexToRevenueOutcome.ttm)}`);
 
       const psrOutcome = await computeAndWritePsrPit(query);
-      console.log(`[psr-pit] ${symbol} ${year}Q${season}: qAnn=${JSON.stringify(psrOutcome.qAnn)} ttm=${JSON.stringify(psrOutcome.ttm)}`);
+      console.log(`[psr-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(psrOutcome.q)} ttm=${JSON.stringify(psrOutcome.ttm)}`);
 
       const pFcfOutcome = await computeAndWritePFcfPit(query);
-      console.log(`[p-fcf-pit] ${symbol} ${year}Q${season}: qAnn=${JSON.stringify(pFcfOutcome.qAnn)} ttm=${JSON.stringify(pFcfOutcome.ttm)}`);
+      console.log(`[p-fcf-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(pFcfOutcome.q)} ttm=${JSON.stringify(pFcfOutcome.ttm)}`);
 
       const evEbitdaOutcome = await computeAndWriteEvEbitdaPit(query);
-      console.log(`[ev-ebitda-pit] ${symbol} ${year}Q${season}: qAnn=${JSON.stringify(evEbitdaOutcome.qAnn)} ttm=${JSON.stringify(evEbitdaOutcome.ttm)}`);
+      console.log(`[ev-ebitda-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(evEbitdaOutcome.q)} ttm=${JSON.stringify(evEbitdaOutcome.ttm)}`);
 
       const roicOutcome = await computeAndWriteRoicPit(query);
-      console.log(`[roic-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roicOutcome.q)} qAnn=${JSON.stringify(roicOutcome.qAnn)} ttm=${JSON.stringify(roicOutcome.ttm)}`);
+      console.log(`[roic-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roicOutcome.q)} ttm=${JSON.stringify(roicOutcome.ttm)}`);
 
       const roceOutcome = await computeAndWriteRocePit(query);
-      console.log(`[roce-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roceOutcome.q)} qAnn=${JSON.stringify(roceOutcome.qAnn)} ttm=${JSON.stringify(roceOutcome.ttm)}`);
+      console.log(`[roce-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roceOutcome.q)} ttm=${JSON.stringify(roceOutcome.ttm)}`);
     }
   }
 };

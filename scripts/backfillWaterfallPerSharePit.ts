@@ -50,7 +50,7 @@ const main = async () => {
         const cashFlowOutcome = await computeAndWriteCashFlowPerSharePit(query);
         const pretaxOutcome = await computeAndWritePretaxIncomePerSharePit(query);
         const daAction = cashFlowOutcome.depreciationAmortizationPerShareQ.action;
-        const pretaxAction = pretaxOutcome.q.action;
+        const pretaxAction = pretaxOutcome.q?.action ?? 'missing_q';
         daActionCounts[daAction] = (daActionCounts[daAction] ?? 0) + 1;
         pretaxActionCounts[pretaxAction] = (pretaxActionCounts[pretaxAction] ?? 0) + 1;
       } catch (error) {

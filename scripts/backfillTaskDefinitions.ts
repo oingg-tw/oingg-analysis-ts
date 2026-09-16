@@ -269,10 +269,17 @@ export const buildBankTasks = (symbol: string, quarter?: { year: string; season:
   ];
 };
 
-export const runTasks = async (tasks: BackfillTask[]): Promise<{ failures: { label: string; error: unknown }[] }> => {
+// 2026-09-17 補回傳 outcomes（成功任務的回傳值，跟 label 配對）——原本只回 failures、把
+// compute 結果整個丟掉，scripts/verifyMetricEquivalencePit.ts 要靠每個 basis 的 action
+// （inserted/skipped_unchanged/…）統計來證明重構後寫入值完全沒變。既有呼叫端只解構
+// failures，不受影響。
+export const runTasks = async (
+  tasks: BackfillTask[]
+): Promise<{ failures: { label: string; error: unknown }[]; outcomes: { label: string; outcome: unknown }[] }> => {
   const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
   const failures = results.flatMap((r, i) => (r.status === 'rejected' ? [{ label: tasks[i]![0], error: r.reason }] : []));
-  return { failures };
+  const outcomes = results.flatMap((r, i) => (r.status === 'fulfilled' ? [{ label: tasks[i]![0], outcome: r.value }] : []));
+  return { failures, outcomes };
 };
 
 export interface BackfillFailure {

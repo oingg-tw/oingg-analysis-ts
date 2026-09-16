@@ -32,14 +32,14 @@ const main = async () => {
       const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
 
       const epsOutcome = await computeAndWriteEpsPit(query);
-      console.log(`[eps-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(epsOutcome.q)} qAnn=${JSON.stringify(epsOutcome.qAnn)} ttm=${JSON.stringify(epsOutcome.ttm)}`);
+      console.log(`[eps-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(epsOutcome.q)} ttm=${JSON.stringify(epsOutcome.ttm)}`);
 
       const bvpsOutcome = await computeAndWriteBvpsPit(query);
       console.log(`[bvps-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(bvpsOutcome.q)}`);
 
       const revenuePerShareOutcome = await computeAndWriteRevenuePerSharePit(query);
       console.log(
-        `[revenue-per-share-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(revenuePerShareOutcome.q)} qAnn=${JSON.stringify(revenuePerShareOutcome.qAnn)} ttm=${JSON.stringify(revenuePerShareOutcome.ttm)}`
+        `[revenue-per-share-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(revenuePerShareOutcome.q)} ttm=${JSON.stringify(revenuePerShareOutcome.ttm)}`
       );
 
       const dividendPayoutRatioOutcome = await computeAndWriteDividendPayoutRatioPit(query);
@@ -60,11 +60,11 @@ const main = async () => {
 
       const accrualsRatioOutcome = await computeAndWriteAccrualsRatioPit(query);
       console.log(
-        `[accruals-ratio-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(accrualsRatioOutcome.q)} qAnn=${JSON.stringify(accrualsRatioOutcome.qAnn)} ttm=${JSON.stringify(accrualsRatioOutcome.ttm)}`
+        `[accruals-ratio-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(accrualsRatioOutcome.q)} ttm=${JSON.stringify(accrualsRatioOutcome.ttm)}`
       );
 
       const fcfYieldOutcome = await computeAndWriteFcfYieldPit(query);
-      console.log(`[fcf-yield-pit] ${symbol} ${year}Q${season}: qAnn=${JSON.stringify(fcfYieldOutcome.qAnn)} ttm=${JSON.stringify(fcfYieldOutcome.ttm)}`);
+      console.log(`[fcf-yield-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(fcfYieldOutcome.q)} ttm=${JSON.stringify(fcfYieldOutcome.ttm)}`);
     }
   }
 };
