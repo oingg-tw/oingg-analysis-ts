@@ -12,7 +12,7 @@ export const createScreenerRouter = (deps: ScreenerDeps): Router => {
   router.get('/screener/ranking', ...jsonRoute({ query: getScreenerRankingQuerySchema }, ({ query }) => runScreenerRanking(query, deps)));
   router.get('/screener/company-rank', ...jsonRoute({ query: getCompanyRankQuerySchema }, ({ query }) => getCompanyRank(query.symbol, query.field, query.direction, deps)));
   router.post('/screener/values', ...jsonRoute({ body: postScreenerValuesBodySchema }, ({ body }) => runScreenerValues(body, deps)));
-  router.get('/screener/distribution', ...jsonRoute({ query: getScreenerDistributionQuerySchema }, ({ query }) => getFieldDistribution(query.field, query.bins, deps)));
+  router.get('/screener/distribution', ...jsonRoute({ query: getScreenerDistributionQuerySchema }, ({ query }) => getFieldDistribution(query.field, query.bins, query.excludeZero, deps)));
 
   return router;
 };

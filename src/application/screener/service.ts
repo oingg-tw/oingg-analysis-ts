@@ -174,8 +174,13 @@ export const runScreenerValues = async (request: { symbols: string[]; columns: S
 // 新增，取代他們原本用 POST /screener 的 count-only 查詢在前端手工打十幾次固定區間湊出來的
 // 粗粒度長條圖。bins 的 count 加總永遠等於 totalCount，見 types.ts 的 FieldDistributionResult
 // 說明；離群值不會被丟掉，只是視覺上落進最左/最右一格。
-export const getFieldDistribution = async (fieldInput: string, bins: number, deps: Pick<AppDeps, 'metricValueQueries'>): Promise<FieldDistributionResult> => {
+export const getFieldDistribution = async (
+  fieldInput: string,
+  bins: number,
+  excludeZero: boolean,
+  deps: Pick<AppDeps, 'metricValueQueries'>
+): Promise<FieldDistributionResult> => {
   const field = resolveFieldOrThrow(fieldInput);
-  const result = await deps.metricValueQueries.distribution(field, bins);
+  const result = await deps.metricValueQueries.distribution(field, bins, excludeZero);
   return { field: fieldInput, ...result };
 };

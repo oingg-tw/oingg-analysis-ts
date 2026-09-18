@@ -101,6 +101,8 @@ export interface MetricValueQueryPort {
   companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc'): Promise<CompanyRankRow[]>;
   // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
   values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
-  // 全市場某個欄位的分布（直方圖用），bins 是要切幾格。
-  distribution(field: FieldRef, bins: number): Promise<FieldDistribution>;
+  // 全市場某個欄位的分布（直方圖用），bins 是要切幾格；excludeZero 排除值精確等於 0 的列
+  // （例如殖利率的「不配息」），見 infrastructure/repositories/analysis/screenerQueries.ts
+  // buildValueFilter 的說明。
+  distribution(field: FieldRef, bins: number, excludeZero: boolean): Promise<FieldDistribution>;
 }

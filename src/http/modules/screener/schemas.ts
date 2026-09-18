@@ -63,6 +63,16 @@ export const getCompanyRankQuerySchema = z.object({
 export const getScreenerDistributionQuerySchema = z.object({
   field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.timeframe" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
   bins: z.coerce.number().int().min(5).max(100).default(20).meta({ description: '要切成幾格，預設 20，範圍 5~100。' }),
+  excludeZero: z.coerce
+    .boolean()
+    .optional()
+    .default(false)
+    .meta({
+      description:
+        '排除值精確等於 0 的列，預設 false。給殖利率這類「0 代表不適用這個概念（不配息），不是連續分布裡的' +
+        '邊緣值」的欄位用——這類欄位常有一大塊列精確等於 0，混進分布會把整個圖壓在左邊界，看不出有意義' +
+        '（非 0）那群的實際分布。true/false 或 1/0 皆可。',
+    }),
 });
 
 // bff-ts 一次最多送一頁的量（≤200），跟其他「明確列出清單」端點（GET /stocks/prices）同一種

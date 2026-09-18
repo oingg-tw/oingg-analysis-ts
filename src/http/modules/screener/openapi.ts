@@ -159,7 +159,9 @@ export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
       '避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax ' +
       '的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是' +
       '未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位' +
-      '全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。',
+      '全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。' +
+      'excludeZero=true 排除值精確等於 0 的列（殖利率這類「0 代表不配息，不是連續分布的邊緣值」的' +
+      '欄位常用），totalCount 也會跟著只計入非零的列。',
     tags: ['Screener'],
     request: { query: getScreenerDistributionQuerySchema },
     responses: {

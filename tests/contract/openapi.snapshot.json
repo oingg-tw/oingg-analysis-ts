@@ -6310,7 +6310,7 @@
     },
     "/screener/distribution": {
       "get": {
-        "description": "給「這家公司這個欄位在全市場排第幾」卡片展開後的分布圖用——一次查詢在資料庫端算完全部分箱，取代逐一打固定區間湊出粗粒度長條圖的做法。裁切邊界是第 1/99 百分位（clippedMin/clippedMax），避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。",
+        "description": "給「這家公司這個欄位在全市場排第幾」卡片展開後的分布圖用——一次查詢在資料庫端算完全部分箱，取代逐一打固定區間湊出粗粒度長條圖的做法。裁切邊界是第 1/99 百分位（clippedMin/clippedMax），避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。excludeZero=true 排除值精確等於 0 的列（殖利率這類「0 代表不配息，不是連續分布的邊緣值」的欄位常用），totalCount 也會跟著只計入非零的列。",
         "parameters": [
           {
             "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
@@ -6335,6 +6335,18 @@
               "maximum": 100,
               "minimum": 5,
               "type": "integer"
+            }
+          },
+          {
+            "description": "排除值精確等於 0 的列，預設 false。給殖利率這類「0 代表不適用這個概念（不配息），不是連續分布裡的邊緣值」的欄位用——這類欄位常有一大塊列精確等於 0，混進分布會把整個圖壓在左邊界，看不出有意義（非 0）那群的實際分布。true/false 或 1/0 皆可。",
+            "in": "query",
+            "name": "excludeZero",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "排除值精確等於 0 的列，預設 false。給殖利率這類「0 代表不適用這個概念（不配息），不是連續分布裡的邊緣值」的欄位用——這類欄位常有一大塊列精確等於 0，混進分布會把整個圖壓在左邊界，看不出有意義（非 0）那群的實際分布。true/false 或 1/0 皆可。",
+              "nullable": true,
+              "type": "boolean"
             }
           }
         ],

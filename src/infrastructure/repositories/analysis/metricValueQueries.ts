@@ -54,8 +54,8 @@ export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[
 // 開頭說明：先查邊界（p1/p99 當裁切範圍，同時拿真實 min/max），totalCount=0 或 p1=p99（樣本太少/
 // 全部同值）時不用查第二支分箱查詢；width_bucket 回傳的 bucket 可能是 0 或 bins+1（範圍外），
 // 用 clampBucketIndex 夾回 [1, bins] 再累加，離群值視覺上落進最左/最右一格，不會憑空消失。
-const fetchDistribution = async (field: FieldRef, bins: number): Promise<FieldDistribution> => {
-  const [bounds] = await runAnalysisRawQuery<DistributionBoundsRow>(buildDistributionBoundsSql(field));
+const fetchDistribution = async (field: FieldRef, bins: number, excludeZero: boolean): Promise<FieldDistribution> => {
+  const [bounds] = await runAnalysisRawQuery<DistributionBoundsRow>(buildDistributionBoundsSql(field, excludeZero));
   const totalCount = Number(bounds?.total_count ?? 0);
   if (totalCount === 0) {
     return { totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] };
@@ -70,7 +70,7 @@ const fetchDistribution = async (field: FieldRef, bins: number): Promise<FieldDi
     return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: [{ min: p1, max: p99, count: totalCount }] };
   }
 
-  const bucketRows = await runAnalysisRawQuery<DistributionBucketRow>(buildDistributionBinsSql(field, p1, p99, bins));
+  const bucketRows = await runAnalysisRawQuery<DistributionBucketRow>(buildDistributionBinsSql(field, p1, p99, bins, excludeZero));
   const countsByBucket = new Map<number, number>();
   for (const row of bucketRows) {
     const clamped = clampBucketIndex(Number(row.bucket), bins);

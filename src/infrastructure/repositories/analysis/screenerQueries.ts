@@ -348,7 +348,16 @@ export interface DistributionBoundsRow {
   p99: unknown;
 }
 
-export const buildDistributionBoundsSql = (field: FieldRef): Prisma.Sql => {
+// excludeZero：2026-09-18 應 web-nuxt 需求新增——殖利率這類欄位「等於 0」是一個真實、大量重複
+// 出現的離散值（不配息，不是連續分布裡的邊緣值），跟其餘資料混在一起算分布時會把整個直方圖
+// 壓在左邊界，看不出有配息的公司實際分布長怎樣。用 `<> 0`（不等於，不是 `> 0`）排除——刻意
+// 不假設「排除的一定是下界」，保留這個開關給之後可能重用這支端點、0 不代表下界的其他欄位
+// （例如成長率類指標，負值一樣有意義，不該被這個開關連帶濾掉）。兩支查詢（邊界、分箱）都要
+// 套用同一個條件，否則 p1/p99 會是「含零」母體算出來的，跟「排除零」母體的分箱範圍對不上。
+const buildValueFilter = (alias: Prisma.Sql, excludeZero: boolean): Prisma.Sql =>
+  excludeZero ? Prisma.sql`${alias}.${q('value')} IS NOT NULL AND ${alias}.${q('value')} <> 0` : Prisma.sql`${alias}.${q('value')} IS NOT NULL`;
+
+export const buildDistributionBoundsSql = (field: FieldRef, excludeZero: boolean): Prisma.Sql => {
   const ref = dedupCtes([field]).get(basisGroupKeyFor(field))!;
   const alias = Prisma.raw(ref.alias);
   return Prisma.sql`
@@ -360,7 +369,7 @@ export const buildDistributionBoundsSql = (field: FieldRef): Prisma.Sql => {
       percentile_cont(0.01) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p1,
       percentile_cont(0.99) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p99
     FROM ${alias}
-    WHERE ${alias}.${q('value')} IS NOT NULL
+    WHERE ${buildValueFilter(alias, excludeZero)}
   `;
 };
 
@@ -372,14 +381,14 @@ export interface DistributionBucketRow {
 // p1/p99 是第一支查詢（buildDistributionBoundsSql）算出來的裁切邊界，原樣帶回來當參數——
 // width_bucket 對範圍外的值回傳 0（< p1）或 bins+1（>= p99），呼叫端（buildDistributionBins）
 // 負責把這兩種情況夾回 [1, bins]，不在這裡處理。
-export const buildDistributionBinsSql = (field: FieldRef, p1: number, p99: number, bins: number): Prisma.Sql => {
+export const buildDistributionBinsSql = (field: FieldRef, p1: number, p99: number, bins: number, excludeZero: boolean): Prisma.Sql => {
   const ref = dedupCtes([field]).get(basisGroupKeyFor(field))!;
   const alias = Prisma.raw(ref.alias);
   return Prisma.sql`
     WITH ${buildCte(ref)}
     SELECT width_bucket(${alias}.${q('value')}, ${p1}, ${p99}, ${bins}) AS bucket, COUNT(*) AS count
     FROM ${alias}
-    WHERE ${alias}.${q('value')} IS NOT NULL
+    WHERE ${buildValueFilter(alias, excludeZero)}
     GROUP BY bucket
     ORDER BY bucket
   `;
