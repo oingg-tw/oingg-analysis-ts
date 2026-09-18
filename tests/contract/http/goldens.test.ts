@@ -23,6 +23,7 @@ const cases: GoldenCase[] = [
   { slug: 'screener-ranking', method: 'get', path: '/screener/ranking?field=roe.TTM&direction=desc&limit=5' },
   { slug: 'screener-values', method: 'post', path: '/screener/values', body: { symbols: ['2330', '2317'], columns: [{ field: 'roe.TTM' }] } },
   { slug: 'screener-company-rank', method: 'get', path: '/screener/company-rank?symbol=2330&field=dividendYield.EOD&direction=desc' },
+  { slug: 'screener-distribution', method: 'get', path: '/screener/distribution?field=dividendYield.EOD&bins=10' },
   { slug: 'valuation-ranking', method: 'get', path: '/valuation/ranking?metric=peRatio&order=desc&limit=5' },
   { slug: 'stocks-quote', method: 'get', path: '/stocks/2330/quote' },
   { slug: 'stocks-prices', method: 'get', path: '/stocks/prices?symbols=2330,2317' },

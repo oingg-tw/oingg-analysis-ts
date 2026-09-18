@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema } from './schemas';
+import { postScreenerBodySchema, getScreenerRankingQuerySchema, postScreenerValuesBodySchema, getCompanyRankQuerySchema, getScreenerDistributionQuerySchema } from './schemas';
 
 // 2026-09-08 重建：field 格式從舊架構的 "metricKey.fieldKey" 改成 "metricCode.basis"（例如
 // "roe.TTM"），對應 GET /metrics（metricFolderCatalog.ts）回傳的 metricCode/allowedBases。
@@ -46,6 +46,22 @@ const screenerRankingResultSchema = z.object({
 
 const screenerValuesResultSchema = z.object({
   results: z.array(screenerRowSchema),
+});
+
+const distributionBucketSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+  count: z.number().int(),
+});
+
+const fieldDistributionResultSchema = z.object({
+  field: z.string(),
+  totalCount: z.number().int().meta({ description: '這個欄位全市場有值（非 null）的公司總數，等於 bins 的 count 加總' }),
+  trueMin: z.number().nullable().meta({ description: '實際最小值（未裁切）；totalCount=0 時為 null' }),
+  trueMax: z.number().nullable().meta({ description: '實際最大值（未裁切）；totalCount=0 時為 null' }),
+  clippedMin: z.number().nullable().meta({ description: '第 1 百分位，拿來切 bins 的裁切下界，避免極端值把其餘資料壓成一根柱子；totalCount=0 時為 null' }),
+  clippedMax: z.number().nullable().meta({ description: '第 99 百分位，拿來切 bins 的裁切上界；totalCount=0 時為 null' }),
+  bins: z.array(distributionBucketSchema).meta({ description: '等寬切割 [clippedMin, clippedMax]；小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉' }),
 });
 
 const companyRankResultSchema = z.object({
@@ -130,6 +146,25 @@ export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
     responses: {
       200: { description: '每個要求的 symbol 都會出現。', content: { 'application/json': { schema: screenerValuesResultSchema } } },
       400: { description: 'symbols/columns 為空、超過上限，或 field 格式錯誤/查不到。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/screener/distribution',
+    summary: '全市場某個欄位的分布（直方圖）',
+    description:
+      '給「這家公司這個欄位在全市場排第幾」卡片展開後的分布圖用——一次查詢在資料庫端算完全部分箱，' +
+      '取代逐一打固定區間湊出粗粒度長條圖的做法。裁切邊界是第 1/99 百分位（clippedMin/clippedMax），' +
+      '避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax ' +
+      '的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是' +
+      '未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位' +
+      '全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。',
+    tags: ['Screener'],
+    request: { query: getScreenerDistributionQuerySchema },
+    responses: {
+      200: { description: '這個欄位全市場的分布。', content: { 'application/json': { schema: fieldDistributionResultSchema } } },
+      400: { description: 'field 格式錯誤或查不到、bins 超出範圍。' },
     },
   });
 };

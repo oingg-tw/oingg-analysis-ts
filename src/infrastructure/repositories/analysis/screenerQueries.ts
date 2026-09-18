@@ -333,3 +333,54 @@ export const buildValuesSql = (symbols: string[], columns: FieldRef[]): Prisma.S
     ${Prisma.join(joinParts, ' ')}
   `;
 };
+
+// 全市場某個欄位的分布（直方圖用）——兩支查詢一組：先算邊界（第 1/99 百分位當裁切邊界，
+// 避免極端值把其餘資料壓成一根柱子；同時給真實 min/max），呼叫端（metricValueQueries.ts）
+// 算完 p1/p99 之後再帶進第二支查詢實際分箱。分兩次查詢而不是一次組完，是因為
+// width_bucket() 的邊界參數不能是同一個查詢裡另一個 aggregate 的結果（Postgres 不支援
+// aggregate 巢狀在同一個 SELECT 層級），比起用 window function 硬湊，兩支各自單純的查詢
+// 更好懂也更好測。single-field CTE 沿用 buildCte，跟其餘三支查詢共用同一套解析結果。
+export interface DistributionBoundsRow {
+  total_count: bigint;
+  true_min: unknown;
+  true_max: unknown;
+  p1: unknown;
+  p99: unknown;
+}
+
+export const buildDistributionBoundsSql = (field: FieldRef): Prisma.Sql => {
+  const ref = dedupCtes([field]).get(basisGroupKeyFor(field))!;
+  const alias = Prisma.raw(ref.alias);
+  return Prisma.sql`
+    WITH ${buildCte(ref)}
+    SELECT
+      COUNT(${alias}.${q('value')}) AS total_count,
+      MIN(${alias}.${q('value')}) AS true_min,
+      MAX(${alias}.${q('value')}) AS true_max,
+      percentile_cont(0.01) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p1,
+      percentile_cont(0.99) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p99
+    FROM ${alias}
+    WHERE ${alias}.${q('value')} IS NOT NULL
+  `;
+};
+
+export interface DistributionBucketRow {
+  bucket: number;
+  count: bigint;
+}
+
+// p1/p99 是第一支查詢（buildDistributionBoundsSql）算出來的裁切邊界，原樣帶回來當參數——
+// width_bucket 對範圍外的值回傳 0（< p1）或 bins+1（>= p99），呼叫端（buildDistributionBins）
+// 負責把這兩種情況夾回 [1, bins]，不在這裡處理。
+export const buildDistributionBinsSql = (field: FieldRef, p1: number, p99: number, bins: number): Prisma.Sql => {
+  const ref = dedupCtes([field]).get(basisGroupKeyFor(field))!;
+  const alias = Prisma.raw(ref.alias);
+  return Prisma.sql`
+    WITH ${buildCte(ref)}
+    SELECT width_bucket(${alias}.${q('value')}, ${p1}, ${p99}, ${bins}) AS bucket, COUNT(*) AS count
+    FROM ${alias}
+    WHERE ${alias}.${q('value')} IS NOT NULL
+    GROUP BY bucket
+    ORDER BY bucket
+  `;
+};

@@ -1,5 +1,6 @@
 import type { LookbackRange, PeriodType, SamplingInterval, SnapshotCadence } from '@/domain/metrics/metricBasis';
 import type { FieldRef } from '@/domain/metrics/timeframe';
+import type { DistributionBucket } from '@/domain/shared/distribution';
 
 // analysis DB 的 metric_values / metric_daily_cadence_values 讀取端 port（寫入端是 metricValues.ts 的
 // MetricValueRepository，刻意分開：指標核心的 PitDeps 只需要寫入端 + findLatest，讀取端是 HTTP use case 在用，
@@ -56,6 +57,20 @@ export interface CompanyRankRow {
   total_count: bigint;
 }
 
+// 全市場某個欄位的分布（給「殖利率市場排名」卡片展開的直方圖用）——trueMin/trueMax 是實際
+// 最小/最大值，clippedMin/clippedMax 是拿來切 bins 的裁切邊界（第 1/99 百分位，避免極端值
+// 把其餘資料壓成一根柱子），bins 的 count 加總永遠等於 totalCount（離群值視覺上落進最左/
+// 最右一格，不會憑空消失，見 domain/shared/distribution.ts 的說明）。totalCount=0（這個
+// 欄位全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列。
+export interface FieldDistribution {
+  totalCount: number;
+  trueMin: number | null;
+  trueMax: number | null;
+  clippedMin: number | null;
+  clippedMax: number | null;
+  bins: DistributionBucket[];
+}
+
 export interface MetricValueQueryPort {
   // 某支逐日型 snapshot 指標（exchangePeRatio/exchangePbRatio/dividendYield…）目前市場最後所知的一筆值。
   findLatestSnapshotValue(
@@ -86,4 +101,6 @@ export interface MetricValueQueryPort {
   companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc'): Promise<CompanyRankRow[]>;
   // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
   values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
+  // 全市場某個欄位的分布（直方圖用），bins 是要切幾格。
+  distribution(field: FieldRef, bins: number): Promise<FieldDistribution>;
 }

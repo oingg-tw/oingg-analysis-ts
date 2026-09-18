@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "body": {
+    "bins": [
+      {
+        "count": "<number>",
+        "max": "<number>",
+        "min": "<number>"
+      }
+    ],
+    "clippedMax": "<number>",
+    "clippedMin": "<number>",
+    "field": "dividendYield.EOD",
+    "totalCount": "<number>",
+    "trueMax": "<number>",
+    "trueMin": "<number>"
+  }
+}

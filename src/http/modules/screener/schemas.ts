@@ -58,6 +58,13 @@ export const getCompanyRankQuerySchema = z.object({
   direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }).meta({ description: 'desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
 });
 
+// 2026-09-18 新增——全市場某個欄位的分布（直方圖）。bins 預設 20，上限 100（畫面上不會有
+// 意義去切更細，且 width_bucket 每多一格就多一列 GROUP BY，沒必要放更寬）。
+export const getScreenerDistributionQuerySchema = z.object({
+  field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.timeframe" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
+  bins: z.coerce.number().int().min(5).max(100).default(20).meta({ description: '要切成幾格，預設 20，範圍 5~100。' }),
+});
+
 // bff-ts 一次最多送一頁的量（≤200），跟其他「明確列出清單」端點（GET /stocks/prices）同一種
 // 上限慣例：超過直接 400，不會默默只處理前 200 筆。
 const MAX_SYMBOLS = 200;

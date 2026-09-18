@@ -6308,6 +6308,118 @@
         ]
       }
     },
+    "/screener/distribution": {
+      "get": {
+        "description": "給「這家公司這個欄位在全市場排第幾」卡片展開後的分布圖用——一次查詢在資料庫端算完全部分箱，取代逐一打固定區間湊出粗粒度長條圖的做法。裁切邊界是第 1/99 百分位（clippedMin/clippedMax），避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。",
+        "parameters": [
+          {
+            "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
+            "in": "query",
+            "name": "field",
+            "required": true,
+            "schema": {
+              "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
+              "example": "dividendYield.EOD",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "要切成幾格，預設 20，範圍 5~100。",
+            "in": "query",
+            "name": "bins",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "要切成幾格，預設 20，範圍 5~100。",
+              "maximum": 100,
+              "minimum": 5,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bins": {
+                      "description": "等寬切割 [clippedMin, clippedMax]；小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉",
+                      "items": {
+                        "properties": {
+                          "count": {
+                            "type": "integer"
+                          },
+                          "max": {
+                            "type": "number"
+                          },
+                          "min": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "min",
+                          "max",
+                          "count"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "clippedMax": {
+                      "description": "第 99 百分位，拿來切 bins 的裁切上界；totalCount=0 時為 null",
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "clippedMin": {
+                      "description": "第 1 百分位，拿來切 bins 的裁切下界，避免極端值把其餘資料壓成一根柱子；totalCount=0 時為 null",
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "totalCount": {
+                      "description": "這個欄位全市場有值（非 null）的公司總數，等於 bins 的 count 加總",
+                      "type": "integer"
+                    },
+                    "trueMax": {
+                      "description": "實際最大值（未裁切）；totalCount=0 時為 null",
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "trueMin": {
+                      "description": "實際最小值（未裁切）；totalCount=0 時為 null",
+                      "nullable": true,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "totalCount",
+                    "trueMin",
+                    "trueMax",
+                    "clippedMin",
+                    "clippedMax",
+                    "bins"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "這個欄位全市場的分布。"
+          },
+          "400": {
+            "description": "field 格式錯誤或查不到、bins 超出範圍。"
+          }
+        },
+        "summary": "全市場某個欄位的分布（直方圖）",
+        "tags": [
+          "Screener"
+        ]
+      }
+    },
     "/screener/ranking": {
       "get": {
         "description": "排序欄位本身一定會出現在 values 裡（不管有沒有另外列進 columns），且保證非 null（WHERE value IS NOT NULL）。sectorCodes（選填，逗號分隔）比照 POST /screener 同一套證交所類股篩選語意，先縮小候選公司範圍再排序。",

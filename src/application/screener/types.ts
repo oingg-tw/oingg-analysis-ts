@@ -61,3 +61,21 @@ export interface CompanyRankResult {
   totalCount: number | null; // 全市場這個欄位有值（非 null）的公司總數
   topPercent: number | null; // rank÷totalCount×100，數字越小代表排名越前面，例如 5 代表排在全市場前 5%
 }
+
+export interface DistributionBucketResult {
+  min: number;
+  max: number;
+  count: number;
+}
+
+// 給「殖利率市場排名」卡片展開的分布圖用——bins 的 count 加總永遠等於 totalCount，
+// 見 application/ports/metricValueQueries.ts 的 FieldDistribution 說明。
+export interface FieldDistributionResult {
+  field: string; // "metricCode.basis"，跟請求時給的字串一致
+  totalCount: number;
+  trueMin: number | null;
+  trueMax: number | null;
+  clippedMin: number | null; // 第 1 百分位，拿來切 bins 的裁切下界
+  clippedMax: number | null; // 第 99 百分位，拿來切 bins 的裁切上界
+  bins: DistributionBucketResult[];
+}

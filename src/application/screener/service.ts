@@ -2,7 +2,7 @@ import type { AppDeps } from '@/application/deps';
 import { ValidationError } from '@/application/errors';
 import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec } from '@/application/ports/metricValueQueries';
 import { resolveFieldOrThrow, type FieldRef } from './fieldResolver';
-import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason, CompanyRankResult } from './types';
+import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason, CompanyRankResult, FieldDistributionResult } from './types';
 
 // ScreenerValidationError 就是 application 共用的 ValidationError（同一個 class，instanceof 判斷不變）；
 // 既有測試沿用這個名字。
@@ -168,4 +168,14 @@ export const runScreenerValues = async (request: { symbols: string[]; columns: S
 
   const indexedColumns: ScreenerIndexedField[] = columns.map((c, index) => ({ ...c, index }));
   return { results: await attachCompanyNames(parseRows(rows, indexedColumns), deps) };
+};
+
+// 全市場某個欄位的分布（直方圖用）——2026-09-18 應 web-nuxt「殖利率市場排名」卡片展開需求
+// 新增，取代他們原本用 POST /screener 的 count-only 查詢在前端手工打十幾次固定區間湊出來的
+// 粗粒度長條圖。bins 的 count 加總永遠等於 totalCount，見 types.ts 的 FieldDistributionResult
+// 說明；離群值不會被丟掉，只是視覺上落進最左/最右一格。
+export const getFieldDistribution = async (fieldInput: string, bins: number, deps: Pick<AppDeps, 'metricValueQueries'>): Promise<FieldDistributionResult> => {
+  const field = resolveFieldOrThrow(fieldInput);
+  const result = await deps.metricValueQueries.distribution(field, bins);
+  return { field: fieldInput, ...result };
 };
