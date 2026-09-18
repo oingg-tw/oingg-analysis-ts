@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-18T03:30:17.984Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -55,6 +55,9 @@
       "operatingCost": {
         "$bigint": "382808019"
       },
+      "operatingExpense": {
+        "$bigint": "94005657"
+      },
       "operatingIncome": {
         "$bigint": "658966142"
       },
@@ -92,6 +95,9 @@
       },
       "operatingCost": {
         "$bigint": "410069555"
+      },
+      "operatingExpense": {
+        "$bigint": "98982083"
       },
       "operatingIncome": {
         "$bigint": "766602651"
@@ -131,6 +137,9 @@
       "operatingCost": {
         "$bigint": "401375489"
       },
+      "operatingExpense": {
+        "$bigint": "87764445"
+      },
       "operatingIncome": {
         "$bigint": "500684818"
       },
@@ -168,6 +177,9 @@
       },
       "operatingCost": {
         "$bigint": "394103585"
+      },
+      "operatingExpense": {
+        "$bigint": "88190790"
       },
       "operatingIncome": {
         "$bigint": "564902413"

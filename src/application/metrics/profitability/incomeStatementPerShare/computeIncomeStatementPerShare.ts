@@ -4,6 +4,9 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateGrossProfitPerShare } from '@/domain/metrics/profitability/grossProfitPerShare/calculateGrossProfitPerShare';
 import { calculateOperatingIncomePerShare } from '@/domain/metrics/profitability/operatingIncomePerShare/calculateOperatingIncomePerShare';
+import { calculateCostOfGoodsSoldPerShare } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/calculateCostOfGoodsSoldPerShare';
+import { calculateOperatingExpensePerShare } from '@/domain/metrics/profitability/operatingExpensePerShare/calculateOperatingExpensePerShare';
+import { calculateIncomeTaxExpensePerShare } from '@/domain/metrics/profitability/incomeTaxExpensePerShare/calculateIncomeTaxExpensePerShare';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -17,11 +20,21 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 刻意不合併進 computeEpsPit.ts——eps 的淨利需要 pickNetIncome() 處理歸屬母公司/整體
 // 口徑的挑選邏輯，毛利/營業利益是損益表單一欄位直接讀，沒有這層複雜度，合併只會讓
 // eps.ts 多背一個它不需要的查詢分支。
+//
+// 2026-09-18 應 web-nuxt 需求擴充：同一次 getIncomeStatement 查詢再拆出 3 個 TTM-only 的
+// metric_code（costOfGoodsSoldPerShare/operatingExpensePerShare/incomeTaxExpensePerShare），
+// 直接讀損益表對應科目（operating_costs/operating_expense/income_tax_expense_continuing_
+// operations），理由跟毛利/營業利益一致——不是用其他 per-share 欄位相減湊出來（那樣會疊加
+// 捨入誤差，incomeTaxExpensePerShare 更是不能用 pretaxIncomePerShare − eps 湊，因為 eps 是
+// 歸屬母公司口徑而稅前淨利−所得稅費用等於整體淨利，多數公司有非零少數股東權益會讓兩者不等價）。
+// 這 3 個新欄位刻意跟既有的 grossProfit/operatingIncome 兩組欄位各自獨立判斷「四季齊不齊」跟
+// 各自呼叫 resolveKnowledgeDate——不共用完整度判斷，避免新欄位的資料缺漏影響到已經上線指標的
+// null 判定（parity 風險）。
 
 
 export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
 
-export type IncomeStatementPerShareComputationBatch = ComputationBatch<'grossProfitPerShareQ' | 'grossProfitPerShareTtm' | 'operatingIncomePerShareQ' | 'operatingIncomePerShareTtm'>;
+export type IncomeStatementPerShareComputationBatch = ComputationBatch<'grossProfitPerShareQ' | 'grossProfitPerShareTtm' | 'operatingIncomePerShareQ' | 'operatingIncomePerShareTtm' | 'costOfGoodsSoldPerShareTtm' | 'operatingExpensePerShareTtm' | 'incomeTaxExpensePerShareTtm'>;
 
 export const computeIncomeStatementPerShare = async (
   query: QuarterlyMetricQuery,
@@ -29,7 +42,7 @@ export const computeIncomeStatementPerShare = async (
 ): Promise<IncomeStatementPerShareComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const skippedNoQuarter: IncomeStatementPerShareComputationBatch = noQuarterBatch(symbol, ['grossProfitPerShareQ', 'grossProfitPerShareTtm', 'operatingIncomePerShareQ', 'operatingIncomePerShareTtm']);
+  const skippedNoQuarter: IncomeStatementPerShareComputationBatch = noQuarterBatch(symbol, ['grossProfitPerShareQ', 'grossProfitPerShareTtm', 'operatingIncomePerShareQ', 'operatingIncomePerShareTtm', 'costOfGoodsSoldPerShareTtm', 'operatingExpensePerShareTtm', 'incomeTaxExpensePerShareTtm']);
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
@@ -114,5 +127,69 @@ export const computeIncomeStatementPerShare = async (
     operatingIncomePerShareTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { grossProfitPerShareQ, grossProfitPerShareTtm, operatingIncomePerShareQ, operatingIncomePerShareTtm } };
+  // 2026-09-18 新增的 3 個 TTM-only 欄位——重用上面已經查好的 ttmRecords（同一份損益表資料），
+  // 但獨立判斷「四季齊不齊」跟獨立呼叫 resolveKnowledgeDate，不影響 grossProfit/operatingIncome
+  // 兩組既有欄位的 ttmComplete/ttmAnchor（見檔頭 2026-09-18 說明）。
+  let costOfGoodsSoldTtmSum = 0n;
+  let operatingExpenseTtmSum = 0n;
+  let incomeTaxExpenseTtmSum = 0n;
+  let expenseTtmComplete = true;
+  for (const record of ttmRecords) {
+    if (record === null || record.operatingCost === null || record.operatingExpense === null || record.incomeTaxExpense === null) {
+      expenseTtmComplete = false;
+    } else {
+      costOfGoodsSoldTtmSum += record.operatingCost;
+      operatingExpenseTtmSum += record.operatingExpense;
+      incomeTaxExpenseTtmSum += record.incomeTaxExpense;
+    }
+  }
+
+  const costOfGoodsSoldPerShareTtmCalc = expenseTtmComplete ? calculateCostOfGoodsSoldPerShare(costOfGoodsSoldTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
+  const operatingExpensePerShareTtmCalc = expenseTtmComplete ? calculateOperatingExpensePerShare(operatingExpenseTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
+  const incomeTaxExpensePerShareTtmCalc = expenseTtmComplete ? calculateIncomeTaxExpensePerShare(incomeTaxExpenseTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
+
+  let costOfGoodsSoldPerShareTtm: ComputationSlot;
+  let operatingExpensePerShareTtm: ComputationSlot;
+  let incomeTaxExpensePerShareTtm: ComputationSlot;
+
+  if (expenseTtmComplete) {
+    const expenseTtmAnchor = await resolveKnowledgeDate(
+      symbol,
+      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null })), deps.announcements
+    );
+    if (!expenseTtmAnchor) {
+      costOfGoodsSoldPerShareTtm = { action: 'skipped_no_knowledge_date' };
+      operatingExpensePerShareTtm = { action: 'skipped_no_knowledge_date' };
+      incomeTaxExpensePerShareTtm = { action: 'skipped_no_knowledge_date' };
+    } else {
+      const { knowledgeDate, isFallback: knowledgeDateIsFallback } = expenseTtmAnchor;
+      costOfGoodsSoldPerShareTtm = computation({ ...coordinateFor('costOfGoodsSoldPerShare'), ...periodTypeGroup('TTM'), value: costOfGoodsSoldPerShareTtmCalc.value, nullReason: costOfGoodsSoldPerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      operatingExpensePerShareTtm = computation({ ...coordinateFor('operatingExpensePerShare'), ...periodTypeGroup('TTM'), value: operatingExpensePerShareTtmCalc.value, nullReason: operatingExpensePerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+      incomeTaxExpensePerShareTtm = computation({ ...coordinateFor('incomeTaxExpensePerShare'), ...periodTypeGroup('TTM'), value: incomeTaxExpensePerShareTtmCalc.value, nullReason: incomeTaxExpensePerShareTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    }
+  } else if (mainAnchor) {
+    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
+    costOfGoodsSoldPerShareTtm = computation({ ...coordinateFor('costOfGoodsSoldPerShare'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    operatingExpensePerShareTtm = computation({ ...coordinateFor('operatingExpensePerShare'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+    incomeTaxExpensePerShareTtm = computation({ ...coordinateFor('incomeTaxExpensePerShare'), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+  } else {
+    costOfGoodsSoldPerShareTtm = { action: 'skipped_no_knowledge_date' };
+    operatingExpensePerShareTtm = { action: 'skipped_no_knowledge_date' };
+    incomeTaxExpensePerShareTtm = { action: 'skipped_no_knowledge_date' };
+  }
+
+  return {
+    symbol,
+    rocYear: year,
+    season,
+    slots: {
+      grossProfitPerShareQ,
+      grossProfitPerShareTtm,
+      operatingIncomePerShareQ,
+      operatingIncomePerShareTtm,
+      costOfGoodsSoldPerShareTtm,
+      operatingExpensePerShareTtm,
+      incomeTaxExpensePerShareTtm,
+    },
+  };
 };

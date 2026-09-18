@@ -56,6 +56,7 @@ const emptyIncome = (reportDate: Date): IncomeStatementFields => ({
   netIncomeAttributableToParent: null,
   operatingCost: null,
   sellingExpenses: null,
+  operatingExpense: null,
 });
 
 const emptyBalance = (reportDate: Date): BalanceSheetFields => ({

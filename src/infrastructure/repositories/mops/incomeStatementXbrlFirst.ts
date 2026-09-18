@@ -6,9 +6,11 @@
 // 那個候選其實等於 gross_profit，是另一個概念的別名）；incomeTaxExpense 對應
 // income_tax_expense_continuing_operations，沿用 guru/roic 批次已驗證過的對照。
 //
-// 31 支既有 computeXxxPit.ts 只透過 getIncomeStatementXbrlFirst(key) 存取以下 11 個欄位 +
-// reportDate（eps／interestIncome 完全沒有任何檔案存取，這裡不處理——EPS 是各自用
-// 淨利/流通股數重新算的，不是讀這張表現成的 eps 欄位）。
+// 既有 computeXxxPit.ts 只透過 getIncomeStatementXbrlFirst(key) 存取以下欄位 + reportDate（eps／
+// interestIncome 完全沒有任何檔案存取，這裡不處理——EPS 是各自用淨利/流通股數重新算的，不是讀
+// 這張表現成的 eps 欄位）。2026-09-18 補上 operating_expense（營業費用合計，給
+// operatingExpensePerShare 用，跟 operating_costs/income_tax_expense_continuing_operations 一樣
+// 是真實揭露的單一總計科目）。
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
@@ -30,6 +32,7 @@ interface RawIncomeStatementXbrlRow {
   profit_loss_attributable_to_owners_of_parent: bigint | null;
   operating_costs: bigint | null;
   selling_expense: bigint | null;
+  operating_expense: bigint | null;
 }
 
 const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
@@ -45,6 +48,7 @@ const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
   netIncomeAttributableToParent: row.profit_loss_attributable_to_owners_of_parent,
   operatingCost: row.operating_costs,
   sellingExpenses: row.selling_expense,
+  operatingExpense: row.operating_expense,
 });
 
 export const getLatestQuarterWithIncomeStatementXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
@@ -60,7 +64,7 @@ export const getIncomeStatementXbrlFirst = async (key: QuarterlyKey): Promise<In
   const rows = await mopsExportPrisma.$queryRaw<RawIncomeStatementXbrlRow[]>`
     SELECT report_date, revenue, gross_profit, profit_loss_from_operating_activities, profit_loss_before_tax,
       profit_loss, administrative_expense, finance_costs, income_tax_expense_continuing_operations,
-      profit_loss_attributable_to_owners_of_parent, operating_costs, selling_expense
+      profit_loss_attributable_to_owners_of_parent, operating_costs, selling_expense, operating_expense
     FROM "export"."quarterly_income_statement_xbrl"
     WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
       AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}

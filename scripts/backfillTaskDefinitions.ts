@@ -16,7 +16,7 @@ export const GENERAL_METRIC_CODES = [
   'roe', 'roa', 'dupontDecomposedRoe', 'dupontEbitMargin', 'dupontExtendedRoe', 'dupontInterestBurden', 'dupontTaxBurden', 'netProfitMargin', 'equityMultiplier',
   'grahamNumber', 'ownerEarnings', 'altmanZScore', 'piotroskiFScore', 'beneishMScore', 'nissimPenmanRnoa', 'zmijewskiScore', 'ohlsonOScore',
   'grossMargin', 'operatingMargin', 'assetTurnover', 'fixedAssetTurnover', 'inventoryDays', 'inventoryTurnover', 'payablesDays', 'payablesTurnover', 'receivablesDays', 'receivablesTurnover', 'cashConversionCycle', 'operatingCycle', 'netWorkingCapitalTurnover', 'inventoryToRevenueRatio', 'receivablesToRevenueRatio',
-  'eps', 'pretaxIncomePerShare', 'grossProfitPerShare', 'operatingIncomePerShare', 'bvps', 'revenuePerShare', 'dividendPayoutRatio', 'dividendPerShare', 'sgr', 'ocfPerShare', 'fcfPerShare', 'depreciationAmortizationPerShare', 'ocfToNetIncome', 'accrualsRatio', 'fcfYield',
+  'eps', 'pretaxIncomePerShare', 'grossProfitPerShare', 'operatingIncomePerShare', 'costOfGoodsSoldPerShare', 'operatingExpensePerShare', 'incomeTaxExpensePerShare', 'bvps', 'revenuePerShare', 'dividendPayoutRatio', 'dividendPerShare', 'sgr', 'ocfPerShare', 'fcfPerShare', 'depreciationAmortizationPerShare', 'ocfToNetIncome', 'accrualsRatio', 'fcfYield',
   'debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'longTermDebtToNetCurrentAssets', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce',
   'revenueGrowthRate', 'epsGrowthRate', 'netIncomeGrowthRate', 'operatingIncomeGrowthRate', 'equityGrowthRate', 'bvpsGrowthRate',
   'assetGrowth', 'consecutiveProfitYears', 'earningsYield',

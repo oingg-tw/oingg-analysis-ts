@@ -20,6 +20,7 @@ export interface IncomeStatementFields {
   adminExpenses: bigint | null;
   financeCosts: bigint | null;
   incomeTaxExpense: bigint | null;
+  operatingExpense: bigint | null;
   netIncomeAttributableToParent: bigint | null;
   operatingCost: bigint | null;
   sellingExpenses: bigint | null;

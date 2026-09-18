@@ -32,6 +32,9 @@ import { dividendPayoutRatioDefinition } from '@/domain/metrics/dividend/dividen
 import { dividendPerShareDefinition } from '@/domain/metrics/dividend/dividendPerShare/dividendPerShareDefinition';
 import { grossProfitPerShareDefinition } from '@/domain/metrics/profitability/grossProfitPerShare/grossProfitPerShareDefinition';
 import { operatingIncomePerShareDefinition } from '@/domain/metrics/profitability/operatingIncomePerShare/operatingIncomePerShareDefinition';
+import { costOfGoodsSoldPerShareDefinition } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/costOfGoodsSoldPerShareDefinition';
+import { operatingExpensePerShareDefinition } from '@/domain/metrics/profitability/operatingExpensePerShare/operatingExpensePerShareDefinition';
+import { incomeTaxExpensePerShareDefinition } from '@/domain/metrics/profitability/incomeTaxExpensePerShare/incomeTaxExpensePerShareDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domain/metrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
 import { dividendDistributionCountDefinition } from '@/domain/metrics/dividend/dividendDistributionCount/dividendDistributionCountDefinition';
 import { dividendGrowthRateFamilyDefinitions } from '@/domain/metrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
@@ -170,6 +173,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   pretaxIncomePerShare: pretaxIncomePerShareDefinition,
   grossProfitPerShare: grossProfitPerShareDefinition,
   operatingIncomePerShare: operatingIncomePerShareDefinition,
+  costOfGoodsSoldPerShare: costOfGoodsSoldPerShareDefinition,
+  operatingExpensePerShare: operatingExpensePerShareDefinition,
+  incomeTaxExpensePerShare: incomeTaxExpensePerShareDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,
   pegRatio: pegRatioDefinition,

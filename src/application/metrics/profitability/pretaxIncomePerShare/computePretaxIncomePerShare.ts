@@ -14,7 +14,36 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 eps 一致）。
 
 
-export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+// 2026-09-18 補上銀行業 fallback：一般損益表（quarterly_income_statement_xbrl）跟銀行監理
+// 專用損益表（bank_income_statement_detail_xbrl）申報進度不一定同步，實測 113Q3~115Q2、
+// 10 家銀行/金控有 24 筆季度組合是一般表缺資料、銀行專用表卻有——這條指標是銀行業「營收到
+// 股利去了哪裡」瀑布圖的終點（跟 bankOtherOperatingExpensePerShare 等 4 個銀行專用欄位對齊），
+// 一般表缺資料時退回銀行專用表的稅前淨利。兩邊有資料時數字完全一致（同一份文件的同一個數字，
+// 見 BankIncomeStatementFields.profitBeforeTax 的說明），不是另一個口徑的替代值。非銀行公司
+// 這張表本來就沒有資料，fallback 對他們是 no-op——用 isFinancialIndustryCompany 先擋掉，
+// 避免全市場 2000+ 家非銀行公司每季都多打一次注定查無資料的查詢。
+
+export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'industry'>;
+
+// 一般損益表優先，缺資料時（且是銀行/金控）才查銀行監理專用表——見上方 2026-09-18 說明。
+const resolveProfitBeforeTax = async (
+  key: { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string },
+  isBank: boolean,
+  deps: Pick<PretaxIncomePerShareDeps, 'statements'>
+): Promise<{ profitBeforeTax: bigint | null; reportDate: Date | null }> => {
+  const incomeStatement = await deps.statements.getIncomeStatement(key);
+  if (incomeStatement?.profitBeforeTax != null) {
+    return { profitBeforeTax: incomeStatement.profitBeforeTax, reportDate: incomeStatement.reportDate };
+  }
+  if (!isBank) {
+    return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null };
+  }
+  const bankIncomeStatement = await deps.statements.getBankIncomeStatement(key);
+  if (bankIncomeStatement?.profitBeforeTax != null) {
+    return { profitBeforeTax: bankIncomeStatement.profitBeforeTax, reportDate: incomeStatement?.reportDate ?? bankIncomeStatement.reportDate };
+  }
+  return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null };
+};
 
 export type PretaxIncomePerShareComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -35,10 +64,10 @@ export const computePretaxIncomePerShare = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
+  const isBank = await deps.industry.isFinancialIndustryCompany(symbol);
+
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await deps.statements.getIncomeStatement(key);
-  const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
-  const reportDate = incomeStatement?.reportDate ?? null;
+  const { profitBeforeTax, reportDate } = await resolveProfitBeforeTax(key, isBank, deps);
 
   // 流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。
   const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
@@ -57,13 +86,13 @@ export const computePretaxIncomePerShare = async (
   // knowledge_date 沿用本季（Q）自己的，跟 computeEpsPit.ts 的 TTM 處理一致。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map((tq) => resolveProfitBeforeTax({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, isBank, deps))
   );
 
   let ttmSum = 0n;
   let ttmComplete = true;
   for (const record of ttmRecords) {
-    if (record === null || record.profitBeforeTax === null) {
+    if (record.profitBeforeTax === null) {
       ttmComplete = false;
     } else {
       ttmSum += record.profitBeforeTax;
