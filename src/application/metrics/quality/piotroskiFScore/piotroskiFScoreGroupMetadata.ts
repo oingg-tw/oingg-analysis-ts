@@ -3,6 +3,12 @@
 // 顯示標籤，原本寫死在 web-nuxt 前端的 guru-badges.ts，任何硬寫的中文字串都擋掉未來
 // 多語系翻譯。
 //
+// 2026-09-19 使用者決定 Piotroski 合併回「一個指標、一個徽章」（piotroskiFScoreBadge.ts 現在
+// 有真正的門檻 gte 8，走 GET /companies/badges 的通用判定），「3 個子徽章」這個呈現方式退場——
+// 這裡的 3 組 metadata 從「子徽章文案」降級為「單一徽章展開細節時的分組標題」，9 個訊號標籤
+// 不受影響。GET /companies/piotroski-breakdown 的回應形狀刻意不動（groupMetadata 欄位照舊
+// 回傳，contract 不變），要不要拿掉 groupMetadata 等 web-nuxt 確認前端不再用了再協調。
+//
 // 這份 metadata 刻意「不」塞進 MetricBadge/MetricDefinitionSpec 這兩個被 94 支指標/12
 // 支 badge 共用的型別——「9 個訊號拆 3 組」這件事只有 Piotroski F-Score 這一支指標有，
 // 其餘 11 支 badge 完全沒有「子分組」概念，硬把 groups/signalLabels 塞進共用型別等於為了

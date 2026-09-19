@@ -77,15 +77,15 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
 
   const categories = await Promise.all(
     catalog.map(async ({ categoryKey, categoryDisplayName, metrics }) => {
-      // piotroskiFScore 的 badge 沒有 timeframe/comparator（文件明講它的「N 選 M」門檻邏輯
-      // 無法用這裡的通用比較詞彙表達，見 metricDefinitionSpec.ts 的 threshold 說明），硬塞
-      // 進這支端點只會生出沒有意義的 timeframe:''/passed:null。它已經有專門的
-      // GET /companies/piotroski-breakdown 端點處理真正的判定邏輯，這裡直接跳過。
+      // 防禦性過濾：沒有 timeframe 的 badge 不知道該讀哪個 basis 的值，硬塞進來只會生出沒有意義的
+      // timeframe:''/passed:null。2026-09-19 起 badgeRegistry 裡每一支 badge 都有 timeframe（piotroskiFScore
+      // 原本是唯一的例外——沒有門檻、由前端拆 3 個子徽章各自算——使用者決定合併回一個徽章、用論文的
+      // 8 分門檻走這裡的通用判定），這個過濾目前不會濾掉任何東西，留著是擋未來漏填的情況。
       const badgeMetrics = metrics.filter((m) => m.badge && m.badge.timeframe !== undefined);
       const evaluated = await Promise.all(
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult | null> => {
           const badge = metric.badge!;
-          const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge（目前只有 piotroskiFScore）
+          const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge
           const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, deps);
 
           // 2026-09-15 使用者要求新增：像 bankCarRatio/bankCet1Ratio/bankTier1Ratio 這種

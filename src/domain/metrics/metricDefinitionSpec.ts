@@ -71,8 +71,9 @@ export interface MetricBadge extends NamedEntity {
     // 下限"、"實務上常用的應計項目異常門檻，非 Sloan 原始論文的十分位法"），跟
     // description 分開存放；沒有補充說明時留空，不要為了填欄位硬湊一句話。
     note?: string;
-    // 目前全部是 1（單一比較），保留這個欄位是因為 Piotroski 這類「N 選 M」門檻未來若
-    // 找到能泛化表達的比較詞彙，denominator 就是那個 M（例如 9）。
+    // 單一數值比較的徽章一律是 1；「N 選 M」型的徽章 denominator 是那個 M——目前只有
+    // Piotroski F-Score（denominator=9，門檻 gte 8，2026-09-19 合併回單一徽章後用通用的
+    // comparator/value 表達，前端顯示「8 / 9」這種分數格式時用得到）。
     denominator: number;
     // 跟 value（固定常數比較）、valueMin/valueMax（'in_range' 時用的區間上下限）或
     // compareAgainstFieldId（比較另一支指標的值，例如 Graham Number/NCAV 是跟股價比較）
