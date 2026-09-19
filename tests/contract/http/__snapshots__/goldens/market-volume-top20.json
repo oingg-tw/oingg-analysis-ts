@@ -6,14 +6,14 @@
         "change": "<number>",
         "changePercent": "<number>",
         "close": "<number>",
-        "companyName": "<null>",
+        "companyName": "<string>",
         "dir": "<string>",
         "high": "<number>",
         "low": "<number>",
         "market": "TWSE",
         "open": "<number>",
         "rank": "<number>",
-        "symbol": "<string>",
+        "symbol": "<numeric-string>",
         "transaction": "<numeric-string>",
         "volume": "<numeric-string>"
       }
