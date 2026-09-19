@@ -87,7 +87,7 @@ export const analysisMetricValueQueries: MetricValueQueryPort = {
   listDailyCadenceMetricHistoryRows,
   screen: (filters, columns, page, pageSize, sort, candidateSymbols) => runAnalysisRawQuery<Record<string, unknown>>(buildScreenerSql(filters, columns, page, pageSize, sort, candidateSymbols)),
   rank: (rankedField, direction, limit, columns, candidateSymbols) => runAnalysisRawQuery<Record<string, unknown>>(buildRankingSql(rankedField, direction, limit, columns, candidateSymbols)),
-  companyRank: (symbol, field, direction) => runAnalysisRawQuery<CompanyRankRow>(buildCompanyRankSql(symbol, field, direction)),
+  companyRank: (symbol, field, direction, excludeZero) => runAnalysisRawQuery<CompanyRankRow>(buildCompanyRankSql(symbol, field, direction, excludeZero)),
   values: (symbols, columns) => runAnalysisRawQuery<Record<string, unknown>>(buildValuesSql(symbols, columns)),
   distribution: fetchDistribution,
 };

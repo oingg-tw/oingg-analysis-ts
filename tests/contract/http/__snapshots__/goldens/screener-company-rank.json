@@ -3,6 +3,7 @@
   "body": {
     "field": "dividendYield.EOD",
     "found": "<boolean>",
+    "quintile": "<number>",
     "rank": "<number>",
     "symbol": "<numeric-string>",
     "topPercent": "<number>",

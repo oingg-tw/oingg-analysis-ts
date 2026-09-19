@@ -70,8 +70,9 @@ const companyRankResultSchema = z.object({
   found: z.boolean().meta({ description: 'false 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時 rank/totalCount/topPercent/value 皆為 null' }),
   value: z.number().nullable(),
   rank: z.number().int().nullable().meta({ description: '1-based，並列名次共用同一個名次（RANK() 語意，不是連續序號）' }),
-  totalCount: z.number().int().nullable().meta({ description: '全市場這個欄位有值（非 null）的公司總數' }),
+  totalCount: z.number().int().nullable().meta({ description: '排名母體的公司總數（這個欄位有值（非 null）的公司；excludeZero=true 時不含值為 0 的公司）' }),
   topPercent: z.number().nullable().meta({ description: 'rank÷totalCount×100，四捨五入到小數點後一位。數字越小代表排名越前面，例如 5 代表排在全市場前 5%（不是「百分位」那種越高越好的敘述方向，刻意選這個命名貼近「贏過前 X%」的中文口語問法）' }),
+  quintile: z.number().int().nullable().meta({ description: '這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高切分，跟 direction 排名方向無關；found=false 時為 null' }),
 });
 
 export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
@@ -125,7 +126,11 @@ export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
       'topPercent 是 rank÷totalCount×100（四捨五入到小數點後一位），數字越小代表排名越前面，' +
       '例如 5 代表排在全市場前 5%——跟「百分位」是相反的敘述方向（百分位越高代表越好），' +
       '刻意選這個命名貼近「贏過前 X%」的中文口語問法。found:false 代表這家公司這個欄位查無資料' +
-      '（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPercent 皆為 null。',
+      '（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPercent/quintile 皆為 null。' +
+      'excludeZero=true 會把值精確等於 0 的公司排除在排名母體之外（殖利率這類「0 代表不配息」的' +
+      '欄位用，比照 GET /screener/distribution 同名參數），影響 rank/totalCount/topPercent/quintile。' +
+      'quintile 是這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高' +
+      '切分，跟 direction 排名方向無關，方便前端直接標示區間不用自己算切點。',
     tags: ['Screener'],
     request: { query: getCompanyRankQuerySchema },
     responses: {

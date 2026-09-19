@@ -54,6 +54,7 @@ export interface CompanyRankRow {
   symbol: string;
   value: unknown;
   rank: bigint;
+  quintile: bigint;
   total_count: bigint;
 }
 
@@ -97,8 +98,9 @@ export interface MetricValueQueryPort {
   screen(filters: ScreenerFilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: ScreenerSortSpec | null, candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
   // 排行：排序欄位永遠是 index 0，其餘 columns 接在後面。
   rank(rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[], candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
-  // 單一公司在全市場某欄位的名次（RANK()，並列共用名次）；查無資料回空陣列。
-  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc'): Promise<CompanyRankRow[]>;
+  // 單一公司在全市場某欄位的名次（RANK()，並列共用名次）；查無資料回空陣列。excludeZero 同
+  // distribution() 的判斷條件（排除精確等於 0 的列，例如殖利率的「不配息」，不影響非 0 語意的欄位）。
+  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean): Promise<CompanyRankRow[]>;
   // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
   values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
   // 全市場某個欄位的分布（直方圖用），bins 是要切幾格；excludeZero 排除值精確等於 0 的列

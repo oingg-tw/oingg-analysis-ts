@@ -280,7 +280,23 @@ export const buildRankingSql = (
 // 算好名次跟總數，最後只取目標 symbol 那一列。RANK()（不是 ROW_NUMBER()）讓並列數值拿到
 // 同一個名次（例如兩家公司殖利率並列第 3，都回傳 rank=3，不會被迫拆成 3/4），跟業界排行榜
 // 慣例一致。
-export const buildCompanyRankSql = (symbol: string, field: FieldRef, direction: 'asc' | 'desc', candidateSymbols: string[] | null = null): Prisma.Sql => {
+//
+// excludeZero：2026-09-20 應使用者要求新增——殖利率這類欄位「等於 0」代表不配息，是一個
+// 大量重複出現的離散值而非連續分布的一部分，混進母體會讓多數有配息公司的排名/百分位卡在
+// 同一個低區段（一堆公司都輸給那群 0），沒有意義。跟 buildValueFilter/buildDistributionBoundsSql
+// 用同一套判斷條件（`<> 0` 而非 `> 0`，不假設排除的一定是下界），呼叫端依欄位語意決定要不要開。
+//
+// quintile：同一批需求新增——排名母體（已套用 excludeZero 篩選後）依數值由低到高切五等分，
+// NTILE(5) 固定用 ASC 排序（跟 direction 參數的排名方向脫鉤，五等分位是「這個數值在全市場
+// 從低到高的哪一段」，是敘述用途，不是名次），1 代表最低 20%、5 代表最高 20%——後端算好直接
+// 給，前端不用自己猜切點。
+export const buildCompanyRankSql = (
+  symbol: string,
+  field: FieldRef,
+  direction: 'asc' | 'desc',
+  excludeZero: boolean,
+  candidateSymbols: string[] | null = null
+): Prisma.Sql => {
   const filterCteRefs = dedupCtes([field]);
   const ctes = [...filterCteRefs.values()].map(buildCte);
   const alias = Prisma.raw(filterCteRefs.get(basisGroupKeyFor(field))!.alias);
@@ -288,7 +304,7 @@ export const buildCompanyRankSql = (symbol: string, field: FieldRef, direction: 
 
   const directionSql = direction === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
 
-  const whereConditions = [Prisma.sql`${valueCol} IS NOT NULL`];
+  const whereConditions = [buildValueFilter(alias, excludeZero)];
   if (candidateSymbols !== null) {
     whereConditions.push(Prisma.sql`${alias}.${q('symbol')} = ANY(${candidateSymbols}::text[])`);
   }
@@ -300,11 +316,12 @@ export const buildCompanyRankSql = (symbol: string, field: FieldRef, direction: 
         ${alias}.${q('symbol')} AS symbol,
         ${valueCol} AS value,
         RANK() OVER (ORDER BY ${valueCol} ${directionSql}) AS rank,
+        NTILE(5) OVER (ORDER BY ${valueCol} ASC) AS quintile,
         COUNT(*) OVER() AS total_count
       FROM ${alias}
       WHERE ${Prisma.join(whereConditions, ' AND ')}
     )
-    SELECT symbol, value, rank, total_count FROM ranked WHERE symbol = ${symbol}
+    SELECT symbol, value, rank, quintile, total_count FROM ranked WHERE symbol = ${symbol}
   `;
 };
 

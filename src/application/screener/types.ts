@@ -58,8 +58,11 @@ export interface CompanyRankResult {
   found: boolean; // false 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時其餘欄位皆為 null
   value: number | null;
   rank: number | null; // 1-based，並列名次共用同一個 rank（RANK() 語意，不是 ROW_NUMBER()）
-  totalCount: number | null; // 全市場這個欄位有值（非 null）的公司總數
+  totalCount: number | null; // 全市場這個欄位有值（非 null）的公司總數（excludeZero=true 時不含值為 0 的公司）
   topPercent: number | null; // rank÷totalCount×100，數字越小代表排名越前面，例如 5 代表排在全市場前 5%
+  // 2026-09-20 新增：這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高
+  // 切分，跟 direction 參數的排名方向無關。found=false 時為 null。
+  quintile: number | null;
 }
 
 export interface DistributionBucketResult {

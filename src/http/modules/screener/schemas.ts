@@ -56,6 +56,16 @@ export const getCompanyRankQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
   field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.basis" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
   direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }).meta({ description: 'desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
+  excludeZero: z.coerce
+    .boolean()
+    .optional()
+    .default(false)
+    .meta({
+      description:
+        '排除值精確等於 0 的公司（不納入排名母體），預設 false。給殖利率這類「0 代表不配息，不是連續分布' +
+        '裡的邊緣值」的欄位用，比照 GET /screener/distribution 的同名參數；混進一大群 0 會讓有配息公司的' +
+        '排名/百分位失真。true/false 或 1/0 皆可。',
+    }),
 });
 
 // 2026-09-18 新增——全市場某個欄位的分布（直方圖）。bins 預設 20，上限 100（畫面上不會有

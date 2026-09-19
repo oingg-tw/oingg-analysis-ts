@@ -131,14 +131,20 @@ export const runScreenerRanking = async (request: ScreenerRankingRequest, deps: 
 // 排在全市場前 5%；跟「百分位（percentile）」是相反方向的敘述習慣（百分位越高代表越好，
 // topPercent 越低代表越好），刻意選 topPercent 這個命名是因為比較貼近「贏過前 X%」這種
 // 中文口語問法。
-export const getCompanyRank = async (symbol: string, fieldInput: string, direction: 'asc' | 'desc', deps: Pick<AppDeps, 'metricValueQueries'>): Promise<CompanyRankResult> => {
+export const getCompanyRank = async (
+  symbol: string,
+  fieldInput: string,
+  direction: 'asc' | 'desc',
+  excludeZero: boolean,
+  deps: Pick<AppDeps, 'metricValueQueries'>
+): Promise<CompanyRankResult> => {
   const field = resolveFieldOrThrow(fieldInput);
 
-  const rows = await deps.metricValueQueries.companyRank(symbol, field, direction);
+  const rows = await deps.metricValueQueries.companyRank(symbol, field, direction, excludeZero);
 
   const row = rows[0];
   if (!row) {
-    return { symbol, field: fieldInput, found: false, value: null, rank: null, totalCount: null, topPercent: null };
+    return { symbol, field: fieldInput, found: false, value: null, rank: null, totalCount: null, topPercent: null, quintile: null };
   }
 
   const totalCount = Number(row.total_count);
@@ -153,6 +159,7 @@ export const getCompanyRank = async (symbol: string, fieldInput: string, directi
     rank,
     totalCount,
     topPercent,
+    quintile: Number(row.quintile),
   };
 };
 
