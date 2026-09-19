@@ -4,6 +4,7 @@ import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/prov
 import { getBadgeForMetric } from '@/domain/metrics/badgeRegistry';
 import { METRIC_CATEGORIES } from '@/domain/metrics/categories';
 import { METRIC_FOLDER_INDEX } from '@/domain/metrics/folderIndex';
+import { getMetricNarrative } from '@/domain/metrics/metricNarratives';
 import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 
 // 2026-09-08 取代舊架構的 filterCatalog.csv（手動維護、退場前已經跟 domainPitMetrics 完全
@@ -84,6 +85,13 @@ export interface MetricFolderCatalogEntry {
   // 逐批擴大的進度脫節，例如新增 payablesTurnover 支援後，沒讀這個欄位的呼叫端不會
   // 自動生效）。必填，不會是 undefined。
   hasProvenance: boolean;
+  // 2026-09-19 新增：給終端使用者看的三段說明文字（web-nuxt /metrics/{code} SEO 頁），來源是
+  // domain/metrics/metricNarratives.ts 獨立登錄檔（不在 Definition 裡，理由同 badgeRegistry）。三個一起有或
+  // 一起沒有；第一批只補 35 支有徽章的指標，其餘是 undefined（不是空字串）。措辭只陳述定義／限制／誤讀，
+  // 不下投資結論。
+  description?: string;
+  limitations?: string;
+  misreadings?: string;
 }
 
 export interface MetricFolderCatalogCategory {
@@ -124,6 +132,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           sources: definition.sources,
           badge: getBadgeForMetric(metricCode),
           hasProvenance: (PILOT_PROVENANCE_METRIC_CODES as readonly string[]).includes(metricCode),
+          ...getMetricNarrative(metricCode),
         };
       });
     return { categoryKey, categoryDisplayName, metrics };

@@ -60,6 +60,17 @@ const metricFolderCatalogEntrySchema = z.object({
       '"composite" = 多因子模型/統計方法論（Altman Z/Piotroski/Beneish/Ohlson/Zmijewski 這些大師評分模型、' +
       'Graham Number/NCAV、DuPont 拆解版 ROE、SGR/Chowder Number、SUE、beta）。',
   }),
+  description: z.string().optional().meta({
+    description:
+      '2026-09-19 新增：給終端使用者看的一句話定義（這支指標是什麼、怎麼算）。跟 limitations/misreadings 三個一起有或' +
+      '一起沒有；第一批只補 35 支有徽章的指標，其餘是 undefined（不是空字串）。措辭只陳述事實，不含投資結論。',
+  }),
+  limitations: z.string().optional().meta({
+    description: '2026-09-19 新增：適用限制——哪些產業不適用、資料口徑的簡化、資料深度造成的 null 情況。選填，見 description。',
+  }),
+  misreadings: z.string().optional().meta({
+    description: '2026-09-19 新增：常見誤讀——數字高/低不代表什麼、門檻的出處與適用範圍。選填，見 description。',
+  }),
   sources: z.array(z.string()).meta({
     description:
       '2026-09-10 新增：這支指標實際依賴的真實資料來源（例如 "公開發行公司資產負債表（XBRL）"），必填，' +
