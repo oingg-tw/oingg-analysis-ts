@@ -12,7 +12,7 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
-import type { DividendDistributionEvent, DividendEventsPort } from '@/application/ports/dividendEvents';
+import type { DividendDistributionEvent, DividendDistributionRow, DividendEventsPort } from '@/application/ports/dividendEvents';
 
 // DividendDistributionEvent 2026-09-17 Phase 3 搬到 application/ports/dividendEvents.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
 export type { DividendDistributionEvent };
@@ -49,4 +49,47 @@ export const getSymbolsWithDividendDistribution = async (): Promise<string[]> =>
   return rows.map((r) => r.symbol);
 };
 
-export const mopsDividendEvents: DividendEventsPort = { getDividendDistributionEvents };
+// 2026-09-19 歷年股利表用：完整欄位版本。numeric 欄位透過 $queryRaw 回來是 Decimal/字串，這裡統一
+// Number()（null 保留），呼叫端拿到的是元／股的原生數字；日期欄位是 date 型別、Prisma 給 Date。
+// 跟上面 getDividendDistributionEvents 刻意分開兩支：那支是指標核心（dividendDistributionCount）在用、
+// 已被 cassette 錄下，不要為了多讀幾個欄位動它的回傳形狀。
+interface RawDividendDistributionFullRow {
+  fiscal_year: number;
+  fiscal_quarter: number | null;
+  cash_dividend_from_earnings: unknown;
+  cash_dividend_from_capital_reserve: unknown;
+  stock_dividend_from_earnings: unknown;
+  stock_dividend_from_capital_reserve: unknown;
+  ex_dividend_date: Date | null;
+  ex_rights_date: Date | null;
+  cash_dividend_payment_date: Date | null;
+  announcement_date: Date | null;
+}
+
+const toNumberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
+
+export const listDividendDistributionRows = async (symbol: string): Promise<DividendDistributionRow[]> => {
+  const rows = await mopsExportPrisma.$queryRawUnsafe<RawDividendDistributionFullRow[]>(
+    `SELECT fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_capital_reserve,
+            stock_dividend_from_earnings, stock_dividend_from_capital_reserve,
+            ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date
+     FROM "export"."dividend_distribution"
+     WHERE symbol = $1
+     ORDER BY fiscal_year ASC, fiscal_quarter ASC NULLS FIRST, ex_dividend_date ASC NULLS LAST`,
+    symbol
+  );
+  return rows.map((r) => ({
+    rocFiscalYear: r.fiscal_year,
+    fiscalQuarter: r.fiscal_quarter,
+    cashDividendFromEarnings: toNumberOrNull(r.cash_dividend_from_earnings),
+    cashDividendFromCapitalReserve: toNumberOrNull(r.cash_dividend_from_capital_reserve),
+    stockDividendFromEarnings: toNumberOrNull(r.stock_dividend_from_earnings),
+    stockDividendFromCapitalReserve: toNumberOrNull(r.stock_dividend_from_capital_reserve),
+    exDividendDate: r.ex_dividend_date,
+    exRightsDate: r.ex_rights_date,
+    cashDividendPaymentDate: r.cash_dividend_payment_date,
+    announcementDate: r.announcement_date,
+  }));
+};
+
+export const mopsDividendEvents: DividendEventsPort = { getDividendDistributionEvents, listDividendDistributionRows };

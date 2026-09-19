@@ -11,6 +11,7 @@ import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
+  getCompanyDividendHistoryQuerySchema,
   getCompanyRoeHistoryQuerySchema,
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
@@ -27,6 +28,7 @@ import {
 } from './schemas';
 import {
   capitalStockHistoryEntrySchema,
+  dividendHistoryEntrySchema,
   monthlyRevenueEntrySchema,
   companyProfileDetailSchema,
   companiesListResultSchema,
@@ -38,6 +40,11 @@ import {
   companyBadgesResultSchema,
   companyMetricCompletenessResultSchema,
 } from './types';
+
+const dividendHistoryResultSchema = z.object({
+  symbol: z.string(),
+  entries: z.array(dividendHistoryEntrySchema).meta({ description: '每個股利所屬年度一列，舊 → 新；查無分派紀錄時是空陣列' }),
+});
 
 const capitalStockHistoryResultSchema = z.object({
   symbol: z.string(),
@@ -172,6 +179,27 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     request: { query: getCompanyCapitalStockHistoryQuerySchema },
     responses: {
       200: { description: '股本異動歷史（由新到舊排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: capitalStockHistoryResultSchema } } },
+      400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/dividend-history',
+    summary: '單一公司歷年股利表（每個股利所屬年度一列，含逐次分派事件）',
+    description:
+      '2026-09-19 應 web-nuxt SEO 個股頁需求新增，「台積電 股利」這類頁面的核心表格。資料源是 mops-ts 的 export.dividend_distribution' +
+      '（MOPS 股利分派公告 t108sb27，每股數字），一列＝一次分派決議：年配公司一年一筆、季配公司一年四筆，這裡先依「股利所屬年度」' +
+      '彙總成年度列（cashDividend/stockDividend/totalDividend 加總、distributionCount 是分派次數、exDividendDate/paymentDate 取該年度' +
+      '最後一次），逐次事件放在 events。payoutRatio 用本服務 metric_values 的 eps.Q 四季加總當年度 EPS（跟 metric-history 同一份），' +
+      '四季不齊或 EPS ≤ 0 為 null。yieldAtExDate 是各次除息日「當天收盤價（已除息）」算的殖利率加總，任一次查無股價整年為 null——' +
+      '目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。' +
+      'knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。' +
+      '查無任何分派紀錄回 entries: []，是 200 不是 404。',
+    tags: ['System'],
+    request: { query: getCompanyDividendHistoryQuerySchema },
+    responses: {
+      200: { description: '歷年股利表（舊 → 新），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dividendHistoryResultSchema } } },
       400: { description: '缺少 symbol。' },
     },
   });

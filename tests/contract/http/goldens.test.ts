@@ -43,6 +43,7 @@ const cases: GoldenCase[] = [
   { slug: 'companies-dupont-history', method: 'get', path: '/companies/dupont-history?symbol=2330&limit=5' },
   { slug: 'companies-monthly-revenue-history', method: 'get', path: '/companies/monthly-revenue-history?symbol=2330&limit=5' },
   { slug: 'companies-capital-stock-history', method: 'get', path: '/companies/capital-stock-history?symbol=2330' },
+  { slug: 'companies-dividend-history', method: 'get', path: '/companies/dividend-history?symbol=2330' },
   { slug: 'companies-piotroski-breakdown', method: 'get', path: '/companies/piotroski-breakdown?symbol=2330' },
   { slug: 'companies-metric-provenance', method: 'get', path: '/companies/2330/metric-provenance?metricCode=roe' },
   { slug: 'preferred-stocks-field-catalog', method: 'get', path: '/preferred-stocks/field-catalog' },

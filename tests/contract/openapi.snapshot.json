@@ -613,6 +613,194 @@
         ]
       }
     },
+    "/companies/dividend-history": {
+      "get": {
+        "description": "2026-09-19 應 web-nuxt SEO 個股頁需求新增，「台積電 股利」這類頁面的核心表格。資料源是 mops-ts 的 export.dividend_distribution（MOPS 股利分派公告 t108sb27，每股數字），一列＝一次分派決議：年配公司一年一筆、季配公司一年四筆，這裡先依「股利所屬年度」彙總成年度列（cashDividend/stockDividend/totalDividend 加總、distributionCount 是分派次數、exDividendDate/paymentDate 取該年度最後一次），逐次事件放在 events。payoutRatio 用本服務 metric_values 的 eps.Q 四季加總當年度 EPS（跟 metric-history 同一份），四季不齊或 EPS ≤ 0 為 null。yieldAtExDate 是各次除息日「當天收盤價（已除息）」算的殖利率加總，任一次查無股價整年為 null——目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。查無任何分派紀錄回 entries: []，是 200 不是 404。",
+        "parameters": [
+          {
+            "description": "公司代號",
+            "in": "query",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "description": "公司代號",
+              "example": "2330",
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "每個股利所屬年度一列，舊 → 新；查無分派紀錄時是空陣列",
+                      "items": {
+                        "properties": {
+                          "cashDividend": {
+                            "description": "該年度全部分派案的現金股利加總，元／股",
+                            "type": "number"
+                          },
+                          "distributionCount": {
+                            "description": "該年度分派幾次（年配 1、季配 4…）",
+                            "type": "integer"
+                          },
+                          "eps": {
+                            "description": "該年度 EPS（metric_values 的 eps.Q 四季加總，跟 metric-history 同一份）；四季不齊為 null",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "events": {
+                            "description": "逐次分派事件，依所屬季度/除息日由舊到新",
+                            "items": {
+                              "properties": {
+                                "announcementDate": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "cashDividend": {
+                                  "description": "元／股，盈餘 + 資本公積",
+                                  "type": "number"
+                                },
+                                "closeAtExDate": {
+                                  "description": "除息日當天收盤價（已除息）；查無當天股價為 null",
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "exDividendDate": {
+                                  "description": "YYYY-MM-DD",
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "exRightsDate": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "fiscalQuarter": {
+                                  "description": "季配公司才有值（1-4）；年配公司這欄是 null",
+                                  "nullable": true,
+                                  "type": "integer"
+                                },
+                                "paymentDate": {
+                                  "description": "現金股利發放日",
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "stockDividend": {
+                                  "description": "元／股（股票股利以面額計），盈餘 + 資本公積",
+                                  "type": "number"
+                                },
+                                "yieldAtExDate": {
+                                  "description": "cashDividend ÷ closeAtExDate × 100，四捨五入到小數 2 位",
+                                  "nullable": true,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "fiscalQuarter",
+                                "cashDividend",
+                                "stockDividend",
+                                "exDividendDate",
+                                "exRightsDate",
+                                "paymentDate",
+                                "announcementDate",
+                                "closeAtExDate",
+                                "yieldAtExDate"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "exDividendDate": {
+                            "description": "該年度最後一次除息日；逐次日期看 events",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "exRightsDate": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "fiscalYear": {
+                            "description": "西元，股利所屬年度（不是除息年度）",
+                            "type": "integer"
+                          },
+                          "knowledgeDate": {
+                            "description": "該年度最後一次分派決議的公告日——這列數字最早何時被市場知道",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "paymentDate": {
+                            "description": "該年度最後一次現金股利發放日",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "payoutRatio": {
+                            "description": "%，cashDividend ÷ eps × 100；EPS ≤ 0 或缺 EPS 時為 null（虧損年度的配息率不硬算）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "rocFiscalYear": {
+                            "type": "integer"
+                          },
+                          "stockDividend": {
+                            "type": "number"
+                          },
+                          "totalDividend": {
+                            "type": "number"
+                          },
+                          "yieldAtExDate": {
+                            "description": "%，各次除息日「當天收盤價（已除息）」算的殖利率加總；任一次查無股價整年為 null（多數公司只有 2026-06 之後的股價，歷史列多為 null）",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "fiscalYear",
+                          "rocFiscalYear",
+                          "cashDividend",
+                          "stockDividend",
+                          "totalDividend",
+                          "distributionCount",
+                          "exDividendDate",
+                          "exRightsDate",
+                          "paymentDate",
+                          "eps",
+                          "payoutRatio",
+                          "yieldAtExDate",
+                          "knowledgeDate",
+                          "events"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "歷年股利表（舊 → 新），查無資料時 entries 是空陣列。"
+          },
+          "400": {
+            "description": "缺少 symbol。"
+          }
+        },
+        "summary": "單一公司歷年股利表（每個股利所屬年度一列，含逐次分派事件）",
+        "tags": [
+          "System"
+        ]
+      }
+    },
     "/companies/dupont-history": {
       "get": {
         "description": "直接讀 metric_values 的 netProfitMargin/assetTurnover/equityMultiplier/dupontDecomposedRoe四個 metric_code 組合而成——**這批遷移刻意只做 Dupont 拆解嚴格需要的最小集合**：只有淨利率、總資產週轉率兩個因子，不是完整的毛利率（含毛利率/營業利益率）或週轉率（含存貨/應收帳款/固定資產/應付帳款周轉率跟 DIO/DSO/DPO/CCC）家族，這兩個因子也因此不單獨開歷史查詢端點，只在這支組合端點裡曝露。decomposedRoePct = netProfitMarginPct x assetTurnover x equityMultiplier，理論上應該接近（但不必完全等於）GET /companies/roe-history 的實際 ROE，差異來自中間值四捨五入造成的正常誤差。periodType=TTM 時 equityMultiplier 恆為 null（權益乘數是資產負債表時點快照，沒有 TTM變體，Q/TTM 拆解共用同一個 Q 快照值）。knowledgeDate/knowledgeDateIsFallback 取這四個 metric_code裡 netProfitMargin 那組的值當代表（同一次計算共用同一組 knowledge_date，正常情況下一致）。**目前資料覆蓋率極低**：只有少數公司/季度有資料，查無資料回傳 entries: []，是正常情境。",

@@ -38,6 +38,11 @@ export const getCompanyCapitalStockHistoryQuerySchema = z.object({
   symbol: symbolField,
 });
 
+// 2026-09-19 歷年股利表——同樣查無分派紀錄回 entries: []，不是 404。
+export const getCompanyDividendHistoryQuerySchema = z.object({
+  symbol: symbolField,
+});
+
 // ROE 這支指標目前允許的 periodType 只有這兩種（見 metricDefinitionRegistry.roe.allowedPeriodTypes），
 // 這裡刻意獨立宣告成 query 參數的合法值，不直接沿用通用的 periodTypeSchema（那個還有 YTD/FY，
 // 對 ROE 沒有意義）——兩邊要保持同步。

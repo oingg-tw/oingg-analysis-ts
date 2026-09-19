@@ -3,6 +3,7 @@ import type { CompanyNameEntry } from '@/application/ports/companyProfiles';
 import type { CapitalStockChangeSource, CapitalStockHistoryEntry } from '@/application/ports/capitalStock';
 import type { MonthlyRevenueEntry } from '@/application/ports/monthlyRevenue';
 import type { CompanyProfileDetail } from '@/application/companies/types';
+import type { DividendHistoryEntry, DividendHistoryEvent } from '@/application/companies/dividendHistory';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
 // 純 TypeScript interface，跟 Swagger 文件（原本手寫 JSDoc）是兩份要手動保持同步的東西，
@@ -110,6 +111,37 @@ export const capitalStockHistoryEntrySchema = z.object({
   changeSource: capitalStockChangeSourceSchema,
   remarks: z.string().nullable().meta({ description: '自由格式文字，庫藏股註銷/核准日期文字說明等落在這裡，不是結構化欄位' }),
 }) satisfies z.ZodType<CapitalStockHistoryEntry>;
+
+// 2026-09-19：GET /companies/dividend-history（歷年股利表）的回應 schema，形狀真理來源是
+// application/companies/dividendHistory.ts 的介面，這裡用 satisfies 釘住。口徑說明見那支檔案檔頭。
+export const dividendHistoryEventSchema = z.object({
+  fiscalQuarter: z.number().int().nullable().meta({ description: '季配公司才有值（1-4）；年配公司這欄是 null' }),
+  cashDividend: z.number().meta({ description: '元／股，盈餘 + 資本公積' }),
+  stockDividend: z.number().meta({ description: '元／股（股票股利以面額計），盈餘 + 資本公積' }),
+  exDividendDate: z.string().nullable().meta({ description: 'YYYY-MM-DD' }),
+  exRightsDate: z.string().nullable(),
+  paymentDate: z.string().nullable().meta({ description: '現金股利發放日' }),
+  announcementDate: z.string().nullable(),
+  closeAtExDate: z.number().nullable().meta({ description: '除息日當天收盤價（已除息）；查無當天股價為 null' }),
+  yieldAtExDate: z.number().nullable().meta({ description: 'cashDividend ÷ closeAtExDate × 100，四捨五入到小數 2 位' }),
+}) satisfies z.ZodType<DividendHistoryEvent>;
+
+export const dividendHistoryEntrySchema = z.object({
+  fiscalYear: z.number().int().meta({ description: '西元，股利所屬年度（不是除息年度）' }),
+  rocFiscalYear: z.number().int(),
+  cashDividend: z.number().meta({ description: '該年度全部分派案的現金股利加總，元／股' }),
+  stockDividend: z.number(),
+  totalDividend: z.number(),
+  distributionCount: z.number().int().meta({ description: '該年度分派幾次（年配 1、季配 4…）' }),
+  exDividendDate: z.string().nullable().meta({ description: '該年度最後一次除息日；逐次日期看 events' }),
+  exRightsDate: z.string().nullable(),
+  paymentDate: z.string().nullable().meta({ description: '該年度最後一次現金股利發放日' }),
+  eps: z.number().nullable().meta({ description: '該年度 EPS（metric_values 的 eps.Q 四季加總，跟 metric-history 同一份）；四季不齊為 null' }),
+  payoutRatio: z.number().nullable().meta({ description: '%，cashDividend ÷ eps × 100；EPS ≤ 0 或缺 EPS 時為 null（虧損年度的配息率不硬算）' }),
+  yieldAtExDate: z.number().nullable().meta({ description: '%，各次除息日「當天收盤價（已除息）」算的殖利率加總；任一次查無股價整年為 null（多數公司只有 2026-06 之後的股價，歷史列多為 null）' }),
+  knowledgeDate: z.string().nullable().meta({ description: '該年度最後一次分派決議的公告日——這列數字最早何時被市場知道' }),
+  events: z.array(dividendHistoryEventSchema).meta({ description: '逐次分派事件，依所屬季度/除息日由舊到新' }),
+}) satisfies z.ZodType<DividendHistoryEntry>;
 
 export const monthlyRevenueEntrySchema = z.object({
   yearMonth: z.string().meta({ description: '"YYYY-MM"' }),

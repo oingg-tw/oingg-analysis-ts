@@ -1,0 +1,36 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "cashDividend": "<number>",
+        "distributionCount": "<number>",
+        "eps": "<null>",
+        "events": [
+          {
+            "announcementDate": "<date>",
+            "cashDividend": "<number>",
+            "closeAtExDate": "<null>",
+            "exDividendDate": "<date>",
+            "exRightsDate": "<null>",
+            "fiscalQuarter": "<null>",
+            "paymentDate": "<date>",
+            "stockDividend": "<number>",
+            "yieldAtExDate": "<null>"
+          }
+        ],
+        "exDividendDate": "<date>",
+        "exRightsDate": "<null>",
+        "fiscalYear": "<number>",
+        "knowledgeDate": "<date>",
+        "paymentDate": "<date>",
+        "payoutRatio": "<null>",
+        "rocFiscalYear": "<number>",
+        "stockDividend": "<number>",
+        "totalDividend": "<number>",
+        "yieldAtExDate": "<null>"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

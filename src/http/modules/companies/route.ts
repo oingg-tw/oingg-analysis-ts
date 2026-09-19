@@ -12,6 +12,7 @@ import {
   getCompanyMonthlyRevenueHistory,
   getCompanyBeta,
 } from '@/application/companies/history';
+import { getCompanyDividendHistory } from '@/application/companies/dividendHistory';
 import { getCompanyFinancialStatement } from '@/application/companies/financialStatement';
 import { getCompanyPeerGroup } from '@/application/companies/peerGroup';
 import { getCompanyBadges, getCompanyMetricCompleteness, getCompanyPiotroskiBreakdown, getCompanyMetricProvenance } from '@/application/companies/insights';
@@ -20,6 +21,7 @@ import {
   getCompaniesQuerySchema,
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
+  getCompanyDividendHistoryQuerySchema,
   getCompanyRoeHistoryQuerySchema,
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
@@ -43,6 +45,7 @@ export const createCompaniesRouter = (deps: AppDeps): Router => {
   router.get('/companies', ...jsonRoute({ query: getCompaniesQuerySchema }, ({ query }) => listCompanies(query, deps)));
   router.get('/companies/profile', ...jsonRoute({ query: getCompanyProfileQuerySchema }, ({ query }) => getCompanyProfile(query.symbol, deps)));
   router.get('/companies/capital-stock-history', ...jsonRoute({ query: getCompanyCapitalStockHistoryQuerySchema }, ({ query }) => getCompanyCapitalStockHistory(query.symbol, deps)));
+  router.get('/companies/dividend-history', ...jsonRoute({ query: getCompanyDividendHistoryQuerySchema }, ({ query }) => getCompanyDividendHistory(query.symbol, deps)));
   router.get('/companies/roe-history', ...jsonRoute({ query: getCompanyRoeHistoryQuerySchema }, ({ query }) => getCompanyRoeHistory(query, deps)));
   router.get('/companies/roa-history', ...jsonRoute({ query: getCompanyRoaHistoryQuerySchema }, ({ query }) => getCompanyRoaHistory(query, deps)));
   router.get('/companies/dupont-history', ...jsonRoute({ query: getCompanyDupontHistoryQuerySchema }, ({ query }) => getCompanyDupontHistory(query, deps)));
