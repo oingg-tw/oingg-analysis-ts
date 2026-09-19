@@ -15,6 +15,14 @@ export interface SecuritySymbolsFilter {
 export interface CompanyNameEntry {
   symbol: string;
   companyName: string | null;
+  // 2026-09-19 應 web-nuxt SEO hub 頁需求新增（/stock 總表、/industry/{sector} 要一次拿到全市場每檔的
+  // 類股跟市場，2,600 檔逐一打 profile 不可行）。market 依資料來源 DB 決定（twse-ts=TWSE、tpex-ts=TPEx）；
+  // sectorCode/sectorName 是證交所類股分類（company_profile.industry，跟 GET /industries/securities-sectors
+  // 同一套 36 個代碼與名稱），公司掛在「非產業」的代碼（07/91/98/XX，見 companyProfile.ts 的
+  // NON_INDUSTRY_CODES）時兩者皆為 null，跟 securities-sectors 排除那幾個代碼的規則一致。
+  market: 'TWSE' | 'TPEx';
+  sectorCode: string | null;
+  sectorName: string | null;
 }
 
 // 普通股/特別股/ETF——web-nuxt 靠這個做導頁判斷，不靠 symbol 格式猜。

@@ -5,6 +5,9 @@
     "entries": [
       {
         "companyName": "<string>",
+        "market": "TWSE",
+        "sectorCode": "<null>",
+        "sectorName": "<null>",
         "symbol": "<numeric-string>"
       }
     ],

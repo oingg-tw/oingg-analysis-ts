@@ -3,6 +3,7 @@ import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 import type { CompanyProfileDetail } from '@/application/companies/types';
 import type { CompanyNameEntry, CompanyProfilePort, SecurityEntry, SecurityType } from '@/application/ports/companyProfiles';
+import { getIndustryCodes } from './industryCodes';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;
@@ -418,22 +419,43 @@ export type { CompanyNameEntry, SecurityEntry };
 // 一樣、只是新舊資料尚未收斂——依 symbol 去重，兩邊都有時保留 TWSE 那筆（跟 getCompanyName/
 // companyExists 一律先查 TWSE 再查 TPEx 同一個優先順序），不能讓同一個 symbol 出現兩次，
 // 之前沒去重害 bff-ts 那邊 upsert 撞到「ON CONFLICT DO UPDATE 同一列被影響兩次」的錯誤。
-const dedupeBySymbol = (rows: { symbol: string; shortName: string | null }[]): CompanyNameEntry[] => {
-  const bySymbol = new Map<string, string | null>();
+// 2026-09-19 補上 market/sectorCode/sectorName（web-nuxt SEO hub 頁需求，見 CompanyNameEntry 的說明）：
+// 類股名稱不用 twse 的 industry_name 欄位（tpex 沒有這欄，兩邊會不一致），統一查 industryCodes 快取
+// （跟 GET /industries/securities-sectors 同一份代碼字典）；快取還沒載入時 sectorName 是 null 但 sectorCode
+// 照給。NON_INDUSTRY_CODES 那幾個「不是產業」的代碼兩者皆 null，跟 securities-sectors 排除它們的規則一致。
+interface DedupeRow {
+  symbol: string;
+  shortName: string | null;
+  market: 'TWSE' | 'TPEx';
+  industry: string | null;
+}
+
+const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
+  const codes = getIndustryCodes();
+  const bySymbol = new Map<string, DedupeRow>();
   for (const row of rows) {
-    if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, row.shortName);
+    if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, row);
   }
-  return [...bySymbol].map(([symbol, companyName]) => ({ symbol, companyName }));
+  return [...bySymbol.values()].map(({ symbol, shortName, market, industry }) => {
+    const isRealSector = industry !== null && !NON_INDUSTRY_CODES.has(industry);
+    return {
+      symbol,
+      companyName: shortName,
+      market,
+      sectorCode: isRealSector ? industry : null,
+      sectorName: isRealSector && codes ? (codes[industry] ?? null) : null,
+    };
+  });
 };
 
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile"`,
-    tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile"`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
+    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
   ]);
   const all = dedupeBySymbol([
-    ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name })),
-    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name })),
+    ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry })),
+    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TPEx' as const, industry: r.industry })),
   ]); // twseRows 排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };

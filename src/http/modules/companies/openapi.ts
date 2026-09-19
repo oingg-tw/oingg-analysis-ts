@@ -122,6 +122,8 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '單一公司的一般指標 API 也會明確補上 companyName（見 registerCompanyRoute.ts）。這支端點還留著，是給還沒被涵蓋到的情境、' +
       '或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 companyName 會是 null。' +
       '這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。' +
+      '2026-09-19 每筆新增 market（TWSE/TPEx）、sectorCode/sectorName（證交所類股，跟 GET /industries/securities-sectors ' +
+      '同一套 36 個代碼；掛在非產業代碼的公司為 null）——給 hub 頁一次拿到全市場分類用，不用逐檔打 profile。' +
       'limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責上限（1000，避免一次回應過大）；' +
       '也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。',
     tags: ['System'],
