@@ -6,8 +6,8 @@
       {
         "companyName": "<string>",
         "market": "TWSE",
-        "sectorCode": "<null>",
-        "sectorName": "<null>",
+        "sectorCode": "<numeric-string>",
+        "sectorName": "<string>",
         "symbol": "<numeric-string>"
       }
     ],
