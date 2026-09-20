@@ -3,7 +3,6 @@ import type { MetricBadge } from './metricDefinitionSpec';
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { epsCagr3yBadge } from './growth/epsCagr/epsCagr3yBadge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
-import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
@@ -77,13 +76,19 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 //     引用這三個具體數字——無法排除是本站或某個二手轉述來源自己加上去的門檻，查無法確認
 //     真偽，保守起見直接下架。
 //
+// 2026-09-20 第五輪：consecutiveProfitYearsBadge（Graham 獲利穩定性，≥10 年）下架——不是出處問題
+// （Graham 第 14 章的 10 年門檻真實可查、sourceUrl 也驗過），是資料深度問題：全市場季報型指標
+// 歷史只回填到 113Q1（2024Q1），只有 2330 有完整歷史（見 project_history_backfill_depth），一個
+// 「連續 10 年獲利」的門檻對幾乎所有公司都只會落在 insufficient_history，徽章等於永遠不亮，
+// 掛著只會讓使用者以為「這家公司不合格」。指標本身（consecutiveProfitYears）保留，數值照算；
+// 之後歷史回填往前補到 10 年以上再考慮重新掛回來。
+//
 // <metricCode>Badge.ts 檔案本身位置不變（還是放在各自指標資料夾底下，跟大段 detail
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
   epsCagr3y: epsCagr3yBadge,
   sgr: sgrBadge,
-  consecutiveProfitYears: consecutiveProfitYearsBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
