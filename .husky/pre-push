@@ -1,3 +1,4 @@
 pnpm typecheck
 pnpm lint:dead
+pnpm lint:copy
 pnpm test

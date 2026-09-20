@@ -26,7 +26,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   chowderNumber: {
     description: 'Chowder Number 是現金殖利率加上股利五年複合成長率，把「現在配多少」跟「配息成長多快」合成一個數字，用來對照存股社群慣用的 12% 門檻。',
     limitations: '股利成長率用現金流量表的股利發放現金換算，不是公告的每股股利，股本大幅變動的公司會失真；公用事業等低成長高殖利率產業在原始規則裡用較低門檻（8%），本站只提供對照不做產業調整。',
-    misreadings: '數字高不代表股利可持續——極高的殖利率可能來自股價下跌，極高的成長率可能來自五年前基期偏低；兩個成分任一缺資料整體就沒有數字，不是 0。',
+    misreadings: '數字高不代表股利可持續——極高的殖利率可能來自股價下跌，極高的成長率可能來自五年前基期較低；兩個成分任一缺資料整體就沒有數字，不是 0。',
   },
   dividendCoverageRatio: {
     description: '現金流量股利保障倍數是近四季自由現金流除以近四季股利發放現金，衡量配息有多少倍的自由現金流在背後支撐。',
@@ -35,7 +35,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   dividendPayoutRatio: {
     description: '盈餘發放率是近四季股利發放現金除以近四季淨利，代表公司把多少比例的獲利以現金股利發回給股東。',
-    limitations: '淨利為零或負值時比率沒有意義，本站不提供數值；金融業與成長期公司的合理發放率差異很大，不能跨產業用同一個標準比較；股利一年通常只發放一到兩次，所以只提供近四季口徑。',
+    limitations: '淨利為零或負值時比率沒有意義，本站不提供數值；金融業與成長期公司的常態發放率差異很大，不能跨產業用同一個標準比較；股利一年通常只發放一到兩次，所以只提供近四季口徑。',
     misreadings: '超過 100% 不一定是「入不敷出」，可能是一次性處分利益或動用保留盈餘的特殊配息；比率很低也可能是公司用買回庫藏股取代現金股利，要搭配股東總回饋率看。',
   },
   shareCountChangeRate: {
@@ -72,7 +72,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   sue: {
     description: 'SUE（標準化未預期盈餘）是本季單季 EPS 減去去年同季 EPS 的差額，再除以過去 20 季這類差額的標準差，把「這季獲利比往常規律多出或少掉多少」換算成統計上的標準差倍數。',
-    limitations: '需要連續 20 季以上的單季 EPS 才能估計標準差，上市未滿五年的公司算不出來；用的是季節性隨機漫步模型（拿去年同季當預期），不是分析師預估，跟財經新聞說的「優於預期」不是同一個基準。',
+    limitations: '需要連續 20 季以上的單季 EPS 才能估計標準差，上市未滿五年的公司算不出來；用的是季節性隨機漫步模型（拿去年同季當預期），不是分析師預估，跟財經新聞說的「超出預期」不是同一個基準。',
     misreadings: '數值大只代表這季偏離往常規律的程度大，不代表獲利金額大——一家獲利極穩定的公司小幅超出就會有高 SUE；本身是波動大的公司則很難出現高分數。',
   },
   oneilCanslimScore: {
@@ -93,7 +93,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   accrualsRatio: {
     description: '應計項目比率是淨利減去營業活動現金流再減去投資活動現金流，除以期末總資產——代表盈餘中有多少比例不是現金流入，而是會計估計（應收帳款、存貨、折舊假設等）撐出來的。',
-    limitations: '這是資產負債表口徑的簡化版（Sloan 原始研究用十分位排名而非固定門檻）；成長期公司大量投資會讓投資現金流出很大，比率自然偏高，不能直接跟成熟公司比。',
+    limitations: '這是資產負債表口徑的簡化版（Sloan 原始研究用十分位排名而非固定門檻）；成長期公司大量投資會讓投資現金流出很大，比率自然較高，不能直接跟成熟公司比。',
     misreadings: '比率高不等於作假帳，只代表盈餘的「現金含量」低，需要進一步看應收帳款與存貨有沒有異常膨脹；比率為負也不代表特別好，可能是大量處分資產帶來的現金流入。',
   },
   fcfConversionRate: {
@@ -103,7 +103,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   ocfToNetIncome: {
     description: '營業現金流對淨利比是近四季營業活動現金流除以近四季淨利，單位是倍數，用來看帳面獲利有沒有對應的現金流入。',
-    limitations: '折舊攤銷高的重資產產業（電信、晶圓代工）這個倍數天生偏高，輕資產或高應收的產業天生偏低，跨產業比較意義不大；淨利為負時倍數的正負號會反過來，本站不提供數值。',
+    limitations: '折舊攤銷高的重資產產業（電信、晶圓代工）這個倍數天生較高，輕資產或高應收的產業天生較低，跨產業比較意義不大；淨利為負時倍數的正負號會反過來，本站不提供數值。',
     misreadings: '倍數低於 1 不一定是盈餘品質問題，成長期公司營收增加會先墊高應收帳款與存貨，現金流暫時落後於獲利是正常現象；持續多季低於 1 才值得追問原因。',
   },
   beneishMScore: {
@@ -120,7 +120,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   altmanZDoublePrimeScore: {
     description: 'Altman Z″-Score 是 Altman 針對非製造業與新興市場公司調整的四變數版本（營運資金、保留盈餘、息前稅前盈餘、帳面權益各除以總資產或總負債），用來預警財務危機。',
     limitations: '刻意拿掉資產週轉率這項，所以跟原始五變數 Z-Score 的分數不能互相比較；金融業（銀行、保險、證券）的資產負債結構不適用任何 Altman 模型，本站對製造業另外提供原始版。',
-    misreadings: '分數低於安全區不等於即將倒閉，模型預測的是「兩年內財務困境」的統計機率；高槓桿但現金流穩定的行業（租賃、電信）分數天生偏低，要跟同業比較而不是看絕對值。',
+    misreadings: '分數低於安全區不等於即將倒閉，模型預測的是「兩年內財務困境」的統計機率；高槓桿但現金流穩定的行業（租賃、電信）分數天生較低，要跟同業比較而不是看絕對值。',
   },
   altmanZScore: {
     description: 'Altman Z-Score 是 1968 年提出的五變數加權模型（營運資金、保留盈餘、息前稅前盈餘、市值對負債、營收對資產），最初用來預測製造業公司兩年內破產的機率。',
@@ -154,7 +154,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   ohlsonOScore: {
     description: 'Ohlson O-Score 是九變數的邏輯迴歸模型（規模、槓桿、營運資金、流動性、獲利能力、現金流、連續虧損、獲利變化），輸出的是企業陷入財務困境的估計機率。',
-    limitations: '用 1970 年代美國工業公司樣本校準，變數之一是總資產的自然對數，對台灣的公司規模分布與幣別沒有重新校準；需要今年與去年的近四季淨利，資料不足時沒有數值。',
+    limitations: '用 1970 年代美國工業公司樣本校準，變數之一是總資產的自然對數，對台灣的公司規模分布與幣別沒有重新校準；需要今年與去年的近四季淨利，資料不齊時沒有數值。',
     misreadings: '0.5 是機率模型的標準判別線，不是論文專門為 O-Score 訂的門檻；機率高不代表一定會出事，模型抓的是「跟歷史上出事的公司財務特徵相似的程度」。',
   },
   zmijewskiScore: {
@@ -180,7 +180,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   tobinsQ: {
     description: '托賓 Q 值是市值加總負債除以總資產，比較市場對整家公司的評價跟帳面上重置全部資產的成本。',
-    limitations: '總資產用帳面值，不是真正的重置成本——擁有大量老舊土地廠房（帳面極低）的公司 Q 值會偏高；無形資產密集的公司（軟體、品牌）帳面資產本來就少，Q 值天生很高。',
+    limitations: '總資產用帳面值，不是真正的重置成本——擁有大量老舊土地廠房（帳面極低）的公司 Q 值會較高；無形資產密集的公司（軟體、品牌）帳面資產本來就少，Q 值天生很高。',
     misreadings: 'Q 小於 1 不等於低估，可能是市場認為資產閒置或會持續虧損；Q 大於 1 也不等於高估，可能反映帳面上沒有的專利、品牌、客戶關係。',
   },
   psr: {
