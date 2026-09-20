@@ -14,11 +14,14 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 譯本。所以這篇論文同時做到兩件事：(a) 證實 0.75/1.5/3.0 這組分界確實出自 Fisher 的書（第三輪
 // 查不到的就是這個），(b) 在台灣上市股票上實際採用了這組分界。
 //
-// author 格式比照 ohlsonOScoreBadge：門檻採用方在前、模型原始出處在後。
+// author 維持 Fisher：那篇論文是「採用」Fisher 的分界做實證，不是「設定」門檻，使用者 2026-09-20 明確
+// 糾正過「某某（門檻）」這種把採用者寫成設定者的格式。論文的角色是 (a) 證實數字出自 Fisher、(b) 台灣
+// 市場的採用實例，放在 note/detail，sourceUrl 指向它的摘要是因為那是目前唯一實際驗證過、逐字把
+// 0.75 分界歸給 Fisher 的公開頁面（驗證用途，不是作者歸屬）。
 export const psrBadge: MetricBadge = {
   name: 'Fisher 超級股票',
   nameEn: "Fisher's Super Stocks",
-  author: '張光廷（門檻）; Kenneth Fisher, 1984（模型）',
+  author: 'Kenneth Fisher, 1984',
   // 2026-09-20 sourceUrl 實際讀過摘要 PDF 驗證：高科大金融資訊系公開的論文摘要，逐字寫出 0.75/1.5/3.0 四個分組並引用 Fisher《超級強勢股》。
   sourceUrl: 'https://fin.nkust.edu.tw/uploads/bulletin_file/file/5ee9dbaf1d41c865a300005e/%E8%82%A1%E5%83%B9%E7%87%9F%E6%94%B6%E6%AF%94-%E4%BB%A5%E5%8F%B0%E7%81%A3%E8%82%A1%E5%B8%82%E9%80%B2%E8%A1%8C%E9%A9%97%E8%AD%89.pdf',
   summary: '股價營收比低於 0.75 倍，落在 Fisher《Super Stocks》分組裡最低的一段。',
