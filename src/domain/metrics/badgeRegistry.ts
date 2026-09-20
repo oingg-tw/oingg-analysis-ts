@@ -2,7 +2,6 @@ import type { MetricBadge } from './metricDefinitionSpec';
 
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { epsCagr3yBadge } from './growth/epsCagr/epsCagr3yBadge';
-import { ruleOf40Badge } from './growth/ruleOf40/ruleOf40Badge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
 import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
@@ -23,7 +22,6 @@ import { liveGrahamNumberBadge } from './valuation/liveGrahamNumber/liveGrahamNu
 import { livePegRatioBadge } from './valuation/livePegRatio/livePegRatioBadge';
 import { ncavBadge } from './valuation/ncav/ncavBadge';
 import { tobinsQBadge } from './valuation/tobinsQ/tobinsQBadge';
-import { psrBadge } from './valuation/psr/psrBadge';
 import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 
 // 2026-09-14 應使用者要求，取代原本 MetricDefinitionSpec.badge?: MetricBadge（內嵌在各自
@@ -68,12 +66,22 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 // Street》裡確實明講 PEG 在 1.0 附近代表合理定價、低於 1.0 代表可能低估，這個數字是他本人
 // 真的說的（雖然他同時強調不是絕對二分線），符合單一可指名出處的標準，不下架。
 //
+// 2026-09-20 第三輪：使用者說「有疑慮就拿掉，現在要做的就是資料收斂」，再下架 2 支：
+//   - ruleOf40Badge：查證發現「Rule of 40」的「40」這個數字根本不是 Brad Feld 提出的——他
+//     只是跟 Fred Wilson 在 2015 年一起把某位「不具名的晚期投資人」在董事會上講的說法寫成
+//     部落格文章推廣出去，真正的原始提出者是誰、哪一年提出都無法考證。「author: Brad Feld」
+//     等於把一個真正匿名起源的規則掛在一個只是「推廣者」的名字底下，不符合單一可指名出處
+//     的標準（不是「數字錯了」，是「根本沒有可指名的原始提出者」）。
+//   - psrBadge：門檻 0.75/1.5/3-6 倍宣稱出自 Kenneth Fisher《Super Stocks》(1984)，多次
+//     上網查證都只找到「Fisher 用 PSR 選股」這個方法論本身的引用，找不到任何獨立來源逐字
+//     引用這三個具體數字——無法排除是本站或某個二手轉述來源自己加上去的門檻，查無法確認
+//     真偽，保守起見直接下架。
+//
 // <metricCode>Badge.ts 檔案本身位置不變（還是放在各自指標資料夾底下，跟大段 detail
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
   epsCagr3y: epsCagr3yBadge,
-  ruleOf40: ruleOf40Badge,
   sgr: sgrBadge,
   consecutiveProfitYears: consecutiveProfitYearsBadge,
   grossMargin: grossMarginBadge,
@@ -94,7 +102,6 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   livePegRatio: livePegRatioBadge,
   ncav: ncavBadge,
   tobinsQ: tobinsQBadge,
-  psr: psrBadge,
   epsGrowthRate: epsGrowthRateBadge,
 };
 
