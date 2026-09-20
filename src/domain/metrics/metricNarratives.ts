@@ -166,7 +166,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   liveGrahamNumber: {
     description: '即時葛拉漢數字是本益比（今天收盤價除以近四季 EPS）乘以股價淨值比（今天收盤價除以最新每股淨值），每個交易日更新，對照 Graham 設定的 15 倍 × 1.5 倍 = 22.5 上限。',
     limitations: 'EPS 或每股淨值為負時無法計算；用的是最新已申報的財報，財報公告前後數字會跳動；銀行與金融業的淨值意義跟製造業不同，這個乘積對它們參考價值有限。',
-    misreadings: '低於 22.5 只表示股價相對盈餘與淨值「符合 Graham 的保守估值上限」，不代表便宜或該買——Graham 的完整篩選還有七條財務體質條件；高成長公司幾乎永遠超過這個數字。',
+    misreadings: '低於 22.5 只表示股價相對盈餘與淨值「符合 Graham 的保守估值上限」，不代表價格低估或該買——Graham 的完整篩選還有七條財務體質條件；高成長公司幾乎永遠超過這個數字。',
   },
   livePegRatio: {
     description: '即時 PEG 是本益比（今天收盤價除以近四季 EPS）除以 EPS 五年複合成長率，每個交易日更新，把估值高低跟成長速度放在一起看。',
