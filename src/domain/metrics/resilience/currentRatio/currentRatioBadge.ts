@@ -6,8 +6,8 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 寫「長期負債 vs 淨流動資產不是現成 metricCode」，已不是事實），兩個徽章合起來才是完整版
 // 原始規則，detail 裡仍誠實說明這支只涵蓋一半，不要讓使用者誤以為單看這個徽章就是完整版。
 export const currentRatioBadge: MetricBadge = {
-  name: '財務體質健全',
-  nameEn: 'Sufficiently Strong Financial Condition',
+  name: '葛拉漢流動比率',
+  nameEn: 'Graham Current Ratio',
   author: 'Benjamin Graham, 1949',
   // 2026-09-20 sourceUrl 實際 fetch 驗證：《智慧型股票投資人》第 14 章逐條回顧，逐字寫出 current assets should be at least twice current liability。
   sourceUrl: 'https://www.gurufocus.com/news/704217/the-intelligent-investor-chapter-14-reviewed',
@@ -16,7 +16,7 @@ export const currentRatioBadge: MetricBadge = {
     'Benjamin Graham 在《The Intelligent Investor》為「防禦型投資者」訂出的七條選股規則之一' +
     '（財務體質健全測試）：流動資產至少是流動負債的兩倍，代表公司短期內即使營收停滯，也有' +
     '充分的流動資產可以應付到期的流動負債，不至於陷入周轉危機。Graham 原始規則的財務體質' +
-    '測試還包含另一半條件（長期負債不超過淨流動資產，見「長期負債安全邊際」徽章），這裡只' +
+    '測試還包含另一半條件（長期負債不超過淨流動資產，見「葛拉漢長期負債上限」徽章），這裡只' +
     '實作流動比率這一半，不是完整版的原始規則。',
   timeframe: 'Q',
   threshold: { description: '≥ 200%', thresholdLatex: '\\mathrm{CurrentRatio} \\geq 200', note: 'Graham 防禦型投資者財務體質測試的其中一半條件，即流動比率至少 2 倍（200%），跟這支指標本身 unit=% 的儲存尺度一致', denominator: 1, comparator: 'gte', value: 200 },

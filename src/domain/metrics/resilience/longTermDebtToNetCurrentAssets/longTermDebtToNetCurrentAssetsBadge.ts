@@ -6,8 +6,8 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 的說明），這種情況 currentRatio 那支指標的 ≥200% 門檻早就會標示出來，兩個徽章合起來看
 // 才是 Graham 原始規則的完整版本，不要只看其中一個就下結論。
 export const longTermDebtToNetCurrentAssetsBadge: MetricBadge = {
-  name: '長期負債安全邊際',
-  nameEn: 'Long-Term Debt Within Net Current Assets',
+  name: '葛拉漢長期負債上限',
+  nameEn: 'Graham Long-Term Debt Limit',
   author: 'Benjamin Graham, 1949',
   // 2026-09-20 sourceUrl 實際 fetch 驗證：同一篇第 14 章回顧，逐字寫出後半條件 long-term debt should not be greater than net current assets or working capital。
   sourceUrl: 'https://www.gurufocus.com/news/704217/the-intelligent-investor-chapter-14-reviewed',
@@ -16,7 +16,7 @@ export const longTermDebtToNetCurrentAssetsBadge: MetricBadge = {
     'Benjamin Graham 在《The Intelligent Investor》為「防禦型投資者」訂出的七條選股規則之一' +
     '（財務體質健全測試）的後半條件：長期負債（長期借款+應付公司債）不超過淨流動資產' +
     '（流動資產-流動負債）。這代表就算公司完全不靠廠房設備等固定資產變現，光是淨流動資產' +
-    '就足以償還全部長期債務，長期償債能力有充分緩衝。跟 currentRatio（流動比率≥200%）是同一條' +
+    '就足以償還全部長期債務，長期償債能力有充分緩衝。跟「葛拉漢流動比率」徽章（流動比率≥200%）是同一條' +
     'Graham 原始規則的兩半，合起來才是完整的「財務體質健全」測試。',
   timeframe: 'Q',
   threshold: { description: '< 100%', thresholdLatex: '\\mathrm{LongTermDebtToNetCurrentAssets} < 100', note: 'Graham 防禦型投資者財務體質測試的後半條件，即長期負債不超過淨流動資產', denominator: 1, comparator: 'lt', value: 100 },
