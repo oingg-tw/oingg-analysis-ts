@@ -1,6 +1,6 @@
 import type { AppDeps } from '@/application/deps';
 import { ValidationError } from '@/application/errors';
-import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec } from '@/application/ports/metricValueQueries';
+import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec, SymbolScope } from '@/application/ports/metricValueQueries';
 import { resolveFieldOrThrow, type FieldRef } from './fieldResolver';
 import type { ScreenerColumnInput, ScreenerFilterInput, ScreenerResponse, ScreenerRankingResponse, ScreenerRow, ScreenerValue, ScreenerNullReason, CompanyRankResult, FieldDistributionResult } from './types';
 
@@ -63,14 +63,31 @@ const resolveSort = (sortField: string | undefined, sortOrder: 'asc' | 'desc' | 
 // 代碼不合法就直接 400，不是靜默忽略打錯的代碼（比照 fieldResolver 對未知 metricCode 一律
 // 400 的既有慣例）。sectorCodes 沒給或空陣列回傳 null，screen/rank 收到 null 就不多加這個
 // WHERE 條件，行為完全不變。
-const resolveSectorCandidateSymbols = async (sectorCodes: string[] | undefined, deps: Pick<AppDeps, 'industryReference'>): Promise<string[] | null> => {
-  if (!sectorCodes || sectorCodes.length === 0) return null;
+const resolveSectorSymbols = async (paramName: 'sectorCodes' | 'excludeSectorCodes', sectorCodes: string[], deps: Pick<AppDeps, 'industryReference'>): Promise<string[]> => {
   for (const code of sectorCodes) {
     if (!deps.industryReference.isValidSecuritiesSectorCode(code)) {
-      throw new ValidationError(`sectorCodes 裡的 "${code}" 不是合法的證券類股代碼，請查 GET /industries/securities-sectors 取得合法代碼。`);
+      throw new ValidationError(`${paramName} 裡的 "${code}" 不是合法的證券類股代碼，請查 GET /industries/securities-sectors 取得合法代碼。`);
     }
   }
   return [...(await deps.industryReference.listCompaniesBySectorCodes(sectorCodes))];
+};
+
+// 2026-09-20 應 bff-ts 要求新增 excludeSectorCodes（排除類股，例如「金融保險以外全部」），跟 sectorCodes
+// 互斥——兩個都給直接 400，不定義優先順序（比照 bff-ts 對 columnPresetId/columns 的做法）。為什麼要原生
+// 支援而不是讓下游用「全部類股減掉排除的」轉成 sectorCodes：bff-ts 會把篩選條件存成 ScreenerPreset，那樣
+// 「排除金融」會被凍結成「包含這 34 個類股」，之後新增的類股會被默默漏掉，不是使用者存下來的意思。
+// 兩者都沒給或空陣列回傳 null，screen/rank 收到 null 就不多加 WHERE 條件，行為完全不變。
+const resolveSymbolScope = async (
+  sectorCodes: string[] | undefined,
+  excludeSectorCodes: string[] | undefined,
+  deps: Pick<AppDeps, 'industryReference'>
+): Promise<SymbolScope | null> => {
+  const hasInclude = !!sectorCodes && sectorCodes.length > 0;
+  const hasExclude = !!excludeSectorCodes && excludeSectorCodes.length > 0;
+  if (hasInclude && hasExclude) throw new ValidationError('sectorCodes 跟 excludeSectorCodes 只能擇一提供，不能同時給。');
+  if (hasInclude) return { include: await resolveSectorSymbols('sectorCodes', sectorCodes!, deps) };
+  if (hasExclude) return { exclude: await resolveSectorSymbols('excludeSectorCodes', excludeSectorCodes!, deps) };
+  return null;
 };
 
 export interface ScreenerRequest {
@@ -81,6 +98,7 @@ export interface ScreenerRequest {
   sortField?: string | undefined;
   sortOrder?: 'asc' | 'desc' | undefined;
   sectorCodes?: string[] | undefined;
+  excludeSectorCodes?: string[] | undefined;
 }
 
 export const runScreener = async (request: ScreenerRequest, deps: ScreenerDeps): Promise<ScreenerResponse> => {
@@ -89,13 +107,13 @@ export const runScreener = async (request: ScreenerRequest, deps: ScreenerDeps):
   const filters: ScreenerFilterCondition[] = filterInputs.map((f) => ({ ...resolveFieldOrThrow(f.field), min: f.min, max: f.max, exclude: f.exclude ?? false }));
   const columns: FieldRef[] = columnInputs.map((c) => resolveFieldOrThrow(c.field));
   const sort = resolveSort(request.sortField, request.sortOrder, columns);
-  const candidateSymbols = await resolveSectorCandidateSymbols(request.sectorCodes, deps);
+  const scope = await resolveSymbolScope(request.sectorCodes, request.excludeSectorCodes, deps);
 
   if (filters.length === 0 && columns.length === 0) {
     throw new ValidationError('filters 跟 columns 至少要提供一個。');
   }
 
-  const rows = await deps.metricValueQueries.screen(filters, columns, page, pageSize, sort, candidateSymbols);
+  const rows = await deps.metricValueQueries.screen(filters, columns, page, pageSize, sort, scope);
 
   const indexedColumns: ScreenerIndexedField[] = columns.map((c, index) => ({ ...c, index }));
   const results = await attachCompanyNames(parseRows(rows, indexedColumns), deps);
@@ -110,14 +128,15 @@ export interface ScreenerRankingRequest {
   limit: number;
   columns: string[];
   sectorCodes?: string[] | undefined;
+  excludeSectorCodes?: string[] | undefined;
 }
 
 export const runScreenerRanking = async (request: ScreenerRankingRequest, deps: ScreenerDeps): Promise<ScreenerRankingResponse> => {
   const rankedField = resolveFieldOrThrow(request.field);
   const columns = request.columns.map((field) => resolveFieldOrThrow(field));
-  const candidateSymbols = await resolveSectorCandidateSymbols(request.sectorCodes, deps);
+  const scope = await resolveSymbolScope(request.sectorCodes, request.excludeSectorCodes, deps);
 
-  const rows = await deps.metricValueQueries.rank(rankedField, request.direction, request.limit, columns, candidateSymbols);
+  const rows = await deps.metricValueQueries.rank(rankedField, request.direction, request.limit, columns, scope);
 
   const combinedFields: ScreenerIndexedField[] = [rankedField, ...columns].map((c, index) => ({ ...c, index }));
   return { results: await attachCompanyNames(parseRows(rows, combinedFields), deps) };

@@ -89,12 +89,15 @@ export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
       '2026-09-11 新增 sectorCodes（選填）：證交所類股代碼（twse-ts/tpex-ts company_profile.industry，' +
       '兩碼，例如「24」半導體業，不是財政部稅籍分類），多個代碼是聯集，跟 filters 是 AND 關係，用來先縮小候選' +
       '公司範圍再套用數字篩選（例如「半導體業 + ROE > 15%」）。合法代碼請查 GET /industries/securities-sectors，' +
-      '未分類的公司用類股篩選時會被排除，不是 bug，是資料源本身的已知限制。',
+      '未分類的公司用類股篩選時會被排除，不是 bug，是資料源本身的已知限制。' +
+      '2026-09-20 新增 excludeSectorCodes（選填）：排除這些類股（例如「金融保險以外全部」），跟 sectorCodes 互斥，' +
+      '兩個都給會 400。查詢引擎原生用 NOT IN，不是下游用補集重算——那樣存成篩選範本會把「排除 X」凍結成「包含其餘 N 個」，' +
+      '之後新增的類股會被默默漏掉。未分類的公司在 excludeSectorCodes 下會被保留（跟 sectorCodes 相反）。',
     tags: ['Screener'],
     request: { body: { content: { 'application/json': { schema: postScreenerBodySchema } } } },
     responses: {
       200: { description: '分頁後的篩選結果。', content: { 'application/json': { schema: screenerResultSchema } } },
-      400: { description: 'filters/columns 都是空的、field 格式錯誤或查不到、sortField 不合法、sectorCodes 有不合法的代碼。' },
+      400: { description: 'filters/columns 都是空的、field 格式錯誤或查不到、sortField 不合法、sectorCodes/excludeSectorCodes 有不合法的代碼、或兩者同時提供。' },
     },
   });
 
@@ -104,12 +107,13 @@ export const registerScreenerOpenApi = (registry: OpenAPIRegistry): void => {
     summary: '單一欄位排序取前 N 名',
     description:
       '排序欄位本身一定會出現在 values 裡（不管有沒有另外列進 columns），且保證非 null（WHERE value IS NOT NULL）。' +
-      'sectorCodes（選填，逗號分隔）比照 POST /screener 同一套證交所類股篩選語意，先縮小候選公司範圍再排序。',
+      'sectorCodes（選填，逗號分隔）比照 POST /screener 同一套證交所類股篩選語意，先縮小候選公司範圍再排序；' +
+      'excludeSectorCodes（選填，逗號分隔，2026-09-20 新增）整批排除指定類股，跟 sectorCodes 互斥。',
     tags: ['Screener'],
     request: { query: getScreenerRankingQuerySchema },
     responses: {
       200: { description: '依 field 排序的前 N 筆結果。', content: { 'application/json': { schema: screenerRankingResultSchema } } },
-      400: { description: 'field 格式錯誤或查不到、sectorCodes 有不合法的代碼。' },
+      400: { description: 'field 格式錯誤或查不到、sectorCodes/excludeSectorCodes 有不合法的代碼、或兩者同時提供。' },
     },
   });
 

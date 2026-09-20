@@ -29,6 +29,16 @@ export const postScreenerBodySchema = z.object({
         '不是財政部稅籍分類），多個代碼是聯集（OR），跟 filters 是 AND 關係。合法代碼請查 ' +
         'GET /industries/securities-sectors，未分類的公司用類股篩選時會被排除。',
     }),
+  excludeSectorCodes: z
+    .array(z.string().min(1))
+    .optional()
+    .meta({
+      description:
+        '選填，2026-09-20 新增。排除這些證交所類股（例如「金融保險以外全部」），代碼體系同 sectorCodes，多個代碼是' +
+        '聯集（OR）後整批排除。跟 sectorCodes 互斥，兩個都給會 400。查詢引擎原生用 NOT IN 實作，不是下游用' +
+        '「全部類股減掉排除的」轉成 sectorCodes——那樣存成篩選範本後會把「排除金融」凍結成「包含這 34 個類股」，' +
+        '之後新增的類股會被默默漏掉。未分類的公司不在任何類股裡，用 excludeSectorCodes 時會被保留（跟 sectorCodes 相反）。',
+    }),
 });
 
 const splitCsv = (value: string): string[] => value.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
@@ -46,6 +56,11 @@ export const getScreenerRankingQuerySchema = z.object({
     .string()
     .optional()
     .meta({ description: '逗號分隔的證交所類股代碼（多個是聯集），比照 POST /screener 的 sectorCodes，合法代碼查 GET /industries/securities-sectors。' })
+    .transform((value) => (value ? splitCsv(value) : undefined)),
+  excludeSectorCodes: z
+    .string()
+    .optional()
+    .meta({ description: '2026-09-20 新增。逗號分隔的證交所類股代碼，整批排除，跟 sectorCodes 互斥（兩個都給會 400），語意同 POST /screener 的 excludeSectorCodes。' })
     .transform((value) => (value ? splitCsv(value) : undefined)),
 });
 

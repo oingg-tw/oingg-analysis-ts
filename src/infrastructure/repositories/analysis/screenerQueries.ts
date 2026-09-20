@@ -1,6 +1,6 @@
 import { Prisma } from '#generated/analysis-client';
 import type { FieldRef } from '@/domain/metrics/timeframe';
-import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec } from '@/application/ports/metricValueQueries';
+import type { ScreenerFilterCondition, ScreenerIndexedField, ScreenerSortSpec, SymbolScope } from '@/application/ports/metricValueQueries';
 
 // 三個輸入型別 2026-09-17 Phase 4 搬到 application/ports/metricValueQueries.ts（port 的 DTO），這裡沿用舊名。
 export type IndexedField = ScreenerIndexedField;
@@ -176,16 +176,20 @@ const buildFilterCondition = (condition: FilterCondition, cteRefs: Map<string, C
   return Prisma.sql`(${col} IS NOT NULL AND (${Prisma.join(bounds, ' OR ')}))`;
 };
 
-// candidateSymbols：2026-09-11 新增，類股篩選（sectorCodes）resolve 出來的候選公司
-// 集合，null 代表沒有類股篩選、不多加這個條件（行為跟改動前完全一樣）。注入方式比照
-// buildValuesSql 既有的 unnest($1::text[]) pattern，一樣是參數化模板，不是字串拼接。
+// scope：2026-09-11 新增類股篩選（sectorCodes → include，= ANY），2026-09-20 應 bff-ts 要求加 exclude
+// （excludeSectorCodes → <> ALL，等價於 NOT IN；bff-ts 說明過不能在下游用補集重算，見 SymbolScope 的
+// 說明）。null 代表沒有類股篩選、不多加這個條件（行為跟改動前完全一樣）。注入方式比照 buildValuesSql
+// 既有的 $1::text[] pattern，一樣是參數化模板，不是字串拼接。
+const buildScopeCondition = (symbolExpr: Prisma.Sql, scope: SymbolScope): Prisma.Sql =>
+  'include' in scope ? Prisma.sql`${symbolExpr} = ANY(${scope.include}::text[])` : Prisma.sql`${symbolExpr} <> ALL(${scope.exclude}::text[])`;
+
 export const buildScreenerSql = (
   filters: FilterCondition[],
   columns: FieldRef[],
   page: number,
   pageSize: number,
   sort: SortSpec | null,
-  candidateSymbols: string[] | null = null
+  scope: SymbolScope | null = null
 ): Prisma.Sql => {
   const filterCteRefs = dedupCtes(filters);
   const columnCteRefs = dedupCtes(columns);
@@ -201,8 +205,8 @@ export const buildScreenerSql = (
   const selectList = [Prisma.sql`${symbolExpr} AS symbol`, ...selectCols, Prisma.sql`COUNT(*) OVER() AS total_count`];
 
   const whereConditions = filters.map((f) => buildFilterCondition(f, allCteRefs));
-  if (candidateSymbols !== null) {
-    whereConditions.push(Prisma.sql`${symbolExpr} = ANY(${candidateSymbols}::text[])`);
+  if (scope !== null) {
+    whereConditions.push(buildScopeCondition(symbolExpr, scope));
   }
   const whereSql = whereConditions.length > 0 ? Prisma.join(whereConditions, ' AND ') : Prisma.sql`TRUE`;
 
@@ -240,7 +244,7 @@ export const buildRankingSql = (
   direction: 'asc' | 'desc',
   limit: number,
   columns: FieldRef[],
-  candidateSymbols: string[] | null = null
+  scope: SymbolScope | null = null
 ): Prisma.Sql => {
   const combinedFields = [rankedField, ...columns];
   const filterCteRefs = dedupCtes([rankedField]);
@@ -261,8 +265,8 @@ export const buildRankingSql = (
   const directionSql = direction === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
 
   const whereConditions = [Prisma.sql`${rankedCol} IS NOT NULL`];
-  if (candidateSymbols !== null) {
-    whereConditions.push(Prisma.sql`${rankedAlias}.${q('symbol')} = ANY(${candidateSymbols}::text[])`);
+  if (scope !== null) {
+    whereConditions.push(buildScopeCondition(Prisma.sql`${rankedAlias}.${q('symbol')}`, scope));
   }
 
   return Prisma.sql`

@@ -50,6 +50,11 @@ export interface ScreenerIndexedField extends FieldRef {
   index: number;
 }
 
+// 2026-09-20 類股範圍：include（sectorCodes，= ANY）或 exclude（excludeSectorCodes，<> ALL）二擇一，null 代表不限。
+// bff-ts 要求 excludeSectorCodes 必須由查詢引擎原生支援、不能在下游用「全部類股減掉排除的」重算成 include——
+// 那樣存成 ScreenerPreset 時會把「排除金融」凍結成「包含這 34 個類股」，之後新增的類股會被默默漏掉。
+export type SymbolScope = { include: string[] } | { exclude: string[] };
+
 export interface CompanyRankRow {
   symbol: string;
   value: unknown;
@@ -94,10 +99,10 @@ export interface MetricValueQueryPort {
     dataType: string,
     subsidiaryCompanyId: string
   ): Promise<DailyCadenceHistoryRow[]>;
-  // 篩選：每列 symbol + 每個 column 的 v/k/n 三欄 + total_count（COUNT(*) OVER()）；candidateSymbols=null 代表不限類股。
-  screen(filters: ScreenerFilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: ScreenerSortSpec | null, candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
+  // 篩選：每列 symbol + 每個 column 的 v/k/n 三欄 + total_count（COUNT(*) OVER()）；scope=null 代表不限類股。
+  screen(filters: ScreenerFilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: ScreenerSortSpec | null, scope: SymbolScope | null): Promise<Record<string, unknown>[]>;
   // 排行：排序欄位永遠是 index 0，其餘 columns 接在後面。
-  rank(rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[], candidateSymbols: string[] | null): Promise<Record<string, unknown>[]>;
+  rank(rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[], scope: SymbolScope | null): Promise<Record<string, unknown>[]>;
   // 單一公司在全市場某欄位的名次（RANK()，並列共用名次）；查無資料回空陣列。excludeZero 同
   // distribution() 的判斷條件（排除精確等於 0 的列，例如殖利率的「不配息」，不影響非 0 語意的欄位）。
   companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean): Promise<CompanyRankRow[]>;
