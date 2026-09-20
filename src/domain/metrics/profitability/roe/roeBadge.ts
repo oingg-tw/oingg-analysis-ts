@@ -8,6 +8,8 @@ export const roeBadge: MetricBadge = {
   name: '巴菲特 ROE 門檻',
   nameEn: 'Buffett ROE Threshold',
   author: 'Warren Buffett, 1987; Robert Hagstrom, 1994',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：Berkshire 官網 1987 年致股東信原文，逐字寫著 two tests of economic excellence - an average return on equity of over 20% in the ten years, 1977 through 1986, and no year worse than 15%。
+  sourceUrl: 'https://www.berkshirehathaway.com/letters/1987.html',
   summary: '近四季股東權益報酬率達到 15% 以上，符合巴菲特對「經濟優異」企業的其中一項標準。',
   detail:
     '巴菲特在 1987 年 Berkshire Hathaway 致股東信中提出兩項「經濟優異」測試：10 年 ROE 均值' +

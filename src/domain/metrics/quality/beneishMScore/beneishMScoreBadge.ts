@@ -4,6 +4,8 @@ export const beneishMScoreBadge: MetricBadge = {
   name: 'Beneish M-Score',
   nameEn: 'Beneish M-Score',
   author: 'Messod Beneish, 1999',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整八變數公式，並逐字寫出 The threshold value is -1.78 for the model whose coefficients are reported above。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Beneish_M-score',
   summary: '結合 8 個會計比率的模型，用來偵測財報是否存在盈餘操縱的跡象。',
   detail:
     '印第安納大學會計學教授 Messod Beneish 於 1999 年發表，設計初衷是偵測財報上常見的盈餘操縱手法' +

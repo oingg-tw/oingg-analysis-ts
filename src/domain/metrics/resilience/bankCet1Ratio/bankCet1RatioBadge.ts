@@ -4,6 +4,8 @@ export const bankCet1RatioBadge: MetricBadge = {
   name: 'Basel III CET1 資本門檻',
   nameEn: 'Basel III CET1 Minimum',
   author: 'Basel Committee on Banking Supervision, 2010',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：逐字寫出 minimum CET1 ratio ... at all times of: 4.5%。BIS 官方頁是下載目錄頁，理由同 bankCarRatio。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Basel_III',
   summary: '普通股權益比率（CET1）達到 4.5% 以上，符合 Basel III 資本監理框架的最低法定要求。',
   detail:
     'Basel III 資本監理框架（BCBS 189）新增「普通股權益第一類資本」（CET1）這個更嚴格的' +

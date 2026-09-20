@@ -4,6 +4,8 @@ export const altmanZDoublePrimeScoreBadge: MetricBadge = {
   name: "Altman Z''-Score",
   nameEn: "Altman Z''-Score",
   author: 'Edward Altman, 1983',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：同一個條目另外列出非製造業/新興市場版的四變數公式，並逐字寫出 Z > 2.6 - "safe" zone。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   summary: '結合 4 個財務比率的加權模型，是 Altman Z-Score 針對非製造業、新興市場公司調整過的版本。',
   detail:
     '紐約大學金融學教授 Edward Altman 於 1983 年（後於 1995 年延伸應用到新興市場）發表，是 1968 年原始' +

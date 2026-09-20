@@ -9,6 +9,8 @@ export const livePegRatioBadge: MetricBadge = {
   name: '本益成長比',
   nameEn: 'PEG Ratio',
   author: 'Peter Lynch, 1989',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：逐字引用 Lynch 1989 年的原話，並寫出 A lower ratio than 1.00 indicates an undervalued stock and a value above 1.00 indicates overvalued。
+  sourceUrl: 'https://en.wikipedia.org/wiki/PEG_ratio',
   summary: '本益比 ÷ 盈餘成長率，用今天的即時股價搭配最新公布財報的成長率數據計算，每個交易日更新。',
   detail:
     '傳奇基金經理人 Peter Lynch 在其著作《One Up on Wall Street》裡推廣的估值概念（PEG 這個' +

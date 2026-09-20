@@ -7,6 +7,8 @@ export const epsGrowthRateBadge: MetricBadge = {
   name: "O'Neil 當季盈餘成長",
   nameEn: "O'Neil Current Quarterly Earnings",
   author: "William O'Neil",
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：維基 CAN SLIM 條目逐字寫出「C」的門檻：current earnings should be up at least 25% in the most recent financial quarter。
+  sourceUrl: 'https://en.wikipedia.org/wiki/CAN_SLIM',
   summary: '當季每股盈餘年增率達 25% 以上，符合 CANSLIM 選股系統「C」的門檻。',
   detail:
     'William O’Neil 在《How to Make Money in Stocks》提出的 CANSLIM 選股系統，「C」' +

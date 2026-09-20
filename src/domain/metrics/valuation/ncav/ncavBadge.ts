@@ -4,6 +4,8 @@ export const ncavBadge: MetricBadge = {
   name: '淨流動資產價值',
   nameEn: 'Net Current Asset Value',
   author: 'Benjamin Graham, David Dodd, 1934',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有 NCAV = Total Current Assets - Total Liabilities 公式，並寫出 Graham 的做法是買 net current asset value greater than their market cap 的股票，同時指出概念出自 1934 年的 Security Analysis。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Net_current_asset_value',
   summary: '用「流動資產減總負債」估算的清算價值角度估值方法，又稱 Net-Net。',
   detail:
     'Benjamin Graham 提出的另一個保守估值角度，計算方式為流動資產減去全部負債（不含流動資產以外的其他' +

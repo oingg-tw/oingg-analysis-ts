@@ -8,6 +8,8 @@ export const bankCarRatioBadge: MetricBadge = {
   name: 'Basel III 資本適足率門檻',
   nameEn: 'Basel III Total Capital Ratio Minimum',
   author: 'Basel Committee on Banking Supervision, 2010',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：逐字寫出 Tier 2 capital + Tier 1 capital is required to be above 8%。BIS 官方頁（bcbs189.htm）是文件下載目錄頁，數字在 77 頁 PDF 內文，不適合當「點進去看得到門檻」的連結，改放這裡，BIS 原始文件仍在 academicSourceUrl。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Basel_III',
   summary: '資本適足率達到 8% 以上，符合 Basel III 資本監理框架的最低法定要求。',
   detail:
     'Basel III 資本監理框架（BCBS 189，2010年12月發布）延續 Basel I 以來的最低資本適足率' +

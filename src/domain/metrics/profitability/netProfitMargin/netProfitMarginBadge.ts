@@ -6,6 +6,8 @@ export const netProfitMarginBadge: MetricBadge = {
   name: '護城河淨利率',
   nameEn: 'Durable Moat Net Margin',
   author: 'Mary Buffett, David Clark, 2008',
+  // 2026-09-20 刻意沒有 sourceUrl（見 metricDefinitionSpec.ts 的欄位說明）：20% 這個門檻出自同一本《Warren Buffett and the Interpretation of Financial Statements》(2008)，
+  // 理由同 grossMarginBadge：沒有合法的免費全文可連，sourceUrl 留空，不代表門檻是本站自訂。
   summary: '稅後淨利率達到 20% 以上，符合書中耐久競爭優勢企業的獲利轉換能力特徵。',
   detail:
     '同一本《Warren Buffett and the Interpretation of Financial Statements》指出，擁有耐久' +

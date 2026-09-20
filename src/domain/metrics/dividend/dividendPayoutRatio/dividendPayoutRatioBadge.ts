@@ -11,6 +11,8 @@ export const dividendPayoutRatioBadge: MetricBadge = {
   name: 'Fidelity 股利發放率最適區間',
   nameEn: 'Fidelity Optimal Payout Ratio Range',
   author: 'Fruhan, Morrow, Hebard, Rahman, 2013',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：Fidelity 官網的論文原文 PDF，內文即為 40%-60% 最適發放率區間的論述本體。
+  sourceUrl: 'https://www.fidelity.com/bin-public/060_www_fidelity_com/documents/Payout-Ratio-The-Most-Influential-Management-Decision-a-Company-Can-Make-retail.pdf',
   summary: '股利發放率落在 Fidelity 研究報告劃定的最適區間，兼顧資本配置紀律與股利永續性。',
   detail:
     '出自 Fidelity Investments 2013 年發布的投資人教育文件《Payout Ratio: The Most Influential Management' +

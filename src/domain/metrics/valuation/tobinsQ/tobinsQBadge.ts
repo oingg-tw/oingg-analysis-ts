@@ -4,6 +4,8 @@ export const tobinsQBadge: MetricBadge = {
   name: '托賓Q值',
   nameEn: "Tobin's Q",
   author: 'James Tobin, 1969',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整公式，並逐字說明 When Tobin's q is less than 1, the market value is less than the book value of the company's assets。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Tobin%27s_q',
   summary: '市值低於資產重置成本，市場對企業資產的評價可能偏低。',
   detail:
     "James Tobin 提出的投資理論：Q = (市值 + 總負債) / 總資產，衡量市場對企業資產的評價相對於" +

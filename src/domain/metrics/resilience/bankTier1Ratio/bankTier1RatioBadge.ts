@@ -4,6 +4,8 @@ export const bankTier1RatioBadge: MetricBadge = {
   name: 'Basel III 第一類資本門檻',
   nameEn: 'Basel III Tier 1 Capital Minimum',
   author: 'Basel Committee on Banking Supervision, 2010',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：逐字寫出 It also requires minimum Tier 1 capital of 6% at all times。BIS 官方頁是下載目錄頁，理由同 bankCarRatio。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Basel_III',
   summary: '第一類資本比率達到 6% 以上，符合 Basel III 資本監理框架的最低法定要求。',
   detail:
     'Basel III 資本監理框架（BCBS 189）將第一類資本（Tier 1，含 CET1 與其他第一類資本）' +

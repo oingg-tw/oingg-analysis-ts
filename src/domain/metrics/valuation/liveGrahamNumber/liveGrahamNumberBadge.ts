@@ -9,6 +9,8 @@ export const liveGrahamNumberBadge: MetricBadge = {
   name: 'Graham Number',
   nameEn: 'Graham Number',
   author: 'Benjamin Graham, 1949',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整公式，並逐字寫出 The product of these two maximum multiples is 15 x 1.5 = 22.5。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   summary: '本益比 × 股價淨值比，用今天的即時股價搭配最新公布財報的基本面數據計算，每個交易日更新。',
   detail:
     '價值投資之父 Benjamin Graham 在其著作中提出的簡化估值公式，原始構想是為每股盈餘與每股淨值設定' +

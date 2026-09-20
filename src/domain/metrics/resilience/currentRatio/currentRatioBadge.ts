@@ -9,6 +9,8 @@ export const currentRatioBadge: MetricBadge = {
   name: '財務體質健全',
   nameEn: 'Sufficiently Strong Financial Condition',
   author: 'Benjamin Graham, 1949',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：《智慧型股票投資人》第 14 章逐條回顧，逐字寫出 current assets should be at least twice current liability。
+  sourceUrl: 'https://www.gurufocus.com/news/704217/the-intelligent-investor-chapter-14-reviewed',
   summary: '流動資產至少是流動負債的兩倍，短期償債能力有充分緩衝。',
   detail:
     'Benjamin Graham 在《The Intelligent Investor》為「防禦型投資者」訂出的七條選股規則之一' +

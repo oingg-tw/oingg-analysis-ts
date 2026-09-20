@@ -9,6 +9,8 @@ export const epsCagr3yBadge: MetricBadge = {
   name: "O'Neil 年度盈餘成長",
   nameEn: "O'Neil Annual Earnings Growth",
   author: "William O'Neil",
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：維基 CAN SLIM 條目逐字寫出「A」的門檻：annual earnings growth, which should be up 25% or more over the last three years。
+  sourceUrl: 'https://en.wikipedia.org/wiki/CAN_SLIM',
   summary: '過去 3 年 EPS 年化複合成長率達 25% 以上，符合 CANSLIM 選股系統「A」的門檻。',
   detail:
     'William O’Neil 在《How to Make Money in Stocks》CANSLIM 系統的「A」（Annual' +

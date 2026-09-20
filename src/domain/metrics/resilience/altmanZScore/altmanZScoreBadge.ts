@@ -6,6 +6,8 @@ export const altmanZScoreBadge: MetricBadge = {
   name: 'Altman Z-Score',
   nameEn: 'Altman Z-Score',
   author: 'Edward Altman, 1968',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有原始五變數公式，並逐字寫出 Z > 2.99 - "safe" zone。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Altman_Z-score',
   summary: '結合 5 個財務比率的加權模型，最初用來預測企業破產風險。',
   detail:
     '紐約大學金融學教授 Edward Altman 於 1968 年發表，是財務危機預測領域最早、也最廣為引用的模型之一。' +

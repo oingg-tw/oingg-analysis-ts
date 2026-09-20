@@ -18,6 +18,8 @@ export const piotroskiFScoreBadge: MetricBadge = {
   name: 'Piotroski F-Score',
   nameEn: 'Piotroski F-Score',
   author: 'Joseph Piotroski, 2000',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整九項訊號的計分方法，並逐字寫出 F-score of 8-9 is considered to be strong。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
   summary: '用 9 個二元財務訊號衡量公司財務體質改善程度的綜合評分，8 分以上代表多數訊號同時轉好。',
   detail:
     '芝加哥大學會計學教授 Joseph Piotroski（現任教於史丹佛大學）於 2000 年發表的論文，設計' +

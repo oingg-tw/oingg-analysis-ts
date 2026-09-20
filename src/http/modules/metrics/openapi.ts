@@ -85,6 +85,16 @@ const metricFolderCatalogEntrySchema = z.object({
       nameSuffix: z.string().optional().meta({ description: '徽章名稱的補充限定語（例如「非上市公司版」），目前沒有任何徽章使用，保留給未來' }),
       nameEn: z.string(),
       author: z.string().meta({ description: '法則/門檻的提出者或出處機構，例如 "Edward Altman, 1968"' }),
+      sourceUrl: z.string().optional().meta({
+        description:
+          '2026-09-20 新增：**點進去就看得到這個門檻數字**的公開頁面。契約比指標層級的 referenceUrl 嚴格——' +
+          'referenceUrl 是「這支指標是什麼、公式怎麼算」（例如維基「毛利率」條目），不會有「為什麼門檻是 40%」；' +
+          '這個欄位填的每個網址都經過實際開啟驗證、頁面上真的有逐字寫出該門檻數字（驗證到的引文記在後端各 badge ' +
+          '檔案的註解裡）。付費牆論文頁不放這裡（那種放指標的 academicSourceUrl，用途是給想找原始論文的人）。\n\n' +
+          '選填：門檻出處是實體書、沒有合法免費全文可連的情況會留空（目前 grossMargin/netProfitMargin 兩支，' +
+          '出處是 Mary Buffett & David Clark 2008 那本書）。**留空不代表門檻是本站自訂的**——出處仍然真實可指名，' +
+          '見 author 欄位。前端遇到留空請不要渲染連結，也不要退回去拿指標的 referenceUrl 充數（那正是這次修掉的問題）。',
+      }),
       summary: z.string(),
       detail: z.string(),
       timeframe: z.string().optional().meta({

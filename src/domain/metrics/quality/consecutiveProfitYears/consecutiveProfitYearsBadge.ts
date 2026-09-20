@@ -6,6 +6,8 @@ export const consecutiveProfitYearsBadge: MetricBadge = {
   name: '獲利穩定性',
   nameEn: 'Earnings Stability',
   author: 'Benjamin Graham, 1949',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：《智慧型股票投資人》第 14 章逐條回顧，逐字寫出防禦型投資者要避開 have a record of deficits in the past 10 years（10 年不得有虧損）。
+  sourceUrl: 'https://www.gurufocus.com/news/704217/the-intelligent-investor-chapter-14-reviewed',
   summary: '過去 10 個完整會計年度每年都有正獲利，沒有任何一年虧損。',
   detail:
     'Benjamin Graham 在《The Intelligent Investor》為「防禦型投資者」訂出的七條選股規則之一' +

@@ -9,6 +9,8 @@ export const longTermDebtToNetCurrentAssetsBadge: MetricBadge = {
   name: '長期負債安全邊際',
   nameEn: 'Long-Term Debt Within Net Current Assets',
   author: 'Benjamin Graham, 1949',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：同一篇第 14 章回顧，逐字寫出後半條件 long-term debt should not be greater than net current assets or working capital。
+  sourceUrl: 'https://www.gurufocus.com/news/704217/the-intelligent-investor-chapter-14-reviewed',
   summary: '長期負債不超過淨流動資產，即使完全不靠固定資產變現也能償還所有長期債務。',
   detail:
     'Benjamin Graham 在《The Intelligent Investor》為「防禦型投資者」訂出的七條選股規則之一' +

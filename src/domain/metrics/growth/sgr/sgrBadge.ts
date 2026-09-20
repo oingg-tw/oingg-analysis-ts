@@ -10,6 +10,8 @@ export const sgrBadge: MetricBadge = {
   name: 'Higgins 永續成長率警訊',
   nameEn: "Higgins's Sustainable Growth Warning",
   author: 'Robert C. Higgins, 1977',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有 SGR 完整公式並在參考文獻逐字引用 Higgins, Robert (1977): How much growth can a firm afford。本徽章門檻是「實際成長率 > SGR」的模型比較，不是固定數字，出處頁涵蓋模型本身。
+  sourceUrl: 'https://en.wikipedia.org/wiki/Sustainable_growth_rate',
   summary: '近 3 年實際營收成長率持續超過永續成長率，成長速度可能得靠舉債或增資撐，是財務體質的警訊。',
   detail:
     'Robert C. Higgins 提出的永續成長率（SGR）模型：在不改變負債權益比、不增發新股的' +

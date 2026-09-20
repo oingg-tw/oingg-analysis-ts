@@ -8,6 +8,8 @@ export const oneDollarTestBadge: MetricBadge = {
   name: '一美元原則',
   nameEn: 'One Dollar Premise',
   author: 'Warren Buffett, 1983',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：Berkshire 官網 1983 年致股東信原文，逐字寫著 delivers shareholders at least $1 of market value for each $1 retained。
+  sourceUrl: 'https://www.berkshirehathaway.com/letters/1983.html',
   summary: '近 5 年累計保留盈餘，至少為股東創造了等值的市值成長，資本配置沒有摧毀價值。',
   detail:
     'Warren Buffett 在 1983 年 Berkshire Hathaway 致股東信提出的資本配置檢驗標準：公司' +

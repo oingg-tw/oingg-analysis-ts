@@ -4,6 +4,8 @@ export const zmijewskiScoreBadge: MetricBadge = {
   name: 'Zmijewski Score',
   nameEn: 'Zmijewski Score',
   author: 'Mark Zmijewski, 1984',
+  // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整三變數 probit 公式，並逐字寫出 a probability of 0.5 or higher flags a firm as financially distressed。原始論文只有 JSTOR 付費 doi、維基也沒有這個條目，這是目前唯一點得到門檻的公開頁面。
+  sourceUrl: 'https://metricgate.com/docs/zmijewski-bankruptcy-score/',
   summary: '用機率模型評估財務困境可能性，聚焦資產報酬率、槓桿與流動性三個面向。',
   detail:
     '芝加哥大學會計學教授 Mark Zmijewski 於 1984 年發表，同樣是財務危機預測模型，採用機率單位迴歸' +
