@@ -30,7 +30,7 @@ pnpm typecheck          # src + tests + scripts 三份 tsconfig 都過型別檢�
 
 ## 整合測試（integration）的資料庫
 
-整合測試會對 analysis DB **寫入/刪除**資料列（例如 `metricValueWriterConcurrency`、`completenessCheck` 會刪 2801 的列再重算），2026-09-17 決定改打 analysis DB 的專用 **Neon branch**：在 `.env` 設 `ANALYSIS_DATABASE_URL_TEST`，`tests/integration/setup.ts` 會在 Prisma client 讀取之前把 `ANALYSIS_DATABASE_URL` 換掉。其餘六個 export DB（mops/gov/twse/tpex/sitca/playwright）全部唯讀，維持用開發環境的連線。
+整合測試會對 analysis DB **寫入/刪除**資料列（例如 `metricValueWriterConcurrency`、`completenessCheck` 會刪 2801 的列再重算），2026-09-17 決定改打 analysis DB 的專用 **Neon branch**：在 `.env` 設 `ANALYSIS_DATABASE_URL_TEST`，`tests/integration/setup.ts` 會在 Prisma client 讀取之前把 `ANALYSIS_DATABASE_URL` 換掉。其餘五個 export DB（mops/gov/twse/tpex/sitca）全部唯讀，維持用開發環境的連線（2026-09-20 playwright-py 供應鏈分類已完全移除，原本的第六個唯讀來源不再存在）。
 2026-09-17 起 branch 已建好（SIT，從 dev 分出來）：沒設 `ANALYSIS_DATABASE_URL_TEST` 直接 throw，不會退回開發 DB。
 
 `vitest.config.ts` 對 integration 打開檔案間平行化（`fileParallelism: true`，2026-09-17 起）：44 檔 210 個從序列的 102 秒降到 8 秒。前提是會寫 DB 的測試各自用唯一 symbol 或只清自己的列——新增會寫入的測試要守這條，不要跟別的檔案共用同一批資料列。

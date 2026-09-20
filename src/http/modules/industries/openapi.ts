@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getIndustryTreeQuerySchema } from './schemas';
-import { industryTreeNodeResultSchema, industryFlatResultSchema, chainClassificationResultSchema, chainClustersResultSchema, industryTreeResultSchema, securitiesIndustrySectorsResultSchema } from './types';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
@@ -40,81 +40,6 @@ export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '全部已分類公司的 symbol/companyName/path 陣列。', content: { 'application/json': { schema: industryFlatResultSchema } } },
-    },
-  });
-
-  registry.registerPath({
-    method: 'get',
-    path: '/industries/chain-classification',
-    summary: '攤平全部公司的供應鏈分類（新版「產業追蹤」頁面用，取代 gov-ts 稅籍分類樹）',
-    description:
-      '給重建後的「產業追蹤」頁面用——資料源改成 oingg-playwright-py 的供應鏈分類（見 GET /companies/peer-group ' +
-      '的說明），跟上面 GET /industries/tree（gov-ts 財政部稅籍五層分類）是完全不同的分類體系，不是取代舊端點，' +
-      '是給重建後的新頁面用（舊頁面/舊端點目前仍照常運作）。一次回傳全部約 1984 家上市櫃公司的分類 ' +
-      '（含 category 為 null、完全沒出現在供應鏈報告裡的公司，不濾掉）+ 10 組粗分類到細分類的對照表 ' +
-      '（groups），前端可以自己組出「粗分類 -> 細分類 -> 公司」的 drill-down 樹狀結構，不用逐一查詢。' +
-      'source/updatedAt 兩個欄位語意跟 GET /companies/peer-group 完全一致（見該端點說明），' +
-      '這支同樣沒有排程重抓機制，服務啟動後才會反映 playwright-py 那邊的最新變動。沒有查詢參數，純讀記憶體' +
-      '快取，成本低，可以每次都打不用自己快取。',
-    tags: ['Industries'],
-    responses: {
-      200: { description: '全部公司的供應鏈分類 + 粗分類對照表。', content: { 'application/json': { schema: chainClassificationResultSchema } } },
-    },
-  });
-
-  registry.registerPath({
-    method: 'get',
-    path: '/industries/chain-clusters',
-    summary: '供應鏈聚落分群 drill-down 樹（「產業追蹤」頁面第二種瀏覽方式，跟 chain-classification 是不同的分群概念）',
-    description:
-      '給「產業追蹤」頁面用——playwright-py 的供應鏈聚落分群（人工中文標籤，不是 Gemini 生成），跟 ' +
-      'GET /industries/chain-classification 的 category/coarseGroup（扁平 2 層業務相似度分組）是完全獨立的另一套 ' +
-      '概念：聚落是真正的階層結構（頂層聚落 + 子聚落）。分群方法/數量會隨 playwright-py 調整演算法而變動' +
-      '（2026-09-14 當天就從 113 頂層+475 子聚落換成 124 頂層+278 子聚落，新版下每個頂層聚落都有子聚落，但這是' +
-      '演算法特性不是保證，某些頂層聚落仍可能沒有子聚落、全部成員都在 directMembers，前端邏輯要能同時處理兩種情況）。' +
-      '一次回傳整棵樹（含全部成員），不用逐一查詢。\n\n' +
-      '⚠️ **clusterId/subClusterId 不是穩定 id**——playwright-py 重跑供應鏈報告解析重建圖、或調整分群演算法後，' +
-      '同一個 id 可能對應到完全不同的一群公司，號碼會整個洗牌（2026-09-14 當天已經發生過一次）。' +
-      'playwright-py 重新分群時會主動通知，屆時只需要重啟本服務即可，不需要改程式碼。前端不能把這兩個 id ' +
-      '當永久不變的產業分類代碼快取、放進收藏/分享連結，只能當「這次查詢當下的聚落」使用，每次都應該重新呼叫這支端點。\n\n' +
-      '成員（members/directMembers）的 code 不是只有台股上市櫃公司——供應鏈圖節點包含國際客戶/供應商（蘋果、' +
-      'NVIDIA、ASML 這類），isListed:false 代表這是外部/非上市公司節點（沒有對應的個股詳情頁可以連結），' +
-      'name 來自 playwright-py 的公司名稱對照表，不是 twse/tpex company_profile。\n\n' +
-      'metaGroup（2026-09-15 新增）：細聚落再收斂成的粗分組，跟 ' +
-      'GET /industries/chain-classification 的 coarseGroup 是完全不同層級的另一套「粗分組」' +
-      '（分別是兩套獨立的分類/分群體系各自收斂出來的粗分組，數量都會隨資料源調整持續變動，不要' +
-      '寫死精確數字，也不要混淆使用）。沒有查詢參數，純讀記憶體' +
-      '快取，成本低，可以每次都打不用自己快取。',
-    tags: ['Industries'],
-    responses: {
-      200: { description: '全部頂層聚落的完整 drill-down 樹。', content: { 'application/json': { schema: chainClustersResultSchema } } },
-    },
-  });
-
-  registry.registerPath({
-    method: 'get',
-    path: '/industries/chain-tree',
-    summary: '產業追蹤逐層點開瀏覽樹（取代 chain-classification 原本的扁平兩層瀏覽用途）',
-    description:
-      '給重建後的「產業追蹤」頁面用（第二次重建）——playwright-py 把原本扁平兩層的 category/' +
-      'coarseGroup 換成真正的階層樹：粗分類(10+其他) → 產業(33) → 產業內區隔（依「共用上下游' +
-      '夥伴」遞迴分群，1~3 層，Gemini 取名，兄弟節點互相區分，例如資訊設備底下會拆成「筆電與' +
-      '伺服器代工」「散熱模組與伺服器導軌」「工業電腦與嵌入式系統」）→ 公司。注意這不是取代 ' +
-      'GET /industries/chain-classification——那支端點跟底層的 company_category_summary ' +
-      '資料本身沒有下線，繼續是 GET /companies/peer-group 同業比較的資料源、也繼續是每家公司' +
-      '「產業標籤」的顯示用途，這裡只是給樹狀瀏覽 UI 換一個更細緻的資料源。\n\n' +
-      'nodeType 恆為 coarse_group/category/segment/misc 四種之一，misc 是「其他（共用上下游' +
-      '太少）」的長尾桶，這種桶底下的公司彼此不見得真的相近。members 只有葉節點（children 為' +
-      '空陣列）才有值，全部是上市櫃公司（不像 chain-clusters 混雜外部/非上市節點，這裡不需要 ' +
-      'isListed 欄位）。\n\n' +
-      '⚠️ **nodeId 不是穩定 id**——playwright-py 重建樹（報告更新或調整分群邏輯）後，同一個 ' +
-      'nodeId 可能對應到完全不同的節點，號碼會整個洗牌，跟 GET /industries/chain-clusters 的 ' +
-      'clusterId 同一種不穩定性質，前端不能把它當永久識別碼快取/收藏/放進分享連結。一次回傳' +
-      '整棵樹（含全部子節點跟葉節點成員），沒有查詢參數，純讀記憶體快取，成本低，可以每次都打' +
-      '不用自己快取。',
-    tags: ['Industries'],
-    responses: {
-      200: { description: '整棵產業追蹤瀏覽樹（頂層粗分類 + 全部子節點 + 葉節點成員）。', content: { 'application/json': { schema: industryTreeResultSchema } } },
     },
   });
 

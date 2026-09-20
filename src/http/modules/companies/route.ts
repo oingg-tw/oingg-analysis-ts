@@ -14,7 +14,6 @@ import {
 } from '@/application/companies/history';
 import { getCompanyDividendHistory } from '@/application/companies/dividendHistory';
 import { getCompanyFinancialStatement } from '@/application/companies/financialStatement';
-import { getCompanyPeerGroup } from '@/application/companies/peerGroup';
 import { getCompanyBadges, getCompanyMetricCompleteness, getCompanyPiotroskiBreakdown, getCompanyMetricProvenance } from '@/application/companies/insights';
 import { jsonRoute } from '@/http/route';
 import {
@@ -29,7 +28,6 @@ import {
   getCompanyMetricsHistoryQuerySchema,
   getCompanyMonthlyRevenueHistoryQuerySchema,
   getCompanyFinancialStatementQuerySchema,
-  getCompanyPeerGroupQuerySchema,
   getCompanyPiotroskiBreakdownQuerySchema,
   getCompanyMetricProvenanceQuerySchema,
   getCompanyBadgesQuerySchema,
@@ -37,8 +35,9 @@ import {
   getCompanyBetaQuerySchema,
 } from './schemas';
 
-// 16 支 /companies/* 端點——掛載順序沿用舊 route.ts。provenance 那支需要整份 PitDeps（107 支 resolver 各自挑不同
-// port），所以這個工廠直接收 AppDeps。
+// 15 支 /companies/* 端點——掛載順序沿用舊 route.ts。provenance 那支需要整份 PitDeps（107 支 resolver 各自挑不同
+// port），所以這個工廠直接收 AppDeps。2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈分類，原本的
+// GET /companies/peer-group（同業比較，完全依賴 playwright 資料且無其他資料源可退回）已移除。
 export const createCompaniesRouter = (deps: AppDeps): Router => {
   const router = Router();
 
@@ -53,7 +52,6 @@ export const createCompaniesRouter = (deps: AppDeps): Router => {
   router.get('/companies/metrics-history', ...jsonRoute({ query: getCompanyMetricsHistoryQuerySchema }, ({ query }) => getCompanyMetricsHistory(query, deps)));
   router.get('/companies/monthly-revenue-history', ...jsonRoute({ query: getCompanyMonthlyRevenueHistoryQuerySchema }, ({ query }) => getCompanyMonthlyRevenueHistory(query, deps)));
   router.get('/companies/financial-statement', ...jsonRoute({ query: getCompanyFinancialStatementQuerySchema }, ({ query }) => getCompanyFinancialStatement(query, deps)));
-  router.get('/companies/peer-group', ...jsonRoute({ query: getCompanyPeerGroupQuerySchema }, ({ query }) => getCompanyPeerGroup(query, deps)));
   router.get('/companies/piotroski-breakdown', ...jsonRoute({ query: getCompanyPiotroskiBreakdownQuerySchema }, ({ query }) => getCompanyPiotroskiBreakdown(query, deps)));
   // 順序跟以前一樣：先驗 query（400 + errors），再檢查路徑參數（400 純 `{ message }`）——路徑有 :symbol 時 express
   // 一定會塞值，這個檢查只是防禦性保留。

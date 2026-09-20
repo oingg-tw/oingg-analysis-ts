@@ -137,11 +137,6 @@ export const getCompanyFinancialStatementQuerySchema = z
   })
   .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
 
-export const getCompanyPeerGroupQuerySchema = z.object({
-  symbol: symbolField,
-  minPeers: z.coerce.number().int().min(1).max(50).default(5).meta({ description: '同業數（含自己）低於這個門檻就往樹的上一層退，預設 5（跟 playwright-py 建議的門檻一致）。' }),
-});
-
 export const getCompanyPiotroskiBreakdownQuerySchema = z
   .object({
     symbol: symbolField,

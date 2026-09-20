@@ -19,7 +19,6 @@ import {
   getCompanyMetricsHistoryQuerySchema,
   getCompanyMonthlyRevenueHistoryQuerySchema,
   getCompanyFinancialStatementQuerySchema,
-  getCompanyPeerGroupQuerySchema,
   getCompanyPiotroskiBreakdownQuerySchema,
   getCompanyMetricProvenanceQuerySchema,
   getCompanyBadgesQuerySchema,
@@ -33,7 +32,6 @@ import {
   companyProfileDetailSchema,
   companiesListResultSchema,
   companiesCountOnlyResultSchema,
-  companyPeerGroupResultSchema,
   financialStatementResultSchema,
   piotroskiFScoreBreakdownResultSchema,
   metricProvenanceResultSchema,
@@ -372,42 +370,9 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     },
   });
 
-  registry.registerPath({
-    method: 'get',
-    path: '/companies/peer-group',
-    summary: '單一公司產業同業清單（產業同業比較功能第一步）',
-    description:
-      '用 oingg-playwright-py 的「產業追蹤」樹（GET /industries/chain-tree 同一份資料源，粗分類→產業→產業內區隔' +
-      '1~3層→公司）找出同業公司清單，只回傳同業名單，**不含財務指標數值**——拿到 peers 之後請自行呼叫 ' +
-      'POST /screener/values（symbols + columns，field 格式 "metricCode.timeframe"）查實際指標數值，這支端點刻意' +
-      '不重複做數值查詢那一層。\n\n' +
-      '2026-09-15 第二次改版：同業比較演算法改用樹的葉節點當第一選擇（不再用 33 類 category 當第一選擇）——目標' +
-      '公司所在的「產業內區隔」葉節點（例如「晶圓代工與主流封測」）同業數（含自己）達到 minPeers 就用這層，' +
-      '這是最精確的比較範圍；不夠則沿樹往上退（區隔可能有 1~3 層，逐層退），一路退到整個「產業」層級' +
-      '（peerGroupLevel:"category"，例如「積體電路」），再不夠退到最粗的「粗分類」層級' +
-      '（peerGroupLevel:"coarse_group"）。目標公司若落在「其他（共用上下游太少）」的長尾桶（misc），這個桶' +
-      '定義上就是「看不出跟誰位置相近」，不當同業池，直接跳過從最近的產業（category）層級開始起算。' +
-      '**退到粗分類層級都湊不到 minPeers 家時，本端點會老實回 found:false（notFoundReason:"insufficient_peers"），' +
-      '不會強行湊一個同業數不足的結果。**\n\n' +
-      'peerGroupLevel/peerGroupNodeId/peerGroupLabel 標示這次比較實際用的樹狀層級——⚠️ peerGroupNodeId 不是穩定 ' +
-      'id，跟 GET /industries/chain-tree 的 nodeId 同一種不穩定性質，樹重建後編號會變，不能當永久識別碼快取。\n\n' +
-      'category/coarseGroup/source/updatedAt 這組欄位是目標公司的「產業標籤」，來源是 company_category_summary' +
-      '（跟 GET /industries/chain-classification 同一份資料），純資訊性用途（source: keyword=僅關鍵字規則、' +
-      'gemini=額外經過語意驗證/修正，全市場 source=keyword 的公司不到 1%）——這組資訊獨立於本次同業比較演算法' +
-      '之外，不影響 peerGroupLevel 的判斷結果。\n\n' +
-      'found:false 且 notFoundReason 為 "not_classified" 代表這家公司完全不在產業追蹤樹裡（供應鏈報告沒提到），' +
-      '或是境外註冊（KY）公司——KY 股不像舊版稅籍分類那樣有結構性資料缺口，warnings 只會提示「這批分類可能沒' +
-      '涵蓋到」。這支端點不驗證 symbol 是否為真實存在的公司（那是 GET /companies/profile 的職責），查無資料一律' +
-      '回 200。updatedAt 是目標公司產業標籤「最後一次變動」的日期（不是查詢當下的時間），可以用來跟使用者說明' +
-      '資料新鮮度——但請注意本服務的分類/樹狀快取只在伺服器啟動時載入一次（沒有排程重抓機制），實際回傳的資料' +
-      '版本可能比伺服器啟動時間更舊。',
-    tags: ['System'],
-    request: { query: getCompanyPeerGroupQuerySchema },
-    responses: {
-      200: { description: '同業清單（含目標公司自己），查無分類資料時 found 為 false、peers 為空陣列。', content: { 'application/json': { schema: companyPeerGroupResultSchema } } },
-      400: { description: '缺少 symbol，或 minPeers 格式錯誤。' },
-    },
-  });
+  // 2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈分類，原本這裡的 GET /companies/peer-group
+  // （單一公司產業同業清單，完全依賴 playwright-py 的「產業追蹤」樹且無其他資料源可退回）已移除，
+  // 見 project_open_data_legal_audit_2026_09.md 的合規考量。
 
   registry.registerPath({
     method: 'get',

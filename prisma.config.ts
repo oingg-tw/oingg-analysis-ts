@@ -25,7 +25,6 @@ const DIRECT_URL_BY_SCHEMA: Record<string, string | undefined> = {
   'prisma/analysis/schema.prisma': env('ANALYSIS_DIRECT_URL'),
   'prisma/mopsExport/schema.prisma': env('MOPS_EXPORT_DIRECT_URL'),
   'prisma/govExport/schema.prisma': env('GOV_EXPORT_DIRECT_URL'),
-  'prisma/playwrightExport/schema.prisma': env('PLAYWRIGHT_EXPORT_DIRECT_URL'),
   'prisma/twseExport/schema.prisma': env('TWSE_EXPORT_DIRECT_URL'),
   'prisma/tpexExport/schema.prisma': env('TPEX_EXPORT_DATABASE_URL_DEV'),
   'prisma/sitcaExport/schema.prisma': env('SITCA_EXPORT_DATABASE_URL_DEV'),

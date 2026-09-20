@@ -9,10 +9,10 @@ beforeAll(async () => {
   await loadIndustryClassification();
 });
 
-// 產業階層瀏覽（純瀏覽，不做動態回退）——findPeerGroup 已於 2026-09-14 搬到
-// src/models/industryChainClassification.ts（資料源換成 oingg-playwright-py
-// 供應鏈分類），對應測試見 tests/models/industryChainClassification.test.ts，
-// 不再放這裡。
+// 產業階層瀏覽（純瀏覽，不做動態回退）。2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈
+// 分類，findPeerGroup（曾短暫改用 playwright 供應鏈分類找同業）連同 GET /companies/peer-group
+// 端點已整個移除，不是回到這裡；這份 gov-ts 稅籍五層分類目前只作產業樹狀瀏覽用途
+// （GET /industries/tree、/industries/flat）。
 
 test('getIndustryNodeInfo/listIndustryChildren: 樹根查詢回傳全部 19 個 section，companyCount 是 999', () => {
   const info = getIndustryNodeInfo(null);

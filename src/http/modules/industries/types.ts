@@ -1,16 +1,13 @@
 import { z } from 'zod';
 import type { IndustryLevel } from '@/application/ports/industryReference';
-import type {
-  ChainClassificationResult,
-  ChainClustersResult,
-  IndustryFlatResult,
-  IndustryTreeNodeResult,
-  SecuritiesIndustrySectorsResult,
-} from '@/application/industries/types';
+import type { IndustryFlatResult, IndustryTreeNodeResult, SecuritiesIndustrySectorsResult } from '@/application/industries/types';
 
 // 2026-09-05 新增——「產業追蹤」樹狀階層瀏覽功能，見
 // infrastructure/repositories/gov/industryClassification.ts 的說明。
 // 2026-09-17 Phase 4：形狀的真理來源是 application/industries/types.ts 的介面，這裡用 satisfies 釘住。
+// 2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈分類，原本這裡的
+// chainClassification*/chainCluster*/industryTree* schema（對應已刪除的 GET /industries/
+// chain-{classification,clusters,tree} 三支端點）已移除。
 
 export const industryLevelSchema = z.enum(['section', 'division', 'group', 'class', 'subclass']) satisfies z.ZodType<IndustryLevel>;
 
@@ -58,93 +55,6 @@ export const industryTreeNodeResultSchema = z.object({
   }),
 }) satisfies z.ZodType<IndustryTreeNodeResult>;
 export type { IndustryTreeNodeResult };
-
-
-// 2026-09-14 新增——「產業追蹤」頁面重建成 playwright-py 供應鏈分類，見
-// src/models/playwright/industryChainClassification.ts 的說明。跟上面 gov-ts 稅籍五層
-// 分類（industryFlatResultSchema）是完全不同的分類體系（扁平 2 層，不是 5 層樹），刻意
-// 獨立一組 schema，不合併/不相容。
-
-export const chainClassificationCompanySchema = z.object({
-  symbol: z.string(),
-  companyName: z.string().nullable(),
-  category: z.string().nullable().meta({ description: '細分類其中之一（清單會隨 playwright-py 發現新缺口持續擴充，不是固定數量，實際清單見 GET /industries/chain-classification 的 groups）；null 代表這家公司完全沒有出現在供應鏈報告裡（沒有任何已分類的邊）' }),
-  coarseGroup: z.string().nullable().meta({ description: '10 組粗分類其中之一，category 為 null 時這裡也是 null' }),
-  source: z.enum(['keyword', 'gemini']).nullable().meta({ description: '這家公司分類的判斷來源——2026-09-15 取代原本的 confidence/sampleSize，keyword 代表僅用免費關鍵字規則判斷、gemini 代表額外經過 Gemini 語意驗證/修正過，category 為 null 時這裡也是 null' }),
-  updatedAt: z.string().nullable().meta({ description: '這家公司分類最後一次變動的日期（YYYY-MM-DD），不是查詢當下時間' }),
-});
-
-export const chainClassificationGroupSchema = z.object({
-  coarseGroup: z.string(),
-  fineCategories: z.array(z.string()).meta({ description: '這個粗分類底下涵蓋的細分類清單' }),
-});
-
-export const chainClassificationResultSchema = z.object({
-  companies: z.array(chainClassificationCompanySchema).meta({ description: '全部上市櫃公司（不濾掉 category 為 null 的），目前約 1984 家' }),
-  groups: z.array(chainClassificationGroupSchema).meta({ description: '10 組粗分類 -> 細分類對照表，給 drill-down 用' }),
-}) satisfies z.ZodType<ChainClassificationResult>;
-export type { ChainClassificationResult };
-
-// 2026-09-14 新增（第二輪）——playwright-py 的供應鏈聚落分群，跟上面 category/coarseGroup
-// 是完全獨立的另一套分群概念，見 src/models/playwright/industryClusters.ts 的完整說明
-// （⚠️ clusterId/subClusterId 不是穩定 id，不能當永久識別碼快取）。
-
-export const chainClusterMemberSchema = z.object({
-  code: z.string().meta({ description: '上市櫃公司代號，或外部/非上市公司的穩定 id（playwright-py 用公司名稱生成，不是股票代號）' }),
-  name: z.string().nullable(),
-  isListed: z.boolean().meta({ description: 'true 代表 code 是台股上市櫃公司（查得到 twse/tpex company_profile），false 代表外部/非上市公司節點，沒有對應的個股詳情頁可以連結' }),
-});
-
-export const chainClusterSubGroupSchema = z.object({
-  subClusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
-  subLabel: z.string().nullable(),
-  members: z.array(chainClusterMemberSchema),
-});
-
-export const chainClusterSchema = z.object({
-  clusterId: z.number().meta({ description: '⚠️ 不是穩定 id，重新分群後編號會洗牌，不要快取' }),
-  label: z.string().nullable(),
-  metaGroup: z.string().nullable().meta({ description: '2026-09-15 新增——326 個細聚落再收斂成的粗分組（約 17~20 組），跟 chain-classification 的 coarseGroup 是不同層級的另一套「粗分組」，不要混淆；同一批分群結果下不會變動，只有整個重新分群才會跟著 clusterId 一起洗牌' }),
-  directMembers: z.array(chainClusterMemberSchema).meta({ description: '沒有再切子聚落的直屬成員；是否為空陣列取決於 playwright-py 當下的分群演算法，不要假設固定規則（見 subClusters 說明）' }),
-  subClusters: z.array(chainClusterSubGroupSchema).meta({ description: '這個頂層聚落底下的子聚落；分群演算法可能讓每個頂層聚落都有子聚落，也可能只有部分聚落有，沒有子聚落時是空陣列' }),
-});
-
-export const chainClustersResultSchema = z.object({
-  clusters: z.array(chainClusterSchema).meta({ description: '全部頂層聚落，含全部成員（一次回傳整棵樹，不用逐一查詢）' }),
-}) satisfies z.ZodType<ChainClustersResult>;
-export type { ChainClustersResult };
-
-// 2026-09-15 新增——playwright-py 重建的「產業追蹤」逐層點開瀏覽樹，取代
-// chainClassificationResultSchema 原本給瀏覽用的扁平兩層（那份資料本身沒有下線，繼續是
-// findPeerGroup 同業比較跟公司「產業標籤」顯示用，見 src/models/playwright/industryTree.ts
-// 的完整說明）。⚠️ nodeId 不是穩定 id，跟 chain-clusters 的 clusterId 同一種不穩定性質，
-// 不能當永久識別碼快取。
-
-export const industryTreeMemberSchema = z.object({
-  symbol: z.string(),
-  companyName: z.string().nullable(),
-});
-
-// 真正的巢狀樹（children 遞迴出現同一種節點形狀），但 registry.registerPath 底層的
-// OpenAPI walker 不支援 z.lazy 自我參照（會無限遞迴導致 stack overflow，已實測炸過一次）
-// ——這兩份 result schema 只用來產生 OpenAPI 文件，不是拿來 runtime 驗證回應（這支
-// controller 沒有呼叫 .parse()），所以 children 用 z.array(z.unknown()) 終止遞迴，靠
-// .meta() 的文字說明「這裡遞迴重複同一個節點形狀」，不會犧牲文件的實際可讀性。
-// 也因為 children 是 unknown[]，這兩份 schema 沒辦法用 satisfies 釘住 application 的
-// IndustryChainTreeResult（那邊 children 是真正的遞迴型別）——唯一沒釘的例外。
-export const industryTreeNodeSchema = z.object({
-  nodeId: z.string().meta({ description: '⚠️ 不是穩定 id，樹重建後編號會變，不要快取' }),
-  nodeType: z.enum(['coarse_group', 'category', 'segment', 'misc']).meta({ description: 'coarse_group=粗分類、category=產業、segment=產業內區隔、misc=「其他（共用上下游太少）」長尾桶' }),
-  label: z.string().nullable(),
-  depth: z.number().meta({ description: '樹的深度，根節點（粗分類）是 0' }),
-  size: z.number().nullable().meta({ description: 'playwright-py 提供的節點規模數字（通常是底下公司數），純參考用，實際公司清單以 members/子節點遞迴收集為準' }),
-  children: z.array(z.unknown()).meta({ description: '遞迴重複同一個節點形狀（nodeId/nodeType/label/depth/size/children/members），深度視實際分群結果而定（通常 1~4 層）' }),
-  members: z.array(industryTreeMemberSchema).meta({ description: '只有葉節點（children 為空陣列）才有成員；全部是上市櫃公司，不含外部/非上市節點，不需要 isListed 欄位' }),
-});
-
-export const industryTreeResultSchema = z.object({
-  roots: z.array(industryTreeNodeSchema).meta({ description: '全部頂層節點（粗分類），含完整子樹跟葉節點成員，一次回傳整棵樹；children 內部形狀跟 roots 的元素完全一致，遞迴到底' }),
-});
 
 // 2026-09-11 新增——證交所類股分類（twse-ts/tpex-ts company_profile.industry，投資人習慣
 // 的「半導體業」「電子零組件業」這種類股），跟上面財政部稅籍五層分類/tpex-ts 產業價值鏈都是

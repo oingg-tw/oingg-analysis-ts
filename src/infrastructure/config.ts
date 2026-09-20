@@ -23,7 +23,6 @@ const envSchema = z
     ANALYSIS_DATABASE_URL: nonEmpty,
     MOPS_EXPORT_DATABASE_URL: nonEmpty,
     GOV_EXPORT_DATABASE_URL: nonEmpty,
-    PLAYWRIGHT_EXPORT_DATABASE_URL: nonEmpty,
     // twse-ts：刻意固定連 PROD（見 prisma/twseExportClient.ts 的說明），月營收另外固定連 DEV
     // （見 prisma/twseExportDevClient.ts），兩條連線在任何環境都需要。
     TWSE_EXPORT_DATABASE_URL: nonEmpty,
@@ -64,7 +63,6 @@ export const config = {
     analysis: env.ANALYSIS_DATABASE_URL,
     mopsExport: env.MOPS_EXPORT_DATABASE_URL,
     govExport: env.GOV_EXPORT_DATABASE_URL,
-    playwrightExport: env.PLAYWRIGHT_EXPORT_DATABASE_URL,
     twseExport: env.TWSE_EXPORT_DATABASE_URL,
     twseExportDev: env.TWSE_EXPORT_DATABASE_URL_DEV,
     // superRefine 已保證當前環境用得到的那一組存在。

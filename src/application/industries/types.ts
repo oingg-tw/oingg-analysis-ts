@@ -1,7 +1,11 @@
-import type { CategoryGroupListEntry, IndustryChainTreeNodeType, IndustryLevel, IndustryPathNode, IndustryTreeChildSummary, SecuritiesIndustrySector } from '@/application/ports/industryReference';
+import type { IndustryLevel, IndustryPathNode, IndustryTreeChildSummary, SecuritiesIndustrySector } from '@/application/ports/industryReference';
 
 // GET /industries/* 的回應形狀（application 真理來源）——http/modules/industries/types.ts 的 zod schema 用
-// satisfies 釘住（chain tree 那份除外，遞迴形狀的 OpenAPI schema 只能用 z.unknown() 終止，見該檔說明）。
+// satisfies 釘住。
+//
+// 2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈分類，原本這裡的
+// ChainClassification*/ChainCluster*/IndustryChainTree* 型別（對應已刪除的 GET /industries/
+// chain-{classification,clusters,tree} 三支端點）已移除。
 
 export interface IndustryCompanyEntry {
   symbol: string;
@@ -26,58 +30,6 @@ export interface IndustryFlatCompany {
 
 export interface IndustryFlatResult {
   companies: IndustryFlatCompany[];
-}
-
-export interface ChainClassificationCompany {
-  symbol: string;
-  companyName: string | null;
-  category: string | null;
-  coarseGroup: string | null;
-  source: 'keyword' | 'gemini' | null;
-  updatedAt: string | null; // YYYY-MM-DD
-}
-
-export interface ChainClassificationResult {
-  companies: ChainClassificationCompany[];
-  groups: CategoryGroupListEntry[];
-}
-
-export interface ChainClusterMember {
-  code: string;
-  name: string | null;
-  isListed: boolean;
-}
-
-export interface ChainClusterSubGroup {
-  subClusterId: number;
-  subLabel: string | null;
-  members: ChainClusterMember[];
-}
-
-export interface ChainCluster {
-  clusterId: number;
-  label: string | null;
-  metaGroup: string | null;
-  directMembers: ChainClusterMember[];
-  subClusters: ChainClusterSubGroup[];
-}
-
-export interface ChainClustersResult {
-  clusters: ChainCluster[];
-}
-
-export interface IndustryChainTreeResultNode {
-  nodeId: string;
-  nodeType: IndustryChainTreeNodeType;
-  label: string | null;
-  depth: number;
-  size: number | null;
-  children: IndustryChainTreeResultNode[];
-  members: IndustryCompanyEntry[];
-}
-
-export interface IndustryChainTreeResult {
-  roots: IndustryChainTreeResultNode[];
 }
 
 export interface SecuritiesIndustrySectorsResult {
