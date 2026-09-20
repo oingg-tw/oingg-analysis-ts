@@ -16,6 +16,7 @@ import { bankCet1RatioBadge } from './resilience/bankCet1Ratio/bankCet1RatioBadg
 import { bankTier1RatioBadge } from './resilience/bankTier1Ratio/bankTier1RatioBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
 import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
+import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
 import { zmijewskiScoreBadge } from './resilience/zmijewskiScore/zmijewskiScoreBadge';
 import { liveGrahamNumberBadge } from './valuation/liveGrahamNumber/liveGrahamNumberBadge';
 import { livePegRatioBadge } from './valuation/livePegRatio/livePegRatioBadge';
@@ -76,6 +77,12 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 //     引用這三個具體數字——無法排除是本站或某個二手轉述來源自己加上去的門檻，查無法確認
 //     真偽，保守起見直接下架。
 //
+// 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
+// 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
+// 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
+// 這條放寬標準之後也適用其他徽章：找不到原始出處的門檻時，可以引用有明確設定門檻的（台灣）學術
+// 論文，但一樣要實際讀到那句話才算數。
+//
 // 2026-09-20 第五輪：consecutiveProfitYearsBadge（Graham 獲利穩定性，≥10 年）下架——不是出處問題
 // （Graham 第 14 章的 10 年門檻真實可查、sourceUrl 也驗過），是資料深度問題：全市場季報型指標
 // 歷史只回填到 113Q1（2024Q1），只有 2330 有完整歷史（見 project_history_backfill_depth），一個
@@ -102,6 +109,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   bankTier1Ratio: bankTier1RatioBadge,
   currentRatio: currentRatioBadge,
   longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
+  ohlsonOScore: ohlsonOScoreBadge,
   zmijewskiScore: zmijewskiScoreBadge,
   liveGrahamNumber: liveGrahamNumberBadge,
   livePegRatio: livePegRatioBadge,
