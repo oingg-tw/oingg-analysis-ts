@@ -6,7 +6,7 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 本身：公式沿用 Graham Number 原始定義，計算基礎明講是「今天」的即時股價 + 最新公布
 // 財報的基本面數據。
 export const liveGrahamNumberBadge: MetricBadge = {
-  name: 'Graham Number',
+  name: '葛拉漢倍數',
   nameEn: 'Graham Number',
   author: 'Benjamin Graham, 1949',
   // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整公式，並逐字寫出 The product of these two maximum multiples is 15 x 1.5 = 22.5。
