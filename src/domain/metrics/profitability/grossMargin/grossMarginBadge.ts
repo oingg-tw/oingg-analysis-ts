@@ -4,8 +4,8 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // (2008)：毛利率持續 ≥40% 是耐久競爭優勢（護城河）訊號，書中舉可口可樂 60%、Moody's 73% 為例；
 // <40% 代表競爭正在侵蝕獲利，<20% 代表沒有真正的優勢。
 export const grossMarginBadge: MetricBadge = {
-  name: '護城河毛利率',
-  nameEn: 'Durable Moat Gross Margin',
+  name: '巴菲特毛利率',
+  nameEn: 'Buffett Gross Margin',
   author: 'Mary Buffett, David Clark, 2008',
   // 2026-09-20 刻意沒有 sourceUrl（見 metricDefinitionSpec.ts 的欄位說明）：40% 這個門檻出自 Mary Buffett & David Clark《Warren Buffett and the Interpretation of Financial
   // Statements》(2008) 這本實體書，書本身沒有合法的免費全文可連；找到的線上頁面不是付費牆截斷、

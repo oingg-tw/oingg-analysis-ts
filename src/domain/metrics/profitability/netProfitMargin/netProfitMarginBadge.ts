@@ -3,8 +3,8 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 同一本書：淨利率持續 ≥20% 是耐久競爭優勢訊號，書中舉可口可樂平均 21%、西南航空 7% 對照；
 // 持續 <10% 代表處在沒有企業擁有優勢的高度競爭產業。
 export const netProfitMarginBadge: MetricBadge = {
-  name: '護城河淨利率',
-  nameEn: 'Durable Moat Net Margin',
+  name: '巴菲特淨利率',
+  nameEn: 'Buffett Net Margin',
   author: 'Mary Buffett, David Clark, 2008',
   // 2026-09-20 刻意沒有 sourceUrl（見 metricDefinitionSpec.ts 的欄位說明）：20% 這個門檻出自同一本《Warren Buffett and the Interpretation of Financial Statements》(2008)，
   // 理由同 grossMarginBadge：沒有合法的免費全文可連，sourceUrl 留空，不代表門檻是本站自訂。
