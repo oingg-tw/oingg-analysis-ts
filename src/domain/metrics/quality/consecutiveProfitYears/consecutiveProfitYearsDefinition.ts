@@ -10,7 +10,9 @@ export const consecutiveProfitYearsDefinition: MetricDefinitionSpec = {
     '完整就停止計數，跟 consecutiveDividendYears 同一套「逐年往回數」設計（見該檔案說明）。' +
     '只有 FY 一種 basis。value=0 代表「有資料、確定最近一個完整年度虧損」，null 代表' +
     '「連最近一年資料都拿不到」，兩者不同。',
-  referenceUrl: 'https://www.stockopedia.com/ratios/no-of-years-consecutive-positive-earnings-per-share-751/',
+  // 2026-09-20 移除原本的 referenceUrl（stockopedia 的 EPS Streak 條目）——實際打開確認那頁
+  // 量的是「過去 5 年中獲利幾次」，跟本指標「連續獲利年數」與徽章的 10 年門檻直接矛盾，
+  // 使用者點過去會看到不一致的數字。找不到可驗證的替代頁面，寧可留空也不放會誤導的。
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',

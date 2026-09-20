@@ -13,7 +13,11 @@ export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
     'grahamNumber 完全相同，股價改用當下最新收盤價，每個交易日更新，跟 grahamNumber（凍結在財報公告' +
     '當天）是刻意並存、互不影響的兩支獨立 metricCode。',
   formulaLatex: '\\mathrm{LiveGrahamNumber} = \\mathrm{PER}_{\\mathrm{TTM}} \\times \\mathrm{PBR}',
-  academicSourceUrl: 'https://archive.org/details/intelligentinves00grah_1',
+  // 2026-09-20 移除原本的 academicSourceUrl（archive.org/details/intelligentinves00grah_1）——
+  // 實際打開確認那是 **2005 年版**（不是徽章宣稱的 1949 初版）、而且是 access-restricted 需要
+  // 借閱才能看（點過去看不到任何內容），項目本身還標示「FOR LITIGATION USE ONLY」，不適合當
+  // 給終端使用者查證的公開連結。referenceUrl 的英文維基 Graham number 條目有完整公式與 22.5
+  // 的推導（15 倍本益比 × 1.5 倍股價淨值比），查證管道不受影響。
   referenceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
   tier: 'composite',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
