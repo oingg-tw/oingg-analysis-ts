@@ -22,6 +22,7 @@ import { liveGrahamNumberBadge } from './valuation/liveGrahamNumber/liveGrahamNu
 import { livePegRatioBadge } from './valuation/livePegRatio/livePegRatioBadge';
 import { ncavBadge } from './valuation/ncav/ncavBadge';
 import { tobinsQBadge } from './valuation/tobinsQ/tobinsQBadge';
+import { psrBadge } from './valuation/psr/psrBadge';
 import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 
 // 2026-09-14 應使用者要求，取代原本 MetricDefinitionSpec.badge?: MetricBadge（內嵌在各自
@@ -81,7 +82,8 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
 // 這條放寬標準之後也適用其他徽章：找不到原始出處的門檻時，可以引用有明確設定門檻的（台灣）學術
-// 論文，但一樣要實際讀到那句話才算數。
+// 論文，但一樣要實際讀到那句話才算數。同一輪依此把 psrBadge 也掛回（張光廷，高應大金融資訊所
+// 碩士論文，摘要逐字採用 Fisher 的 0.75/1.5/3.0 分界並引用《超級強勢股》譯本，見該檔檔頭）。
 //
 // 2026-09-20 第五輪：consecutiveProfitYearsBadge（Graham 獲利穩定性，≥10 年）下架——不是出處問題
 // （Graham 第 14 章的 10 年門檻真實可查、sourceUrl 也驗過），是資料深度問題：全市場季報型指標
@@ -115,6 +117,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   livePegRatio: livePegRatioBadge,
   ncav: ncavBadge,
   tobinsQ: tobinsQBadge,
+  psr: psrBadge,
   epsGrowthRate: epsGrowthRateBadge,
 };
 
