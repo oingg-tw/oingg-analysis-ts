@@ -118,6 +118,7 @@ import { ownerEarningsDefinition } from '@/domain/metrics/quality/ownerEarnings/
 import { altmanZScoreDefinition } from '@/domain/metrics/resilience/altmanZScore/altmanZScoreDefinition';
 import { altmanZDoublePrimeScoreDefinition } from '@/domain/metrics/resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreDefinition';
 import { piotroskiFScoreDefinition } from '@/domain/metrics/quality/piotroskiFScore/piotroskiFScoreDefinition';
+import { oneilCanslimScoreDefinition } from '@/domain/metrics/growth/oneilCanslimScore/oneilCanslimScoreDefinition';
 import { beneishMScoreDefinition } from '@/domain/metrics/quality/beneishMScore/beneishMScoreDefinition';
 import { beneishAqiDefinition } from '@/domain/metrics/quality/beneishAqi/beneishAqiDefinition';
 import { beneishDsriDefinition } from '@/domain/metrics/quality/beneishDsri/beneishDsriDefinition';
@@ -271,6 +272,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   altmanZScore: altmanZScoreDefinition,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreDefinition,
   piotroskiFScore: piotroskiFScoreDefinition,
+  oneilCanslimScore: oneilCanslimScoreDefinition,
   beneishMScore: beneishMScoreDefinition,
   beneishAqi: beneishAqiDefinition,
   beneishDsri: beneishDsriDefinition,

@@ -1,7 +1,7 @@
 import type { MetricBadge } from './metricDefinitionSpec';
 
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
-import { epsCagr3yBadge } from './growth/epsCagr/epsCagr3yBadge';
+import { oneilCanslimScoreBadge } from './growth/oneilCanslimScore/oneilCanslimScoreBadge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
@@ -23,7 +23,6 @@ import { livePegRatioBadge } from './valuation/livePegRatio/livePegRatioBadge';
 import { ncavBadge } from './valuation/ncav/ncavBadge';
 import { tobinsQBadge } from './valuation/tobinsQ/tobinsQBadge';
 import { psrBadge } from './valuation/psr/psrBadge';
-import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 
 // 2026-09-14 應使用者要求，取代原本 MetricDefinitionSpec.badge?: MetricBadge（內嵌在各自
 // <metricCode>Definition.ts 裡）的做法——那個設計把「這支指標怎麼算」（客觀事實，
@@ -78,6 +77,15 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 //     引用這三個具體數字——無法排除是本站或某個二手轉述來源自己加上去的門檻，查無法確認
 //     真偽，保守起見直接下架。
 //
+// 2026-09-20 第七輪：O'Neil 兩支合併。原本 epsCagr3yBadge（CAN SLIM 的 A，三年 EPS ≥25%）與
+// epsGrowthRateBadge（C，當季 EPS ≥25%）各掛一半，是因為門檻型別無法表達「多個指標各自門檻同時
+// 達成」。使用者要求合併成一支並補齊 O'Neil 原本就要求的另外兩條（當季營收 ≥25%、ROE ≥17%），
+// 做法比照 piotroskiFScore：新增複合指標 oneilCanslimScore（0-4 分），徽章門檻 4/4。兩支舊徽章刪除，
+// epsCagr3y/epsGrowthRate 指標本身不變。另外查核時發現 epsCagr3y 全市場只有 150/2067 家有值（三年
+// CAGR 要四個完整年度，歷史只到 113Q1），舊徽章其實早就對 93% 公司亮不起來，跟第五輪拿掉
+// consecutiveProfitYears 是同一種資料深度問題；合併後的複合指標同樣受限，使用者決定先讓 2330
+// （有完整歷史）跑出來，其餘等回填。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -96,7 +104,7 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
-  epsCagr3y: epsCagr3yBadge,
+  oneilCanslimScore: oneilCanslimScoreBadge,
   sgr: sgrBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,
@@ -118,7 +126,6 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   ncav: ncavBadge,
   tobinsQ: tobinsQBadge,
   psr: psrBadge,
-  epsGrowthRate: epsGrowthRateBadge,
 };
 
 export const getBadgeForMetric = (metricCode: string): MetricBadge | undefined => badgeRegistry[metricCode];
