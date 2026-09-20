@@ -39,5 +39,17 @@ export const piotroskiFScoreBadge: MetricBadge = {
     denominator: 9,
     comparator: 'gte',
     value: 8,
+    // 2026-09-20 使用者要求補上「另一端」：8+ 達成、2- 警示。維基（sourceUrl）Interpretation 段逐字：
+    // 「F-score of 8–9 is considered to be strong. Alternatively, firms achieving the F-score of 0–2 are
+    // considered to be weak.」中間 3–7 是 average/mixed，不是任何一級。注意 Piotroski (2000) 原始論文拿來
+    // 做報酬比較的「低分組」是 0–1 分（跟 8–9 的高分組對稱），0–2 這條線是後續文獻與維基的通用解讀，
+    // note 裡寫明。
+    warning: {
+      description: '≤ 2',
+      thresholdLatex: '\\mathrm{FScore} \\leq 2',
+      note: '維基 Piotroski F-score 條目定義的弱區（0–2 分）；Piotroski (2000) 原始論文做報酬比較用的低分組是 0–1 分',
+      comparator: 'lte',
+      value: 2,
+    },
   },
 };

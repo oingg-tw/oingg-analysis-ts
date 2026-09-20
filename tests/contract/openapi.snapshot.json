@@ -323,6 +323,11 @@
                                   "description": "這支指標最新一期的數值；null 代表算不出來，原因見 nullReason",
                                   "nullable": true,
                                   "type": "number"
+                                },
+                                "warning": {
+                                  "description": "2026-09-20 新增：是否落在出處定義的弱/警示區（見 GET /metrics 的 badge.threshold.warning）。徽章沒有定義 warning 門檻、或 value 為 null 時一律 null。跟 passed 互斥不會同時 true；passed=false 且 warning=false 代表落在中間區。前端顯示：passed → 達成、warning → 警示、都 false → 中間、null → 無法判定。",
+                                  "nullable": true,
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
@@ -333,7 +338,8 @@
                                 "nullReason",
                                 "knowledgeDate",
                                 "knowledgeDateIsFallback",
-                                "passed"
+                                "passed",
+                                "warning"
                               ],
                               "type": "object"
                             },
@@ -5257,6 +5263,40 @@
                                         "valueMin": {
                                           "description": "comparator 是 in_range 時的區間下限（例如 dividendPayoutRatio 是 40）",
                                           "type": "number"
+                                        },
+                                        "warning": {
+                                          "description": "2026-09-20 新增（選填）：徽章的「另一端」——出處明確定義的弱/警示區（例如 Piotroski F-Score 維基條目：8–9 strong、0–2 weak）。只有出處真的寫出低端數字的徽章才有這個欄位，不會為了對稱硬補。GET /companies/badges 會據此多回一個 warning 布林；passed 與 warning 互斥，兩者都 false 代表落在中間區（例如 F-Score 3–7 的 average/mixed）。",
+                                          "properties": {
+                                            "comparator": {
+                                              "enum": [
+                                                "gt",
+                                                "lt",
+                                                "gte",
+                                                "lte"
+                                              ],
+                                              "type": "string"
+                                            },
+                                            "description": {
+                                              "description": "警示門檻的人類可讀說明，只放門檻本身（例如 \"≤ 2\"）",
+                                              "type": "string"
+                                            },
+                                            "note": {
+                                              "type": "string"
+                                            },
+                                            "thresholdLatex": {
+                                              "type": "string"
+                                            },
+                                            "value": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "required": [
+                                            "description",
+                                            "thresholdLatex",
+                                            "comparator",
+                                            "value"
+                                          ],
+                                          "type": "object"
                                         }
                                       },
                                       "required": [

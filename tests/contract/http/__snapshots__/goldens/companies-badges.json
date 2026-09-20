@@ -13,7 +13,8 @@
             "nullReason": "<null>",
             "passed": "<boolean>",
             "timeframe": "EOD",
-            "value": "<number>"
+            "value": "<number>",
+            "warning": "<null>"
           }
         ],
         "categoryDisplayName": "<string>",

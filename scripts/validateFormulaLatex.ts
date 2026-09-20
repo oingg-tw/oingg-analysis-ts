@@ -44,6 +44,11 @@ const main = () => {
   for (const [metricCode, badge] of Object.entries(badgeRegistry)) {
     checked++;
     if (!validateOne(`${metricCode} (threshold)`, badge.threshold.thresholdLatex)) failed++;
+    // 2026-09-20 起 threshold.warning（徽章的警示端，選填）也有自己的 thresholdLatex，一併驗。
+    if (badge.threshold.warning) {
+      checked++;
+      if (!validateOne(`${metricCode} (threshold.warning)`, badge.threshold.warning.thresholdLatex)) failed++;
+    }
   }
 
   console.log(`\n共 ${checked} 個算式（formulaLatex + threshold.thresholdLatex），${failed} 個解析失敗。`);

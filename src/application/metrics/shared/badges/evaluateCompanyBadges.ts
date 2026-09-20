@@ -29,6 +29,9 @@ export interface CompanyBadgeResult {
   knowledgeDate: string | null;
   knowledgeDateIsFallback: boolean | null;
   passed: boolean | null;
+  // 2026-09-20 新增：落在出處定義的「弱/警示」區。沒有定義 warning 門檻的徽章一律 null；value 為 null
+  // 時也是 null。跟 passed 互斥（不會同時 true），見 metricDefinitionSpec.ts threshold.warning 的說明。
+  warning: boolean | null;
 }
 
 export interface CompanyBadgeCategory {
@@ -72,6 +75,20 @@ const evaluateComparator = (threshold: MetricBadge['threshold'], value: number, 
   }
 };
 
+// 警示區判定——只有單值比較，沒有 compareAgainstFieldId/in_range（目前沒有這種案例）。
+const evaluateWarning = (warning: NonNullable<MetricBadge['threshold']['warning']>, value: number): boolean => {
+  switch (warning.comparator) {
+    case 'gt':
+      return value > warning.value;
+    case 'gte':
+      return value >= warning.value;
+    case 'lt':
+      return value < warning.value;
+    case 'lte':
+      return value <= warning.value;
+  }
+};
+
 export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryDeps): Promise<CompanyBadgeCategory[]> => {
   const catalog = scanMetricFolderCatalog();
 
@@ -110,6 +127,7 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
           const value = fetched?.value ?? null;
           const nullReason = fetched?.nullReason ?? null;
           const passed = value === null ? null : evaluateComparator(badge.threshold, value, compareValue);
+          const warning = value === null || !badge.threshold.warning ? null : evaluateWarning(badge.threshold.warning, value);
 
           return {
             metricCode: metric.metricCode,
@@ -121,6 +139,7 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
             knowledgeDate: fetched?.knowledgeDate ?? null,
             knowledgeDateIsFallback: fetched?.knowledgeDateIsFallback ?? null,
             passed,
+            warning,
           };
         })
       );

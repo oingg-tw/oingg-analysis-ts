@@ -115,6 +115,21 @@ const metricFolderCatalogEntrySchema = z.object({
           description: '格式 "metricCode.timeframe"，語意是「這個欄位的值 {comparator} 這支指標自己的值」（例如 Graham Number 是「股價 < Graham Number」）',
         }),
         allPositiveFieldIds: z.array(z.string()).optional().meta({ description: '格式同上，多個欄位，語意是「全部都要 > 0」' }),
+        warning: z
+          .object({
+            description: z.string().meta({ description: '警示門檻的人類可讀說明，只放門檻本身（例如 "≤ 2"）' }),
+            thresholdLatex: z.string(),
+            note: z.string().optional(),
+            comparator: z.enum(['gt', 'lt', 'gte', 'lte']),
+            value: z.number(),
+          })
+          .optional()
+          .meta({
+            description:
+              '2026-09-20 新增（選填）：徽章的「另一端」——出處明確定義的弱/警示區（例如 Piotroski F-Score 維基條目：8–9 strong、' +
+              '0–2 weak）。只有出處真的寫出低端數字的徽章才有這個欄位，不會為了對稱硬補。GET /companies/badges 會據此' +
+              '多回一個 warning 布林；passed 與 warning 互斥，兩者都 false 代表落在中間區（例如 F-Score 3–7 的 average/mixed）。',
+          }),
       }),
     })
     .optional()

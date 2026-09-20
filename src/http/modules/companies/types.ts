@@ -247,6 +247,12 @@ export const companyBadgeResultSchema = z.object({
   knowledgeDate: z.string().nullable().meta({ description: '2026-09-14 新增：這筆值最早可被市場知道的日期（"YYYY-MM-DD"），跟 metrics-history 同一個語意；查無資料時是 null' }),
   knowledgeDateIsFallback: z.boolean().nullable().meta({ description: '2026-09-14 新增：true 代表 knowledgeDate 是用財報期末日頂替的（沒有真實公告日），有 look-ahead bias 風險；查無資料時是 null' }),
   passed: z.boolean().nullable().meta({ description: '是否達成門檻；value 為 null 時 passed 也一定是 null（無法判定，不是「未達成」）' }),
+  warning: z.boolean().nullable().meta({
+    description:
+      '2026-09-20 新增：是否落在出處定義的弱/警示區（見 GET /metrics 的 badge.threshold.warning）。徽章沒有定義 warning 門檻、' +
+      '或 value 為 null 時一律 null。跟 passed 互斥不會同時 true；passed=false 且 warning=false 代表落在中間區。前端顯示：' +
+      'passed → 達成、warning → 警示、都 false → 中間、null → 無法判定。',
+  }),
 });
 
 export const companyBadgeCategorySchema = z.object({

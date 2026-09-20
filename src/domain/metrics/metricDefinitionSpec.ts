@@ -109,6 +109,21 @@ export interface MetricBadge extends NamedEntity {
     value?: number;
     valueMin?: number;
     valueMax?: number;
+    // 2026-09-20 新增（選填）：徽章的「另一端」——低於某條線不只是「未達成」，而是出處明確定義的
+    // 「弱/警示」區。第一個案例是 Piotroski F-Score：維基（sourceUrl）逐字寫 8–9 strong、0–2 weak，
+    // 原本只表達了 strong 那端。跟 2026-09-13 廢掉的 tiers（bronze/silver/gold 把單一指標連續值
+    // 再切等級）不同：這不是在門檻上再細分等級，是出處本身就給了兩端各一條線，中間那段（3–7）
+    // 出處也明說是 average/mixed，不是任何一級。只有出處真的有寫出低端數字才能填，不要自己
+    // 對稱地補一條（例如 Altman Z 有 1.81 的 distress zone 可以填，ROE ≥15% 沒有對應的低端就不填）。
+    // GET /companies/badges 會多回一個 warning 欄位（true/false/null），passed 跟 warning 互斥不
+    // 會同時為 true；前端顯示邏輯：passed → 達成、warning → 警示、都 false → 中間區、null → 無法判定。
+    warning?: {
+      description: string; // 人類可讀，只放門檻本身（例如 "≤ 2"），規則同上面的 description
+      thresholdLatex: string; // 同 thresholdLatex 的驗證機制
+      note?: string; // 出處/跟原論文差異
+      comparator: 'gt' | 'lt' | 'gte' | 'lte'; // 警示區的比較詞彙；沒有 in_range/abs_lt（目前沒有這種案例，有再加）
+      value: number;
+    };
     // 格式是 "metricCode.timeframe"（例如 "stockPrice.Q"），指向另一支指標的值，語意是
     // 「compareAgainstFieldId 的值 {comparator} 這支指標自己的值」（例如 Graham Number
     // 門檻是「股價 < Graham Number」，compareAgainstFieldId 是 stockPrice.Q）。
