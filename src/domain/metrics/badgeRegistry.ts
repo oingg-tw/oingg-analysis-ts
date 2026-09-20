@@ -1,19 +1,14 @@
 import type { MetricBadge } from './metricDefinitionSpec';
 
-import { chowderNumberBadge } from './dividend/chowderNumber/chowderNumberBadge';
-import { dividendCoverageRatioBadge } from './dividend/dividendCoverageRatio/dividendCoverageRatioBadge';
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { epsCagr3yBadge } from './growth/epsCagr/epsCagr3yBadge';
 import { ruleOf40Badge } from './growth/ruleOf40/ruleOf40Badge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
-import { sueBadge } from './growth/sue/sueBadge';
 import { consecutiveProfitYearsBadge } from './quality/consecutiveProfitYears/consecutiveProfitYearsBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
-import { fcfConversionRateBadge } from './quality/fcfConversionRate/fcfConversionRateBadge';
-import { ocfToNetIncomeBadge } from './quality/ocfToNetIncome/ocfToNetIncomeBadge';
 import { beneishMScoreBadge } from './quality/beneishMScore/beneishMScoreBadge';
 import { piotroskiFScoreBadge } from './quality/piotroskiFScore/piotroskiFScoreBadge';
 import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreBadge';
@@ -60,23 +55,31 @@ import { epsGrowthRateBadge } from './growth/epsGrowthRate/epsGrowthRateBadge';
 // 門檻判定。同性質但查證後沒問題的 zmijewskiScoreBadge 予以保留（0.5 確實是 Zmijewski
 // 論文本身處理過抽樣偏誤後仍採用的慣例切點，跟 Ohlson 情況不同）。
 //
+// 2026-09-20 第二輪：使用者把標準拉高到「必須有單一可指名的出處」，再下架 5 支：
+//   - sueBadge：門檻「> 2」查證後確認 Foster/Olsen/Shevlin (1984)、Bernard/Thomas (1989)
+//     兩篇論文用的都是十分位排序法（比較最高分位 vs 最低分位的報酬差），論文本身從未訂過
+//     這種絕對切點，跟第一輪的 accrualsRatio/shareholderYield 是同一種問題。
+//   - chowderNumberBadge/dividendCoverageRatioBadge/fcfConversionRateBadge/
+//     ocfToNetIncomeBadge：門檻誠實標註為「業界慣例」而非掛某個學者名字，沒有假造出處，
+//     但也找不到單一可指名的文獻明確給出這個數字（12%/2倍/80%/1倍分別是社群/傳統/顧問業
+//     教材裡廣泛流傳的慣例值，不是某篇論文或某本書的精確引用），不符合「單一可指名出處」
+//     的新標準。
+// 查證後確認沒問題、保留的對照組：livePegRatio 的「< 1」——Peter Lynch 在《One Up on Wall
+// Street》裡確實明講 PEG 在 1.0 附近代表合理定價、低於 1.0 代表可能低估，這個數字是他本人
+// 真的說的（雖然他同時強調不是絕對二分線），符合單一可指名出處的標準，不下架。
+//
 // <metricCode>Badge.ts 檔案本身位置不變（還是放在各自指標資料夾底下，跟大段 detail
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
-  chowderNumber: chowderNumberBadge,
-  dividendCoverageRatio: dividendCoverageRatioBadge,
   dividendPayoutRatio: dividendPayoutRatioBadge,
   epsCagr3y: epsCagr3yBadge,
   ruleOf40: ruleOf40Badge,
   sgr: sgrBadge,
-  sue: sueBadge,
   consecutiveProfitYears: consecutiveProfitYearsBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
-  fcfConversionRate: fcfConversionRateBadge,
-  ocfToNetIncome: ocfToNetIncomeBadge,
   beneishMScore: beneishMScoreBadge,
   piotroskiFScore: piotroskiFScoreBadge,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreBadge,
