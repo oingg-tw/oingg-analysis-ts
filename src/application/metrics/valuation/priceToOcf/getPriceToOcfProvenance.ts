@@ -60,7 +60,7 @@ export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery, deps:
     },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營業活動現金流（第 ${i + 1}/4 季）`,
+        role: `近四季 營業活動現金流（第 ${i + 1}/4 季）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

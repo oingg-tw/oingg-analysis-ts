@@ -64,7 +64,7 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 淨利（第 ${i + 1}/4 季，用於 ROE 與配息率）`,
+          role: `近四季 淨利（第 ${i + 1}/4 季，用於 ROE 與配息率）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +74,7 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `TTM 發放股利（第 ${i + 1}/4 季，用於配息率，原始資料是現金流出負值）`,
+          role: `近四季 發放股利（第 ${i + 1}/4 季，用於配息率，原始資料是現金流出負值）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

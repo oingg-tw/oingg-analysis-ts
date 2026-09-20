@@ -22,7 +22,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery, de
   const { symbol, fiscalYear, fiscalQuarter, totalAssets, ttmQuarterDetails, ttmValue } = resolution;
 
   const entries: ProvenanceEntry[] = ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => {
-    const label = `TTM 第 ${i + 1}/4 季`;
+    const label = `近四季 第 ${i + 1}/4 季`;
     const netIncomeEntry: ProvenanceEntry = {
       role: `${label}淨利（歸屬母公司）`,
       fiscalYear: detail.fiscalYear,
@@ -57,7 +57,7 @@ export const getAccrualsRatioProvenance = async (query: QuarterlyMetricQuery, de
   });
 
   entries.push({
-    role: '本季期末總資產（分母，不隨 TTM 加總）',
+    role: '本季期末總資產（分母，不隨近四季加總）',
     fiscalYear,
     fiscalQuarter,
     type: 'statementField',

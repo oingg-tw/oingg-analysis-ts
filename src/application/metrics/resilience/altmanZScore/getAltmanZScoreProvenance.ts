@@ -80,7 +80,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery, dep
       value: marketCap ? marketCap.marketCap : null,
     },
     ...ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => {
-      const label = `TTM 第 ${i + 1}/4 季（X3/X5 分子加總項）`;
+      const label = `近四季 第 ${i + 1}/4 季（X3/X5 分子加總項）`;
       return [
         {
           role: `${label}：稅前淨利`,

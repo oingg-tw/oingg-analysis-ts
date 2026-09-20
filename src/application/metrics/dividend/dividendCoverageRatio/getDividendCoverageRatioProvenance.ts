@@ -55,7 +55,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
+        role: `近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -65,7 +65,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(ocfs[i]),
       },
       {
-        role: `TTM 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
+        role: `近四季 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -75,7 +75,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(capexes[i]),
       },
       {
-        role: `TTM 發放股利（第 ${i + 1}/4 季，原始資料是現金流出負值，缺漏視為 0）`,
+        role: `近四季 發放股利（第 ${i + 1}/4 季，原始資料是現金流出負值，缺漏視為 0）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

@@ -22,7 +22,7 @@ export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, de
     { role: '本季期末不動產、廠房及設備', fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'property_plant_and_equipment', sourceDescription: null, value: toProvenanceEntryValue(propertyPlantEquipment) },
     ...ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => [
       {
-        role: `TTM 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
         fiscalYear: detail.fiscalYear,
         fiscalQuarter: detail.season,
         type: 'statementField',
@@ -32,7 +32,7 @@ export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, de
         value: toProvenanceEntryValue(detail.profitBeforeTax),
       },
       {
-        role: `TTM 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
         fiscalYear: detail.fiscalYear,
         fiscalQuarter: detail.season,
         type: 'statementField',

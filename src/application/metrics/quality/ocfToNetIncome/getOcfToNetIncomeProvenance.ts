@@ -56,7 +56,7 @@ export const getOcfToNetIncomeProvenance = async (query: QuarterlyMetricQuery, d
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 淨利（第 ${i + 1}/4 季）`,
+        role: `近四季 淨利（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -66,7 +66,7 @@ export const getOcfToNetIncomeProvenance = async (query: QuarterlyMetricQuery, d
         value: toProvenanceEntryValue(netIncomes[i]!.value),
       },
       {
-        role: `TTM 營業活動現金流（第 ${i + 1}/4 季）`,
+        role: `近四季 營業活動現金流（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

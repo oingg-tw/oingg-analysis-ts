@@ -47,7 +47,7 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營收（第 ${i + 1}/4 季）`,
+        role: `近四季 營收（第 ${i + 1}/4 季）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

@@ -24,7 +24,7 @@ export const getInventoryDaysProvenance = async (query: QuarterlyMetricQuery, de
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營業成本（第 ${i + 1}/4 季）`,
+        role: `近四季 營業成本（第 ${i + 1}/4 季）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

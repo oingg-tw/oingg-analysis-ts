@@ -86,7 +86,7 @@ export const getEvEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: P
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 稅前淨利（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -96,7 +96,7 @@ export const getEvEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: P
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `TTM 財務費用（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -106,7 +106,7 @@ export const getEvEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: P
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `TTM 折舊（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近四季 折舊（第 ${i + 1}/4 季，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -116,7 +116,7 @@ export const getEvEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: P
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `TTM 攤銷（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近四季 攤銷（第 ${i + 1}/4 季，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

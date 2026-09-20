@@ -47,7 +47,7 @@ export const getOcfPerShareProvenance = async (query: QuarterlyMetricQuery, deps
     { role: '本季流通股數', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(shares) },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營業活動現金流（第 ${i + 1}/4 季）`,
+        role: `近四季 營業活動現金流（第 ${i + 1}/4 季）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

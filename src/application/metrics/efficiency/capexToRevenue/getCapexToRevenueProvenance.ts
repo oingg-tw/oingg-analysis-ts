@@ -57,7 +57,7 @@ export const getCapexToRevenueProvenance = async (query: QuarterlyMetricQuery, d
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 營收（第 ${i + 1}/4 季）`,
+        role: `近四季 營收（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -67,7 +67,7 @@ export const getCapexToRevenueProvenance = async (query: QuarterlyMetricQuery, d
         value: toProvenanceEntryValue(revenues[i]),
       },
       {
-        role: `TTM 資本支出（第 ${i + 1}/4 季，投資活動現金流出，原始資料是負值）`,
+        role: `近四季 資本支出（第 ${i + 1}/4 季，投資活動現金流出，原始資料是負值）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

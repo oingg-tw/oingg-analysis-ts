@@ -38,7 +38,7 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營業成本（第 ${i + 1}/4 季，用於 DIO/DPO）`,
+        role: `近四季 營業成本（第 ${i + 1}/4 季，用於 DIO/DPO）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -50,7 +50,7 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
     ),
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 營收（第 ${i + 1}/4 季，用於 DSO）`,
+        role: `近四季 營收（第 ${i + 1}/4 季，用於 DSO）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

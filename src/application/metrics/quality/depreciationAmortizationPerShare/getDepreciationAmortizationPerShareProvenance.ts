@@ -52,7 +52,7 @@ export const getDepreciationAmortizationPerShareProvenance = async (query: Quart
     ...ttmQuarters.flatMap(
       (tq, i): ProvenanceEntry[] => [
         {
-          role: `TTM 折舊費用（第 ${i + 1}/4 季）`,
+          role: `近四季 折舊費用（第 ${i + 1}/4 季）`,
           fiscalYear: rocYearToGregorian(Number(tq.year)),
           fiscalQuarter: Number(tq.season),
           type: 'statementField',
@@ -62,7 +62,7 @@ export const getDepreciationAmortizationPerShareProvenance = async (query: Quart
           value: toProvenanceEntryValue(depreciations[i] ?? null),
         },
         {
-          role: `TTM 攤銷費用（第 ${i + 1}/4 季）`,
+          role: `近四季 攤銷費用（第 ${i + 1}/4 季）`,
           fiscalYear: rocYearToGregorian(Number(tq.year)),
           fiscalQuarter: Number(tq.season),
           type: 'statementField',

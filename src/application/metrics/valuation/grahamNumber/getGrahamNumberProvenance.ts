@@ -72,7 +72,7 @@ export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery, dep
     { role: '本季期末淨值（BVPS 分子）', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 淨利（第 ${i + 1}/4 季，EPS 分子）`,
+        role: `近四季 淨利（第 ${i + 1}/4 季，EPS 分子）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

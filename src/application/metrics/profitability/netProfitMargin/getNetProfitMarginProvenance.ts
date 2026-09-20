@@ -50,7 +50,7 @@ export const getNetProfitMarginProvenance = async (query: QuarterlyMetricQuery, 
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 淨利（第 ${i + 1}/4 季）`,
+        role: `近四季 淨利（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -60,7 +60,7 @@ export const getNetProfitMarginProvenance = async (query: QuarterlyMetricQuery, 
         value: toProvenanceEntryValue(netIncomes[i]!.value),
       },
       {
-        role: `TTM 營收（第 ${i + 1}/4 季）`,
+        role: `近四季 營收（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

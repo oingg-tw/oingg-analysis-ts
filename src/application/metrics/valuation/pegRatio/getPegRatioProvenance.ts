@@ -144,7 +144,7 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
     { role: '本季流通股數（PER 用 EPS 分母）', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(shares) },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 淨利（第 ${i + 1}/4 季，PER 用 EPS 分子）`,
+        role: `近四季 淨利（第 ${i + 1}/4 季，PER 用 EPS 分子）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

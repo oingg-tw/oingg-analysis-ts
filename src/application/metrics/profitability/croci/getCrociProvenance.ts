@@ -64,7 +64,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 淨利（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近四季 淨利（第 ${i + 1}/4 季，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +74,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `TTM 財務費用（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近四季 財務費用（第 ${i + 1}/4 季，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -84,7 +84,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `TTM 折舊（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近四季 折舊（第 ${i + 1}/4 季，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -94,7 +94,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `TTM 攤銷（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近四季 攤銷（第 ${i + 1}/4 季，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

@@ -64,7 +64,7 @@ export const getOwnerEarningsProvenance = async (query: QuarterlyMetricQuery, de
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 淨利（第 ${i + 1}/4 季）`,
+          role: `近四季 淨利（第 ${i + 1}/4 季）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +74,7 @@ export const getOwnerEarningsProvenance = async (query: QuarterlyMetricQuery, de
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `TTM 折舊（第 ${i + 1}/4 季）`,
+          role: `近四季 折舊（第 ${i + 1}/4 季）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -84,7 +84,7 @@ export const getOwnerEarningsProvenance = async (query: QuarterlyMetricQuery, de
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `TTM 攤銷（第 ${i + 1}/4 季）`,
+          role: `近四季 攤銷（第 ${i + 1}/4 季）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -94,7 +94,7 @@ export const getOwnerEarningsProvenance = async (query: QuarterlyMetricQuery, de
           value: toProvenanceEntryValue(amortizations[i]),
         },
         {
-          role: `TTM 資本支出（第 ${i + 1}/4 季，原始資料是負值）`,
+          role: `近四季 資本支出（第 ${i + 1}/4 季，原始資料是負值）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

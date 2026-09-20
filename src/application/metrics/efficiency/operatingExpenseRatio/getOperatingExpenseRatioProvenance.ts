@@ -52,7 +52,7 @@ export const getOperatingExpenseRatioProvenance = async (query: QuarterlyMetricQ
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 營收（第 ${i + 1}/4 季）`,
+        role: `近四季 營收（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -62,7 +62,7 @@ export const getOperatingExpenseRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(revenues[i]),
       },
       {
-        role: `TTM 推銷費用（第 ${i + 1}/4 季）`,
+        role: `近四季 推銷費用（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -72,7 +72,7 @@ export const getOperatingExpenseRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(sellingExpenses[i]),
       },
       {
-        role: `TTM 管理費用（第 ${i + 1}/4 季）`,
+        role: `近四季 管理費用（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

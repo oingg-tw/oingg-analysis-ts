@@ -41,7 +41,7 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map((tq, i) =>
-      buildStatementFieldEntry(`TTM 淨利（第 ${i + 1}/4 季）`, ttmNetIncomes[i]!, 'incomeStatement', rocYearToGregorian(Number(tq.year)), Number(tq.season))
+      buildStatementFieldEntry(`近四季 淨利（第 ${i + 1}/4 季）`, ttmNetIncomes[i]!, 'incomeStatement', rocYearToGregorian(Number(tq.year)), Number(tq.season))
     ),
     buildStatementFieldEntry('本季期末權益（TTM 分母不取平均，固定用本季單一期末值）', equity, 'balanceSheet', fiscalYear, fiscalQuarter),
   ];

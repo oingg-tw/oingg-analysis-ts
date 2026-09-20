@@ -71,7 +71,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 稅前淨利（第 ${i + 1}/4 季，用於 NOPAT）`,
+          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -81,7 +81,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `TTM 財務費用（第 ${i + 1}/4 季，用於 NOPAT）`,
+          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -91,7 +91,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `TTM 所得稅費用（第 ${i + 1}/4 季，用於 NOPAT 有效稅率）`,
+          role: `近四季 所得稅費用（第 ${i + 1}/4 季，用於 NOPAT 有效稅率）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

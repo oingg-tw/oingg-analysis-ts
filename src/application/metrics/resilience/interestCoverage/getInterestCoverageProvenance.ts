@@ -50,7 +50,7 @@ export const getInterestCoverageProvenance = async (query: QuarterlyMetricQuery,
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 稅前淨利（第 ${i + 1}/4 季）`,
+        role: `近四季 稅前淨利（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -60,7 +60,7 @@ export const getInterestCoverageProvenance = async (query: QuarterlyMetricQuery,
         value: toProvenanceEntryValue(preTaxes[i]),
       },
       {
-        role: `TTM 財務費用（第 ${i + 1}/4 季，跟稅前淨利相加得出 EBIT）`,
+        role: `近四季 財務費用（第 ${i + 1}/4 季，跟稅前淨利相加得出 EBIT）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

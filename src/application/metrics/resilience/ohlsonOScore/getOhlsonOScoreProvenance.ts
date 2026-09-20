@@ -108,7 +108,7 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
     },
     ...thisYearTtmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `今年 TTM 淨利（第 ${i + 1}/4 季）`,
+        role: `今年 近四季 淨利（第 ${i + 1}/4 季）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -120,7 +120,7 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
     ),
     ...priorYearTtmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `去年同期 TTM 淨利（第 ${i + 1}/4 季，用於 INTWO/CHIN）`,
+        role: `去年同期 近四季 淨利（第 ${i + 1}/4 季，用於 INTWO/CHIN）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -132,7 +132,7 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
     ),
     ...thisYearTtmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `今年 TTM 營業活動現金流（第 ${i + 1}/4 季，用於 FUTL）`,
+        role: `今年 近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FUTL）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

@@ -62,7 +62,7 @@ export const getRdIntensityProvenance = async (query: QuarterlyMetricQuery, deps
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 研發費用（第 ${i + 1}/4 季）`,
+        role: `近四季 研發費用（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -72,7 +72,7 @@ export const getRdIntensityProvenance = async (query: QuarterlyMetricQuery, deps
         value: toProvenanceEntryValue(ttmRecords[i]!.researchExpense),
       },
       {
-        role: `TTM 營收（第 ${i + 1}/4 季）`,
+        role: `近四季 營收（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

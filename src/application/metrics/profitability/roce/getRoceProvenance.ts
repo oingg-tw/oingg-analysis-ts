@@ -55,7 +55,7 @@ export const getRoceProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
+          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -65,7 +65,7 @@ export const getRoceProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `TTM 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
+          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

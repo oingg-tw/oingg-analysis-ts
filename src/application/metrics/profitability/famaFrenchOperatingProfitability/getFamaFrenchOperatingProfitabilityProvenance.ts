@@ -56,7 +56,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 毛利（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近四季 毛利（第 ${i + 1}/4 季，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -66,7 +66,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(grossProfits[i]),
         },
         {
-          role: `TTM 推銷費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近四季 推銷費用（第 ${i + 1}/4 季，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -76,7 +76,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(sellingExpenses[i]),
         },
         {
-          role: `TTM 管理費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近四季 管理費用（第 ${i + 1}/4 季，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -86,7 +86,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(adminExpenses[i]),
         },
         {
-          role: `TTM 財務費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近四季 財務費用（第 ${i + 1}/4 季，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

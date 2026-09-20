@@ -61,7 +61,7 @@ export const getBuybackYieldProvenance = async (query: QuarterlyMetricQuery, dep
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `TTM 買回庫藏股支付現金（第 ${i + 1}/4 季，原始資料是現金流出負值）`,
+        role: `近四季 買回庫藏股支付現金（第 ${i + 1}/4 季，原始資料是現金流出負值）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

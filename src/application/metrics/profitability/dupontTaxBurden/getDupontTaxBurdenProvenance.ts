@@ -54,7 +54,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, 
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `TTM 淨利（第 ${i + 1}/4 季）`,
+        role: `近四季 淨利（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -64,7 +64,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, 
         value: toProvenanceEntryValue(netIncomes[i]!.value),
       },
       {
-        role: `TTM 稅前淨利（第 ${i + 1}/4 季）`,
+        role: `近四季 稅前淨利（第 ${i + 1}/4 季）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

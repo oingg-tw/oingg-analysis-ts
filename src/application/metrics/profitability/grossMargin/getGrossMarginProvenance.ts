@@ -58,7 +58,7 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
     const isInsurance = record?.isInsuranceFallback ?? false;
     return [
       {
-        role: `TTM 營收（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目' : ''}）`,
+        role: `近四季 營收（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目' : ''}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -68,7 +68,7 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
         value: toProvenanceEntryValue(record?.revenue ?? null),
       },
       {
-        role: `TTM 毛利（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目：保險服務結果' : ''}）`,
+        role: `近四季 毛利（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目：保險服務結果' : ''}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

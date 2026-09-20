@@ -61,7 +61,7 @@ export const getPFcfProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `TTM 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
+          role: `近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -71,7 +71,7 @@ export const getPFcfProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(ocfs[i]),
         },
         {
-          role: `TTM 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
+          role: `近四季 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

@@ -20,7 +20,7 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
   const { symbol, fiscalYear, fiscalQuarter, ttmQuarterDetails, payoutRatioTtm } = resolution;
 
   const entries: ProvenanceEntry[] = ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => {
-    const label = `TTM 第 ${i + 1}/4 季`;
+    const label = `近四季 第 ${i + 1}/4 季`;
     const netIncomeEntry: ProvenanceEntry = {
       role: `${label}淨利（歸屬母公司）`,
       fiscalYear: detail.fiscalYear,
