@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "coincidentIndexComposite": "<number>",
+        "coincidentIndexDetrended": "<number>",
+        "laggingIndexComposite": "<number>",
+        "laggingIndexDetrended": "<number>",
+        "leadingIndexComposite": "<number>",
+        "leadingIndexDetrended": "<number>",
+        "month": "<number>",
+        "period": "<string>",
+        "signalLight": "<string>",
+        "signalScore": "<number>",
+        "year": "<number>"
+      }
+    ]
+  }
+}

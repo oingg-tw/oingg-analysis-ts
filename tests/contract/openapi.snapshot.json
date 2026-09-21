@@ -3527,6 +3527,117 @@
         ]
       }
     },
+    "/macro/business-cycle-indicator": {
+      "get": {
+        "description": "國發會領先／同時／落後指標（綜合指數與不含趨勢指數）＋景氣對策信號綜合分數與燈號，1982-01 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "coincidentIndexComposite": {
+                            "description": "同時指標綜合指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "coincidentIndexDetrended": {
+                            "description": "同時指標不含趨勢指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "laggingIndexComposite": {
+                            "description": "落後指標綜合指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "laggingIndexDetrended": {
+                            "description": "落後指標不含趨勢指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "leadingIndexComposite": {
+                            "description": "領先指標綜合指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "leadingIndexDetrended": {
+                            "description": "領先指標不含趨勢指數",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "month": {
+                            "type": "integer"
+                          },
+                          "period": {
+                            "description": "\"YYYY-MM\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "signalLight": {
+                            "description": "燈號中文：紅／黃紅／綠／黃藍／藍",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "signalScore": {
+                            "description": "景氣對策信號綜合分數（9–45）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "year": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "month",
+                          "leadingIndexComposite",
+                          "leadingIndexDetrended",
+                          "coincidentIndexComposite",
+                          "coincidentIndexDetrended",
+                          "laggingIndexComposite",
+                          "laggingIndexDetrended",
+                          "signalScore",
+                          "signalLight"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新，查無資料時 entries 是空陣列。"
+          }
+        },
+        "summary": "景氣指標與景氣對策信號（月）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/cbc-policy-rate": {
       "get": {
         "description": "事件型序列：一列就是一次利率調整的生效日，不是逐日/逐月快照，直接當圖上的事件標記用（例如疊在 /market/taiex-daily-price 或個股 daily-price-history 上）。資料來源是 gov-ts 的 export.cbc_policy_rate（央行統計資料庫 EG28D01en，1989-04-01 起，本服務只讀），本服務唯一的加工是 changeBp（重貼現率相對前一次的變動，基點）。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。只有生效日、沒有理監事會決議日。",
@@ -3598,6 +3709,106 @@
           }
         },
         "summary": "央行政策利率歷次調整事件（重貼現率／擔保放款融通利率／短期融通利率）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
+    "/macro/cpi": {
+      "get": {
+        "description": "總指數或七大類（category 參數），指數值與年增率，1981-01 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "總指數或七大類，預設 total。",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "default": "total",
+              "description": "總指數或七大類，預設 total。",
+              "enum": [
+                "total",
+                "food",
+                "clothing",
+                "housing",
+                "transport_communication",
+                "medical",
+                "education_recreation",
+                "misc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "category": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "indexValue": {
+                            "description": "指數（基期 = 100）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "month": {
+                            "type": "integer"
+                          },
+                          "period": {
+                            "description": "\"YYYY-MM\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "year": {
+                            "type": "integer"
+                          },
+                          "yoyChangePercent": {
+                            "description": "年增率 %",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "month",
+                          "indexValue",
+                          "yoyChangePercent"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新，回應帶回實際使用的 category。"
+          }
+        },
+        "summary": "消費者物價指數（月）",
         "tags": [
           "Macro"
         ]
@@ -3830,6 +4041,110 @@
         ]
       }
     },
+    "/macro/gdp": {
+      "get": {
+        "description": "category=growth_rate 是經濟成長率本身，其餘 11 個是國內需求／國外淨需求各項目的貢獻百分點與年增率，1981-Q1 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這一季（\"YYYY-Qn\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這一季（\"YYYY-Qn\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-Q[1-4]$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "經濟成長率或需求面 11 個項目，預設 growth_rate。",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "default": "growth_rate",
+              "description": "經濟成長率或需求面 11 個項目，預設 growth_rate。",
+              "enum": [
+                "growth_rate",
+                "domestic_demand_total",
+                "private_consumption",
+                "government_consumption",
+                "fixed_capital_formation_total",
+                "fixed_capital_formation_private",
+                "fixed_capital_formation_government",
+                "fixed_capital_formation_public_enterprise",
+                "inventory_change",
+                "net_external_demand_total",
+                "exports",
+                "imports"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "category": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "contributionPoints": {
+                            "description": "對經濟成長率的貢獻（百分點）；category=growth_rate 時就是經濟成長率本身",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "period": {
+                            "description": "\"YYYY-Qn\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "quarter": {
+                            "type": "integer"
+                          },
+                          "year": {
+                            "type": "integer"
+                          },
+                          "yoyChangePercent": {
+                            "description": "該項目的年增率 %",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "quarter",
+                          "contributionPoints",
+                          "yoyChangePercent"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新，回應帶回實際使用的 category。"
+          }
+        },
+        "summary": "經濟成長率與需求面貢獻（季）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/gov-bond-yield-10y": {
       "get": {
         "description": "只回傳最新一筆，不是歷史序列——給估值排行卡片當中性的利率參考基準用，不做投資建議。資料來源跟 /macro/equity-risk-premium 同一張表（monthly_gov_bond_yield_10y，來源是央行統計資料庫 EG43M01en，本服務只讀）；要完整歷史序列或窗口計算請改用 /macro/equity-risk-premium。",
@@ -3895,6 +4210,265 @@
           }
         },
         "summary": "10 年期政府公債次級市場殖利率（最新一個月）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
+    "/macro/gov-bond-yield-10y-history": {
+      "get": {
+        "description": "跟 /macro/gov-bond-yield-10y 同一張表（那支只回最新一筆），這支回 1994-01 起整段序列。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "month": {
+                            "type": "integer"
+                          },
+                          "period": {
+                            "description": "\"YYYY-MM\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "year": {
+                            "type": "integer"
+                          },
+                          "yieldPct": {
+                            "description": "百分比，例如 1.9 代表 1.9%",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "month",
+                          "yieldPct"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新。"
+          }
+        },
+        "summary": "10 年期政府公債殖利率整段歷史（月）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
+    "/macro/monetary-aggregate": {
+      "get": {
+        "description": "央行日平均餘額（百萬新台幣）與年增率，1987-05 起（年增率前 12 個月為 null）。央行會修正近月數字，gov-ts 排程不覆寫、修正值需手動重建才會進來。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "m1aAmount": {
+                            "description": "M1A 日平均餘額，百萬新台幣",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "m1aYoyPercent": {
+                            "description": "M1A 年增率 %",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "m1bAmount": {
+                            "description": "M1B 日平均餘額，百萬新台幣",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "m1bYoyPercent": {
+                            "description": "M1B 年增率 %",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "m2Amount": {
+                            "description": "M2 日平均餘額，百萬新台幣",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "m2YoyPercent": {
+                            "description": "M2 年增率 %",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "month": {
+                            "type": "integer"
+                          },
+                          "period": {
+                            "description": "\"YYYY-MM\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "year": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "month",
+                          "m1aAmount",
+                          "m1aYoyPercent",
+                          "m1bAmount",
+                          "m1bYoyPercent",
+                          "m2Amount",
+                          "m2YoyPercent"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新。"
+          }
+        },
+        "summary": "貨幣總計數 M1A／M1B／M2（月）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
+    "/macro/usd-twd-rate": {
+      "get": {
+        "description": "央行銀行買入／賣出／銀行間收盤三個匯率，1992-01 起。不是即時匯率：央行按月批次補、落後約一個月，前端請標明資料涵蓋到哪一天。limit/interval 慣例跟 /market/taiex-daily-price 相同。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "取最近幾筆，預設 250，上限 2000。",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 250,
+              "description": "取最近幾筆，預設 250，上限 2000。",
+              "maximum": 2000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "粒度：daily 逐日；weekly/monthly 每週（週一起算）/每月取最後一個有資料的日子。資料 1992-01 起。",
+            "in": "query",
+            "name": "interval",
+            "required": false,
+            "schema": {
+              "default": "daily",
+              "description": "粒度：daily 逐日；weekly/monthly 每週（週一起算）/每月取最後一個有資料的日子。資料 1992-01 起。",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "依日期由舊到新排序，跟 /market/taiex-daily-price 同慣例",
+                      "items": {
+                        "properties": {
+                          "bankBuyingRate": {
+                            "description": "銀行買入，元/美元",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "bankSellingRate": {
+                            "description": "銀行賣出，元/美元",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "interbankClosingRate": {
+                            "description": "銀行間收盤，元/美元",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "tradeDate": {
+                            "description": "\"YYYY-MM-DD\"",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tradeDate",
+                          "bankBuyingRate",
+                          "bankSellingRate",
+                          "interbankClosingRate"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新。"
+          }
+        },
+        "summary": "新台幣兌美元匯率（日）",
         "tags": [
           "Macro"
         ]

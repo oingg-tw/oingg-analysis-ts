@@ -67,6 +67,12 @@ const cases: GoldenCase[] = [
   { slug: 'macro-equity-risk-premium', method: 'get', path: '/macro/equity-risk-premium?startYear=2020&startMonth=1&endYear=2025&endMonth=12' },
   { slug: 'macro-gov-bond-yield-10y', method: 'get', path: '/macro/gov-bond-yield-10y' },
   { slug: 'macro-cbc-policy-rate', method: 'get', path: '/macro/cbc-policy-rate?from=2022-01-01' },
+  { slug: 'macro-business-cycle-indicator', method: 'get', path: '/macro/business-cycle-indicator?from=2026-01' },
+  { slug: 'macro-monetary-aggregate', method: 'get', path: '/macro/monetary-aggregate?from=2026-01' },
+  { slug: 'macro-gov-bond-yield-10y-history', method: 'get', path: '/macro/gov-bond-yield-10y-history?from=2026-01' },
+  { slug: 'macro-usd-twd-rate', method: 'get', path: '/macro/usd-twd-rate?limit=5&interval=monthly' },
+  { slug: 'macro-cpi', method: 'get', path: '/macro/cpi?from=2026-01' },
+  { slug: 'macro-gdp', method: 'get', path: '/macro/gdp?from=2026-Q1' },
 ];
 
 let harness: Awaited<ReturnType<typeof startApp>>;

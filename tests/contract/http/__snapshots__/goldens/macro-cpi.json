@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "category": "total",
+    "entries": [
+      {
+        "indexValue": "<number>",
+        "month": "<number>",
+        "period": "<string>",
+        "year": "<number>",
+        "yoyChangePercent": "<number>"
+      }
+    ]
+  }
+}

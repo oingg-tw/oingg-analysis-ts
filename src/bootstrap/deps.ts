@@ -1,6 +1,7 @@
 import type { AppDeps } from '@/application/deps';
 import { logger } from '@/infrastructure/logger';
 import { macroData } from '@/infrastructure/repositories/macro/macroDataPort';
+import { govMacroSeries } from '@/infrastructure/repositories/gov/macroSeries';
 import { exchangeCompanyProfiles } from '@/infrastructure/repositories/exchange/companyProfile';
 import { exchangePreferredStocks } from '@/infrastructure/repositories/exchange/preferredStock';
 import { analysisMetricValueQueries } from '@/infrastructure/repositories/analysis/metricValueQueries';
@@ -22,6 +23,7 @@ export const createAppDeps = (): AppDeps => ({
   ...createPitDeps(),
   logger,
   macroData,
+  macroSeries: govMacroSeries,
   companyProfiles: exchangeCompanyProfiles,
   metricValueQueries: analysisMetricValueQueries,
   preferredStocks: exchangePreferredStocks,

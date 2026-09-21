@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "month": "<number>",
+        "period": "<string>",
+        "year": "<number>",
+        "yieldPct": "<number>"
+      }
+    ]
+  }
+}

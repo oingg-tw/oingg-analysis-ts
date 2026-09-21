@@ -1,6 +1,6 @@
 import type { PitDeps } from './metrics/deps';
 import type { LoggerPort } from './ports/logger';
-import type { MacroDataPort } from './ports/macroData';
+import type { MacroDataPort, MacroSeriesPort } from './ports/macroData';
 import type { CompanyProfilePort } from './ports/companyProfiles';
 import type { MetricValueQueryPort } from './ports/metricValueQueries';
 import type { PreferredStockPort } from './ports/preferredStocks';
@@ -21,6 +21,7 @@ import type { EtfDataPort } from './ports/etfData';
 export interface AppDeps extends PitDeps {
   logger: LoggerPort;
   macroData: MacroDataPort;
+  macroSeries: MacroSeriesPort;
   companyProfiles: CompanyProfilePort;
   metricValueQueries: MetricValueQueryPort;
   preferredStocks: PreferredStockPort;

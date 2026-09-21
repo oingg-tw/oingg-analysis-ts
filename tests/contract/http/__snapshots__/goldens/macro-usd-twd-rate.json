@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "bankBuyingRate": "<number>",
+        "bankSellingRate": "<number>",
+        "interbankClosingRate": "<number>",
+        "tradeDate": "<date>"
+      }
+    ]
+  }
+}

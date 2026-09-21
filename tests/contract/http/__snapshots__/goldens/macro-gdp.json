@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "category": "growth_rate",
+    "entries": [
+      {
+        "contributionPoints": "<number>",
+        "period": "<string>",
+        "quarter": "<number>",
+        "year": "<number>",
+        "yoyChangePercent": "<number>"
+      }
+    ]
+  }
+}

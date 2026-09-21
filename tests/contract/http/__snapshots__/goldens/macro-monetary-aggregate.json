@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "m1aAmount": "<number>",
+        "m1aYoyPercent": "<number>",
+        "m1bAmount": "<number>",
+        "m1bYoyPercent": "<number>",
+        "m2Amount": "<number>",
+        "m2YoyPercent": "<number>",
+        "month": "<number>",
+        "period": "<string>",
+        "year": "<number>"
+      }
+    ]
+  }
+}

@@ -19,6 +19,7 @@ export const createTestDeps = (overrides: Partial<AppDeps> = {}): AppDeps => ({
   ...createTestPitDeps(),
   logger: silentLogger,
   macroData: unusedPort('macroData'),
+  macroSeries: unusedPort('macroSeries'),
   companyProfiles: unusedPort('companyProfiles'),
   metricValueQueries: unusedPort('metricValueQueries'),
   preferredStocks: unusedPort('preferredStocks'),

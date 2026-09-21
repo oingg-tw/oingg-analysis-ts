@@ -46,3 +46,62 @@ export interface MacroDataPort {
   listTaiexDailyClosesAsc(): Promise<TaiexDailyClose[]>;
   saveEquityRiskPremiumResult(row: EquityRiskPremiumCacheRow): Promise<void>;
 }
+
+// ---- 2026-09-22 總經特區（web-nuxt）：gov-ts 六個總經 view 的原始序列，全部由舊到新、數字已轉 number ----
+// 月/季座標保留原始 year/month/quarter，`period` 字串（'YYYY-MM' / 'YYYY-Qn'）由 application 組，前端不用各自拼。
+
+export interface BusinessCycleMonth {
+  year: number;
+  month: number;
+  leadingIndexComposite: number | null;
+  leadingIndexDetrended: number | null;
+  coincidentIndexComposite: number | null;
+  coincidentIndexDetrended: number | null;
+  laggingIndexComposite: number | null;
+  laggingIndexDetrended: number | null;
+  signalScore: number | null; // 景氣對策信號綜合分數（9–45）
+  signalLight: string | null; // 燈號中文：紅/黃紅/綠/黃藍/藍
+}
+
+export interface MonetaryAggregateMonth {
+  year: number;
+  month: number;
+  m1aAmount: number | null; // 日平均餘額，百萬新台幣
+  m1aYoyPercent: number | null;
+  m1bAmount: number | null;
+  m1bYoyPercent: number | null;
+  m2Amount: number | null;
+  m2YoyPercent: number | null;
+}
+
+export interface UsdTwdRateDay {
+  tradeDate: Date;
+  bankBuyingRate: number | null; // 元/美元
+  bankSellingRate: number | null;
+  interbankClosingRate: number | null;
+}
+
+export interface CpiMonth {
+  year: number;
+  month: number;
+  indexValue: number | null;
+  yoyChangePercent: number | null;
+}
+
+export interface GdpQuarter {
+  year: number;
+  quarter: number;
+  contributionPoints: number | null;
+  yoyChangePercent: number | null;
+}
+
+export type UsdTwdInterval = 'daily' | 'weekly' | 'monthly';
+
+export interface MacroSeriesPort {
+  listBusinessCycleIndicatorsAsc(): Promise<BusinessCycleMonth[]>;
+  listMonetaryAggregatesAsc(): Promise<MonetaryAggregateMonth[]>;
+  // 由新到舊取 limit 筆；weekly/monthly 是每區間最後一個有資料的日子（跟 TaiexIndexPort 同一種語意）。
+  listLatestUsdTwdRates(limit: number, interval: UsdTwdInterval): Promise<UsdTwdRateDay[]>;
+  listCpiAsc(category: string): Promise<CpiMonth[]>;
+  listGdpAsc(category: string): Promise<GdpQuarter[]>;
+}
