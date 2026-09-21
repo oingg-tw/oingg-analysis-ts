@@ -8,7 +8,9 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 組合 E3 為盈餘…贏家組合」，1994-2009 台灣上市櫃 1,459 家。三分位最高組 = 前 33.33%，percentileRank
 // 的 topPercent 用 33.33（rank/total ≤ 0.3333）。scope market——論文母體是全市場不分產業。
 export const sueBadge: MetricBadge = {
-  name: 'SUE 前 1/3',
+  // 2026-09-21 使用者要求改名：原本「SUE 前 1/3」縮寫不透明、1/3 寫法跟其他 percentile 徽章（五分位/前四分位/
+  // 最低十分位）不一致，改用論文自己的「未預期盈餘」＋「三分位」。
+  name: '未預期盈餘前三分位',
   nameEn: 'Earnings Surprise Top Tercile',
   author: '顧廣平, 2011',
   sourceUrl: 'https://jom.management.org.tw/upload/alistfs141102023023172.pdf',
@@ -20,7 +22,7 @@ export const sueBadge: MetricBadge = {
     '沿用論文的三分位定義。',
   timeframe: 'Q',
   threshold: {
-    description: '前 1/3',
+    description: '前三分位',
     thresholdLatex: '\\mathrm{SUE\\ Percentile} \\geq 66.67',
     note: '顧廣平（2011）每月依 SUE 高低均分三組，最高一組（前 1/3）為贏家組合，不是絕對數字門檻。',
     denominator: 1,

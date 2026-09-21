@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // （UE = EPS_t − EPS_{t−4}，σ 取最近 20 期 UE），實測全市場最新一季只有 2330 算得出來（要 24 季 EPS
 // 還卡股本缺口）。改採顧廣平（2011）〈盈餘與營收動能〉對台灣市場的定義（管理學報 28(6) 第 525 頁式 (2)，
 // 已逐字核對）：用單季稅後盈餘金額、含漂移項 μ、μ 與 σ 取前 8 季盈餘變動值——只要 13 季淨利，全市場都
-// 算得出來，且顧 2011 同時是徽章「SUE 前 1/3」的出處。PEAD 的原始文獻（Ball & Brown 1968、Bernard &
+// 算得出來，且顧 2011 同時是徽章「未預期盈餘前三分位」的出處。PEAD 的原始文獻（Ball & Brown 1968、Bernard &
 // Thomas 1989）放 referenceUrl 那條維基頁的脈絡裡，academicSourceUrl 改指本站實際採用的這個定義的出處。
 export const sueDefinition: MetricDefinitionSpec = {
   metricCode: 'sue',
