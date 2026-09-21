@@ -56,7 +56,7 @@ export const registerMacroSeriesOpenApi = (registry: OpenAPIRegistry): void => {
     method: 'get',
     path: '/macro/gdp',
     summary: '經濟成長率與需求面貢獻（季）',
-    description: `category=growth_rate 是經濟成長率本身，其餘 11 個是國內需求／國外淨需求各項目的貢獻百分點與年增率，1981-Q1 起。${SOURCE_NOTE}`,
+    description: `category=growth_rate 的 contributionPoints 是經濟成長率本身（%），其餘 11 個 category 是國內需求／國外淨需求各項目對成長率的貢獻百分點（各項加總 = growth_rate），1981-Q1 起。${SOURCE_NOTE}`,
     tags: ['Macro'],
     request: { query: gdpQuerySchema },
     responses: { 200: { description: '由舊到新，回應帶回實際使用的 category。', content: { 'application/json': { schema: gdpResultSchema } } } },

@@ -11,8 +11,8 @@ const macroSeries = {
     { year: 2026, month: 1, indexValue: 110.5, yoyChangePercent: category === 'total' ? 2.1 : 9.9 },
   ],
   listGdpAsc: async () => [
-    { year: 2025, quarter: 4, contributionPoints: 6.2, yoyChangePercent: null },
-    { year: 2026, quarter: 1, contributionPoints: 15.43, yoyChangePercent: 178.52 },
+    { year: 2025, quarter: 4, contributionPoints: 6.2 },
+    { year: 2026, quarter: 1, contributionPoints: 15.43 },
   ],
   listLatestUsdTwdRates: async (limit) =>
     [
@@ -21,7 +21,7 @@ const macroSeries = {
     ].slice(0, limit),
 } satisfies Partial<MacroSeriesPort>;
 
-const deps = createTestDeps({ macroSeries: macroSeries as MacroSeriesPort });
+const deps = createTestDeps({ macroSeries: macroSeries as unknown as MacroSeriesPort });
 
 describe('macro series', () => {
   test('月 period 補零、from 用字典序過濾、回應帶回 category', async () => {
@@ -33,7 +33,7 @@ describe('macro series', () => {
 
   test('季 period 用 Qn，from 過濾同樣字典序', async () => {
     const r = await getGdp({ category: 'growth_rate', from: '2026-Q1' }, deps);
-    expect(r.entries).toEqual([{ period: '2026-Q1', year: 2026, quarter: 1, contributionPoints: 15.43, yoyChangePercent: 178.52 }]);
+    expect(r.entries).toEqual([{ period: '2026-Q1', year: 2026, quarter: 1, contributionPoints: 15.43 }]);
   });
 
   test('日匯率：port 由新到舊，回應反轉成由舊到新、tradeDate 是 YYYY-MM-DD', async () => {

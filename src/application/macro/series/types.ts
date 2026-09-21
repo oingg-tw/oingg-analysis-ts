@@ -63,8 +63,7 @@ export const gdpEntrySchema = z.object({
   period: z.string().meta({ description: '"YYYY-Qn"，字典序即時間序' }),
   year: z.number().int(),
   quarter: z.number().int(),
-  contributionPoints: z.number().nullable().meta({ description: '對經濟成長率的貢獻（百分點）；category=growth_rate 時就是經濟成長率本身' }),
-  yoyChangePercent: z.number().nullable().meta({ description: '該項目的年增率 %' }),
+  contributionPoints: z.number().nullable().meta({ description: 'category=growth_rate 時是經濟成長率 %；其餘 category 是該項目對經濟成長率的貢獻（百分點），各項加總 = growth_rate' }),
 });
 export const gdpResultSchema = z.object({ category: z.string(), entries: z.array(gdpEntrySchema).meta(entriesMeta) });
 export type GdpResult = z.infer<typeof gdpResultSchema>;

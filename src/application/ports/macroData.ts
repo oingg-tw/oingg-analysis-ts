@@ -88,11 +88,11 @@ export interface CpiMonth {
   yoyChangePercent: number | null;
 }
 
+// 2026-09-22 gov-ts 核對主計總處原表後把 yoy_change_percent 整欄移除（它是對「百分點」再算年增率，全部 12 個項目都沒意義）。
 export interface GdpQuarter {
   year: number;
   quarter: number;
-  contributionPoints: number | null;
-  yoyChangePercent: number | null;
+  contributionPoints: number | null; // category=growth_rate 時就是經濟成長率 %；其餘是對成長率的貢獻百分點，各項加總 = growth_rate
 }
 
 export type UsdTwdInterval = 'daily' | 'weekly' | 'monthly';

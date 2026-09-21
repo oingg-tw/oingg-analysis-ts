@@ -4043,7 +4043,7 @@
     },
     "/macro/gdp": {
       "get": {
-        "description": "category=growth_rate 是經濟成長率本身，其餘 11 個是國內需求／國外淨需求各項目的貢獻百分點與年增率，1981-Q1 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "description": "category=growth_rate 的 contributionPoints 是經濟成長率本身（%），其餘 11 個 category 是國內需求／國外淨需求各項目對成長率的貢獻百分點（各項加總 = growth_rate），1981-Q1 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
         "parameters": [
           {
             "description": "只回傳 period >= 這一季（\"YYYY-Qn\"）的資料；不給就回全部歷史。",
@@ -4096,7 +4096,7 @@
                       "items": {
                         "properties": {
                           "contributionPoints": {
-                            "description": "對經濟成長率的貢獻（百分點）；category=growth_rate 時就是經濟成長率本身",
+                            "description": "category=growth_rate 時是經濟成長率 %；其餘 category 是該項目對經濟成長率的貢獻（百分點），各項加總 = growth_rate",
                             "nullable": true,
                             "type": "number"
                           },
@@ -4109,19 +4109,13 @@
                           },
                           "year": {
                             "type": "integer"
-                          },
-                          "yoyChangePercent": {
-                            "description": "該項目的年增率 %",
-                            "nullable": true,
-                            "type": "number"
                           }
                         },
                         "required": [
                           "period",
                           "year",
                           "quarter",
-                          "contributionPoints",
-                          "yoyChangePercent"
+                          "contributionPoints"
                         ],
                         "type": "object"
                       },

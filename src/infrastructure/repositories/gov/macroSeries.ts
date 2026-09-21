@@ -74,7 +74,7 @@ export const govMacroSeries: MacroSeriesPort = {
   listGdpAsc: async (category) =>
     (
       await govExportPrisma.$queryRaw<Record<string, unknown>[]>`
-        SELECT year, quarter, contribution_points, yoy_change_percent FROM "export"."quarterly_gdp"
+        SELECT year, quarter, contribution_points FROM "export"."quarterly_gdp"
         WHERE category = ${category} ORDER BY year ASC, quarter ASC`
-    ).map((r) => ({ year: Number(r.year), quarter: Number(r.quarter), contributionPoints: num(r.contribution_points), yoyChangePercent: num(r.yoy_change_percent) })),
+    ).map((r) => ({ year: Number(r.year), quarter: Number(r.quarter), contributionPoints: num(r.contribution_points) })),
 };

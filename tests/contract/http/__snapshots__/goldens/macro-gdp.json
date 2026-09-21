@@ -7,8 +7,7 @@
         "contributionPoints": "<number>",
         "period": "<string>",
         "quarter": "<number>",
-        "year": "<number>",
-        "yoyChangePercent": "<number>"
+        "year": "<number>"
       }
     ]
   }
