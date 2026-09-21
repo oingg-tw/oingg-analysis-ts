@@ -6,6 +6,8 @@ import { sgrBadge } from './growth/sgr/sgrBadge';
 import { threeMarginsRisingBadge } from './growth/threeMarginsRising/threeMarginsRisingBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { novyMarxGpToAssetsBadge } from './profitability/novyMarxGpToAssets/novyMarxGpToAssetsBadge';
+import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
+import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -130,6 +132,20 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 的 O'Shaughnessy Buyback Yield/Sloan Accruals 十分位候選，理論上現在可以用這個新變體重新評估，
 // 但每一支都要重新查證出處是否真的是「固定十分位/五分位」而非「作者自訂絕對數字」，不能自動放行。
 //
+// 2026-09-21：使用者要求重新評估 2026-09-20 第一輪因「門檻數字不是原始出處給的」被下架的候選，
+// 用新的 percentileRank 機制看能不能忠實還原。兩支掛回：
+//   - shareholderYieldBadge：直接讀 Mebane Faber 個人網站免費公開的《Shareholder Yield》全文
+//     （2013）逐字確認他自己的回測方法論用的是「四分位」（quartile，前 25%），不是先前紀錄
+//     誤記的「十分位」——書裡確實提到「top decile」，但那是 Faber 引用 O'Shaughnessy 另一組
+//     獨立回測的結果，不是 Faber 本人的方法論，先前下架時把兩者搞混了。
+//   - accrualsRatioBadge：直接讀 Sloan (1996) 論文全文（免費學術鏡像）逐字確認 Table 1「十等分
+//     排序法」屬實，且方向明確（應計項目越低分位排名越前面）。
+// shareCountChangeRateBadge（Munger「食人族」是質性描述）、cashConversionCycleBadge（Michael
+// Dell 是商業案例不是門檻提出者）這兩支不重新評估——percentileRank 解決的是「作者用排名法但本站
+// 誤植成絕對數字」，不是「作者根本沒訂過任何量化門檻」，機制上幫不了這兩支。sueBadge（Foster/
+// Olsen/Shevlin、Bernard/Thomas 兩篇論文都用十分位排序）理論上符合條件，但兩篇都還沒逐字查證過
+// 具體方法論細節，留待之後有需求再查證掛回，不主動排入。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -153,6 +169,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   threeMarginsRising: threeMarginsRisingBadge,
   grossMargin: grossMarginBadge,
   novyMarxGpToAssets: novyMarxGpToAssetsBadge,
+  shareholderYield: shareholderYieldBadge,
+  accrualsRatio: accrualsRatioBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
