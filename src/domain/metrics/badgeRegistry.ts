@@ -10,6 +10,8 @@ import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYi
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
 import { assetGrowthBadge } from './growth/assetGrowth/assetGrowthBadge';
+import { netIncomeGrowthRateBadge } from './growth/netIncomeGrowthRate/netIncomeGrowthRateBadge';
+import { earningsToRecordHighBadge } from './growth/earningsToRecordHigh/earningsToRecordHighBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -157,6 +159,15 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // bankNplRatio（金管會「加速降低本國銀行逾期放款措施」的 2%/5% 門檻 2013 年已廢止，IMF FSI
 // 指南沒有門檻）、abnormalCapexRatio（最新一季 0 家有值）。
 //
+// 2026-09-21：使用者提供顧廣平、張家瑜、蔡承祐（2025）〈盈餘動能與盈餘創新高動能〉（東吳經濟商學
+// 學報 111 期，公開全文）並要求納入，新增兩支 percentileRank 徽章（台灣市場、作者即原始提出者）：
+//   - netIncomeGrowthRateBadge（盈餘動能前 20%）：論文的「未預期盈餘」公式跟本站 netIncomeGrowthRate
+//     逐字相同，直接掛在既有指標上。
+//   - earningsToRecordHighBadge（盈餘創新高前 20%）：新增指標 earningsToRecordHigh（本季淨利 / 近三年
+//     最高單季淨利），論文附註 1 明載近三年變體結果與全歷史「非常近似」，這樣才落在本站 XBRL 覆蓋範圍
+//     內——2026-09 否決「營收創歷史新高」的資料深度理由因此不適用於這支。
+// 兩支都是「每月依指標均分五組、最高一組為贏家（前 20%）」，逐字見論文第 7 頁與結論頁。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -184,6 +195,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   accrualsRatio: accrualsRatioBadge,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
   assetGrowth: assetGrowthBadge,
+  netIncomeGrowthRate: netIncomeGrowthRateBadge,
+  earningsToRecordHigh: earningsToRecordHighBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
