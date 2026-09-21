@@ -4,38 +4,33 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/cale
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { type ComputationBatch, isComputationSkip, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 
-// SUE（標準化未預期盈餘，Standardized Unexpected Earnings）——季節性隨機漫步版
-// （Foster, Olsen & Shevlin 1984；Bernard & Thomas 1989），PEAD 文獻旗艦指標。
-// UE_i = EPS_i − EPS_{i-4}（本季 vs 去年同季單季 EPS 之差，不是成長率），SUE_t = UE_t /
-// σ(UE)，σ 用最近 20 期 UE 的樣本標準差（ddof=1）估計——原始論文用 20 季估計，2026-09-10
-// 實測驗證過 2330 的 XBRL 損益表資料至少連續回溯到 108Q3（28 季全部有值，無缺口），資料
-// 深度足夠支撐完整的 20 季窗口，不需要退回較短的實務替代窗口。不足 20 期視為
-// insufficient_history，不用更少的期數頂替（跟文件「不自訂較短視窗」的原則一致）。
+// SUE（標準化未預期盈餘）——2026-09-21 起改採顧廣平（2011）〈盈餘與營收動能〉（管理學報 28(6)，
+// 第 525 頁式 (2)，已開 PDF 逐字核對）對台灣市場的定義：
+//   SUE_t = (E_t − E_{t−4} − μ) / σ，E 是單季稅後盈餘（金額，不是 EPS），μ、σ 是「前 8 季盈餘變動值
+//   E_i − E_{i−4}（i = t−1…t−8）」的平均數與樣本標準差（有漂移項的季節性隨機漫步）。
+// 取代原本 2026-09-10 的 Bernard & Thomas 版（EPS、無漂移項、σ 取最近 20 期 UE）。改的理由不是
+// 「縮短視窗」而是換出處：舊版需要 24 季 EPS（含流通股數），2026-09-21 實測全市場最新一季只有
+// 2330 一家算得出來（2057 家 insufficient_history，還卡股本資料缺口）；顧 2011 的版本只要 13 季淨利、
+// 不需要股本，全市場都算得出來，而且它本身就是一篇原創、台灣樣本、免費全文的出處（也是徽章的出處）。
+// formulaVersion 2——同座標舊值會被重算覆蓋（updated_same_knowledge_date），這是刻意的公式變更。
 //
-// 2026-09-10：抽出 resolveSueInputs()，回傳完整 24 期的逐季明細（原本算完 EPS 就丟掉
-// netIncome/shares 細節），給 getSueProvenance.ts（GET /companies/:symbol/metric-provenance
-// 的 sue 試點）共用；寫入路徑（computeAndWriteSuePit）本身行為不變，只是內部改呼叫這個
-// resolver。
+// 資料規則：13 季淨利任一缺漏 → insufficient_history（不用更少期數頂替，窗口變短 σ 就失真）；
+// σ = 0 → zero_or_negative_denominator。resolveSueInputs 仍回傳逐季明細給 getSueProvenance.ts 共用。
 
-const TARGET_UE_WINDOW = 20;
-const MIN_UE_WINDOW = 20;
-// 算 20 期 UE 需要「本季往回 20 期」再加上「每期都要比對去年同季」，所以要抓到本季往回
-// 20+4-1=23 期前，共 24 期 EPS。
-const QUARTERS_OF_EPS_NEEDED = TARGET_UE_WINDOW + 4;
+export const SUE_FORMULA_VERSION = 2;
+// 前 8 季盈餘變動值 + 每個變動值要往前 4 季比對 + 本季 = 8 + 4 + 1 = 13 季淨利。
+const DRIFT_WINDOW = 8;
+const QUARTERS_OF_EARNINGS_NEEDED = DRIFT_WINDOW + 4 + 1;
 
-const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
-  if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
-  return (Number(netIncomeInThousands) * 1000) / Number(shares);
-};
+const mean = (values: number[]): number => values.reduce((sum, v) => sum + v, 0) / values.length;
 
 const sampleStdDev = (values: number[]): number | null => {
   if (values.length < 2) return null;
-  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (values.length - 1);
-  return Math.sqrt(variance);
+  const m = mean(values);
+  return Math.sqrt(values.reduce((sum, v) => sum + (v - m) ** 2, 0) / (values.length - 1));
 };
 
 export interface SueQuarterDetail {
@@ -43,8 +38,6 @@ export interface SueQuarterDetail {
   season: number;
   fiscalYear: number;
   netIncome: PickedField;
-  shares: bigint | null;
-  eps: number | null;
 }
 
 export interface SueResolution {
@@ -53,20 +46,17 @@ export interface SueResolution {
   season: string;
   fiscalYear: number;
   fiscalQuarter: number;
-  quarterDetails: SueQuarterDetail[];
+  quarterDetails: SueQuarterDetail[]; // 13 季，舊到新，最後一筆是本季
   lastIndex: number;
-  ueValues: (number | null)[];
-  currentUe: number | null;
-  stdDev: number | null;
+  currentChange: number | null; // E_t − E_{t−4}
+  drift: number | null; // μ
+  stdDev: number | null; // σ
   sueValue: number | null;
   nullReason: MetricNullReason | null;
   mainAnchor: KnowledgeDateResolution | null;
 }
 
-export const resolveSueInputs = async (
-  query: QuarterlyMetricQuery,
-  deps: SueDeps
-): Promise<SueResolution | null> => {
+export const resolveSueInputs = async (query: QuarterlyMetricQuery, deps: SueDeps): Promise<SueResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
@@ -78,69 +68,45 @@ export const resolveSueInputs = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  // 24 期 EPS，舊到新排列，最後一筆就是本季。
-  const epsQuarters = getPastNQuarters({ rocYear, season: season as Season }, QUARTERS_OF_EPS_NEEDED);
-  const epsRecords = await Promise.all(
-    epsQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+  const quarters = getPastNQuarters({ rocYear, season: season as Season }, QUARTERS_OF_EARNINGS_NEEDED);
+  const records = await Promise.all(
+    quarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
-  const quarterDetails: SueQuarterDetail[] = await Promise.all(
-    epsQuarters.map(async (tq, i) => {
-      const record = epsRecords[i]!;
-      const netIncome = pickNetIncome(record);
-      const shares = record ? (await deps.shares.getPaidInShares(symbol, record.reportDate))?.paidInShares ?? null : null;
-      return {
-        rocYear: Number(tq.year),
-        season: Number(tq.season),
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        netIncome,
-        shares,
-        eps: toEps(netIncome.value, shares),
-      };
-    })
-  );
+  const quarterDetails: SueQuarterDetail[] = quarters.map((tq, i) => ({
+    rocYear: Number(tq.year),
+    season: Number(tq.season),
+    fiscalYear: rocYearToGregorian(Number(tq.year)),
+    netIncome: pickNetIncome(records[i]!),
+  }));
 
-  const reportDate = epsRecords[epsRecords.length - 1]?.reportDate ?? null;
+  const reportDate = records[records.length - 1]?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
-  // 索引 QUARTERS_OF_EPS_NEEDED-1 是本季（最新），往前數第 4 筆是去年同季。
-  // k=0 是本季 UE，k=1..TARGET_UE_WINDOW-1 是更早的 UE，用來估計標準差（含 k=0 本身）。
   const lastIndex = quarterDetails.length - 1;
-  const ueValues: (number | null)[] = [];
-  for (let k = 0; k < TARGET_UE_WINDOW; k++) {
-    const currentIdx = lastIndex - k;
-    const priorYearIdx = currentIdx - 4;
-    if (currentIdx < 0 || priorYearIdx < 0) {
-      ueValues.push(null);
-      continue;
-    }
-    const current = quarterDetails[currentIdx]!.eps;
-    const priorYear = quarterDetails[priorYearIdx]!.eps;
-    ueValues.push(current !== null && priorYear !== null ? current - priorYear : null);
-  }
+  // k=0 是本季的盈餘變動值，k=1..8 是前 8 季的盈餘變動值（估 μ、σ 用）。
+  const changeAt = (k: number): number | null => {
+    const current = quarterDetails[lastIndex - k]!.netIncome.value;
+    const priorYear = quarterDetails[lastIndex - k - 4]!.netIncome.value;
+    return current !== null && priorYear !== null ? Number(current - priorYear) : null;
+  };
+  const currentChange = changeAt(0);
+  const driftWindow = Array.from({ length: DRIFT_WINDOW }, (_, i) => changeAt(i + 1));
+  const historyComplete = currentChange !== null && driftWindow.every((v) => v !== null);
 
-  const currentUe = ueValues[0] ?? null;
-  const ueWindow = ueValues.filter((v): v is number => v !== null);
+  const drift = historyComplete ? mean(driftWindow as number[]) : null;
+  const stdDev = historyComplete ? sampleStdDev(driftWindow as number[]) : null;
+  const sueValue = currentChange !== null && drift !== null && stdDev !== null && stdDev !== 0 ? Math.round(((currentChange - drift) / stdDev) * 100) / 100 : null;
 
-  const stdDev = ueWindow.length >= MIN_UE_WINDOW ? sampleStdDev(ueWindow) : null;
-  const sueValue = currentUe !== null && stdDev !== null && stdDev !== 0 ? Math.round((currentUe / stdDev) * 100) / 100 : null;
+  const nullReason: MetricNullReason | null = sueValue !== null ? null : !historyComplete ? 'insufficient_history' : 'zero_or_negative_denominator';
 
-  let nullReason: MetricNullReason | null = null;
-  if (sueValue === null) {
-    nullReason = currentUe === null || stdDev === null ? 'insufficient_history' : 'zero_or_negative_denominator';
-  }
-
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, quarterDetails, lastIndex, ueValues, currentUe, stdDev, sueValue, nullReason, mainAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, quarterDetails, lastIndex, currentChange, drift, stdDev, sueValue, nullReason, mainAnchor };
 };
 
-
-export type SueDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+export type SueDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
 
 export type SueComputationBatch = ComputationBatch<'q'>;
 
-export const computeSue = async (
-  query: QuarterlyMetricQuery,
-  deps: SueDeps
-): Promise<SueComputationBatch> => {
+export const computeSue = async (query: QuarterlyMetricQuery, deps: SueDeps): Promise<SueComputationBatch> => {
   const resolution = await resolveSueInputs(query, deps);
   if (!resolution) {
     return noQuarterBatch(query.symbol, ['q']);
@@ -149,7 +115,8 @@ export const computeSue = async (
   const { symbol, rocYear, season, fiscalYear, fiscalQuarter, sueValue, nullReason, mainAnchor } = resolution;
   const coordinateBase = { symbol, metricCode: 'sue', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', sueValue, nullReason);
+  const slot = periodSlot(mainAnchor, coordinateBase, 'Q', sueValue, nullReason);
+  const q = isComputationSkip(slot) ? slot : { ...slot, formulaVersion: SUE_FORMULA_VERSION };
 
   return { symbol, rocYear, season, slots: { q } };
 };

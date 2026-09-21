@@ -11,6 +11,7 @@ import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
 import { netIncomeGrowthRateBadge } from './growth/netIncomeGrowthRate/netIncomeGrowthRateBadge';
 import { earningsToRecordHighBadge } from './growth/earningsToRecordHigh/earningsToRecordHighBadge';
+import { sueBadge } from './growth/sue/sueBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -175,6 +176,13 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 之後若要做「其他資產成長」（總資產扣現金/流動資產/長投/固定資產後的殘項年增率）最低十分位，柯冠成等
 // 2012 是合格出處（免費全文、原創者、台灣樣本、十分位明確），但指標冷僻，未排入。
 //
+// 2026-09-21：sueBadge 掛回，出處換成顧廣平（2011）〈盈餘與營收動能〉（管理學報 28(6)，公開全文），
+// 且 sue 指標本身同步換成該論文的定義（淨利金額、含漂移項、μ/σ 取前 8 季；formulaVersion 2）——舊的
+// Bernard & Thomas 版全市場最新一季只有 2330 算得出來（24 季 EPS + 股本缺口），顧 2011 版只要 13 季
+// 淨利。門檻「前 1/3」逐字：「依每月個別股票之 SUE…均分成 3 個組合…SUE 最高之組合 E3 為盈餘贏家組合」，
+// percentileRank topPercent 33.33。第二輪下架時的理由（原始論文用排名法、本站硬湊 > 2 絕對切點）現在
+// 兩個都解掉了。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -203,6 +211,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
   netIncomeGrowthRate: netIncomeGrowthRateBadge,
   earningsToRecordHigh: earningsToRecordHighBadge,
+  sue: sueBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
