@@ -130,6 +130,27 @@ export interface MetricBadge extends NamedEntity {
     compareAgainstFieldId?: string;
     // 格式同上，多個 "metricCode.timeframe"，語意是「這些欄位全部都要 > 0」。
     allPositiveFieldIds?: string[];
+    // 2026-09-21 新增第六種變體：跟同一批公司「橫斷面排名」比較，不是跟固定常數比較。動機——
+    // Novy-Marx（Gross Profitability）、O'Shaughnessy（Buyback Yield 十分位）這類出處原本因為
+    // 型別只支援絕對數字被排除（見 badgeRegistry.ts 稽核紀錄），但這些出處本來就是用十分位/
+    // 五分位定義「高/低」，不是自訂一個絕對門檻，有了這個變體之後可以忠實呈現原始方法論，不用
+    // 硬湊一個出處沒寫過的絕對數字。用這個變體時 comparator/value/valueMin/valueMax/
+    // compareAgainstFieldId/allPositiveFieldIds 都不使用。
+    percentileRank?: {
+      // market：跟全市場（排除金融保險業由各指標自己的 nullReason 決定，這裡不重複判斷）比較；
+      // sector：只跟同一個證交所類股（company_profile.industry，GET /industries/securities-sectors
+      // 同一套代碼）的公司比較——這是使用者 2026-09-21 要求「我們產業就按證交所的分類」定案的
+      // 分類依據，不是 gov-ts 稅籍分類、也不是已下架的 playwright 供應鏈分類。公司自己的類股代碼
+      // 是「非產業」代碼（07/91/98/XX）或字典查無資料時，sector 排名無法計算（null，不是 0%）。
+      scope: 'market' | 'sector';
+      // desc：數值越大排名越前面（例如毛利率、ROE）；asc：數值越小排名越前面（例如本益比）。
+      direction: 'asc' | 'desc';
+      // 前 N%（1–100 之間），例如 Novy-Marx 的最高五分位是 20。用 RANK()/總數換算百分位，
+      // 並列的公司拿到相同名次（跟 GET /screener/company-rank 同一套規則）。
+      topPercent: number;
+      // 同 GET /screener/company-rank 的 excludeZero——排名母體要不要排除精確等於 0 的公司。
+      excludeZero?: boolean;
+    };
   };
 }
 

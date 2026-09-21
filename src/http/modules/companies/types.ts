@@ -253,6 +253,13 @@ export const companyBadgeResultSchema = z.object({
       '或 value 為 null 時一律 null。跟 passed 互斥不會同時 true；passed=false 且 warning=false 代表落在中間區。前端顯示：' +
       'passed → 達成、warning → 警示、都 false → 中間、null → 無法判定。',
   }),
+  percentile: z.number().nullable().meta({
+    description:
+      '2026-09-21 新增：只有出處是「橫斷面排名」（見 GET /metrics 的 badge.threshold.percentileRank）的徽章才會填，其餘一律 null。' +
+      '贏過全市場/同類股的百分比（0-100，數字越大排名越前面），例如 95 代表贏過 95% 的比較對象。',
+  }),
+  rank: z.number().int().nullable().meta({ description: '2026-09-21 新增：只有 percentileRank 徽章才會填，原始名次（並列共用名次），其餘一律 null。' }),
+  totalCount: z.number().int().nullable().meta({ description: '2026-09-21 新增：只有 percentileRank 徽章才會填，排名母體總數（market=全市場、sector=同類股家數），其餘一律 null。' }),
 });
 
 export const companyBadgeCategorySchema = z.object({

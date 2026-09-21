@@ -1,6 +1,8 @@
 import { scanMetricFolderCatalog } from '@/application/metrics/metricFolderCatalog';
+import { resolveTimeframeForMetric } from '@/application/metrics/resolveTimeframeForMetric';
 import { fetchLatestMetricValue } from '../fetchLatestMetricValue';
 import type { MetricHistoryDeps } from '../queryMetricHistory';
+import type { AppDeps } from '@/application/deps';
 import type { MetricBadge } from '../../../../domain/metrics/metricDefinitionSpec';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 
@@ -19,6 +21,8 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 // 對落差、細節未定案，這支端點目前只做「每支 badge 各自獨立判定 passed」的通用邏輯，
 // 三模型聚合是後續獨立的擴充，不在這裡混著做。
 
+export type EvaluateCompanyBadgesDeps = Pick<AppDeps, 'metricValueQueries' | 'industryReference' | 'companyProfiles'>;
+
 export interface CompanyBadgeResult {
   metricCode: string;
   name: string;
@@ -32,6 +36,14 @@ export interface CompanyBadgeResult {
   // 2026-09-20 新增：落在出處定義的「弱/警示」區。沒有定義 warning 門檻的徽章一律 null；value 為 null
   // 時也是 null。跟 passed 互斥（不會同時 true），見 metricDefinitionSpec.ts threshold.warning 的說明。
   warning: boolean | null;
+  // 2026-09-21 新增：只有 threshold.percentileRank 的徽章才會填，其餘一律 null。percentile 是
+  // 「贏過全市場/同類股百分之幾」（0-100，數字越大排名越前面，例如 95 代表贏過 95% 的同儕）；
+  // rank/totalCount 是原始名次/母體總數，給前端想顯示「1,204 家裡排第 58 名」這種文案用，不用
+  // 自己從 percentile 反推。sector 排名母體無法決定（公司沒有有效的證交所類股代碼）時三者皆 null，
+  // 跟「這支指標本身算不出來」用同一套 null 語意，不特別區分。
+  percentile: number | null;
+  rank: number | null;
+  totalCount: number | null;
 }
 
 export interface CompanyBadgeCategory {
@@ -89,8 +101,55 @@ const evaluateWarning = (warning: NonNullable<MetricBadge['threshold']['warning'
   }
 };
 
-export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryDeps): Promise<CompanyBadgeCategory[]> => {
+// percentileRank 徽章的排名母體——market 回 null（companyRank 原生語意就是不限類股）；sector 查
+// 公司自己的證交所類股代碼，代碼不存在/不合法（07/91/98/XX 這種「非產業」代碼、或這家公司從來沒有
+// 類股資料）就回 undefined，呼叫端據此判斷「這家公司沒辦法做同類股排名」跟「查詢本身失敗」是同一種
+// null 情境，不特別報錯。
+const resolveCandidateSymbols = async (symbol: string, scope: 'market' | 'sector', deps: EvaluateCompanyBadgesDeps): Promise<string[] | null | undefined> => {
+  if (scope === 'market') return null;
+  const profile = await deps.companyProfiles.getCompanyProfileDetail(symbol);
+  const sectorCode = profile?.industry ?? null;
+  if (!sectorCode || !deps.industryReference.isValidSecuritiesSectorCode(sectorCode)) return undefined;
+  const members = await deps.industryReference.listCompaniesBySectorCodes([sectorCode]);
+  return [...members];
+};
+
+interface PercentileRankResult {
+  value: number | null;
+  percentile: number | null;
+  rank: number | null;
+  totalCount: number | null;
+  passed: boolean | null;
+}
+
+const NULL_PERCENTILE_RESULT: PercentileRankResult = { value: null, percentile: null, rank: null, totalCount: null, passed: null };
+
+const evaluatePercentileRank = async (
+  symbol: string,
+  metricCode: string,
+  timeframe: string,
+  percentileRank: NonNullable<MetricBadge['threshold']['percentileRank']>,
+  deps: EvaluateCompanyBadgesDeps
+): Promise<PercentileRankResult> => {
+  const candidateSymbols = await resolveCandidateSymbols(symbol, percentileRank.scope, deps);
+  if (candidateSymbols === undefined) return NULL_PERCENTILE_RESULT;
+
+  const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
+  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols);
+  const row = rows[0];
+  if (!row) return NULL_PERCENTILE_RESULT;
+
+  const rank = Number(row.rank);
+  const totalCount = Number(row.total_count);
+  const percentile = totalCount > 0 ? Math.round((1 - (rank - 1) / totalCount) * 1000) / 10 : null;
+  const passed = percentile !== null ? rank / totalCount <= percentileRank.topPercent / 100 : null;
+
+  return { value: typeof row.value === 'number' ? row.value : Number(row.value), percentile, rank, totalCount, passed };
+};
+
+export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompanyBadgesDeps): Promise<CompanyBadgeCategory[]> => {
   const catalog = scanMetricFolderCatalog();
+  const metricHistoryDeps: MetricHistoryDeps = deps;
 
   const categories = await Promise.all(
     catalog.map(async ({ categoryKey, categoryDisplayName, metrics }) => {
@@ -103,7 +162,30 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult | null> => {
           const badge = metric.badge!;
           const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge
-          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, deps);
+
+          // percentileRank 是橫斷面比較，走獨立的一條路徑——companyRank 本身就會回傳這支指標的
+          // 原始數值（row.value），不需要再另外呼叫 fetchLatestMetricValue 抓一次。
+          if (badge.threshold.percentileRank) {
+            const result = await evaluatePercentileRank(symbol, metric.metricCode, timeframe, badge.threshold.percentileRank, deps);
+            if (result.value === null) return null; // 這家公司這支指標本身沒有值，或排名母體解析不出來——沒有意義的徽章列，跳過不回傳
+            return {
+              metricCode: metric.metricCode,
+              name: badge.name,
+              nameEn: badge.nameEn,
+              timeframe,
+              value: result.value,
+              nullReason: null,
+              knowledgeDate: null,
+              knowledgeDateIsFallback: null,
+              passed: result.passed,
+              warning: null, // percentileRank 目前沒有 warning 端的案例，有再加
+              percentile: result.percentile,
+              rank: result.rank,
+              totalCount: result.totalCount,
+            };
+          }
+
+          const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, metricHistoryDeps);
 
           // 2026-09-15 使用者要求新增：像 bankCarRatio/bankCet1Ratio/bankTier1Ratio 這種
           // 只對特定產業（銀行/金控）有意義的指標，非銀行公司（例如台積電）從來不會有任何
@@ -120,7 +202,7 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
           let compareValue: number | null = null;
           if (badge.threshold.compareAgainstFieldId) {
             const [compareMetricCode, compareTimeframe] = badge.threshold.compareAgainstFieldId.split('.');
-            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareTimeframe!, deps);
+            const compareFetched = await fetchLatestMetricValue(symbol, compareMetricCode!, compareTimeframe!, metricHistoryDeps);
             compareValue = compareFetched?.value ?? null;
           }
 
@@ -140,6 +222,9 @@ export const evaluateCompanyBadges = async (symbol: string, deps: MetricHistoryD
             knowledgeDateIsFallback: fetched?.knowledgeDateIsFallback ?? null,
             passed,
             warning,
+            percentile: null,
+            rank: null,
+            totalCount: null,
           };
         })
       );

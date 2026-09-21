@@ -315,9 +315,24 @@
                                   "nullable": true,
                                   "type": "boolean"
                                 },
+                                "percentile": {
+                                  "description": "2026-09-21 新增：只有出處是「橫斷面排名」（見 GET /metrics 的 badge.threshold.percentileRank）的徽章才會填，其餘一律 null。贏過全市場/同類股的百分比（0-100，數字越大排名越前面），例如 95 代表贏過 95% 的比較對象。",
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "rank": {
+                                  "description": "2026-09-21 新增：只有 percentileRank 徽章才會填，原始名次（並列共用名次），其餘一律 null。",
+                                  "nullable": true,
+                                  "type": "integer"
+                                },
                                 "timeframe": {
                                   "description": "這支 badge 讀值用的 timeframe（對應 metric-history 的 timeframe 參數）",
                                   "type": "string"
+                                },
+                                "totalCount": {
+                                  "description": "2026-09-21 新增：只有 percentileRank 徽章才會填，排名母體總數（market=全市場、sector=同類股家數），其餘一律 null。",
+                                  "nullable": true,
+                                  "type": "integer"
                                 },
                                 "value": {
                                   "description": "這支指標最新一期的數值；null 代表算不出來，原因見 nullReason",
@@ -339,7 +354,10 @@
                                 "knowledgeDate",
                                 "knowledgeDateIsFallback",
                                 "passed",
-                                "warning"
+                                "warning",
+                                "percentile",
+                                "rank",
+                                "totalCount"
                               ],
                               "type": "object"
                             },
@@ -5247,6 +5265,41 @@
                                         "note": {
                                           "description": "門檻的出處/限制/跟原論文差異等補充說明，跟 description 分開存放；沒有補充說明時省略",
                                           "type": "string"
+                                        },
+                                        "percentileRank": {
+                                          "description": "2026-09-21 新增（選填）：跟固定常數比較的第六種變體——出處本來就是用十分位/五分位定義「高/低」（Novy-Marx、O'Shaughnessy 這類），不是自訂絕對門檻。有這個欄位時 comparator/value/valueMin/valueMax/compareAgainstFieldId/allPositiveFieldIds 都不使用，GET /companies/badges 改用 percentile/rank/totalCount 三個欄位表達結果。",
+                                          "properties": {
+                                            "direction": {
+                                              "description": "desc=數值越大排名越前面（例如毛利率）；asc=數值越小排名越前面（例如本益比）",
+                                              "enum": [
+                                                "asc",
+                                                "desc"
+                                              ],
+                                              "type": "string"
+                                            },
+                                            "excludeZero": {
+                                              "description": "排名母體要不要排除精確等於 0 的公司，同 GET /screener/company-rank 的 excludeZero",
+                                              "type": "boolean"
+                                            },
+                                            "scope": {
+                                              "description": "market=跟全市場比較；sector=只跟同一個證交所類股（company_profile.industry）的公司比較",
+                                              "enum": [
+                                                "market",
+                                                "sector"
+                                              ],
+                                              "type": "string"
+                                            },
+                                            "topPercent": {
+                                              "description": "前 N%（1-100），例如 Novy-Marx 的最高五分位是 20",
+                                              "type": "number"
+                                            }
+                                          },
+                                          "required": [
+                                            "scope",
+                                            "direction",
+                                            "topPercent"
+                                          ],
+                                          "type": "object"
                                         },
                                         "thresholdLatex": {
                                           "description": "門檻的 LaTeX 數學式呈現（例如 \"\\mathrm{Z} > 2.99\"），跟 formulaLatex 同一套 compute-engine 驗證機制，符號盡量跟該指標自己的 formulaLatex 一致",

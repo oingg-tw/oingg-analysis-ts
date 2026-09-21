@@ -115,6 +115,20 @@ const metricFolderCatalogEntrySchema = z.object({
           description: '格式 "metricCode.timeframe"，語意是「這個欄位的值 {comparator} 這支指標自己的值」（例如 Graham Number 是「股價 < Graham Number」）',
         }),
         allPositiveFieldIds: z.array(z.string()).optional().meta({ description: '格式同上，多個欄位，語意是「全部都要 > 0」' }),
+        percentileRank: z
+          .object({
+            scope: z.enum(['market', 'sector']).meta({ description: 'market=跟全市場比較；sector=只跟同一個證交所類股（company_profile.industry）的公司比較' }),
+            direction: z.enum(['asc', 'desc']).meta({ description: 'desc=數值越大排名越前面（例如毛利率）；asc=數值越小排名越前面（例如本益比）' }),
+            topPercent: z.number().meta({ description: '前 N%（1-100），例如 Novy-Marx 的最高五分位是 20' }),
+            excludeZero: z.boolean().optional().meta({ description: '排名母體要不要排除精確等於 0 的公司，同 GET /screener/company-rank 的 excludeZero' }),
+          })
+          .optional()
+          .meta({
+            description:
+              '2026-09-21 新增（選填）：跟固定常數比較的第六種變體——出處本來就是用十分位/五分位定義「高/低」（Novy-Marx、' +
+              'O\'Shaughnessy 這類），不是自訂絕對門檻。有這個欄位時 comparator/value/valueMin/valueMax/compareAgainstFieldId/' +
+              'allPositiveFieldIds 都不使用，GET /companies/badges 改用 percentile/rank/totalCount 三個欄位表達結果。',
+          }),
         warning: z
           .object({
             description: z.string().meta({ description: '警示門檻的人類可讀說明，只放門檻本身（例如 "≤ 2"）' }),

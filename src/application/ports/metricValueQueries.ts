@@ -105,7 +105,10 @@ export interface MetricValueQueryPort {
   rank(rankedField: FieldRef, direction: 'asc' | 'desc', limit: number, columns: FieldRef[], scope: SymbolScope | null): Promise<Record<string, unknown>[]>;
   // 單一公司在全市場某欄位的名次（RANK()，並列共用名次）；查無資料回空陣列。excludeZero 同
   // distribution() 的判斷條件（排除精確等於 0 的列，例如殖利率的「不配息」，不影響非 0 語意的欄位）。
-  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean): Promise<CompanyRankRow[]>;
+  // candidateSymbols：2026-09-21 應 percentileRank 徽章需求新增（選填，預設 null=全市場不限）——
+  // 縮小排名母體到指定的 symbol 清單（例如某個證交所類股的成分股），只有 include 語意，沒有
+  // SymbolScope 的 exclude 變體（目前唯一的呼叫端 evaluateCompanyBadges 用不到排除）。
+  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean, candidateSymbols?: string[] | null): Promise<CompanyRankRow[]>;
   // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
   values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
   // 全市場某個欄位的分布（直方圖用），bins 是要切幾格；excludeZero 排除值精確等於 0 的列

@@ -20,7 +20,9 @@ export interface CompanyBadgesResult {
 // 2026-09-13 使用者要求：前端原本拿 GET /metrics 的 badge.threshold 自己跟 metric-history
 // 的數值土法煉鋼比較「達成/未達成」，已證實會出錯。這支端點統一由後端算好每支 badge
 // 的 passed，前端只管呈現，範圍限定在有 badge 的指標（見 evaluateCompanyBadges.ts）。
-export const getCompanyBadges = async (symbol: string, deps: Pick<AppDeps, 'metricValueQueries'>): Promise<CompanyBadgesResult> => {
+// 2026-09-21：deps 多兩個 port（industryReference/companyProfiles）——percentileRank 徽章要查
+// 公司自己的證交所類股代碼、展開同類股成分股，見 evaluateCompanyBadges.ts 的 resolveCandidateSymbols。
+export const getCompanyBadges = async (symbol: string, deps: Pick<AppDeps, 'metricValueQueries' | 'industryReference' | 'companyProfiles'>): Promise<CompanyBadgesResult> => {
   const categories = await evaluateCompanyBadges(symbol, deps);
   return { symbol, categories };
 };

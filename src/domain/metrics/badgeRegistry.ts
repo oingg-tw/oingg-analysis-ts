@@ -5,6 +5,7 @@ import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/share
 import { sgrBadge } from './growth/sgr/sgrBadge';
 import { threeMarginsRisingBadge } from './growth/threeMarginsRising/threeMarginsRisingBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
+import { novyMarxGpToAssetsBadge } from './profitability/novyMarxGpToAssets/novyMarxGpToAssetsBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -119,6 +120,16 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 淨利率、負債結構、租賃調整）都是產業平均值統計不是分級門檻，這張利息保障倍數表是目前唯一符合
 // 「比率對應到具體等級」條件的資料集，完整脈絡見 interestCoverageBadge.ts 檔頭。
 //
+// 2026-09-21：新增第六種門檻變體 threshold.percentileRank（跟同一批公司橫斷面排名比較，不是跟
+// 固定常數）+ novyMarxGpToAssetsBadge 是第一個使用案例。動機：Novy-Marx（Gross Profitability）、
+// O'Shaughnessy（Buyback Yield 十分位）這類出處的「高/低」本來就是十分位/五分位排名定義，不是
+// 作者自己訂的絕對數字，之前因為型別只支援絕對常數比較被排除（見上面第二輪的分析），現在可以
+// 忠實呈現原始方法論。novyMarxGpToAssetsBadge 已直接讀 Novy-Marx 個人網站免費公開的論文全文
+// 逐字確認「quintile sort」「NYSE break points」「excludes financial firms」，scope 選 market
+// （論文原文排名母體是全市場不分產業），完整脈絡見 novyMarxGpToAssetsBadge.ts 檔頭。之前被否決
+// 的 O'Shaughnessy Buyback Yield/Sloan Accruals 十分位候選，理論上現在可以用這個新變體重新評估，
+// 但每一支都要重新查證出處是否真的是「固定十分位/五分位」而非「作者自訂絕對數字」，不能自動放行。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -141,6 +152,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   sgr: sgrBadge,
   threeMarginsRising: threeMarginsRisingBadge,
   grossMargin: grossMarginBadge,
+  novyMarxGpToAssets: novyMarxGpToAssetsBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,

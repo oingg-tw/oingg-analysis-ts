@@ -12,7 +12,10 @@
             "nameEn": "<string>",
             "nullReason": "<null>",
             "passed": "<boolean>",
+            "percentile": "<null>",
+            "rank": "<null>",
             "timeframe": "EOD",
+            "totalCount": "<null>",
             "value": "<number>",
             "warning": "<null>"
           }
