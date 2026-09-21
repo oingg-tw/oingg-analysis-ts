@@ -115,14 +115,13 @@ const resolveCandidateSymbols = async (symbol: string, scope: 'market' | 'sector
 };
 
 interface PercentileRankResult {
-  value: number | null;
   percentile: number | null;
   rank: number | null;
   totalCount: number | null;
   passed: boolean | null;
 }
 
-const NULL_PERCENTILE_RESULT: PercentileRankResult = { value: null, percentile: null, rank: null, totalCount: null, passed: null };
+const NULL_PERCENTILE_RESULT: PercentileRankResult = { percentile: null, rank: null, totalCount: null, passed: null };
 
 const evaluatePercentileRank = async (
   symbol: string,
@@ -144,7 +143,7 @@ const evaluatePercentileRank = async (
   const percentile = totalCount > 0 ? Math.round((1 - (rank - 1) / totalCount) * 1000) / 10 : null;
   const passed = percentile !== null ? rank / totalCount <= percentileRank.topPercent / 100 : null;
 
-  return { value: typeof row.value === 'number' ? row.value : Number(row.value), percentile, rank, totalCount, passed };
+  return { percentile, rank, totalCount, passed };
 };
 
 export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompanyBadgesDeps): Promise<CompanyBadgeCategory[]> => {
@@ -162,28 +161,6 @@ export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompan
         badgeMetrics.map(async (metric): Promise<CompanyBadgeResult | null> => {
           const badge = metric.badge!;
           const timeframe = badge.timeframe!; // 已在上面過濾掉 timeframe undefined 的 badge
-
-          // percentileRank 是橫斷面比較，走獨立的一條路徑——companyRank 本身就會回傳這支指標的
-          // 原始數值（row.value），不需要再另外呼叫 fetchLatestMetricValue 抓一次。
-          if (badge.threshold.percentileRank) {
-            const result = await evaluatePercentileRank(symbol, metric.metricCode, timeframe, badge.threshold.percentileRank, deps);
-            if (result.value === null) return null; // 這家公司這支指標本身沒有值，或排名母體解析不出來——沒有意義的徽章列，跳過不回傳
-            return {
-              metricCode: metric.metricCode,
-              name: badge.name,
-              nameEn: badge.nameEn,
-              timeframe,
-              value: result.value,
-              nullReason: null,
-              knowledgeDate: null,
-              knowledgeDateIsFallback: null,
-              passed: result.passed,
-              warning: null, // percentileRank 目前沒有 warning 端的案例，有再加
-              percentile: result.percentile,
-              rank: result.rank,
-              totalCount: result.totalCount,
-            };
-          }
 
           const fetched = await fetchLatestMetricValue(symbol, metric.metricCode, timeframe, metricHistoryDeps);
 
@@ -208,8 +185,17 @@ export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompan
 
           const value = fetched?.value ?? null;
           const nullReason = fetched?.nullReason ?? null;
-          const passed = value === null ? null : evaluateComparator(badge.threshold, value, compareValue);
-          const warning = value === null || !badge.threshold.warning ? null : evaluateWarning(badge.threshold.warning, value);
+
+          // 2026-09-21 web-nuxt 回報 bug：percentileRank 徽章原本走獨立路徑（只靠 companyRank 拿值），value 為 null
+          // 時整筆 return null，7 支橫斷面徽章在算不出來的公司上從回應裡消失（2412 少了 6 支）——跟上面「只有
+          // 『從未計算過』才跳過、『這季算不出來』照回 nullReason」的規則矛盾，使用者明確要求不適用的徽章也要列。
+          // 改成兩種徽章共用同一段 fetch + 跳過規則，percentileRank 只在有值時才多做一次排名查詢；排名母體
+          // 解析不出來（sector 無效）或這家不在母體裡時 passed/percentile 皆 null，但列本身照回。
+          const percentileRank = badge.threshold.percentileRank;
+          const ranked = percentileRank && value !== null ? await evaluatePercentileRank(symbol, metric.metricCode, timeframe, percentileRank, deps) : NULL_PERCENTILE_RESULT;
+          const passed = value === null ? null : percentileRank ? ranked.passed : evaluateComparator(badge.threshold, value, compareValue);
+          // percentileRank 目前沒有 warning 端的案例，有再加。
+          const warning = value === null || percentileRank || !badge.threshold.warning ? null : evaluateWarning(badge.threshold.warning, value);
 
           return {
             metricCode: metric.metricCode,
@@ -222,9 +208,9 @@ export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompan
             knowledgeDateIsFallback: fetched?.knowledgeDateIsFallback ?? null,
             passed,
             warning,
-            percentile: null,
-            rank: null,
-            totalCount: null,
+            percentile: ranked.percentile,
+            rank: ranked.rank,
+            totalCount: ranked.totalCount,
           };
         })
       );

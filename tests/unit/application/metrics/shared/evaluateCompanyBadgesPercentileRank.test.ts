@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { evaluateCompanyBadges } from '@/application/metrics/shared/badges/evaluateCompanyBadges';
-import type { CompanyRankRow, MetricValueQueryPort } from '@/application/ports/metricValueQueries';
+import type { CompanyRankRow, MetricValueQueryPort, PeriodHistoryRow } from '@/application/ports/metricValueQueries';
 import { createTestDeps } from '../../../../fakes/createTestDeps';
 
 // 2026-09-21 threshold.percentileRank（跟同一批公司橫斷面排名比較，不是跟固定常數）——用
@@ -13,16 +13,19 @@ import { createTestDeps } from '../../../../fakes/createTestDeps';
 // 任何呼叫端會走到的分支。
 
 const rankRow = (value: number, rank: number, totalCount: number): CompanyRankRow => ({ symbol: '2330', value, rank: BigInt(rank), quintile: 1n, total_count: BigInt(totalCount) });
+const latestRow = (value: number | null, nullReason: string | null): PeriodHistoryRow => ({ fiscalYear: 2026, fiscalQuarter: 2, value, nullReason, knowledgeDate: new Date('2026-08-14'), knowledgeDateIsFallback: false });
 
-const queriesWithGpToAssets = (rows: CompanyRankRow[]): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows' | 'listDailyCadenceMetricHistoryRows' | 'findLatestSnapshotValue' | 'companyRank'> => ({
-  listPeriodMetricHistoryRows: async () => [], // 其餘一般徽章走這條，回空＝不適用略過，結果只會出現 novyMarxGpToAssets 一支
+// 2026-09-21 起 percentileRank 徽章跟一般徽章共用同一段「先查最新值」的路徑（web-nuxt 回報 bug 後合併）：
+// latest 是 fetchLatestMetricValue 會看到的最新列（[] = 從未計算過），rows 是 companyRank 的排名結果。
+const queriesWithGpToAssets = (latest: PeriodHistoryRow[], rows: CompanyRankRow[]): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows' | 'listDailyCadenceMetricHistoryRows' | 'findLatestSnapshotValue' | 'companyRank'> => ({
+  listPeriodMetricHistoryRows: async (_symbol, metricCode) => (metricCode === 'novyMarxGpToAssets' ? latest : []), // 其餘徽章回空＝從未計算過、略過，結果只會出現 novyMarxGpToAssets 一支
   listDailyCadenceMetricHistoryRows: async () => [],
   findLatestSnapshotValue: async () => null,
   companyRank: async (_symbol, field) => (field.metricCode === 'novyMarxGpToAssets' ? rows : []),
 });
 
-const gpToAssetsBadgeOf = async (rows: CompanyRankRow[]) => {
-  const deps = createTestDeps({ metricValueQueries: queriesWithGpToAssets(rows) as MetricValueQueryPort });
+const gpToAssetsBadgeOf = async (rows: CompanyRankRow[], latest: PeriodHistoryRow[] = rows.map((r) => latestRow(r.value as number, null))) => {
+  const deps = createTestDeps({ metricValueQueries: queriesWithGpToAssets(latest, rows) as MetricValueQueryPort });
   const categories = await evaluateCompanyBadges('2330', deps);
   return categories.flatMap((c) => c.badges).find((b) => b.metricCode === 'novyMarxGpToAssets');
 };
@@ -49,8 +52,20 @@ describe('evaluateCompanyBadges 的 percentileRank（novyMarxGpToAssets，market
     expect(badge!.passed).toBe(false);
   });
 
-  test('companyRank 查無這家公司（value 本身算不出來）：這支徽章整個不出現在結果裡', async () => {
-    const badge = await gpToAssetsBadgeOf([]);
+  test('從未計算過（metric_values 沒有任何列）：這支徽章整個不出現在結果裡，跟一般徽章同規則', async () => {
+    const badge = await gpToAssetsBadgeOf([], []);
     expect(badge).toBeUndefined();
+  });
+
+  // 2026-09-21 web-nuxt 回報：算不出來的公司上 percentileRank 徽章整筆缺席（徽章總數在公司間跳動 28/26/22），
+  // 使用者要求不適用的徽章也要列——有列但 value null 時要照回 nullReason，percentile 三欄 null。
+  test('這季算不出來（有列、value null、nullReason 是列舉值）：照回傳，passed/percentile/rank/totalCount 皆 null', async () => {
+    const badge = await gpToAssetsBadgeOf([], [latestRow(null, 'insufficient_history')]);
+    expect(badge).toMatchObject({ value: null, nullReason: 'insufficient_history', knowledgeDate: '2026-08-14', passed: null, percentile: null, rank: null, totalCount: null });
+  });
+
+  test('有值但不在排名母體裡（companyRank 回空）：value 照回，排名三欄與 passed 為 null', async () => {
+    const badge = await gpToAssetsBadgeOf([], [latestRow(12.3, null)]);
+    expect(badge).toMatchObject({ value: 12.3, nullReason: null, passed: null, percentile: null, rank: null, totalCount: null });
   });
 });
