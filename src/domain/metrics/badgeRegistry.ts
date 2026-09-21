@@ -24,6 +24,9 @@ import { bankCet1RatioBadge } from './resilience/bankCet1Ratio/bankCet1RatioBadg
 import { bankTier1RatioBadge } from './resilience/bankTier1Ratio/bankTier1RatioBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
 import { interestCoverageBadge } from './resilience/interestCoverage/interestCoverageBadge';
+import { netDebtToEbitdaBadge } from './resilience/netDebtToEbitda/netDebtToEbitdaBadge';
+import { cashConversionCycleBadge } from './efficiency/cashConversionCycle/cashConversionCycleBadge';
+import { rdIntensityBadge } from './growth/rdIntensity/rdIntensityBadge';
 import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
 import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
 import { zmijewskiScoreBadge } from './resilience/zmijewskiScore/zmijewskiScoreBadge';
@@ -176,6 +179,20 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 之後若要做「其他資產成長」（總資產扣現金/流動資產/長投/固定資產後的殘項年增率）最低十分位，柯冠成等
 // 2012 是合格出處（免費全文、原創者、台灣樣本、十分位明確），但指標冷僻，未排入。
 //
+// 2026-09-22 第十輪（四組文獻研究員：台灣價值/動能/財務結構＋國外；全部親自下載全文逐字讀）：新增三支——
+//   - cashConversionCycleBadge：Wang (2019, JFE) 十分位，原創者本人；第一輪下架的 Dell「< 0」問題（非門檻提出者、
+//     本站自訂數字）解掉。缺台灣證據（47 國版本付費牆）。
+//   - netDebtToEbitdaBadge：S&P 企業信評準則 Table 17 六級表，< 1.5x minimal / > 5x highly leveraged，跟 Damodaran
+//     那支同型；順帶把 netDebtToEbitda 的負 EBITDA 改成 zero_or_negative_denominator（formulaVersion 2），否則負倍數
+//     會冒充淨現金公司誤判通過。
+//   - rdIntensityBadge：范宏書、林彥廷（2010，證券市場發展季刊）五分位，台灣 1990–98。掛 rdIntensity 不掛
+//     priceToResearchRatio（後者只有 530 家有值，等股本回補；CLS 2001 美國證據撐的是後者）。
+//   使用者否決：台灣制度性門檻兩支（營業細則 §49 淨值/股本 1/2、注意股票 PE 60/PB 6）。查過不做：pbRatio 最低
+//   十分位（台灣三篇方向一致但劉信陸等 2023 不顯著、電子業反向、覆蓋 678 家）、低本益比（方智強 1998 反證）、
+//   低 beta（Frazzini-Pedersen 出處硬但台灣證據混合）、dividendYield 前 20%（黃金生等 2014 事後殖利率、四因子
+//   後消失）、Tobin's q 四分位（國科會報告非期刊）、consecutiveDividendYears ≥ 10（在職碩論＋資料深度不夠）、
+//   equityRatio 後 10% 排除（0056 規則，95% 公司都過）。研究員抽出的全文在當次 session scratchpad，不進版控。
+//
 // 2026-09-21：sueBadge 掛回，出處換成顧廣平（2011）〈盈餘與營收動能〉（管理學報 28(6)，公開全文），
 // 且 sue 指標本身同步換成該論文的定義（淨利金額、含漂移項、μ/σ 取前 8 季；formulaVersion 2）——舊的
 // Bernard & Thomas 版全市場最新一季只有 2330 算得出來（24 季 EPS + 股本缺口），顧 2011 版只要 13 季
@@ -224,6 +241,9 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   bankTier1Ratio: bankTier1RatioBadge,
   currentRatio: currentRatioBadge,
   interestCoverage: interestCoverageBadge,
+  netDebtToEbitda: netDebtToEbitdaBadge,
+  cashConversionCycle: cashConversionCycleBadge,
+  rdIntensity: rdIntensityBadge,
   longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
   ohlsonOScore: ohlsonOScoreBadge,
   zmijewskiScore: zmijewskiScoreBadge,

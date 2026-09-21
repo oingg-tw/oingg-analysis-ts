@@ -56,7 +56,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
     }
   }
 
-  const value = complete && netDebt !== null && ebitdaTtmSum !== 0n ? Math.round((Number(netDebt) / Number(ebitdaTtmSum)) * 100) / 100 : null;
+  const value = complete && netDebt !== null && ebitdaTtmSum > 0n ? Math.round((Number(netDebt) / Number(ebitdaTtmSum)) * 100) / 100 : null;
 
   const entries: ProvenanceEntry[] = [
     { role: '本季期末短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(shortTermBorrowings) },

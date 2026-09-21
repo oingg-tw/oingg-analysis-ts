@@ -14,6 +14,10 @@ import type { PitDeps } from '@/application/metrics/deps';
 // interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，這裡延續同一個
 // 既有慣例，evEbitda 這批也會再重複一次淨負債+EBITDA 的計算，不依賴這個 metric_code
 // 已寫入的值。
+// 2026-09-22 formulaVersion 2：EBITDA ≤ 0 改回 zero_or_negative_denominator（原本只擋 0）。負 EBITDA
+// 配正淨負債會算出負倍數，跟「淨現金」的負倍數長得一樣，掛 S&P 分級表（< 1.5x）的徽章時會誤判通過；
+// 信評慣例對負 EBITDA 的槓桿倍數就是「不具意義」（n/m）。同座標舊值會被重算覆蓋，是刻意的公式變更。
+export const NET_DEBT_TO_EBITDA_FORMULA_VERSION = 2;
 
 
 export type NetDebtToEbitdaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
@@ -80,7 +84,7 @@ export const computeNetDebtToEbitda = async (query: QuarterlyMetricQuery, deps: 
     }
   }
 
-  const ttmValue = ttmComplete && netDebt !== null && ebitdaTtmSum !== 0n ? Math.round((Number(netDebt) / Number(ebitdaTtmSum)) * 100) / 100 : null;
+  const ttmValue = ttmComplete && netDebt !== null && ebitdaTtmSum > 0n ? Math.round((Number(netDebt) / Number(ebitdaTtmSum)) * 100) / 100 : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(netDebt, ebitdaTtmSum) : 'insufficient_history';
 
   let ttm: ComputationSlot;
@@ -99,6 +103,7 @@ export const computeNetDebtToEbitda = async (query: QuarterlyMetricQuery, deps: 
         nullReason: ttmNullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
         knowledgeDateIsFallback: ttmAnchor.isFallback,
+        formulaVersion: NET_DEBT_TO_EBITDA_FORMULA_VERSION,
       });
     }
   } else if (mainAnchor) {
@@ -109,6 +114,7 @@ export const computeNetDebtToEbitda = async (query: QuarterlyMetricQuery, deps: 
       nullReason: 'insufficient_history',
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
+      formulaVersion: NET_DEBT_TO_EBITDA_FORMULA_VERSION,
     });
   } else {
     ttm = { action: 'skipped_no_knowledge_date' };
