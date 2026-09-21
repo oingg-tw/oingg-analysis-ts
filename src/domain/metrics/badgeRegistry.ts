@@ -1,6 +1,7 @@
 import type { MetricBadge } from './metricDefinitionSpec';
 
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
+import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/shareCountChangeRateBadge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
@@ -90,6 +91,16 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 不受影響。沒有恢復第七輪拿掉的那兩支舊徽章（同一份資料深度限制仍在，恢復也一樣點不亮）。之後
 // 若要重做，上面第七輪的分析（四條門檻、資料深度現況）仍然有效，不用重查。
 //
+// 2026-09-21：shareCountChangeRateBadge 重新掛回，換了出處。原本 2026-09-14 用 Charlie Munger
+// 的「cannibal」比喻（門檻 < 0%）在第一輪查證下架，因為 Munger 從未訂過量化數字。使用者提供
+// oingg-conductor-ts 的一份股本食人族研究筆記，指出 Nasdaq US BuyBack Achievers Index（Invesco
+// PKW 追蹤）方法論本身訂了「近四季淨減少流通股數 5% 以上」的量化門檻——這份研究筆記是二手彙整
+// 不能直接採信，已直接 fetch 官方方法論 PDF（indexes.nasdaqomx.com/docs/Methodology_DRB.pdf）
+// 逐字確認這句話在 Index Description 與 Security Eligibility Criteria 兩處一致出現，且 2013 年起
+// 沿用至今。author 改掛 Nasdaq（真正訂門檻的機構），Munger 的比喻放進 detail 當背景說明，不再
+// 當作者——完整脈絡見 shareCountChangeRateBadge.ts 檔頭。全市場資料深度已查過：139 筆 ≤ -5%、
+// 覆蓋 48 家公司，不是打不亮的情況。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -108,6 +119,7 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
+  shareCountChangeRate: shareCountChangeRateBadge,
   sgr: sgrBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,
