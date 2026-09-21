@@ -28,11 +28,11 @@ test('dupontFamilyPit: 2330 115Q2 合併報表，跟 dupont.test.ts 的既有基
 
   assert.equal(Number(netProfitMarginQ!.value), 55.62);
   assert.equal(Number(netProfitMarginTtm!.value), 50.38);
-  assert.equal(Number(assetTurnoverQ!.value), 0.14);
-  assert.equal(Number(assetTurnoverTtm!.value), 0.47);
-  assert.equal(Number(equityMultiplier!.value), 1.46);
-  assert.equal(Number(decomposedRoeQ!.value), 11.37);
-  assert.equal(Number(decomposedRoeTtm!.value), 34.57);
+  assert.equal(Number(assetTurnoverQ!.value), 0.1355);
+  assert.equal(Number(assetTurnoverTtm!.value), 0.4736);
+  assert.equal(Number(equityMultiplier!.value), 1.4575);
+  assert.equal(Number(decomposedRoeQ!.value), 10.98); // 2026-09-21 因子改 4 位小數後，恆等式對得起 roe.Q 10.98（舊 2 位小數版是 11.37）
+  assert.equal(Number(decomposedRoeTtm!.value), 34.78); // = roe.TTM 34.78（舊 34.57）
   assert.equal(decomposedRoeQ!.nullReason, null);
   assert.equal(decomposedRoeTtm!.nullReason, null);
   assert.equal(netProfitMarginQ!.knowledgeDateIsFallback, false);
@@ -64,13 +64,13 @@ test('dupontFamilyPit: 五因子 Extended DuPont（2330 115Q2）應該精確等�
   assert.equal(Number(taxBurdenQ!.value), 81.93);
   assert.equal(Number(interestBurdenQ!.value), 99.64);
   assert.equal(Number(ebitMarginQ!.value), 68.13);
-  assert.equal(Number(extendedRoeQ!.value), 11.37, '五因子相乘應該精確等於既有 dupontDecomposedRoeQ 基準值 11.37');
+  assert.equal(Number(extendedRoeQ!.value), 10.98, '五因子相乘應該精確等於既有 dupontDecomposedRoeQ 基準值 10.98');
   assert.equal(extendedRoeQ!.nullReason, null);
 
   assert.equal(Number(taxBurdenTtm!.value), 83.85);
   assert.equal(Number(interestBurdenTtm!.value), 99.56);
   assert.equal(Number(ebitMarginTtm!.value), 60.35);
-  assert.equal(Number(extendedRoeTtm!.value), 34.57, '五因子相乘應該精確等於既有 dupontDecomposedRoeTtm 基準值 34.57');
+  assert.equal(Number(extendedRoeTtm!.value), 34.78, '五因子相乘應該精確等於既有 dupontDecomposedRoeTtm 基準值 34.78');
   assert.equal(extendedRoeTtm!.nullReason, null);
 });
 
@@ -113,9 +113,9 @@ test('dupontFamilyPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該
   // netProfitMargin=2.29%、assetTurnover=1.66 次、decomposedRoe = round2(2.29*1.66*2.95) = 11.21%。
   assert.equal(Number(netProfitMarginTtm!.value), 2.29);
   assert.equal(netProfitMarginTtm!.nullReason, null);
-  assert.equal(Number(assetTurnoverTtm!.value), 1.66);
+  assert.equal(Number(assetTurnoverTtm!.value), 1.656);
   assert.equal(assetTurnoverTtm!.nullReason, null);
-  assert.equal(Number(decomposedRoeTtm!.value), 11.21);
+  assert.equal(Number(decomposedRoeTtm!.value), 11.18);
   assert.equal(decomposedRoeTtm!.nullReason, null);
 });
 

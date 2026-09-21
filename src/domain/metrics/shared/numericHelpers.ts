@@ -38,7 +38,10 @@ export const toRatioFromNumbers = (numerator: number, denominator: number): numb
 
 // 4 位小數版的 toRatio/toRatioFromNumbers——altmanZDoublePrimeScore/altmanZScore/tobinsQ
 // 這類財務危機/估值評分模型的係數需要比一般比率型指標更高的精度，2 位小數會讓組成分數的
-// 小尺度變量被無謂捨去。
+// 小尺度變量被無謂捨去。2026-09-21 起 assetTurnover/equityMultiplier 也改用（web-nuxt 回報杜邦
+// 三因子連乘對不起 ROE，誤差 0.2%~6.3%——1101 的週轉率 0.06 只有一位有效數字，±0.005 就是 ±8%，
+// dupontDecomposedRoe 又拿已四捨五入的因子相乘；杜邦恆等式要讓讀者拿紙筆驗得過。其他週轉率不參與
+// 恆等式，維持 toRatio）。
 export const toRatio4 = (numerator: bigint, denominator: bigint): number | null => {
   if (denominator === 0n) return null;
   return Math.round((Number(numerator) / Number(denominator)) * 10000) / 10000;
