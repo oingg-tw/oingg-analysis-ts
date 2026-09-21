@@ -9,7 +9,7 @@ export const receivablesToRevenueRatioDefinition: MetricDefinitionSpec = {
   formulaNote: '= 本季期末應收帳款 ÷ 近四季營收加總，衡量應收帳款水位相對於營收規模是否偏高。',
   formulaLatex: '\\mathrm{Receivables/Revenue} = \\dfrac{\\mathrm{Receivables}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '損益表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['accounts_receivable_net', 'revenue'],

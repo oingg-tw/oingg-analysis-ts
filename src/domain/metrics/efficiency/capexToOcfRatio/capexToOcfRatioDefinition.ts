@@ -9,7 +9,7 @@ export const capexToOcfRatioDefinition: MetricDefinitionSpec = {
   formulaNote: '= 近四季資本支出（絕對值）加總 ÷ 近四季營業活動現金流量加總，衡量營業現金流有多少比例被拿去做資本支出。',
   formulaLatex: '\\mathrm{Capex/OCF} = \\dfrac{|\\mathrm{Capex}_{\\mathrm{TTM}}|}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['現金流量表（XBRL）'],
+  sources: ['公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['cash_flows_from_used_in_operating_activities', 'purchase_of_ppe_investing'],

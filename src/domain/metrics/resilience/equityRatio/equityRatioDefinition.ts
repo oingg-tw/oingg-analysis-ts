@@ -9,7 +9,7 @@ export const equityRatioDefinition: MetricDefinitionSpec = {
   formulaNote: '= 股東權益總額 ÷ 資產總額，衡量資產有多少比例是股東自有資金支應（跟 debtRatio/equityMultiplier 互為對照）。',
   formulaLatex: '\\mathrm{EquityRatio} = \\dfrac{\\mathrm{Equity}}{\\mathrm{TotalAssets}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity', 'assets'],

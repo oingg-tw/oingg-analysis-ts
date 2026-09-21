@@ -10,7 +10,7 @@ export const priceToOcfDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{P/OCF} = \\dfrac{\\mathrm{MarketCap}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/p/price-to-cash-flow-ratio.asp',
   tier: 'derived',
-  sources: ['現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
+  sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['cash_flows_from_used_in_operating_activities', 'paidInShares'],

@@ -11,7 +11,7 @@ export const ocfMarginDefinition: MetricDefinitionSpec = {
   formulaNote: '= 近四季營業活動現金流量加總 ÷ 近四季營收加總，衡量每一元營收能轉換成多少營業現金流入，跟損益表口徑的獲利率互為對照。',
   formulaLatex: '\\mathrm{OCF\\ Margin} = \\dfrac{\\mathrm{OCF}_{\\mathrm{TTM}}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['損益表（XBRL）', '現金流量表（XBRL）'],
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['revenue', 'cash_flows_from_used_in_operating_activities'],

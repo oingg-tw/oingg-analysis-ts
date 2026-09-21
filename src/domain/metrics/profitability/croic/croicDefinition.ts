@@ -11,7 +11,7 @@ export const croicDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}}',
   referenceUrl: 'https://www.investopedia.com/terms/c/cashreturnoninvestment.asp',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '現金流量表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: [

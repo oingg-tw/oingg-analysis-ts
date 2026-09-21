@@ -11,7 +11,7 @@ export const evToSalesDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{EV/Sales} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/e/enterprisevaluerevenuemultiple.asp',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['revenue', 'assets', 'liabilities', 'cash_and_cash_equivalents', 'paidInShares'],

@@ -9,7 +9,7 @@ export const netWorkingCapitalTurnoverDefinition: MetricDefinitionSpec = {
   formulaNote: '= 近四季營收加總 ÷ 淨營運資金（流動資產-流動負債），衡量每一元淨營運資金能支撐多少營收。',
   formulaLatex: '\\mathrm{NWC\\ Turnover} = \\dfrac{\\mathrm{Revenue}_{\\mathrm{TTM}}}{\\mathrm{CurrentAssets} - \\mathrm{CurrentLiabilities}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '損益表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['current_assets', 'current_liabilities', 'revenue'],

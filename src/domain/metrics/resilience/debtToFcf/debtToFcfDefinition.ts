@@ -9,7 +9,7 @@ export const debtToFcfDefinition: MetricDefinitionSpec = {
   formulaNote: '= 付息負債（短期借款+應付公司債+長期借款） ÷ 近四季自由現金流（OCF-資本支出）加總，衡量現有付息負債要用多少年的自由現金流償還。',
   formulaLatex: '\\mathrm{Debt/FCF} = \\dfrac{\\mathrm{Debt}}{\\mathrm{FCF}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '現金流量表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['shortterm_borrowings', 'noncurrent_portion_of_bonds_issued', 'longterm_borrowings', 'cash_flows_from_used_in_operating_activities', 'purchase_of_ppe_investing'],

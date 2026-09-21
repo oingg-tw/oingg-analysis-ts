@@ -9,7 +9,7 @@ export const inventoryToRevenueRatioDefinition: MetricDefinitionSpec = {
   formulaNote: '= 本季期末存貨 ÷ 近四季營收加總，衡量存貨水位相對於營收規模是否偏高。',
   formulaLatex: '\\mathrm{Inventory/Revenue} = \\dfrac{\\mathrm{Inventory}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '損益表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['inventories', 'revenue'],

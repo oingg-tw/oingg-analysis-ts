@@ -12,7 +12,7 @@ export const fcfConversionRateDefinition: MetricDefinitionSpec = {
     '「FCF 轉換率」業界有多種定義（FCF/OCF、FCF/EBITDA、FCF/NetIncome），這裡採用 FCF/NetIncome 版本。',
   formulaLatex: '\\mathrm{FCF\\ Conversion} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{NetIncome}_{\\mathrm{TTM}}}',
   tier: 'derived',
-  sources: ['損益表（XBRL）', '現金流量表（XBRL）'],
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss', 'cash_flows_from_used_in_operating_activities', 'purchase_of_ppe_investing'],

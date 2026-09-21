@@ -10,7 +10,7 @@ export const operatingCycleDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{OperatingCycle} = \\mathrm{DIO} + \\mathrm{DSO}',
   referenceUrl: 'https://www.investopedia.com/terms/o/operatingcycle.asp',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）', '損益表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['inventories', 'accounts_receivable_net', 'operating_costs', 'revenue'],

@@ -11,7 +11,7 @@ export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{DFL} = \\dfrac{\\%\\Delta \\mathrm{EPS}}{\\%\\Delta \\mathrm{EBIT}}',
   referenceUrl: 'https://www.investopedia.com/terms/d/degreeoffinancialleverage.asp',
   tier: 'derived',
-  sources: ['損益表（XBRL）', '公開發行公司股本變動申報'],
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_from_operating_activities', 'paidInShares'],

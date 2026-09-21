@@ -9,7 +9,7 @@ export const cashToAssetsRatioDefinition: MetricDefinitionSpec = {
   formulaNote: '= 現金及約當現金 ÷ 資產總額，衡量資產配置中流動性最高的部位占比。',
   formulaLatex: '\\mathrm{Cash/Assets} = \\dfrac{\\mathrm{Cash}}{\\mathrm{TotalAssets}}',
   tier: 'derived',
-  sources: ['資產負債表（XBRL）'],
+  sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['cash_and_cash_equivalents', 'assets'],
