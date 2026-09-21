@@ -30,6 +30,7 @@ import { computeRevenueCagrFamily } from '@/application/metrics/growth/revenueCa
 import { computeRevenueGrowthRate } from '@/application/metrics/growth/revenueGrowthRate/computeRevenueGrowthRate';
 import { computeRuleOf40 } from '@/application/metrics/growth/ruleOf40/computeRuleOf40';
 import { computeSgr } from '@/application/metrics/growth/sgr/computeSgr';
+import { computeThreeMarginsRising } from '@/application/metrics/growth/threeMarginsRising/computeThreeMarginsRising';
 import { computeSue } from '@/application/metrics/growth/sue/computeSue';
 import { computeBankIncomeWaterfall } from '@/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfall';
 import { computeCroci } from '@/application/metrics/profitability/croci/computeCroci';
@@ -154,6 +155,7 @@ export const computeAndWriteRevenueCagrFamilyPit = runPitNested(computeRevenueCa
 export const computeAndWriteRevenueGrowthRatePit = runPit(computeRevenueGrowthRate);
 export const computeAndWriteRuleOf40Pit = runPit(computeRuleOf40);
 export const computeAndWriteSgrPit = runPit(computeSgr);
+export const computeAndWriteThreeMarginsRisingPit = runPit(computeThreeMarginsRising);
 export const computeAndWriteSuePit = runPit(computeSue);
 export const computeAndWriteBankIncomeWaterfallPit = runPit(computeBankIncomeWaterfall);
 export const computeAndWriteCrociPit = runPit(computeCroci);

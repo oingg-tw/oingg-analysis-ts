@@ -3,6 +3,7 @@ import type { MetricBadge } from './metricDefinitionSpec';
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
 import { shareCountChangeRateBadge } from './dividend/shareCountChangeRate/shareCountChangeRateBadge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
+import { threeMarginsRisingBadge } from './growth/threeMarginsRising/threeMarginsRisingBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
@@ -101,6 +102,16 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 當作者——完整脈絡見 shareCountChangeRateBadge.ts 檔頭。全市場資料深度已查過：139 筆 ≤ -5%、
 // 覆蓋 48 家公司，不是打不亮的情況。
 //
+// 2026-09-21：threeMarginsRisingBadge（三率三升）新增，是「單一可指名出處」標準**唯一的明知例外**。
+// 查證確認「三率三升」（毛利率/營業利益率/稅後淨利率同步上升）沒有單一可指名的原始提出者或機構——
+// 是理財周刊、鉅亨網、商業周刊、Yahoo、豹投資等台灣財經媒體長期使用的慣用語，跟已下架的 Rule of 40
+// （推廣者不是原始提出者）、shareholderYield 舊版（業界慣例找不到單一文獻）是同一種情況。使用者
+// 已知情這個結論、仍明確要求破例放行（理由：使用頻率極高、對台灣使用者辨識度高），不是查證疏漏或
+// 標準鬆動——**之後遇到其他同樣「找不到單一出處但很常用」的候選，不要拿這支當先例自動放行，每一支
+// 都要重新請示使用者是否要破例**。author 誠實標「台灣財經媒體慣用語」不假冒任何個人/機構。新增指標
+// 複合座標放在 growth（成長動能）分類，比照 piotroskiFScore/oneilCanslimScore 的「計分卡」模式：
+// 三個比率各自「本季>上一季」且「本季>去年同季」（雙重驗證）才算一「升」，3/3 才算三率三升。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -121,6 +132,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
   shareCountChangeRate: shareCountChangeRateBadge,
   sgr: sgrBadge,
+  threeMarginsRising: threeMarginsRisingBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
