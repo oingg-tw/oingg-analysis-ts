@@ -16,6 +16,7 @@ import { bankCarRatioBadge } from './resilience/bankCarRatio/bankCarRatioBadge';
 import { bankCet1RatioBadge } from './resilience/bankCet1Ratio/bankCet1RatioBadge';
 import { bankTier1RatioBadge } from './resilience/bankTier1Ratio/bankTier1RatioBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
+import { interestCoverageBadge } from './resilience/interestCoverage/interestCoverageBadge';
 import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
 import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
 import { zmijewskiScoreBadge } from './resilience/zmijewskiScore/zmijewskiScoreBadge';
@@ -112,6 +113,12 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 複合座標放在 growth（成長動能）分類，比照 piotroskiFScore/oneilCanslimScore 的「計分卡」模式：
 // 三個比率各自「本季>上一季」且「本季>去年同季」（雙重驗證）才算一「升」，3/3 才算三率三升。
 //
+// 2026-09-21：interestCoverageBadge 新增。出處 Aswath Damodaran（紐約大學史登商學院教授）個人
+// 網站維護的「利息保障倍數→信評等級」合成信評對照表，已實際 fetch 逐字確認數字存在，門檻取投資
+// 等級（Baa2/BBB）下限 2.5 倍，弱端取 B2/B 下緣 1.5 倍。查過他網站上其餘資料集（產業別毛利率/
+// 淨利率、負債結構、租賃調整）都是產業平均值統計不是分級門檻，這張利息保障倍數表是目前唯一符合
+// 「比率對應到具體等級」條件的資料集，完整脈絡見 interestCoverageBadge.ts 檔頭。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -145,6 +152,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   bankCet1Ratio: bankCet1RatioBadge,
   bankTier1Ratio: bankTier1RatioBadge,
   currentRatio: currentRatioBadge,
+  interestCoverage: interestCoverageBadge,
   longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
   ohlsonOScore: ohlsonOScoreBadge,
   zmijewskiScore: zmijewskiScoreBadge,
