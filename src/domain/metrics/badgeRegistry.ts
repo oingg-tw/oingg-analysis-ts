@@ -8,6 +8,8 @@ import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { novyMarxGpToAssetsBadge } from './profitability/novyMarxGpToAssets/novyMarxGpToAssetsBadge';
 import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
+import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
+import { assetGrowthBadge } from './growth/assetGrowth/assetGrowthBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -146,6 +148,15 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // Olsen/Shevlin、Bernard/Thomas 兩篇論文都用十分位排序）理論上符合條件，但兩篇都還沒逐字查證過
 // 具體方法論細節，留待之後有需求再查證掛回，不主動排入。
 //
+// 2026-09-21：使用者要求再發想一輪，新增兩支 Fama & French 五因子模型（2015）徽章，同一份出處、
+// 同一套 percentileRank 機制：famaFrenchOperatingProfitabilityBadge（RMW「Robust」組＝OP 前 30%）、
+// assetGrowthBadge（CMA「Conservative」組＝總資產年增率最低 30%，方向反直覺，文案已講清楚）。
+// 兩支都直接讀 Kenneth French 本人維護的 Data Library 公開頁面逐字確認「The OP/Inv breakpoints
+// are the 30th and 70th NYSE percentiles」。同輪查過但沒做：magicFormulaRank ≤30（Greenblatt 的
+// 網站要登入、書本付費牆、最新一季只有 630 家有值）、rdIntensity/sue 十分位（還沒逐字查證）、
+// bankNplRatio（金管會「加速降低本國銀行逾期放款措施」的 2%/5% 門檻 2013 年已廢止，IMF FSI
+// 指南沒有門檻）、abnormalCapexRatio（最新一季 0 家有值）。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -171,6 +182,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   novyMarxGpToAssets: novyMarxGpToAssetsBadge,
   shareholderYield: shareholderYieldBadge,
   accrualsRatio: accrualsRatioBadge,
+  famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
+  assetGrowth: assetGrowthBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
