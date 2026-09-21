@@ -5,6 +5,6 @@ import { getTaiexDailyPriceQuerySchema } from './schemas';
 
 export const createTaiexDailyPriceRouter = (deps: TaiexDailyPriceDeps): Router => {
   const router = Router();
-  router.get('/market/taiex-daily-price', ...jsonRoute({ query: getTaiexDailyPriceQuerySchema }, ({ query }) => getTaiexDailyPrice(query.limit, deps)));
+  router.get('/market/taiex-daily-price', ...jsonRoute({ query: getTaiexDailyPriceQuerySchema }, ({ query }) => getTaiexDailyPrice(query.limit, query.interval, deps)));
   return router;
 };
