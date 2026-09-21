@@ -82,6 +82,9 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
 
   return rows.map((row) => ({
     symbol: row.symbol,
+    status: 'announced' as const,
+    paymentDate: null,
+    fiscalYear: null,
     exDate: row.ex_date.toISOString().slice(0, 10),
     exType: row.ex_type as ExDividendNoticeEntry['exType'],
     stockDividendRatio: toNumber(row.stock_dividend_ratio),

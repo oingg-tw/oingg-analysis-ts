@@ -4,12 +4,15 @@
     "entries": [
       {
         "cashDividend": "<number>",
-        "companyName": "<null>",
+        "companyName": "<string>",
         "exDate": "<date>",
         "exType": "<string>",
+        "fiscalYear": "<number>",
+        "paymentDate": "<date>",
         "sharesEmpOwner": "<null>",
         "sharesholderOwner": "<null>",
         "sharesOffered": "<null>",
+        "status": "realized",
         "stockDividendRatio": "<null>",
         "stockHoldingRatio": "<null>",
         "subscriptionPricePerShare": "<null>",

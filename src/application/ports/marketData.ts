@@ -94,8 +94,17 @@ export interface ExDividendNoticeEntry {
   stockHoldingRatio: number | null;
 }
 
+// 2026-09-22 月曆往回翻：status 區分「預告」（twse 預告表，除息日 >= 今天，可能還會改）與「已實現」（mops 股利
+// 分派公告，除息日 < 今天，事實）。兩種來源共用同一個 envelope，填不出來的欄位 null：已實現列只有 cashDividend/
+// stockDividendRatio（元／股 ÷ 面額換成股／股）對得上，現金增資那幾欄兩邊單位不同（差 10 倍）刻意不對應；
+// paymentDate/fiscalYear 只有已實現列有。
+export type ExDividendCalendarStatus = 'announced' | 'realized';
+
 export interface ExDividendCalendarEntry extends ExDividendNoticeEntry {
   symbol: string;
+  status: ExDividendCalendarStatus;
+  paymentDate: string | null; // 現金股利發放日，"YYYY-MM-DD"，預告列一律 null
+  fiscalYear: number | null; // 股利所屬年度（西元），預告列一律 null
 }
 
 export interface ForeignShareholdingEntry {

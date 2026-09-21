@@ -103,12 +103,13 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/stocks/ex-dividend-calendar',
     summary: '全市場除權息日曆（月曆格狀呈現用，不需要先知道 symbol 清單）',
     description:
-      '跟 GET /stocks/ex-dividend-notices 同一份資料源（twse-ts 的 export.ex_dividend_notice），差別是這支不用先給' +
-      'symbol 清單——傳一個月份（month="YYYY-MM"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」' +
-      '這種日曆瀏覽情境，不是「我關心的這幾檔怎麼樣」。不像 ex-dividend-notices 只回傳未來事件，這支不篩選' +
-      '「只看未來」——查哪個月的事件完全由呼叫端決定，可能是已經過去一半的當月。只有 TWSE 上市有這份資料，' +
-      '也包含 ETF，不是只有一般股票。每筆都帶 symbol/companyName，依除權息基準日排序。exType/cashDividend 等' +
-      '欄位語意跟 ex-dividend-notices 完全一致。',
+      '傳一個月份（month="YYYY-MM"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」的日曆瀏覽情境，' +
+      '不用先給 symbol 清單。2026-09-22 起可以往回翻：以「今天」為界，今天（含）以後的事件來自 twse 除權息預告表' +
+      '（跟 ex-dividend-notices 同一張，只有 TWSE 上市含 ETF；status=announced，內容可能再變動），之前的事件來自 mops' +
+      '股利分派公告（跟 /companies/dividend-history 同一張，上市＋上櫃；status=realized）。兩種來源共用同一個 envelope，' +
+      '填不出來的欄位是 null：realized 列只有 cashDividend、stockDividendRatio（元／股 ÷ 面額換成股／股）、paymentDate、' +
+      'fiscalYear 有值，現金增資相關欄位一律 null。歷史深度受分派公告涵蓋範圍限制（全市場 2026-03 起，更早只有少數公司，' +
+      'mops-ts 回補中），有多少給多少。每筆都帶 symbol/companyName，依除權息基準日、symbol 排序。',
     tags: ['Stocks'],
     request: { query: getExDividendCalendarQuerySchema },
     responses: {

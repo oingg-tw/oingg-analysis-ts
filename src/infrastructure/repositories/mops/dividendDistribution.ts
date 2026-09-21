@@ -12,7 +12,7 @@
 
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
-import type { DividendDistributionEvent, DividendDistributionRow, DividendEventsPort } from '@/application/ports/dividendEvents';
+import type { DividendDistributionEvent, DividendDistributionRow, DividendEventsPort, RealizedExDividendRow } from '@/application/ports/dividendEvents';
 
 // DividendDistributionEvent 2026-09-17 Phase 3 搬到 application/ports/dividendEvents.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
 export type { DividendDistributionEvent };
@@ -92,4 +92,33 @@ export const listDividendDistributionRows = async (symbol: string): Promise<Divi
   }));
 };
 
-export const mopsDividendEvents: DividendEventsPort = { getDividendDistributionEvents, listDividendDistributionRows };
+// 2026-09-22 除權息月曆往回翻：LEAST() 在 Postgres 會忽略 NULL，所以「除息日／除權日只有一個」的列也能落在區間內；
+// 兩個都 NULL 的列（只有股東會決議、還沒訂日期）自然不會被選到。
+export const listRealizedExDividendRows = async (startDate: Date, endDate: Date): Promise<RealizedExDividendRow[]> => {
+  const rows = await mopsExportPrisma.$queryRaw<(RawDividendDistributionFullRow & { symbol: string; company_name: string | null; ex_date: Date; par_value: unknown })[]>`
+    SELECT symbol, company_name, fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_capital_reserve,
+           stock_dividend_from_earnings, stock_dividend_from_capital_reserve,
+           ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date, par_value,
+           LEAST(ex_dividend_date, ex_rights_date) AS ex_date
+    FROM "export"."dividend_distribution"
+    WHERE LEAST(ex_dividend_date, ex_rights_date) BETWEEN ${startDate} AND ${endDate}
+    ORDER BY ex_date ASC, symbol ASC`;
+  return rows.map((r) => ({
+    symbol: r.symbol,
+    companyName: r.company_name,
+    exDate: r.ex_date,
+    parValue: toNumberOrNull(r.par_value),
+    rocFiscalYear: r.fiscal_year,
+    fiscalQuarter: r.fiscal_quarter,
+    cashDividendFromEarnings: toNumberOrNull(r.cash_dividend_from_earnings),
+    cashDividendFromCapitalReserve: toNumberOrNull(r.cash_dividend_from_capital_reserve),
+    stockDividendFromEarnings: toNumberOrNull(r.stock_dividend_from_earnings),
+    stockDividendFromCapitalReserve: toNumberOrNull(r.stock_dividend_from_capital_reserve),
+    exDividendDate: r.ex_dividend_date,
+    exRightsDate: r.ex_rights_date,
+    cashDividendPaymentDate: r.cash_dividend_payment_date,
+    announcementDate: r.announcement_date,
+  }));
+};
+
+export const mopsDividendEvents: DividendEventsPort = { getDividendDistributionEvents, listDividendDistributionRows, listRealizedExDividendRows };

@@ -7362,7 +7362,7 @@
     },
     "/stocks/ex-dividend-calendar": {
       "get": {
-        "description": "跟 GET /stocks/ex-dividend-notices 同一份資料源（twse-ts 的 export.ex_dividend_notice），差別是這支不用先給symbol 清單——傳一個月份（month=\"YYYY-MM\"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」這種日曆瀏覽情境，不是「我關心的這幾檔怎麼樣」。不像 ex-dividend-notices 只回傳未來事件，這支不篩選「只看未來」——查哪個月的事件完全由呼叫端決定，可能是已經過去一半的當月。只有 TWSE 上市有這份資料，也包含 ETF，不是只有一般股票。每筆都帶 symbol/companyName，依除權息基準日排序。exType/cashDividend 等欄位語意跟 ex-dividend-notices 完全一致。",
+        "description": "傳一個月份（month=\"YYYY-MM\"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」的日曆瀏覽情境，不用先給 symbol 清單。2026-09-22 起可以往回翻：以「今天」為界，今天（含）以後的事件來自 twse 除權息預告表（跟 ex-dividend-notices 同一張，只有 TWSE 上市含 ETF；status=announced，內容可能再變動），之前的事件來自 mops股利分派公告（跟 /companies/dividend-history 同一張，上市＋上櫃；status=realized）。兩種來源共用同一個 envelope，填不出來的欄位是 null：realized 列只有 cashDividend、stockDividendRatio（元／股 ÷ 面額換成股／股）、paymentDate、fiscalYear 有值，現金增資相關欄位一律 null。歷史深度受分派公告涵蓋範圍限制（全市場 2026-03 起，更早只有少數公司，mops-ts 回補中），有多少給多少。每筆都帶 symbol/companyName，依除權息基準日、symbol 排序。",
         "parameters": [
           {
             "description": "要查詢的月份，\"YYYY-MM\"",
@@ -7384,7 +7384,7 @@
                 "schema": {
                   "properties": {
                     "entries": {
-                      "description": "依除權息基準日由舊到新排序（同一天有多筆時再依 symbol 排序），每一筆都帶 symbol/companyName",
+                      "description": "依除權息基準日由舊到新排序（同一天有多筆時再依 symbol 排序），每一筆都帶 symbol/companyName。以「今天」為界：今天（含）以後是 twse 預告表（status announced），之前是 mops 股利分派公告（status realized）。realized 列只有 cashDividend/stockDividendRatio（元／股 ÷ 面額）/paymentDate/fiscalYear 有值，現金增資相關欄位一律 null（兩來源單位不同，不對應）；announced 列的 paymentDate/fiscalYear 一律 null。歷史深度：分派公告全市場 2026-03 起，更早月份目前只有少數公司（mops-ts 回補中）。",
                       "items": {
                         "properties": {
                           "cashDividend": {
@@ -7409,6 +7409,16 @@
                             ],
                             "type": "string"
                           },
+                          "fiscalYear": {
+                            "description": "股利所屬年度（西元），只有 realized 列有值",
+                            "nullable": true,
+                            "type": "integer"
+                          },
+                          "paymentDate": {
+                            "description": "現金股利發放日 \"YYYY-MM-DD\"，只有 realized 列有值",
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "sharesEmpOwner": {
                             "nullable": true,
                             "type": "number"
@@ -7420,6 +7430,14 @@
                           "sharesholderOwner": {
                             "nullable": true,
                             "type": "number"
+                          },
+                          "status": {
+                            "description": "announced = 除息日在今天（含）以後的預告，內容可能再變動；realized = 除息日已過、來自股利分派公告的事實",
+                            "enum": [
+                              "announced",
+                              "realized"
+                            ],
+                            "type": "string"
                           },
                           "stockDividendRatio": {
                             "description": "股票股利比例（配股）；純除息時是 null",
@@ -7456,6 +7474,9 @@
                           "sharesholderOwner",
                           "stockHoldingRatio",
                           "symbol",
+                          "status",
+                          "paymentDate",
+                          "fiscalYear",
                           "companyName"
                         ],
                         "type": "object"

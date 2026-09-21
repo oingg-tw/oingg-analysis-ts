@@ -1,4 +1,6 @@
 import type { AppDeps } from '@/application/deps';
+import type { ExDividendCalendarEntry } from '@/application/ports/marketData';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type {
   StockPricesResult,
   StockQuoteResult,
@@ -12,7 +14,7 @@ import type {
 
 // 2026-09-17 Phase 4：從 http/modules/stocks/service.ts 搬來，資料存取改透過 deps 的 port
 // （companyProfiles/market/metricValueQueries）注入，邏輯逐字不變。
-export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries'>;
+export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries' | 'dividendEvents'>;
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -139,10 +141,57 @@ export const getExDividendNotices = async (symbols: string[], deps: StocksDeps):
 // symbol 清單查——跟上面 getExDividendNotices 用同一份 export.ex_dividend_notice 資料源，
 // 差別是不帶 symbol 篩選、改用日期區間，並附上 companyName（月曆情境需要顯示公司名稱，
 // 不只是代號）。
+// 2026-09-22 web-nuxt：月曆要能往回翻。twse 預告表（ex_dividend_notice）只有「已公告、尚未發生」的事件，
+// 除息日一過就消失，所以過去月份改接 mops 股利分派公告（dividend_distribution，跟 /companies/dividend-history
+// 同一張）。以「今天（UTC 日）」為界：>= 今天走預告表（status announced，可能還會改），< 今天走分派公告
+// （status realized，事實）；兩段各自查、合併後依 exDate/symbol 排序，同一天不會同時出現在兩邊。
+// 深度：dividend_distribution 全市場覆蓋 2026-03 起，更早只有種子公司（mops-ts 回補中），有多少給多少。
+// 已實現列的 companyName 直接用公告上的簡稱（ETF/特別股也有），預告列仍查 profile（只有普通股有名字，
+// 這是 company_profile 的範圍，不在這裡補）。
+const toIso = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
+const sumNonNull = (...values: (number | null)[]): number | null => (values.every((v) => v === null) ? null : values.reduce<number>((acc, v) => acc + (v ?? 0), 0));
+const round4 = (n: number): number => Math.round(n * 10000) / 10000;
+
 export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps: StocksDeps): Promise<ExDividendCalendarResult> => {
-  const rows = await deps.market.getExDividendCalendar(startDate, endDate);
-  const nameMap = await deps.companyProfiles.getCompanyNamesForSymbols(rows.map((r) => r.symbol));
-  return { entries: rows.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null })) };
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const announcedStart = startDate >= today ? startDate : today;
+  const realizedEnd = endDate < today ? endDate : new Date(today.getTime() - 86_400_000);
+
+  const [announced, realized] = await Promise.all([
+    announcedStart <= endDate ? deps.market.getExDividendCalendar(announcedStart, endDate) : Promise.resolve([]),
+    realizedEnd >= startDate ? deps.dividendEvents.listRealizedExDividendRows(startDate, realizedEnd) : Promise.resolve([]),
+  ]);
+
+  const nameMap = await deps.companyProfiles.getCompanyNamesForSymbols(announced.map((r) => r.symbol));
+  const announcedEntries = announced.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null }));
+
+  const realizedEntries = realized.map((r) => {
+    const cashDividend = sumNonNull(r.cashDividendFromEarnings, r.cashDividendFromCapitalReserve);
+    const stockDividend = sumNonNull(r.stockDividendFromEarnings, r.stockDividendFromCapitalReserve);
+    const hasCash = r.exDividendDate !== null;
+    const hasStock = r.exRightsDate !== null;
+    return {
+      symbol: r.symbol,
+      companyName: r.companyName,
+      status: 'realized' as const,
+      exDate: toIso(r.exDate)!,
+      exType: (hasCash && hasStock ? '權息' : hasStock ? '權' : '息') as ExDividendCalendarEntry['exType'],
+      cashDividend,
+      // 分派公告是元／股（面額計），預告表是股／股：0.8 元 ÷ 面額 10 = 0.08，跟 twse 表逐筆對過（2614/1235）。
+      stockDividendRatio: stockDividend !== null && r.parValue ? round4(stockDividend / r.parValue) : null,
+      subscriptionRatio: null,
+      subscriptionPricePerShare: null,
+      sharesOffered: null,
+      sharesEmpOwner: null,
+      sharesholderOwner: null,
+      stockHoldingRatio: null,
+      paymentDate: toIso(r.cashDividendPaymentDate),
+      fiscalYear: r.rocFiscalYear === null ? null : rocYearToGregorian(r.rocFiscalYear),
+    };
+  });
+
+  const entries = [...realizedEntries, ...announcedEntries].sort((a, b) => (a.exDate === b.exDate ? a.symbol.localeCompare(b.symbol) : a.exDate.localeCompare(b.exDate)));
+  return { entries };
 };
 
 // 2026-09-08 web-nuxt 轉達使用者需求：個股頁面外資持股卡片。目前只有 2330 有真實資料

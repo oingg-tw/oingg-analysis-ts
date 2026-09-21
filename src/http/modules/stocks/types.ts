@@ -88,7 +88,13 @@ export const exDividendNoticeEntrySchema = z.object({
   stockHoldingRatio: z.number().nullable(),
 }) satisfies z.ZodType<ExDividendNoticeEntry>;
 
-export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend({ symbol: z.string() }) satisfies z.ZodType<ExDividendCalendarEntry>;
+// 2026-09-22 月曆往回翻：status 區分預告（twse 預告表）與已實現（mops 股利分派公告），見 application/ports/marketData.ts。
+export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend({
+  symbol: z.string(),
+  status: z.enum(['announced', 'realized']).meta({ description: 'announced = 除息日在今天（含）以後的預告，內容可能再變動；realized = 除息日已過、來自股利分派公告的事實' }),
+  paymentDate: z.string().nullable().meta({ description: '現金股利發放日 "YYYY-MM-DD"，只有 realized 列有值' }),
+  fiscalYear: z.number().int().nullable().meta({ description: '股利所屬年度（西元），只有 realized 列有值' }),
+}) satisfies z.ZodType<ExDividendCalendarEntry>;
 
 export const exDividendNoticesResultSchema = z.object({
   notices: z.record(z.string(), z.array(exDividendNoticeEntrySchema)).meta({
@@ -98,7 +104,10 @@ export const exDividendNoticesResultSchema = z.object({
 
 export const exDividendCalendarResultSchema = z.object({
   entries: exDividendCalendarEntrySchema.extend({ companyName: z.string().nullable() }).array().meta({
-    description: '依除權息基準日由舊到新排序（同一天有多筆時再依 symbol 排序），每一筆都帶 symbol/companyName',
+    description:
+      '依除權息基準日由舊到新排序（同一天有多筆時再依 symbol 排序），每一筆都帶 symbol/companyName。以「今天」為界：今天（含）以後是 twse 預告表（status announced），' +
+      '之前是 mops 股利分派公告（status realized）。realized 列只有 cashDividend/stockDividendRatio（元／股 ÷ 面額）/paymentDate/fiscalYear 有值，現金增資相關欄位一律 null（兩來源單位不同，不對應）；' +
+      'announced 列的 paymentDate/fiscalYear 一律 null。歷史深度：分派公告全市場 2026-03 起，更早月份目前只有少數公司（mops-ts 回補中）。',
   }),
 }) satisfies z.ZodType<ExDividendCalendarResult>;
 

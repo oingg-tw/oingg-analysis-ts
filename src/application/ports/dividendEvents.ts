@@ -26,8 +26,20 @@ export interface DividendDistributionRow {
   announcementDate: Date | null;
 }
 
+// 2026-09-22 給除權息月曆「過去月份」用：全市場在某段除權息日區間內已實現的分派列（exDate = 除息日與除權日
+// 中較早的那個，兩者通常同一天）。companyName 直接帶公告上的公司簡稱，ETF/特別股也有，不用再查 profile。
+// parValue 是換算股票股利「元／股 → 股／股」用的面額（twse 預告表的 stock_dividend_ratio 是股／股）。
+export interface RealizedExDividendRow extends DividendDistributionRow {
+  symbol: string;
+  companyName: string | null;
+  exDate: Date;
+  parValue: number | null;
+}
+
 export interface DividendEventsPort {
   getDividendDistributionEvents(symbol: string): Promise<DividendDistributionEvent[]>;
   // 全部歷史分派列（含金額/日期欄位），依所屬年度、季度由舊到新。
   listDividendDistributionRows(symbol: string): Promise<DividendDistributionRow[]>;
+  // 全市場、除權息日落在 [startDate, endDate] 的分派列，依 exDate、symbol 升冪。
+  listRealizedExDividendRows(startDate: Date, endDate: Date): Promise<RealizedExDividendRow[]>;
 }
