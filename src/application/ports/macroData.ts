@@ -27,7 +27,17 @@ export interface EquityRiskPremiumCacheRow {
   warnings: string[];
 }
 
+// 央行政策利率一次調整事件（gov-ts export.cbc_policy_rate，一列一次生效日）。三率都是百分比數字。
+export interface CbcPolicyRateEvent {
+  effectiveDate: Date;
+  discountRate: number; // 重貼現率——新聞講「升息半碼」的那支基準利率
+  collateralAccommodationRate: number; // 擔保放款融通利率
+  unsecuredAccommodationRate: number; // 短期融通利率（無擔保）
+}
+
 export interface MacroDataPort {
+  // 央行政策利率歷次調整事件，全部歷史依生效日升冪（GET /macro/cbc-policy-rate 要跟前一列相減算幅度）。
+  listCbcPolicyRatesAsc(): Promise<CbcPolicyRateEvent[]>;
   // 全部歷史，依年月升冪（ERP 要跟 TAIEX 月底收盤對齊重疊區間）。
   listGovBondYields10yAsc(): Promise<GovBondYieldMonth[]>;
   // 最新一筆（GET /macro/gov-bond-yield-10y 只要最新值）。

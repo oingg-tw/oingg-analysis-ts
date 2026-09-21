@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "changeBp": "<number>",
+        "collateralAccommodationRate": "<number>",
+        "discountRate": "<number>",
+        "effectiveDate": "<date>",
+        "unsecuredAccommodationRate": "<number>"
+      }
+    ]
+  }
+}

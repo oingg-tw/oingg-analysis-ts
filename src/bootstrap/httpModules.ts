@@ -47,6 +47,8 @@ import { createEquityRiskPremiumRouter } from '@/http/modules/macro/equityRiskPr
 import { registerEquityRiskPremiumOpenApi } from '@/http/modules/macro/equityRiskPremium/openapi';
 import { createGovBondYield10yRouter } from '@/http/modules/macro/govBondYield10y/route';
 import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYield10y/openapi';
+import { createCbcPolicyRateRouter } from '@/http/modules/macro/cbcPolicyRate/route';
+import { registerCbcPolicyRateOpenApi } from '@/http/modules/macro/cbcPolicyRate/openapi';
 
 // 2026-09-17 clean architecture 重構 Phase 4：**唯一**知道「全部路由有哪些」的地方——取代 src/http/routes.ts
 // （掛載順序）跟舊 src/bootstrap/openapi.ts（文件註冊順序）兩份手動同步的清單。createApp 依 auth 分組、
@@ -84,4 +86,5 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: createRankingRouter(deps), registerOpenApi: registerValuationRankingOpenApi },
   { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },
   { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: createGovBondYield10yRouter(deps), registerOpenApi: registerGovBondYield10yOpenApi },
+  { name: 'cbcPolicyRate', auth: 'bff', mountPath: '/macro', router: createCbcPolicyRateRouter(deps), registerOpenApi: registerCbcPolicyRateOpenApi },
 ];

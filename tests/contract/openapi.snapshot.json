@@ -3527,6 +3527,82 @@
         ]
       }
     },
+    "/macro/cbc-policy-rate": {
+      "get": {
+        "description": "事件型序列：一列就是一次利率調整的生效日，不是逐日/逐月快照，直接當圖上的事件標記用（例如疊在 /market/taiex-daily-price 或個股 daily-price-history 上）。資料來源是 gov-ts 的 export.cbc_policy_rate（央行統計資料庫 EG28D01en，1989-04-01 起，本服務只讀），本服務唯一的加工是 changeBp（重貼現率相對前一次的變動，基點）。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。只有生效日、沒有理監事會決議日。",
+        "parameters": [
+          {
+            "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1989-04-01 起，不到百筆，不需要分頁）。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1989-04-01 起，不到百筆，不需要分頁）。",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "依生效日由舊到新排序的調整事件；一列就是一次調整，不是逐日序列",
+                      "items": {
+                        "properties": {
+                          "changeBp": {
+                            "description": "重貼現率相對前一次調整的變動，基點（12.5 = 半碼升息、-12.5 = 半碼降息）；整段歷史的第一筆是 null",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "collateralAccommodationRate": {
+                            "description": "擔保放款融通利率，百分比數字",
+                            "type": "number"
+                          },
+                          "discountRate": {
+                            "description": "重貼現率，百分比數字（2 代表 2%）——新聞講「升息半碼」的那支基準利率",
+                            "type": "number"
+                          },
+                          "effectiveDate": {
+                            "description": "\"YYYY-MM-DD\" 調整生效日（央行統計表只記生效日，沒有理監事會決議日；決議日通常是生效日前一個工作日）",
+                            "type": "string"
+                          },
+                          "unsecuredAccommodationRate": {
+                            "description": "短期融通利率（無擔保），百分比數字",
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "effectiveDate",
+                          "discountRate",
+                          "collateralAccommodationRate",
+                          "unsecuredAccommodationRate",
+                          "changeBp"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "依生效日由舊到新排序的調整事件，查無資料時 entries 是空陣列。"
+          }
+        },
+        "summary": "央行政策利率歷次調整事件（重貼現率／擔保放款融通利率／短期融通利率）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/equity-risk-premium": {
       "get": {
         "description": "歷史法（Historical Risk Premium Approach）：用 oingg-twse 的 daily_taiex_index 月底收盤算 TAIEX 年化報酬率，減去 GOV 的 monthly_gov_bond_yield_10y（10 年期政府公債次級市場殖利率）同期平均值。本服務不向任何來源抓取原始資料，只讀取兩個資料源已鏡像進資料庫的資料，若查無資料請先確認 oingg-twse / oingg-gov-ts 那邊有沒有涵蓋所需月份。樣本窗口越長越可信：不指定 start/end 就用「TAIEX 與無風險利率都有資料」的完整重疊區間（目前約 1999-01 至今）。實測過，短窗口（例如 5~10 年）容易算出遠高於文獻常見的 4%~8% 的 ERP，是台股單一段極端多頭造成的樣本偏誤；27 年窗口算出來才貼近文獻。窗口低於 20 年（240 個月）仍然會算，但 warnings 會提醒可信度風險，不會擋下計算。計算口徑：marketReturnGeometric = TAIEX 年化幾何報酬率 = (期末收盤/期初收盤)^(12/月數) - 1；marketReturnArithmetic = TAIEX 年化算術報酬率 = 月報酬率平均 * 12；avgRiskFreeRate = 窗口內 10 年期公債殖利率的簡單平均；erpGeometric / erpArithmetic = 對應的市場報酬率 - 無風險利率。兩者哪個更適合視用途而定（長期資本預算常建議用幾何，CAPM 單期折現率常見用算術——本服務兩者都算，不替使用者預設）。全部欄位是百分比數字（例如 5.80 代表 5.80%），不是小數。窗口內重疊月份少於 2 個月無法算出任何報酬率，fieldStatuses 標註 calculation_error。指定的 start/end 超出實際資料涵蓋範圍時，會裁切到實際涵蓋範圍並在 warnings 說明，clippedToAvailableData 會是 true。",

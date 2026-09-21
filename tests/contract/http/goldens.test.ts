@@ -66,6 +66,7 @@ const cases: GoldenCase[] = [
   // 不在 bff-ts 的 45 支清單裡，但 Phase 4 逐模組改寫前一併釘住（macro 兩支是第一個改寫的範本模組）。
   { slug: 'macro-equity-risk-premium', method: 'get', path: '/macro/equity-risk-premium?startYear=2020&startMonth=1&endYear=2025&endMonth=12' },
   { slug: 'macro-gov-bond-yield-10y', method: 'get', path: '/macro/gov-bond-yield-10y' },
+  { slug: 'macro-cbc-policy-rate', method: 'get', path: '/macro/cbc-policy-rate?from=2022-01-01' },
 ];
 
 let harness: Awaited<ReturnType<typeof startApp>>;
