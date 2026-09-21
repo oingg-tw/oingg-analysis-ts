@@ -106,6 +106,11 @@ import { getOcfPerShareProvenance } from '@/application/metrics/quality/ocfPerSh
 import { getDepreciationAmortizationPerShareProvenance } from '@/application/metrics/quality/depreciationAmortizationPerShare/getDepreciationAmortizationPerShareProvenance';
 import { getOcfToNetIncomeProvenance } from '@/application/metrics/quality/ocfToNetIncome/getOcfToNetIncomeProvenance';
 import { getOwnerEarningsProvenance } from '@/application/metrics/quality/ownerEarnings/getOwnerEarningsProvenance';
+import { getEarningsToRecordHighProvenance } from '@/application/metrics/growth/earningsToRecordHigh/getEarningsToRecordHighProvenance';
+import { getThreeMarginsRisingProvenance } from '@/application/metrics/growth/threeMarginsRising/getThreeMarginsRisingProvenance';
+import { getShareholderYieldProvenance } from '@/application/metrics/dividend/shareholderYield/getShareholderYieldProvenance';
+import { getAssetTurnoverProvenance } from '@/application/metrics/efficiency/assetTurnover/getAssetTurnoverProvenance';
+import { getEquityMultiplierProvenance } from '@/application/metrics/resilience/equityMultiplier/getEquityMultiplierProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
@@ -235,4 +240,9 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   depreciationAmortizationPerShare: (query) => getDepreciationAmortizationPerShareProvenance(query, deps),
   ocfToNetIncome: (query) => getOcfToNetIncomeProvenance(query, deps),
   ownerEarnings: (query) => getOwnerEarningsProvenance(query, deps),
+  earningsToRecordHigh: (query) => getEarningsToRecordHighProvenance(query, deps),
+  threeMarginsRising: (query) => getThreeMarginsRisingProvenance(query, deps),
+  shareholderYield: (query) => getShareholderYieldProvenance(query, deps),
+  assetTurnover: (query) => getAssetTurnoverProvenance(query, deps),
+  equityMultiplier: (query) => getEquityMultiplierProvenance(query, deps),
 });

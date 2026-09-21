@@ -43,13 +43,31 @@ const risingBoth = (current: MetricComputation, qoqBase: MetricComputation, yoyB
   return current.value > qoqBase.value && current.value > yoyBase.value;
 };
 
-export const computeThreeMarginsRising = async (query: QuarterlyMetricQuery, deps: ThreeMarginsRisingDeps): Promise<ThreeMarginsRisingComputationBatch> => {
+// 2026-09-21：抽出 resolveThreeMarginsRisingInputs()——三個座標的三率明細與判定結果，給
+// getThreeMarginsRisingProvenance.ts（GET /companies/:symbol/metric-provenance）共用，寫入路徑本身
+// 行為不變。
+export interface ThreeMarginsRisingResolution {
+  year: string;
+  season: Season;
+  qoqCoord: { year: string; season: Season };
+  yoyCoord: { year: string; season: Season };
+  current: MarginTriple;
+  qoqBase: MarginTriple | null;
+  yoyBase: MarginTriple | null;
+  signals: Record<'grossMargin' | 'operatingMargin' | 'netProfitMargin', boolean | null>;
+  score: number | null;
+  nullReason: MetricNullReason | null;
+}
+
+export const resolveThreeMarginsRisingInputs = async (
+  query: QuarterlyMetricQuery,
+  deps: ThreeMarginsRisingDeps
+): Promise<{ year: string; season: string; resolution: ThreeMarginsRisingResolution | null } | null> => {
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
-  if (!resolvedQuarter) return noQuarterBatch(query.symbol, ['q']);
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
-  const seasonNum = Number(season);
 
   const qoqCoord = getPastNQuarters({ rocYear, season: season as Season }, 2)[0]!;
   const yoyCoord = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
@@ -60,11 +78,7 @@ export const computeThreeMarginsRising = async (query: QuarterlyMetricQuery, dep
     getMarginsAt(query, yoyCoord.year, yoyCoord.season, deps),
   ]);
 
-  // 本季自己連三率的座標都解析不出來（少見，通常代表這季 knowledge date 沒著落）——整支 skip，
-  // 理由沿用「沒有 knowledge date」，跟三率本身遇到這個情境的行為一致。
-  if (!current) {
-    return { symbol: query.symbol, rocYear: year, season, slots: { q: { action: 'skipped_no_knowledge_date' } } };
-  }
+  if (!current) return { year, season, resolution: null };
 
   const evaluate = (metric: 'gross' | 'operating' | 'net'): boolean | null => {
     if (!qoqBase || !yoyBase) return null;
@@ -80,6 +94,23 @@ export const computeThreeMarginsRising = async (query: QuarterlyMetricQuery, dep
   // 對使用者最有解釋力（通常是上市未滿一年或該季資料還沒回填），其餘情況（基準座標都在，
   // 只是某一率的值本身是 null）歸 missing_input。
   const nullReason: MetricNullReason | null = score === null ? (!qoqBase || !yoyBase ? 'insufficient_history' : 'missing_input') : null;
+
+  return { year, season, resolution: { year, season: season as Season, qoqCoord, yoyCoord, current, qoqBase, yoyBase, signals, score, nullReason } };
+};
+
+export const computeThreeMarginsRising = async (query: QuarterlyMetricQuery, deps: ThreeMarginsRisingDeps): Promise<ThreeMarginsRisingComputationBatch> => {
+  const resolved = await resolveThreeMarginsRisingInputs(query, deps);
+  if (!resolved) return noQuarterBatch(query.symbol, ['q']);
+  const { year, season, resolution } = resolved;
+
+  // 本季自己連三率的座標都解析不出來（少見，通常代表這季 knowledge date 沒著落）——整支 skip，
+  // 理由沿用「沒有 knowledge date」，跟三率本身遇到這個情境的行為一致。
+  if (!resolution) {
+    return { symbol: query.symbol, rocYear: year, season, slots: { q: { action: 'skipped_no_knowledge_date' } } };
+  }
+  const { current, score, nullReason } = resolution;
+  const rocYear = Number(year);
+  const seasonNum = Number(season);
 
   const knowledgeDateSources: MetricComputation[] = [current.gross, current.operating, current.net];
   const knowledgeDate = new Date(Math.max(...knowledgeDateSources.map((s) => s.knowledgeDate.getTime())));

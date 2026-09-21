@@ -5,6 +5,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import type { MarketCapAsOf } from '@/application/ports/marketData';
 
 // Shareholder Yield（Mebane Faber, 2013《Shareholder Yield: A Better Approach to
 // Dividend Investing》）= 股利殖利率 + 買回殖利率（Faber 完整版還有第三項「淨還債殖利率」，
@@ -39,17 +40,35 @@ export type ShareholderYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'an
 
 export type ShareholderYieldComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeShareholderYield = async (
-  query: QuarterlyMetricQuery,
-  deps: ShareholderYieldDeps
-): Promise<ShareholderYieldComputationBatch> => {
+// 2026-09-21：抽出 resolveShareholderYieldInputs()——近四季股利/買回明細與市值，給
+// getShareholderYieldProvenance.ts 共用，寫入路徑行為不變。
+export interface ShareholderYieldQuarter {
+  rocYear: number;
+  season: number;
+  fiscalYear: number;
+  dividendsPaid: bigint | null; // 現金流量表 dividends_paid_financing（缺漏視為 0 計入）
+  treasuryShares: bigint | null; // XBRL 長表 payments_to_acquire_treasury_shares（整列缺漏 = null，不是沒買回）
+}
+
+export interface ShareholderYieldResolution {
+  year: string;
+  season: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  quarters: ShareholderYieldQuarter[]; // 近四季，舊到新
+  ttmComplete: boolean;
+  shareholderCashOutflow: bigint; // |股利加總| + |買回加總|，千元
+  marketCap: MarketCapAsOf | null;
+  reportDate: Date | null;
+  value: number | null;
+  nullReason: MetricNullReason | null;
+}
+
+export const resolveShareholderYieldInputs = async (query: QuarterlyMetricQuery, deps: ShareholderYieldDeps): Promise<ShareholderYieldResolution | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -59,26 +78,31 @@ export const computeShareholderYield = async (
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const mainCashFlow = await deps.statements.getCashFlowStatement(key);
   const reportDate = mainCashFlow?.reportDate ?? null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
+  const quarters: ShareholderYieldQuarter[] = await Promise.all(
     ttmQuarters.map(async (tq) => {
       const q = { symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId };
       const [cashFlow, treasuryShares] = await Promise.all([deps.statements.getCashFlowStatement(q), getTreasurySharesPurchased(q, deps)]);
-      return { cashFlow, treasuryShares };
+      return {
+        rocYear: Number(tq.year),
+        season: Number(tq.season),
+        fiscalYear: rocYearToGregorian(Number(tq.year)),
+        dividendsPaid: cashFlow === null ? null : (cashFlow.dividendsPaid ?? null),
+        treasuryShares: cashFlow === null ? null : treasuryShares,
+      };
     })
   );
 
   let dividendsSum = 0n;
   let buybackSum = 0n;
   let ttmComplete = true;
-  for (const { cashFlow, treasuryShares } of ttmRecords) {
-    if (cashFlow === null || treasuryShares === null) {
+  for (const { dividendsPaid, treasuryShares } of quarters) {
+    if (treasuryShares === null) {
       ttmComplete = false;
     } else {
       // 股利發放缺漏視為 0——大多數季度本來就沒發放，不是資料缺漏（比照 dividendCoverageRatio 的既有規則）。
-      dividendsSum += cashFlow.dividendsPaid ?? 0n;
+      dividendsSum += dividendsPaid ?? 0n;
       buybackSum += treasuryShares;
     }
   }
@@ -91,6 +115,20 @@ export const computeShareholderYield = async (
   const shareholderYieldTtm =
     ttmComplete && marketCap && marketCap.marketCap > 0 ? Math.round(((Number(shareholderCashOutflow) * 1000) / marketCap.marketCap) * 100 * 100) / 100 : null;
   const ttmNullReason: MetricNullReason | null = shareholderYieldTtm !== null ? null : !ttmComplete ? 'insufficient_history' : 'missing_input';
+
+  return { year, season, fiscalYear, fiscalQuarter: seasonNum, quarters, ttmComplete, shareholderCashOutflow, marketCap, reportDate, value: shareholderYieldTtm, nullReason: ttmNullReason };
+};
+
+export const computeShareholderYield = async (query: QuarterlyMetricQuery, deps: ShareholderYieldDeps): Promise<ShareholderYieldComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveShareholderYieldInputs(query, deps);
+  if (!resolution) {
+    return noQuarterBatch(symbol, ['ttm']);
+  }
+  const { year, season, fiscalYear, fiscalQuarter: seasonNum, reportDate, value: shareholderYieldTtm, nullReason: ttmNullReason } = resolution;
+  const rocYear = Number(year);
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const coordinateBase = { symbol, metricCode: 'shareholderYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

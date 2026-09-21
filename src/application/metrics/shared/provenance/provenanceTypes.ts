@@ -138,6 +138,13 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'depreciationAmortizationPerShare',
   'ocfToNetIncome',
   'ownerEarnings',
+  // 2026-09-21 web-nuxt 要求（徽章專頁的「計算依據表」是唯一的 SSR 表格，沒有稽核鏈就開不了專頁；
+  // 杜邦頁要三因子都有鏈）：三支徽章指標 + 杜邦兩個因子。
+  'earningsToRecordHigh',
+  'threeMarginsRising',
+  'shareholderYield',
+  'assetTurnover',
+  'equityMultiplier',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 
