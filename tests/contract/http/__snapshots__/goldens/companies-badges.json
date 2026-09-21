@@ -7,15 +7,15 @@
           {
             "knowledgeDate": "<date>",
             "knowledgeDateIsFallback": "<boolean>",
-            "metricCode": "liveGrahamNumber",
+            "metricCode": "beta",
             "name": "<string>",
             "nameEn": "<string>",
             "nullReason": "<null>",
             "passed": "<boolean>",
-            "percentile": "<null>",
-            "rank": "<null>",
-            "timeframe": "EOD",
-            "totalCount": "<null>",
+            "percentile": "<number>",
+            "rank": "<number>",
+            "timeframe": "<string>",
+            "totalCount": "<number>",
             "value": "<number>",
             "warning": "<null>"
           }

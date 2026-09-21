@@ -8,9 +8,32 @@
         "metrics": [
           {
             "academicSourceUrl": "<string>",
+            "badge": {
+              "author": "<string>",
+              "detail": "<string>",
+              "name": "<string>",
+              "nameEn": "<string>",
+              "sourceUrl": "<string>",
+              "summary": "<string>",
+              "threshold": {
+                "denominator": "<number>",
+                "description": "<string>",
+                "note": "<string>",
+                "percentileRank": {
+                  "direction": "asc",
+                  "scope": "market",
+                  "topPercent": "<number>"
+                },
+                "thresholdLatex": "<string>"
+              },
+              "timeframe": "<string>"
+            },
+            "description": "<string>",
             "formulaLatex": "<string>",
             "hasProvenance": "<boolean>",
+            "limitations": "<string>",
             "metricCode": "beta",
+            "misreadings": "<string>",
             "name": "Beta",
             "referenceUrl": "<string>",
             "sources": [

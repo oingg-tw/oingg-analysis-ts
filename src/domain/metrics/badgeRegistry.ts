@@ -27,6 +27,7 @@ import { interestCoverageBadge } from './resilience/interestCoverage/interestCov
 import { netDebtToEbitdaBadge } from './resilience/netDebtToEbitda/netDebtToEbitdaBadge';
 import { cashConversionCycleBadge } from './efficiency/cashConversionCycle/cashConversionCycleBadge';
 import { rdIntensityBadge } from './growth/rdIntensity/rdIntensityBadge';
+import { betaBadge } from './valuation/beta/betaBadge';
 import { longTermDebtToNetCurrentAssetsBadge } from './resilience/longTermDebtToNetCurrentAssets/longTermDebtToNetCurrentAssetsBadge';
 import { ohlsonOScoreBadge } from './resilience/ohlsonOScore/ohlsonOScoreBadge';
 import { zmijewskiScoreBadge } from './resilience/zmijewskiScore/zmijewskiScoreBadge';
@@ -187,6 +188,8 @@ import { psrBadge } from './valuation/psr/psrBadge';
 //     會冒充淨現金公司誤判通過。
 //   - rdIntensityBadge：范宏書、林彥廷（2010，證券市場發展季刊）五分位，台灣 1990–98。掛 rdIntensity 不掛
 //     priceToResearchRatio（後者只有 530 家有值，等股本回補；CLS 2001 美國證據撐的是後者）。
+//   - betaBadge（同日追加，使用者點名）：Baker-Bradley-Wurgler (2011, FAJ) 五分位、60 個月月報酬估 beta，對上本站
+//     5Y_1M 窗口；Frazzini-Pedersen 的混合窗口估法本站沒有等價物，只當同方向佐證。台灣證據混合（見檔頭），使用者知情。
 //   使用者否決：台灣制度性門檻兩支（營業細則 §49 淨值/股本 1/2、注意股票 PE 60/PB 6）。查過不做：pbRatio 最低
 //   十分位（台灣三篇方向一致但劉信陸等 2023 不顯著、電子業反向、覆蓋 678 家）、低本益比（方智強 1998 反證）、
 //   低 beta（Frazzini-Pedersen 出處硬但台灣證據混合）、dividendYield 前 20%（黃金生等 2014 事後殖利率、四因子
@@ -244,6 +247,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   netDebtToEbitda: netDebtToEbitdaBadge,
   cashConversionCycle: cashConversionCycleBadge,
   rdIntensity: rdIntensityBadge,
+  beta: betaBadge,
   longTermDebtToNetCurrentAssets: longTermDebtToNetCurrentAssetsBadge,
   ohlsonOScore: ohlsonOScoreBadge,
   zmijewskiScore: zmijewskiScoreBadge,
