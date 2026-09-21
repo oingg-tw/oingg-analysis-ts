@@ -264,7 +264,7 @@ export const companyBadgeResultSchema = z.object({
 
 export const companyBadgeCategorySchema = z.object({
   categoryKey: z.string().meta({ description: '對應 GET /metrics 的 categoryKey' }),
-  categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「財務韌性」' }),
+  categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「安全韌性」' }),
   badges: z.array(companyBadgeResultSchema),
 });
 
@@ -291,7 +291,7 @@ export const companyMetricCompletenessEntrySchema = z.object({
 
 export const companyMetricCompletenessCategorySchema = z.object({
   categoryKey: z.string().meta({ description: '對應 GET /metrics 的 categoryKey' }),
-  categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「財務韌性」' }),
+  categoryDisplayName: z.string().meta({ description: '分類中文名稱，例如「安全韌性」' }),
   metrics: z.array(companyMetricCompletenessEntrySchema),
   coveredCount: z.number().int().meta({ description: '這個分類裡 hasValue 為 true 的指標數' }),
   totalCount: z.number().int().meta({ description: '這個分類的指標總數' }),

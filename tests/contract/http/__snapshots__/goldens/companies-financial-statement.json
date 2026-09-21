@@ -59,7 +59,7 @@
       "longterm_borrowings": "<numeric-string>",
       "longterm_liabilities_current_portion": "<numeric-string>",
       "longterm_notes_and_accounts_payable": "<null>",
-      "merger_reserve": "<null>",
+      "merger_reserve": "<numeric-string>",
       "noncontrolling_interests": "<numeric-string>",
       "noncurrent_assets": "<numeric-string>",
       "noncurrent_assets_held_for_sale": "<null>",

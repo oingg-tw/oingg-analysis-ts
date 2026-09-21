@@ -364,7 +364,7 @@
                             "type": "array"
                           },
                           "categoryDisplayName": {
-                            "description": "分類中文名稱，例如「財務韌性」",
+                            "description": "分類中文名稱，例如「安全韌性」",
                             "type": "string"
                           },
                           "categoryKey": {
@@ -1191,7 +1191,7 @@
                       "items": {
                         "properties": {
                           "categoryDisplayName": {
-                            "description": "分類中文名稱，例如「財務韌性」",
+                            "description": "分類中文名稱，例如「安全韌性」",
                             "type": "string"
                           },
                           "categoryKey": {

@@ -5,7 +5,11 @@
 export const METRIC_CATEGORIES = [
   { key: 'valuation', displayName: '市場評價' },
   { key: 'dividend', displayName: '股東政策' },
-  { key: 'resilience', displayName: '財務韌性' },
+  // 2026-09-21 使用者（經 web-nuxt 轉達）要求「財務韌性」改名「安全韌性」——只改顯示名稱，key 不動。
+  // 這個字串同時流向 GET /metrics 的 category name、GET /companies/badges 的 categoryDisplayName，
+  // 以及 bff-ts 的 /screener/templates 範本名稱（web-nuxt 的 /screener/{slug} 用範本名稱當 key 對 slug，
+  // 改名前要先通知他們同步，否則連結會靜默消失——2026-09-20「股利穩健→股利連續性」那次踩過）。
+  { key: 'resilience', displayName: '安全韌性' },
   { key: 'quality', displayName: '獲利品質' },
   { key: 'profitability', displayName: '獲利能力' },
   { key: 'efficiency', displayName: '營運效率' },
