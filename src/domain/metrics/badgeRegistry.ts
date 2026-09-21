@@ -9,7 +9,6 @@ import { novyMarxGpToAssetsBadge } from './profitability/novyMarxGpToAssets/novy
 import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
-import { assetGrowthBadge } from './growth/assetGrowth/assetGrowthBadge';
 import { netIncomeGrowthRateBadge } from './growth/netIncomeGrowthRate/netIncomeGrowthRateBadge';
 import { earningsToRecordHighBadge } from './growth/earningsToRecordHigh/earningsToRecordHighBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
@@ -168,6 +167,14 @@ import { psrBadge } from './valuation/psr/psrBadge';
 //     內——2026-09 否決「營收創歷史新高」的資料深度理由因此不適用於這支。
 // 兩支都是「每月依指標均分五組、最高一組為贏家（前 20%）」，逐字見論文第 7 頁與結論頁。
 //
+// 2026-09-21：assetGrowthBadge（Fama-French CMA「Conservative」最低 30%）同日掛上、同日下架。下架理由
+// 是台灣本土反證：柯冠成、江惠君、林信助、張榮顯（2012）〈資產成長與股票報酬之關係：台灣實證〉
+// （管理學報 29(5):465-487，1982/7–2009/12 台灣上市櫃全市場，已開 PDF 逐字核對摘要）：「我們發現僅有
+// 『其他資產成長』對股票報酬具有顯著的負向解釋力，『總資產成長』則否」。Fama-French 的美國證據不能
+// 直接搬到台灣，這支徽章在本站的母體上沒有本土實證支持，使用者決定下架。assetGrowth 指標本身保留。
+// 之後若要做「其他資產成長」（總資產扣現金/流動資產/長投/固定資產後的殘項年增率）最低十分位，柯冠成等
+// 2012 是合格出處（免費全文、原創者、台灣樣本、十分位明確），但指標冷僻，未排入。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -194,7 +201,6 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   shareholderYield: shareholderYieldBadge,
   accrualsRatio: accrualsRatioBadge,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
-  assetGrowth: assetGrowthBadge,
   netIncomeGrowthRate: netIncomeGrowthRateBadge,
   earningsToRecordHigh: earningsToRecordHighBadge,
   oneDollarTest: oneDollarTestBadge,
