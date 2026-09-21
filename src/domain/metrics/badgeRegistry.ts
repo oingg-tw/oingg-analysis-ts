@@ -1,7 +1,6 @@
 import type { MetricBadge } from './metricDefinitionSpec';
 
 import { dividendPayoutRatioBadge } from './dividend/dividendPayoutRatio/dividendPayoutRatioBadge';
-import { oneilCanslimScoreBadge } from './growth/oneilCanslimScore/oneilCanslimScoreBadge';
 import { sgrBadge } from './growth/sgr/sgrBadge';
 import { grossMarginBadge } from './profitability/grossMargin/grossMarginBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
@@ -86,6 +85,11 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // consecutiveProfitYears 是同一種資料深度問題；合併後的複合指標同樣受限，使用者決定先讓 2330
 // （有完整歷史）跑出來，其餘等回填。
 //
+// 2026-09-21：使用者決定 oneilCanslimScore 先移除不做——複合指標、compute、badge、metric_values
+// 裡 2330 那 10 列全部下架/刪除，epsCagr3y/epsGrowthRate/revenueGrowthRate/roe 四支底層指標本身
+// 不受影響。沒有恢復第七輪拿掉的那兩支舊徽章（同一份資料深度限制仍在，恢復也一樣點不亮）。之後
+// 若要重做，上面第七輪的分析（四條門檻、資料深度現況）仍然有效，不用重查。
+//
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有
 // 學術論文設定過、設定方不是本平台即可。改引用廖彥傑（2023，台大財金所碩士論文）對台灣上市櫃公司
 // 採用的 0.5 判別線，全文 PDF 已實際讀過確認逐字有寫。完整脈絡見 ohlsonOScoreBadge.ts 檔頭。
@@ -104,7 +108,6 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // prose 文案綁在一起比較好找），只是不再被 Definition.ts import，改成這裡統一 import。
 export const badgeRegistry: Record<string, MetricBadge> = {
   dividendPayoutRatio: dividendPayoutRatioBadge,
-  oneilCanslimScore: oneilCanslimScoreBadge,
   sgr: sgrBadge,
   grossMargin: grossMarginBadge,
   oneDollarTest: oneDollarTestBadge,

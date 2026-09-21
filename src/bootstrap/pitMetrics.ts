@@ -21,7 +21,6 @@ import { computeAssetGrowth } from '@/application/metrics/growth/assetGrowth/com
 import { computeBvpsGrowthRate } from '@/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRate';
 import { computeEpsCagrFamily } from '@/application/metrics/growth/epsCagr/computeEpsCagrFamily';
 import { computeEpsGrowthRate } from '@/application/metrics/growth/epsGrowthRate/computeEpsGrowthRate';
-import { computeOneilCanslimScore } from '@/application/metrics/growth/oneilCanslimScore/computeOneilCanslimScore';
 import { computeEquityGrowthRate } from '@/application/metrics/growth/equityGrowthRate/computeEquityGrowthRate';
 import { computeNetIncomeGrowthRate } from '@/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRate';
 import { computeOperatingIncomeGrowthRate } from '@/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRate';
@@ -184,7 +183,6 @@ export const computeAndWriteFcfMarginPit = runPit(computeFcfMargin);
 export const computeAndWriteOcfToNetIncomePit = runPit(computeOcfToNetIncome);
 export const computeAndWriteOwnerEarningsPit = runPit(computeOwnerEarnings);
 export const computeAndWritePiotroskiFScorePit = runPit(computePiotroskiFScore);
-export const computeAndWriteOneilCanslimScorePit = runPit(computeOneilCanslimScore);
 export const computeAndWriteAltmanZDoublePrimeScorePit = runPit(computeAltmanZDoublePrimeScore);
 export const computeAndWriteAltmanZScorePit = runPit(computeAltmanZScore);
 export const computeAndWriteBankAssetQualityFamilyPit = runPit(computeBankAssetQualityFamily);
