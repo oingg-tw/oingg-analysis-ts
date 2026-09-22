@@ -258,6 +258,11 @@ export const companyBadgeResultSchema = z.object({
   }),
   rank: z.number().int().nullable().meta({ description: '2026-09-21 新增：只有 percentileRank 徽章才會填，原始名次（並列共用名次），其餘一律 null。' }),
   totalCount: z.number().int().nullable().meta({ description: '2026-09-21 新增：只有 percentileRank 徽章才會填，排名母體總數（market=全市場、sector=同類股家數），其餘一律 null。' }),
+  thresholdValue: z.number().nullable().meta({
+    description:
+      '2026-09-22 新增：只有 percentileRank 徽章才會填，其餘一律 null。門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPercent 分界那家公司的指標值，單位與精度同 value。' +
+      '前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPercent/100）。',
+  }),
 });
 
 export const companyBadgeCategorySchema = z.object({

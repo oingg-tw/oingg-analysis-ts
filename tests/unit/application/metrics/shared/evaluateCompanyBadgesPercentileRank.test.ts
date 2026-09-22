@@ -12,7 +12,8 @@ import { createTestDeps } from '../../../../fakes/createTestDeps';
 // 等第一支真的用 sector 的徽章出現時，那支徽章自己的測試會覆蓋這條路徑——不提前測一段目前沒有
 // 任何呼叫端會走到的分支。
 
-const rankRow = (value: number, rank: number, totalCount: number): CompanyRankRow => ({ symbol: '2330', value, rank: BigInt(rank), quintile: 1n, total_count: BigInt(totalCount) });
+// threshold_value 是 SQL 算好的分界線值（見 buildCompanyRankSql），這裡直接給。
+const rankRow = (value: number, rank: number, totalCount: number, thresholdValue: number | null = 30): CompanyRankRow => ({ symbol: '2330', value, rank: BigInt(rank), quintile: 1n, total_count: BigInt(totalCount), threshold_value: thresholdValue });
 const latestRow = (value: number | null, nullReason: string | null): PeriodHistoryRow => ({ fiscalYear: 2026, fiscalQuarter: 2, value, nullReason, knowledgeDate: new Date('2026-08-14'), knowledgeDateIsFallback: false });
 
 // 2026-09-21 起 percentileRank 徽章跟一般徽章共用同一段「先查最新值」的路徑（web-nuxt 回報 bug 後合併）：
@@ -33,7 +34,7 @@ const gpToAssetsBadgeOf = async (rows: CompanyRankRow[], latest: PeriodHistoryRo
 describe('evaluateCompanyBadges 的 percentileRank（novyMarxGpToAssets，market 五分位）', () => {
   test('排第 1 名（100 家裡最高）：percentile=100、passed=true', async () => {
     const badge = await gpToAssetsBadgeOf([rankRow(45.2, 1, 100)]);
-    expect(badge).toMatchObject({ value: 45.2, percentile: 100, rank: 1, totalCount: 100, passed: true });
+    expect(badge).toMatchObject({ value: 45.2, percentile: 100, rank: 1, totalCount: 100, thresholdValue: 30, passed: true });
   });
 
   test('剛好落在前 20% 邊界（第 20/100 名）：passed=true', async () => {
@@ -61,11 +62,11 @@ describe('evaluateCompanyBadges 的 percentileRank（novyMarxGpToAssets，market
   // 使用者要求不適用的徽章也要列——有列但 value null 時要照回 nullReason，percentile 三欄 null。
   test('這季算不出來（有列、value null、nullReason 是列舉值）：照回傳，passed/percentile/rank/totalCount 皆 null', async () => {
     const badge = await gpToAssetsBadgeOf([], [latestRow(null, 'insufficient_history')]);
-    expect(badge).toMatchObject({ value: null, nullReason: 'insufficient_history', knowledgeDate: '2026-08-14', passed: null, percentile: null, rank: null, totalCount: null });
+    expect(badge).toMatchObject({ value: null, nullReason: 'insufficient_history', knowledgeDate: '2026-08-14', passed: null, percentile: null, rank: null, totalCount: null, thresholdValue: null });
   });
 
   test('有值但不在排名母體裡（companyRank 回空）：value 照回，排名三欄與 passed 為 null', async () => {
     const badge = await gpToAssetsBadgeOf([], [latestRow(12.3, null)]);
-    expect(badge).toMatchObject({ value: 12.3, nullReason: null, passed: null, percentile: null, rank: null, totalCount: null });
+    expect(badge).toMatchObject({ value: 12.3, nullReason: null, passed: null, percentile: null, rank: null, totalCount: null, thresholdValue: null });
   });
 });

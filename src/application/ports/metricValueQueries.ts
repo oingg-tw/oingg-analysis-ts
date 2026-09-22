@@ -61,6 +61,9 @@ export interface CompanyRankRow {
   rank: bigint;
   quintile: bigint;
   total_count: bigint;
+  // 2026-09-22 web-nuxt 要求：percentileRank 徽章的分界線落在指標本身單位上是多少——排名母體裡「rank/total ≤ topPercent」
+  // 那條線上最後一家的值（跟 passed 的判定用同一條規則）。呼叫端沒給 thresholdTopPercent 時是 null。
+  threshold_value: unknown;
 }
 
 // 全市場某個欄位的分布（給「殖利率市場排名」卡片展開的直方圖用）——trueMin/trueMax 是實際
@@ -108,7 +111,7 @@ export interface MetricValueQueryPort {
   // candidateSymbols：2026-09-21 應 percentileRank 徽章需求新增（選填，預設 null=全市場不限）——
   // 縮小排名母體到指定的 symbol 清單（例如某個證交所類股的成分股），只有 include 語意，沒有
   // SymbolScope 的 exclude 變體（目前唯一的呼叫端 evaluateCompanyBadges 用不到排除）。
-  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean, candidateSymbols?: string[] | null): Promise<CompanyRankRow[]>;
+  companyRank(symbol: string, field: FieldRef, direction: 'asc' | 'desc', excludeZero: boolean, candidateSymbols?: string[] | null, thresholdTopPercent?: number | null): Promise<CompanyRankRow[]>;
   // 明確列出的 symbol 各自的欄位值，每個 symbol 都保證有一列。
   values(symbols: string[], columns: FieldRef[]): Promise<Record<string, unknown>[]>;
   // 全市場某個欄位的分布（直方圖用），bins 是要切幾格；excludeZero 排除值精確等於 0 的列

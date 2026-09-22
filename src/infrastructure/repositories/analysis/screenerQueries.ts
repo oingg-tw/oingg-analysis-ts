@@ -300,7 +300,8 @@ export const buildCompanyRankSql = (
   field: FieldRef,
   direction: 'asc' | 'desc',
   excludeZero: boolean,
-  candidateSymbols: string[] | null = null
+  candidateSymbols: string[] | null = null,
+  thresholdTopPercent: number | null = null
 ): Prisma.Sql => {
   const filterCteRefs = dedupCtes([field]);
   const ctes = [...filterCteRefs.values()].map(buildCte);
@@ -326,7 +327,11 @@ export const buildCompanyRankSql = (
       FROM ${alias}
       WHERE ${Prisma.join(whereConditions, ' AND ')}
     )
-    SELECT symbol, value, rank, quintile, total_count FROM ranked WHERE symbol = ${symbol}
+    SELECT symbol, value, rank, quintile, total_count,
+      ${thresholdTopPercent === null
+        ? Prisma.sql`NULL`
+        : Prisma.sql`(SELECT r2.value FROM ranked r2 WHERE r2.rank::numeric / r2.total_count <= ${thresholdTopPercent / 100} ORDER BY r2.rank DESC LIMIT 1)`} AS threshold_value
+    FROM ranked WHERE symbol = ${symbol}
   `;
 };
 

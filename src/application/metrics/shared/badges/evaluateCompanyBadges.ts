@@ -44,6 +44,9 @@ export interface CompanyBadgeResult {
   percentile: number | null;
   rank: number | null;
   totalCount: number | null;
+  // 2026-09-22 web-nuxt 要求：門檻分界線對應的指標值（單位同 value），讓「前 20%」可以印成「前 20%（研發密度 ≥ 12.34%）」；
+  // 只有 percentileRank 徽章才會填，其餘一律 null。
+  thresholdValue: number | null;
 }
 
 export interface CompanyBadgeCategory {
@@ -118,10 +121,11 @@ interface PercentileRankResult {
   percentile: number | null;
   rank: number | null;
   totalCount: number | null;
+  thresholdValue: number | null;
   passed: boolean | null;
 }
 
-const NULL_PERCENTILE_RESULT: PercentileRankResult = { percentile: null, rank: null, totalCount: null, passed: null };
+const NULL_PERCENTILE_RESULT: PercentileRankResult = { percentile: null, rank: null, totalCount: null, thresholdValue: null, passed: null };
 
 const evaluatePercentileRank = async (
   symbol: string,
@@ -134,7 +138,7 @@ const evaluatePercentileRank = async (
   if (candidateSymbols === undefined) return NULL_PERCENTILE_RESULT;
 
   const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
-  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols);
+  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols, percentileRank.topPercent);
   const row = rows[0];
   if (!row) return NULL_PERCENTILE_RESULT;
 
@@ -142,8 +146,10 @@ const evaluatePercentileRank = async (
   const totalCount = Number(row.total_count);
   const percentile = totalCount > 0 ? Math.round((1 - (rank - 1) / totalCount) * 1000) / 10 : null;
   const passed = percentile !== null ? rank / totalCount <= percentileRank.topPercent / 100 : null;
+  // 分界線上最後一家的值（跟 passed 同一條規則），單位、精度同 value；母體太小連一家都不到線時是 null。
+  const thresholdValue = row.threshold_value === null || row.threshold_value === undefined ? null : Number(row.threshold_value);
 
-  return { percentile, rank, totalCount, passed };
+  return { percentile, rank, totalCount, thresholdValue, passed };
 };
 
 export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompanyBadgesDeps): Promise<CompanyBadgeCategory[]> => {
@@ -211,6 +217,7 @@ export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompan
             percentile: ranked.percentile,
             rank: ranked.rank,
             totalCount: ranked.totalCount,
+            thresholdValue: ranked.thresholdValue,
           };
         })
       );
