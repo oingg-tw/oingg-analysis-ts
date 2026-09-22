@@ -51,11 +51,19 @@ const PROGRESS_EVERY = 50;
 const SYMBOL_CONCURRENCY = 8;
 const FLUSH_EVERY = 20;
 
-// 113Q1 ~ 115Q2，舊到新——舊到新的順序純粹是方便看進度／符合直覺，各指標彼此獨立計算
+// 109Q3 ~ 115Q2，舊到新——舊到新的順序純粹是方便看進度／符合直覺，各指標彼此獨立計算
 // 不依賴回填順序（每支 compute*Pit 都是自己重新查那一季的原始資料，不依賴 metric_values
 // 裡已經寫入的其他季度值，見 grahamNumberDefinition.ts 等檔案「每支 PIT 檔案獨立、不互相
 // 依賴」的既有原則）。
 const QUARTERS: { year: string; season: Season }[] = [
+  // 2026-09-22 往前延伸到 109Q3：TECH_DEBT.md 原本說 5 年/8 年 CAGR 空著是「上游 XBRL 深度不夠」，實測已經不是——
+  // mops 的 quarterly_income_statement_xbrl 109 年有 1,534 家、110 年 1,604、111 年 1,606、112 年 1,897，是我們的
+  // metric_values 只回填到 113Q1（113 年以前只有 2330 一家）。補完這 14 季，epsCagr5y/8y、revenueCagr5y/8y、
+  // dividendGrowthRate5y/8y、chowderNumber、pegRatio、livePegRatio、oneDollarTest 這批才會從「全市場 0~1 家有值」變成上千家。
+  { year: '109', season: '3' }, { year: '109', season: '4' },
+  { year: '110', season: '1' }, { year: '110', season: '2' }, { year: '110', season: '3' }, { year: '110', season: '4' },
+  { year: '111', season: '1' }, { year: '111', season: '2' }, { year: '111', season: '3' }, { year: '111', season: '4' },
+  { year: '112', season: '1' }, { year: '112', season: '2' }, { year: '112', season: '3' }, { year: '112', season: '4' },
   { year: '113', season: '1' }, { year: '113', season: '2' }, { year: '113', season: '3' }, { year: '113', season: '4' },
   { year: '114', season: '1' }, { year: '114', season: '2' }, { year: '114', season: '3' }, { year: '114', season: '4' },
   { year: '115', season: '1' }, { year: '115', season: '2' },
