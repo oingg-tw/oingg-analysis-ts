@@ -15,23 +15,18 @@
   （`liveGrahamNumber`/`livePegRatio`/`liveMarketCap`）、「六季財報深度解鎖」17 支
   新指標，全部都已經是全市場覆蓋，不再是「只有 2330」的狀態。以下這條舊記錄已解決，
   不用再提。
-- **真正的資料覆蓋率缺口，改成結構性的「深度不夠」而不是「範圍沒做」**：
-  `chowderNumber`/`pegRatio`/`livePegRatio`/`epsCagr3y`/`epsCagr5y`/`epsCagr8y`/
-  `revenueCagr3y`/`revenueCagr5y`/`revenueCagr8y`/`dividendGrowthRate3y`/
-  `dividendGrowthRate5y`/`dividendGrowthRate8y` 這批需要 ≥3 年（≥12 季）歷史回溯的
-  指標，全市場已回填但實測非 null 比例偏低——mops-ts 的 XBRL 全市場覆蓋實際是從
-  114Q1（2025）才開始鋪開，深度還在逐步累積。不是誰的 bug，純粹是上游資料庫歷史
-  深度還沒累積到，沒有排期，等 mops-ts 之後往回補歷史年度的 XBRL 才會自然解決。
-  **2026-09-14 實測進度**（對照 2026-09-11 舊快照的 1~2/2058）：3 年版本已經有
-  實質進展——`epsCagr3y` 33/2067、`revenueCagr3y` 138/2067；但 5 年/8 年版本
-  （`epsCagr5y`/`8y`、`revenueCagr5y`/`8y`、`dividendGrowthRate5y`/`8y`）跟
-  `chowderNumber`/`pegRatio`/`livePegRatio`（`livePegRatio` 內部邏輯依賴 5 年年度
-  EPS，實測 `metric_daily_cadence_values` 裡 1781 家有列但只有 1 家非 null，同一種
-  深度限制）幾乎沒動，仍是 0~1。深度還是不夠，只是 3 年版本比 5/8 年版本先解套，
-  之後可以再抽查一次確認趨勢。
-  （⚠️ 查這批指標時要注意 `livePegRatio` 是逐日型 snapshotCadence='EOD'，寫進
-  `metric_daily_cadence_values`，不是 `metric_values`——2026-09-14 曾經查錯表誤判
-  成「完全沒資料」，已更正。）
+- **歷史深度：2026-09-22 重新查證後結論翻轉——不是上游深度不夠，是我們沒回填**。
+  `chowderNumber`/`pegRatio`/`livePegRatio`/`oneDollarTest`/`epsCagr5y`/`epsCagr8y`/
+  `revenueCagr5y`/`revenueCagr8y`/`dividendGrowthRate5y`/`dividendGrowthRate8y` 全市場
+  2026Q2 只有 0~1 家有值。2026-09-14 的舊記錄說是「mops XBRL 從 114Q1 才鋪開」，實測
+  已經不成立：`quarterly_income_statement_xbrl` 109 年（2020）有 1,534 家、110 年 1,604 家、
+  111 年 1,606 家、112 年 1,897 家、113 年 2,299 家。真正的限制是
+  `scripts/backfillFullHistoryFullMarketPit.ts` 的 `QUARTERS` 只從 113Q1 起算，所以
+  `metric_values` 在 113 年以前**只有 2330 一家**。
+  **處理中**：QUARTERS 已往前延伸到 109Q3（commit 931cc5b6），109Q3–112Q4 這 14 季的全市場
+  回填排在 2026-09-22 那條重算鏈之後跑（`tmp/runHistory.sh` → `tmp/history-109-112.log`），
+  腳本有逐公司續跑機制，中斷可以接著跑。跑完這批指標會從「幾乎不存在」變成上千家有值，
+  屆時把這條移到已結案。
 
 ## 卡在其他微服務，等對方排期
 
@@ -79,4 +74,18 @@
 
 - **mops 季度資料越界問題**：查一季卻回兩季資料，已確認是 mops-ts 端的問題，已回報
   等對方查，見 [[project_mops_quarter_boundary_bug]]。
+- **mops 單季現金流「上季累計有值、本季累計 null」38,425 筆**：2026-09-22 mops-ts 重推導
+  整張單季表時留下的警告（維持存 null），方向跟他們剛修好的「一年只出現一次的科目被丟掉」
+  相反、語意不明（公司不再列該行，或 parser 漏抓），他們之後另外查。不影響股利科目。
+
+## 2026-09-22 當天新增的上下游約定（不是債，是查表用）
+
+- **twse `company_profile` 有 `source` 欄位**：`COMPANY_PROFILE`（上市）vs `COMPANY_PROFILE_PUBLIC`
+  （公開發行未上市，約 305 家）。公司目錄/類股一律 `WHERE source='COMPANY_PROFILE'`（commit e3590506），
+  不要用碼數或 industry 啟發式。`monthly_revenue` 也是同一套 source。
+- **每家公司只用一種財報口徑**：`ReportAvailabilityPort` 讀 mops `export.company_report_availability`，
+  有合併報表用 `data_type='2'`、結構上只申報個體報表的 249 家用 `'1'`（commit 21fdd2d4）。新增讀
+  metric_values 的 use case 不要寫死 '2'。
+- **回填一律走 `memoizeStatementsForBackfill()`**（commit 82bff0a5）：三大表讀取記憶化，實測快約 3 倍；
+  四支正式回填腳本＋`scripts/backfillTargetedPit.ts` 都已接上。新寫回填腳本記得在 main() 開頭呼叫。
 
