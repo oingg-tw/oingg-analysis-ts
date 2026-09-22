@@ -19,9 +19,6 @@ import { beneishMScoreBadge } from './quality/beneishMScore/beneishMScoreBadge';
 import { piotroskiFScoreBadge } from './quality/piotroskiFScore/piotroskiFScoreBadge';
 import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeScore/altmanZDoublePrimeScoreBadge';
 import { altmanZScoreBadge } from './resilience/altmanZScore/altmanZScoreBadge';
-import { bankCarRatioBadge } from './resilience/bankCarRatio/bankCarRatioBadge';
-import { bankCet1RatioBadge } from './resilience/bankCet1Ratio/bankCet1RatioBadge';
-import { bankTier1RatioBadge } from './resilience/bankTier1Ratio/bankTier1RatioBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
 import { interestCoverageBadge } from './resilience/interestCoverage/interestCoverageBadge';
 import { netDebtToEbitdaBadge } from './resilience/netDebtToEbitda/netDebtToEbitdaBadge';
@@ -199,6 +196,13 @@ import { psrBadge } from './valuation/psr/psrBadge';
 //   後消失）、Tobin's q 四分位（國科會報告非期刊）、consecutiveDividendYears ≥ 10（在職碩論＋資料深度不夠）、
 //   equityRatio 後 10% 排除（0056 規則，95% 公司都過）。研究員抽出的全文在當次 session scratchpad，不進版控。
 //
+// 2026-09-22：bankCarRatio / bankTier1Ratio / bankCet1Ratio 三支 Basel III 最低線徽章（≥ 8 / 6 / 4.5%）下架。
+// 不是出處問題（BCBS 官方文件），是沒有鑑別力：查了 2026Q2 全部 8 家有值的純銀行股（含 mops 誤貼到 1409 的
+// 瑞興銀合併報表），CAR 最低 13.49%、Tier 1 最低 10.67%、CET1 最低 9.05%，連台灣金管會含留存緩衝的
+// 10.5 / 8.5 / 7% 都全數通過，Basel 最低線更是每家都遠遠超過——一支永遠全亮的徽章沒有資訊量。母體也
+// 只有純銀行股（金控旗下銀行的監理比率本站沒有），六家 D-SIB 全在金控底下，連「額外 2% 緩衝」都沒東西可對。
+// 三支指標本身保留照算。若之後要做有鑑別力的版本，方向是 percentileRank（同業排名）而不是絕對法定線。
+//
 // 2026-09-21：sueBadge 掛回，出處換成顧廣平（2011）〈盈餘與營收動能〉（管理學報 28(6)，公開全文），
 // 且 sue 指標本身同步換成該論文的定義（淨利金額、含漂移項、μ/σ 取前 8 季；formulaVersion 2）——舊的
 // Bernard & Thomas 版全市場最新一季只有 2330 算得出來（24 季 EPS + 股本缺口），顧 2011 版只要 13 季
@@ -242,9 +246,6 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   piotroskiFScore: piotroskiFScoreBadge,
   altmanZDoublePrimeScore: altmanZDoublePrimeScoreBadge,
   altmanZScore: altmanZScoreBadge,
-  bankCarRatio: bankCarRatioBadge,
-  bankCet1Ratio: bankCet1RatioBadge,
-  bankTier1Ratio: bankTier1RatioBadge,
   currentRatio: currentRatioBadge,
   interestCoverage: interestCoverageBadge,
   netDebtToEbitda: netDebtToEbitdaBadge,
