@@ -7,6 +7,7 @@
 import { computeAndWriteStockPricePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -41,7 +42,7 @@ const main = async () => {
 
   for (const symbol of SYMBOLS) {
     for (const { year, season } of QUARTERS) {
-      const outcome = await computeAndWriteStockPricePit({ symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' });
+      const outcome = await computeAndWriteStockPricePit({ symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       console.log(`[stock-price-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(outcome.q)}`);
     }
   }

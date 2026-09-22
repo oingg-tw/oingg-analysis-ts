@@ -31,14 +31,14 @@ export interface PeriodHistoryQuery {
 // profitability_roe 的對外端點，見 queryRoeHistory.ts 的說明。目前資料
 // 覆蓋率極低（只有 spike 手動 backfill 過的少數公司），查無資料回傳 entries: []，不是 404
 // 或錯誤——跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
-export const getCompanyRoeHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyRoeHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getRoeHistory(symbol, periodType, limit, deps);
   return { symbol, metricCode: 'roe' as const, periodType, total, hasMore, entries };
 };
 
 // 給前端畫「ROA 歷史時序」圖表用，完全比照 getCompanyRoeHistory 的模式（第二支直接讀
 // metric_values 的端點）。查無資料回傳 entries: []，不是 404。
-export const getCompanyRoaHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyRoaHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getRoaHistory(symbol, periodType, limit, deps);
   return { symbol, metricCode: 'roa' as const, periodType, total, hasMore, entries };
 };
@@ -46,7 +46,7 @@ export const getCompanyRoaHistory = async ({ symbol, periodType, limit }: Period
 // 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
 // 權益乘數 + 組裝出來的 ROE），不是完整的毛利率/週轉率家族，見 queryDupontHistory.ts 的說明。
 // periodType=TTM 時 equityMultiplier 沿用同一期的 Q 快照值（不是恆為 null）。查無資料回傳 entries: []，不是 404。
-export const getCompanyDupontHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyDupontHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getDupontHistory(symbol, periodType, limit, deps);
   return { symbol, periodType, total, hasMore, entries };
 };
@@ -65,7 +65,7 @@ export interface MetricHistoryQuery {
 // 都回來改一次這裡的型別。roe-history/roa-history/dupont-history 三支既有端點維持不動，
 // 這支只是之後新增指標的曝露管道，不是要取代它們。
 // 2026-09-14：query 參數 token 改名 timeframe（金融/交易類 API 常見用語），是對外契約變更。
-export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, limit }: MetricHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, limit }: MetricHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   // 2026-09-11 使用者要求：beta 不畫河流圖，沒有查詢單一公司歷史/最新值的需求，直接從
   // 這支端點移除——beta 全市場只回填最新一筆快照（不像 exchangePeRatio/exchangePbRatio/
   // dividendYield 那樣有完整歷史），真正需要 beta 的情境是排行/篩選（screener 的
@@ -80,9 +80,10 @@ export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, l
   // 2026-09-09：逐日型指標（beta/exchangePeRatio 等）拆表後查的是不同的 Prisma model/
   // 去重邏輯，見 queryDailyCadenceMetricHistory.ts 的說明——依 FieldRef.isDailyCadence
   // 分流，呼叫端（這裡）完全不用知道背後是哪張表。
+  const dataType = await deps.reportAvailability.resolveDataType(symbol);
   const { entries, total, hasMore } = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, '2', '', limit, deps)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, '2', '', limit, deps);
+    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, dataType, '', limit, deps)
+    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, dataType, '', limit, deps);
   return { symbol, metricCode, timeframe, total, hasMore, entries };
 };
 
@@ -100,7 +101,7 @@ export interface MetricsHistoryQuery {
 // 具名欄位的組合端點；這支是任意 metricCode 清單、用 metricCode 當 key 合併回傳，不要求
 // 彼此有語意組裝關係。timeframe 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
 // （附上是哪個 metricCode 不允許），不會部分成功。
-export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { symbol, timeframe, limit } = query;
   const metricCodes = [...new Set(query.metricCodes.split(',').map((code) => code.trim()).filter((code) => code.length > 0))];
 
@@ -124,7 +125,7 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
     periodType ??= fieldRef.periodType;
   }
 
-  const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, '2', '', limit, deps);
+  const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);
   return { symbol, metricCodes, timeframe, total, hasMore, entries };
 };
 
@@ -140,10 +141,11 @@ export const getCompanyMonthlyRevenueHistory = async ({ symbol, limit }: { symbo
 // 2026-09-14 web-nuxt 轉達使用者需求：股票詳情頁 Beta 卡片要直接顯示係數數值。GET /companies/metric-history
 // 對 metricCode='beta' 一律 400（畫圖用的歷史查詢），這支是「查單一公司目前的係數值」的輕量快照端點，
 // 一次回傳 BETA_WINDOWS 四個滾動視窗各自最新一筆，不做歷史累積。
-export const getCompanyBeta = async (symbol: string, deps: Pick<AppDeps, 'metricValueQueries'>) => {
+export const getCompanyBeta = async (symbol: string, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
+  const dataType = await deps.reportAvailability.resolveDataType(symbol);
   const windows = await Promise.all(
     BETA_WINDOWS.map(async ({ timeframe, lookbackRange, samplingInterval }) => {
-      const { entries } = await getDailyCadenceMetricHistory(symbol, 'beta', { lookbackRange, samplingInterval, snapshotCadence: 'N/A' }, '2', '', 1, deps);
+      const { entries } = await getDailyCadenceMetricHistory(symbol, 'beta', { lookbackRange, samplingInterval, snapshotCadence: 'N/A' }, dataType, '', 1, deps);
       const latest = entries.at(-1) ?? null;
       return {
         timeframe,

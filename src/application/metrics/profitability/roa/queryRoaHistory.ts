@@ -5,5 +5,5 @@ import type { PeriodType } from '../../../../domain/metrics/metricBasis';
 export const roaHistoryEntrySchema = metricHistoryEntrySchema;
 
 // ROA 只落在季報型（periodType），理由同 queryRoeHistory.ts。
-export const getRoaHistory = (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<MetricHistoryResult> =>
-  getMetricHistory(symbol, 'roa', periodType, '2', '', limit, deps);
+export const getRoaHistory = async (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<MetricHistoryResult> =>
+  getMetricHistory(symbol, 'roa', periodType, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);

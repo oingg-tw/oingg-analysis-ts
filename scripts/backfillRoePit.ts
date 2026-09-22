@@ -18,13 +18,14 @@ import { computeAndWriteRoePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const main = async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.roe!);
 
   for (const symbol of PIT_BACKFILL_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
-      const outcome = await computeAndWriteRoePit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+      const outcome = await computeAndWriteRoePit({ symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       console.log(`[roe-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(outcome.q)} ttm=${JSON.stringify(outcome.ttm)}`);
     }
   }

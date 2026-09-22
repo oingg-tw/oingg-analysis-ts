@@ -28,7 +28,7 @@ import { join } from 'node:path';
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { computeAndWriteBetaPit, computeAndWriteMarketRatiosPit } from '../src/bootstrap/pitMetrics';
-import { analysisQueries } from '../src/bootstrap/scripts';
+import { analysisQueries, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const BANK_SYMBOLS = ['2801', '2812'];
@@ -99,7 +99,7 @@ const main = async (): Promise<void> => {
     for (const quarter of PIT_BACKFILL_QUARTERS) {
       await runAndCollect(symbol, buildGeneralTasks(symbol, quarter));
     }
-    const dailyQuery = { symbol, dataType: '2' as const, subsidiaryCompanyId: '', date: DAILY_PINNED_DATE };
+    const dailyQuery = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '', date: DAILY_PINNED_DATE };
     await runAndCollect(symbol, [
       ['beta', () => computeAndWriteBetaPit(dailyQuery)],
       ['marketRatios', () => computeAndWriteMarketRatiosPit(dailyQuery)],

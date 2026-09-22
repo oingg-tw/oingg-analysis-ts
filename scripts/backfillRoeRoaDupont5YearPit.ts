@@ -14,6 +14,7 @@
 import { computeAndWriteDupontFamilyPit, computeAndWriteRoaPit, computeAndWriteRoePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -51,7 +52,7 @@ const main = async () => {
 
   for (const symbol of SYMBOLS) {
     for (const { year, season } of QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
 
       const roeOutcome = await computeAndWriteRoePit(query);
       console.log(`[roe-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roeOutcome.q)} ttm=${JSON.stringify(roeOutcome.ttm)}`);

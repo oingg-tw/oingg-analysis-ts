@@ -32,5 +32,5 @@ export const roeHistoryEntrySchema = z.object({
 // 這兩個內部細節維度。
 // ROE 只落在季報型（periodType，值域 Q/Q_ANN/TTM），2026-09-09 拆表後 getMetricHistory
 // 已經是純季報型函式，直接傳 periodType 即可，不用再組四欄位的 basisGroup。
-export const getRoeHistory = (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<MetricHistoryResult> =>
-  getMetricHistory(symbol, 'roe', periodType, '2', '', limit, deps);
+export const getRoeHistory = async (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<MetricHistoryResult> =>
+  getMetricHistory(symbol, 'roe', periodType, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);

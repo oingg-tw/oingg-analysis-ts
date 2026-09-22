@@ -18,6 +18,7 @@ import { computeAndWriteDupontFamilyPit, computeAndWriteRoaPit } from '../src/bo
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const main = async () => {
   await Promise.all([
@@ -30,10 +31,10 @@ const main = async () => {
 
   for (const symbol of PIT_BACKFILL_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
-      const roaOutcome = await computeAndWriteRoaPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+      const roaOutcome = await computeAndWriteRoaPit({ symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       console.log(`[roa-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roaOutcome.q)} ttm=${JSON.stringify(roaOutcome.ttm)}`);
 
-      const dupontOutcome = await computeAndWriteDupontFamilyPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+      const dupontOutcome = await computeAndWriteDupontFamilyPit({ symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       console.log(
         `[dupont-family-pit] ${symbol} ${year}Q${season}: ` +
           `netProfitMargin(Q=${JSON.stringify(dupontOutcome.netProfitMarginQ)}, TTM=${JSON.stringify(dupontOutcome.netProfitMarginTtm)}) ` +

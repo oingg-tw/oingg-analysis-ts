@@ -9,6 +9,7 @@
 import { computeAndWriteMarginsFamilyPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -44,7 +45,7 @@ const main = async () => {
 
   for (const symbol of SYMBOLS) {
     for (const { year, season } of QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
       const outcome = await computeAndWriteMarginsFamilyPit(query);
       console.log(
         `[margins-family-pit] ${symbol} ${year}Q${season}: gross(Q=${JSON.stringify(outcome.grossMarginQ)}, TTM=${JSON.stringify(outcome.grossMarginTtm)}) operating(Q=${JSON.stringify(outcome.operatingMarginQ)}, TTM=${JSON.stringify(outcome.operatingMarginTtm)})`

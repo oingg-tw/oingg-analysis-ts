@@ -24,7 +24,8 @@ export type SortSpec = ScreenerSortSpec;
 // buildFromClause/buildSelectColumnsSql/buildFilterCondition/basisGroupKeyFor/
 // cteAliasFor）只在別名/欄位層級操作，完全不需要知道背後是哪張表。
 
-const DATA_TYPE = '2'; // 合併報表——跟 roe-history 等既有 pitMetrics 端點同一個慣例，不對外曝露
+// 2026-09-22 起不再限定 data_type='2'：每家公司只會有一種口徑（有合併報表用 '2'、只有個體報表用 '1'，見
+// application/ports/reportAvailability.ts），DISTINCT ON (symbol) 本來就每家取一列，不需要再用 data_type 過濾。
 const SUBSIDIARY_COMPANY_ID = ''; // 母公司本身
 
 const q = (identifier: string): Prisma.Sql => Prisma.raw(`"${identifier}"`);
@@ -78,7 +79,7 @@ const buildCte = (ref: CteRef): Prisma.Sql => {
         AND ${q('lookback_range')} = ${ref.lookbackRange}
         AND ${q('sampling_interval')} = ${ref.samplingInterval}
         AND ${q('snapshot_cadence')} = ${ref.snapshotCadence}
-        AND ${q('data_type')} = ${DATA_TYPE} AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+        AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
       ORDER BY ${q('symbol')}, ${q('trade_date')} DESC, ${q('knowledge_date')} DESC
     )`;
   }
@@ -87,7 +88,7 @@ const buildCte = (ref: CteRef): Prisma.Sql => {
     FROM ${q('metric_values')}
     WHERE ${q('metric_code')} = ${ref.metricCode}
       AND ${q('period_type')} = ${ref.periodType}
-      AND ${q('data_type')} = ${DATA_TYPE} AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+      AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
     ORDER BY ${q('symbol')}, ${q('fiscal_year')} DESC, ${q('fiscal_quarter')} DESC, ${q('knowledge_date')} DESC
   )`;
 };

@@ -20,7 +20,7 @@ import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRoc
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { persistMetricValue } from '../src/bootstrap/pitMetrics';
 import { periodTypeGroup } from '../src/domain/metrics/coordinate';
-import { backfillUniverse, analysisQueries, type LatestTtmMetricRow } from '../src/bootstrap/scripts';
+import { backfillUniverse, analysisQueries, type LatestTtmMetricRow, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
@@ -63,7 +63,7 @@ const main = async () => {
       const symbol = symbols[cursor]!;
       cursor += 1;
       try {
-        const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+        const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
         await Promise.all([computeAndWriteGreenblattRocPit(query), computeAndWriteGreenblattEarningsYieldPit(query)]);
       } catch (error) {
         errors.push({ symbol, message: error instanceof Error ? error.message : String(error) });
@@ -103,7 +103,7 @@ const main = async () => {
       ...periodTypeGroup('TTM'),
       fiscalYear: roc.fiscal_year,
       fiscalQuarter: roc.fiscal_quarter,
-      dataType: '2',
+      dataType: await reportAvailability.resolveDataType(symbol),
       subsidiaryCompanyId: '',
       value: combinedRank,
       nullReason: null,

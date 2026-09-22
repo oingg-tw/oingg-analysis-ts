@@ -8,7 +8,7 @@
 // 用法：pnpm tsx scripts/backfillLiveValuationMetricsFullMarketPit.ts
 import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePegRatioPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap'];
@@ -21,7 +21,7 @@ const getFullMarketSymbols = async (): Promise<string[]> => {
 };
 
 const computeSymbol = async (symbol: string): Promise<void> => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+  const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
   await Promise.all([
     computeAndWriteLiveGrahamNumberPit(query),
     computeAndWriteLivePegRatioPit(query),

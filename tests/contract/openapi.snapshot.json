@@ -2065,12 +2065,12 @@
                       "type": "string"
                     },
                     "financialReportType": {
-                      "description": "財報類型裸代碼（\"1\"/\"2\"），前端顯示請用 financialReportTypeName",
+                      "description": "交易所「編製財務報告類型」裸代碼：\"1\" 合併財報、\"2\" 個別財報（注意跟 MOPS dataType 相反）；前端顯示請用 financialReportTypeName，判斷指標口徑請用 metricDataType",
                       "nullable": true,
                       "type": "string"
                     },
                     "financialReportTypeName": {
-                      "description": "目前只會是「個別財報」或「合併財報」，未知代碼回 null",
+                      "description": "「合併財報」或「個別財報」，未知代碼回 null（2026-09-22 前的對照是反的）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -2105,6 +2105,14 @@
                       "enum": [
                         "TWSE",
                         "TPEx"
+                      ],
+                      "type": "string"
+                    },
+                    "metricDataType": {
+                      "description": "本服務指標對這家公司實際採用的財報口徑（MOPS dataType）：\"2\" 合併報表、\"1\" 個體報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個體報表的公司（約 249 家）用個體。要標示「個體報表」看這個欄位。",
+                      "enum": [
+                        "1",
+                        "2"
                       ],
                       "type": "string"
                     },
@@ -2211,7 +2219,8 @@
                     "faxNumber",
                     "email",
                     "website",
-                    "issuedShares"
+                    "issuedShares",
+                    "metricDataType"
                   ],
                   "type": "object"
                 }

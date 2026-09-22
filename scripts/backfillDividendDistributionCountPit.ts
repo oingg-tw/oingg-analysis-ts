@@ -7,7 +7,7 @@
 // 用法：pnpm tsx scripts/backfillDividendDistributionCountPit.ts
 import { computeAndWriteDividendDistributionCountPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
@@ -29,7 +29,7 @@ const main = async () => {
       const symbol = symbols[cursor]!;
       cursor += 1;
       try {
-        const outcome = await computeAndWriteDividendDistributionCountPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
+        const outcome = await computeAndWriteDividendDistributionCountPit({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
         const action = outcome.ttm.action;
         actionCounts[action] = (actionCounts[action] ?? 0) + 1;
       } catch (error) {

@@ -4,6 +4,7 @@
 import { computeAndWriteFamaFrenchOperatingProfitabilityPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -11,7 +12,7 @@ const main = async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.famaFrenchOperatingProfitability!);
 
   for (const symbol of SYMBOLS) {
-    const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+    const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
     console.log(`[fama-french-operating-profitability-pit] ${symbol}: ${JSON.stringify(await computeAndWriteFamaFrenchOperatingProfitabilityPit(query))}`);
   }
 };

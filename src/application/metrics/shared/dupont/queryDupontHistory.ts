@@ -62,15 +62,16 @@ export interface DupontHistoryResult {
 }
 
 export const getDupontHistory = async (symbol: string, periodType: PeriodType, limit: number, deps: MetricHistoryDeps): Promise<DupontHistoryResult> => {
+  const dataType = await deps.reportAvailability.resolveDataType(symbol);
   const [netProfitMarginResult, assetTurnoverResult, decomposedRoeResult, equityMultiplierResult, taxBurdenResult, interestBurdenResult, ebitMarginResult, extendedRoeResult] = await Promise.all([
-    getMetricHistory(symbol, 'netProfitMargin', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'assetTurnover', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'dupontDecomposedRoe', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'equityMultiplier', 'Q', '2', '', limit, deps),
-    getMetricHistory(symbol, 'dupontTaxBurden', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'dupontInterestBurden', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'dupontEbitMargin', periodType, '2', '', limit, deps),
-    getMetricHistory(symbol, 'dupontExtendedRoe', periodType, '2', '', limit, deps),
+    getMetricHistory(symbol, 'netProfitMargin', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'assetTurnover', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'dupontDecomposedRoe', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'equityMultiplier', 'Q', dataType, '', limit, deps),
+    getMetricHistory(symbol, 'dupontTaxBurden', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'dupontInterestBurden', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'dupontEbitMargin', periodType, dataType, '', limit, deps),
+    getMetricHistory(symbol, 'dupontExtendedRoe', periodType, dataType, '', limit, deps),
   ]);
   const netProfitMarginRows = netProfitMarginResult.entries;
   const assetTurnoverRows = assetTurnoverResult.entries;

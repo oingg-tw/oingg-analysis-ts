@@ -1,4 +1,4 @@
-import type { CompanyProfileDetail } from '@/application/companies/types';
+import type { ExchangeCompanyProfileDetail } from '@/application/companies/types';
 
 // 公司/證券基本資料 port（twse-ts/tpex-ts 兩邊的 company_profile + sitca 的 ETF 清單）——GET /companies、
 // GET /securities、以及所有「把 symbol 補上公司名稱」的排行/清單端點都靠它。實作在
@@ -39,7 +39,7 @@ export interface CompanyProfilePort {
   getCompanyNamesForSymbols(symbols: string[]): Promise<Map<string, string | null>>;
   getSecuritySymbolSet(filter: SecuritySymbolsFilter): Promise<Set<string>>;
   companyExists(symbol: string): Promise<boolean>;
-  getCompanyProfileDetail(symbol: string): Promise<CompanyProfileDetail | null>;
+  getCompanyProfileDetail(symbol: string): Promise<ExchangeCompanyProfileDetail | null>;
   listAllCompanyNames(limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }>;
   countAllCompanyNames(): Promise<number>;
   listAllSecurityNames(limit: number, offset: number): Promise<{ count: number; entries: SecurityEntry[] }>;

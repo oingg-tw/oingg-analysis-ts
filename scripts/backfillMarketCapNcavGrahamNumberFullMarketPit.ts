@@ -14,7 +14,7 @@
 // 用法：pnpm tsx scripts/backfillMarketCapNcavGrahamNumberFullMarketPit.ts
 import { computeAndWriteGrahamNumberPit, computeAndWriteMarketCapPit, computeAndWriteNcavPit, computeAndWritePegRatioPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const PROGRESS_EVERY = 50;
@@ -35,7 +35,7 @@ const main = async () => {
   const errors: { symbol: string; error: unknown }[] = [];
 
   for (const symbol of symbols) {
-    const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+    const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
     try {
       await computeAndWriteMarketCapPit(query);
       await computeAndWritePegRatioPit(query);

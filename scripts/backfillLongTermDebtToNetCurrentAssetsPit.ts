@@ -6,7 +6,7 @@
 // 用法：pnpm tsx scripts/backfillLongTermDebtToNetCurrentAssetsPit.ts
 import { computeAndWriteLongTermDebtToNetCurrentAssetsPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const PROGRESS_EVERY = 50;
@@ -34,7 +34,7 @@ const main = async () => {
       const symbol = symbols[cursor]!;
       cursor += 1;
       try {
-        const outcome = await computeAndWriteLongTermDebtToNetCurrentAssetsPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
+        const outcome = await computeAndWriteLongTermDebtToNetCurrentAssetsPit({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
         const action = outcome.q?.action ?? 'missing_q';
         actionCounts[action] = (actionCounts[action] ?? 0) + 1;
       } catch (error) {

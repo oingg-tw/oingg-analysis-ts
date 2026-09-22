@@ -1,7 +1,7 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
-import type { CompanyProfileDetail } from '@/application/companies/types';
+import type { ExchangeCompanyProfileDetail } from '@/application/companies/types';
 import type { CompanyNameEntry, CompanyProfilePort, SecurityEntry, SecurityType } from '@/application/ports/companyProfiles';
 import { getIndustryCodes } from './industryCodes';
 
@@ -253,11 +253,13 @@ const NON_INDUSTRY_CODES = new Set(['07', '91', '98', 'XX']);
 const resolveIndustryName = (industry: string | null, industryName: string | null): string | null =>
   industry !== null && NON_INDUSTRY_CODES.has(industry) ? null : industryName;
 
-// MOPS 沒有公開的欄位字典，2026-09-02 跟 mops-ts 確認過：'1'=個別財報、'2'=合併財報——他們
-// 專案內部從三表 domain 開始就用同一套 dataType 慣例（見 profitability/roe 等 controller 的
-// 「1 = 個體, 2 = 合併」註解），另外用 MOPS t164sb01 端點的 REPORT_ID 參數 'A'（個別）/
-// 'C'（合併）交叉印證過，信心度高但不是官方白紙黑字文件，未知代碼一律回 null，不亂猜。
-const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '個別財報', '2': '合併財報' };
+// 2026-09-22 修正：這個欄位是交易所公司基本資料的「編製財務報告類型」，代碼跟 MOPS 三表 dataType 的慣例
+// （'1' 個體／'2' 合併）**相反**——2026-09-02 當時把兩套代碼混為一談寫反了。用 mops-ts 的
+// export.company_report_availability（實際有沒有合併報表）交叉比對：交易所 '1' 的 2,062 家全部有合併報表、
+// 0 家只有個體；交易所 '2' 的 280 家裡 249 家只有個體報表、31 家近期有合併（母體變動的時間差）。所以
+// '1' = 合併財報、'2' = 個別財報。未知代碼一律回 null。指標實際用哪個口徑看 metricDataType（來自 mops 的
+// 實際資料），不是這個交易所申報欄位。
+const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '合併財報', '2': '個別財報' };
 const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
   financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
 
@@ -283,7 +285,7 @@ const normalizeWebsiteDomain = (website: string | null): string | null => {
 // 查詢失敗。這裡刻意不篩 source/market——單一公司查詢是使用者/下游服務指名要看這家公司的資料，
 // 不是「排除幽靈代號」那種清單情境（見 getAllSecurityRows 的說明），就算是
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
-export const getCompanyProfileDetail = async (symbol: string): Promise<CompanyProfileDetail | null> => {
+export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeCompanyProfileDetail | null> => {
   const twseRows = await twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
     `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
     symbol

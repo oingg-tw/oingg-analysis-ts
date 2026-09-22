@@ -12,7 +12,7 @@
 // 用法：pnpm tsx scripts/backfillBetaPit.ts
 import { computeAndWriteBetaPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOLS = ['2330'];
@@ -35,7 +35,7 @@ const main = async () => {
     let processed = 0;
 
     for (const tradeDate of tradeDates) {
-      const outcome = await computeAndWriteBetaPit({ symbol, date: tradeDate, dataType: '2', subsidiaryCompanyId: '' });
+      const outcome = await computeAndWriteBetaPit({ symbol, date: tradeDate, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       for (const result of [outcome.beta1YDaily, outcome.beta2YWeekly, outcome.beta3YWeekly, outcome.beta5YMonthly]) {
         if (result.action === 'inserted') inserted++;
         else if (result.action === 'updated_same_knowledge_date') updated++;

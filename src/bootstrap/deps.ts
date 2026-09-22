@@ -15,6 +15,7 @@ import { exchangePriceChange } from '@/infrastructure/repositories/exchange/pric
 import { twseTaiexIndex } from '@/infrastructure/repositories/twse/taiexIndex';
 import { twseMaterialAnnouncements } from '@/infrastructure/repositories/twse/materialAnnouncement';
 import { sitcaEtfData } from '@/infrastructure/repositories/sitca/etfQueries';
+import { mopsReportAvailability } from '@/infrastructure/repositories/mops/companyReportAvailability';
 import { createPitDeps } from './pitDeps';
 
 // 整個服務的 composition root：指標核心的 pitDeps 加上 HTTP use case 用的 port。全 repo 只有這裡（跟測試的
@@ -37,6 +38,7 @@ export const createAppDeps = (): AppDeps => ({
   taiexIndex: twseTaiexIndex,
   materialAnnouncements: twseMaterialAnnouncements,
   etfData: sitcaEtfData,
+  reportAvailability: mopsReportAvailability,
 });
 
 export const appDeps: AppDeps = createAppDeps();

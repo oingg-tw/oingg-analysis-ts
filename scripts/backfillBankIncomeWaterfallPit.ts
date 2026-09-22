@@ -12,7 +12,7 @@
 // 用法：pnpm tsx scripts/backfillBankIncomeWaterfallPit.ts
 import { computeAndWriteBankIncomeWaterfallPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const getBankIncomeStatementSymbols = async (): Promise<string[]> => {
@@ -34,7 +34,7 @@ const main = async () => {
 
   for (const symbol of symbols) {
     try {
-      const outcome = await computeAndWriteBankIncomeWaterfallPit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
+      const outcome = await computeAndWriteBankIncomeWaterfallPit({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       const action = outcome.bankNetInterestIncomePerShareQ.action;
       actionCounts[action] = (actionCounts[action] ?? 0) + 1;
       console.log(`[bank-income-waterfall-pit] ${symbol}: ${JSON.stringify(outcome)}`);

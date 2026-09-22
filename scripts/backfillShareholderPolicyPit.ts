@@ -8,6 +8,7 @@
 import { computeAndWriteBuybackYieldPit, computeAndWriteDividendCoverageRatioPit, computeAndWriteShareCountChangeRatePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -45,7 +46,7 @@ const main = async () => {
 
   for (const symbol of SYMBOLS) {
     for (const { year, season } of QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
 
       const buybackOutcome = await computeAndWriteBuybackYieldPit(query);
       console.log(`[buyback-yield-pit] ${symbol} ${year}Q${season}: ${JSON.stringify(buybackOutcome)}`);

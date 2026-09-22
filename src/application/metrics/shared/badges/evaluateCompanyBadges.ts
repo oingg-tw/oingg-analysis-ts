@@ -21,7 +21,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 // 對落差、細節未定案，這支端點目前只做「每支 badge 各自獨立判定 passed」的通用邏輯，
 // 三模型聚合是後續獨立的擴充，不在這裡混著做。
 
-export type EvaluateCompanyBadgesDeps = Pick<AppDeps, 'metricValueQueries' | 'industryReference' | 'companyProfiles'>;
+export type EvaluateCompanyBadgesDeps = Pick<AppDeps, 'metricValueQueries' | 'industryReference' | 'companyProfiles' | 'reportAvailability'>;
 
 export interface CompanyBadgeResult {
   metricCode: string;

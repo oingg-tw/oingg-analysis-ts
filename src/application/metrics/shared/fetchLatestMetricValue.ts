@@ -11,7 +11,6 @@ import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
 // 2026-09-17：timeframe 解析改用 application 自己的 resolveTimeframeForMetric（原本反過來
 // import HTTP 層的 screener/fieldResolver，是依賴反轉）；Phase 4 起歷史查詢透過 deps 注入。
 
-const DATA_TYPE = '2'; // 既有 metric-history 端點的既定慣例：'2' = 合併口徑，不分子公司
 const SUBSIDIARY_COMPANY_ID = '';
 
 // 2026-09-14 補上 knowledgeDate/knowledgeDateIsFallback——web-nuxt 徽章卡片有一行「資料時間」
@@ -35,9 +34,10 @@ export const fetchLatestMetricValue = async (symbol: string, metricCode: string,
     throw error;
   }
 
+  const dataType = await deps.reportAvailability.resolveDataType(symbol);
   const result = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1, deps)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, DATA_TYPE, SUBSIDIARY_COMPANY_ID, 1, deps);
+    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, dataType, SUBSIDIARY_COMPANY_ID, 1, deps)
+    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, dataType, SUBSIDIARY_COMPANY_ID, 1, deps);
 
   const latest = result.entries.at(-1);
   if (!latest) return { value: null, nullReason: null, knowledgeDate: null, knowledgeDateIsFallback: null };

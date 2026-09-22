@@ -14,7 +14,7 @@
 // 用法：pnpm tsx scripts/backfillZDoublePrimeManufacturingExclusionPit.ts
 import { computeAndWriteAltmanZDoublePrimeScorePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
@@ -40,7 +40,7 @@ const main = async () => {
       const symbol = symbols[cursor]!;
       cursor += 1;
       try {
-        await computeAndWriteAltmanZDoublePrimeScorePit({ symbol, dataType: '2', subsidiaryCompanyId: '' });
+        await computeAndWriteAltmanZDoublePrimeScorePit({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
       } catch (error) {
         errors.push({ symbol, message: error instanceof Error ? error.message : String(error) });
         console.error(`[z-double-prime-manufacturing-exclusion-pit] ${symbol} 失敗：`, error);

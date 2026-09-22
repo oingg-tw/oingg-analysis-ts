@@ -7,7 +7,7 @@
 import { computeAndWriteBuybackYieldPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import type { Season } from '../src/domain/calendar/rocQuarter';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
@@ -44,7 +44,7 @@ const main = async () => {
         const symbol = symbols[cursor]!;
         cursor += 1;
         try {
-          await computeAndWriteBuybackYieldPit({ symbol, year, season, dataType: '2', subsidiaryCompanyId: '' });
+          await computeAndWriteBuybackYieldPit({ symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
         } catch (error) {
           errors += 1;
           totalErrors += 1;

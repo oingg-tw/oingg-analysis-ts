@@ -8,7 +8,7 @@
 //      PILOT_LIMIT=30 pnpm tsx scripts/backfillUnlockedMetricsFullMarketPit.ts（小批次測試）
 import { computeAndWriteCashFlowValuationFamilyPit, computeAndWriteCashToAssetsRatioPit, computeAndWriteEquityRatioPit, computeAndWriteLeverageDegreeFamilyPit, computeAndWriteNonOperatingIncomeRatioPit, computeAndWriteTurnoverRatioFamilyPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const METRIC_CODES = [
@@ -30,7 +30,7 @@ const getFullMarketSymbols = async (): Promise<string[]> => {
 // 不會重算出跟既有值不同的結果（純新增欄位，沒有改既有計算邏輯，見 tsc/oxlint/既有測試
 // 驗證過的規格），重跑等同 no-op（既有欄位 skipped_unchanged）。
 const computeSymbol = async (symbol: string): Promise<void> => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+  const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
   await Promise.all([
     computeAndWriteCashFlowValuationFamilyPit(query),
     computeAndWriteLeverageDegreeFamilyPit(query),

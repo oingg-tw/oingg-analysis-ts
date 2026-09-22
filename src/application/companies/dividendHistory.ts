@@ -58,11 +58,11 @@ export interface DividendHistoryResult {
   entries: DividendHistoryEntry[]; // 舊 → 新
 }
 
-export type DividendHistoryDeps = Pick<AppDeps, 'dividendEvents' | 'metricValueQueries' | 'market'>;
+export type DividendHistoryDeps = Pick<AppDeps, 'dividendEvents' | 'metricValueQueries' | 'market' | 'reportAvailability'>;
 
 // eps.Q 依西元年度彙總：四季都有值才算年度 EPS，缺任一季為 null。
 const buildAnnualEps = async (symbol: string, deps: DividendHistoryDeps): Promise<Map<number, number | null>> => {
-  const history = await getMetricHistory(symbol, 'eps', 'Q', '2', '', 400, deps);
+  const history = await getMetricHistory(symbol, 'eps', 'Q', await deps.reportAvailability.resolveDataType(symbol), '', 400, deps);
   const byYear = new Map<number, Map<number, number>>();
   for (const entry of history.entries) {
     if (entry.fiscalQuarter === null || entry.value === null) continue;

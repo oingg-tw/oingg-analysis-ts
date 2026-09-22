@@ -17,7 +17,7 @@ export const listLatestTtmValuesAcrossMarket = (metricCode: string): Promise<Lat
   analysisPrisma.$queryRaw<LatestTtmMetricRow[]>`
     SELECT DISTINCT ON (symbol) symbol, value::float AS value, fiscal_year, fiscal_quarter, knowledge_date, knowledge_date_is_fallback
     FROM metric_values
-    WHERE metric_code = ${metricCode} AND period_type = 'TTM' AND data_type = '2' AND subsidiary_company_id = '' AND value IS NOT NULL
+    WHERE metric_code = ${metricCode} AND period_type = 'TTM' AND subsidiary_company_id = '' AND value IS NOT NULL
     ORDER BY symbol, fiscal_year DESC, fiscal_quarter DESC, knowledge_date DESC
   `;
 
@@ -35,7 +35,6 @@ export const listMetricValuesForGapScan = (input: { metricCodes: string[]; fisca
       metricCode: { in: input.metricCodes },
       fiscalYear: input.fiscalYear,
       fiscalQuarter: input.fiscalQuarter,
-      dataType: '2',
       subsidiaryCompanyId: '',
       symbol: { in: input.symbols },
     },

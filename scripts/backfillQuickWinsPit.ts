@@ -7,6 +7,7 @@
 import { computeAndWriteAssetGrowthPit, computeAndWriteConsecutiveProfitYearsPit, computeAndWriteEarningsYieldPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const SYMBOLS = ['2330'];
 
@@ -44,13 +45,13 @@ const main = async () => {
 
   for (const symbol of SYMBOLS) {
     for (const { year, season } of QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
 
       console.log(`[asset-growth-pit] ${symbol} ${year}Q${season}: ${JSON.stringify(await computeAndWriteAssetGrowthPit(query))}`);
       console.log(`[earnings-yield-pit] ${symbol} ${year}Q${season}: ${JSON.stringify(await computeAndWriteEarningsYieldPit(query))}`);
     }
     // consecutiveProfitYears 是 FY 週期概念，不需要逐季回補，只查最新一次即可。
-    const latestQuery = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+    const latestQuery = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
     console.log(`[consecutive-profit-years-pit] ${symbol}: ${JSON.stringify(await computeAndWriteConsecutiveProfitYearsPit(latestQuery))}`);
   }
 };

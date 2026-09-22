@@ -14,7 +14,7 @@ import type {
 
 // 2026-09-17 Phase 4：從 http/modules/stocks/service.ts 搬來，資料存取改透過 deps 的 port
 // （companyProfiles/market/metricValueQueries）注入，邏輯逐字不變。
-export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries' | 'dividendEvents'>;
+export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries' | 'dividendEvents' | 'reportAvailability'>;
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -25,13 +25,12 @@ export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricVal
 // 同一次 computeAndWriteMarketRatiosPit 呼叫一起寫入的，理論上 tradeDate 一致，這裡各自
 // 獨立查「最新一筆」而不是假設一定同步，跟 getMetricHistory 的既有慣例一致（用
 // knowledgeDate desc 取最新，不是相信呼叫端保證同步）。dataType/subsidiaryCompanyId
-// 固定 '2'/''——這是純市場數字，沒有個體/合併報表的區分，只是延續 metric 識別欄位慣例，
-// 見 computeMarketRatiosPit.ts 的說明。
-const MARKET_RATIOS_DATA_TYPE = '2';
+// 這是純市場數字，沒有個體/合併報表的區分，但 2026-09-22 起 data_type 鍵跟這家公司其他指標一致（見
+// application/ports/reportAvailability.ts），不再寫死 '2'。
 const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 
-const getLatestMarketRatioValue = (deps: StocksDeps, symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
-  deps.metricValueQueries.findLatestSnapshotValue(symbol, metricCode, 'EOD', MARKET_RATIOS_DATA_TYPE, MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
+const getLatestMarketRatioValue = async (deps: StocksDeps, symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
+  deps.metricValueQueries.findLatestSnapshotValue(symbol, metricCode, 'EOD', await deps.reportAvailability.resolveDataType(symbol), MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
 
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無

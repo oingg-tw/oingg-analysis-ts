@@ -33,5 +33,7 @@ export const createTestDeps = (overrides: Partial<AppDeps> = {}): AppDeps => ({
   taiexIndex: unusedPort('taiexIndex'),
   materialAnnouncements: unusedPort('materialAnnouncements'),
   etfData: unusedPort('etfData'),
+  // 口徑解析預設回 '2'（合併報表）而不是一碰就丟錯：幾乎每個讀取端 use case 都會經過它，測試不該每支都要 seed。
+  reportAvailability: { resolveDataType: async () => '2' },
   ...overrides,
 });

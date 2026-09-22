@@ -40,13 +40,10 @@ export const companyProfileDetailSchema = z.object({
   paidInCapital: z.string().nullable().meta({ description: 'BigInt 序列化成字串，避免 JS 數字精度問題' }),
   privatePlacementShares: z.string().nullable(),
   preferredStockShares: z.string().nullable(),
-  financialReportType: z.string().nullable().meta({ description: '財報類型裸代碼（"1"/"2"），前端顯示請用 financialReportTypeName' }),
-  // 2026-09-02 應 bff-ts/web-nuxt 要求新增——financialReportType 是裸代碼（"1"/"2"），前端顯示
-  // 沒意義。MOPS 沒有公開的欄位字典，這個對照是跟 mops-ts 確認過的（他們專案內部從三表 domain
-  // 開始就用同一套慣例：dataType '1'=個體/個別財報、'2'=合併財報，且用另一個 MOPS 端點
-  // t164sb01 的 REPORT_ID 參數 'A'（個別）/'C'（合併）交叉印證過，信心度高但不是白紙黑字的
-  // 官方文件），跟 industryName 一樣是本服務自己解出來的可讀名稱，不是 company_profile 原始欄位。
-  financialReportTypeName: z.string().nullable().meta({ description: '目前只會是「個別財報」或「合併財報」，未知代碼回 null' }),
+  financialReportType: z.string().nullable().meta({ description: '交易所「編製財務報告類型」裸代碼："1" 合併財報、"2" 個別財報（注意跟 MOPS dataType 相反）；前端顯示請用 financialReportTypeName，判斷指標口徑請用 metricDataType' }),
+  // 2026-09-02 應 bff-ts/web-nuxt 要求新增的可讀名稱；2026-09-22 修正代碼對照（原本寫反，見
+  // infrastructure/repositories/exchange/companyProfile.ts 的交叉比對）。
+  financialReportTypeName: z.string().nullable().meta({ description: '「合併財報」或「個別財報」，未知代碼回 null（2026-09-22 前的對照是反的）' }),
   stockTransferAgency: z.string().nullable(),
   transferAgencyPhone: z.string().nullable(),
   transferAgencyAddress: z.string().nullable(),
@@ -59,6 +56,7 @@ export const companyProfileDetailSchema = z.object({
   email: z.string().nullable(),
   website: z.string().nullable().meta({ description: '2026-09-04 起已正規化成裸網域（去 scheme/尾斜線/www. 前綴），方便直接接 logo 服務' }),
   issuedShares: z.string().nullable(),
+  metricDataType: z.enum(['1', '2']).meta({ description: '本服務指標對這家公司實際採用的財報口徑（MOPS dataType）："2" 合併報表、"1" 個體報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個體報表的公司（約 249 家）用個體。要標示「個體報表」看這個欄位。' }),
   // 2026-09-17：型別的真理來源改成 application/companies/types.ts 的介面（infrastructure 的
   // companyProfile.ts 也用它，不再反過來 import HTTP 層），這裡的 schema 用 satisfies 釘住，
   // 欄位對不上會編譯失敗。

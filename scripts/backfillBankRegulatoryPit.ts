@@ -10,6 +10,7 @@ import { computeAndWriteBankAssetQualityFamilyPit, computeAndWriteBankCapitalAde
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const BANK_SYMBOLS = ['2801', '2812', '2834'];
 
@@ -20,7 +21,7 @@ const main = async () => {
 
   for (const symbol of BANK_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
 
       const assetQualityOutcome = await computeAndWriteBankAssetQualityFamilyPit(query);
       console.log(

@@ -4,7 +4,8 @@ import type { PeriodType } from '../../../domain/metrics/metricBasis';
 
 // 讀取端 use case 共用的 deps 形狀——2026-09-17 Phase 4 起歷史查詢改透過 MetricValueQueryPort 注入，
 // 不再靜態 import infrastructure 的 repository。
-export type MetricHistoryDeps = Pick<AppDeps, 'metricValueQueries'>;
+// 2026-09-22 加 reportAvailability：讀取端不再寫死 dataType '2'，每家公司的口徑由 port 決定（見 ports/reportAvailability.ts）。
+export type MetricHistoryDeps = Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>;
 
 export const metricHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),

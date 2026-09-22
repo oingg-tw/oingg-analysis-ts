@@ -8,7 +8,7 @@ import type { Season } from '@/domain/calendar/rocQuarter';
 export const FINANCIAL_STATEMENT_TYPES = ['balanceSheet', 'incomeStatement', 'cashFlowStatement'] as const;
 export type FinancialStatementType = (typeof FINANCIAL_STATEMENT_TYPES)[number];
 
-export type FinancialStatementDeps = Pick<AppDeps, 'quarters' | 'statementRows' | 'xbrlAccounts'>;
+export type FinancialStatementDeps = Pick<AppDeps, 'quarters' | 'statementRows' | 'xbrlAccounts' | 'reportAvailability'>;
 
 export interface GetCompanyFinancialStatementQuery {
   symbol: string;
@@ -78,7 +78,7 @@ const serializeStatementRow = (row: FinancialStatementRow): Record<string, strin
 // 跟 roe-history/capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyFinancialStatement = async (query: GetCompanyFinancialStatementQuery, deps: FinancialStatementDeps): Promise<FinancialStatementResult> => {
   const { symbol, statementType, year, season } = query;
-  const dataType = '2';
+  const dataType = await deps.reportAvailability.resolveDataType(symbol);
   const subsidiaryCompanyId = '';
 
   const resolvedQuarter =

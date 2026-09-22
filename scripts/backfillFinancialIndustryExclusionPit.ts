@@ -12,7 +12,7 @@
 // 用法：pnpm tsx scripts/backfillFinancialIndustryExclusionPit.ts
 import { computeAndWriteAltmanZDoublePrimeScorePit, computeAndWriteAltmanZScorePit, computeAndWriteBeneishMScorePit, computeAndWriteOhlsonOScorePit, computeAndWriteZmijewskiScorePit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const AFFECTED_METRIC_CODES = ['altmanZScore', 'altmanZDoublePrimeScore', 'beneishMScore', 'ohlsonOScore', 'zmijewskiScore'] as const;
@@ -20,7 +20,7 @@ const AFFECTED_METRIC_CODES = ['altmanZScore', 'altmanZDoublePrimeScore', 'benei
 const SYMBOL_CONCURRENCY = 8;
 
 const computeSymbol = async (symbol: string): Promise<{ label: string; error: unknown }[]> => {
-  const query = { symbol, dataType: '2' as const, subsidiaryCompanyId: '' };
+  const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
   const tasks: [string, () => Promise<unknown>][] = [
     ['altmanZScore', () => computeAndWriteAltmanZScorePit(query)],
     ['altmanZDoublePrimeScore', () => computeAndWriteAltmanZDoublePrimeScorePit(query)],

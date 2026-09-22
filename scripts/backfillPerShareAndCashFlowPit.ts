@@ -9,6 +9,7 @@ import { computeAndWriteAccrualsRatioPit, computeAndWriteBvpsPit, computeAndWrit
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { reportAvailability } from '../src/bootstrap/scripts';
 
 const main = async () => {
   await Promise.all(
@@ -19,7 +20,7 @@ const main = async () => {
 
   for (const symbol of PIT_BACKFILL_SYMBOLS) {
     for (const { year, season } of PIT_BACKFILL_QUARTERS) {
-      const query = { symbol, year, season, dataType: '2' as const, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
 
       const epsOutcome = await computeAndWriteEpsPit(query);
       console.log(`[eps-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(epsOutcome.q)} ttm=${JSON.stringify(epsOutcome.ttm)}`);

@@ -4,7 +4,7 @@ import type { CompanyNameEntry } from '@/application/ports/companyProfiles';
 import type { CompanyProfileDetail } from './types';
 
 // 2026-09-17 Phase 4：從 http/modules/companies/companyDirectoryController.ts 搬來，邏輯逐字不變。
-export type CompanyDirectoryDeps = Pick<AppDeps, 'companyProfiles'>;
+export type CompanyDirectoryDeps = Pick<AppDeps, 'companyProfiles' | 'reportAvailability'>;
 
 export interface ListCompaniesQuery {
   limit: number;
@@ -38,5 +38,5 @@ export const listCompanies = async (query: ListCompaniesQuery, deps: CompanyDire
 export const getCompanyProfile = async (symbol: string, deps: CompanyDirectoryDeps): Promise<CompanyProfileDetail> => {
   const profile = await deps.companyProfiles.getCompanyProfileDetail(symbol);
   if (!profile) throw new NotFoundError(`找不到公司代號 ${symbol}。`);
-  return profile;
+  return { ...profile, metricDataType: await deps.reportAvailability.resolveDataType(symbol) };
 };

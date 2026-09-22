@@ -20,8 +20,8 @@ test('getCompanyProfileDetail: TWSE 公司（2330）應該回傳完整基本資�
   );
   assert.equal(
     result!.financialReportTypeName,
-    result!.financialReportType === '1' ? '個別財報' : '合併財報',
-    'financialReportTypeName 應該對得上代碼（跟 mops-ts 確認過：1=個別、2=合併）',
+    result!.financialReportType === '1' ? '合併財報' : '個別財報',
+    'financialReportTypeName 應該對得上代碼（2026-09-22 用 mops 實際資料可得性交叉比對：交易所 1=合併、2=個別，跟 MOPS dataType 相反）',
   );
 });
 

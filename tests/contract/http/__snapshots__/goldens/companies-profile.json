@@ -21,6 +21,7 @@
     "issuedShares": "<numeric-string>",
     "listedDate": "<date>",
     "market": "TWSE",
+    "metricDataType": "<numeric-string>",
     "name": "<string>",
     "paidInCapital": "<numeric-string>",
     "parValue": "<number>",
