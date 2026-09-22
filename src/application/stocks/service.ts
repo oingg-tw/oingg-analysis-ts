@@ -144,7 +144,11 @@ export const getExDividendNotices = async (symbols: string[], deps: StocksDeps):
 // 除息日一過就消失，所以過去月份改接 mops 股利分派公告（dividend_distribution，跟 /companies/dividend-history
 // 同一張）。以「今天（UTC 日）」為界：>= 今天走預告表（status announced，可能還會改），< 今天走分派公告
 // （status realized，事實）；兩段各自查、合併後依 exDate/symbol 排序，同一天不會同時出現在兩邊。
-// 深度：dividend_distribution 全市場覆蓋 2026-03 起，更早只有種子公司（mops-ts 回補中），有多少給多少。
+// 深度（2026-09-22 與 mops-ts 議定）：回補完的起點是**除息日 2020-09** 左右——回補範圍是盈餘所屬年度
+// 民國 109~115，而 fiscal 109 最早的除息日是 2020-09-17（2020 上半的除息事件屬於 fiscal 108，不補）。
+// 這個起點跟全服務的 109Q3 財報地板刻意對齊，避免同一頁出現「有除息事件、沒有對應財報」。
+// 回補跑完 mops-ts 會給實際的 MIN(除息日)，web-nuxt 的往回翻上限（COVERAGE_FROM）就設那個值。
+// 回補前的現況：全市場覆蓋 2026-03 起，更早只有種子公司。任何情況都是有多少給多少，超出範圍回空陣列不報錯。
 // 已實現列的 companyName 直接用公告上的簡稱（ETF/特別股也有），預告列仍查 profile（只有普通股有名字，
 // 這是 company_profile 的範圍，不在這裡補）。
 const toIso = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);

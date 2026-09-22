@@ -17,8 +17,15 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 //   其他公司 2026-06 之後才有，歷史列大多會是 null，這是 twse-ts 資料範圍，不是這裡算錯）。
 // - knowledgeDate：該年度最後一次分派決議的公告日——這一列的數字最早何時被市場知道。
 //
-// 深度：dividend_distribution 目前涵蓋民國 107 年起（mops-ts 2026-09-19 排定 9/24 起全市場回補更早年份），
+// 深度（2026-09-22 與 mops-ts 議定）：全市場回補範圍是**民國 109~115**（7 年），不會更早——他們使用者
+// 定的全服務資料地板是 109Q3，股利照辦。回補前的現況是 114 年 1,469 家、更早每年只有 30~47 家種子公司。
+// 注意這裡的年度是**盈餘所屬年度**不是除息年：fiscal 109 的除息日實際落在 2020-09~2021-09（半年配的 N 年
+// 上半盈餘當年 9 月除息、年配要隔年夏天），所以 2020 上半的除息事件屬於 fiscal 108、不在範圍內。
 // 有多少給多少，不補假資料。查無任何分派紀錄回 entries: []（200，不是 404——公司存不存在是 profile 的事）。
+//
+// 這支跟 consecutiveDividendYears 讀**不同資料源**、深度剛好相反（那支讀現金流量表 XBRL，多數公司從
+// 民國 110 年起算所以上限 5），兩者不能互相驗證——2026-09-22 bff-ts 誤判成矛盾過一次，已在他們的端點
+// 文件加註。見記憶 reference_mops_dividend_distribution_dataset。
 
 const ISO_DATE = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 const round2 = (n: number): number => Math.round(n * 100) / 100;
