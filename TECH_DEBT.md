@@ -15,18 +15,23 @@
   （`liveGrahamNumber`/`livePegRatio`/`liveMarketCap`）、「六季財報深度解鎖」17 支
   新指標，全部都已經是全市場覆蓋，不再是「只有 2330」的狀態。以下這條舊記錄已解決，
   不用再提。
-- **歷史深度：2026-09-22 重新查證後結論翻轉——不是上游深度不夠，是我們沒回填**。
-  `chowderNumber`/`pegRatio`/`livePegRatio`/`oneDollarTest`/`epsCagr5y`/`epsCagr8y`/
-  `revenueCagr5y`/`revenueCagr8y`/`dividendGrowthRate5y`/`dividendGrowthRate8y` 全市場
-  2026Q2 只有 0~1 家有值。2026-09-14 的舊記錄說是「mops XBRL 從 114Q1 才鋪開」，實測
-  已經不成立：`quarterly_income_statement_xbrl` 109 年（2020）有 1,534 家、110 年 1,604 家、
-  111 年 1,606 家、112 年 1,897 家、113 年 2,299 家。真正的限制是
-  `scripts/backfillFullHistoryFullMarketPit.ts` 的 `QUARTERS` 只從 113Q1 起算，所以
-  `metric_values` 在 113 年以前**只有 2330 一家**。
-  **處理中**：QUARTERS 已往前延伸到 109Q3（commit 931cc5b6），109Q3–112Q4 這 14 季的全市場
-  回填排在 2026-09-22 那條重算鏈之後跑（`tmp/runHistory.sh` → `tmp/history-109-112.log`），
-  腳本有逐公司續跑機制，中斷可以接著跑。跑完這批指標會從「幾乎不存在」變成上千家有值，
-  屆時把這條移到已結案。
+- **歷史深度：真正的牆是 mops XBRL 從 109Q3 才鋪開，不是我們沒回填**（2026-09-22 兩次查證後的最終結論，
+  當天稍早那版「是我們只回填到 113Q1」是錯的，已更正）。
+  這批指標（`chowderNumber`/`oneDollarTest`/`epsCagr5y`/`epsCagr8y`/`revenueCagr5y`/`revenueCagr8y`/
+  `dividendGrowthRate5y`/`dividendGrowthRate8y`/`consecutiveDividendYears`/`consecutiveProfitYears`）
+  **每次計算都現查 mops 的財報表往回走年度，不讀我們自己算好的歷史列**——所以回填 `metric_values` 的
+  季度範圍對它們完全沒有影響。
+  實測上游各季有資料的公司數：109Q1=2、109Q2=47、**109Q3=1,352**、109Q4=51、110Q1=1,357、110Q2=1,406…
+  「四季齊全」的年度數：109 年只有 1 家（2330）、110 年 1,353、111 年 1,373、112 年 1,393、113 年 1,405、114 年 1,785。
+  → **多數公司的第一個完整會計年度是民國 110 年（2021）**，所以在 115Q2：5 年 CAGR 要 FY114 對 FY109，只有 2330 算得出來；
+  `consecutiveDividendYears` 最多數到 110~114 共 5 年（web-nuxt 2026-09-22 量到 889 家並列 5，就是這條線）。
+  **什麼時候自然解套**：115Q4 財報出來後（約 2027 年初）FY115 變完整年度，5 年 CAGR 變成 FY115 對 FY110，上千家會有值，
+  連續年數上限變 6。8 年版本要等 FY118，或 mops 往前補 109Q3 以前的 XBRL（他們沒有排期）。
+  **前端處置**：數字等於上限時語意是「至少 N 年」，兩支連續年數指標的 `limitations` 都已寫明；
+  `/rank/consecutive-dividend-years` 這類排行榜在解套前沒有鑑別度（第 2~50 名全部並列 5），已告知 web-nuxt 自行處理。
+- **109Q3–112Q4 全市場回填（進行中，價值是「歷史圖的深度」不是上面那條）**：`QUARTERS` 已延伸到 109Q3
+  （commit 931cc5b6），跑完後 `GET /companies/metric-history` 之類的序列從只有 113Q1 起變成 109Q3 起，
+  web-nuxt 的指標走勢圖才畫得出 2020~2023。進度見 `tmp/history-109-112.log`，腳本有逐公司續跑機制。
 
 ## 卡在其他微服務，等對方排期
 
