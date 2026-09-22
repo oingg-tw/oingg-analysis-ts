@@ -55,6 +55,12 @@ describe('decideWrite：既有列 vs 新輸入的四種決策', () => {
     expect(decideWrite(existing, input)).toEqual({ action: 'skipped_unchanged' });
   });
 
+  test('值一樣但 formulaVersion 不同（公式改版後這家剛好算出同一個數字）→ 就地覆蓋，不留舊版本號', () => {
+    const sameValue = { value: 10.98, nullReason: null, knowledgeDate: input.knowledgeDate };
+    expect(decideWrite({ ...sameValue, formulaVersion: 1 }, { ...input, formulaVersion: 2 })).toEqual({ action: 'update_same_knowledge_date' });
+    expect(decideWrite({ ...sameValue, formulaVersion: 2 }, { ...input, formulaVersion: 2 })).toEqual({ action: 'skipped_unchanged' });
+  });
+
   test('值不同、knowledgeDate 相同 → 同一天重算，就地覆蓋', () => {
     const existing = { value: 9.5, nullReason: null, knowledgeDate: input.knowledgeDate };
     expect(decideWrite(existing, input)).toEqual({ action: 'update_same_knowledge_date' });

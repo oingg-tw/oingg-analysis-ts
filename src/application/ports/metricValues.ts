@@ -31,6 +31,9 @@ export interface ExistingMetricRow {
   value: unknown;
   nullReason: string | null;
   knowledgeDate: Date;
+  // 2026-09-22 加進比對：公式改版後值剛好沒變的列（例如四捨五入吃掉差異）原本會停在舊的 formula_version，
+  // 同一支指標的列會混著 v1/v2，之後查「這批重算過了嗎」會誤判。見 persistComputations.decideWrite。
+  formulaVersion: number;
 }
 
 export interface MetricRowValues {

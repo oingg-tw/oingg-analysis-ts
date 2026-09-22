@@ -33,7 +33,7 @@ export const createInMemoryMetricValues = (): InMemoryMetricValues => {
   const findLatest = async (where: Record<string, unknown>): Promise<ExistingMetricRow | null> => {
     const candidates = rows.filter((row) => matches(row, where)).sort((a, b) => b.values.knowledgeDate.getTime() - a.values.knowledgeDate.getTime());
     const latest = candidates[0];
-    return latest ? { value: latest.values.value, nullReason: latest.values.nullReason, knowledgeDate: latest.values.knowledgeDate } : null;
+    return latest ? { value: latest.values.value, nullReason: latest.values.nullReason, knowledgeDate: latest.values.knowledgeDate, formulaVersion: latest.values.formulaVersion } : null;
   };
 
   const upsert = async (where: Record<string, unknown>, values: MetricRowValues): Promise<void> => {

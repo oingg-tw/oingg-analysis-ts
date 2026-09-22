@@ -29,13 +29,17 @@ export const valuesEqual = (a: number | null, b: number | null): boolean => {
 // 完全一樣，只是查詢/寫入的 Prisma model 不同——這支純函式抽出比對決策本身，兩個路徑
 // 各自負責呼叫對應 model 的 findFirst/create/update，決策邏輯只寫一次。
 export type DiffDecision = { action: 'skipped_unchanged' } | { action: 'update_same_knowledge_date' } | { action: 'insert' };
+// 2026-09-22 formulaVersion 也算「變了」：公式改版後，值剛好沒變的列（大公司的四捨五入吃掉差異、或新舊公式在
+// 這家身上同值）原本停在舊版本號，同一支指標的列會混著 v1/v2——之後查「這批重算跑到了嗎」「這個值是哪版公式算的」
+// 會誤判成漏跑。改成版本不同就寫回去（同 knowledge_date 就地覆蓋，不疊加新列）。
 export const decideWrite = (
-  existing: { value: unknown; nullReason: string | null; knowledgeDate: Date } | null,
-  input: Pick<MetricComputation, 'value' | 'nullReason' | 'knowledgeDate'>
+  existing: { value: unknown; nullReason: string | null; knowledgeDate: Date; formulaVersion?: number } | null,
+  input: Pick<MetricComputation, 'value' | 'nullReason' | 'knowledgeDate' | 'formulaVersion'>
 ): DiffDecision => {
   if (!existing) return { action: 'insert' };
   const existingValue = existing.value === null ? null : Number(existing.value);
-  const unchanged = valuesEqual(existingValue, input.value) && existing.nullReason === input.nullReason;
+  const sameFormulaVersion = existing.formulaVersion === undefined || existing.formulaVersion === (input.formulaVersion ?? 1);
+  const unchanged = valuesEqual(existingValue, input.value) && existing.nullReason === input.nullReason && sameFormulaVersion;
   if (unchanged) return { action: 'skipped_unchanged' };
   const sameKnowledgeDate = existing.knowledgeDate.getTime() === input.knowledgeDate.getTime();
   return sameKnowledgeDate ? { action: 'update_same_knowledge_date' } : { action: 'insert' };

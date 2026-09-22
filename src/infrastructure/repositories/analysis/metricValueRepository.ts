@@ -20,7 +20,7 @@ export type { DailyCadenceCoordinateWhere, ExistingMetricRow, MetricRowValues, P
 
 // 用「座標」（不含 knowledgeDate）查最新一列（orderBy knowledgeDate desc）——「目前市場最後所知」的那一列。
 export const findLatestPeriodMetricRow = (where: PeriodCoordinateWhere): Promise<ExistingMetricRow | null> =>
-  analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' }, select: { value: true, nullReason: true, knowledgeDate: true } });
+  analysisPrisma.metricValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' }, select: { value: true, nullReason: true, knowledgeDate: true, formulaVersion: true } });
 
 // 一次原子的 upsert（鍵是完整的 identity 唯一鍵，含 knowledgeDate）——2026-09-11 全市場 backfill
 // 平行化後同一個 knowledgeDate 被重算兩次撞過唯一鍵，改讓 Postgres 自己原子地決定 insert 還是
@@ -36,7 +36,7 @@ export const upsertPeriodMetricRow = async (where: PeriodCoordinateWhere, values
 };
 
 export const findLatestDailyCadenceMetricRow = (where: DailyCadenceCoordinateWhere): Promise<ExistingMetricRow | null> =>
-  analysisPrisma.metricDailyCadenceValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' }, select: { value: true, nullReason: true, knowledgeDate: true } });
+  analysisPrisma.metricDailyCadenceValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' }, select: { value: true, nullReason: true, knowledgeDate: true, formulaVersion: true } });
 
 export const upsertDailyCadenceMetricRow = async (where: DailyCadenceCoordinateWhere, values: MetricRowValues): Promise<void> => {
   await analysisPrisma.metricDailyCadenceValue.upsert({
