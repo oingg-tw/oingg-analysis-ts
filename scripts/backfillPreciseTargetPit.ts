@@ -35,6 +35,7 @@
 import { buildGeneralTasks, buildBankTasks, runTasks, type BackfillTask } from './backfillTaskDefinitions';
 import type { Season } from '../src/domain/calendar/rocQuarter';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { memoizeStatementsForBackfill } from '../src/bootstrap/memoizedStatements';
 
 const parseCsv = (value: string | undefined): string[] | undefined => {
   if (!value) return undefined;
@@ -67,6 +68,8 @@ const filterByLabels = (tasks: BackfillTask[], labels: string[] | undefined): Ba
 };
 
 const main = async () => {
+  // 三大表讀取記憶化：同一家同一季被各 label 重複查 5–7 次，記憶化後實測快約 3 倍（見 memoizedStatements.ts）。
+  memoizeStatementsForBackfill();
   const symbols = parseCsv(process.env.SYMBOLS);
   if (!symbols) {
     console.error('SYMBOLS 必填（逗號分隔的公司代號清單），避免不小心對全市場下去跑。全市場範圍請用 backfillFullHistoryFullMarketPit.ts。');

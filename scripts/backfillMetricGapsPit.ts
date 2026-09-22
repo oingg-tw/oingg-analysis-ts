@@ -12,6 +12,7 @@ import { GENERAL_METRIC_CODES, BANK_METRIC_CODES, buildGeneralTasks, buildBankTa
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import type { Season } from '../src/domain/calendar/rocQuarter';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { memoizeStatementsForBackfill } from '../src/bootstrap/memoizedStatements';
 
 const SYMBOL_CONCURRENCY = 8;
 const PROGRESS_EVERY = 50;
@@ -93,6 +94,8 @@ const runBatch = async (
 };
 
 const main = async () => {
+  // 三大表讀取記憶化：同一家同一季被各 label 重複查 5–7 次，記憶化後實測快約 3 倍（見 memoizedStatements.ts）。
+  memoizeStatementsForBackfill();
   if (!existsSync(REPORT_PATH)) {
     console.error(`找不到 ${REPORT_PATH}，請先執行 pnpm tsx scripts/scanMetricGapsPit.ts 產生空缺報告。`);
     process.exitCode = 1;

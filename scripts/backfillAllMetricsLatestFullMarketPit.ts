@@ -38,6 +38,7 @@ import { GENERAL_METRIC_CODES, BANK_METRIC_CODES, buildGeneralTasks, buildBankTa
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { backfillUniverse } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
+import { memoizeStatementsForBackfill } from '../src/bootstrap/memoizedStatements';
 
 const PROGRESS_EVERY = 50;
 
@@ -172,6 +173,8 @@ const runBatch = async (
 };
 
 const main = async () => {
+  // 三大表讀取記憶化：同一家同一季被各 label 重複查 5–7 次，記憶化後實測快約 3 倍（見 memoizedStatements.ts）。
+  memoizeStatementsForBackfill();
   await Promise.all(GENERAL_METRIC_CODES.map((code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)));
   await Promise.all(BANK_METRIC_CODES.map((code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)));
 
