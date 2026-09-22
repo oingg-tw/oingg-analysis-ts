@@ -5,6 +5,7 @@ import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
 import type { ExchangeCompanyProfileDetail } from '@/application/companies/types';
 import type { CompanyNameEntry, CompanyProfilePort, SecurityEntry, SecurityType } from '@/application/ports/companyProfiles';
 import { getIndustryCodes } from './industryCodes';
+import { normalizeWebsite } from '@/domain/shared/normalizeWebsite';
 
 interface RawTpexCompanyProfileRow {
   symbol: string;
@@ -264,21 +265,10 @@ const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '合併財報
 const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
   financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
 
-// 2026-09-04 應 web-nuxt/conductor 要求新增——company_profile 的 website 欄位混雜至少三種
-// 格式（"www.acc.com.tw" 純網域、"http://www.ancang.com/" 含 scheme+尾斜線、
-// "www.tactc.com.tw/" 尾斜線但無 scheme），這是資料源頭本身的格式不一致，不該讓每個消費端
-// 各自防禦性清洗，統一在這裡（資料離開本服務之前）處理一次。清洗規則跟 web-nuxt 原本各自
-// 維護的 normalizeWebsiteDomain() 一致（他們之後會刪掉前端那份重複邏輯，只留 Brandfetch URL
-// 組裝——那段是供應商綁定的細節，仍然留在他們那層，不屬於資料正規化）。
-const normalizeWebsiteDomain = (website: string | null): string | null => {
-  if (website === null) return null;
-  const normalized = website
-    .trim()
-    .replace(/^https?:\/\//, '')
-    .replace(/\/+$/, '')
-    .replace(/^www\./, '');
-  return normalized.length > 0 ? normalized : null;
-};
+// 2026-09-04 應 web-nuxt/conductor 要求新增：website 欄位的格式在源頭就不一致，統一在資料離開本服務之前
+// 清洗一次，不讓每個消費端各自防禦性處理。2026-09-23 搬去 domain/shared/normalizeWebsite.ts（純字串函式 +
+// 單元測試，規則與已知例外都記在那裡），這裡只留別名讓呼叫點不動。
+const normalizeWebsiteDomain = normalizeWebsite;
 
 // 給 GET /companies/profile 用（2026-09-02 應 bff-ts 要求新增，個股詳情頁的公司基本資料卡片）。
 // 上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 null。TWSE/TPEx 兩邊 company_profile
