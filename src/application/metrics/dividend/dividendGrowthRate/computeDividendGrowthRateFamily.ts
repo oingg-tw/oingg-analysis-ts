@@ -24,12 +24,14 @@ const getAnnualDividendPerShareProxy = async (
   const quarters = await Promise.all(
     [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
-  if (quarters.some((q) => q === null || q.dividendsPaid === null)) {
+  // 2026-09-22 mops-ts 確認單季現金流量表的語意：該季有整份表但 dividends_paid_financing 為 null = 「本年度到這季為止還沒付過股利」
+  // （台股多在 Q3 付款，Q1/Q2 的累計表根本沒這行），不是缺資料——所以只有整季報表缺席才算不齊，科目 null 視為 0。
+  if (quarters.some((q) => q === null)) {
     cache.set(rocYear, null);
     return null;
   }
 
-  const yearSum = quarters.reduce((sum, q) => sum + q!.dividendsPaid!, 0n);
+  const yearSum = quarters.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = quarters[3]!.reportDate;
   const shares = await deps.shares.getPaidInShares(symbol, q4ReportDate);

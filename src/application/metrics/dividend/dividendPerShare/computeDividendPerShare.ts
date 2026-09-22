@@ -56,11 +56,13 @@ export const computeDividendPerShare = async (
 
   let dividendsPaidTtmSum = 0n;
   let ttmComplete = true;
+  // 2026-09-22 mops-ts 確認單季現金流量表的語意：該季有整份表但 dividends_paid_financing 為 null = 「本年度到這季為止還沒付過股利」
+  // （台股多在 Q3 付款，Q1/Q2 的累計表根本沒這行），不是缺資料——所以只有整季報表缺席才算不齊，科目 null 視為 0。
   for (const record of ttmRecords) {
-    if (record === null || record.dividendsPaid === null) {
+    if (record === null) {
       ttmComplete = false;
     } else {
-      dividendsPaidTtmSum += record.dividendsPaid;
+      dividendsPaidTtmSum += record.dividendsPaid ?? 0n;
     }
   }
   const dividendsPaidAbs = ttmComplete ? (dividendsPaidTtmSum < 0n ? -dividendsPaidTtmSum : dividendsPaidTtmSum) : null;
