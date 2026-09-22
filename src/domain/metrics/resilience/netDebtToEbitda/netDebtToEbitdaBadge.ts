@@ -29,7 +29,7 @@ export const netDebtToEbitdaBadge: MetricBadge = {
   threshold: {
     description: '< 1.5',
     thresholdLatex: '\\mathrm{NetDebtToEbitda} \\lt 1.5',
-    note: 'S&P Corporate Methodology Table 17（standard volatility）Debt/EBITDA「Less than 1.5」= minimal。低波動產業用的 Table 18/19 門檻更寬，本站一律用 standard 表；EBITDA ≤ 0 不計算。',
+    note: 'S&P Corporate Methodology Table 17（standard volatility）Debt/EBITDA「Less than 1.5」= minimal。低波動產業用的 Table 18/19 門檻更寬，這裡照 standard 表計算；EBITDA ≤ 0 不計算。',
     denominator: 1,
     comparator: 'lt',
     value: 1.5,

@@ -33,7 +33,7 @@ export const betaBadge: MetricBadge = {
     'Baker、Bradley 與 Wurgler 在 2011 年《Financial Analysts Journal》發表的研究把美國上市公司依過去 60 個月的 Beta' +
     '切成五等分，1968 到 2008 年間最低 Beta 的一組 Sharpe 比率 0.42、年化超額報酬 4.42%，最高的一組只有 0.05 與 −2.42%' +
     '——跟 CAPM「風險越高報酬越高」的預期相反，這就是所謂的低波動／低 Beta 異象。作者把原因歸於基金經理人被基準' +
-    '指數綁住、不願意持有低 Beta 股票。這是排名，不是絕對數字門檻，本站直接沿用論文的五分位定義，Beta 用跟論文' +
+    '指數綁住、不願意持有低 Beta 股票。這是排名，不是絕對數字門檻，照論文的五分位定義排，Beta 用跟論文' +
     '同樣的五年月頻窗口計算。Beta 低只代表跟大盤連動小，不代表個別公司風險低。',
   timeframe: '5Y_1M',
   threshold: {

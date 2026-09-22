@@ -23,7 +23,7 @@ export const famaFrenchOperatingProfitabilityBadge: MetricBadge = {
     '用「營業獲利力」區分公司：營收扣掉銷貨成本、推銷管理費用與利息費用後，除以帳面權益。' +
     '他們的做法是以全市場第 30 與第 70 百分位為分界切成三組，最高的一組（前 30%）稱為' +
     '「Robust」，長期報酬與最低的一組有系統性差距。這是排名，不是一個絕對數字門檻，本站' +
-    '直接沿用他們的分界定義，不自己訂常數。',
+    '照他們的分界定義排，不自己訂常數。',
   timeframe: 'TTM',
   threshold: {
     description: '前 30%',

@@ -23,7 +23,7 @@ export const cashConversionCycleBadge: MetricBadge = {
     'Baolian Wang 在 2019 年《Journal of Financial Economics》發表的研究把美國上市公司依現金轉換循環（存貨天數＋' +
     '應收天數－應付天數）由短到長切成十等分，發現最短的一組後續報酬每年高於最長的一組約 5 到 7 個百分點，' +
     '而且這個差距在不同產業、大型股樣本裡都存在，無法用既有的風險因子解釋。這是排名，不是絕對天數門檻，' +
-    '本站直接沿用論文的十分位定義；天數為負（靠供應商信用週轉）的公司會排在最前面，這跟論文一致。',
+    '照論文的十分位定義排；天數為負（靠供應商信用週轉）的公司會排在最前面，這跟論文一致。',
   timeframe: 'TTM',
   threshold: {
     description: '最短 10%',

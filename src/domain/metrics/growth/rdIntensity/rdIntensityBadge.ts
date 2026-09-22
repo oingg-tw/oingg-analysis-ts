@@ -22,13 +22,13 @@ export const rdIntensityBadge: MetricBadge = {
     '范宏書與林彥廷 2010 年以 1990–1998 年台灣上市櫃有研發支出的公司驗證：把公司依研發密度（研發資產相對於營收，' +
     '另一版相對於市值）由低到高分成五組，最高的一組在研發支出後續三年的剩餘報酬（已扣除規模與淨值市值比的風險溢酬）' +
     '顯著為正，第一年約 24%，並隨研發密度遞增。作者把這個現象歸因於研發投入帶來的風險溢酬，而不是市場錯價。' +
-    '這是排名，不是絕對百分比門檻，本站直接沿用論文的五分位定義。同一時期美國的研究（Chan, Lakonishok & Sougiannis, ' +
+    '這是排名，不是絕對百分比門檻，照論文的五分位定義排。同一時期美國的研究（Chan, Lakonishok & Sougiannis, ' +
     '2001）發現研發相對營收的排序在美國沒有預測力、研發相對市值才有，所以這支徽章的依據是台灣市場的證據。',
   timeframe: 'TTM',
   threshold: {
     description: '前 20%',
     thresholdLatex: '\\mathrm{RdIntensity\\ Percentile} \\geq 80',
-    note: '范宏書、林彥廷（2010）用五等級（quintile）排序，最高一組即前 20%，不是絕對數字門檻。論文分子是資本化的淨研發資產，本站用當期研發費用；查無研發費用欄位的公司不在排名母體內。',
+    note: '范宏書、林彥廷（2010）用五等級（quintile）排序，最高一組即前 20%，不是絕對數字門檻。論文分子是資本化的淨研發資產，這裡以當期研發費用計算；查無研發費用欄位的公司不在排名母體內。',
     denominator: 1,
     percentileRank: { scope: 'market', direction: 'desc', topPercent: 20 },
   },

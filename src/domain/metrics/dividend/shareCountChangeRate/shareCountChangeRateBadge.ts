@@ -39,7 +39,7 @@ export const shareCountChangeRateBadge: MetricBadge = {
   threshold: {
     description: '< -5%',
     thresholdLatex: '\\mathrm{ShareCountChangeRate} < -5',
-    note: 'Nasdaq 原文是「trailing twelve months 淨減少 5% 或以上」（≤ -5%），本站用嚴格小於 -5% 實作——避免為了這個機率可忽略的邊界案例（財務數字精確等於 -5.000000%）新增 comparator 列舉值。',
+    note: 'Nasdaq 原文是「trailing twelve months 淨減少 5% 或以上」（≤ -5%），這裡以嚴格小於 -5% 實作——避免為了這個機率可忽略的邊界案例（財務數字精確等於 -5.000000%）新增 comparator 列舉值。',
     denominator: 1,
     comparator: 'lt',
     value: -5,
