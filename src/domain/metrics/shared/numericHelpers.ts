@@ -78,6 +78,15 @@ export const absBigint = (value: bigint): bigint => (value < 0n ? -value : value
 
 // 每股金額——分子是財報原始金額（單位：千元），乘 1000 換算成元之後除以流通股數，
 // 四捨五入到小數 2 位。ocfPerShare/fcfPerShare 用這個換算。
+// 不四捨五入的每股值——只給「還要拿去算別的東西」的中繼值用（peRatio/pbRatio/grahamNumber/earningsYield/fcfYield/
+// pegRatio 的 EPS/BVPS、epsGrowthRate/bvpsGrowthRate 的分子分母）。2026-09-22 web-nuxt 實測：拿已進位到「分」的 EPS 相除，
+// 台泥（單季 EPS 0.06–0.5 元）的年增率跟淨利年增率差到 43 個百分點，一分錢就佔 11–17%。對外呈現的 eps/bvps 本身維持
+// 兩位小數（toPerShare），只有中繼值改用這支。
+export const toPerShareExact = (numeratorInThousands: bigint, shares: bigint): number | null => {
+  if (shares === 0n) return null;
+  return (Number(numeratorInThousands) * 1000) / Number(shares);
+};
+
 export const toPerShare = (numeratorInThousands: bigint, shares: bigint): number | null => {
   if (shares === 0n) return null;
   return Math.round(((Number(numeratorInThousands) * 1000) / Number(shares)) * 100) / 100;

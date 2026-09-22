@@ -1,13 +1,16 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare, toRatioFromNumbers } from '@/domain/metrics/shared/numericHelpers';
+import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：中繼 EPS/BVPS/PER/PBR 都不再各自四捨五入，只在最後的 PER×PBR 四捨五入一次（見 numericHelpers.ts toPerShareExact 的說明）。
+export const GRAHAM_NUMBER_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/grahamNumber.ts 的獨立重新實作——舊架構呼叫
 // calculateEps()+calculateBvps()，這裡不依賴 eps/bvps 這兩個 metric_code 已寫入的值，
@@ -52,11 +55,11 @@ export const computeGrahamNumber = async (
   const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
+  const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
-  const pbRatio = bvps !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, bvps) : null;
+  const pbRatio = bvps !== null && bvps !== 0 && stockPrice !== null ? stockPrice.closePrice / bvps : null;
 
   // EPS(TTM)：近四季（含本季）淨利加總，算法跟 peRatio/eps 的 TTM 完全相同。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -75,8 +78,8 @@ export const computeGrahamNumber = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(netIncomeTtmSum, sharesValue) : null;
-  const peRatioTtm = epsTtm !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, epsTtm) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(netIncomeTtmSum, sharesValue) : null;
+  const peRatioTtm = epsTtm !== null && epsTtm !== 0 && stockPrice !== null ? stockPrice.closePrice / epsTtm : null;
 
   // grahamNumber = PER × PBR，跟 peRatio/pbRatio 自己的 null_reason 判斷同一套哲學：
   // 分母（EPS/BVPS）剛好等於 0 才是 zero_or_negative_denominator，為負仍然算出一個
@@ -110,5 +113,5 @@ export const computeGrahamNumber = async (
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: GRAHAM_NUMBER_FORMULA_VERSION } } };
 };

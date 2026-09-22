@@ -1,13 +1,16 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare, toRatioFromNumbers } from '@/domain/metrics/shared/numericHelpers';
+import { toRatioFromNumbers, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity } from '@/domain/metrics/shared/pickers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：中繼 BVPS 改用不四捨五入的 toPerShareExact（見 numericHelpers.ts toPerShareExact 的說明）。
+export const PB_RATIO_FORMULA_VERSION = 2;
 
 // 本淨比（PB）= 股價(knowledge_date) / BVPS(本季期末權益/流通股數)。獨立重新實作，不呼叫
 // computeBvpsPit——分子分母算法直接複製自 bvps/computeBvpsPit.ts，保持每支 PIT 檔案獨立、
@@ -51,7 +54,7 @@ export const computePbRatio = async (
   const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
+  const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
@@ -83,5 +86,5 @@ export const computePbRatio = async (
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: { q: isComputationSkip(q) ? q : { ...q, formulaVersion: PB_RATIO_FORMULA_VERSION } } };
 };

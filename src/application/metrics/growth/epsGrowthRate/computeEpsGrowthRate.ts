@@ -1,16 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { calculateYoyGrowthRate } from '@/domain/metrics/shared/numericHelpers';
+import { calculateYoyGrowthRate, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { isComputationSkip, type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 一致）。
+// 2026-09-22 formulaVersion 2：EPS 中繼值不再四捨五入到分——web-nuxt 實測台泥 2026Q1 用進位值算 28.57%、真值 36.2%
+// （0.07 → 0.09 兩個都是進位後的數字），小 EPS 公司的年增率整個失真；只在最後的百分比四捨五入一次。
+export const EPS_GROWTH_RATE_FORMULA_VERSION = 2;
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
   if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
-  return Math.round(((Number(netIncomeInThousands) * 1000) / Number(shares)) * 100) / 100;
+  return toPerShareExact(netIncomeInThousands, shares);
 };
 
 
@@ -61,5 +64,5 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', growthRate, nullReason);
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: { q: isComputationSkip(q) ? q : { ...q, formulaVersion: EPS_GROWTH_RATE_FORMULA_VERSION } } };
 };

@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { toPerShare, toRatioFromNumbers } from '@/domain/metrics/shared/numericHelpers';
+import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
@@ -7,6 +7,9 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { snapshotCadenceGroup } from '@/domain/metrics/coordinate';
 import { computation, type DailyComputationBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：同 pegRatio：中繼值不四捨五入，只在最後一次（見 numericHelpers.ts toPerShareExact 的說明）。
+export const LIVE_PEG_RATIO_FORMULA_VERSION = 2;
 
 // 2026-09-11 應 web-nuxt 要求新增——pegRatio（季報快照，PER 用財報公告當天股價）的即時
 // 版本：EPS 5 年 CAGR 維持用「最新已申報」的完整會計年度資料，PER 的股價改用當下最新
@@ -98,8 +101,8 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum, sharesValue) : null;
-  const peRatioTtm = epsTtm !== null ? toRatioFromNumbers(close, epsTtm) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
+  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const epsCache = new Map<number, number | null>();
@@ -108,7 +111,7 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
 
   const epsCagr5yPct =
     currentAnnualEps !== null && priorAnnualEps !== null && currentAnnualEps > 0 && priorAnnualEps > 0
-      ? Math.round((Math.pow(currentAnnualEps / priorAnnualEps, 1 / PEG_GROWTH_YEARS) - 1) * 100 * 100) / 100
+      ? (Math.pow(currentAnnualEps / priorAnnualEps, 1 / PEG_GROWTH_YEARS) - 1) * 100
       : null;
 
   const livePegRatio = peRatioTtm !== null && epsCagr5yPct !== null && epsCagr5yPct > 0 ? Math.round((peRatioTtm / epsCagr5yPct) * 100) / 100 : null;
@@ -135,5 +138,5 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
     knowledgeDateIsFallback: false,
   });
 
-  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod } };
+  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod: { ...eod, formulaVersion: LIVE_PEG_RATIO_FORMULA_VERSION } } };
 };

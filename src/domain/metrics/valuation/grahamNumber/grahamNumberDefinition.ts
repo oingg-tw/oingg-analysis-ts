@@ -25,7 +25,7 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   // 相乘的無因次數字。
   formulaNote:
     '= PER(TTM，股價/EPS) × PBR（股價/BVPS）。PER/PBR 獨立重新計算，不依賴 peRatio/' +
-    'pbRatio 這兩個 metric_code 已寫入的值。只有 TTM 一種 basis——沿用 peRatio 的 TTM 基準。',
+    'pbRatio 這兩個 metric_code 已寫入的值。只有 TTM 一種 basis——沿用 peRatio 的 TTM 基準。（2026-09-22 formulaVersion 2：中繼的每股值改用不四捨五入的精確值，只在最後結果四捨五入一次；v1 拿已進位到分的 EPS/BVPS 再算，小 EPS 公司失真。）',
   formulaLatex: '\\mathrm{GrahamNumber} = \\mathrm{PER}_{\\mathrm{TTM}} \\times \\mathrm{PBR}',
   // 出處是葛拉漢《The Intelligent Investor》(1949)，不是期刊論文——archive.org 上該書
   // 掃描本需要借閱帳號（access-restricted），沒有完全公開的版本，仍是合法可查證的出處連結。
@@ -36,5 +36,5 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'paidInShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

@@ -11,7 +11,7 @@ export const pegRatioDefinition: MetricDefinitionSpec = {
   formulaNote:
     '= PER(TTM) / EPS 5年複合成長率(%)。PER 跟成長率各自獨立重新計算，不依賴 peRatio/' +
     'epsCagr5y 已寫入的值。成長率 ≤ 0（獲利衰退或虧損）時 PEG 沒有意義，回傳 null' +
-    '（zero_or_negative_denominator）。只有 TTM 一種 basis——沿用 peRatio 的基準。',
+    '（zero_or_negative_denominator）。只有 TTM 一種 basis——沿用 peRatio 的基準。（2026-09-22 formulaVersion 2：中繼的每股值改用不四捨五入的精確值，只在最後結果四捨五入一次；v1 拿已進位到分的 EPS/BVPS 再算，小 EPS 公司失真。）',
   formulaLatex: '\\mathrm{PEG} = \\frac{\\mathrm{PER}_{\\mathrm{TTM}}}{\\mathrm{EpsCagr}_{5y}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/PEG_ratio',
   tier: 'composite',
@@ -19,5 +19,5 @@ export const pegRatioDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

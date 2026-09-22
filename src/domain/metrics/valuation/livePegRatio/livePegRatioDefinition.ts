@@ -10,7 +10,7 @@ export const livePegRatioDefinition: MetricDefinitionSpec = {
   formulaNote:
     '= PER(TTM，當下最新收盤價/最新已申報 EPS TTM) ÷ EPS 5 年複合成長率(%)。成長率跟 pegRatio 完全相同，' +
     'PER 的股價改用當下最新收盤價，每個交易日更新，跟 pegRatio（凍結在財報公告當天）是刻意並存、互不影響' +
-    '的兩支獨立 metricCode。',
+    '的兩支獨立 metricCode。（2026-09-22 formulaVersion 2：中繼的每股值改用不四捨五入的精確值，只在最後結果四捨五入一次；v1 拿已進位到分的 EPS/BVPS 再算，小 EPS 公司失真。）',
   formulaLatex: '\\mathrm{LivePEG} = \\dfrac{\\mathrm{PER}_{\\mathrm{TTM}}}{\\mathrm{EPS\\ CAGR}_{5Y}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/PEG_ratio',
   tier: 'composite',
@@ -18,5 +18,5 @@ export const livePegRatioDefinition: MetricDefinitionSpec = {
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares', 'daily_price.close'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

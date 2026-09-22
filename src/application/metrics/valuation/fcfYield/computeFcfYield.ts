@@ -1,12 +1,15 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
+import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：中繼每股 FCF 改用不四捨五入的 toPerShareExact（見 numericHelpers.ts toPerShareExact 的說明）。
+export const FCF_YIELD_FORMULA_VERSION = 2;
 
 // 這份檔案獨立重新實作 src/domainMetrics/fcfYield.ts——舊架構呼叫 calculateCashFlowPerShare()，
 // 這裡不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值，自己重新查現金流量表 +
@@ -71,7 +74,7 @@ export const computeFcfYield = async (
     }
   }
 
-  const fcfPerShareTtm = ttmComplete && sharesValue !== null ? toPerShare(fcfTtmSum, sharesValue) : null;
+  const fcfPerShareTtm = ttmComplete && sharesValue !== null ? toPerShareExact(fcfTtmSum, sharesValue) : null;
   const fcfYieldTtmPct = fcfPerShareTtm !== null && stockPrice !== null ? toPctFromNumbers(fcfPerShareTtm, stockPrice.closePrice) : null;
   const ttmNullReason: MetricNullReason | null = fcfYieldTtmPct !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
 
@@ -106,5 +109,5 @@ export const computeFcfYield = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: FCF_YIELD_FORMULA_VERSION } } };
 };

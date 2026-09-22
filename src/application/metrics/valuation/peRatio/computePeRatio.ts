@@ -1,13 +1,16 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare, toRatioFromNumbers } from '@/domain/metrics/shared/numericHelpers';
+import { toRatioFromNumbers, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：中繼 EPS 改用不四捨五入的 toPerShareExact（小 EPS 公司的本益比原本被「分」的進位誤差扭曲，台泥級的單季 EPS 一分錢佔 11–17%）（見 numericHelpers.ts toPerShareExact 的說明）。
+export const PE_RATIO_FORMULA_VERSION = 2;
 
 // 本益比（PE）= 股價(knowledge_date) / EPS(TTM，近四季淨利加總/流通股數)。獨立重新實作，
 // 不呼叫 computeEpsPit——分子分母的計算邏輯直接複製自 eps/computeEpsPit.ts 的 TTM 那段，
@@ -70,7 +73,7 @@ export const computePeRatio = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
   const peRatioTtm = epsTtm !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, epsTtm) : null;
 
   let ttmNullReason: MetricNullReason | null = null;
@@ -113,5 +116,5 @@ export const computePeRatio = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: PE_RATIO_FORMULA_VERSION } } };
 };

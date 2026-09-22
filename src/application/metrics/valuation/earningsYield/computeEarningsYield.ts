@@ -1,13 +1,16 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
+import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：中繼 EPS 改用不四捨五入的 toPerShareExact（見 numericHelpers.ts toPerShareExact 的說明）。
+export const EARNINGS_YIELD_FORMULA_VERSION = 2;
 
 // 盈餘收益率（EY）= EPS(TTM) / 股價 * 100，是本益比的倒數換算成百分比呈現——獨立重新計算
 // EPS_TTM/股價（不依賴 eps/peRatio 這兩個 metric_code 已寫入的值，跟 sgr 對 roe/
@@ -64,7 +67,7 @@ export const computeEarningsYield = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
   const earningsYieldTtm =
     epsTtm !== null && stockPrice !== null && stockPrice.closePrice !== 0 ? Math.round((epsTtm / stockPrice.closePrice) * 100 * 100) / 100 : null;
 
@@ -108,5 +111,5 @@ export const computeEarningsYield = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: EARNINGS_YIELD_FORMULA_VERSION } } };
 };

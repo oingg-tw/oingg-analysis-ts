@@ -1,5 +1,5 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { toPerShare, toRatioFromNumbers } from '@/domain/metrics/shared/numericHelpers';
+import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
@@ -7,6 +7,9 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { snapshotCadenceGroup } from '@/domain/metrics/coordinate';
 import { computation, type DailyComputationBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-22 formulaVersion 2：同 grahamNumber：中繼值不四捨五入，只在最後一次（見 numericHelpers.ts toPerShareExact 的說明）。
+export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 2;
 
 // 2026-09-11 應 web-nuxt 要求新增——grahamNumber（季報快照，PER/PBR 都用財報公告當天的
 // 股價，凍結在 knowledge_date）的即時版本：基本面（EPS TTM/BVPS）維持用「最新已申報」的
@@ -56,8 +59,8 @@ export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, d
   const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
   const sharesValue = shares?.paidInShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
-  const pbRatio = bvps !== null ? toRatioFromNumbers(close, bvps) : null;
+  const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
+  const pbRatio = bvps !== null && bvps !== 0 ? close / bvps : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
@@ -75,8 +78,8 @@ export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, d
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(netIncomeTtmSum, sharesValue) : null;
-  const peRatioTtm = epsTtm !== null ? toRatioFromNumbers(close, epsTtm) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(netIncomeTtmSum, sharesValue) : null;
+  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
 
   const liveGrahamNumber = peRatioTtm !== null && pbRatio !== null ? Math.round(peRatioTtm * pbRatio * 100) / 100 : null;
 
@@ -102,5 +105,5 @@ export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, d
     knowledgeDateIsFallback: false,
   });
 
-  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod } };
+  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod: { ...eod, formulaVersion: LIVE_GRAHAM_NUMBER_FORMULA_VERSION } } };
 };
