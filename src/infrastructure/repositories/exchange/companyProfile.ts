@@ -451,14 +451,16 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
   });
 };
 
-// 2026-09-22 twse-ts 的 company_profile 多了 25 家六碼代號、industry='XX'（證券商）的**未上市公開發行證券商**
-// （000104 臺銀證券、000601 牛牛牛亞…），把公司目錄的前幾筆全變成它們；它們不是上市股票，目錄／計數一律排除。
-// 四碼的證券商（6008 凱基證）跟六碼的 TDR（910322，industry 91）都是真的上市標的，不能只看碼數或只看 XX。
-const UNLISTED_BROKER_FILTER = `NOT (industry = 'XX' AND length(symbol) > 4)`;
+// 2026-09-22：twse-ts 的 company_profile 從 2026-08-20 起就是兩個來源寫同一張表——t187ap03_L（上市，source='COMPANY_PROFILE'）
+// ＋ t187ap03_P（公開發行未上市，source='COMPANY_PROFILE_PUBLIC'，約 305 家，含 26 家六碼證券商 000104 臺銀證券…跟 280 家
+// 四碼的公開發行公司）。公司目錄／計數只要上市的，用 view 本來就有的 source 欄位過濾（twse-ts 說篩選權在消費端，view 是
+// 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
+// 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
+const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
 
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(UNLISTED_BROKER_FILTER)}`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(LISTED_ONLY)}`,
     tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
   ]);
   const all = dedupeBySymbol([
@@ -470,7 +472,7 @@ export const listAllCompanyNames = async (limit: number, offset: number): Promis
 
 export const countAllCompanyNames = async (): Promise<number> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(UNLISTED_BROKER_FILTER)}`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(LISTED_ONLY)}`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
