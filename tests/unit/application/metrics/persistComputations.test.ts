@@ -27,6 +27,7 @@ const roeQ = (overrides: Partial<MetricComputation> = {}): MetricComputation => 
   nullReason: null,
   knowledgeDate: new Date('2026-08-12T00:00:00.000Z'),
   knowledgeDateIsFallback: false,
+  formulaVersion: roeDefinition.currentFormulaVersion, // 2026-09-22 起 writer 會拒絕跟定義檔對不上的版本
   ...overrides,
 });
 
@@ -84,7 +85,7 @@ describe('validateCoordinate：spec v0.2 §5.5 的強制檢查', () => {
 
   test('滾動統計量：periodType 必須 N/A、lookbackRange/samplingInterval 成對、tradeDate 必填', () => {
     const beta = (overrides: Partial<MetricComputation>): MetricComputation =>
-      roeQ({ metricCode: 'beta', ...rollingWindowGroup('1Y', '1D'), fiscalYear: undefined, fiscalQuarter: undefined, tradeDate: new Date('2026-09-01T00:00:00.000Z'), ...overrides });
+      roeQ({ metricCode: 'beta', formulaVersion: betaDefinition.currentFormulaVersion, ...rollingWindowGroup('1Y', '1D'), fiscalYear: undefined, fiscalQuarter: undefined, tradeDate: new Date('2026-09-01T00:00:00.000Z'), ...overrides });
     expect(validateCoordinate(beta({}), betaDefinition)).toBeNull();
     expect(validateCoordinate(beta({ periodType: 'Q' }), betaDefinition)?.reason).toContain('periodType/snapshotCadence 必須都是');
     expect(validateCoordinate(beta({ samplingInterval: 'N/A' }), betaDefinition)?.reason).toContain('成對的正交維度');
@@ -105,7 +106,7 @@ describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
     expect(await persistOne(roeQ({ value: 11.02 }), deps)).toEqual({ action: 'updated_same_knowledge_date' });
     expect(metricValues.rows()).toHaveLength(1);
     expect(metricValues.rows()[0]!.values.value).toBe(11.02);
-    expect(metricValues.rows()[0]!.values.formulaVersion).toBe(1);
+    expect(metricValues.rows()[0]!.values.formulaVersion).toBe(roeDefinition.currentFormulaVersion);
 
     const restated = roeQ({ value: 11.5, knowledgeDate: new Date('2026-11-14T00:00:00.000Z') });
     expect(await persistOne(restated, deps)).toEqual({ action: 'inserted' });
@@ -132,7 +133,7 @@ describe('persistComputations：整批攤平成舊 outcome 形狀', () => {
       rocYear: '115',
       season: '2',
       slots: {
-        q: periodSlot(anchor, base, 'Q', 10.98, null),
+        q: { ...periodSlot(anchor, base, 'Q', 10.98, null), formulaVersion: roeDefinition.currentFormulaVersion },
         ttm: periodSlot(null, base, 'TTM', 34.78, null),
       },
     };

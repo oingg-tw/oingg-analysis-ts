@@ -55,6 +55,13 @@ export const validateCoordinate = (input: MetricComputation, definition: MetricD
   if (!definition) {
     return { action: 'rejected', reason: `metric_code '${input.metricCode}' 未在 metricDefinitionRegistry 註冊。` };
   }
+  // 2026-09-22：compute 標的 formulaVersion 不能跟定義檔的 currentFormulaVersion 對不上——兩邊各自手改，漏一邊就會
+  // 出現「值換了新公式、GET /metrics 還說是舊版」（beneishMScore 在 bcc33939 真實發生過，下游靠 formulaVersion 判斷
+  // 文案要不要重讀）。沒標的 compute 預設 1，所以這條只在有標版本的指標上生效。
+  const inputVersion = input.formulaVersion ?? 1;
+  if (inputVersion !== definition.currentFormulaVersion) {
+    return { action: 'rejected', reason: `metric_code '${input.metricCode}' 的 compute 標 formulaVersion ${inputVersion}，定義檔 currentFormulaVersion 是 ${definition.currentFormulaVersion}，兩邊要一起改。` };
+  }
   const lookbackIsSet = input.lookbackRange !== 'N/A';
   const samplingIsSet = input.samplingInterval !== 'N/A';
   const snapshotCadenceIsSet = input.snapshotCadence !== 'N/A';
