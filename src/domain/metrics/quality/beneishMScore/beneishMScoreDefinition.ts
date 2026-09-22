@@ -31,5 +31,5 @@ export const beneishMScoreDefinition: MetricDefinitionSpec = {
     'netCashFromOperatingActivities',
     'liabilities',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };
