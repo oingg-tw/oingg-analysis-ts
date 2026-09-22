@@ -7,10 +7,10 @@ import { createPitReplay } from '../../../fakes/pit/replayHarness';
 
 const replay = createPitReplay('suePit');
 
-// 2026-09-21 SUE 換成顧廣平（2011）定義（見 computeSue.ts）——用同一份 cassette 的損益表獨立重算
-// (E_t − E_{t−4} − μ) / σ，μ、σ 取前 8 季盈餘變動值的平均數與樣本標準差，斷言 compute 的契約：
-// 13 季窗口、漂移項、樣本標準差（ddof=1）、四捨五入 2 位、formulaVersion 2。不釘死 2330 的數字。
-test('suePit: 2330 115Q2 = (本季變動 − 前 8 季變動平均) / 前 8 季變動樣本標準差，formulaVersion 2', async () => {
+// 2026-09-22 SUE 換成 Chan, Jegadeesh & Lakonishok（1996）定義（見 computeSue.ts）——用同一份 cassette 的損益表
+// 獨立重算 (E_t − E_{t−4}) / σ，σ 取前 8 季盈餘變動值的樣本標準差，斷言 compute 的契約：13 季窗口、無漂移項、
+// 樣本標準差（ddof=1）、四捨五入 2 位、formulaVersion 3。不釘死 2330 的數字。
+test('suePit: 2330 115Q2 = 本季變動 / 前 8 季變動樣本標準差，formulaVersion 3', async () => {
   const outcome = await replay.run(computeSue)({ symbol: '2330', year: '115', season: '2', dataType: '2', subsidiaryCompanyId: '' });
   assert.equal(outcome.q.action, 'inserted');
 
@@ -27,7 +27,7 @@ test('suePit: 2330 115Q2 = (本季變動 − 前 8 季變動平均) / 前 8 季�
   const window = [1, 2, 3, 4, 5, 6, 7, 8].map(change);
   const mu = window.reduce((s, v) => s + v, 0) / 8;
   const sigma = Math.sqrt(window.reduce((s, v) => s + (v - mu) ** 2, 0) / 7);
-  const expected = Math.round(((change(0) - mu) / sigma) * 100) / 100;
+  const expected = Math.round((change(0) / sigma) * 100) / 100;
 
   assert.equal(row!.value, expected);
 });

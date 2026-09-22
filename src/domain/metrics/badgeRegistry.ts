@@ -9,8 +9,6 @@ import { novyMarxGpToAssetsBadge } from './profitability/novyMarxGpToAssets/novy
 import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYieldBadge';
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
-import { netIncomeGrowthRateBadge } from './growth/netIncomeGrowthRate/netIncomeGrowthRateBadge';
-import { earningsToRecordHighBadge } from './growth/earningsToRecordHigh/earningsToRecordHighBadge';
 import { sueBadge } from './growth/sue/sueBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
@@ -196,6 +194,15 @@ import { psrBadge } from './valuation/psr/psrBadge';
 //   後消失）、Tobin's q 四分位（國科會報告非期刊）、consecutiveDividendYears ≥ 10（在職碩論＋資料深度不夠）、
 //   equityRatio 後 10% 排除（0056 規則，95% 公司都過）。研究員抽出的全文在當次 session scratchpad，不進版控。
 //
+// 2026-09-22：成長動能三支顧廣平徽章調整——使用者認為同一位學者佔三支太刻意，要求換成國外學者的對應研究：
+//   - sueBadge 換出處：顧廣平（2011）三分位 → Chan, Jegadeesh & Lakonishok（1996, JF）十分位（前 10%），sue 指標
+//     公式同步拿掉漂移項對齊 CJL（formulaVersion 3，13 季需求不變）；Novy-Marx 2015 用同一定義，兩篇全文皆已逐字核對。
+//     顧 2011 降為 note 裡的台灣採用實例。
+//   - netIncomeGrowthRateBadge（盈餘動能前 20%）下架：國外文獻一律用 SUE 表達盈餘動能，查無用「單季淨利年增率」
+//     做排序的國外研究；SUE 徽章已涵蓋同一個訊號。指標本身保留。
+//   - earningsToRecordHighBadge（盈餘創新高前 20%）下架：「盈餘對歷史最高單季盈餘比率」是顧廣平本人首創，查無國外
+//     對應（George & Hwang 2004 的 52 週高點是價格不是盈餘）。指標 earningsToRecordHigh 本身保留。
+//
 // 2026-09-22：bankCarRatio / bankTier1Ratio / bankCet1Ratio 三支 Basel III 最低線徽章（≥ 8 / 6 / 4.5%）下架。
 // 不是出處問題（BCBS 官方文件），是沒有鑑別力：查了 2026Q2 全部 8 家有值的純銀行股（含 mops 誤貼到 1409 的
 // 瑞興銀合併報表），CAR 最低 13.49%、Tier 1 最低 10.67%、CET1 最低 9.05%，連台灣金管會含留存緩衝的
@@ -236,8 +243,6 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   shareholderYield: shareholderYieldBadge,
   accrualsRatio: accrualsRatioBadge,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
-  netIncomeGrowthRate: netIncomeGrowthRateBadge,
-  earningsToRecordHigh: earningsToRecordHighBadge,
   sue: sueBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
