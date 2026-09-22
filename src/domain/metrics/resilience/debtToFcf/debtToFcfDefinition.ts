@@ -6,7 +6,7 @@ export const debtToFcfDefinition: MetricDefinitionSpec = {
   metricCode: 'debtToFcf',
   name: '負債對自由現金流比',
   unit: '倍',
-  formulaNote: '= 付息負債（短期借款+應付公司債+長期借款） ÷ 近四季自由現金流（OCF-資本支出）加總，衡量現有付息負債要用多少年的自由現金流償還。',
+  formulaNote: '= 付息負債（短期借款+應付公司債+長期借款） ÷ 近四季自由現金流（OCF-資本支出）加總，衡量現有付息負債要用多少年的自由現金流償還。自由現金流 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；負的「償還年數」無意義）。',
   formulaLatex: '\\mathrm{Debt/FCF} = \\dfrac{\\mathrm{Debt}}{\\mathrm{FCF}_{\\mathrm{TTM}}}',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）'],

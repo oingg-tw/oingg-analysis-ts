@@ -170,13 +170,16 @@ export const computeCashFlowValuationFamily = async (
   const evToOcfValue = enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, ocfTtmSum) : null;
   const evToSalesValue = enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, revenueTtmSum) : null;
   const priceToOcfValue = marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, ocfTtmSum) : null;
-  const debtToFcfValue = totalDebt !== null ? toRatioFromThousands(totalDebt, fcfTtmSum) : null;
-  const capexToOcfRatioValue = toPctFromThousands(capexTtmSum < 0n ? -capexTtmSum : capexTtmSum, ocfTtmSum);
+  // 2026-09-22 公式稽核：debtToFcf（幾年還完）、capexToOcfRatio（OCF 有幾成拿去投資）、fcfConversionRate（獲利幾成變現金）
+  // 在分母 ≤ 0 時符號翻轉、數值爆掉（全市場 p95 曾到 486%、max 96961%），一律 zero_or_negative_denominator（v1 只擋 = 0）。
+  // 估值倍數（evToOcf/priceToOcf/evToSales）維持跟 peRatio 一樣的慣例：為負仍照算不隱藏。
+  const debtToFcfValue = totalDebt !== null && fcfTtmSum > 0n ? toRatioFromThousands(totalDebt, fcfTtmSum) : null;
+  const capexToOcfRatioValue = ocfTtmSum > 0n ? toPctFromThousands(capexTtmSum < 0n ? -capexTtmSum : capexTtmSum, ocfTtmSum) : null;
   // 2026-09-22 公式稽核抓到：croic 的 unit 是 %，但原本用 toRatioFromThousands（沒乘 100），全市場中位數 0.11 = 實際 11%。
   // 改 toPctFromThousands，formulaVersion 2，全市場重算。
   const croicValue = investedCapital !== null ? toPctFromThousands(fcfTtmSum, investedCapital) : null;
   const ocfMarginValue = toPctFromThousands(ocfTtmSum, revenueTtmSum);
-  const fcfConversionRateValue = toPctFromThousands(fcfTtmSum, netIncomeTtmSum);
+  const fcfConversionRateValue = netIncomeTtmSum > 0n ? toPctFromThousands(fcfTtmSum, netIncomeTtmSum) : null;
 
   const nullReasonFor = (value: number | null, ...inputsAvailable: boolean[]): MetricNullReason | null => {
     if (value !== null) return null;

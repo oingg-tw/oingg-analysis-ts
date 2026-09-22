@@ -6,7 +6,7 @@ export const capexToOcfRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'capexToOcfRatio',
   name: '資本支出占營業現金流比',
   unit: '%',
-  formulaNote: '= 近四季資本支出（絕對值）加總 ÷ 近四季營業活動現金流量加總，衡量營業現金流有多少比例被拿去做資本支出。',
+  formulaNote: '= 近四季資本支出（絕對值）加總 ÷ 近四季營業活動現金流量加總，衡量營業現金流有多少比例被拿去做資本支出。營業現金流 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起）。',
   formulaLatex: '\\mathrm{Capex/OCF} = \\dfrac{|\\mathrm{Capex}_{\\mathrm{TTM}}|}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）'],

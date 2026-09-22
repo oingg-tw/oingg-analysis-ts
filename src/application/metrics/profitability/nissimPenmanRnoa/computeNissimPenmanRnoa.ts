@@ -27,7 +27,8 @@ interface IncomeStatementSlice {
 
 const calculateEffectiveTaxRate = (record: IncomeStatementSlice | null): number | null => {
   if (!record || record.profitBeforeTax === null || record.incomeTaxExpense === null || record.profitBeforeTax <= 0n) return null;
-  return Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
+  // 2026-09-22 公式稽核：夾在 [0, 1]，理由同 roic 的 computeNopat。
+  return Math.min(1, Math.max(0, Number(record.incomeTaxExpense) / Number(record.profitBeforeTax)));
 };
 
 const calculateNopat = (record: IncomeStatementSlice | null): bigint | null => {

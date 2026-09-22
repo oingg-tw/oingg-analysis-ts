@@ -145,6 +145,20 @@ export const resolveBeneishMScoreInputs = async (
     fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId, deps),
   ]);
 
+  // 2026-09-22 formulaVersion 2（公式稽核）：TATA 改用近四季加總的 (淨利 − 營業現金流) / 本季期末總資產。Beneish (1999)
+  // 是年度模型，係數 4.037 對應的是「一年的應計項目佔總資產比」；v1 用單季分子只有年度尺度的約 1/4，M-Score 系統性偏低。
+  // 其餘 7 個變數都是「本期比率 ÷ 去年同期比率」的指數，尺度會互相抵消，維持單季 vs 去年同季。
+  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  const ttmRecords = await Promise.all(
+    ttmQuarters.map(async (tq) => {
+      const k = { symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId };
+      const [income, cashFlow] = await Promise.all([deps.statements.getIncomeStatement(k), deps.statements.getCashFlowStatement(k)]);
+      return { netIncome: pickNetIncome(income).value, operatingCashFlow: cashFlow?.netCashFromOperatingActivities ?? null };
+    })
+  );
+  const ttmAccrualsComplete = ttmRecords.every((r) => r.netIncome !== null && r.operatingCashFlow !== null);
+  const accrualsTtm = ttmAccrualsComplete ? ttmRecords.reduce((sum, r) => sum + (r.netIncome! - r.operatingCashFlow!), 0n) : null;
+
   const currArRatio = ratio(curr.accountsReceivable, curr.operatingRevenue);
   const prevArRatio = ratio(prev.accountsReceivable, prev.operatingRevenue);
   const currGrossMargin = ratio(curr.grossProfit, curr.operatingRevenue);
@@ -164,7 +178,7 @@ export const resolveBeneishMScoreInputs = async (
   const sgi = ratio(curr.operatingRevenue, prev.operatingRevenue);
   const depi = divide(prevDepRate, currDepRate);
   const sgai = divide(currSgaRatio, prevSgaRatio);
-  const tata = curr.netIncome !== null && curr.operatingCashFlow !== null ? ratio(curr.netIncome - curr.operatingCashFlow, curr.totalAssets) : null;
+  const tata = accrualsTtm !== null ? ratio(accrualsTtm, curr.totalAssets) : null;
   const lvgi = divide(currLeverage, prevLeverage);
 
   const variables = [dsri, gmi, aqi, sgi, depi, sgai, tata, lvgi];
@@ -217,6 +231,8 @@ const resolveVariableNullReason = (value: number | null, resolution: BeneishMSco
 
 export type BeneishMScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
 
+export const BENEISH_M_SCORE_FORMULA_VERSION = 2; // TATA 改 TTM，見 resolveBeneishMScoreInputs 內的說明。
+
 export type BeneishMScoreComputationBatch = ComputationBatch<'q'>;
 
 export const computeBeneishMScore = async (
@@ -248,6 +264,7 @@ export const computeBeneishMScore = async (
       nullReason,
       knowledgeDate: mainAnchor.knowledgeDate,
       knowledgeDateIsFallback: mainAnchor.isFallback,
+      formulaVersion: BENEISH_M_SCORE_FORMULA_VERSION,
     });
   }
 

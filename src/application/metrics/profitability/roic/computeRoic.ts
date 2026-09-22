@@ -21,7 +21,9 @@ const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bi
   if (!record || record.profitBeforeTax === null || record.financeCosts === null || record.incomeTaxExpense === null) return null;
   if (record.profitBeforeTax <= 0n) return null;
   const ebit = record.profitBeforeTax + record.financeCosts;
-  const effectiveTaxRate = Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
+  // 2026-09-22 公式稽核：有效稅率夾在 [0, 1]——所得稅費用為負（遞延稅資產迴轉）或超過稅前淨利時，原式會讓 NOPAT 大於
+  // EBIT 或變負，不是模型要表達的「稅後」概念。
+  const effectiveTaxRate = Math.min(1, Math.max(0, Number(record.incomeTaxExpense) / Number(record.profitBeforeTax)));
   return BigInt(Math.round(Number(ebit) * (1 - effectiveTaxRate)));
 };
 

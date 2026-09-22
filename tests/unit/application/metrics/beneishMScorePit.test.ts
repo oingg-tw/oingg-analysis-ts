@@ -17,7 +17,8 @@ test(
     const q = await replay.findLatest({ symbol: '2330', metricCode: 'beneishMScore', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' });
 
     assert.ok(q, 'basis=Q 應該有寫入 metric_values');
-    assert.equal(Number(q!.value), -1.4827);
+    assert.equal(Number(q!.value), -1.6208); // 2026-09-22 TATA 改 TTM（舊單季版 -1.4827）
+    assert.equal(q!.formulaVersion, 2);
     assert.equal(q!.nullReason, null);
   },
   20000

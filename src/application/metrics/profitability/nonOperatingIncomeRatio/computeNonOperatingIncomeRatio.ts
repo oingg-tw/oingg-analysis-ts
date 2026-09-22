@@ -38,7 +38,9 @@ export const computeNonOperatingIncomeRatio = async (query: QuarterlyMetricQuery
   const operatingIncome = incomeStatement?.operatingIncome ?? null;
   const nonOperatingIncome = profitBeforeTax !== null && operatingIncome !== null ? profitBeforeTax - operatingIncome : null;
 
-  const ratio = nonOperatingIncome !== null && profitBeforeTax !== null ? toPercent(nonOperatingIncome, profitBeforeTax) : null;
+  // 2026-09-22 公式稽核：稅前淨利 ≤ 0 時比率符號會翻轉（稅前虧損、業外正貢獻 → 算出負的「業外依賴度」），沒有意義，
+  // 一律 zero_or_negative_denominator（v1 只擋 = 0）。
+  const ratio = nonOperatingIncome !== null && profitBeforeTax !== null && profitBeforeTax > 0n ? toPercent(nonOperatingIncome, profitBeforeTax) : null;
   const nullReason: MetricNullReason | null = ratio !== null ? null : nonOperatingIncome === null || profitBeforeTax === null ? 'missing_input' : 'zero_or_negative_denominator';
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
