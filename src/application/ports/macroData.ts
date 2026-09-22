@@ -74,6 +74,20 @@ export interface MonetaryAggregateMonth {
   m2YoyPercent: number | null;
 }
 
+// 2026-09-22 gov-ts export.monthly_stock_market_summary（CBC EG27M01en，1987-05 起）：web-nuxt 大事件年表頁要把大盤推到
+// 1987（35 年回看視窗），avg_taiex 是加權指數**月平均**（證交所編製、1966 年平均=100，跟日收盤是同一套指數的不同取樣）。
+export interface StockMarketSummaryMonth {
+  year: number;
+  month: number;
+  listedCompanies: number | null;
+  totalParValue: number | null; // 百萬新台幣
+  totalMarketValue: number | null;
+  totalTradingValue: number | null;
+  avgDailyTradingValue: number | null; // 1987–88 為 null
+  avgTaiex: number | null; // 加權指數月平均
+  avgTaiexYoyPercent: number | null;
+}
+
 export interface UsdTwdRateDay {
   tradeDate: Date;
   bankBuyingRate: number | null; // 元/美元
@@ -100,6 +114,7 @@ export type UsdTwdInterval = 'daily' | 'weekly' | 'monthly';
 export interface MacroSeriesPort {
   listBusinessCycleIndicatorsAsc(): Promise<BusinessCycleMonth[]>;
   listMonetaryAggregatesAsc(): Promise<MonetaryAggregateMonth[]>;
+  listStockMarketSummariesAsc(): Promise<StockMarketSummaryMonth[]>;
   // 由新到舊取 limit 筆；weekly/monthly 是每區間最後一個有資料的日子（跟 TaiexIndexPort 同一種語意）。
   listLatestUsdTwdRates(limit: number, interval: UsdTwdInterval): Promise<UsdTwdRateDay[]>;
   listCpiAsc(category: string): Promise<CpiMonth[]>;

@@ -35,6 +35,19 @@ export const monetaryAggregateEntrySchema = z.object({
 export const monetaryAggregateResultSchema = z.object({ entries: z.array(monetaryAggregateEntrySchema).meta(entriesMeta) });
 export type MonetaryAggregateResult = z.infer<typeof monetaryAggregateResultSchema>;
 
+export const stockMarketSummaryEntrySchema = z.object({
+  ...monthPeriod,
+  listedCompanies: z.number().nullable().meta({ description: '上市公司家數' }),
+  totalParValue: z.number().nullable().meta({ description: '上市股票面值總額，百萬新台幣' }),
+  totalMarketValue: z.number().nullable().meta({ description: '上市股票市值總額，百萬新台幣' }),
+  totalTradingValue: z.number().nullable().meta({ description: '當月成交值，百萬新台幣' }),
+  avgDailyTradingValue: z.number().nullable().meta({ description: '日平均成交值，百萬新台幣（1987–88 為 null）' }),
+  avgTaiex: z.number().nullable().meta({ description: '發行量加權股價指數當月平均（證交所編製、1966 年平均=100）——是月平均不是月底收盤，不要跟 /market/taiex-daily-price 的收盤序列接成同一條線' }),
+  avgTaiexYoyPercent: z.number().nullable().meta({ description: '加權指數月平均年增率 %' }),
+});
+export const stockMarketSummaryResultSchema = z.object({ entries: z.array(stockMarketSummaryEntrySchema).meta(entriesMeta) });
+export type StockMarketSummaryResult = z.infer<typeof stockMarketSummaryResultSchema>;
+
 export const govBondYield10yHistoryEntrySchema = z.object({
   ...monthPeriod,
   yieldPct: z.number().nullable().meta({ description: '百分比，例如 1.9 代表 1.9%' }),

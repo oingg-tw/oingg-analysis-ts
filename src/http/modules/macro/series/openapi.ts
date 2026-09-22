@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { businessCycleResultSchema, cpiResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
+import { businessCycleResultSchema, cpiResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, stockMarketSummaryResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
 import { cpiQuerySchema, gdpQuerySchema, monthlySeriesQuerySchema, usdTwdRateQuerySchema } from './schemas';
 
 const SOURCE_NOTE = '資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。';
@@ -22,6 +22,15 @@ export const registerMacroSeriesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['Macro'],
     request: { query: monthlySeriesQuerySchema },
     responses: { 200: { description: '由舊到新。', content: { 'application/json': { schema: monetaryAggregateResultSchema } } } },
+  });
+  registry.registerPath({
+    method: 'get',
+    path: '/macro/stock-market-summary',
+    summary: '集中市場月摘要：上市家數／市值／成交值／加權指數月平均（月）',
+    description: `央行統計的集中市場月資料，1987-05 起（比 /market/taiex-daily-price 的 1999 年月線再往前 12 年）。avgTaiex 是加權指數的**當月平均**，不是月底收盤：同一套證交所指數（1966 年平均=100）但取樣不同，畫圖要整條線用同一種取樣、並標明是月平均。金額欄位皆為百萬新台幣。${SOURCE_NOTE}`,
+    tags: ['Macro'],
+    request: { query: monthlySeriesQuerySchema },
+    responses: { 200: { description: '由舊到新。', content: { 'application/json': { schema: stockMarketSummaryResultSchema } } } },
   });
   registry.registerPath({
     method: 'get',

@@ -1,0 +1,19 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "avgDailyTradingValue": "<number>",
+        "avgTaiex": "<number>",
+        "avgTaiexYoyPercent": "<number>",
+        "listedCompanies": "<number>",
+        "month": "<number>",
+        "period": "<string>",
+        "totalMarketValue": "<number>",
+        "totalParValue": "<number>",
+        "totalTradingValue": "<number>",
+        "year": "<number>"
+      }
+    ]
+  }
+}

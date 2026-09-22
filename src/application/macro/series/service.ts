@@ -1,7 +1,7 @@
 import type { AppDeps } from '@/application/deps';
 import type { UsdTwdInterval } from '@/application/ports/macroData';
 import { toMonthPeriod, toQuarterPeriod } from './period';
-import type { BusinessCycleResult, CpiResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, UsdTwdRateResult } from './types';
+import type { BusinessCycleResult, CpiResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, StockMarketSummaryResult, UsdTwdRateResult } from './types';
 
 // 2026-09-22 web-nuxt「總經特區」：側邊欄放各總經指標跟大盤對照。六支都是 gov-ts export view 的純轉發
 // （bff 沒有 DB 直連，只有這條路；使用者拍板整批做），唯一的加工是把 (year, month)/(year, quarter) 組成
@@ -19,6 +19,12 @@ export const getBusinessCycleIndicators = async (query: { from?: string }, deps:
 
 export const getMonetaryAggregates = async (query: { from?: string }, deps: MacroSeriesDeps): Promise<MonetaryAggregateResult> => {
   const rows = await deps.macroSeries.listMonetaryAggregatesAsc();
+  return { entries: fromFilter(rows.map((r) => ({ period: toMonthPeriod(r.year, r.month), ...r })), query.from) };
+};
+
+// 2026-09-22 web-nuxt 大事件年表頁正式提需求：大盤月平均推到 1987-05 才填得滿 35 年回看視窗（twse 月線只到 1999）。
+export const getStockMarketSummaries = async (query: { from?: string }, deps: MacroSeriesDeps): Promise<StockMarketSummaryResult> => {
+  const rows = await deps.macroSeries.listStockMarketSummariesAsc();
   return { entries: fromFilter(rows.map((r) => ({ period: toMonthPeriod(r.year, r.month), ...r })), query.from) };
 };
 

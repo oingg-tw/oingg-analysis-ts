@@ -45,6 +45,23 @@ export const govMacroSeries: MacroSeriesPort = {
       m2YoyPercent: num(r.m2_yoy_percent),
     })),
 
+  listStockMarketSummariesAsc: async () =>
+    (
+      await govExportPrisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT year, month, listed_companies, total_par_value, total_market_value, total_trading_value, avg_daily_trading_value, avg_taiex, avg_taiex_yoy_percent
+        FROM "export"."monthly_stock_market_summary" ORDER BY year ASC, month ASC`
+    ).map((r) => ({
+      year: Number(r.year),
+      month: Number(r.month),
+      listedCompanies: num(r.listed_companies),
+      totalParValue: num(r.total_par_value),
+      totalMarketValue: num(r.total_market_value),
+      totalTradingValue: num(r.total_trading_value),
+      avgDailyTradingValue: num(r.avg_daily_trading_value),
+      avgTaiex: num(r.avg_taiex),
+      avgTaiexYoyPercent: num(r.avg_taiex_yoy_percent),
+    })),
+
   // 跟 twse/taiexIndex.ts 的 listLatestTaiexDailyPrices 同一招：weekly/monthly 用 DISTINCT ON date_trunc 取區間最後一天。
   listLatestUsdTwdRates: async (limit, interval) => {
     const rows =
