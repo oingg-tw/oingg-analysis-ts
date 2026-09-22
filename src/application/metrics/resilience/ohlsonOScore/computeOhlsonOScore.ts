@@ -29,7 +29,19 @@ const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; 
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
 
-export type OhlsonOScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
+export type OhlsonOScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'priceLevel'>;
+
+// 2026-09-22 formulaVersion 2（公式稽核第 ③ 項，使用者拍板照原文換算）：SIZE = log(總資產 ÷ GNP 物價指數)，Ohlson (1980)
+// 原文「Total assets are as reported in dollars」、「The index assumes a base value of 100 for 1968」。單位判讀用 Ohlson 自己的
+// 最適切點反推：他的樣本最適機率切點 0.038 ↔ O ≈ −3.2，健康公司要落在 −5 附近，只有「美元（不是千元）÷ 1968=100 的指數」
+// 這種讀法會讓 1970 年代一家 1 億美元的公司 SIZE ≈ 13、O ≈ −5；改成千元或指數不乘 100 都會差 ln(1000) 或 ln(100)。
+// v1 直接 ln(新台幣千元)：對 2330 是 22.7，換算後 19.6，Δ −3.1 × −0.407 → O 系統性低約 1.3（小公司差更多），全市場
+// 看起來都比實際安全（2026Q2 中位數 −5.8）。換算：SIZE = ln( TA_千元新台幣 × 1000 ÷ 匯率 ÷ (GNPDEF_q ÷ GNPDEF_1968 × 100) )，
+// 匯率取季末當天或之前最近一筆銀行間收盤價（序列落後約一個月），GNPDEF 取該季 FRED 原值（2017=100，1968 四季平均 18.243）。
+// 查無匯率或指數 → missing_input。資料來源見 application/ports/priceLevel.ts。
+export const OHLSON_O_SCORE_FORMULA_VERSION = 2;
+const quarterEndDate = (rocYear: number, quarter: number): Date => new Date(Date.UTC(rocYearToGregorian(rocYear), quarter * 3, 0));
+
 
 export type OhlsonOScoreComputationBatch = ComputationBatch<'ttm'>;
 
@@ -82,7 +94,14 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
     operatingCashFlowTtm += record.netCashFromOperatingActivities;
   }
 
-  const size = totalAssets !== null && totalAssets > 0n ? round4(Math.log(Number(totalAssets))) : null;
+  const [usdTwd, deflator, deflatorBase] = await Promise.all([
+    deps.priceLevel.getUsdTwdRateAsOf(quarterEndDate(rocYear, seasonNum)),
+    deps.priceLevel.getUsGnpDeflator(fiscalYear, seasonNum),
+    deps.priceLevel.getUsGnpDeflatorBase1968(),
+  ]);
+  const priceLevelAvailable = usdTwd !== null && usdTwd > 0 && deflator !== null && deflator > 0 && deflatorBase !== null && deflatorBase > 0;
+  const size =
+    totalAssets !== null && totalAssets > 0n && priceLevelAvailable ? round4(Math.log((Number(totalAssets) * 1000) / usdTwd / ((deflator / deflatorBase) * 100))) : null;
   const tlta = totalAssets !== null && totalLiabilities !== null && totalAssets !== 0n ? round4(Number(totalLiabilities) / Number(totalAssets)) : null;
   const wcta =
     totalAssets !== null && currentAssets !== null && currentLiabilities !== null && totalAssets !== 0n
@@ -109,7 +128,7 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
   let nullReason: MetricNullReason | null = null;
   if (oScore === null) {
     if (!ttmComplete) nullReason = 'insufficient_history';
-    else if (totalAssets === null || totalLiabilities === null || currentAssets === null || currentLiabilities === null) nullReason = 'missing_input';
+    else if (totalAssets === null || totalLiabilities === null || currentAssets === null || currentLiabilities === null || !priceLevelAvailable) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
 
@@ -138,6 +157,7 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
         nullReason,
         knowledgeDate: ttmAnchor.knowledgeDate,
         knowledgeDateIsFallback: ttmAnchor.isFallback,
+        formulaVersion: OHLSON_O_SCORE_FORMULA_VERSION,
       });
     }
   } else {
@@ -154,6 +174,7 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
         nullReason,
         knowledgeDate: mainAnchor.knowledgeDate,
         knowledgeDateIsFallback: mainAnchor.isFallback,
+        formulaVersion: OHLSON_O_SCORE_FORMULA_VERSION,
       });
     }
   }

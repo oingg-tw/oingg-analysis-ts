@@ -16,7 +16,7 @@ import { createInMemoryMetricValues, type InMemoryMetricValues } from './inMemor
 // JSON 編碼：Date / bigint / Map / Set / Decimal（Prisma 的 Decimal 物件）/ undefined 都有各自的標記，
 // 回放時還原成同型別（Decimal 還原成字串——呼叫端一律用 Number() 轉，跟 Decimal 物件的 valueOf 行為一致）。
 
-export const RECORDED_PORTS = ['statements', 'quarters', 'announcements', 'shares', 'market', 'xbrlAccounts', 'industry', 'dividendEvents'] as const;
+export const RECORDED_PORTS = ['statements', 'quarters', 'announcements', 'shares', 'market', 'xbrlAccounts', 'industry', 'dividendEvents', 'priceLevel'] as const;
 export type RecordedPort = (typeof RECORDED_PORTS)[number];
 
 export interface Cassette {
@@ -64,7 +64,7 @@ export const decodeValue = (value: unknown): unknown => {
 // 呼叫的識別鍵：port.method(參數 JSON)——參數先經過同一套編碼（Date 之類才會穩定），物件 key 已排序。
 export const callKey = (port: string, method: string, args: unknown[]): string => `${port}.${method}(${JSON.stringify(encodeValue(args))})`;
 
-// 回放：八個資料 port 全部從 cassette 查表，metricValues 記憶體版、definitions 真實 registry。
+// 回放：九個資料 port（2026-09-22 加 priceLevel） 全部從 cassette 查表，metricValues 記憶體版、definitions 真實 registry。
 export const createReplayPitDeps = (cassette: Cassette, overrides: Partial<PitDeps> = {}): PitDeps & { metricValues: InMemoryMetricValues } => {
   const replayPort = <T extends object>(port: RecordedPort): T =>
     new Proxy({} as T, {
@@ -90,13 +90,14 @@ export const createReplayPitDeps = (cassette: Cassette, overrides: Partial<PitDe
     xbrlAccounts: replayPort('xbrlAccounts'),
     industry: replayPort('industry'),
     dividendEvents: replayPort('dividendEvents'),
+    priceLevel: replayPort('priceLevel'),
     definitions: { get: (metricCode) => metricDefinitionRegistry[metricCode] },
     ...overrides,
     metricValues,
   };
 };
 
-// 錄製：把真實 deps 的八個資料 port 包一層，每次呼叫都把結果寫進 entries；metricValues 換成記憶體版
+// 錄製：把真實 deps 的九個資料 port（2026-09-22 加 priceLevel） 包一層，每次呼叫都把結果寫進 entries；metricValues 換成記憶體版
 // （錄製過程不寫 DB，也不需要 DB 裡既有的列）。回傳的 ports 用 Object.assign 蓋回真實的 pitDeps 物件上，
 // bootstrap/pitMetrics.ts 綁好的 computeAndWriteXxxPit 就會走錄製版（它們拿的是同一個物件參照）。
 export const createRecordingPorts = (real: PitDeps): { ports: Partial<PitDeps>; entries: Record<string, unknown> } => {

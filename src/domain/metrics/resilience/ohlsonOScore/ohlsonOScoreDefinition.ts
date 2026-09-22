@@ -5,7 +5,7 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
   name: 'Ohlson O-Score 危機預警分數',
   unit: '分',
   formulaNote:
-    '9 變量 Logit 模型：SIZE=ln(總資產)、TLTA=總負債/總資產、WCTA=(流動資產-流動負債)/總資產、' +
+    '9 變量 Logit 模型：SIZE=ln(總資產 ÷ GNP 物價指數)——總資產以美元計（新台幣千元 × 1000 ÷ 季末美元匯率，照原文 as reported in dollars）、指數為 FRED GNPDEF 換成 1968 年 = 100 的基期（2026-09-22 formulaVersion 2；v1 直接 ln 新台幣千元，O 值系統性低約 2）、TLTA=總負債/總資產、WCTA=(流動資產-流動負債)/總資產、' +
     'CLCA=流動負債/流動資產、OENEG=總負債>總資產?1:0、NITA=淨利(TTM)/總資產、' +
     'FUTL=營運現金流(TTM)/總負債、INTWO=今年及去年TTM淨利皆為負?1:0、' +
     'CHIN=(今年TTM淨利-去年TTM淨利)/(|今年|+|去年|)。INTWO/CHIN 需要「今年 TTM vs 去年同季' +
@@ -28,5 +28,5 @@ export const ohlsonOScoreDefinition: MetricDefinitionSpec = {
     'profit_loss',
     'netCashFromOperatingActivities',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

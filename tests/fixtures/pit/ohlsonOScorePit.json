@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-22T05:45:52.729Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",113,3,{\"$date\":\"2024-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -50,6 +50,9 @@
       "source": "announcement"
     },
     "industry.isFinancialIndustryCompany([\"2330\"])": false,
+    "priceLevel.getUsGnpDeflator([2026,2])": 133.758,
+    "priceLevel.getUsGnpDeflatorBase1968([])": 18.24325,
+    "priceLevel.getUsdTwdRateAsOf([{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": 31.837,
     "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"cashFlowStatement\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
@@ -216,6 +219,9 @@
       "operatingCost": {
         "$bigint": "345858588"
       },
+      "operatingExpense": {
+        "$bigint": "85186056"
+      },
       "operatingIncome": {
         "$bigint": "407080808"
       },
@@ -253,6 +259,9 @@
       },
       "operatingCost": {
         "$bigint": "382808019"
+      },
+      "operatingExpense": {
+        "$bigint": "94005657"
       },
       "operatingIncome": {
         "$bigint": "658966142"
@@ -292,6 +301,9 @@
       "operatingCost": {
         "$bigint": "386422631"
       },
+      "operatingExpense": {
+        "$bigint": "84508339"
+      },
       "operatingIncome": {
         "$bigint": "463423638"
       },
@@ -329,6 +341,9 @@
       },
       "operatingCost": {
         "$bigint": "410069555"
+      },
+      "operatingExpense": {
+        "$bigint": "98982083"
       },
       "operatingIncome": {
         "$bigint": "766602651"
@@ -368,6 +383,9 @@
       "operatingCost": {
         "$bigint": "320346477"
       },
+      "operatingExpense": {
+        "$bigint": "79078904"
+      },
       "operatingIncome": {
         "$bigint": "360766289"
       },
@@ -405,6 +423,9 @@
       },
       "operatingCost": {
         "$bigint": "401375489"
+      },
+      "operatingExpense": {
+        "$bigint": "87764445"
       },
       "operatingIncome": {
         "$bigint": "500684818"
@@ -444,6 +465,9 @@
       "operatingCost": {
         "$bigint": "356083027"
       },
+      "operatingExpense": {
+        "$bigint": "86338820"
+      },
       "operatingIncome": {
         "$bigint": "425712913"
       },
@@ -481,6 +505,9 @@
       },
       "operatingCost": {
         "$bigint": "394103585"
+      },
+      "operatingExpense": {
+        "$bigint": "88190790"
       },
       "operatingIncome": {
         "$bigint": "564902413"

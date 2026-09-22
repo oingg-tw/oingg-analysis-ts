@@ -8,6 +8,7 @@ import type { IndustryPort } from '@/application/ports/industry';
 import type { DividendEventsPort } from '@/application/ports/dividendEvents';
 import type { MetricValueRepository } from '@/application/ports/metricValues';
 import type { MetricDefinitionLookup } from '@/application/ports/metricDefinitions';
+import type { PriceLevelPort } from '@/application/ports/priceLevel';
 
 // 2026-09-17 clean architecture 重構 Phase 3：指標核心的依賴集合。每支 computeXxx 的最後一個參數
 // 是 `deps: Pick<PitDeps, ...>`——只挑自己真的用到的 port（跟 2026-09-13 起用交集型別挑
@@ -25,6 +26,7 @@ export interface PitDeps {
   xbrlAccounts: XbrlAccountsPort; // 寬表沒有的 XBRL 原始科目
   industry: IndustryPort; // 產業別 gating
   dividendEvents: DividendEventsPort; // 股利分派事件
+  priceLevel: PriceLevelPort; // 美元匯率＋美國 GNP 平減指數（Ohlson SIZE 換算）
   metricValues: MetricValueRepository; // metric_values / metric_daily_cadence_values 讀寫
   definitions: MetricDefinitionLookup; // 寫入前座標驗證用的 definition 查詢
 }

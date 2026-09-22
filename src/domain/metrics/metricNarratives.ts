@@ -249,7 +249,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   ohlsonOScore: {
     description: 'Ohlson O-Score 是九變數的邏輯迴歸模型（規模、槓桿、營運資金、流動性、獲利能力、現金流、連續虧損、獲利變化），輸出的是企業陷入財務困境的估計機率。',
-    limitations: '用 1970 年代美國工業公司樣本校準，變數之一是總資產的自然對數，對台灣的公司規模分布與幣別沒有重新校準；需要今年與去年的近四季淨利，資料不齊時沒有數值。',
+    limitations: '用 1970 年代美國工業公司樣本校準；規模變數照原文把總資產換算成美元、再用美國 GNP 物價指數平減到 1968 年（匯率與指數來自央行與 FRED），但模型係數本身沒有為台灣重新校準；需要今年與去年的近四季淨利，資料不齊時沒有數值。',
     misreadings: '0.5 是機率模型的標準判別線，不是論文專門為 O-Score 訂的門檻；機率高不代表一定會出事，模型抓的是「跟歷史上出事的公司財務特徵相似的程度」。',
   },
   zmijewskiScore: {
