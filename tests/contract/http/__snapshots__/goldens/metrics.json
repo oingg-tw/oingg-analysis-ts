@@ -30,6 +30,7 @@
             },
             "description": "<string>",
             "formulaLatex": "<string>",
+            "formulaVersion": "<number>",
             "hasProvenance": "<boolean>",
             "limitations": "<string>",
             "metricCode": "beta",

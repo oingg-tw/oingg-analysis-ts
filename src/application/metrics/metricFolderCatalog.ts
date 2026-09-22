@@ -58,6 +58,10 @@ export interface MetricFolderCatalogEntry {
   // （不是空字串），前端要處理「這支指標還沒有公式可顯示」的情況，繼續 fallback 顯示
   // displayName 就好。
   formulaLatex?: string;
+  // 2026-09-22 web-nuxt 要求：公式版本號（= definition.currentFormulaVersion，metric_values.formula_version 寫的就是它）。
+  // 前端用它當「公式語意變了、文案要重讀」的明確訊號——formulaLatex 字串抽象到看不出分母改平均這類改動時，
+  // 版本號是唯一會表態的欄位。
+  formulaVersion: number;
   // 2026-09-10 新增：出處來源，維護者跟前端終端使用者都要能看，都是公開可點的超連結
   // （見 metricDefinitionSpec.ts 的完整說明）。academicSourceUrl 只有真的有單一可指名
   // 論文出處的大師模型/複合指標才填，一般會計比率沒有這個欄位；referenceUrl 是給終端
@@ -126,6 +130,7 @@ export const scanMetricFolderCatalog = (): MetricFolderCatalogCategory[] =>
           unit: definition.unit,
           validTimeframes: validTimeframesForMetric(metricCode),
           formulaLatex: definition.formulaLatex,
+          formulaVersion: definition.currentFormulaVersion,
           academicSourceUrl: definition.academicSourceUrl,
           referenceUrl: definition.referenceUrl,
           tier: definition.tier,

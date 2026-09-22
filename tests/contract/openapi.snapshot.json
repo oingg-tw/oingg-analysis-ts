@@ -6061,6 +6061,10 @@
                                   "description": "2026-09-10 新增：公式的 LaTeX 字串，前後端統一算式顯示用——後端儲存、前端忠實顯示，不要各自維護一份。目前只在少數指標試點，還沒補上的是 undefined（不是空字串），前端請處理「這支指標還沒有公式可顯示」的情況，繼續 fallback 顯示 name 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。",
                                   "type": "string"
                                 },
+                                "formulaVersion": {
+                                  "description": "2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。",
+                                  "type": "integer"
+                                },
                                 "hasProvenance": {
                                   "description": "2026-09-13 新增：這支 metricCode 是否支援 GET /companies/:symbol/metric-provenance（稽核鏈/原始欄位溯源）——目前只有一批試點指標支援，範圍會逐批擴大，前端應該讀這個欄位動態決定要不要顯示「查看稽核鏈」的入口，不要自己另外維護一份 metricCode 清單（那份清單只會跟這裡的擴大進度脫節）。必填，不會是 undefined。",
                                   "type": "boolean"
@@ -6126,6 +6130,7 @@
                                 "name",
                                 "unit",
                                 "validTimeframes",
+                                "formulaVersion",
                                 "tier",
                                 "sources",
                                 "hasProvenance"

@@ -39,6 +39,9 @@ const metricFolderCatalogEntrySchema = z.object({
       '目前只在少數指標試點，還沒補上的是 undefined（不是空字串），前端請處理「這支指標還沒有公式可顯示」的情況，' +
       '繼續 fallback 顯示 name 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
   }),
+  formulaVersion: z.number().int().meta({
+    description: '2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。',
+  }),
   academicSourceUrl: z.string().optional().meta({
     description:
       '2026-09-10 新增：這個公式/模型本身的學術出處連結（作者/年份/論文），只有真的有單一可指名論文出處的' +
