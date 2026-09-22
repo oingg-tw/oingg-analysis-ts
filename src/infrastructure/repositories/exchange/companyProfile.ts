@@ -1,3 +1,4 @@
+import { Prisma } from '#generated/twse-export-client';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
@@ -450,9 +451,14 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
   });
 };
 
+// 2026-09-22 twse-ts 的 company_profile 多了 25 家六碼代號、industry='XX'（證券商）的**未上市公開發行證券商**
+// （000104 臺銀證券、000601 牛牛牛亞…），把公司目錄的前幾筆全變成它們；它們不是上市股票，目錄／計數一律排除。
+// 四碼的證券商（6008 凱基證）跟六碼的 TDR（910322，industry 91）都是真的上市標的，不能只看碼數或只看 XX。
+const UNLISTED_BROKER_FILTER = `NOT (industry = 'XX' AND length(symbol) > 4)`;
+
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(UNLISTED_BROKER_FILTER)}`,
     tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
   ]);
   const all = dedupeBySymbol([
@@ -464,7 +470,7 @@ export const listAllCompanyNames = async (limit: number, offset: number): Promis
 
 export const countAllCompanyNames = async (): Promise<number> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(UNLISTED_BROKER_FILTER)}`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
