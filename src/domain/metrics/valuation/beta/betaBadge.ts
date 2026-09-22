@@ -11,8 +11,18 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 為什麼掛 BBW 不掛 Frazzini & Pedersen (2014)：FP 的 beta 是「1 年日資料估波動 × 5 年 3 日重疊報酬估相關」再向 1
 // 收縮，本站沒有等價窗口；BBW 用 60 個月月報酬跑迴歸，跟本站 beta 的 5Y×1M 窗口（對齊 Morningstar 5 年月頻）完全
 // 對得上，所以 timeframe 固定 5Y_1M，不用新算變體。FP 也證實同方向（低 beta 組 alpha 高，美國十分位 alpha 單調遞減）。
-// 台灣本土證據（2026-09-22 查證時）是混合的：杜宣霈（2020，交大碩論）摘要稱台股存在低 beta 異象；PBFJ 2025 一篇台灣
-// 論文發現 beta 與報酬「隔夜正、日內負」；亞洲 BAB 複製（2022）不含台灣。使用者知情後拍板做，文案不寫台灣。
+// 台灣本土證據（2026-09-22 使用者提供三篇學位論文全文，已逐篇讀過）是「原始報酬不一定、風險調整後偏支持」——
+// 跟 BBW 的主張（Sharpe／alpha，不是原始報酬）是同一個口徑：
+//   (1) 李安倫（2025，臺北大企管博論〈臺灣股市證券市場線負斜率之決定因素〉）：TEJ 2001–2023 上市 1,802 家，beta 用
+//       Frazzini-Pedersen 原版估法；Fama-MacBeth SML 斜率 −0.68～−0.90 但 t 值全不顯著；BAB 實證（表 4-10，2006–2023
+//       年化）低 beta 組 11.00%／Sharpe 0.118、高 beta 組 1.88%／0.021、BAB 9.12%／0.237、大盤超額 4.26%／0.067 → 支持。
+//   (2) 羅彩秀（2024，雲科大碩論）：XQ 回測 2011/5–2024/5 上市櫃、一年換股兩次、用 Calmar 評比不做檢定；beta 最低 25% 的
+//       Calmar 0.52（年化 12.5%、MDD −24%）高於 0050 的 0.34，但**最低 5% 那一層 Calmar 只有 0.20、是全部分段裡最差**
+//       （近零 beta 多半是冷門股）→ 偏支持；「最低 20%」會吃到這層爛尾，之後若要收緊成「排除近零 beta」再回來討論。
+//   (3) 呂倢妤（2023，嘉大碩論）：1993–2022 上市 899 家、60 個月滾動 OLS beta 切十分位（＝本站 5Y_1M／BBW 做法）；
+//       P1 月超額報酬 0.90% < P10 1.44%（原始報酬反對），Sharpe P1 0.093 > P10 0.083、Treynor 2.55 vs 0.77（風險調整
+//       後微弱支持），CAPM alpha 高 beta 組較高、Carhart alpha 低 beta 組較高；樣本外低減高五分位月 −0.13% 不顯著。
+// 更早的四篇（樣本止於 2011 年前）為負面。結論：徽章可以站，但文案只寫「風險調整後報酬」、不寫台灣有原始報酬優勢。
 export const betaBadge: MetricBadge = {
   name: 'Beta 最低五分位',
   nameEn: 'Low-Beta Bottom Quintile',
@@ -29,7 +39,7 @@ export const betaBadge: MetricBadge = {
   threshold: {
     description: '最低 20%',
     thresholdLatex: '\\mathrm{Beta_{5Y,1M}\\ Percentile} \\geq 80',
-    note: 'Baker, Bradley & Wurgler (2011) 用全市場五等分（quintile）排序、beta 以最多 60 個月的月報酬估計，最低一組即最低 20%。direction 用 asc（Beta 越小排名越前面）；排名母體只含當日有 5Y_1M 值的公司（2026-09 約 960 家，beta 逐日回填尚未涵蓋全市場）。',
+    note: 'Baker, Bradley & Wurgler (2011) 用全市場五等分（quintile）排序、beta 以最多 60 個月的月報酬估計，最低一組即最低 20%。direction 用 asc（Beta 越小排名越前面）；排名母體只含當日有 5Y_1M 值的公司（2026-09 約 960 家，beta 逐日回填尚未涵蓋全市場）。台灣採用實例：李安倫（2025，臺北大博士論文）以 Frazzini-Pedersen 估法對 2001–2023 年台灣上市公司驗證，低 beta 組合 Sharpe 0.118、高 beta 組合 0.021、BAB 組合 0.237（大盤 0.067）；呂倢妤（2023，嘉大碩士論文）用同本站的 60 個月 OLS 十分位，最低 beta 組原始報酬低於最高組、Sharpe 略高，效應以風險調整後為準。',
     denominator: 1,
     percentileRank: { scope: 'market', direction: 'asc', topPercent: 20 },
   },
