@@ -20,7 +20,7 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
     return { symbol: query.symbol, metricCode: 'roe', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, equity, roeTtmPct, ttmQuarters, ttmNetIncomes } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, balances, roeTtmPct, ttmQuarters, ttmNetIncomes } = resolution;
 
   const buildStatementFieldEntry = (
     role: string,
@@ -43,7 +43,8 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
     ...ttmQuarters.map((tq, i) =>
       buildStatementFieldEntry(`近四季 淨利（第 ${i + 1}/4 季）`, ttmNetIncomes[i]!, 'incomeStatement', rocYearToGregorian(Number(tq.year)), Number(tq.season))
     ),
-    buildStatementFieldEntry('本季期末權益（TTM 分母不取平均，固定用本季單一期末值）', equity, 'balanceSheet', fiscalYear, fiscalQuarter),
+    // 2026-09-22 起分母是 5 個季末權益的平均（見 shared/averageBalances.ts），逐季列出讓讀者能自己算平均。
+    ...balances.quarters.map((bq, i) => buildStatementFieldEntry(`季末權益（平均分母第 ${i + 1}/5 點）`, balances.equities[i]!, 'balanceSheet', bq.fiscalYear, bq.fiscalQuarter)),
   ];
 
   return {
@@ -54,6 +55,6 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
     fiscalQuarter,
     value: roeTtmPct,
     entries,
-    methodologyNote: null,
+    methodologyNote: 'ROE（TTM）= 近四季淨利加總 ÷ 近四季窗口 5 個季末權益的平均（t−4 … t）；Q = 本季淨利 ÷ 本季與上季期末權益平均。2026-09-22 前分母是本季單一期末值。',
   };
 };

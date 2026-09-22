@@ -21,8 +21,9 @@ test('roaPit: 2330 115Q2 合併報表，跟 roa.test.ts 的既有基準數字交
 
   assert.ok(q, 'periodType=Q 應該有寫入 metric_values');
   assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
-  assert.equal(Number(q!.value), 7.54);
-  assert.equal(Number(ttm!.value), 23.86);
+  // 2026-09-22 分母改平均總資產：7.54 → 7.83、23.86 → 27.73。
+  assert.equal(Number(q!.value), 7.83);
+  assert.equal(Number(ttm!.value), 27.73);
   assert.equal(q!.nullReason, null);
   assert.equal(ttm!.nullReason, null);
   // 2330 的 financial_report_announcement 已驗證覆蓋到 115Q2，不應該落到 fallback。
@@ -64,7 +65,7 @@ test('roaPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
   assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
   // totalAssets 5622576474，手動核算過等於 3.78%。
-  assert.equal(Number(ttm!.value), 3.78);
+  assert.equal(Number(ttm!.value), 4.26); // 2026-09-22 平均總資產分母（舊 3.78）
   assert.equal(ttm!.nullReason, null);
 });
 

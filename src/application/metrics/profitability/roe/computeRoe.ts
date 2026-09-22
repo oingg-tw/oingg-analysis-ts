@@ -4,9 +4,10 @@ import { pickEquityWithFieldKey as pickEquity, pickNetIncomeWithFieldKey as pick
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import type { MetricNullReason } from '@/domain/metrics/metricBasis';
-import { noQuarterBatch, periodSlot, type ComputationBatch } from '@/domain/metrics/computation';
+import { isComputationSkip, noQuarterBatch, periodSlot, type ComputationBatch } from '@/domain/metrics/computation';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { PitDeps } from '../../deps';
+import { resolveAverageBalances, type AverageBalances } from '../../shared/averageBalances';
 
 // 這份檔案是 src/domainMetrics/roe.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
 // 私有函式，也不呼叫 calculateRoe() 本身——保持這條新管線對舊系統完全唯讀，不會觸發
@@ -26,6 +27,10 @@ import type { PitDeps } from '../../deps';
 
 export type RoeDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
 
+// 2026-09-22 formulaVersion 2：分母從本季期末權益改成期間平均權益（Q = 本季與上季期末平均、TTM = 5 個季末平均），
+// 理由與定義見 shared/averageBalances.ts。分子不變。缺前期資產負債表 → insufficient_history。
+export const ROE_FORMULA_VERSION = 2;
+
 // 分子/分母任一為 null 視為缺輸入；兩者皆非 null 但分母為 0 才是「分母為零」——負權益仍然
 // 算得出一個（可能扭曲的）實際數字，不算 null（跟 roe.ts 現有對外行為一致，這裡不改變語意）。
 export interface RoeQuarterResolution {
@@ -35,7 +40,8 @@ export interface RoeQuarterResolution {
   fiscalYear: number;
   fiscalQuarter: number;
   netIncome: PickedField;
-  equity: PickedField;
+  equity: PickedField; // 本季期末權益（provenance 用），分母已改用 balances 裡的平均值
+  balances: AverageBalances;
   roeQuarterlyPct: number | null;
   quarterlyNullReason: MetricNullReason | null;
   mainAnchor: KnowledgeDateResolution | null;
@@ -65,14 +71,17 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
 
   const netIncome = pickNetIncome(incomeStatement);
   const equity = pickEquity(balanceSheet);
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
 
-  const roeQuarterlyPct = netIncome.value !== null && equity.value !== null ? toPercent(netIncome.value, equity.value) : null;
-  const quarterlyNullReason: MetricNullReason | null = roeQuarterlyPct === null ? determineNullReason(netIncome.value, equity.value) : null;
+  // 分母缺前期季末 → insufficient_history（本季自己的權益有、只是平均湊不齊）；本季權益本身就缺 → missing_input。
+  const roeQuarterlyPct = netIncome.value !== null && balances.equityAvgQ !== null ? toPercent(netIncome.value, balances.equityAvgQ) : null;
+  const quarterlyNullReason: MetricNullReason | null =
+    roeQuarterlyPct !== null ? null : netIncome.value !== null && equity.value !== null && balances.equityAvgQ === null ? 'insufficient_history' : determineNullReason(netIncome.value, balances.equityAvgQ ?? equity.value);
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
-  // TTM：近四季（含本季）淨利加總 / 本季期末權益。四季資料需全部存在且淨利欄位皆非 null，
+  // TTM：近四季（含本季）淨利加總 / 近四季窗口 5 個季末權益平均。四季損益表與 5 個季末資產負債表需全部存在，
   // 否則視為不齊——不齊時寫一列 value=null/null_reason=insufficient_history，knowledge_date
   // 沿用本季（Q）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -91,8 +100,8 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
     }
   }
 
-  const roeTtmPct = ttmComplete && equity.value !== null ? toPercent(ttmSum, equity.value) : null;
-  const ttmNullReason: MetricNullReason | null = roeTtmPct !== null ? null : ttmComplete ? determineNullReason(ttmSum, equity.value) : 'insufficient_history';
+  const roeTtmPct = ttmComplete && balances.equityAvgTtm !== null ? toPercent(ttmSum, balances.equityAvgTtm) : null;
+  const ttmNullReason: MetricNullReason | null = roeTtmPct !== null ? null : ttmComplete && balances.equityAvgTtm !== null ? determineNullReason(ttmSum, balances.equityAvgTtm) : 'insufficient_history';
 
   const ttmAnchor = ttmComplete
     ? await resolveKnowledgeDate(
@@ -110,6 +119,7 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
     fiscalQuarter: seasonNum,
     netIncome,
     equity,
+    balances,
     roeQuarterlyPct,
     quarterlyNullReason,
     mainAnchor,
@@ -135,10 +145,11 @@ export const computeRoe = async (query: QuarterlyMetricQuery, deps: RoeDeps): Pr
 
   const coordinateBase = { symbol, metricCode: 'roe', fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId };
 
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', roeQuarterlyPct, quarterlyNullReason);
+  const versioned = (slot: ReturnType<typeof periodSlot>) => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: ROE_FORMULA_VERSION });
+  const q = versioned(periodSlot(mainAnchor, coordinateBase, 'Q', roeQuarterlyPct, quarterlyNullReason));
   // 四季齊全：用四季公告日的最大值當 knowledge_date（查不到就 skip）；不齊：寫 insufficient_history，
   // knowledge_date 沿用本季的 anchor（本季 anchor 也沒有就 skip）。
-  const ttm = ttmComplete ? periodSlot(ttmAnchor, coordinateBase, 'TTM', roeTtmPct, ttmNullReason) : periodSlot(mainAnchor, coordinateBase, 'TTM', null, 'insufficient_history');
+  const ttm = versioned(ttmComplete ? periodSlot(ttmAnchor, coordinateBase, 'TTM', roeTtmPct, ttmNullReason) : periodSlot(mainAnchor, coordinateBase, 'TTM', null, 'insufficient_history'));
 
   return { symbol, rocYear, season, slots: { q, ttm } };
 };

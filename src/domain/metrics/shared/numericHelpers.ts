@@ -28,6 +28,16 @@ export const toRatio = (numerator: bigint, denominator: bigint): number | null =
 
 export const round2 = (x: number): number => Math.round(x * 100) / 100;
 
+// 資產負債表存量的期間平均（2026-09-22 起 roe/roa/assetTurnover/equityMultiplier 的分母，見
+// application/metrics/shared/averageBalances.ts 的理由）：任一點缺漏 → null（不用較少的點頂替）。維持 bigint
+// 讓杜邦恆等式的四個因子拿到完全相同的分母；整數除法四捨五入到千元，對 2–4 位小數的比率沒有可見影響。
+export const averageBalance = (values: (bigint | null)[]): bigint | null => {
+  if (values.length === 0 || values.some((v) => v === null)) return null;
+  const n = BigInt(values.length);
+  const sum = (values as bigint[]).reduce((acc, v) => acc + v, 0n);
+  return (sum >= 0n ? sum + n / 2n : sum - n / 2n) / n;
+};
+
 // number 版 toRatio——跟 toRatio 公式完全對應，只是分子分母已經是 number（不是財報原始
 // bigint），grahamNumber/pbRatio/pegRatio/peRatio 這類混合 EV/市值/股價（number）跟財報
 // 金額（bigint，已先各自換算成 number）的估值指標共用。

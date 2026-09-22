@@ -11,12 +11,15 @@ import { createTestPitDeps } from '../../../../../fakes/pit/createTestPitDeps';
 
 const query = { symbol: '2330', year: '115', season: '2' as const, dataType: '2' as const, subsidiaryCompanyId: '' };
 
-// 114Q3～115Q2 四季淨利 100/200/300/400（合計 1000），115Q2 期末權益 5000 → Q = 8%、TTM = 20%。
+// 114Q3～115Q2 四季淨利 100/200/300/400（合計 1000）；2026-09-22 起分母是平均權益（Q = 本季與上季期末兩點、
+// TTM = 114Q2～115Q2 五個季末），這裡刻意讓五個季末權益 5500/4500/5000/5000/5000 平均恰好 5000、
+// 最後兩點平均也是 5000 → Q = 8%、TTM = 20%，數字跟改版前一樣但走的是平均路徑。
 const fourQuarters: StatementsSeed = {
   '2330': {
-    '114Q3': { income: { netIncomeAttributableToParent: 100n } },
-    '114Q4': { income: { netIncomeAttributableToParent: 200n } },
-    '115Q1': { income: { netIncomeAttributableToParent: 300n } },
+    '114Q2': { balance: { equityAttributableToParent: 5500n } },
+    '114Q3': { income: { netIncomeAttributableToParent: 100n }, balance: { equityAttributableToParent: 4500n } },
+    '114Q4': { income: { netIncomeAttributableToParent: 200n }, balance: { equityAttributableToParent: 5000n } },
+    '115Q1': { income: { netIncomeAttributableToParent: 300n }, balance: { equityAttributableToParent: 5000n } },
     '115Q2': { income: { netIncomeAttributableToParent: 400n }, balance: { equityAttributableToParent: 5000n } },
   },
 };
@@ -39,7 +42,7 @@ const asComputation = (slot: MetricComputation | { action: string }): MetricComp
 };
 
 describe('computeRoe', () => {
-  test('Q = 本季淨利 / 期末權益，TTM = 四季淨利加總 / 期末權益；slot 順序固定 q → ttm', async () => {
+  test('Q = 本季淨利 / 兩點平均權益，TTM = 四季淨利加總 / 五點平均權益；slot 順序固定 q → ttm；formulaVersion 2', async () => {
     const batch = await computeRoe(query, depsFor(fourQuarters));
 
     expect(batch).toMatchObject({ symbol: '2330', rocYear: '115', season: '2' });
@@ -56,6 +59,23 @@ describe('computeRoe', () => {
     expect(ttm.periodType).toBe('TTM');
     expect(ttm.value).toBe(20);
     expect(ttm.nullReason).toBeNull();
+    expect(q.formulaVersion).toBe(2);
+    expect(ttm.formulaVersion).toBe(2);
+  });
+
+  test('平均分母真的有平均：上季期末 3000、本季 5000 → Q 分母 4000', async () => {
+    const seed: StatementsSeed = {
+      '2330': {
+        '115Q1': { balance: { equityAttributableToParent: 3000n } },
+        '115Q2': { income: { netIncomeAttributableToParent: 400n }, balance: { equityAttributableToParent: 5000n } },
+      },
+    };
+    expect(asComputation((await computeRoe(query, depsFor(seed))).slots.q).value).toBe(10);
+  });
+
+  test('缺上季資產負債表 → Q 寫 insufficient_history（本季權益有，只是平均湊不齊）', async () => {
+    const seed: StatementsSeed = { '2330': { '115Q2': { income: { netIncomeAttributableToParent: 400n }, balance: { equityAttributableToParent: 5000n } } } };
+    expect(asComputation((await computeRoe(query, depsFor(seed))).slots.q)).toMatchObject({ value: null, nullReason: 'insufficient_history' });
   });
 
   test('TTM 的 knowledge_date = 四季公告日的最大值；任一季退回期末日就標 isFallback', async () => {
@@ -71,7 +91,7 @@ describe('computeRoe', () => {
   });
 
   test('權益為負仍算出真實（可能扭曲的）負值，不隱藏成 null', async () => {
-    const seed: StatementsSeed = { '2330': { '115Q2': { income: { netIncomeAttributableToParent: 100n }, balance: { equityAttributableToParent: -500n } } } };
+    const seed: StatementsSeed = { '2330': { '115Q1': { balance: { equityAttributableToParent: -500n } }, '115Q2': { income: { netIncomeAttributableToParent: 100n }, balance: { equityAttributableToParent: -500n } } } };
     const resolution = await resolveRoeQuarterData(query, depsFor(seed));
 
     expect(resolution).not.toBeNull();
@@ -82,17 +102,17 @@ describe('computeRoe', () => {
   });
 
   test('權益為 0 → zero_or_negative_denominator；淨利缺 → missing_input', async () => {
-    const zeroEquity = await computeRoe(query, depsFor({ '2330': { '115Q2': { income: { netIncomeAttributableToParent: 100n }, balance: { equityAttributableToParent: 0n } } } }));
+    const zeroEquity = await computeRoe(query, depsFor({ '2330': { '115Q1': { balance: { equityAttributableToParent: 0n } }, '115Q2': { income: { netIncomeAttributableToParent: 100n }, balance: { equityAttributableToParent: 0n } } } }));
     expect(asComputation(zeroEquity.slots.q)).toMatchObject({ value: null, nullReason: 'zero_or_negative_denominator' });
 
-    const noIncome = await computeRoe(query, depsFor({ '2330': { '115Q2': { income: {}, balance: { equityAttributableToParent: 5000n } } } }));
+    const noIncome = await computeRoe(query, depsFor({ '2330': { '115Q1': { balance: { equityAttributableToParent: 5000n } }, '115Q2': { income: {}, balance: { equityAttributableToParent: 5000n } } } }));
     expect(asComputation(noIncome.slots.q)).toMatchObject({ value: null, nullReason: 'missing_input' });
   });
 
   test('四季不齊 → TTM 寫 insufficient_history，knowledge_date 沿用本季（Q）的 anchor', async () => {
     const twoQuarters: StatementsSeed = {
       '2330': {
-        '115Q1': { income: { netIncomeAttributableToParent: 300n } },
+        '115Q1': { income: { netIncomeAttributableToParent: 300n }, balance: { equityAttributableToParent: 5000n } },
         '115Q2': { income: { netIncomeAttributableToParent: 400n }, balance: { equityAttributableToParent: 5000n } },
       },
     };
@@ -120,7 +140,7 @@ describe('computeRoe', () => {
   test('沒指定 year/season 時透過 quarters port 抓「資產負債表跟損益表都有資料」的最新一季', async () => {
     const batch = await computeRoe({ symbol: '2330', dataType: '2', subsidiaryCompanyId: '' }, depsFor(fourQuarters));
 
-    // 114Q3～115Q1 只有損益表，115Q2 兩張表都有 → 交集下界是 115Q2。
+    // 114Q2 只有資產負債表，其餘四季兩張表都有 → 交集的最新一季是 115Q2。
     expect(batch).toMatchObject({ rocYear: '115', season: '2' });
     expect(asComputation(batch.slots.q).value).toBe(8);
   });

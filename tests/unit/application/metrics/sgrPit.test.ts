@@ -15,7 +15,7 @@ test('sgrPit: 2330 115Q2 合併報表（只有 TTM 口徑），跟既有基準�
   const ttm = await replay.findLatest({ symbol: '2330', metricCode: 'sgr', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' });
 
   assert.ok(ttm, 'basis=TTM 應該有寫入 metric_values');
-  assert.equal(Number(ttm!.value), 26.52);
+  assert.equal(Number(ttm!.value), 31.21); // 2026-09-22 內部 ROE 分母改 5 點平均權益（roe.TTM 34.78 → 40.94，配息率不變 → 26.52 → 31.21）
   assert.equal(ttm!.nullReason, null);
 });
 

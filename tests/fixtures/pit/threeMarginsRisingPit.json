@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-21T08:48:44.749Z",
+  "recordedAt": "2026-09-22T03:24:07.286Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",112,3,{\"$date\":\"2023-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -76,6 +76,55 @@
     "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"insuranceIncomeStatement\",\"9999\",\"2\",\"\"])": null,
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "accountsPayable": {
+        "$bigint": "56424812"
+      },
+      "accountsReceivable": {
+        "$bigint": "201500334"
+      },
+      "bondsPayable": {
+        "$bigint": "955540142"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "1698195704"
+      },
+      "currentAssets": {
+        "$bigint": "2452767394"
+      },
+      "currentLiabilities": {
+        "$bigint": "1026180079"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "3635731930"
+      },
+      "inventory": {
+        "$bigint": "267123339"
+      },
+      "longTermBorrowings": {
+        "$bigint": "10020132"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3051847989"
+      },
+      "reportDate": {
+        "$date": "2024-03-31T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "3294563704"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "5787891082"
+      },
+      "totalEquity": {
+        "$bigint": "3665716254"
+      },
+      "totalLiabilities": {
+        "$bigint": "2122174828"
+      }
+    },
     "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
       "accountsPayable": {
         "$bigint": "75637284"
@@ -172,6 +221,57 @@
       },
       "totalLiabilities": {
         "$bigint": "2728560764"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "accountsPayable": {
+        "$bigint": "47794115"
+      },
+      "accountsReceivable": {
+        "$bigint": "190164242"
+      },
+      "bondsPayable": {
+        "$bigint": "901710299"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "1276723984"
+      },
+      "currentAssets": {
+        "$bigint": "1959964207"
+      },
+      "currentLiabilities": {
+        "$bigint": "810829007"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "3188750455"
+      },
+      "inventory": {
+        "$bigint": "234332949"
+      },
+      "longTermBorrowings": {
+        "$bigint": "5611138"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "2947233393"
+      },
+      "reportDate": {
+        "$date": "2023-06-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "2877310603"
+      },
+      "shortTermBorrowings": {
+        "$bigint": "0"
+      },
+      "totalAssets": {
+        "$bigint": "5149465045"
+      },
+      "totalEquity": {
+        "$bigint": "3205468199"
+      },
+      "totalLiabilities": {
+        "$bigint": "1943996846"
       }
     },
     "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
@@ -319,6 +419,251 @@
       },
       "totalLiabilities": {
         "$bigint": "2901183746"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "accountsPayable": {
+        "$bigint": "52150883"
+      },
+      "accountsReceivable": {
+        "$bigint": "222467653"
+      },
+      "bondsPayable": {
+        "$bigint": "932479423"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "1311806535"
+      },
+      "currentAssets": {
+        "$bigint": "2082477636"
+      },
+      "currentLiabilities": {
+        "$bigint": "970034816"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "3348349657"
+      },
+      "inventory": {
+        "$bigint": "262090072"
+      },
+      "longTermBorrowings": {
+        "$bigint": "5013050"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3132664367"
+      },
+      "reportDate": {
+        "$date": "2023-09-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "3010532799"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "5484556381"
+      },
+      "totalEquity": {
+        "$bigint": "3372818107"
+      },
+      "totalLiabilities": {
+        "$bigint": "2111738274"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "accountsPayable": {
+        "$bigint": "69134197"
+      },
+      "accountsReceivable": {
+        "$bigint": "249570573"
+      },
+      "bondsPayable": {
+        "$bigint": "909703588"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "1886780555"
+      },
+      "currentAssets": {
+        "$bigint": "2773913863"
+      },
+      "currentLiabilities": {
+        "$bigint": "1080399099"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "3990019153"
+      },
+      "inventory": {
+        "$bigint": "292883930"
+      },
+      "longTermBorrowings": {
+        "$bigint": "26459677"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3071599327"
+      },
+      "reportDate": {
+        "$date": "2024-09-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "3657379241"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "6165658176"
+      },
+      "totalEquity": {
+        "$bigint": "4021922291"
+      },
+      "totalLiabilities": {
+        "$bigint": "2143735885"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
+      "accountsPayable": {
+        "$bigint": "84425148"
+      },
+      "accountsReceivable": {
+        "$bigint": "305477496"
+      },
+      "bondsPayable": {
+        "$bigint": "880432755"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "2470759384"
+      },
+      "currentAssets": {
+        "$bigint": "3436015312"
+      },
+      "currentLiabilities": {
+        "$bigint": "1275906624"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "4998306972"
+      },
+      "inventory": {
+        "$bigint": "288689063"
+      },
+      "longTermBorrowings": {
+        "$bigint": "37795501"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3499340761"
+      },
+      "reportDate": {
+        "$date": "2025-09-30T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "4753530544"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "7354107076"
+      },
+      "totalEquity": {
+        "$bigint": "5035577802"
+      },
+      "totalLiabilities": {
+        "$bigint": "2318529274"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":112}])": {
+      "accountsPayable": {
+        "$bigint": "55726757"
+      },
+      "accountsReceivable": {
+        "$bigint": "201313914"
+      },
+      "bondsPayable": {
+        "$bigint": "913899843"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "1465427753"
+      },
+      "currentAssets": {
+        "$bigint": "2194032910"
+      },
+      "currentLiabilities": {
+        "$bigint": "913583316"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "3458913627"
+      },
+      "inventory": {
+        "$bigint": "250997088"
+      },
+      "longTermBorrowings": {
+        "$bigint": "4382965"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3064474984"
+      },
+      "reportDate": {
+        "$date": "2023-12-31T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "3158030792"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "5532371215"
+      },
+      "totalEquity": {
+        "$bigint": "3483262847"
+      },
+      "totalLiabilities": {
+        "$bigint": "2049108368"
+      }
+    },
+    "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":113}])": {
+      "accountsPayable": {
+        "$bigint": "72800558"
+      },
+      "accountsReceivable": {
+        "$bigint": "270683235"
+      },
+      "bondsPayable": {
+        "$bigint": "926604506"
+      },
+      "cashAndEquivalents": {
+        "$bigint": "2127627043"
+      },
+      "currentAssets": {
+        "$bigint": "3088352120"
+      },
+      "currentLiabilities": {
+        "$bigint": "1264524964"
+      },
+      "equityAttributableToParent": {
+        "$bigint": "4288545167"
+      },
+      "inventory": {
+        "$bigint": "287868810"
+      },
+      "longTermBorrowings": {
+        "$bigint": "31824386"
+      },
+      "preferredStockCapital": null,
+      "propertyPlantEquipment": {
+        "$bigint": "3234980070"
+      },
+      "reportDate": {
+        "$date": "2024-12-31T00:00:00.000Z"
+      },
+      "retainedEarnings": {
+        "$bigint": "3917252023"
+      },
+      "shortTermBorrowings": null,
+      "totalAssets": {
+        "$bigint": "6691938000"
+      },
+      "totalEquity": {
+        "$bigint": "4323575865"
+      },
+      "totalLiabilities": {
+        "$bigint": "2368362135"
       }
     },
     "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {

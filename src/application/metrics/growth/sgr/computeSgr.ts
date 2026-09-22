@@ -6,8 +6,9 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveAverageBalances } from '../../shared/averageBalances';
 
 // 這份檔案獨立重新實作 src/domainMetrics/sgr.ts——舊架構呼叫 calculateRoe()+
 // calculateDividendPayoutRatio()，這裡不依賴 roe/dividendPayoutRatio 這兩個 metric_code
@@ -17,6 +18,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 
 export type SgrDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+
+// 2026-09-22 formulaVersion 2：內部的 ROE(TTM) 分母跟 roe 指標同步改成 5 個季末權益平均（見 shared/averageBalances.ts）。
+export const SGR_FORMULA_VERSION = 2;
 
 export type SgrComputationBatch = ComputationBatch<'ttm'>;
 
@@ -67,7 +71,8 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
     }
   }
 
-  const roeTtm = ttmComplete && equity.value !== null ? toPercent(netIncomeTtmSum, equity.value) : null;
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const roeTtm = ttmComplete && balances.equityAvgTtm !== null ? toPercent(netIncomeTtmSum, balances.equityAvgTtm) : null;
   const dividendsPaidAbs = dividendsPaidTtmSum < 0n ? -dividendsPaidTtmSum : dividendsPaidTtmSum;
   const payoutRatioTtm = ttmComplete && netIncomeTtmSum > 0n ? toPercent(dividendsPaidAbs, netIncomeTtmSum) : null;
 
@@ -75,7 +80,7 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   // 任一子計算因四季不齊而為 null 時回報 insufficient_history；子計算本身可算但值為 null
   // （例如權益缺漏、或配息率分母≤0）時回報 missing_input——不細分是哪個子計算的哪種缺漏，
   // 那些細節記在各自獨立算過一次的過程裡，這裡的 sgr 是組裝值，只回報一種原因。
-  const sgrNullReason: MetricNullReason | null = sgrTtm !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
+  const sgrNullReason: MetricNullReason | null = sgrTtm !== null ? null : ttmComplete && (balances.equityAvgTtm !== null || equity.value === null) ? 'missing_input' : 'insufficient_history';
 
   const coordinateBase = { symbol, metricCode: 'sgr', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
@@ -110,5 +115,5 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: SGR_FORMULA_VERSION } } };
 };

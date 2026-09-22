@@ -21,18 +21,21 @@ test('dupontFamilyPit: 2330 115Q2 合併報表，跟 dupont.test.ts 的既有基
   const assetTurnoverQ = await findLatest('2330', 'assetTurnover', 'Q', 2026, 2);
   const assetTurnoverTtm = await findLatest('2330', 'assetTurnover', 'TTM', 2026, 2);
   const equityMultiplier = await findLatest('2330', 'equityMultiplier', 'Q', 2026, 2);
+  const equityMultiplierTtm = await findLatest('2330', 'equityMultiplier', 'TTM', 2026, 2);
   const decomposedRoeQ = await findLatest('2330', 'dupontDecomposedRoe', 'Q', 2026, 2);
   const decomposedRoeTtm = await findLatest('2330', 'dupontDecomposedRoe', 'TTM', 2026, 2);
 
-  assert.ok(netProfitMarginQ && netProfitMarginTtm && assetTurnoverQ && assetTurnoverTtm && equityMultiplier && decomposedRoeQ && decomposedRoeTtm, '5 個 metric_code 應該全部寫入 metric_values');
+  assert.ok(netProfitMarginQ && netProfitMarginTtm && assetTurnoverQ && assetTurnoverTtm && equityMultiplier && equityMultiplierTtm && decomposedRoeQ && decomposedRoeTtm, '5 個 metric_code（equityMultiplier 含 Q/TTM）應該全部寫入 metric_values');
 
   assert.equal(Number(netProfitMarginQ!.value), 55.62);
   assert.equal(Number(netProfitMarginTtm!.value), 50.38);
-  assert.equal(Number(assetTurnoverQ!.value), 0.1355);
-  assert.equal(Number(assetTurnoverTtm!.value), 0.4736);
-  assert.equal(Number(equityMultiplier!.value), 1.4575);
-  assert.equal(Number(decomposedRoeQ!.value), 10.98); // 2026-09-21 因子改 4 位小數後，恆等式對得起 roe.Q 10.98（舊 2 位小數版是 11.37）
-  assert.equal(Number(decomposedRoeTtm!.value), 34.78); // = roe.TTM 34.78（舊 34.57）
+  // 2026-09-22 週轉率/權益乘數分母改期間平均（Q 兩點、TTM 5 點），數字用 cassette 裡的五季資產負債表獨立算過。
+  assert.equal(Number(assetTurnoverQ!.value), 0.1409);
+  assert.equal(Number(assetTurnoverTtm!.value), 0.5505);
+  assert.equal(Number(equityMultiplier!.value), 1.4636);
+  assert.equal(Number(equityMultiplierTtm!.value), 1.4761);
+  assert.equal(Number(decomposedRoeQ!.value), 11.47); // = roe.Q 11.47（三因子同一組平均分母，恆等式成立）
+  assert.equal(Number(decomposedRoeTtm!.value), 40.94); // = roe.TTM 40.94
   assert.equal(decomposedRoeQ!.nullReason, null);
   assert.equal(decomposedRoeTtm!.nullReason, null);
   assert.equal(netProfitMarginQ!.knowledgeDateIsFallback, false);
@@ -64,13 +67,13 @@ test('dupontFamilyPit: 五因子 Extended DuPont（2330 115Q2）應該精確等�
   assert.equal(Number(taxBurdenQ!.value), 81.93);
   assert.equal(Number(interestBurdenQ!.value), 99.64);
   assert.equal(Number(ebitMarginQ!.value), 68.13);
-  assert.equal(Number(extendedRoeQ!.value), 10.98, '五因子相乘應該精確等於既有 dupontDecomposedRoeQ 基準值 10.98');
+  assert.equal(Number(extendedRoeQ!.value), 11.47, '五因子相乘應該精確等於既有 dupontDecomposedRoeQ 基準值 11.47');
   assert.equal(extendedRoeQ!.nullReason, null);
 
   assert.equal(Number(taxBurdenTtm!.value), 83.85);
   assert.equal(Number(interestBurdenTtm!.value), 99.56);
   assert.equal(Number(ebitMarginTtm!.value), 60.35);
-  assert.equal(Number(extendedRoeTtm!.value), 34.78, '五因子相乘應該精確等於既有 dupontDecomposedRoeTtm 基準值 34.78');
+  assert.equal(Number(extendedRoeTtm!.value), 40.94, '五因子相乘應該精確等於既有 dupontDecomposedRoeTtm 基準值 40.94');
   assert.equal(extendedRoeTtm!.nullReason, null);
 });
 
@@ -113,9 +116,9 @@ test('dupontFamilyPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該
   // netProfitMargin=2.29%、assetTurnover=1.66 次、decomposedRoe = round2(2.29*1.66*2.95) = 11.21%。
   assert.equal(Number(netProfitMarginTtm!.value), 2.29);
   assert.equal(netProfitMarginTtm!.nullReason, null);
-  assert.equal(Number(assetTurnoverTtm!.value), 1.656);
+  assert.equal(Number(assetTurnoverTtm!.value), 1.8628); // 2026-09-22 平均分母（舊 1.656）
   assert.equal(assetTurnoverTtm!.nullReason, null);
-  assert.equal(Number(decomposedRoeTtm!.value), 11.18);
+  assert.equal(Number(decomposedRoeTtm!.value), 12.46); // 2026-09-22 平均分母（舊 11.18）；roe.TTM 是 12.43，差在因子各自四捨五入
   assert.equal(decomposedRoeTtm!.nullReason, null);
 });
 

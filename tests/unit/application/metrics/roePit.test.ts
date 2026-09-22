@@ -25,8 +25,9 @@ test('roePit: 2330 115Q2 合併報表，跟 roe.test.ts 的既有基準數字交
 
   assert.ok(q, 'periodType=Q 應該有寫入 metric_values');
   assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
-  assert.equal(Number(q!.value), 10.98);
-  assert.equal(Number(ttm!.value), 34.78);
+  // 2026-09-22 分母改平均權益（Q 兩點、TTM 5 點）：10.98 → 11.47、34.78 → 40.94，用 cassette 裡的資產負債表獨立算過。
+  assert.equal(Number(q!.value), 11.47);
+  assert.equal(Number(ttm!.value), 40.94);
   assert.equal(q!.nullReason, null);
   assert.equal(ttm!.nullReason, null);
   // 2330 的 financial_report_announcement 已驗證覆蓋到 115Q2，不應該落到 fallback。
@@ -73,7 +74,7 @@ test('roePit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該算得出
   assert.ok(ttm, 'periodType=TTM 應該有寫入 metric_values');
   // 114Q3~115Q2 四季 netIncomeAttributableToParent 加總 212778460，除以 115Q2 期末
   // equityAttributableToParent 1907936607，手動核算過等於 11.15%。
-  assert.equal(Number(ttm!.value), 11.15);
+  assert.equal(Number(ttm!.value), 12.43); // 2026-09-22 平均權益分母（舊 11.15）
   assert.equal(ttm!.nullReason, null);
 });
 

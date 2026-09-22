@@ -16,7 +16,7 @@
     "fiscalQuarter": "<number>",
     "fiscalYear": "<number>",
     "found": "<boolean>",
-    "methodologyNote": "<null>",
+    "methodologyNote": "<string>",
     "metricCode": "roe",
     "symbol": "<numeric-string>",
     "value": "<number>"

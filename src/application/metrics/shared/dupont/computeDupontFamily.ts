@@ -13,8 +13,10 @@ import { calculateDupontInterestBurden } from '@/domain/metrics/profitability/du
 import { calculateDupontEbitMargin } from '@/domain/metrics/profitability/dupontEbitMargin/calculateDupontEbitMargin';
 import { calculateDupontExtendedRoe } from '@/domain/metrics/profitability/dupontExtendedRoe/calculateDupontExtendedRoe';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricNullReason } from '@/domain/metrics/metricBasis';
+import { resolveAverageBalances } from '../averageBalances';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts（僅 netProfitMargin 這個因子）、
 // src/domainMetrics/turnoverRatio.ts（僅 assetTurnover 這個因子）、src/domainMetrics/dupont.ts
@@ -38,10 +40,16 @@ import type { PitDeps } from '@/application/metrics/deps';
 // writeMetricValue。Q 跟 TTM 兩個 basis 共用同一個 calculateXxx() 純函式（公式本身不會因為
 // 輸入是單季還是近四季加總而不同），差別只在傳進去的 bigint 是單季原始值還是 TTM 加總值。
 
+// 2026-09-22 formulaVersion 2（只有分母含資產負債表存量的四支：assetTurnover / equityMultiplier / dupontDecomposedRoe /
+// dupontExtendedRoe；netProfitMargin 與三個負擔比率不變）：分母從本季期末改成期間平均——Q 用本季與上季期末兩點平均，
+// TTM 用近四季窗口 5 個季末平均，理由見 ../averageBalances.ts。equityMultiplier 因此多了 TTM basis（5 點平均總資產 ÷
+// 5 點平均權益），讓 TTM 的杜邦恆等式 roe.TTM = npm.TTM × at.TTM × em.TTM 用儲存的欄位就能對上；Q 的恆等式用 em.Q。
+export const DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION = 2;
+const AVERAGE_DENOMINATOR_CODES = new Set(['assetTurnover', 'equityMultiplier', 'dupontDecomposedRoe', 'dupontExtendedRoe']);
 
 export type DupontFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
 
-export type DupontFamilyComputationBatch = ComputationBatch<'netProfitMarginQ' | 'netProfitMarginTtm' | 'assetTurnoverQ' | 'assetTurnoverTtm' | 'equityMultiplier' | 'dupontDecomposedRoeQ' | 'dupontDecomposedRoeTtm' | 'dupontTaxBurdenQ' | 'dupontTaxBurdenTtm' | 'dupontInterestBurdenQ' | 'dupontInterestBurdenTtm' | 'dupontEbitMarginQ' | 'dupontEbitMarginTtm' | 'dupontExtendedRoeQ' | 'dupontExtendedRoeTtm'>;
+export type DupontFamilyComputationBatch = ComputationBatch<'netProfitMarginQ' | 'netProfitMarginTtm' | 'assetTurnoverQ' | 'assetTurnoverTtm' | 'equityMultiplier' | 'equityMultiplierTtm' | 'dupontDecomposedRoeQ' | 'dupontDecomposedRoeTtm' | 'dupontTaxBurdenQ' | 'dupontTaxBurdenTtm' | 'dupontInterestBurdenQ' | 'dupontInterestBurdenTtm' | 'dupontEbitMarginQ' | 'dupontEbitMarginTtm' | 'dupontExtendedRoeQ' | 'dupontExtendedRoeTtm'>;
 
 export const computeDupontFamily = async (
   query: QuarterlyMetricQuery,
@@ -49,7 +57,7 @@ export const computeDupontFamily = async (
 ): Promise<DupontFamilyComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const skippedNoQuarter: DupontFamilyComputationBatch = noQuarterBatch(symbol, ['netProfitMarginQ', 'netProfitMarginTtm', 'assetTurnoverQ', 'assetTurnoverTtm', 'equityMultiplier', 'dupontDecomposedRoeQ', 'dupontDecomposedRoeTtm', 'dupontTaxBurdenQ', 'dupontTaxBurdenTtm', 'dupontInterestBurdenQ', 'dupontInterestBurdenTtm', 'dupontEbitMarginQ', 'dupontEbitMarginTtm', 'dupontExtendedRoeQ', 'dupontExtendedRoeTtm']);
+  const skippedNoQuarter: DupontFamilyComputationBatch = noQuarterBatch(symbol, ['netProfitMarginQ', 'netProfitMarginTtm', 'assetTurnoverQ', 'assetTurnoverTtm', 'equityMultiplier', 'equityMultiplierTtm', 'dupontDecomposedRoeQ', 'dupontDecomposedRoeTtm', 'dupontTaxBurdenQ', 'dupontTaxBurdenTtm', 'dupontInterestBurdenQ', 'dupontInterestBurdenTtm', 'dupontEbitMarginQ', 'dupontEbitMarginTtm', 'dupontExtendedRoeQ', 'dupontExtendedRoeTtm']);
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
@@ -68,9 +76,15 @@ export const computeDupontFamily = async (
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const totalAssets = balanceSheet?.totalAssets ?? null;
 
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  // 平均分母湊不齊（缺前期季末）但本季自己的存量在 → insufficient_history，不是 missing_input。
+  const withAverageDenominator = (calc: { value: number | null; nullReason: MetricNullReason | null }, avg: bigint | null, current: bigint | null) =>
+    calc.value === null && avg === null && current !== null ? { value: null, nullReason: 'insufficient_history' as const } : calc;
+
   const netProfitMarginQuarterly = calculateNetProfitMargin(netIncome.value, operatingRevenue);
-  const assetTurnoverQuarterly = calculateAssetTurnover(operatingRevenue, totalAssets);
-  const equityMultiplierResult = calculateEquityMultiplier(totalAssets, equity.value);
+  const assetTurnoverQuarterly = withAverageDenominator(calculateAssetTurnover(operatingRevenue, balances.assetsAvgQ), balances.assetsAvgQ, totalAssets);
+  const equityMultiplierResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgQ, balances.equityAvgQ), balances.equityAvgQ, equity.value);
+  const equityMultiplierTtmResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgTtm, balances.equityAvgTtm), balances.equityAvgTtm, equity.value);
   const decomposedRoeQuarterly = calculateDupontDecomposedRoe(netProfitMarginQuarterly.value, assetTurnoverQuarterly.value, equityMultiplierResult.value);
 
   // 五因子 Extended DuPont：把上面的 netProfitMargin 再拆成稅務負擔×利息負擔×EBIT利潤率。
@@ -180,8 +194,7 @@ export const computeDupontFamily = async (
     });
   }
 
-  // TTM：近四季（含本季）營收/淨利加總；assetTurnover 分母沿用「本季期末總資產」（不是加總），
-  // 跟 turnoverRatio.ts 的既有簡化一致。一季只要營收或淨利任一為 null 就視為該季不齊，
+  // TTM：近四季（含本季）營收/淨利加總；assetTurnover 分母是 5 個季末總資產的平均（2026-09-22 起，見 ../averageBalances.ts）。一季只要營收或淨利任一為 null 就視為該季不齊，
   // netProfitMargin/assetTurnover 的 TTM 共用同一組「資料齊不齊」判斷（比照 margins.ts）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
@@ -217,9 +230,9 @@ export const computeDupontFamily = async (
   }
 
   const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
-  const assetTurnoverTtmCalc = ttmComplete && totalAssets !== null ? calculateAssetTurnover(revenueTtmSum, totalAssets) : { value: null, nullReason: 'insufficient_history' as const };
+  const assetTurnoverTtmCalc = ttmComplete && balances.assetsAvgTtm !== null ? calculateAssetTurnover(revenueTtmSum, balances.assetsAvgTtm) : { value: null, nullReason: 'insufficient_history' as const };
 
-  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierResult.value);
+  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
   const decomposedRoeTtmNullReason = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : ('insufficient_history' as const);
 
   const dupontTaxBurdenTtmCalc = extendedTtmComplete ? calculateDupontTaxBurden(netIncomeTtmSum, preTaxTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
@@ -232,12 +245,13 @@ export const computeDupontFamily = async (
     dupontInterestBurdenTtmCalc.value,
     dupontEbitMarginTtmCalc.value,
     assetTurnoverTtmCalc.value,
-    equityMultiplierResult.value,
+    equityMultiplierTtmResult.value,
   );
   const extendedRoeTtmNullReason = extendedRoeTtmCalc.value !== null ? null : extendedTtmComplete ? 'missing_input' : ('insufficient_history' as const);
 
   let netProfitMarginTtm: ComputationSlot;
   let assetTurnoverTtm: ComputationSlot;
+  let equityMultiplierTtm: ComputationSlot;
   let dupontDecomposedRoeTtm: ComputationSlot;
   let dupontTaxBurdenTtm: ComputationSlot;
   let dupontInterestBurdenTtm: ComputationSlot;
@@ -252,6 +266,7 @@ export const computeDupontFamily = async (
     if (!ttmAnchor) {
       netProfitMarginTtm = { action: 'skipped_no_knowledge_date' };
       assetTurnoverTtm = { action: 'skipped_no_knowledge_date' };
+      equityMultiplierTtm = { action: 'skipped_no_knowledge_date' };
       dupontDecomposedRoeTtm = { action: 'skipped_no_knowledge_date' };
       dupontTaxBurdenTtm = { action: 'skipped_no_knowledge_date' };
       dupontInterestBurdenTtm = { action: 'skipped_no_knowledge_date' };
@@ -272,6 +287,14 @@ export const computeDupontFamily = async (
         ...periodTypeGroup('TTM'),
         value: assetTurnoverTtmCalc.value,
         nullReason: assetTurnoverTtmCalc.nullReason,
+        knowledgeDate,
+        knowledgeDateIsFallback,
+      });
+      equityMultiplierTtm = computation({
+        ...coordinateFor('equityMultiplier'),
+        ...periodTypeGroup('TTM'),
+        value: equityMultiplierTtmResult.value,
+        nullReason: equityMultiplierTtmResult.nullReason,
         knowledgeDate,
         knowledgeDateIsFallback,
       });
@@ -339,6 +362,14 @@ export const computeDupontFamily = async (
       knowledgeDate,
       knowledgeDateIsFallback,
     });
+    equityMultiplierTtm = computation({
+      ...coordinateFor('equityMultiplier'),
+      ...periodTypeGroup('TTM'),
+      value: null,
+      nullReason: 'insufficient_history',
+      knowledgeDate,
+      knowledgeDateIsFallback,
+    });
     dupontDecomposedRoeTtm = computation({
       ...coordinateFor('dupontDecomposedRoe'),
       ...periodTypeGroup('TTM'),
@@ -382,6 +413,7 @@ export const computeDupontFamily = async (
   } else {
     netProfitMarginTtm = { action: 'skipped_no_knowledge_date' };
     assetTurnoverTtm = { action: 'skipped_no_knowledge_date' };
+    equityMultiplierTtm = { action: 'skipped_no_knowledge_date' };
     dupontDecomposedRoeTtm = { action: 'skipped_no_knowledge_date' };
     dupontTaxBurdenTtm = { action: 'skipped_no_knowledge_date' };
     dupontInterestBurdenTtm = { action: 'skipped_no_knowledge_date' };
@@ -389,5 +421,10 @@ export const computeDupontFamily = async (
     dupontExtendedRoeTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { netProfitMarginQ, netProfitMarginTtm, assetTurnoverQ, assetTurnoverTtm, equityMultiplier: equityMultiplierOutcome, dupontDecomposedRoeQ, dupontDecomposedRoeTtm, dupontTaxBurdenQ, dupontTaxBurdenTtm, dupontInterestBurdenQ, dupontInterestBurdenTtm, dupontEbitMarginQ, dupontEbitMarginTtm, dupontExtendedRoeQ, dupontExtendedRoeTtm } };
+  const slots = { netProfitMarginQ, netProfitMarginTtm, assetTurnoverQ, assetTurnoverTtm, equityMultiplier: equityMultiplierOutcome, equityMultiplierTtm, dupontDecomposedRoeQ, dupontDecomposedRoeTtm, dupontTaxBurdenQ, dupontTaxBurdenTtm, dupontInterestBurdenQ, dupontInterestBurdenTtm, dupontEbitMarginQ, dupontEbitMarginTtm, dupontExtendedRoeQ, dupontExtendedRoeTtm };
+  // 分母改平均的四支標 formulaVersion 2，其餘維持預設 1。
+  const versioned = Object.fromEntries(
+    Object.entries(slots).map(([key, slot]) => [key, !isComputationSkip(slot) && AVERAGE_DENOMINATOR_CODES.has(slot.metricCode) ? { ...slot, formulaVersion: DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION } : slot])
+  ) as typeof slots;
+  return { symbol, rocYear: year, season, slots: versioned };
 };
