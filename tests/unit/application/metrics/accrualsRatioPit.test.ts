@@ -18,8 +18,8 @@ test('accrualsRatioPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
   const ttm = await findLatest('TTM');
 
   assert.ok(q && ttm, '兩個 periodType 應該全部寫入 metric_values');
-  assert.equal(Number(q!.value), 4.44);
-  assert.equal(Number(ttm!.value), 11.5);
+  assert.equal(Number(q!.value), 4.61); // 2026-09-22 分母改平均（舊 4.44）
+  assert.equal(Number(ttm!.value), 13.36); // 2026-09-22 分母改平均（舊 11.5）
 });
 
 test('accrualsRatioPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {

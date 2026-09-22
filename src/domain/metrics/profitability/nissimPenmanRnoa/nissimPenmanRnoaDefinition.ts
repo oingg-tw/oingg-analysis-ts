@@ -6,9 +6,9 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   unit: '%',
   formulaNote:
     'NOPAT = 營業利益*(1-有效稅率)；NOA(淨營業資產) = 權益+NFO(淨金融負債，= 有息負債-現金)；' +
-    'Q(單季) = NOPAT/NOA*100；TTM = 近四季（含本季）NOPAT 加總/本季期末 NOA*100' +
-    '（分母固定用本季，同 ROIC）。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
-    '（沒有獨立查詢價值，範圍刻意限縮）。',
+    'Q(單季) = NOPAT/平均 NOA*100；TTM = 近四季（含本季）NOPAT 加總/平均 NOA*100' +
+    '。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
+    '（沒有獨立查詢價值，範圍刻意限縮）。（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',
   formulaLatex:
     '\\mathrm{RNOA} = \\frac{\\mathrm{NOPAT}}{\\mathrm{NOA}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{OperatingIncome}\\times(1-\\mathrm{TaxRate}),\\quad \\mathrm{NOA} = \\mathrm{Equity} + \\mathrm{NFO}',
   academicSourceUrl: 'https://doi.org/10.1023/A:1011338221623',
@@ -29,5 +29,5 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
     'equity_attributable_to_owners_of_parent',
     'equity',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

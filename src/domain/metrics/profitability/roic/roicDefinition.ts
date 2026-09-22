@@ -7,9 +7,9 @@ export const roicDefinition: MetricDefinitionSpec = {
   formulaNote:
     'EBIT = 稅前淨利+利息費用；有效稅率 = 所得稅費用/稅前淨利（稅前淨利須為正，否則 NOPAT 為 ' +
     'null）；NOPAT = EBIT*(1-有效稅率)；投入資本 = 有息負債(短期借款+應付公司債+長期借款)+權益-' +
-    '現金及約當現金，權益優先採歸屬母公司口徑；Q(單季) = NOPAT/投入資本*100；' +
-    'TTM = 近四季（含本季）NOPAT 加總/本季期末投入資本*100（分母固定用本季，不平均不加總，跟' +
-    'ROE/ROA 用期末值同一種簡化）。',
+    '現金及約當現金，權益優先採歸屬母公司口徑；Q(單季) = NOPAT/平均投入資本*100；' +
+    'TTM = 近四季（含本季）NOPAT 加總/平均投入資本*100。' +
+    '（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',
   formulaLatex:
     '\\mathrm{ROIC} = \\frac{\\mathrm{NOPAT}}{\\mathrm{InvestedCapital}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{EBIT}\\times(1-\\mathrm{TaxRate})',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%8A%95%E5%85%A5%E8%B3%87%E6%9C%AC%E5%A0%B1%E9%85%AC%E7%8E%87',
@@ -28,5 +28,5 @@ export const roicDefinition: MetricDefinitionSpec = {
     'equity',
     'cash_and_cash_equivalents',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

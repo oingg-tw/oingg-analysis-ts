@@ -7,8 +7,13 @@ import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowle
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { CashFlowFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveAverageBalances } from '../../shared/averageBalances';
+
+// 2026-09-22 formulaVersion 2：分母總資產從本季期末改成期間平均（Q 兩點、TTM 5 個季末）——Sloan (1996) 原文就是
+// average total assets，見 shared/averageBalances.ts。
+export const ACCRUALS_RATIO_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/accrualsRatio.ts 的獨立重新實作。分母固定用本季期末總資產
 // （不平均、不加總 TTM），跟 ROE/ROA 用期末值同一種簡化。
@@ -33,6 +38,8 @@ export interface AccrualsRatioResolution {
   fiscalYear: number;
   fiscalQuarter: number;
   totalAssets: bigint | null;
+  totalAssetsAvgQ: bigint | null;
+  totalAssetsAvgTtm: bigint | null;
   ttmQuarterDetails: AccrualsRatioTtmQuarterDetail[];
   ttmComplete: boolean;
   ttmValue: number | null;
@@ -64,10 +71,13 @@ export const resolveAccrualsRatioInputs = async (
   ]);
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const totalAssetsAvgQ = balances.assetsAvgQ;
+  const totalAssetsAvgTtm = balances.assetsAvgTtm;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
-  // TTM：近四季（含本季）淨利/OCF/ICF 各自加總，分母固定用本季期末總資產。
+  // TTM：近四季（含本季）淨利/OCF/ICF 各自加總，分母是近四季窗口 5 個季末總資產的平均（2026-09-22 起）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) =>
@@ -102,8 +112,9 @@ export const resolveAccrualsRatioInputs = async (
   }
 
   const accrualsTtm = ttmComplete ? netIncomeTtmSum - ocfTtmSum - icfTtmSum : null;
-  const ttmValue = accrualsTtm !== null && totalAssets !== null ? toPercent(accrualsTtm, totalAssets) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(accrualsTtm, totalAssets) : 'insufficient_history';
+  const ttmValue = accrualsTtm !== null && totalAssetsAvgTtm !== null ? toPercent(accrualsTtm, totalAssetsAvgTtm) : null;
+  const ttmNullReason: MetricNullReason | null =
+    ttmValue !== null ? null : !ttmComplete || (totalAssetsAvgTtm === null && totalAssets !== null) ? 'insufficient_history' : determineNullReason(accrualsTtm, totalAssetsAvgTtm ?? totalAssets);
 
   const ttmAnchor = ttmComplete
     ? await resolveKnowledgeDate(
@@ -112,7 +123,7 @@ export const resolveAccrualsRatioInputs = async (
       )
     : null;
 
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, totalAssetsAvgQ, totalAssetsAvgTtm, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
 };
 
 
@@ -129,7 +140,7 @@ export const computeAccrualsRatio = async (
     return noQuarterBatch(query.symbol, ['q', 'ttm']);
   }
 
-  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, totalAssets, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
+  const { symbol, rocYear, season, fiscalYear, fiscalQuarter, totalAssets, totalAssetsAvgQ, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
   const coordinateBase = { symbol, metricCode: 'accrualsRatio', fiscalYear, fiscalQuarter, dataType: query.dataType, subsidiaryCompanyId: query.subsidiaryCompanyId };
 
   // Q 只用本季（TTM 明細裡的最後一筆就是本季）。
@@ -139,8 +150,9 @@ export const computeAccrualsRatio = async (
     currentQuarter.netIncome.value !== null && currentCashFlow?.netCashFromOperatingActivities != null && currentCashFlow?.netCashFromInvestingActivities != null
       ? currentQuarter.netIncome.value - currentCashFlow.netCashFromOperatingActivities - currentCashFlow.netCashFromInvestingActivities
       : null;
-  const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssets !== null ? toPercent(accrualsQuarterly, totalAssets) : null;
-  const quarterlyNullReason: MetricNullReason | null = accrualsRatioQuarterly === null ? determineNullReason(accrualsQuarterly, totalAssets) : null;
+  const accrualsRatioQuarterly = accrualsQuarterly !== null && totalAssetsAvgQ !== null ? toPercent(accrualsQuarterly, totalAssetsAvgQ) : null;
+  const quarterlyNullReason: MetricNullReason | null =
+    accrualsRatioQuarterly !== null ? null : accrualsQuarterly !== null && totalAssetsAvgQ === null && totalAssets !== null ? 'insufficient_history' : determineNullReason(accrualsQuarterly, totalAssetsAvgQ ?? totalAssets);
 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', accrualsRatioQuarterly, quarterlyNullReason);
 
@@ -171,5 +183,6 @@ export const computeAccrualsRatio = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear, season, slots: { q, ttm } };
+  const versioned = (slot: ComputationSlot): ComputationSlot => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: ACCRUALS_RATIO_FORMULA_VERSION });
+  return { symbol, rocYear, season, slots: { q: versioned(q), ttm: versioned(ttm) } };
 };

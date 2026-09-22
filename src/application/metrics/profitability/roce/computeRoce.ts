@@ -5,8 +5,12 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
+
+// 2026-09-22 formulaVersion 2：使用資本從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
+export const ROCE_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/roce.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
 // 在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，延續既有慣例。
@@ -44,8 +48,16 @@ export const computeRoce = async (query: QuarterlyMetricQuery, deps: RoceDeps): 
   const capitalEmployed = totalAssets !== null && currentLiabilities !== null ? totalAssets - currentLiabilities : null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const roceQuarterlyPct = ebit !== null && capitalEmployed !== null ? toPercent(ebit, capitalEmployed) : null;
-  const quarterlyNullReason: MetricNullReason | null = roceQuarterlyPct === null ? determineNullReason(ebit, capitalEmployed) : null;
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const pickCapitalEmployed = (bs: NonNullable<typeof balanceSheet>): bigint | null => (bs.totalAssets !== null && bs.currentLiabilities !== null ? bs.totalAssets - bs.currentLiabilities : null);
+  const capitalEmployedAvgQ = averageOf(balances, pickCapitalEmployed, 'q');
+  const capitalEmployedAvgTtm = averageOf(balances, pickCapitalEmployed, 'ttm');
+  // 平均分母湊不齊（缺前期季末）但本季自己的存量在 → insufficient_history，不是 missing_input（2026-09-22 分母改平均）。
+  const denominatorNullReason = (numerator: bigint | null, average: bigint | null, current: bigint | null): MetricNullReason =>
+    numerator !== null && average === null && current !== null ? 'insufficient_history' : determineNullReason(numerator, average ?? current);
+
+  const roceQuarterlyPct = ebit !== null && capitalEmployedAvgQ !== null ? toPercent(ebit, capitalEmployedAvgQ) : null;
+  const quarterlyNullReason: MetricNullReason | null = roceQuarterlyPct === null ? denominatorNullReason(ebit, capitalEmployedAvgQ, capitalEmployed) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'roce', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -69,8 +81,8 @@ export const computeRoce = async (query: QuarterlyMetricQuery, deps: RoceDeps): 
     }
   }
 
-  const ttmValue = ttmComplete && capitalEmployed !== null ? toPercent(ebitTtmSum, capitalEmployed) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(ebitTtmSum, capitalEmployed) : 'insufficient_history';
+  const ttmValue = ttmComplete && capitalEmployedAvgTtm !== null ? toPercent(ebitTtmSum, capitalEmployedAvgTtm) : null;
+  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? denominatorNullReason(ebitTtmSum, capitalEmployedAvgTtm, capitalEmployed) : 'insufficient_history';
 
   let ttm: ComputationSlot;
   if (ttmComplete) {
@@ -103,5 +115,6 @@ export const computeRoce = async (query: QuarterlyMetricQuery, deps: RoceDeps): 
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  const versioned = (slot: ComputationSlot): ComputationSlot => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: ROCE_FORMULA_VERSION });
+  return { symbol, rocYear: year, season, slots: { q: versioned(q), ttm: versioned(ttm) } };
 };

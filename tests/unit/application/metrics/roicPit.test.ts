@@ -15,8 +15,8 @@ test('roicPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗證', asy
   const ttm = await findLatest('TTM');
 
   assert.ok(q && ttm, '兩個 periodType 應該全部寫入');
-  assert.equal(Number(q!.value), 17.04);
-  assert.equal(Number(ttm!.value), 53.97);
+  assert.equal(Number(q!.value), 17.91); // 2026-09-22 分母改平均（舊 17.04）
+  assert.equal(Number(ttm!.value), 62.36); // 2026-09-22 分母改平均（舊 53.97）
 });
 
 test('roicPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {

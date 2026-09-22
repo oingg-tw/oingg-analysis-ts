@@ -5,9 +5,9 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
   name: '應計項目比率',
   unit: '%',
   formulaNote:
-    'Q(單季) = (本季淨利 − 本季營業活動現金流 − 本季投資活動現金流) / 本季期末總資產 * 100；' +
-    'TTM 分子改用近四季（含本季）加總，分母仍固定用本季期末總資產（不平均、不' +
-    '加總，跟 ROE/ROA 用期末值同一種簡化）。',
+    'Q(單季) = (本季淨利 − 本季營業活動現金流 − 本季投資活動現金流) / 平均總資產 * 100；' +
+    'TTM 分子改用近四季（含本季）加總，分母同樣改用平均總資產。' +
+    '（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）Sloan (1996) 原文就是 average total assets。',
   formulaLatex:
     '\\mathrm{AccrualsRatio} = \\frac{\\mathrm{NetIncome} - \\mathrm{CFO} - \\mathrm{CFI}}{\\mathrm{TotalAssets}} \\times 100',
   // 2026-09-10 補：雖然算式本身是單一比率（tier 維持 derived，不因為出處升級成 composite，
@@ -25,5 +25,5 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
     'netCashFromInvestingActivities',
     'assets',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

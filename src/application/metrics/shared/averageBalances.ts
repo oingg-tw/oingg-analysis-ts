@@ -33,6 +33,14 @@ export interface AverageBalances {
 
 const TTM_POINTS = 5; // t−4 … t
 
+// 任一資產負債表欄位（或欄位組合）的期間平均：'q' 取最後兩個季末、'ttm' 取全部 5 個季末。給 turnover 家族
+// （存貨/應收/應付/PPE/淨營運資金）、roic/roce/croci/RNOA（投入資本）、accrualsRatio（總資產）這類跟 roe 同批改平均
+// 的指標用，pick 回 null 的季末視為缺漏 → 平均為 null。
+export const averageOf = (balances: AverageBalances, pick: (bs: BalanceSheetFields) => bigint | null, window: 'q' | 'ttm'): bigint | null => {
+  const values = balances.balanceSheets.map((bs) => (bs ? pick(bs) : null));
+  return averageBalance(window === 'q' ? values.slice(-2) : values);
+};
+
 export const resolveAverageBalances = async (
   key: { symbol: string; rocYear: number; season: Season; dataType: StatementDataType; subsidiaryCompanyId: string },
   deps: Pick<PitDeps, 'statements'>

@@ -33,40 +33,40 @@ test('turnoverRatioFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交
 
   const inventoryQ = await findLatest('inventoryTurnover', 'Q');
   const inventoryTtm = await findLatest('inventoryTurnover', 'TTM');
-  assert.equal(Number(inventoryQ!.value), 1.06);
-  assert.equal(Number(inventoryTtm!.value), 4.12);
+  assert.equal(Number(inventoryQ!.value), 1.18); // 2026-09-22 分母改平均（舊 1.06）
+  assert.equal(Number(inventoryTtm!.value), 5.03); // 2026-09-22 分母改平均（舊 4.12）
 
   const receivablesQ = await findLatest('receivablesTurnover', 'Q');
   const receivablesTtm = await findLatest('receivablesTurnover', 'TTM');
-  assert.equal(Number(receivablesQ!.value), 2.92);
-  assert.equal(Number(receivablesTtm!.value), 10.19);
+  assert.equal(Number(receivablesQ!.value), 3.2); // 2026-09-22 分母改平均（舊 2.92）
+  assert.equal(Number(receivablesTtm!.value), 13.78); // 2026-09-22 分母改平均（舊 10.19）
 
   const fixedAssetQ = await findLatest('fixedAssetTurnover', 'Q');
   const fixedAssetTtm = await findLatest('fixedAssetTurnover', 'TTM');
-  assert.equal(Number(fixedAssetQ!.value), 0.3);
-  assert.equal(Number(fixedAssetTtm!.value), 1.03);
+  assert.equal(Number(fixedAssetQ!.value), 0.31); // 2026-09-22 分母改平均（舊 0.3）
+  assert.equal(Number(fixedAssetTtm!.value), 1.18); // 2026-09-22 分母改平均（舊 1.03）
 
   const payablesQ = await findLatest('payablesTurnover', 'Q');
   const payablesTtm = await findLatest('payablesTurnover', 'TTM');
-  assert.equal(Number(payablesQ!.value), 3.77);
-  assert.equal(Number(payablesTtm!.value), 14.59);
+  assert.equal(Number(payablesQ!.value), 3.96); // 2026-09-22 分母改平均（舊 3.77）
+  assert.equal(Number(payablesTtm!.value), 17.36); // 2026-09-22 分母改平均（舊 14.59）
 
   const dioTtm = await findLatest('inventoryDays', 'TTM');
-  assert.equal(Number(dioTtm!.value), 88.59);
+  assert.equal(Number(dioTtm!.value), 72.56); // 2026-09-22 分母改平均（舊 88.59）
 
   const dsoTtm = await findLatest('receivablesDays', 'TTM');
-  assert.equal(Number(dsoTtm!.value), 35.82);
+  assert.equal(Number(dsoTtm!.value), 26.49); // 2026-09-22 分母改平均（舊 35.82）
 
   const dpoTtm = await findLatest('payablesDays', 'TTM');
-  assert.equal(Number(dpoTtm!.value), 25.02);
+  assert.equal(Number(dpoTtm!.value), 21.03); // 2026-09-22 分母改平均（舊 25.02）
 
   const cccTtm = await findLatest('cashConversionCycle', 'TTM');
-  assert.equal(Number(cccTtm!.value), 99.39);
+  assert.equal(Number(cccTtm!.value), 78.02); // 2026-09-22 分母改平均（舊 99.39）
 
   // 2026-09-11 新增（「全市場六季財報深度解鎖的指標」批次）——operatingCycle = DIO+DSO
   // （不扣 DPO），跟上面已驗證過的 dio/dso 數字直接加總對得上：TTM 88.59+35.82=124.41。
   const operatingCycleTtm = await findLatest('operatingCycle', 'TTM');
-  assert.equal(Number(operatingCycleTtm!.value), 124.41);
+  assert.equal(Number(operatingCycleTtm!.value), 99.05); // 2026-09-22 分母改平均（舊 124.41）
 
   const netWorkingCapitalTurnoverTtm = await findLatest('netWorkingCapitalTurnover', 'TTM');
   const inventoryToRevenueRatioTtm = await findLatest('inventoryToRevenueRatio', 'TTM');

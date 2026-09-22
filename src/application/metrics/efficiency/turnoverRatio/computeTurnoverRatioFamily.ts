@@ -13,8 +13,10 @@ import { calculatePayablesDays } from '@/domain/metrics/efficiency/payablesDays/
 import { calculateCashConversionCycle } from '@/domain/metrics/efficiency/cashConversionCycle/calculateCashConversionCycle';
 import { calculateOperatingCycle } from '@/domain/metrics/efficiency/operatingCycle/calculateOperatingCycle';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricNullReason } from '@/domain/metrics/metricBasis';
+import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
 
 // 這份檔案獨立重新實作 src/domainMetrics/turnoverRatio.ts 裡「還沒遷移」的欄位——
 // assetTurnover 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts 寫入，這裡不重複
@@ -44,6 +46,14 @@ const toRatio = (numeratorInThousands: bigint, denominatorInThousands: bigint): 
 export type TurnoverRatioFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
 
 export type TurnoverRatioFamilyComputationBatch = ComputationBatch<'inventoryTurnoverQ' | 'inventoryTurnoverTtm' | 'receivablesTurnoverQ' | 'receivablesTurnoverTtm' | 'fixedAssetTurnoverQ' | 'fixedAssetTurnoverTtm' | 'payablesTurnoverQ' | 'payablesTurnoverTtm' | 'inventoryDaysTtm' | 'receivablesDaysTtm' | 'payablesDaysTtm' | 'cashConversionCycleTtm' | 'operatingCycleTtm' | 'netWorkingCapitalTurnoverTtm' | 'inventoryToRevenueRatioTtm' | 'receivablesToRevenueRatioTtm'>;
+
+// 2026-09-22 formulaVersion 2（公式稽核第 ④ 項，使用者拍板「改掉後更正確就改」）：四個週轉率（含由它們推出的三個
+// 天數、CCC、營業週期）與淨營運資金週轉率的分母，從本季期末餘額改成期間平均——Q 用本季與上季期末兩點、TTM 用近四季
+// 窗口 5 個季末（跟 roe/roa/assetTurnover 同一套 shared/averageBalances.ts）。教科書的週轉率定義本來就是「平均存貨／
+// 平均應收」，期末值在季節性產業（零售旺季、年底衝貨）會系統性失真。inventoryToRevenueRatio／receivablesToRevenueRatio
+// 是「現在的水位相對年營收」，語意本來就是期末，維持 v1。
+export const TURNOVER_AVERAGE_DENOMINATOR_FORMULA_VERSION = 2;
+const AVERAGE_DENOMINATOR_CODES = new Set(['inventoryTurnover', 'receivablesTurnover', 'fixedAssetTurnover', 'payablesTurnover', 'inventoryDays', 'receivablesDays', 'payablesDays', 'cashConversionCycle', 'operatingCycle', 'netWorkingCapitalTurnover']);
 
 export const computeTurnoverRatioFamily = async (
   query: QuarterlyMetricQuery,
@@ -98,11 +108,27 @@ export const computeTurnoverRatioFamily = async (
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  // Q
-  const inventoryTurnoverQuarterly = calculateInventoryTurnover(operatingCost, inventory);
-  const receivablesTurnoverQuarterly = calculateReceivablesTurnover(operatingRevenue, accountsReceivable);
-  const fixedAssetTurnoverQuarterly = calculateFixedAssetTurnover(operatingRevenue, propertyPlantEquipment);
-  const payablesTurnoverQuarterly = calculatePayablesTurnover(operatingCost, accountsPayable);
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const avg = {
+    inventoryQ: averageOf(balances, (bs) => bs.inventory, 'q'),
+    inventoryTtm: averageOf(balances, (bs) => bs.inventory, 'ttm'),
+    receivableQ: averageOf(balances, (bs) => bs.accountsReceivable, 'q'),
+    receivableTtm: averageOf(balances, (bs) => bs.accountsReceivable, 'ttm'),
+    ppeQ: averageOf(balances, (bs) => bs.propertyPlantEquipment, 'q'),
+    ppeTtm: averageOf(balances, (bs) => bs.propertyPlantEquipment, 'ttm'),
+    payableQ: averageOf(balances, (bs) => bs.accountsPayable, 'q'),
+    payableTtm: averageOf(balances, (bs) => bs.accountsPayable, 'ttm'),
+    netWorkingCapitalTtm: averageOf(balances, (bs) => (bs.currentAssets !== null && bs.currentLiabilities !== null ? bs.currentAssets - bs.currentLiabilities : null), 'ttm'),
+  };
+  // 平均分母湊不齊（缺前期季末）但本季自己的餘額在 → insufficient_history，不是 missing_input。
+  const withAverageDenominator = (calc: { value: number | null; nullReason: MetricNullReason | null }, average: bigint | null, current: bigint | null) =>
+    calc.value === null && average === null && current !== null ? { value: null, nullReason: 'insufficient_history' as const } : calc;
+
+  // Q：分母是本季與上季期末的平均。
+  const inventoryTurnoverQuarterly = withAverageDenominator(calculateInventoryTurnover(operatingCost, avg.inventoryQ), avg.inventoryQ, inventory);
+  const receivablesTurnoverQuarterly = withAverageDenominator(calculateReceivablesTurnover(operatingRevenue, avg.receivableQ), avg.receivableQ, accountsReceivable);
+  const fixedAssetTurnoverQuarterly = withAverageDenominator(calculateFixedAssetTurnover(operatingRevenue, avg.ppeQ), avg.ppeQ, propertyPlantEquipment);
+  const payablesTurnoverQuarterly = withAverageDenominator(calculatePayablesTurnover(operatingCost, avg.payableQ), avg.payableQ, accountsPayable);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
@@ -126,7 +152,7 @@ export const computeTurnoverRatioFamily = async (
   }
 
   // TTM：近四季（含本季）營業成本/營收各自加總，四個周轉率共用同一個 ttmComplete 旗標，
-  // 分母固定用本季期末餘額（不平均不加總，跟舊架構一致）。
+  // 分母是近四季窗口 5 個季末餘額的平均（2026-09-22 起）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
     ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
@@ -144,10 +170,11 @@ export const computeTurnoverRatioFamily = async (
     }
   }
 
-  const inventoryTurnoverTtmCalc = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
-  const receivablesTurnoverTtmCalc = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
-  const fixedAssetTurnoverTtmCalc = ttmComplete ? calculateFixedAssetTurnover(revenueTtmSum, propertyPlantEquipment) : { value: null, nullReason: 'insufficient_history' as const };
-  const payablesTurnoverTtmCalc = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
+  const insufficient = { value: null, nullReason: 'insufficient_history' as const };
+  const inventoryTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateInventoryTurnover(costTtmSum, avg.inventoryTtm), avg.inventoryTtm, inventory) : insufficient;
+  const receivablesTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateReceivablesTurnover(revenueTtmSum, avg.receivableTtm), avg.receivableTtm, accountsReceivable) : insufficient;
+  const fixedAssetTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateFixedAssetTurnover(revenueTtmSum, avg.ppeTtm), avg.ppeTtm, propertyPlantEquipment) : insufficient;
+  const payablesTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculatePayablesTurnover(costTtmSum, avg.payableTtm), avg.payableTtm, accountsPayable) : insufficient;
 
   let inventoryTurnoverTtm: ComputationSlot, receivablesTurnoverTtm: ComputationSlot, fixedAssetTurnoverTtm: ComputationSlot, payablesTurnoverTtm: ComputationSlot;
   let inventoryDaysTtm: ComputationSlot, receivablesDaysTtm: ComputationSlot, payablesDaysTtm: ComputationSlot, cashConversionCycleTtm: ComputationSlot, operatingCycleTtm: ComputationSlot;
@@ -187,12 +214,13 @@ export const computeTurnoverRatioFamily = async (
       // netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio，
       // 只有 TTM 一種 basis，分母缺漏或本季餘額查無資料時 missing_input，分母為 0 時
       // zero_or_negative_denominator。
-      const netWorkingCapitalTurnoverValue = netWorkingCapital !== null ? toRatio(revenueTtmSum, netWorkingCapital) : null;
+      // 分母改 5 個季末淨營運資金的平均（v2）——期末 NWC 在 Q2 會被股東會決議後的應付股利壓低。
+      const netWorkingCapitalTurnoverValue = avg.netWorkingCapitalTtm !== null ? toRatio(revenueTtmSum, avg.netWorkingCapitalTtm) : null;
       netWorkingCapitalTurnoverTtm = computation({
         ...coordinateFor('netWorkingCapitalTurnover'),
         ...periodTypeGroup('TTM'),
         value: netWorkingCapitalTurnoverValue,
-        nullReason: netWorkingCapitalTurnoverValue !== null ? null : netWorkingCapital === null ? 'missing_input' : 'zero_or_negative_denominator',
+        nullReason: netWorkingCapitalTurnoverValue !== null ? null : netWorkingCapital === null ? 'missing_input' : avg.netWorkingCapitalTtm === null ? 'insufficient_history' : 'zero_or_negative_denominator',
         knowledgeDate,
         knowledgeDateIsFallback,
       });
@@ -237,5 +265,9 @@ export const computeTurnoverRatioFamily = async (
     netWorkingCapitalTurnoverTtm = inventoryToRevenueRatioTtm = receivablesToRevenueRatioTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { inventoryTurnoverQ, inventoryTurnoverTtm, receivablesTurnoverQ, receivablesTurnoverTtm, fixedAssetTurnoverQ, fixedAssetTurnoverTtm, payablesTurnoverQ, payablesTurnoverTtm, inventoryDaysTtm, receivablesDaysTtm, payablesDaysTtm, cashConversionCycleTtm, operatingCycleTtm, netWorkingCapitalTurnoverTtm, inventoryToRevenueRatioTtm, receivablesToRevenueRatioTtm } };
+  const slots = { inventoryTurnoverQ, inventoryTurnoverTtm, receivablesTurnoverQ, receivablesTurnoverTtm, fixedAssetTurnoverQ, fixedAssetTurnoverTtm, payablesTurnoverQ, payablesTurnoverTtm, inventoryDaysTtm, receivablesDaysTtm, payablesDaysTtm, cashConversionCycleTtm, operatingCycleTtm, netWorkingCapitalTurnoverTtm, inventoryToRevenueRatioTtm, receivablesToRevenueRatioTtm };
+  const versioned = Object.fromEntries(
+    Object.entries(slots).map(([key, slot]) => [key, !isComputationSkip(slot) && AVERAGE_DENOMINATOR_CODES.has(slot.metricCode) ? { ...slot, formulaVersion: TURNOVER_AVERAGE_DENOMINATOR_FORMULA_VERSION } : slot])
+  ) as typeof slots;
+  return { symbol, rocYear: year, season, slots: versioned };
 };

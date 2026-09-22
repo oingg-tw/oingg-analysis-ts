@@ -17,9 +17,9 @@ test('nissimPenmanRnoaPit: 2330 115Q2 合併報表，跟既有基準數字交叉
   const ttm = await replay.findLatest({ ...where, periodType: 'TTM' });
 
   assert.ok(q, 'basis=Q 應該有寫入');
-  assert.equal(Number(q!.value), 15.09);
+  assert.equal(Number(q!.value), 15.87); // 2026-09-22 分母改平均（舊 15.09）
   assert.ok(ttm, 'basis=TTM 應該有寫入');
-  assert.equal(Number(ttm!.value), 50.2);
+  assert.equal(Number(ttm!.value), 58); // 2026-09-22 分母改平均（舊 50.2）
 });
 
 test('nissimPenmanRnoaPit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {

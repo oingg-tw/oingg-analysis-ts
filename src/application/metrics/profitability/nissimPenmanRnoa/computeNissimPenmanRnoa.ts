@@ -6,8 +6,12 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
+
+// 2026-09-22 formulaVersion 2：NOA 從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
+export const RNOA_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/nissimPenmanRnoa.ts 的獨立重新實作，只遷移 RNOA 本身
 // （= NOPAT / NOA），不遷移 FLEV/NBC/SPREAD/reconstructedRoe（模型內部機制，不是獨立
@@ -63,12 +67,20 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
   const nfo = interestBearingDebt !== null && cashAndEquivalents !== null ? interestBearingDebt - cashAndEquivalents : null;
   const noa = nfo !== null && equity !== null ? equity + nfo : null;
 
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const pickNoa = (bs: NonNullable<typeof balanceSheet>): bigint | null => {
+    const e = pickEquity(bs);
+    return e !== null && bs.cashAndEquivalents !== null ? e + (bs.shortTermBorrowings ?? 0n) + (bs.bondsPayable ?? 0n) + (bs.longTermBorrowings ?? 0n) - bs.cashAndEquivalents : null;
+  };
+  const noaAvgQ = averageOf(balances, pickNoa, 'q');
+  const noaAvgTtm = averageOf(balances, pickNoa, 'ttm');
+
   const nopat = calculateNopat(incomeStatement);
-  const rnoaQuarterlyPct = nopat !== null && noa !== null ? toPercent(nopat, noa) : null;
+  const rnoaQuarterlyPct = nopat !== null && noaAvgQ !== null ? toPercent(nopat, noaAvgQ) : null;
 
   let qNullReason: MetricNullReason | null = null;
   if (rnoaQuarterlyPct === null) {
-    qNullReason = nopat === null || noa === null ? 'missing_input' : 'zero_or_negative_denominator';
+    qNullReason = nopat === null || noa === null ? 'missing_input' : noaAvgQ === null ? 'insufficient_history' : 'zero_or_negative_denominator';
   }
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
@@ -93,10 +105,10 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
     }
   }
 
-  const rnoaTtmPct = ttmComplete && noa !== null ? toPercent(nopatTtmSum, noa) : null;
+  const rnoaTtmPct = ttmComplete && noaAvgTtm !== null ? toPercent(nopatTtmSum, noaAvgTtm) : null;
   let ttmNullReason: MetricNullReason | null = null;
   if (rnoaTtmPct === null) {
-    ttmNullReason = !ttmComplete ? 'insufficient_history' : noa === null ? 'missing_input' : 'zero_or_negative_denominator';
+    ttmNullReason = !ttmComplete ? 'insufficient_history' : noa === null ? 'missing_input' : noaAvgTtm === null ? 'insufficient_history' : 'zero_or_negative_denominator';
   }
 
   let ttm: ComputationSlot;
@@ -130,5 +142,6 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  const versioned = (slot: ComputationSlot): ComputationSlot => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: RNOA_FORMULA_VERSION });
+  return { symbol, rocYear: year, season, slots: { q: versioned(q), ttm: versioned(ttm) } };
 };

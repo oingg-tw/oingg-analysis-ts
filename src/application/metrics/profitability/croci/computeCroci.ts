@@ -6,8 +6,12 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
+
+// 2026-09-22 formulaVersion 2：Economic Capital 從本季期末改成近四季窗口 5 個季末的平均，見 shared/averageBalances.ts。
+export const CROCI_FORMULA_VERSION = 2;
 
 // 量化選股盤點使用者要求新增，簡化版公式見 crociDefinition.ts 的說明（不做 CROCI 原始
 // 方法論的通膨/資本化調整）。Economic Capital 用本季期末總資產－流動負債（單一期末值，
@@ -38,6 +42,8 @@ export const computeCroci = async (query: QuarterlyMetricQuery, deps: CrociDeps)
   const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
   const economicCapital = totalAssets !== null && currentLiabilities !== null ? totalAssets - currentLiabilities : null;
   const reportDate = balanceSheet?.reportDate ?? null;
+  const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const economicCapitalAvgTtm = averageOf(balances, (bs) => (bs.totalAssets !== null && bs.currentLiabilities !== null ? bs.totalAssets - bs.currentLiabilities : null), 'ttm');
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
@@ -60,8 +66,9 @@ export const computeCroci = async (query: QuarterlyMetricQuery, deps: CrociDeps)
     }
   }
 
-  const ttmValue = ttmComplete && economicCapital !== null ? toPercent(grossCashFlowTtmSum, economicCapital) : null;
-  const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(grossCashFlowTtmSum, economicCapital) : 'insufficient_history';
+  const ttmValue = ttmComplete && economicCapitalAvgTtm !== null ? toPercent(grossCashFlowTtmSum, economicCapitalAvgTtm) : null;
+  const ttmNullReason: MetricNullReason | null =
+    ttmValue !== null ? null : !ttmComplete || (economicCapitalAvgTtm === null && economicCapital !== null) ? 'insufficient_history' : determineNullReason(grossCashFlowTtmSum, economicCapitalAvgTtm ?? economicCapital);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'croci', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
@@ -97,5 +104,5 @@ export const computeCroci = async (query: QuarterlyMetricQuery, deps: CrociDeps)
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: { ttm: isComputationSkip(ttm) ? ttm : { ...ttm, formulaVersion: CROCI_FORMULA_VERSION } } };
 };
