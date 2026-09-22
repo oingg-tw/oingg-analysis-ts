@@ -9,7 +9,7 @@ export const dupontHistoryEntrySchema = z.object({
   fiscalQuarter: z.number().nullable(),
   netProfitMarginPct: z.number().nullable().meta({ description: '稅後淨利率百分比' }),
   assetTurnover: z.number().nullable().meta({ description: '總資產週轉率（次）' }),
-  equityMultiplier: z.number().nullable().meta({ description: '權益乘數；資產負債表時點快照，沒有獨立的 TTM 儲存值，periodType=TTM 時直接沿用同一期(fiscalYear/fiscalQuarter)的 Q 快照值——這正是 dupontDecomposedRoe(TTM)/dupontExtendedRoe(TTM) 內部計算時實際使用的同一個數字，不是另外估算' }),
+  equityMultiplier: z.number().nullable().meta({ description: '權益乘數，跟查詢的 periodType 同 basis：Q = 本季與上季期末平均總資產 ÷ 平均權益，TTM = 近四季窗口 5 個季末平均總資產 ÷ 平均權益（2026-09-22 起）——正是 dupontDecomposedRoe/dupontExtendedRoe 同 basis 內部使用的同一個數字' }),
   decomposedRoePct: z.number().nullable().meta({ description: '三因子杜邦拆解組裝出來的 ROE 百分比 = netProfitMarginPct x assetTurnover x equityMultiplier' }),
   nullReason: nullReasonSchema.meta({ description: 'decomposedRoePct 為 null 時的原因；其餘因子各自缺漏的細節請對照三個 metric_code 各自的資料，這裡不重複列出' }),
   // 2026-09-07 新增：五因子 Extended DuPont，把上面 netProfitMarginPct 再拆成稅務負擔×
@@ -51,6 +51,8 @@ const periodKey = (row: { fiscalYear: number; fiscalQuarter: number | null }): s
 // 既然 TTM 分解的數學本來就用了這個值，這裡查詢時也一律 join 同一期的 Q 快照
 // （不管呼叫端要的是 Q 還是 TTM basis），不用另外在 metric_values 多寫一份「TTM」列——
 // 兩個 periodType 分解出來的 equityMultiplier 本來就該是同一個數字。
+// 2026-09-22 上面這段作廢：分母改期間平均後 equityMultiplier 有獨立的 TTM 儲存列（5 個季末平均總資產 ÷ 平均權益，
+// 跟 assetTurnover.TTM 同一組平均分母），這裡改成跟其他因子同 basis 查；Q 與 TTM 的權益乘數現在是兩個不同的數字。
 //
 // 四個 metric_code 是同一次 computeAndWriteDupontFamilyPit() 呼叫共用同一組
 // knowledge_date 寫入的，正常情況下同一期的 knowledgeDate 會一致；這裡以 netProfitMargin
@@ -67,7 +69,9 @@ export const getDupontHistory = async (symbol: string, periodType: PeriodType, l
     getMetricHistory(symbol, 'netProfitMargin', periodType, dataType, '', limit, deps),
     getMetricHistory(symbol, 'assetTurnover', periodType, dataType, '', limit, deps),
     getMetricHistory(symbol, 'dupontDecomposedRoe', periodType, dataType, '', limit, deps),
-    getMetricHistory(symbol, 'equityMultiplier', 'Q', dataType, '', limit, deps),
+    // 2026-09-22 起 equityMultiplier 有 Q/TTM 兩個 basis（分母改期間平均後 TTM 有意義），跟其他因子同 basis 查，
+    // TTM 的恆等式才用得上 em.TTM；之前只有 Q 所以寫死 'Q'。
+    getMetricHistory(symbol, 'equityMultiplier', periodType, dataType, '', limit, deps),
     getMetricHistory(symbol, 'dupontTaxBurden', periodType, dataType, '', limit, deps),
     getMetricHistory(symbol, 'dupontInterestBurden', periodType, dataType, '', limit, deps),
     getMetricHistory(symbol, 'dupontEbitMargin', periodType, dataType, '', limit, deps),

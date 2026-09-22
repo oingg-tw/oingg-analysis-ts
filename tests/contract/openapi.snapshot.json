@@ -922,7 +922,7 @@
                             "type": "number"
                           },
                           "equityMultiplier": {
-                            "description": "權益乘數；資產負債表時點快照，沒有獨立的 TTM 儲存值，periodType=TTM 時直接沿用同一期(fiscalYear/fiscalQuarter)的 Q 快照值——這正是 dupontDecomposedRoe(TTM)/dupontExtendedRoe(TTM) 內部計算時實際使用的同一個數字，不是另外估算",
+                            "description": "權益乘數，跟查詢的 periodType 同 basis：Q = 本季與上季期末平均總資產 ÷ 平均權益，TTM = 近四季窗口 5 個季末平均總資產 ÷ 平均權益（2026-09-22 起）——正是 dupontDecomposedRoe/dupontExtendedRoe 同 basis 內部使用的同一個數字",
                             "nullable": true,
                             "type": "number"
                           },
