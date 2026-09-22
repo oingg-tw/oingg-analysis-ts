@@ -28,6 +28,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 真的轉換成自由現金流），不是 FCF/OCF 或 FCF/EBITDA 版本——業界對「conversion rate」
 // 有多種定義，這裡明確記錄採用的是哪一種。
 
+export const CROIC_FORMULA_VERSION = 2;
+
 const toPctFromThousands = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
   if (denominatorInThousands === 0n) return null;
   return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100 * 100) / 100;
@@ -170,7 +172,9 @@ export const computeCashFlowValuationFamily = async (
   const priceToOcfValue = marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, ocfTtmSum) : null;
   const debtToFcfValue = totalDebt !== null ? toRatioFromThousands(totalDebt, fcfTtmSum) : null;
   const capexToOcfRatioValue = toPctFromThousands(capexTtmSum < 0n ? -capexTtmSum : capexTtmSum, ocfTtmSum);
-  const croicValue = investedCapital !== null ? toRatioFromThousands(fcfTtmSum, investedCapital) : null;
+  // 2026-09-22 公式稽核抓到：croic 的 unit 是 %，但原本用 toRatioFromThousands（沒乘 100），全市場中位數 0.11 = 實際 11%。
+  // 改 toPctFromThousands，formulaVersion 2，全市場重算。
+  const croicValue = investedCapital !== null ? toPctFromThousands(fcfTtmSum, investedCapital) : null;
   const ocfMarginValue = toPctFromThousands(ocfTtmSum, revenueTtmSum);
   const fcfConversionRateValue = toPctFromThousands(fcfTtmSum, netIncomeTtmSum);
 
@@ -187,7 +191,8 @@ export const computeCashFlowValuationFamily = async (
   const priceToOcf = write('priceToOcf', priceToOcfValue, nullReasonFor(priceToOcfValue, marketCap !== null));
   const debtToFcf = write('debtToFcf', debtToFcfValue, nullReasonFor(debtToFcfValue, totalDebt !== null));
   const capexToOcfRatio = write('capexToOcfRatio', capexToOcfRatioValue, nullReasonFor(capexToOcfRatioValue, true));
-  const croic = write('croic', croicValue, nullReasonFor(croicValue, investedCapital !== null));
+  const croicSlot = write('croic', croicValue, nullReasonFor(croicValue, investedCapital !== null));
+  const croic = { ...croicSlot, formulaVersion: CROIC_FORMULA_VERSION };
   const ocfMargin = write('ocfMargin', ocfMarginValue, nullReasonFor(ocfMarginValue, true));
   const fcfConversionRate = write('fcfConversionRate', fcfConversionRateValue, nullReasonFor(fcfConversionRateValue, true));
 

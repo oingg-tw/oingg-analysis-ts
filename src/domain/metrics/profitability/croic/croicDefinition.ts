@@ -7,7 +7,7 @@ export const croicDefinition: MetricDefinitionSpec = {
   metricCode: 'croic',
   name: 'CROIC',
   unit: '%',
-  formulaNote: '= 近四季自由現金流（OCF-資本支出）加總 ÷ 投入資本（付息負債+股東權益-現金，跟既有 roic 同一套定義）。',
+  formulaNote: '= 近四季自由現金流（OCF-資本支出）加總 ÷ 投入資本（付息負債+股東權益-現金，跟既有 roic 同一套定義）× 100。（formulaVersion 1 漏乘 100，存的是比率不是百分比，2026-09-22 修正。）',
   formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}}',
   referenceUrl: 'https://www.investopedia.com/terms/c/cashreturnoninvestment.asp',
   tier: 'derived',
@@ -24,5 +24,5 @@ export const croicDefinition: MetricDefinitionSpec = {
     'cash_flows_from_used_in_operating_activities',
     'purchase_of_ppe_investing',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };
