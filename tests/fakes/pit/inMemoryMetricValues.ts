@@ -3,6 +3,7 @@ import type {
   ExistingMetricRow,
   MetricRowValues,
   MetricValueRepository,
+  MonthlyCoordinateWhere,
   PeriodCoordinateWhere,
 } from '@/application/ports/metricValues';
 
@@ -12,7 +13,7 @@ import type {
 // identity，已存在就只更新 value/nullReason/knowledgeDateIsFallback/formulaVersion（跟 Prisma 的
 // update 子句一樣，不動 knowledgeDate）。rows() 給測試檢查最後落地的內容。
 
-export interface StoredMetricRow<W = PeriodCoordinateWhere | DailyCadenceCoordinateWhere> {
+export interface StoredMetricRow<W = PeriodCoordinateWhere | DailyCadenceCoordinateWhere | MonthlyCoordinateWhere> {
   where: W;
   values: MetricRowValues;
 }
@@ -42,7 +43,7 @@ export const createInMemoryMetricValues = (): InMemoryMetricValues => {
       existing.values = { ...existing.values, value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion };
       return;
     }
-    rows.push({ where: where as unknown as PeriodCoordinateWhere | DailyCadenceCoordinateWhere, values: { ...values } });
+    rows.push({ where: where as unknown as PeriodCoordinateWhere | DailyCadenceCoordinateWhere | MonthlyCoordinateWhere, values: { ...values } });
   };
 
   return {
@@ -50,6 +51,8 @@ export const createInMemoryMetricValues = (): InMemoryMetricValues => {
     upsertPeriodRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
     findLatestDailyCadenceRow: (where) => findLatest(where as unknown as Record<string, unknown>),
     upsertDailyCadenceRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
+    findLatestMonthlyRow: (where) => findLatest(where as unknown as Record<string, unknown>),
+    upsertMonthlyRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
     rows: () => rows.map((row) => ({ where: { ...row.where }, values: { ...row.values } })),
     seed: (seedRows) => {
       for (const row of seedRows) rows.push({ where: { ...row.where }, values: { ...row.values } });

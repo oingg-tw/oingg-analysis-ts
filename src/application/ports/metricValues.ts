@@ -27,6 +27,18 @@ export interface DailyCadenceCoordinateWhere {
   tradeDate: Date;
 }
 
+// 2026-09-23 月頻指標（第一支是 sus）的座標——獨立的 metric_monthly_values 表，理由見 schema.prisma 的
+// MetricMonthlyValue 檔頭：季表沒有月份欄位（同一季三個月會撞座標）、逐日表的鍵叫 tradeDate 而且假設
+// 「沒有公告延遲」，但月營收次月才公告。沒有 periodType 這類 discriminator——這張表只有一種座標形狀。
+export interface MonthlyCoordinateWhere {
+  symbol: string;
+  metricCode: string;
+  fiscalYear: number;
+  fiscalMonth: number; // 1~12，真實值，沒有 sentinel
+  dataType: string;
+  subsidiaryCompanyId: string;
+}
+
 export interface ExistingMetricRow {
   value: unknown;
   nullReason: string | null;
@@ -51,4 +63,6 @@ export interface MetricValueRepository {
   upsertPeriodRow(where: PeriodCoordinateWhere, values: MetricRowValues): Promise<void>;
   findLatestDailyCadenceRow(where: DailyCadenceCoordinateWhere): Promise<ExistingMetricRow | null>;
   upsertDailyCadenceRow(where: DailyCadenceCoordinateWhere, values: MetricRowValues): Promise<void>;
+  findLatestMonthlyRow(where: MonthlyCoordinateWhere): Promise<ExistingMetricRow | null>;
+  upsertMonthlyRow(where: MonthlyCoordinateWhere, values: MetricRowValues): Promise<void>;
 }

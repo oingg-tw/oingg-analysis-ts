@@ -136,6 +136,7 @@ model MetricDefinition {
 
   values MetricValue[]
   dailyCadenceValues MetricDailyCadenceValue[]
+  monthlyValues MetricMonthlyValue[]
 
   @@map("metric_definitions")
 }
@@ -258,6 +259,54 @@ model MetricDailyCadenceValue {
   @@unique([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId, tradeDate, knowledgeDate], map: "metric_daily_cadence_values_identity_key")
   @@index([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId], map: "metric_daily_cadence_values_latest_lookup")
   @@map("metric_daily_cadence_values")
+}
+
+// 2026-09-23 新增：月頻指標（第一支是 sus，標準化未預期營收）的獨立表。
+//
+// 為什麼不塞進 MetricValue：那張表的期間座標是 (fiscalYear, fiscalQuarter)，沒有月份。硬塞的話同一季的
+// 三個月會共用同一個座標——唯一鍵與 latest_lookup 索引都會把它們當成同一期，`findLatest` 只會看到最後
+// 公告的那個月、歷史查詢會把三個月摺成一筆。**這正是逐日型指標當初拆表的原因**（見 MetricDailyCadenceValue
+// 檔頭：「把一整年資料誤判成同一期、遺失 99%+ 資料」），不重蹈覆轍。
+//
+// 為什麼不塞進 MetricDailyCadenceValue：那張表的鍵叫 tradeDate（營收月份不是交易日），而且它的檔頭明寫
+// 「逐日型指標沒有公告延遲，knowledgeDate 恆等於 tradeDate」——**月營收有公告延遲**（8 月營收次月 10 日前
+// 才公告），放進去等於謊報 knowledgeDate，回測會穿越未來。
+//
+// 為什麼不在 MetricValue 加欄位：實測該表 610 萬列 1.65 GB，月座標必須進唯一鍵與 latest_lookup，等於重建
+// 446MB + 409MB 兩個索引。拆表零風險、且符合本檔案已確立的模式。
+//
+// 沒有 periodType 這類欄位：這張表只有一種座標形狀（年＋月），不需要 discriminator，也不需要 sentinel。
+model MetricMonthlyValue {
+  id BigInt @id @default(autoincrement())
+
+  symbol String
+
+  metricCode String @map("metric_code")
+
+  dataType            String @map("data_type") // '1' = 個體, '2' = 合併
+  subsidiaryCompanyId String @default("") @map("subsidiary_company_id")
+
+  // 營收所屬月份。fiscalYear 是西元年，fiscalMonth 1~12——都是真實值，沒有 sentinel。
+  fiscalYear  Int @map("fiscal_year") @db.SmallInt
+  fiscalMonth Int @map("fiscal_month") @db.SmallInt
+
+  value      Decimal? @db.Decimal(24, 6)
+  nullReason String?  @map("null_reason")
+
+  // 跟 MetricValue 同樣語意：這個值最早可被市場知道的日期。月營收的公告期限是次月 10 日前，所以
+  // knowledgeDate 一定晚於所屬月份，**不會等於任何「該月份的日期」**——這是這張表跟
+  // MetricDailyCadenceValue 最關鍵的差別。
+  knowledgeDate           DateTime @map("knowledge_date") @db.Date
+  knowledgeDateIsFallback Boolean  @map("knowledge_date_is_fallback")
+
+  formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
+  computedAt     DateTime @default(now()) @map("computed_at")
+
+  metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
+
+  @@unique([symbol, metricCode, fiscalYear, fiscalMonth, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_monthly_values_identity_key")
+  @@index([symbol, metricCode, fiscalYear, fiscalMonth, dataType, subsidiaryCompanyId], map: "metric_monthly_values_latest_lookup")
+  @@map("metric_monthly_values")
 }
 
 // ============================================================================
