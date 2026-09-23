@@ -23,6 +23,15 @@ export interface CompanyNameEntry {
   market: 'TWSE' | 'TPEx';
   sectorCode: string | null;
   sectorName: string | null;
+  // 2026-09-23 新增：這個目錄**刻意包含興櫃**（使用者裁定），所以下游必須有辦法分辨。
+  // 興櫃只存在於 TPEx 那側（tpex-ts 的 company_profile 用 source 區分：COMPANY_PROFILE 上櫃 891 家、
+  // COMPANY_PROFILE_EMERGING 興櫃 364 家）；TWSE 側恆為 false。判斷邏輯跟 listSecuritySymbols
+  // 的 isEmerging 同一套，不另外發明。
+  //
+  // 為什麼重要：興櫃公司**沒有月營收強制揭露**，所以 SUS 這類依賴月營收的指標對它們永遠是空的；
+  // 上游（mops-ts/twse-ts/tpex-ts）的「全市場」清單也一律指上市＋上櫃 1,985 家、不含興櫃。
+  // 下游拿這個目錄當母體算覆蓋率時，要先扣掉 isEmerging 才會跟上游的數字對得起來。
+  isEmerging: boolean;
 }
 
 // 普通股/特別股/ETF——web-nuxt 靠這個做導頁判斷，不靠 symbol 格式猜。

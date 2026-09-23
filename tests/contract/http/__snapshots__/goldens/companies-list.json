@@ -5,6 +5,7 @@
     "entries": [
       {
         "companyName": "<string>",
+        "isEmerging": "<boolean>",
         "market": "TWSE",
         "sectorCode": "<numeric-string>",
         "sectorName": "<string>",

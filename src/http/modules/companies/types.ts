@@ -71,6 +71,13 @@ export const companyNameEntrySchema = z.object({
   market: z.enum(['TWSE', 'TPEx']).meta({ description: '2026-09-19 新增：上市（twse-ts）或上櫃（tpex-ts）' }),
   sectorCode: z.string().nullable().meta({ description: '2026-09-19 新增：證交所類股代碼（兩碼，跟 GET /industries/securities-sectors 同一套）；掛在非產業代碼（07/91/98/XX）的公司為 null' }),
   sectorName: z.string().nullable().meta({ description: '2026-09-19 新增：類股中文名稱；sectorCode 為 null 或代碼字典尚未載入時為 null' }),
+  isEmerging: z.boolean().meta({
+    description:
+      '2026-09-23 新增：是否為興櫃公司。這份目錄**刻意包含興櫃**（約 364 家，全部在 TPEx 側；TWSE 側恆為 false），' +
+      '所以需要這個旗標才能分辨。注意興櫃**沒有月營收強制揭露**，依賴月營收的指標對它們永遠是空的；' +
+      '上游各資料服務的「全市場」也一律指上市＋上櫃 1,985 家。拿這份目錄當母體算指標覆蓋率時，' +
+      '要先扣掉 isEmerging=true 才會跟上游的數字對得起來。',
+  }),
 }) satisfies z.ZodType<CompanyNameEntry>;
 
 // 2026-09-01 應 bff-ts 要求新增的 GET /companies 兩種回應形狀（依 countOnly 決定回哪一種）。

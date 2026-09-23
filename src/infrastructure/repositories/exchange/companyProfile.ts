@@ -421,6 +421,7 @@ interface DedupeRow {
   shortName: string | null;
   market: 'TWSE' | 'TPEx';
   industry: string | null;
+  isEmerging: boolean;
 }
 
 const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
@@ -429,7 +430,7 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
   for (const row of rows) {
     if (!bySymbol.has(row.symbol)) bySymbol.set(row.symbol, row);
   }
-  return [...bySymbol.values()].map(({ symbol, shortName, market, industry }) => {
+  return [...bySymbol.values()].map(({ symbol, shortName, market, industry, isEmerging }) => {
     const isRealSector = industry !== null && !NON_INDUSTRY_CODES.has(industry);
     return {
       symbol,
@@ -437,6 +438,7 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
       market,
       sectorCode: isRealSector ? industry : null,
       sectorName: isRealSector && codes ? (codes[industry] ?? null) : null,
+      isEmerging,
     };
   });
 };
@@ -447,15 +449,28 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
 // 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
 // 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
 const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
+// tpex-ts 的 company_profile 也用 source 分兩種，但語意跟 twse 不同：COMPANY_PROFILE 是上櫃（891 家）、
+// COMPANY_PROFILE_EMERGING 是興櫃（364 家），兩者都是正牌公司，差別是市場別不是雜訊。
+const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
 
+// 2026-09-23 使用者拍板：**這個目錄刻意包含興櫃，不要篩掉**（tpex 側 source='COMPANY_PROFILE_EMERGING'
+// 364 家），理由是未來可能有專門處理興櫃公司的業務線，先留著比之後再補回來容易。改成多回一個
+// isEmerging 旗標讓下游自己決定要不要用。
+//
+// **看到 twse 篩了 LISTED_ONLY、tpex 沒篩，不要以為是漏篩**——兩邊篩的是不同東西：twse 的
+// COMPANY_PROFILE_PUBLIC 是「公開發行未上市」（含六碼證券商），那是雜訊；tpex 的
+// COMPANY_PROFILE_EMERGING 是興櫃，那是刻意保留的一個市場別。
+//
+// 對下游的意義：興櫃**沒有月營收強制揭露**，上游各服務的「全市場」也一律指上市＋上櫃 1,985 家，
+// 所以拿這個目錄當母體算指標覆蓋率時要先扣掉 isEmerging，否則分母會多 364 家永遠算不出來的公司。
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(LISTED_ONLY)}`,
-    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile"`,
+    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."company_profile"`,
   ]);
   const all = dedupeBySymbol([
-    ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry })),
-    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TPEx' as const, industry: r.industry })),
+    ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry, isEmerging: false })),
+    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TPEx' as const, industry: r.industry, isEmerging: r.source === EMERGING_SOURCE })),
   ]); // twseRows 排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };

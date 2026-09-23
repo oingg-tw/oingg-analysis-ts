@@ -170,6 +170,10 @@
                                 "nullable": true,
                                 "type": "string"
                               },
+                              "isEmerging": {
+                                "description": "2026-09-23 新增：是否為興櫃公司。這份目錄**刻意包含興櫃**（約 364 家，全部在 TPEx 側；TWSE 側恆為 false），所以需要這個旗標才能分辨。注意興櫃**沒有月營收強制揭露**，依賴月營收的指標對它們永遠是空的；上游各資料服務的「全市場」也一律指上市＋上櫃 1,985 家。拿這份目錄當母體算指標覆蓋率時，要先扣掉 isEmerging=true 才會跟上游的數字對得起來。",
+                                "type": "boolean"
+                              },
                               "market": {
                                 "description": "2026-09-19 新增：上市（twse-ts）或上櫃（tpex-ts）",
                                 "enum": [
@@ -197,7 +201,8 @@
                               "companyName",
                               "market",
                               "sectorCode",
-                              "sectorName"
+                              "sectorName",
+                              "isEmerging"
                             ],
                             "type": "object"
                           },
