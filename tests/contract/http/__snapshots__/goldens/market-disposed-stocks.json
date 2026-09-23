@@ -14,7 +14,7 @@
         "linkInformation": "<string>",
         "market": "TWSE",
         "reason": "<string>",
-        "reasonShort": "<string>",
+        "reasonShort": "<null>",
         "reasonTimes": "<number>",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>"
