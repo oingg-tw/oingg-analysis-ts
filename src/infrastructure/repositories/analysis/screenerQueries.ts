@@ -373,6 +373,10 @@ export interface DistributionBoundsRow {
   true_max: unknown;
   p1: unknown;
   p99: unknown;
+  p20: unknown;
+  p40: unknown;
+  p60: unknown;
+  p80: unknown;
 }
 
 // excludeZero：2026-09-18 應 web-nuxt 需求新增——殖利率這類欄位「等於 0」是一個真實、大量重複
@@ -384,6 +388,12 @@ export interface DistributionBoundsRow {
 const buildValueFilter = (alias: Prisma.Sql, excludeZero: boolean): Prisma.Sql =>
   excludeZero ? Prisma.sql`${alias}.${q('value')} IS NOT NULL AND ${alias}.${q('value')} <> 0` : Prisma.sql`${alias}.${q('value')} IS NOT NULL`;
 
+// 2026-09-24 web-nuxt 需求：直方圖的 x 軸想標五等分位而不是等距刻度（殖利率右偏長尾，等距刻度
+// 讀者看不出自己在母體裡的位置）。p20/p40/p60/p80 刻意跟 p1/p99 放在**同一支查詢**：同一個 CTE、
+// 同一個 buildValueFilter，所以母體必定跟 bins 與 totalCount 一致——尤其 excludeZero=true 時不會
+// 混進值為 0 的公司。分開查會多一次往返，而且兩支查詢之間母體定義可能悄悄漂掉。
+// 不從 bins 反推分位是刻意的：右偏分布的低值區段擠了大量公司，格內線性插值誤差可能到好幾個
+// basis point，那是「看起來精確但其實是猜的」數字。
 export const buildDistributionBoundsSql = (field: FieldRef, excludeZero: boolean): Prisma.Sql => {
   const ref = dedupCtes([field]).get(basisGroupKeyFor(field))!;
   const alias = Prisma.raw(ref.alias);
@@ -394,7 +404,11 @@ export const buildDistributionBoundsSql = (field: FieldRef, excludeZero: boolean
       MIN(${alias}.${q('value')}) AS true_min,
       MAX(${alias}.${q('value')}) AS true_max,
       percentile_cont(0.01) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p1,
-      percentile_cont(0.99) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p99
+      percentile_cont(0.99) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p99,
+      percentile_cont(0.20) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p20,
+      percentile_cont(0.40) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p40,
+      percentile_cont(0.60) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p60,
+      percentile_cont(0.80) WITHIN GROUP (ORDER BY ${alias}.${q('value')}) AS p80
     FROM ${alias}
     WHERE ${buildValueFilter(alias, excludeZero)}
   `;

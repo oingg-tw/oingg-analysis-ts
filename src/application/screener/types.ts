@@ -81,4 +81,6 @@ export interface FieldDistributionResult {
   clippedMin: number | null; // 第 1 百分位，拿來切 bins 的裁切下界
   clippedMax: number | null; // 第 99 百分位，拿來切 bins 的裁切上界
   bins: DistributionBucketResult[];
+  // 五等分位的邊界值，跟 bins/totalCount 同一個母體；totalCount=0 時為 null。
+  quantiles: { p20: number; p40: number; p60: number; p80: number } | null;
 }

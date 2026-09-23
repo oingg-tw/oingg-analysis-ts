@@ -58,16 +58,18 @@ const fetchDistribution = async (field: FieldRef, bins: number, excludeZero: boo
   const [bounds] = await runAnalysisRawQuery<DistributionBoundsRow>(buildDistributionBoundsSql(field, excludeZero));
   const totalCount = Number(bounds?.total_count ?? 0);
   if (totalCount === 0) {
-    return { totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] };
+    return { totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [], quantiles: null };
   }
 
   const trueMin = Number(bounds!.true_min);
   const trueMax = Number(bounds!.true_max);
   const p1 = Number(bounds!.p1);
   const p99 = Number(bounds!.p99);
+  // totalCount > 0 時 percentile_cont 必定有值，所以這裡不會是 NaN；全部同值的母體四個分位都等於那個值。
+  const quantiles = { p20: Number(bounds!.p20), p40: Number(bounds!.p40), p60: Number(bounds!.p60), p80: Number(bounds!.p80) };
 
   if (p1 === p99) {
-    return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: [{ min: p1, max: p99, count: totalCount }] };
+    return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: [{ min: p1, max: p99, count: totalCount }], quantiles };
   }
 
   const bucketRows = await runAnalysisRawQuery<DistributionBucketRow>(buildDistributionBinsSql(field, p1, p99, bins, excludeZero));
@@ -77,7 +79,7 @@ const fetchDistribution = async (field: FieldRef, bins: number, excludeZero: boo
     countsByBucket.set(clamped, (countsByBucket.get(clamped) ?? 0) + Number(row.count));
   }
 
-  return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: buildDistributionBins(p1, p99, bins, countsByBucket) };
+  return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: buildDistributionBins(p1, p99, bins, countsByBucket), quantiles };
 };
 
 export const analysisMetricValueQueries: MetricValueQueryPort = {

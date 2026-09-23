@@ -7046,6 +7046,31 @@
                     "field": {
                       "type": "string"
                     },
+                    "quantiles": {
+                      "description": "五等分位的邊界值（分位線落在這個欄位的單位上是多少），由 SQL 的 percentile_cont 直接算，跟 bins/totalCount 同一個母體、同樣套用 excludeZero。用來把直方圖的 x 軸刻度從等距數值改標分位；不要拿 bins 反推，右偏分布的低值區段擠了大量公司，格內插值誤差可能到好幾個 basis point。跟 GET /screener/company-rank 的 quintile 互補：quintile 是「這家公司在第幾等分」，這裡是「等分的界線在哪」。totalCount=0 時為 null。",
+                      "nullable": true,
+                      "properties": {
+                        "p20": {
+                          "type": "number"
+                        },
+                        "p40": {
+                          "type": "number"
+                        },
+                        "p60": {
+                          "type": "number"
+                        },
+                        "p80": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "p20",
+                        "p40",
+                        "p60",
+                        "p80"
+                      ],
+                      "type": "object"
+                    },
                     "totalCount": {
                       "description": "這個欄位全市場有值（非 null）的公司總數，等於 bins 的 count 加總",
                       "type": "integer"
@@ -7068,7 +7093,8 @@
                     "trueMax",
                     "clippedMin",
                     "clippedMax",
-                    "bins"
+                    "bins",
+                    "quantiles"
                   ],
                   "type": "object"
                 }

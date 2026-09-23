@@ -78,6 +78,17 @@ export interface FieldDistribution {
   clippedMin: number | null;
   clippedMax: number | null;
   bins: DistributionBucket[];
+  // 2026-09-24 新增：五等分位的「邊界值」（分位線落在指標單位上是多少），跟 companyRank 的
+  // quintile 互補不重疊——quintile 回答「這家公司在第幾等分」，這裡回答「等分的界線在哪」。
+  // 跟 bins/totalCount 同一個母體（同一支查詢、同一個 excludeZero 條件）。totalCount=0 時為 null。
+  quantiles: FieldQuantiles | null;
+}
+
+export interface FieldQuantiles {
+  p20: number;
+  p40: number;
+  p60: number;
+  p80: number;
 }
 
 export interface MetricValueQueryPort {

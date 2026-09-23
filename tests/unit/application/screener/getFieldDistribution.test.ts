@@ -14,14 +14,14 @@ const distributionPort = (result: FieldDistribution): Pick<MetricValueQueryPort,
 
 describe('getFieldDistribution', () => {
   test('field 格式錯誤（沒有點）丟 ValidationError', async () => {
-    const deps = createTestDeps({ metricValueQueries: distributionPort({ totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] }) as MetricValueQueryPort });
+    const deps = createTestDeps({ metricValueQueries: distributionPort({ totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [], quantiles: null }) as MetricValueQueryPort });
     await assert.rejects(() => getFieldDistribution('roe', 20, false, deps), ScreenerValidationError);
   });
 
   test('查無資料時原樣回傳空 bins，field 帶回請求時的字串', async () => {
-    const deps = createTestDeps({ metricValueQueries: distributionPort({ totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] }) as MetricValueQueryPort });
+    const deps = createTestDeps({ metricValueQueries: distributionPort({ totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [], quantiles: null }) as MetricValueQueryPort });
     const result = await getFieldDistribution('dividendYield.EOD', 20, false, deps);
-    expect(result).toEqual({ field: 'dividendYield.EOD', totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] });
+    expect(result).toEqual({ field: 'dividendYield.EOD', totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [], quantiles: null });
   });
 
   test('有資料時把 port 回傳的分布結果原樣帶回，只補上 field', async () => {
@@ -32,6 +32,7 @@ describe('getFieldDistribution', () => {
       clippedMin: 0.5,
       clippedMax: 12,
       bins: [{ min: 0.5, max: 6.25, count: 60 }, { min: 6.25, max: 12, count: 40 }],
+      quantiles: { p20: 1.1, p40: 2.2, p60: 3.3, p80: 4.4 },
     };
     const deps = createTestDeps({ metricValueQueries: distributionPort(distribution) as MetricValueQueryPort });
     const result = await getFieldDistribution('dividendYield.EOD', 2, false, deps);
@@ -43,7 +44,7 @@ describe('getFieldDistribution', () => {
     const spyPort: Pick<MetricValueQueryPort, 'distribution'> = {
       distribution: async (field, bins, excludeZero) => {
         calls.push({ field, bins, excludeZero });
-        return { totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [] };
+        return { totalCount: 0, trueMin: null, trueMax: null, clippedMin: null, clippedMax: null, bins: [], quantiles: null };
       },
     };
     const deps = createTestDeps({ metricValueQueries: spyPort as MetricValueQueryPort });

@@ -11,6 +11,12 @@
     "clippedMax": "<number>",
     "clippedMin": "<number>",
     "field": "dividendYield.EOD",
+    "quantiles": {
+      "p20": "<number>",
+      "p40": "<number>",
+      "p60": "<number>",
+      "p80": "<number>"
+    },
     "totalCount": "<number>",
     "trueMax": "<number>",
     "trueMin": "<number>"

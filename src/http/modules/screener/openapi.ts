@@ -62,6 +62,17 @@ const fieldDistributionResultSchema = z.object({
   clippedMin: z.number().nullable().meta({ description: '第 1 百分位，拿來切 bins 的裁切下界，避免極端值把其餘資料壓成一根柱子；totalCount=0 時為 null' }),
   clippedMax: z.number().nullable().meta({ description: '第 99 百分位，拿來切 bins 的裁切上界；totalCount=0 時為 null' }),
   bins: z.array(distributionBucketSchema).meta({ description: '等寬切割 [clippedMin, clippedMax]；小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉' }),
+  quantiles: z
+    .object({ p20: z.number(), p40: z.number(), p60: z.number(), p80: z.number() })
+    .nullable()
+    .meta({
+      description:
+        '五等分位的邊界值（分位線落在這個欄位的單位上是多少），由 SQL 的 percentile_cont 直接算，' +
+        '跟 bins/totalCount 同一個母體、同樣套用 excludeZero。用來把直方圖的 x 軸刻度從等距數值改標分位；' +
+        '不要拿 bins 反推，右偏分布的低值區段擠了大量公司，格內插值誤差可能到好幾個 basis point。' +
+        '跟 GET /screener/company-rank 的 quintile 互補：quintile 是「這家公司在第幾等分」，這裡是「等分的界線在哪」。' +
+        'totalCount=0 時為 null。',
+    }),
 });
 
 const companyRankResultSchema = z.object({
