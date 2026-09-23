@@ -83,6 +83,21 @@ export const validateCoordinate = (input: MetricComputation, definition: MetricD
     return null;
   }
 
+  // 2026-09-23 月頻（group='monthly'，寫進 metric_monthly_values）：四個 basis 欄位全部必須是 'N/A'
+  // ——月頻的座標是 (fiscalYear, fiscalMonth)，不屬於任何一組既有 basis。fiscalMonth 必填且 1~12。
+  if (definition.group === 'monthly') {
+    if (periodTypeIsSet(input.periodType) || lookbackIsSet || samplingIsSet || snapshotCadenceIsSet) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是月頻指標（group='monthly'），periodType/lookbackRange/samplingInterval/snapshotCadence 必須都是 'N/A'。` };
+    }
+    if (input.fiscalYear === undefined || input.fiscalMonth === undefined) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是月頻指標，fiscalYear/fiscalMonth 必填。` };
+    }
+    if (input.fiscalMonth < 1 || input.fiscalMonth > 12) {
+      return { action: 'rejected', reason: `metric_code '${input.metricCode}' 的 fiscalMonth 必須是 1~12，收到 ${input.fiscalMonth}。` };
+    }
+    return null;
+  }
+
   if (definition.group === 'rollingWindow') {
     if (periodTypeIsSet(input.periodType) || snapshotCadenceIsSet) {
       return { action: 'rejected', reason: `metric_code '${input.metricCode}' 是滾動統計量指標（group='rollingWindow'），periodType/snapshotCadence 必須都是 'N/A'。` };
@@ -162,6 +177,25 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
     if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
 
     await deps.metricValues.upsertPeriodRow(coordinateWhere, values);
+    return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
+  }
+
+  // 2026-09-23 月頻：寫進 metric_monthly_values。決策邏輯（decideWrite）跟另外兩條路徑共用同一支，
+  // 差別只在座標形狀與打哪張表。
+  if (definition!.group === 'monthly') {
+    const monthlyCoordinateWhere = {
+      symbol: input.symbol,
+      metricCode: input.metricCode,
+      fiscalYear: input.fiscalYear!,
+      fiscalMonth: input.fiscalMonth!,
+      dataType: input.dataType,
+      subsidiaryCompanyId: input.subsidiaryCompanyId,
+    };
+    const existing = await deps.metricValues.findLatestMonthlyRow(monthlyCoordinateWhere);
+    const decision = decideWrite(existing, input);
+    if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
+
+    await deps.metricValues.upsertMonthlyRow(monthlyCoordinateWhere, values);
     return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
   }
 

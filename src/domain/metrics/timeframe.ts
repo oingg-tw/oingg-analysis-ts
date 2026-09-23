@@ -25,6 +25,11 @@ export interface FieldRef {
   // 逐日型指標（lookbackRange/snapshotCadence 這兩組）存在獨立的 metric_daily_cadence_values 表，
   // 跟季報型（periodType 這組）不共用 metric_values——查詢端直接讀這個 boolean 決定要打哪張表。
   isDailyCadence: boolean;
+  // 2026-09-23：月頻指標（group='monthly'，目前只有 sus）又是第三張表 metric_monthly_values。
+  // **不變式：isDailyCadence 與 isMonthly 至多一個為 true**（兩者皆 false = 季報型 metric_values）。
+  // 沒有改成三值 discriminator 是因為 isDailyCadence 已有 8 個消費端（screener SQL、history、
+  // completeness…），換型別的漣漪遠大於多一個布林；改動時請維持這個不變式。
+  isMonthly: boolean;
 }
 
 // 這支 metricCode 實際可用的 timeframe 清單（給 GET /metrics 的 validTimeframes 跟錯誤訊息用）。
@@ -36,6 +41,10 @@ export const validTimeframes = (definition: MetricDefinitionSpec): string[] => {
       return definition.allowedRollingWindowTimeframes;
     case 'snapshot':
       return definition.allowedSnapshotCadences;
+    // 月頻只有一種形狀，用單一 token 'M'——讓 screener 的 "metricCode.timeframe" 語法（sus.M）與
+    // GET /metrics 的 validTimeframes 選單都不用為它開特例。
+    case 'monthly':
+      return ['M'];
   }
 };
 
@@ -45,16 +54,21 @@ export const resolveTimeframe = (definition: MetricDefinitionSpec, timeframe: st
   switch (definition.group) {
     case 'period': {
       if (!definition.allowedPeriodTypes.includes(timeframe as PeriodType)) return null;
-      return { field: displayField, metricCode, isDailyCadence: false, ...periodTypeGroup(timeframe as PeriodType) };
+      return { field: displayField, metricCode, isDailyCadence: false, isMonthly: false, ...periodTypeGroup(timeframe as PeriodType) };
     }
     case 'rollingWindow': {
       if (!definition.allowedRollingWindowTimeframes.includes(timeframe)) return null;
       const [lookbackRange, samplingInterval] = timeframe.split('_') as [LookbackRange, SamplingInterval];
-      return { field: displayField, metricCode, isDailyCadence: true, ...rollingWindowGroup(lookbackRange, samplingInterval) };
+      return { field: displayField, metricCode, isDailyCadence: true, isMonthly: false, ...rollingWindowGroup(lookbackRange, samplingInterval) };
     }
     case 'snapshot': {
       if (!definition.allowedSnapshotCadences.includes(timeframe as SnapshotCadence)) return null;
-      return { field: displayField, metricCode, isDailyCadence: true, ...snapshotCadenceGroup(timeframe as SnapshotCadence) };
+      return { field: displayField, metricCode, isDailyCadence: true, isMonthly: false, ...snapshotCadenceGroup(timeframe as SnapshotCadence) };
+    }
+    case 'monthly': {
+      if (timeframe !== 'M') return null;
+      // 四個 basis 欄位全部 'N/A'——月頻的座標是 (fiscalYear, fiscalMonth)，不屬於任何一組既有 basis。
+      return { field: displayField, metricCode, isDailyCadence: false, isMonthly: true, periodType: 'N/A', lookbackRange: 'N/A', samplingInterval: 'N/A', snapshotCadence: 'N/A' };
     }
   }
 };

@@ -23,6 +23,9 @@ export interface MetricValueCoordinate {
   // 逐日型路徑完全不使用這兩個欄位。
   fiscalYear?: number;
   fiscalQuarter?: number;
+  // 2026-09-23：月頻（group='monthly'，寫進 metric_monthly_values）用 fiscalYear + fiscalMonth。
+  // 四個 basis 欄位對它全部是 'N/A'——月頻的座標不屬於任何一組既有 basis。fiscalYear 跟季報型共用同一個欄位。
+  fiscalMonth?: number;
   // tradeDate：拆表後只有逐日型（lookbackRange/snapshotCadence 這兩組）才需要，是
   // metric_daily_cadence_values 的真正自然鍵（NOT NULL）——writeMetricValue() 判斷
   // 走逐日型路徑時執行期驗證必填。季報型路徑完全不使用這個欄位。
@@ -39,6 +42,14 @@ export type BasisGroupFields = Pick<MetricValueCoordinate, 'periodType' | 'lookb
 // 組合，只需要記得自己這組要填哪個真實值。
 export const periodTypeGroup = (periodType: PeriodType): BasisGroupFields => ({
   periodType,
+  lookbackRange: 'N/A',
+  samplingInterval: 'N/A',
+  snapshotCadence: 'N/A',
+});
+
+// 2026-09-23 月頻：四個 basis 欄位全部 'N/A'，座標由 fiscalYear + fiscalMonth 表達。
+export const monthlyGroup = (): BasisGroupFields => ({
+  periodType: 'N/A',
   lookbackRange: 'N/A',
   samplingInterval: 'N/A',
   snapshotCadence: 'N/A',

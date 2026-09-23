@@ -291,4 +291,9 @@ export type MetricDefinitionSpec =
       // 檢查兩個獨立陣列的 includes()。
       allowedRollingWindowTimeframes: string[];
     })
-  | (MetricDefinitionSpecBase & { group: 'snapshot'; allowedSnapshotCadences: SnapshotCadence[] });
+  | (MetricDefinitionSpecBase & { group: 'snapshot'; allowedSnapshotCadences: SnapshotCadence[] })
+  // 2026-09-23 新增第四種座標形狀：月頻（第一支是 sus，標準化未預期營收）。**沒有 allowed* 陣列**——
+  // 另外三組的陣列是用來宣告「這支指標支援哪幾種聚合/視窗」，月頻只有一種形狀（年＋月），沒有可選項，
+  // 硬加一個恆為單一值的陣列只是噪音。資料落在獨立的 metric_monthly_values（理由見 schema.prisma 的
+  // MetricMonthlyValue 檔頭：季表沒有月份欄位、逐日表假設沒有公告延遲，而月營收次月才公告）。
+  | (MetricDefinitionSpecBase & { group: 'monthly' });

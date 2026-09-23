@@ -43,5 +43,7 @@ export const resolveTimeframeForMetric = (metricCode: string, timeframe: string,
       );
     case 'snapshot':
       throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${timeframe}"，允許的值：${allowed}。`);
+    case 'monthly':
+      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 是月頻指標，timeframe 只有 "M" 一種（收到 "${timeframe}"）。`);
   }
 };
