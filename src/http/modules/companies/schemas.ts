@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
 import { FINANCIAL_STATEMENT_TYPES } from '@/application/companies/financialStatement';
 import { MAX_METRIC_CODES_PER_REQUEST } from '@/application/companies/history';
+import { booleanQueryParam } from '@/http/schemas/queryParams';
 
 // GET /companies/* 的請求 schema。2026-09-17 Phase 4 從 8 支 controller 檔案搬來，逐字不變；
 // 2026-09-05 起這些 query schema 就是 export——zod-to-openapi 的 Swagger 文件直接引用同一個
@@ -18,14 +19,7 @@ const DEFAULT_LIMIT = 200;
 export const getCompaniesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT).meta({ description: `這次要拿幾筆，預設 ${DEFAULT_LIMIT}，上限 ${MAX_LIMIT}。` }),
   offset: z.coerce.number().int().min(0).default(0).meta({ description: '跳過前面幾筆，預設 0。' }),
-  // z.coerce.boolean() 是個陷阱——底層用 JS 的 Boolean(value)，query string 只要非空字串
-  // （包含字面上的 "false"）一律轉成 true。用字串本身判斷才對。transform 直接放在匯出的 schema 上：
-  // zod-to-openapi 文件化的是 transform 前的輸入 schema（optional string），跟以前分兩份 schema 時一樣。
-  countOnly: z
-    .string()
-    .optional()
-    .meta({ description: 'true 時只回總筆數（`{ count }`），不拉實際資料。' })
-    .transform((value) => value === 'true'),
+  countOnly: booleanQueryParam('true 時只回總筆數（`{ count }`），不拉實際資料。'),
 });
 
 export const getCompanyProfileQuerySchema = z.object({

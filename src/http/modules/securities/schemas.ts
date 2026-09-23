@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { booleanQueryParam } from '@/http/schemas/queryParams';
 
 // 上限/預設值跟 GET /companies 一致。
 const MAX_LIMIT = 1000;
@@ -10,9 +11,5 @@ const DEFAULT_LIMIT = 200;
 export const getSecuritiesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT).meta({ description: `這次要拿幾筆，預設 ${DEFAULT_LIMIT}，上限 ${MAX_LIMIT}。` }),
   offset: z.coerce.number().int().min(0).default(0).meta({ description: '跳過前面幾筆，預設 0。' }),
-  countOnly: z
-    .string()
-    .optional()
-    .meta({ description: 'true 時只回總筆數（`{ count }`），不拉實際資料。' })
-    .transform((value) => value === 'true'),
+  countOnly: booleanQueryParam('true 時只回總筆數（`{ count }`），不拉實際資料。'),
 });

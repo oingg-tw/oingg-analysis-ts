@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { booleanQueryParam } from '@/http/schemas/queryParams';
 
 // screener 系列端點的請求 schema——2026-09-17 Phase 4 從 controller.ts 搬來。CSV → 陣列的 transform 直接放在
 // 匯出的 schema 上：zod-to-openapi 文件化的是 transform 前的輸入 schema（optional string），跟以前分兩份
@@ -71,23 +72,11 @@ export const getCompanyRankQuerySchema = z.object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
   field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.basis" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
   direction: z.enum(['asc', 'desc'], { error: 'direction is required.' }).meta({ description: 'desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
-  // 2026-09-24 修正：原本是 z.coerce.boolean()，**底層是 JS 的 Boolean(value)，query string 只要非空字串
-  // （包含字面上的 "false" 和 "0"）一律轉成 true**——實測 excludeZero=false 與 excludeZero=0 都會排除 0 值，
-  // 只有整個參數不存在或空字串才不排除。bff-ts 2026-09-24 回報：明確送 false 的呼叫端拿到跟要求相反的母體
-  // （1445 而不是 1723），而且數字看起來完全合理、只是回答了另一個問題。
-  // 更糟的是舊說明還寫著「true/false 或 1/0 皆可」——文件承諾了實作沒做到的事。
-  // 這個陷阱本 repo 已經踩過兩次並留下警告（companies/schemas.ts 的 countOnly、securities/schemas.ts），
-  // 只有 screener 這兩處沒跟上，現在統一成同樣的字串比對寫法。
-  excludeZero: z
-    .string()
-    .optional()
-    .meta({
-      description:
-        '排除值精確等於 0 的公司（不納入排名母體），預設 false。給殖利率這類「0 代表不配息，不是連續分布' +
-        '裡的邊緣值」的欄位用，比照 GET /screener/distribution 的同名參數；混進一大群 0 會讓有配息公司的' +
-        '排名/百分位失真。**只有字面上的 "true" 或 "1" 視為真**，其餘（含省略、"false"、"0"）一律為假。',
-    })
-    .transform((value) => value === 'true' || value === '1'),
+  excludeZero: booleanQueryParam(
+    '排除值精確等於 0 的公司（不納入排名母體），預設 false。給殖利率這類「0 代表不配息，不是連續分布' +
+      '裡的邊緣值」的欄位用，比照 GET /screener/distribution 的同名參數；混進一大群 0 會讓有配息公司的' +
+      '排名/百分位失真。'
+  ),
 });
 
 // 2026-09-18 新增——全市場某個欄位的分布（直方圖）。bins 預設 20，上限 100（畫面上不會有
@@ -95,17 +84,11 @@ export const getCompanyRankQuerySchema = z.object({
 export const getScreenerDistributionQuerySchema = z.object({
   field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.timeframe" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
   bins: z.coerce.number().int().min(5).max(100).default(20).meta({ description: '要切成幾格，預設 20，範圍 5~100。' }),
-  // 同上面 company-rank 的 excludeZero，2026-09-24 一起從 z.coerce.boolean() 改成字串比對。
-  excludeZero: z
-    .string()
-    .optional()
-    .meta({
-      description:
-        '排除值精確等於 0 的列，預設 false（**只有 "true" 或 "1" 視為真**）。給殖利率這類「0 代表不適用這個概念（不配息），不是連續分布裡的' +
-        '邊緣值」的欄位用——這類欄位常有一大塊列精確等於 0，混進分布會把整個圖壓在左邊界，看不出有意義' +
-        '（非 0）那群的實際分布。',
-    })
-    .transform((value) => value === 'true' || value === '1'),
+  excludeZero: booleanQueryParam(
+    '排除值精確等於 0 的列，預設 false。給殖利率這類「0 代表不適用這個概念（不配息），不是連續分布裡的' +
+      '邊緣值」的欄位用——這類欄位常有一大塊列精確等於 0，混進分布會把整個圖壓在左邊界，看不出有意義' +
+      '（非 0）那群的實際分布。'
+  ),
 });
 
 // bff-ts 一次最多送一頁的量（≤200），跟其他「明確列出清單」端點（GET /stocks/prices）同一種
