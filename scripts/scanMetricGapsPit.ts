@@ -10,12 +10,10 @@
 //       值得重跑；not_applicable_industry（產業排除）/zero_or_negative_denominator
 //       （分母為零或負）是結構性、重跑不會改變，不算空缺。
 //
-// 重要警告：insufficient_history 在「歷史最早幾季」通常是永久性的，不是暫時的——
-// 例如 TTM 型指標在 113Q1（回填起點）本來就沒有再往前 3 季的資料可以湊出近四季，
-// 這種 insufficient_history 重跑一百次都不會變成有值，因為資料源本身不會生出
-// 113 年以前不存在的申報。這支腳本仍然會把它們算進「空缺」（照使用者要求的定義），
-// 但輸出報告會按季度分組呈現數量，讓使用者自己判斷要不要真的對最早幾季的
-// insufficient_history 觸發重跑（大機率是做白工）。
+// insufficient_history 有一大類是永久性的，不是暫時的——資料源本身不會生出不存在的申報。
+// 2026-09-13 的版本只在這裡寫警告、讓人自己判斷，實際上防不住：2026-09-23 實測每一季都回報
+// 「2070/2070 家有空缺」，報告退化成「全市場重跑」，正是這支腳本要避免的事。現在改成自動認出
+// 這類指標（見下方 STRUCTURAL_GAP_RATIO），不拿它們標記公司，但單獨列出來讓人看見。
 //
 // 精準回補的粒度是「(公司, 季度)」不是「單一 metricCode」——GENERAL_METRIC_CODES 裡
 // 有很多 metricCode 其實共用同一支 compute*Family*Pit（例如 dupont 家族一次寫 5 個
@@ -40,6 +38,20 @@ const DAILY_CADENCE_CODES = new Set(['beta', 'exchangePeRatio', 'exchangePbRatio
 const GENERAL_QUARTERLY_CODES = GENERAL_METRIC_CODES.filter((c) => !DAILY_CADENCE_CODES.has(c));
 
 const RETRYABLE_NULL_REASONS = new Set(['missing_input', 'insufficient_history']);
+
+// 2026-09-23：一支指標如果在該季「幾乎每一家都空缺」，那不是空缺是**這支指標還不能算**——
+// 重跑一百次都一樣。實測 113Q1~115Q2 每一季都回報「2070/2070 家有空缺」，追下去發現前幾名是
+// revenueCagr8y / epsCagr8y / dividendGrowthRate8y（各 20,606 個組合＝每家每季）跟 5 年版本：
+// 年度值要該民國年四季齊全，而 XBRL 109Q3 才鋪開，第一個完整年度是 FY110，所以 8 年窗口要到
+// 民國 118 年報（約 2030）、5 年窗口要等 115Q4（約 2027）才會有第一個值。
+//
+// 只要有一支這種指標，整家公司就會被標記成「有空缺」，報告因此退化成「全市場重跑」——正是這支
+// 腳本當初要避免的事（檔頭那段警告講的就是這個，但沒有防護）。改成先算每支指標的空缺比例，
+// 超過門檻的視為結構性、不拿來標記公司，另外單獨列出來讓人看見。
+//
+// ponytail: 用「比例超過門檻」這個啟發式而不是維護一份結構性指標白名單——白名單會隨著資料變深
+// 過期（5 年 CAGR 在 115Q4 之後就該從白名單移除，但沒人會記得改），比例是自己會退場的判準。
+const STRUCTURAL_GAP_RATIO = Number(process.env.STRUCTURAL_GAP_RATIO ?? 0.9);
 
 const QUARTERS: { year: string; season: Season; fiscalYear: number }[] = [
   { year: '113', season: '1', fiscalYear: 2024 }, { year: '113', season: '2', fiscalYear: 2024 },
@@ -71,7 +83,7 @@ const findGapSymbols = async (
   fiscalQuarter: number,
   expectedSymbols: string[],
   metricCodes: string[]
-): Promise<{ gapSymbols: string[]; gapCountByMetric: Record<string, number> }> => {
+): Promise<{ gapSymbols: string[]; gapCountByMetric: Record<string, number>; structuralCodes: string[] }> => {
   const rows = await analysisQueries.listMetricValuesForGapScan({ metricCodes, fiscalYear, fiscalQuarter, symbols: expectedSymbols });
 
   // symbol -> metricCode -> 是否至少有一筆非 null 值 / 是否至少有一筆可重試的 null 原因
@@ -85,30 +97,37 @@ const findGapSymbols = async (
     metricMap.set(row.metricCode, existing);
   }
 
-  const gapSymbols: string[] = [];
+  const isGapFor = (symbol: string, metricCode: string): boolean => {
+    const entry = bySymbol.get(symbol)?.get(metricCode);
+    return !entry || (!entry.hasValue && entry.hasRetryableNull);
+  };
+
+  // 第一輪：每支指標的空缺比例，用來認出「這支指標還不能算」的結構性缺口。
   const gapCountByMetric: Record<string, number> = {};
-
-  for (const symbol of expectedSymbols) {
-    const metricMap = bySymbol.get(symbol);
-    let symbolHasGap = false;
-    for (const metricCode of metricCodes) {
-      const entry = metricMap?.get(metricCode);
-      const isGap = !entry || (!entry.hasValue && entry.hasRetryableNull);
-      if (isGap) {
-        symbolHasGap = true;
-        gapCountByMetric[metricCode] = (gapCountByMetric[metricCode] ?? 0) + 1;
-      }
-    }
-    if (symbolHasGap) gapSymbols.push(symbol);
+  for (const metricCode of metricCodes) {
+    const count = expectedSymbols.reduce((n, symbol) => n + (isGapFor(symbol, metricCode) ? 1 : 0), 0);
+    if (count > 0) gapCountByMetric[metricCode] = count;
   }
+  const structuralCodes =
+    expectedSymbols.length === 0
+      ? []
+      : Object.entries(gapCountByMetric)
+          .filter(([, count]) => count / expectedSymbols.length >= STRUCTURAL_GAP_RATIO)
+          .map(([code]) => code);
+  const structural = new Set(structuralCodes);
 
-  return { gapSymbols, gapCountByMetric };
+  // 第二輪：只有非結構性的指標才能把一家公司標記成「需要重跑」。
+  const gapSymbols = expectedSymbols.filter((symbol) => metricCodes.some((code) => !structural.has(code) && isGapFor(symbol, code)));
+
+  return { gapSymbols, gapCountByMetric, structuralCodes };
 };
 
 const main = async () => {
   const report: Record<string, GapReportEntry> = {};
   const overallGeneralGapByMetric: Record<string, number> = {};
   const overallBankGapByMetric: Record<string, number> = {};
+  // metricCode -> 有幾季被判定為結構性（幾乎全市場都空缺，重跑不會好）
+  const structuralByCode: Record<string, number> = {};
 
   for (const { year, season, fiscalYear } of QUARTERS) {
     const seasonNum = Number(season);
@@ -119,18 +138,19 @@ const main = async () => {
       getBankSymbolsForQuarter(year, season),
     ]);
 
-    const { gapSymbols: generalGaps, gapCountByMetric: generalGapCount } = await findGapSymbols(
+    const { gapSymbols: generalGaps, gapCountByMetric: generalGapCount, structuralCodes: generalStructural } = await findGapSymbols(
       fiscalYear,
       seasonNum,
       generalSymbols,
       GENERAL_QUARTERLY_CODES
     );
-    const { gapSymbols: bankGaps, gapCountByMetric: bankGapCount } = await findGapSymbols(
+    const { gapSymbols: bankGaps, gapCountByMetric: bankGapCount, structuralCodes: bankStructural } = await findGapSymbols(
       fiscalYear,
       seasonNum,
       bankSymbols,
       BANK_METRIC_CODES
     );
+    for (const code of [...generalStructural, ...bankStructural]) structuralByCode[code] = (structuralByCode[code] ?? 0) + 1;
 
     for (const [code, count] of Object.entries(generalGapCount)) overallGeneralGapByMetric[code] = (overallGeneralGapByMetric[code] ?? 0) + count;
     for (const [code, count] of Object.entries(bankGapCount)) overallBankGapByMetric[code] = (overallBankGapByMetric[code] ?? 0) + count;
@@ -138,9 +158,15 @@ const main = async () => {
     console.log(
       `[scan-gaps] ${year}Q${season}：一般 ${generalGaps.length}/${generalSymbols.length} 家有空缺，銀行 ${bankGaps.length}/${bankSymbols.length} 家有空缺`
     );
-    const topGeneral = Object.entries(generalGapCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const topGeneral = Object.entries(generalGapCount)
+      .filter(([c]) => !generalStructural.includes(c))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
     if (topGeneral.length > 0) {
-      console.log(`[scan-gaps] ${year}Q${season} 空缺最多的指標：${topGeneral.map(([c, n]) => `${c}(${n})`).join(', ')}`);
+      console.log(`[scan-gaps] ${year}Q${season} 空缺最多的指標（已排除結構性）：${topGeneral.map(([c, n]) => `${c}(${n})`).join(', ')}`);
+    }
+    if (generalStructural.length + bankStructural.length > 0) {
+      console.log(`[scan-gaps] ${year}Q${season} 結構性（>=${(STRUCTURAL_GAP_RATIO * 100).toFixed(0)}% 公司都空缺，重跑不會好）：${[...generalStructural, ...bankStructural].join(', ')}`);
     }
 
     report[`${year}Q${season}`] = { general: generalGaps, bank: bankGaps };
@@ -161,6 +187,13 @@ const main = async () => {
       .map(([c, n]) => `${c}(${n})`)
       .join(', ')}`
   );
+  const structuralSummary = Object.entries(structuralByCode).sort((a, b) => b[1] - a[1]);
+  if (structuralSummary.length > 0) {
+    console.log(
+      `[scan-gaps] 結構性缺口（幾乎全市場都空缺，重跑不會好；括號是命中幾季）：${structuralSummary.map(([c, n]) => `${c}(${n})`).join(', ')}`
+    );
+    console.log('[scan-gaps] 這些不算進上面的空缺公司數——要它們有值得等資料深度到位，不是重跑。');
+  }
   if (Object.keys(overallBankGapByMetric).length > 0) {
     console.log(
       `[scan-gaps] 全期間空缺的銀行指標：${Object.entries(overallBankGapByMetric)
