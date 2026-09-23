@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getPaidInSharesAsOf } from '../mops/capitalStock';
 import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
 import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
@@ -26,12 +27,22 @@ interface RawPriceRow {
 // 1312A）好幾天沒成交時，會直接回傳 null，即使往前一兩天就有真實成交價——用特別股功能實測
 // 時發現的，改成找「最近一筆真的有成交價的日期」，不是「最新一列」，避免這種可以往前找到
 // 真實價格的情況被誤判成查無股價。
-const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeDate: Date; close: unknown } | null> => {
-  const rows = await twseExportPrisma.$queryRaw<RawPriceRow[]>`
+//
+// **2026-09-24 補上上櫃**：這支先前只查 twse 的 daily_price，所以**所有上櫃公司的市值都算不出來**
+// （marketCap 在 115Q2 有 1,255 家 missing_input，實測其中 1,230 家的成因是查不到股價、只有 73 家是
+// 缺股本）。實際兩邊都有資料：twse 1,451 檔（2020-11 起）、**tpex 11,197 檔（2021-09 起）**——
+// 不是上游沒收，是我們沒去 tpex 拿。一家公司只會掛在其中一個市場，所以「先查上市、查無再查上櫃」
+// 不會重複也不會衝突（跟 twse/monthlyRevenue.ts 同一天修的是同一類 bug、同一個解法）。
+const queryPriceRow = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, asOfDate: Date) =>
+  db.$queryRaw<RawPriceRow[]>`
     SELECT trade_date, close FROM "export"."daily_price"
     WHERE symbol = ${symbol} AND trade_date <= ${asOfDate} AND close IS NOT NULL
     ORDER BY trade_date DESC LIMIT 1
   `;
+
+const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeDate: Date; close: unknown } | null> => {
+  const listed = await queryPriceRow(twseExportPrisma, symbol, asOfDate);
+  const rows = listed.length > 0 ? listed : await queryPriceRow(tpexExportPrisma, symbol, asOfDate);
   const row = rows[0];
   return row ? { tradeDate: row.trade_date, close: row.close } : null;
 };
@@ -55,9 +66,9 @@ export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise
 // mops 那張表消失的問題，也讓歷史回溯能力變得更好（可以查到這幾家公司歷史上幾乎每一季的市值，
 // 不是只有最新一季）。
 //
-// 覆蓋率限於這 6 家種子公司（歷史深度）+ 其他公司近幾個月（2026-06 起）——不要在呼叫端寫死特定
-// 公司代號判斷「這家公司有沒有股價資料」，覆蓋率之後還會繼續變（查無資料就回 null 讓指標記
-// missing_input）。
+// **上面那段「覆蓋率限於 6 家種子公司」已經過時**（2026-09-24 實測）：twse daily_price 現在有 1,451 檔、
+// 2020-11 起；tpex 有 11,197 檔、2021-09 起。不要在呼叫端寫死特定公司代號判斷「這家公司有沒有股價資料」，
+// 覆蓋率會繼續變（查無資料就回 null 讓指標記 missing_input）。
 export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null> => {
   const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getPaidInSharesAsOf(symbol, asOfDate)]);
 
