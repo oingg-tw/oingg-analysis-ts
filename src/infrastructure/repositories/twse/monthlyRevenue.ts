@@ -1,9 +1,21 @@
-import { twseExportDevPrisma } from '@/infrastructure/prisma/twseExportDevClient';
+import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
 
-// twse-ts export.monthly_revenue——目前只有 2330 有資料（一次性回填，2021-08~2026-07
-// 共 60 個月，見 twseExportDevClient.ts 檔頭說明）。查無資料（不是 2330）回傳空陣列，
-// 是正常情境不是錯誤，呼叫端不用特別判斷。
+// twse-ts export.monthly_revenue（PROD）——2026-09-23 從 DEV 庫換過來。先前接 DEV 是因為當時只有那邊
+// 有一次性回填的樣本（356 筆 / 297 家，而且 2330 以外多半只有一兩個月），實際效果是
+// GET /companies/monthly-revenue-history 幾乎只有 2330 回得出東西（web-nuxt 實測 1101、2317 都是空陣列）。
+// twse-ts 2026-09-23 完成上市全市場 `_L` 回填後 PROD 有 2021-09~2026-08 共 60 個月、58,024 筆、993 家
+// （964 家有 ≥36 個月），欄位也齊全，所以改讀 PROD。
+//
+// **必須篩 source**：這張表兩個來源共用（`MONTHLY_REVENUE` 上市；`MONTHLY_REVENUE_PUBLIC` 公開發行未上市的
+// 證券商，2026-07 起 588 筆 / 301 家）。不篩會冒出 000104 這類六碼代號的非上市公司——跟 company_profile
+// 那次是同一類陷阱（見 exchange/companyProfile.ts 的 LISTED_ONLY）。
+//
+// 已知資料特性（twse-ts 2026-09-23 說明，不要「修」掉）：`yoy_change_percent` 有 226 筆 null（0.4%），
+// 是當年新上市、沒有去年同期可比，不是漏抓——照實傳 null，不要填 0，下游要靠它分辨「無法計算」與「尚無資料」。
+// 金額單位是**千元**（來源原樣），這一層不換算。
+//
+// 查無資料回傳空陣列，是正常情境不是錯誤，呼叫端不用特別判斷。
 // DTO 型別 2026-09-17 Phase 4 搬到 application/ports/monthlyRevenue.ts（對外回應的 zod schema 在
 // http/modules/companies/types.ts），這裡 re-export 給既有 import 路徑。
 export type { MonthlyRevenueHistoryResult };
@@ -27,11 +39,11 @@ const toYearMonthString = (value: Date): string => value.toISOString().slice(0, 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
 export const getMonthlyRevenueHistory = async (symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult> => {
-  const rows = await twseExportDevPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
+  const rows = await twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
     SELECT year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue,
       yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note
     FROM "export"."monthly_revenue"
-    WHERE symbol = ${symbol}
+    WHERE symbol = ${symbol} AND source = 'MONTHLY_REVENUE'
     ORDER BY year_month ASC
   `;
 

@@ -104,17 +104,32 @@ export interface RawMonthlyRevenueRow {
   yoy_change_percent: number | null;
 }
 
+// 2026-09-23：twse 的 monthly_revenue 兩個來源共用一張表——`MONTHLY_REVENUE`（上市，2021-09~2026-08、
+// 58,024 筆、993 家）與 `MONTHLY_REVENUE_PUBLIC`（公開發行未上市的證券商，2026-07 起 588 筆、301 家）。
+// 不篩 source 的話這兩個月的月營收清單會混進 000104 這類六碼代號的非上市公司，跟 company_profile 那次
+// 是同一類陷阱（見 companyProfile.ts 的 LISTED_ONLY）；MAX(year_month) 也會在 PUBLIC 領先時指到一個
+// 只有 301 家的月份。**tpex 那張表沒有 source 欄位**（只有一個來源），所以照本檔開頭的慣例
+// 「欄位不同的查詢維持各自一支」分兩邊寫，不用 dbFor。
 export const getLatestMonthlyRevenueYearMonth = async (market: Market): Promise<Date | null> => {
-  const rows = await dbFor(market).$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`;
+  const rows =
+    market === 'TWSE'
+      ? await twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue" WHERE source = 'MONTHLY_REVENUE'`
+      : await tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."monthly_revenue"`;
   return rows[0]?.year_month ?? null;
 };
 
 export const listMonthlyRevenueForMonth = (market: Market, yearMonth: Date): Promise<RawMonthlyRevenueRow[]> =>
-  dbFor(market).$queryRaw<RawMonthlyRevenueRow[]>`
-    SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
-    FROM "export"."monthly_revenue"
-    WHERE year_month = ${yearMonth}
-  `;
+  market === 'TWSE'
+    ? twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
+        SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
+        FROM "export"."monthly_revenue"
+        WHERE year_month = ${yearMonth} AND source = 'MONTHLY_REVENUE'
+      `
+    : tpexExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
+        SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
+        FROM "export"."monthly_revenue"
+        WHERE year_month = ${yearMonth}
+      `;
 
 // ---- 融資融券餘額（export.margin_balance，兩邊欄位一致）----
 export interface RawMarginBalanceRow {
