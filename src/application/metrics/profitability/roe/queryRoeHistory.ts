@@ -10,7 +10,10 @@ export const roeHistoryEntrySchema = z.object({
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
     .nullable()
     .meta({ description: 'value 為 null 時的原因；value 非 null 時一律是 null' }),
-  knowledgeDate: z.string().meta({ description: '這個值最早可被市場知道的日期（YYYY-MM-DD）' }),
+  knowledgeDate: z.string().meta({
+    description:
+      '這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 的分母改期間平均就是這樣）。我們重算後會主動通知下游清快取。',
+  }),
   knowledgeDateIsFallback: z
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),

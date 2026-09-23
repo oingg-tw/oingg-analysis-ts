@@ -941,7 +941,7 @@
                             "type": "number"
                           },
                           "knowledgeDate": {
-                            "description": "這一期資料最早可被市場知道的日期（YYYY-MM-DD），這批 metric_code 共用同一次解析結果",
+                            "description": "這一期資料最早可被市場知道的日期（YYYY-MM-DD），這批 metric_code 共用同一次解析結果。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 分母改期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                             "type": "string"
                           },
                           "knowledgeDateIsFallback": {
@@ -1377,7 +1377,7 @@
                             "type": "number"
                           },
                           "knowledgeDate": {
-                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）",
+                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                             "type": "string"
                           },
                           "knowledgeDateIsFallback": {
@@ -1536,7 +1536,7 @@
                               "nullable": true,
                               "properties": {
                                 "knowledgeDate": {
-                                  "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）",
+                                  "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                                   "type": "string"
                                 },
                                 "knowledgeDateIsFallback": {
@@ -2310,7 +2310,7 @@
                             "type": "number"
                           },
                           "knowledgeDate": {
-                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）",
+                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                             "type": "string"
                           },
                           "knowledgeDateIsFallback": {
@@ -2463,7 +2463,7 @@
                             "type": "number"
                           },
                           "knowledgeDate": {
-                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）",
+                            "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 的分母改期間平均就是這樣）。我們重算後會主動通知下游清快取。",
                             "type": "string"
                           },
                           "knowledgeDateIsFallback": {

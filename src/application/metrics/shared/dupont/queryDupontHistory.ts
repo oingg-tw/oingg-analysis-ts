@@ -28,7 +28,10 @@ export const dupontHistoryEntrySchema = z.object({
     .nullable()
     .meta({ description: '五因子杜邦拆解組裝出來的 ROE 百分比 = dupontTaxBurdenPct x dupontInterestBurdenPct x dupontEbitMarginPct x assetTurnover x equityMultiplier，理論上等於 decomposedRoePct' }),
   dupontExtendedRoeNullReason: nullReasonSchema.meta({ description: 'dupontExtendedRoePct 為 null 時的原因，跟 nullReason（三因子）分開判斷，兩者不一定一致' }),
-  knowledgeDate: z.string().meta({ description: '這一期資料最早可被市場知道的日期（YYYY-MM-DD），這批 metric_code 共用同一次解析結果' }),
+  knowledgeDate: z.string().meta({
+    description:
+      '這一期資料最早可被市場知道的日期（YYYY-MM-DD），這批 metric_code 共用同一次解析結果。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 分母改期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。',
+  }),
   knowledgeDateIsFallback: z.boolean().meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日）' }),
 });
 export type DupontHistoryEntry = z.infer<typeof dupontHistoryEntrySchema>;
