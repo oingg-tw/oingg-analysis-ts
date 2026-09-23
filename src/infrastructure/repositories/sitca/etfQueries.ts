@@ -1,5 +1,5 @@
 import { sitcaExportPrisma } from '@/infrastructure/prisma/sitcaExportClient';
-import type { EtfDataPort } from '@/application/ports/etfData';
+import type { EtfDataPort, RawEtfDividendRow } from '@/application/ports/etfData';
 import { buildEtfScreenerSql } from './etfScreenerQuery';
 import type { Prisma } from '#generated/sitca-export-client';
 
@@ -123,9 +123,23 @@ export const listDistinctEtfDistributionFrequencies = async (): Promise<string[]
   return rows.map((r) => r.value).filter((v): v is string => v !== null);
 };
 
+// 2026-09-23 除權息月曆併入 ETF 收益分配——全市場、除息日落在 [startDate, endDate] 的分配列。
+// 組成百分比五欄原樣透傳（unknown → 呼叫端轉 number|null）：**null 跟 0 是兩件事**，null 是該次沒有揭露組成、
+// 0 是有揭露且該項為零，這裡不做任何填補。實測近 24 個月 1,965 筆裡 1,783 筆是 0、166 筆 > 0、16 筆 null。
+const listEtfDividendsForRange = (startDate: Date, endDate: Date): Promise<RawEtfDividendRow[]> =>
+  sitcaExportPrisma.$queryRaw<RawEtfDividendRow[]>`
+    SELECT symbol, etf_name, ex_dividend_date, record_date, payment_date, distribution_per_unit,
+           composition_dividend_income_pct, composition_interest_income_pct, composition_income_equalization_pct,
+           composition_realized_capital_gain_pct, composition_other_income_pct
+    FROM "export"."fundclear_etf_dividend"
+    WHERE ex_dividend_date BETWEEN ${startDate} AND ${endDate}
+    ORDER BY ex_dividend_date ASC, symbol ASC
+  `;
+
 // application/ports/etfData.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。screenEtfs = ./etfScreenerQuery.ts 組 SQL + 這裡執行，
 // Prisma.Sql 不出 infrastructure。
 export const sitcaEtfData: EtfDataPort = {
+  listEtfDividendsForRange,
   getLatestEtfYearMonth,
   listEtfBasicInfo,
   listEtfMonthlyStatement,

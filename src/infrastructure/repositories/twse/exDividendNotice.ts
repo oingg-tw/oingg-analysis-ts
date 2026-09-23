@@ -85,6 +85,11 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
     status: 'announced' as const,
     paymentDate: null,
     fiscalYear: null,
+    // twse 預告表只收個股，ETF 的收益分配走 sitca 那條（見 application/stocks/service.ts 的合併邏輯）。
+    securityType: 'COMMON' as const,
+    recordDate: null,
+    distributionPerUnit: null,
+    composition: null,
     exDate: row.ex_date.toISOString().slice(0, 10),
     exType: row.ex_type as ExDividendNoticeEntry['exType'],
     stockDividendRatio: toNumber(row.stock_dividend_ratio),

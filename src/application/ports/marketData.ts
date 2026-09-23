@@ -100,11 +100,35 @@ export interface ExDividendNoticeEntry {
 // paymentDate/fiscalYear 只有已實現列有。
 export type ExDividendCalendarStatus = 'announced' | 'realized';
 
+// 2026-09-23 ETF 收益分配併進月曆：ETF 不在 mops 的 dividend_distribution 裡（那是上市櫃**公司**的股利分派
+// 決議，實測 00 開頭零筆），收益分配走另一條法規途徑、資料在 sitca-ts 的 export.fundclear_etf_dividend。
+// 結果是月曆「往前看有 ETF（twse 預告表有）、往回翻沒有」，追月配 ETF 的讀者翻到上個月會以為資料壞了。
+// 沿用同一個 envelope＋填不出來的欄位給 null 的慣例，多一個 securityType 讓下游分辨。
+export type CalendarSecurityType = 'COMMON' | 'ETF';
+
+// ETF 收益分配的組成拆解（百分比，原樣透傳不做任何評價）。收益平準金佔比在台灣是「配息是不是配到本金」的
+// 核心爭議數字，多數免費工具沒有，這是這份月曆真正的差異點。
+//
+// **null 跟 0 是兩件事，不要合併**：null = 該次配息沒有揭露組成，0 = 有揭露且該項就是零。實測近 24 個月
+// 1,965 筆裡 1,783 筆是 0、166 筆 > 0、16 筆 null——資料源本來就分得開，我們原樣傳，不要為了「有值比較好看」
+// 把 null 填成 0，下游要靠它分辨「未揭露」與「確實為零」。
+export interface EtfDistributionComposition {
+  dividendIncomePct: number | null; // 股利所得
+  interestIncomePct: number | null; // 利息所得
+  incomeEqualizationPct: number | null; // 收益平準金
+  realizedCapitalGainPct: number | null; // 已實現資本利得
+  otherIncomePct: number | null; // 其他
+}
+
 export interface ExDividendCalendarEntry extends ExDividendNoticeEntry {
   symbol: string;
   status: ExDividendCalendarStatus;
   paymentDate: string | null; // 現金股利發放日，"YYYY-MM-DD"，預告列一律 null
   fiscalYear: number | null; // 股利所屬年度（西元），預告列一律 null
+  securityType: CalendarSecurityType; // 2026-09-23 新增：ETF 列跟個股列的欄位可用性不同，見下面三個欄位
+  recordDate: string | null; // 收益分配基準日，"YYYY-MM-DD"——只有 ETF 列有，個股列一律 null
+  distributionPerUnit: number | null; // 每受益權單位分配金額（元）——只有 ETF 列有；個股的每股現金股利仍在 cashDividend
+  composition: EtfDistributionComposition | null; // 只有 ETF 列有；個股列一律 null
 }
 
 export interface ForeignShareholdingEntry {

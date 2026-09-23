@@ -94,6 +94,32 @@ export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend(
   status: z.enum(['announced', 'realized']).meta({ description: 'announced = 除息日在今天（含）以後的預告，內容可能再變動；realized = 除息日已過、來自股利分派公告的事實' }),
   paymentDate: z.string().nullable().meta({ description: '現金股利發放日 "YYYY-MM-DD"，只有 realized 列有值' }),
   fiscalYear: z.number().int().nullable().meta({ description: '股利所屬年度（西元），只有 realized 列有值' }),
+  // 2026-09-23 併入 ETF 收益分配。ETF 不在個股那兩個來源裡（twse 預告表只收個股、mops 股利分派公告是上市櫃
+  // **公司**的決議），所以在此之前月曆「往前看有 ETF、往回翻沒有」。
+  securityType: z.enum(['COMMON', 'ETF']).meta({
+    description: '2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。',
+  }),
+  recordDate: z.string().nullable().meta({ description: '2026-09-23 新增：收益分配基準日 "YYYY-MM-DD"，只有 ETF 列有值' }),
+  distributionPerUnit: z.number().nullable().meta({
+    description: '2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用',
+  }),
+  composition: z
+    .object({
+      dividendIncomePct: z.number().nullable(),
+      interestIncomePct: z.number().nullable(),
+      incomeEqualizationPct: z.number().nullable(),
+      realizedCapitalGainPct: z.number().nullable(),
+      otherIncomePct: z.number().nullable(),
+    })
+    .nullable()
+    .meta({
+      description:
+        '2026-09-23 新增：ETF 收益分配的組成百分比拆解，只有 ETF 列有值（個股列為 null）。' +
+        'incomeEqualizationPct 是**收益平準金**佔比，在台灣是「配息是不是配到本金」的核心爭議數字。' +
+        '**原樣透傳、不做任何評價**。注意每一項的 null 與 0 是兩件事：null = 該次配息沒有揭露組成，' +
+        '0 = 有揭露且該項確實為零。實測近 24 個月 1,965 筆裡 1,783 筆為 0、166 筆 > 0、16 筆未揭露——' +
+        '資料源本來就分得開，不要把 null 當成 0 顯示。',
+    }),
 }) satisfies z.ZodType<ExDividendCalendarEntry>;
 
 export const exDividendNoticesResultSchema = z.object({

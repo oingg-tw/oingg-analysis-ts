@@ -3,12 +3,22 @@
   "body": {
     "entries": [
       {
-        "cashDividend": "<number>",
+        "cashDividend": "<null>",
         "companyName": "<string>",
+        "composition": {
+          "dividendIncomePct": "<number>",
+          "incomeEqualizationPct": "<number>",
+          "interestIncomePct": "<number>",
+          "otherIncomePct": "<number>",
+          "realizedCapitalGainPct": "<number>"
+        },
+        "distributionPerUnit": "<number>",
         "exDate": "<date>",
         "exType": "<string>",
-        "fiscalYear": "<number>",
+        "fiscalYear": "<null>",
         "paymentDate": "<date>",
+        "recordDate": "<date>",
+        "securityType": "ETF",
         "sharesEmpOwner": "<null>",
         "sharesholderOwner": "<null>",
         "sharesOffered": "<null>",

@@ -74,7 +74,25 @@ export interface EtfSortSpec {
   order: 'asc' | 'desc';
 }
 
+// 2026-09-23 除權息月曆併入 ETF 收益分配用。一列＝一次分配，依除息日升冪。
+// 來源 sitca-ts export.fundclear_etf_dividend（FundClear）——跟 mops 的 dividend_distribution 是
+// 完全不同的法規途徑與資料源，ETF 不會出現在後者（實測 00 開頭零筆）。
+export interface RawEtfDividendRow {
+  symbol: string;
+  etf_name: string | null;
+  ex_dividend_date: Date;
+  record_date: Date | null;
+  payment_date: Date | null;
+  distribution_per_unit: unknown;
+  composition_dividend_income_pct: unknown;
+  composition_interest_income_pct: unknown;
+  composition_income_equalization_pct: unknown;
+  composition_realized_capital_gain_pct: unknown;
+  composition_other_income_pct: unknown;
+}
+
 export interface EtfDataPort {
+  listEtfDividendsForRange(startDate: Date, endDate: Date): Promise<RawEtfDividendRow[]>;
   getLatestEtfYearMonth(): Promise<string | null>;
   listEtfBasicInfo(yearMonth: string): Promise<RawEtfBasicInfoRow[]>;
   listEtfMonthlyStatement(yearMonth: string): Promise<RawEtfStatementRow[]>;

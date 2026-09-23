@@ -14,7 +14,7 @@ import type {
 
 // 2026-09-17 Phase 4：從 http/modules/stocks/service.ts 搬來，資料存取改透過 deps 的 port
 // （companyProfiles/market/metricValueQueries）注入，邏輯逐字不變。
-export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries' | 'dividendEvents' | 'reportAvailability'>;
+export type StocksDeps = Pick<AppDeps, 'companyProfiles' | 'market' | 'metricValueQueries' | 'dividendEvents' | 'reportAvailability' | 'etfData'>;
 
 // 2026-09-08 起改讀 pitMetrics（exchangePeRatio/exchangePbRatio/dividendYield，
 // snapshotCadence='EOD'）取代舊架構的 MarketRatiosResult——舊表連同 domainMetrics/marketRatios.ts
@@ -153,6 +153,7 @@ export const getExDividendNotices = async (symbols: string[], deps: StocksDeps):
 // 這是 company_profile 的範圍，不在這裡補）。
 const toIso = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 const sumNonNull = (...values: (number | null)[]): number | null => (values.every((v) => v === null) ? null : values.reduce<number>((acc, v) => acc + (v ?? 0), 0));
+const toNumberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
 const round4 = (n: number): number => Math.round(n * 10000) / 10000;
 
 export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps: StocksDeps): Promise<ExDividendCalendarResult> => {
@@ -160,9 +161,13 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
   const announcedStart = startDate >= today ? startDate : today;
   const realizedEnd = endDate < today ? endDate : new Date(today.getTime() - 86_400_000);
 
-  const [announced, realized] = await Promise.all([
+  const [announced, realized, etfRows] = await Promise.all([
     announcedStart <= endDate ? deps.market.getExDividendCalendar(announcedStart, endDate) : Promise.resolve([]),
     realizedEnd >= startDate ? deps.dividendEvents.listRealizedExDividendRows(startDate, realizedEnd) : Promise.resolve([]),
+    // 2026-09-23：ETF 的收益分配整段都從 sitca 來（不分 announced/realized）——FundClear 的資料同時含已發生與
+    // 已公告未發生的分配，所以查整個區間、不用今天切。ETF 不會出現在上面兩個來源裡（twse 預告表只收個股、
+    // mops dividend_distribution 是上市櫃公司的股利分派決議，實測 00 開頭零筆）。
+    deps.etfData.listEtfDividendsForRange(startDate, endDate),
   ]);
 
   const nameMap = await deps.companyProfiles.getCompanyNamesForSymbols(announced.map((r) => r.symbol));
@@ -190,10 +195,71 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
       stockHoldingRatio: null,
       paymentDate: toIso(r.cashDividendPaymentDate),
       fiscalYear: r.rocFiscalYear === null ? null : rocYearToGregorian(r.rocFiscalYear),
+      securityType: 'COMMON' as const,
+      recordDate: null,
+      distributionPerUnit: null,
+      composition: null,
     };
   });
 
-  const entries = [...realizedEntries, ...announcedEntries].sort((a, b) => (a.exDate === b.exDate ? a.symbol.localeCompare(b.symbol) : a.exDate.localeCompare(b.exDate)));
+  // ETF 列：status 用除息日跟今天比，跟個股那兩段的語意對齊（>= 今天是尚未發生的公告、< 今天是既成事實）。
+  // exType 固定 '息'——ETF 的收益分配沒有除權（不會配發受益權單位），這是結構性的不是資料缺漏。
+  // 組成百分比五欄**原樣透傳**：null（未揭露）跟 0（有揭露且為零）是兩件事，不做任何填補，見
+  // application/ports/marketData.ts 的 EtfDistributionComposition 說明。
+  const etfEntries = etfRows.map((r) => ({
+    symbol: r.symbol,
+    companyName: r.etf_name,
+    status: (r.ex_dividend_date >= today ? 'announced' : 'realized') as ExDividendCalendarEntry['status'],
+    exDate: toIso(r.ex_dividend_date)!,
+    exType: '息' as ExDividendCalendarEntry['exType'],
+    cashDividend: null,
+    stockDividendRatio: null,
+    subscriptionRatio: null,
+    subscriptionPricePerShare: null,
+    sharesOffered: null,
+    sharesEmpOwner: null,
+    sharesholderOwner: null,
+    stockHoldingRatio: null,
+    paymentDate: toIso(r.payment_date),
+    fiscalYear: null,
+    securityType: 'ETF' as const,
+    recordDate: toIso(r.record_date),
+    distributionPerUnit: toNumberOrNull(r.distribution_per_unit),
+    composition: {
+      dividendIncomePct: toNumberOrNull(r.composition_dividend_income_pct),
+      interestIncomePct: toNumberOrNull(r.composition_interest_income_pct),
+      incomeEqualizationPct: toNumberOrNull(r.composition_income_equalization_pct),
+      realizedCapitalGainPct: toNumberOrNull(r.composition_realized_capital_gain_pct),
+      otherIncomePct: toNumberOrNull(r.composition_other_income_pct),
+    },
+  }));
+
+  // 同一個 (exDate, symbol) 可能同時出現在兩邊——**twse 預告表本來就含 ETF**（它們也是上市證券），
+  // 實測 2026-10 有 8 組、2026-09 有 1 組。不能二選一，因為兩邊各有對方沒有的欄位：預告表有已宣告的
+  // 配息金額（cashDividend），sitca 有組成拆解與基準日、但未來月份的 distribution_per_unit 還是 null。
+  // 所以個股那兩段先進 map，ETF 列命中既有 key 就**補欄位**（標成 ETF、補基準日/組成，金額只在非 null
+  // 時覆蓋），沒命中才當新列加入。
+  const byKey = new Map<string, (typeof announcedEntries)[number] | (typeof realizedEntries)[number] | (typeof etfEntries)[number]>();
+  for (const e of [...realizedEntries, ...announcedEntries]) byKey.set(`${e.exDate}|${e.symbol}`, e);
+  for (const e of etfEntries) {
+    const key = `${e.exDate}|${e.symbol}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, e);
+      continue;
+    }
+    byKey.set(key, {
+      ...existing,
+      securityType: 'ETF' as const,
+      recordDate: e.recordDate,
+      composition: e.composition,
+      distributionPerUnit: e.distributionPerUnit,
+      // 預告表的 companyName 要查 profile 而 ETF 不在 company_profile 裡，通常是 null；用基金名稱補。
+      companyName: existing.companyName ?? e.companyName,
+    });
+  }
+
+  const entries = [...byKey.values()].sort((a, b) => (a.exDate === b.exDate ? a.symbol.localeCompare(b.symbol) : a.exDate.localeCompare(b.exDate)));
   return { entries };
 };
 
