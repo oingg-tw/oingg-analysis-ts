@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { persistMetricValue } from '@/bootstrap/pitMetrics';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 
 // 2026-09-11：全市場 backfill 平行化後真實發生過的 race condition——writeMetricValue（2026-09-17 Phase 3
 // 起是 persistComputations.persistOne，這裡走 bootstrap 綁好真實 repository 的 persistMetricValue）
@@ -18,9 +19,16 @@ const TEST_SYMBOL = `ZZT${Math.random().toString(36).slice(2, 9).toUpperCase().p
 const TEST_FISCAL_YEAR = 2019;
 const TEST_FISCAL_QUARTER = 1;
 
+// 2026-09-23：formulaVersion 從 registry 讀，不寫死。persistOne 的座標驗證會擋掉「跟定義宣告的
+// currentFormulaVersion 不符」的寫入（2026-09-22 加的守門），而 roe 同日從期末分母改成期間平均、
+// 版本升到 2——這支測試當時沒跟著改，從那天起就一直是 rejected。寫死版本號只會在下次改版重演，
+// 改成讀定義本身，這支測試以後不會再因為公式改版而失效。
+const ROE_FORMULA_VERSION = metricDefinitionRegistry.roe!.currentFormulaVersion;
+
 const buildInput = (value: number) => ({
   symbol: TEST_SYMBOL,
   metricCode: 'roe',
+  formulaVersion: ROE_FORMULA_VERSION,
   ...periodTypeGroup('TTM' as const),
   fiscalYear: TEST_FISCAL_YEAR,
   fiscalQuarter: TEST_FISCAL_QUARTER,

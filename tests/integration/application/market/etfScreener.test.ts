@@ -29,12 +29,24 @@ test('runEtfScreener: 類別 filter（values）應該是 IN 語意', async () =>
   }
 });
 
+// 2026-09-23 改掉一個違反 tests/README.md「不釘上游會變的資料」的斷言：原本寫死「主動式 ETF 應該是
+// 36 檔（上市31+上櫃5）」，市場上多掛了 3 檔就變 39、測試就紅——那是資料成長不是迴歸。這支測試要測的
+// 是「'true' 這個字串有沒有被正確轉成布林」，不是市場上有幾檔，所以改成驗證那個性質本身：
+// 篩 true 只回 true、篩 false 只回 false、兩者互斥且都非空。
 test('runEtfScreener: isActive 類別 filter 應該正確轉換布林值', async () => {
-  const result = await runEtfScreener({ filters: [{ field: 'isActive', values: ['true'] }], columns: [{ field: 'isActive' }], page: 1, pageSize: 50 }, appDeps);
-  assert.equal(result.count, 36, '目前資料裡主動式 ETF 應該是 36 檔（上市31+上櫃5）');
-  for (const row of result.results) {
-    assert.equal(row.values.isActive, true);
-  }
+  const active = await runEtfScreener({ filters: [{ field: 'isActive', values: ['true'] }], columns: [{ field: 'isActive' }], page: 1, pageSize: 50 }, appDeps);
+  const passive = await runEtfScreener({ filters: [{ field: 'isActive', values: ['false'] }], columns: [{ field: 'isActive' }], page: 1, pageSize: 50 }, appDeps);
+
+  assert.ok(active.count > 0, '應該至少有幾檔主動式 ETF');
+  assert.ok(passive.count > 0, '應該至少有幾檔被動式 ETF');
+  for (const row of active.results) assert.equal(row.values.isActive, true, '篩 true 不該回到 false 的列');
+  for (const row of passive.results) assert.equal(row.values.isActive, false, '篩 false 不該回到 true 的列');
+  // 布林轉換真的生效的話兩邊互斥；如果字串沒被轉成布林，兩次查詢會回到同一批（或都是空的）。
+  const activeSymbols = new Set(active.results.map((r) => r.symbol));
+  assert.ok(
+    passive.results.every((r) => !activeSymbols.has(r.symbol)),
+    '主動式與被動式不該有重疊——有重疊代表 filter 沒有真的生效'
+  );
 });
 
 // 2026-09-02 修過一次 bug：SQL 樣板字面值裡 \( \) 只打一個反斜線，JS 會在送進 Postgres 前
