@@ -10,6 +10,7 @@ import { shareholderYieldBadge } from './dividend/shareholderYield/shareholderYi
 import { accrualsRatioBadge } from './quality/accrualsRatio/accrualsRatioBadge';
 import { famaFrenchOperatingProfitabilityBadge } from './profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityBadge';
 import { sueBadge } from './growth/sue/sueBadge';
+import { susBadge } from './growth/sus/susBadge';
 import { oneDollarTestBadge } from './profitability/oneDollarTest/oneDollarTestBadge';
 import { netProfitMarginBadge } from './profitability/netProfitMargin/netProfitMarginBadge';
 import { roeBadge } from './profitability/roe/roeBadge';
@@ -244,6 +245,7 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   accrualsRatio: accrualsRatioBadge,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityBadge,
   sue: sueBadge,
+  sus: susBadge,
   oneDollarTest: oneDollarTestBadge,
   netProfitMargin: netProfitMarginBadge,
   roe: roeBadge,
