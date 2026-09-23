@@ -23,10 +23,10 @@ const envSchema = z
     ANALYSIS_DATABASE_URL: nonEmpty,
     MOPS_EXPORT_DATABASE_URL: nonEmpty,
     GOV_EXPORT_DATABASE_URL: nonEmpty,
-    // twse-ts：刻意固定連 PROD（見 prisma/twseExportClient.ts 的說明），月營收另外固定連 DEV
-    // （見 prisma/twseExportDevClient.ts），兩條連線在任何環境都需要。
+    // twse-ts：刻意固定連 PROD（見 prisma/twseExportClient.ts 的說明）。2026-09-23 拿掉了
+    // TWSE_EXPORT_DATABASE_URL_DEV——它當初只為了月營收存在（那批資料一度只有 DEV 有），
+    // twse-ts 完成上市全市場回填後 PROD 才是正確來源，那條連線已無消費端。
     TWSE_EXPORT_DATABASE_URL: nonEmpty,
-    TWSE_EXPORT_DATABASE_URL_DEV: nonEmpty,
     // tpex-ts / sitca-ts：dev/prod 是兩個獨立的 Neon 專案，依執行環境二選一（下方 superRefine
     // 只要求當前環境用得到的那一組存在，正式 image 不需要帶 DEV 的連線字串）。
     TPEX_EXPORT_DATABASE_URL_DEV: nonEmpty.optional(),
@@ -64,7 +64,6 @@ export const config = {
     mopsExport: env.MOPS_EXPORT_DATABASE_URL,
     govExport: env.GOV_EXPORT_DATABASE_URL,
     twseExport: env.TWSE_EXPORT_DATABASE_URL,
-    twseExportDev: env.TWSE_EXPORT_DATABASE_URL_DEV,
     // superRefine 已保證當前環境用得到的那一組存在。
     tpexExport: (isProduction ? env.TPEX_EXPORT_DATABASE_URL_PROD : env.TPEX_EXPORT_DATABASE_URL_DEV)!,
     sitcaExport: (isProduction ? env.SITCA_EXPORT_DATABASE_URL_PROD : env.SITCA_EXPORT_DATABASE_URL_DEV)!,

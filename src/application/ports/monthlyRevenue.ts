@@ -1,5 +1,5 @@
-// 月營收歷史 port——twse-ts export.monthly_revenue（目前只有 2330 有資料，一次性回填，見
-// infrastructure/prisma/twseExportDevClient.ts 檔頭說明）。查無資料回空陣列，是正常情境不是錯誤。
+// 月營收歷史 port——twse-ts export.monthly_revenue（PROD，上市全市場 2021-09 起；只涵蓋上市，
+// 實作層已篩掉公開發行未上市那批）。查無資料回空陣列，是正常情境不是錯誤。
 // 實作在 infrastructure/repositories/twse/monthlyRevenue.ts。
 
 export interface MonthlyRevenueEntry {

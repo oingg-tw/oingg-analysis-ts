@@ -319,16 +319,18 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/companies/monthly-revenue-history',
-    summary: '單一公司月營收歷史（畫圖用，目前僅 2330 有資料）',
+    summary: '單一公司月營收歷史（畫圖用）',
     description:
-      '**目前只有 2330 有資料**（twse-ts 2026-09-07 一次性手動回填，2021-08~2026-07 共 60 個月，' +
-      '從 MOPS 舊制個股查詢頁逐月抓的，不是常態每日更新的管道，之後也不會自動長出新月份或新公司）。' +
-      '查其他公司代號會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種' +
-      '「查無歷史資料是正常情境」的慣例——**不要誤以為這是全市場即時月營收功能**。' +
+      '**上市公司全市場**，2021-09 起逐月（twse-ts 2026-09-23 完成 `_L` 歷史回填，共 60 個月、993 家，' +
+      '其中 964 家有 36 個月以上）。2026-09 之後的月份由 twse-ts 每月自動 ingest，會持續長出來。' +
+      '**只涵蓋上市**：上櫃不在這支、公開發行未上市的證券商（六碼代號）已在資料層排除。' +
+      '查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種' +
+      '「查無歷史資料是正常情境」的慣例。' +
       'momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的' +
       '（來源這批一次性回填的資料沒有這個欄位）；yoyChangePercent（年增率）、cumulativeChangePercent' +
-      '（累計營收年增率）是來源直接算好的欄位，原樣透傳。金額欄位（currentMonthRevenue 等）都是' +
-      'bigint 序列化成字串，單位新台幣千元。',
+      '（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePercent 有約 0.4% 是 null，' +
+      '那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是' +
+      'bigint 序列化成字串，單位新台幣千元（本服務不換算）。',
     tags: ['System'],
     request: { query: getCompanyMonthlyRevenueHistoryQuerySchema },
     responses: {
