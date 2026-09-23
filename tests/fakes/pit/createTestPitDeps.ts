@@ -22,6 +22,7 @@ export const createTestPitDeps = (overrides: Partial<PitDeps> = {}): PitDeps => 
   xbrlAccounts: unusedPort('xbrlAccounts'),
   industry: unusedPort('industry'),
   dividendEvents: unusedPort('dividendEvents'),
+  monthlyRevenue: unusedPort('monthlyRevenue'),
   priceLevel: unusedPort('priceLevel'),
   metricValues: createInMemoryMetricValues(),
   definitions: { get: (metricCode) => metricDefinitionRegistry[metricCode] },

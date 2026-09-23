@@ -38,6 +38,13 @@ export interface ComputationBatch<K extends string> {
 }
 
 // 逐日型指標（beta/marketRatios/live*）的一批計算結果：座標是交易日（YYYY-MM-DD），沒有季度。
+// 2026-09-23 月頻指標（sus）的一批計算結果——座標是 (fiscalYear, fiscalMonth)，寫進 metric_monthly_values。
+export interface MonthlyComputationBatch<K extends string> {
+  symbol: string;
+  yearMonth: string | null; // "YYYY-MM"，解析不出目標月時為 null（對應 skipped_no_quarter 那類跳過）
+  slots: Record<K, ComputationSlot>;
+}
+
 export interface DailyComputationBatch<K extends string> {
   symbol: string;
   tradeDate: string | null;

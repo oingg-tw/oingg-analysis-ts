@@ -6,6 +6,7 @@ import type { MarketDataPort } from '@/application/ports/marketData';
 import type { XbrlAccountsPort } from '@/application/ports/xbrlAccounts';
 import type { IndustryPort } from '@/application/ports/industry';
 import type { DividendEventsPort } from '@/application/ports/dividendEvents';
+import type { MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
 import type { MetricValueRepository } from '@/application/ports/metricValues';
 import type { MetricDefinitionLookup } from '@/application/ports/metricDefinitions';
 import type { PriceLevelPort } from '@/application/ports/priceLevel';
@@ -26,6 +27,7 @@ export interface PitDeps {
   xbrlAccounts: XbrlAccountsPort; // 寬表沒有的 XBRL 原始科目
   industry: IndustryPort; // 產業別 gating
   dividendEvents: DividendEventsPort; // 股利分派事件
+  monthlyRevenue: MonthlyRevenuePort; // 月營收（上市＋上櫃，2021-09 起）——月頻指標 sus 用
   priceLevel: PriceLevelPort; // 美元匯率＋美國 GNP 平減指數（Ohlson SIZE 換算）
   metricValues: MetricValueRepository; // metric_values / metric_daily_cadence_values 讀寫
   definitions: MetricDefinitionLookup; // 寫入前座標驗證用的 definition 查詢

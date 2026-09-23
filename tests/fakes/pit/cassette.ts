@@ -16,7 +16,7 @@ import { createInMemoryMetricValues, type InMemoryMetricValues } from './inMemor
 // JSON 編碼：Date / bigint / Map / Set / Decimal（Prisma 的 Decimal 物件）/ undefined 都有各自的標記，
 // 回放時還原成同型別（Decimal 還原成字串——呼叫端一律用 Number() 轉，跟 Decimal 物件的 valueOf 行為一致）。
 
-export const RECORDED_PORTS = ['statements', 'quarters', 'announcements', 'shares', 'market', 'xbrlAccounts', 'industry', 'dividendEvents', 'priceLevel'] as const;
+export const RECORDED_PORTS = ['statements', 'quarters', 'announcements', 'shares', 'market', 'xbrlAccounts', 'industry', 'dividendEvents', 'priceLevel', 'monthlyRevenue'] as const;
 export type RecordedPort = (typeof RECORDED_PORTS)[number];
 
 export interface Cassette {
@@ -88,6 +88,7 @@ export const createReplayPitDeps = (cassette: Cassette, overrides: Partial<PitDe
     shares: replayPort('shares'),
     market: replayPort('market'),
     xbrlAccounts: replayPort('xbrlAccounts'),
+    monthlyRevenue: replayPort('monthlyRevenue'),
     industry: replayPort('industry'),
     dividendEvents: replayPort('dividendEvents'),
     priceLevel: replayPort('priceLevel'),
