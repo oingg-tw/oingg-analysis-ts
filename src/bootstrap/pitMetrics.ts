@@ -4,6 +4,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 import type { BasisOutcome } from '@/application/metrics/pitOutcome';
 import type { ComputationSlot, MetricComputation } from '@/domain/metrics/computation';
 import type { MetricValueWriteOutcome } from '@/domain/metrics/coordinate';
+import { computeSus } from '@/application/metrics/growth/sus/computeSus';
 import { computeBuybackYield } from '@/application/metrics/dividend/buybackYield/computeBuybackYield';
 import { computeChowderNumber } from '@/application/metrics/dividend/chowderNumber/computeChowderNumber';
 import { computeConsecutiveDividendYears } from '@/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYears';
@@ -129,6 +130,10 @@ export const runPitNested =
 
 // 直接寫一筆（scripts/backfillMagicFormulaRankPit.ts 這種算完不是走 computeXxx 的呼叫端用）。
 export const persistMetricValue = (input: MetricComputation): Promise<MetricValueWriteOutcome> => persistOne(input, pitDeps);
+
+// 2026-09-23 月頻指標 sus——runPit 對它一樣適用（batch 的 slots 形狀相同，只是 context 欄位是 yearMonth
+// 而不是 rocYear/season），不用另外寫一支 runner。
+export const computeAndWriteSusPit = runPit(computeSus);
 
 export const computeAndWriteBuybackYieldPit = runPit(computeBuybackYield);
 export const computeAndWriteChowderNumberPit = runPit(computeChowderNumber);

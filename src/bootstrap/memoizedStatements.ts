@@ -35,3 +35,28 @@ export const memoizeStatementsForBackfill = (): { size: () => number } => {
   Object.assign(pitDeps, { statements: memoized });
   return { size: () => cache.size };
 };
+
+// 2026-09-23 月頻回填（scripts/backfillSusPit.ts）用：同一家公司的 60 個月各自呼叫一次 computeSus，
+// 每次都會重抓整份月營收歷史——記憶化之後一家公司只查一次。跟上面 memoizeStatementsForBackfill 同一招、
+// 同樣只給一次性跑完就結束的腳本用（沒有失效機制）。
+export const memoizeMonthlyRevenueForBackfill = (): { size: () => number } => {
+  const cache = new Map<string, Promise<unknown>>();
+  const target = pitDeps.monthlyRevenue;
+  const memoized = new Proxy(target, {
+    get: (obj, prop, receiver) => {
+      const original = Reflect.get(obj, prop, receiver);
+      if (typeof original !== 'function' || prop !== 'getMonthlyRevenueHistory') return original;
+      return (...args: unknown[]) => {
+        const key = JSON.stringify(args);
+        let hit = cache.get(key);
+        if (!hit) {
+          hit = (original as (...a: unknown[]) => Promise<unknown>).apply(obj, args);
+          cache.set(key, hit);
+        }
+        return hit;
+      };
+    },
+  });
+  Object.assign(pitDeps, { monthlyRevenue: memoized });
+  return { size: () => cache.size };
+};
