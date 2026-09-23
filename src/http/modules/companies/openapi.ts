@@ -321,9 +321,10 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/companies/monthly-revenue-history',
     summary: '單一公司月營收歷史（畫圖用）',
     description:
-      '**上市公司全市場**，2021-09 起逐月（twse-ts 2026-09-23 完成 `_L` 歷史回填，共 60 個月、993 家，' +
-      '其中 964 家有 36 個月以上）。2026-09 之後的月份由 twse-ts 每月自動 ingest，會持續長出來。' +
-      '**只涵蓋上市**：上櫃不在這支、公開發行未上市的證券商（六碼代號）已在資料層排除。' +
+      '**上市＋上櫃全市場**，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 完成歷史回填）。' +
+      '2026-09 之後的月份由上游每月自動 ingest，會持續長出來。公開發行未上市的證券商（六碼代號）已在資料層排除。' +
+      '上櫃公司的 `reportDate` 在歷史月份是 null——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，' +
+      '上游選擇誠實留空而不是照抄一個錯的日期。' +
       '查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種' +
       '「查無歷史資料是正常情境」的慣例。' +
       'momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的' +

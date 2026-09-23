@@ -1,5 +1,5 @@
-// 月營收歷史 port——twse-ts export.monthly_revenue（PROD，上市全市場 2021-09 起；只涵蓋上市，
-// 實作層已篩掉公開發行未上市那批）。查無資料回空陣列，是正常情境不是錯誤。
+// 月營收歷史 port——上市（twse-ts）＋上櫃（tpex-ts）全市場，2021-09 起共 60 個月；實作層先查上市、
+// 查無資料再查上櫃，並已篩掉公開發行未上市那批。查無資料回空陣列，是正常情境不是錯誤。
 // 實作在 infrastructure/repositories/twse/monthlyRevenue.ts。
 
 export interface MonthlyRevenueEntry {

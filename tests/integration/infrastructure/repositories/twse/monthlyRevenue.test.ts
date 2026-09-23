@@ -67,6 +67,26 @@ test('getMonthlyRevenueHistory: 公開發行未上市的公司不該出現（sou
   assert.equal(result.total, 0);
 });
 
+// 2026-09-23 同日補上的上櫃 fallback：在那之前這支只查 twse，上櫃公司一律回空陣列。
+// 6488 環球晶的 2026-08 營收 4,764,363 千元跟 tpex-ts 的抽驗一致。
+test('getMonthlyRevenueHistory: 上櫃公司也要查得到（先查上市、空了再查上櫃）', async () => {
+  const result = await getMonthlyRevenueHistory('6488', 60);
+
+  assert.equal(result.total, 60);
+  assert.equal(result.entries[0]!.yearMonth, '2021-09');
+  assert.equal(result.entries[59]!.yearMonth, '2026-08');
+  assert.equal(result.entries[59]!.currentMonthRevenue, '4764363');
+  assert.equal(result.entries[59]!.industry, '半導體業');
+});
+
+// 上櫃歷史列的 report_date 是 NULL——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，
+// tpex-ts 選擇誠實留空。這裡釘住「是 null 而不是被填了一個假日期」。
+test('getMonthlyRevenueHistory: 上櫃歷史月份的 reportDate 是 null，不是假的申報日', async () => {
+  const result = await getMonthlyRevenueHistory('6488', 60);
+
+  assert.equal(result.entries[59]!.reportDate, null);
+});
+
 afterAll(async () => {
   await twseExportPrisma.$disconnect();
 });

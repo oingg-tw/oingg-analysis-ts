@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
 
 // twse-ts export.monthly_revenue（PROD）——2026-09-23 從 DEV 庫換過來。先前接 DEV 是因為當時只有那邊
@@ -14,6 +15,21 @@ import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePo
 // 已知資料特性（twse-ts 2026-09-23 說明，不要「修」掉）：`yoy_change_percent` 有 226 筆 null（0.4%），
 // 是當年新上市、沒有去年同期可比，不是漏抓——照實傳 null，不要填 0，下游要靠它分辨「無法計算」與「尚無資料」。
 // 金額單位是**千元**（來源原樣），這一層不換算。
+//
+// **上市查無資料就退回上櫃**（2026-09-23 同日補上）：tpex-ts 完成上櫃 60 個月回填後，
+// export.monthly_revenue 有 2021-09~2026-08、894 個代號、50,132 筆（831 個有 ≥36 個月）。
+// 在那之前這支只查 twse，所以 6488 環球晶、5483 中美晶這類上櫃公司一律回空陣列——實測確認過。
+// 一家公司只會是上市或上櫃其中之一，所以「先查上市、空了再查上櫃」不會重複也不會衝突。
+//
+// **上櫃那張不要篩 source**（tpex-ts 2026-09-23 特別提醒）：他們的 source 語意跟 twse 不同——
+// twse 的是排除「公開發行未上市」的證券商，tpex 的是區分兩份 MOPS 報表（`TPEX_T187AP05` 每日排程、
+// `MOPS_T21SC03` 這次補的歷史），**兩種值都是正牌上櫃公司**。重疊月份他們以 t187ap05_O 為準、
+// 只補 t21sc03 獨有的代號，所以無條件查就對了。
+// 數字對不上時的權威順序（mops-ts 提供）：逐家申報的 t05st10_ifrs > t187ap05 > t21sc03（二次彙總）。
+//
+// **上櫃歷史列的 report_date 幾乎都是 NULL**：t21sc03 頁面的「出表日期」是 MOPS 重新產生該頁面的日期
+// （2021-09 那份寫的是 2026-09-21），不是當年申報日，tpex-ts 選擇誠實留空而不是照抄。我們的 DTO 本來
+// 就允許 reportDate 為 null，不用特別處理，但下游畫「申報日」時要知道上櫃歷史沒有這個資訊。
 //
 // 查無資料回傳空陣列，是正常情境不是錯誤，呼叫端不用特別判斷。
 // DTO 型別 2026-09-17 Phase 4 搬到 application/ports/monthlyRevenue.ts（對外回應的 zod schema 在
@@ -38,14 +54,20 @@ const toDateString = (value: Date | null): string | null => (value === null ? nu
 const toYearMonthString = (value: Date): string => value.toISOString().slice(0, 7);
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
+const COLUMNS = 'year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue, yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note';
+
 export const getMonthlyRevenueHistory = async (symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult> => {
-  const rows = await twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
-    SELECT year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue,
-      yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note
-    FROM "export"."monthly_revenue"
-    WHERE symbol = ${symbol} AND source = 'MONTHLY_REVENUE'
-    ORDER BY year_month ASC
-  `;
+  const listed = await twseExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
+    `SELECT ${COLUMNS} FROM "export"."monthly_revenue" WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
+    symbol
+  );
+  const rows =
+    listed.length > 0
+      ? listed
+      : await tpexExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
+          `SELECT ${COLUMNS} FROM "export"."monthly_revenue" WHERE symbol = $1 ORDER BY year_month ASC`,
+          symbol
+        );
 
   const total = rows.length;
   const selected = rows.slice(-limit);

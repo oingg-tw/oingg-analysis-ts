@@ -129,8 +129,8 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
   return { symbol, metricCodes, timeframe, total, hasMore, entries };
 };
 
-// 月營收歷史——上市公司全市場，2021-09 起逐月（twse-ts 2026-09-23 完成 `_L` 回填，60 個月、993 家；
-// 2026-09 之後每月自動 ingest）。2026-09-23 之前這裡只有 2330 回得出資料，原因是讀錯資料庫，見
+// 月營收歷史——上市＋上櫃全市場，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 兩邊
+// 都完成回填；之後每月自動 ingest）。2026-09-23 之前這裡只有 2330 回得出資料，原因是讀錯資料庫，見
 // infrastructure/repositories/twse/monthlyRevenue.ts 的說明。查無資料會正確回 entries: []（不是 404），
 // 跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyMonthlyRevenueHistory = async ({ symbol, limit }: { symbol: string; limit: number }, deps: Pick<AppDeps, 'monthlyRevenue'>) => {
