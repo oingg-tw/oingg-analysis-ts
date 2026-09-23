@@ -22,6 +22,13 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
   currentFormulaVersion: 1,
+  // 2026-09-24 使用者決定 8 年窗口先從 GET /metrics 目錄下架：mops-ts 用 40 家等距採樣確認 **iXBRL 從民國
+  // 108 年起才強制、107 年以前結構上就是舊格式 HTML**（採樣成功率 0/40），所以最早年度是 FY108，8 年窗口
+  // 要 FY115 才滿——**約 2027 年初**才會出現第一個值，在那之前全市場 0 家有值，掛在目錄裡對使用者是雜訊。
+  // **計算與儲存完全不動**（照常每季算、照常寫進 metric_values），只是不出現在目錄；時間到要掛回來就是
+  // 把這個旗標拿掉，不用重算任何東西。3 年／5 年窗口不受影響。
+  // 跟 dupontDecomposedRoe 用同一個機制（excludeFromFilterCatalog）。
+  excludeFromFilterCatalog: years === 8,
 });
 
 export const epsCagrFamilyDefinitions: Record<string, MetricDefinitionSpec> = Object.fromEntries(
