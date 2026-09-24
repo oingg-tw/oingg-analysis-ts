@@ -2,12 +2,20 @@
 // bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare 上線後的首次回填，
 // 單一任務，不用跑 backfillAllMetricsLatestFullMarketPit.ts 整套。
 //
-// 銀行清單刻意不沿用 backfillAllMetricsLatestFullMarketPit.ts 的 getBankSymbols()
-// （那份清單查的是 bank_capital_adequacy_detail_xbrl 的 eligible_capital IS NOT NULL，
-// 只覆蓋 6-7 家有申報資本適足率監理揭露的銀行）——這裡的資料源是損益表明細
-// bank_income_statement_detail_xbrl，覆蓋範圍不同（已跟 mops-ts 驗證約 10-11 家），
-// 用同一張表自己的 net_income_loss_of_interest_quarter IS NOT NULL 當銀行清單依據，
-// 才不會漏掉「有損益表資料但沒有資本適足率監理揭露」的銀行/金控。
+// 銀行清單用損益表明細（bank_income_statement_detail_xbrl 的
+// net_income_loss_of_interest_quarter IS NOT NULL），不是資本適足率揭露。
+//
+// 2026-09-24 更新：這段原本寫「刻意不沿用 backfillAllMetricsLatestFullMarketPit.ts 的
+// getBankSymbols()」——當時那份清單只查資本適足率，會漏掉「有銀行損益表但不申報資本適足率」
+// 的公司（實例：2820 華票，票券公司）。**那個分歧已經不存在了**：listBankSymbols() /
+// listBankSymbolsForQuarter() 已改成兩張表的聯集，所以現在兩邊母體一致。
+//
+// 這支腳本保留的理由變成「只跑 bankIncomeWaterfall 這一個 label 的快速通道」，
+// 不再是因為母體不同。
+//
+// 教訓留著：當時是在**這一支**繞過問題而不是修母體函式，結果另外三支選母體的腳本
+// （AllMetricsLatest / FullHistory / scanMetricGaps）繼續用錯的清單，2820 從來沒被算過，
+// 直到 2026-09-24 bff-ts 回報銀行指標覆蓋率才發現。繞道會留在原地。
 //
 // 用法：pnpm tsx scripts/backfillBankIncomeWaterfallPit.ts
 import { computeAndWriteBankIncomeWaterfallPit } from '../src/bootstrap/pitMetrics';

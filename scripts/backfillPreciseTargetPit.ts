@@ -56,15 +56,26 @@ const parseQuarters = (value: string | undefined): { year: string; season: Seaso
   });
 };
 
-const filterByLabels = (tasks: BackfillTask[], labels: string[] | undefined): BackfillTask[] => {
-  if (!labels) return tasks;
-  const labelSet = new Set(labels);
-  const filtered = tasks.filter(([label]) => labelSet.has(label));
-  const missing = labels.filter((label) => !tasks.some(([taskLabel]) => taskLabel === label));
+// 2026-09-24 修：原本這支函式自己驗證「label 存不存在」，而它被**分別**呼叫兩次（一般任務一次、
+// 銀行任務一次），所以指定純銀行的 label（例如 METRIC_LABELS=bankIncomeWaterfall）會在一般任務
+// 那一關就丟錯，永遠跑不到銀行任務——等於這個腳本沒辦法只跑銀行指標。
+// 現在篩選不驗證，驗證改成 main() 裡對「一般 + 銀行」聯集做一次。
+const filterByLabels = (tasks: BackfillTask[], labels: string[] | undefined): BackfillTask[] =>
+  labels ? tasks.filter(([label]) => new Set(labels).has(label)) : tasks;
+
+// 對照可用 label 的聯集驗證一次。銀行 label 只有在 INCLUDE_BANK=1 時才算數——否則指定了
+// 銀行 label 卻沒開 INCLUDE_BANK 會安靜地不跑任何東西，那正是今天一直在抓的那種沉默失敗。
+const assertLabelsExist = (labels: string[] | undefined, includeBank: boolean): void => {
+  if (!labels) return;
+  const available = new Set([
+    ...buildGeneralTasks('0000').map(([label]) => label),
+    ...(includeBank ? buildBankTasks('0000').map(([label]) => label) : []),
+  ]);
+  const missing = labels.filter((label) => !available.has(label));
   if (missing.length > 0) {
-    throw new Error(`METRIC_LABELS 裡有不存在的任務 label：${missing.join(', ')}。可用清單見 backfillTaskDefinitions.ts 的 buildGeneralTasks/buildBankTasks。`);
+    const hint = includeBank ? '' : '（銀行 label 需要一併設 INCLUDE_BANK=1）';
+    throw new Error(`METRIC_LABELS 裡有不存在的任務 label：${missing.join(', ')}${hint}。可用清單見 backfillTaskDefinitions.ts 的 buildGeneralTasks/buildBankTasks。`);
   }
-  return filtered;
 };
 
 const main = async () => {
@@ -79,6 +90,7 @@ const main = async () => {
   const quarters = parseQuarters(process.env.QUARTERS);
   const metricLabels = parseCsv(process.env.METRIC_LABELS);
   const includeBank = process.env.INCLUDE_BANK === '1';
+  assertLabelsExist(metricLabels, includeBank);
 
   const quarterList: ({ year: string; season: Season } | undefined)[] = quarters ?? [undefined];
 

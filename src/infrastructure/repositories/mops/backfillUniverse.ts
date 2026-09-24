@@ -14,17 +14,32 @@ export const listSymbolsWithIncomeStatement = (year: string, quarter: string): P
     ORDER BY symbol
   `;
 
-// 真正的銀行：bank_capital_adequacy_detail_xbrl 每家公司都有列，但只有銀行的 eligible_capital 不是 null
-// （mops-ts 2026-09-11 澄清），實測 11 家。
+// 「要跑銀行指標的公司」——buildBankTasks 的三個 label（bankAssetQuality / bankCapitalAdequacy /
+// bankIncomeWaterfall）共用這份母體。
+//
+// 2026-09-24 改成兩張表的聯集。原本只查 bank_capital_adequacy_detail_xbrl（eligible_capital
+// 非 null = 受 Basel 資本適足率監理的銀行，實測 9 家），漏掉 **2820 華票**：票券公司有銀行式
+// 損益表、但不申報資本適足率，於是整家從來沒跑過任何銀行指標。
+//
+// 為什麼修在這裡而不是三個呼叫端：backfillAllMetricsLatest / backfillFullHistory / scanMetricGaps
+// 三支都各自選母體，改呼叫端會漏掉之後新寫的腳本。修在母體函式，全部自動正確。
+// 多納進來的公司不會產生髒資料——資本適足率那兩個 label 對它們是「跳過不寫」（見各自 compute
+// 的產業 gating），只有它真的有資料的 label 才會寫。
 export const listBankSymbols = (): Promise<{ symbol: string }[]> =>
   mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
-    SELECT DISTINCT symbol FROM "export"."bank_capital_adequacy_detail_xbrl" WHERE eligible_capital IS NOT NULL ORDER BY symbol
+    SELECT DISTINCT symbol FROM "export"."bank_capital_adequacy_detail_xbrl" WHERE eligible_capital IS NOT NULL
+    UNION
+    SELECT DISTINCT symbol FROM "export"."bank_income_statement_detail_xbrl" WHERE net_income_loss_of_interest_quarter IS NOT NULL
+    ORDER BY symbol
   `;
 
 export const listBankSymbolsForQuarter = (year: string, quarter: string): Promise<{ symbol: string }[]> =>
   mopsExportPrisma.$queryRaw<{ symbol: string }[]>`
     SELECT DISTINCT symbol FROM "export"."bank_capital_adequacy_detail_xbrl"
     WHERE year = ${year} AND quarter = ${quarter} AND eligible_capital IS NOT NULL
+    UNION
+    SELECT DISTINCT symbol FROM "export"."bank_income_statement_detail_xbrl"
+    WHERE year = ${year} AND quarter = ${quarter} AND net_income_loss_of_interest_quarter IS NOT NULL
     ORDER BY symbol
   `;
 
