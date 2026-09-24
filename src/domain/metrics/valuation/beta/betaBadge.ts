@@ -38,7 +38,7 @@ export const betaBadge: MetricBadge = {
   timeframe: '5Y_1M',
   threshold: {
     description: '最低 20%',
-    thresholdLatex: '\\mathrm{Beta_{5Y,1M}\\ Percentile} \\geq 80',
+    thresholdLatex: '\\mathrm{Beta5Y1MPercentile} \\geq 80',
     note: 'Baker, Bradley & Wurgler (2011) 用全市場五等分（quintile）排序、beta 以最多 60 個月的月報酬估計，最低一組即最低 20%。direction 用 asc（Beta 越小排名越前面）；排名母體只含當日有 5Y_1M 值的公司（2026-09 約 960 家，beta 逐日回填尚未涵蓋全市場）。台灣採用實例：李安倫（2025，臺北大博士論文）以 Frazzini-Pedersen 估法對 2001–2023 年台灣上市公司驗證，低 beta 組合 Sharpe 0.118、高 beta 組合 0.021、BAB 組合 0.237（大盤 0.067）；呂倢妤（2023，嘉大碩士論文）用同本站的 60 個月 OLS 十分位，最低 beta 組原始報酬低於最高組、Sharpe 略高，效應以風險調整後為準。',
     denominator: 1,
     percentileRank: { scope: 'market', direction: 'asc', topPercent: 20 },

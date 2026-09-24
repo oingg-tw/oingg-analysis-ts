@@ -13,6 +13,7 @@
 import { ComputeEngine } from '@cortex-js/compute-engine';
 import { metricDefinitionRegistry } from '../src/bootstrap/metricDefinitions';
 import { badgeRegistry } from '../src/domain/metrics/badgeRegistry';
+import { inspectMathJson } from './latexHealth';
 
 const ce = new ComputeEngine();
 
@@ -20,11 +21,16 @@ const validateOne = (label: string, latex: string): boolean => {
   try {
     const boxed = ce.parse(latex);
     const json = boxed.json;
-    const roundTripLatex = ce.box(json).latex;
-    console.log(`✓ ${label}\n  in:  ${latex}\n  json: ${JSON.stringify(json)}\n  out: ${roundTripLatex}`);
+    const serialized = JSON.stringify(json);
+    const problem = inspectMathJson(latex, serialized);
+    if (problem) {
+      console.error(`✗ ${label}: ${problem.message} [${problem.code}]\n  in:  ${latex}\n  json: ${serialized}`);
+      return false;
+    }
+    console.log(`✓ ${label}\n  in:  ${latex}\n  json: ${serialized}\n  out: ${ce.box(json).latex}`);
     return true;
   } catch (error) {
-    console.error(`✗ ${label}: ${latex}`);
+    console.error(`✗ ${label}（解析丟例外）: ${latex}`);
     console.error(error);
     return false;
   }

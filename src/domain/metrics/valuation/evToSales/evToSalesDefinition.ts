@@ -8,7 +8,7 @@ export const evToSalesDefinition: MetricDefinitionSpec = {
   name: 'EV/Sales',
   unit: '倍',
   formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營收加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用營收。',
-  formulaLatex: '\\mathrm{EV/Sales} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
+  formulaLatex: '\\mathrm{EVToSales} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{Revenue}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/e/enterprisevaluerevenuemultiple.asp',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],

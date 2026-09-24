@@ -8,7 +8,7 @@ export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   name: '財務槓桿度',
   unit: '倍',
   formulaNote: '= EPS 年增率(%) ÷ EBIT 年增率(%)（本季 vs 去年同季），衡量 EBIT 變動對每股盈餘變動的放大效果，數值越高代表財務槓桿（負債利息）對盈餘波動的放大程度越大。',
-  formulaLatex: '\\mathrm{DFL} = \\dfrac{\\%\\Delta \\mathrm{EPS}}{\\%\\Delta \\mathrm{EBIT}}',
+  formulaLatex: '\\mathrm{DFL} = \\dfrac{\\mathrm{EPSPctChange}}{\\mathrm{EBITPctChange}}',
   referenceUrl: 'https://www.investopedia.com/terms/d/degreeoffinancialleverage.asp',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],

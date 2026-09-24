@@ -7,7 +7,7 @@ export const priceToOcfDefinition: MetricDefinitionSpec = {
   name: 'P/OCF',
   unit: '倍',
   formulaNote: '= 市值 ÷ 近四季營業活動現金流量加總。跟既有 pFcf（P/FCF）是姊妹指標，分母不扣資本支出。',
-  formulaLatex: '\\mathrm{P/OCF} = \\dfrac{\\mathrm{MarketCap}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
+  formulaLatex: '\\mathrm{PriceToOCF} = \\dfrac{\\mathrm{MarketCap}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/p/price-to-cash-flow-ratio.asp',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],

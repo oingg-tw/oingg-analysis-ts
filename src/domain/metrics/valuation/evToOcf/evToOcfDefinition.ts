@@ -8,7 +8,7 @@ export const evToOcfDefinition: MetricDefinitionSpec = {
   name: 'EV/OCF',
   unit: '倍',
   formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營業活動現金流量加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用 OCF。',
-  formulaLatex: '\\mathrm{EV/OCF} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
+  formulaLatex: '\\mathrm{EVToOCF} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/e/ev-cash-flow.asp',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],

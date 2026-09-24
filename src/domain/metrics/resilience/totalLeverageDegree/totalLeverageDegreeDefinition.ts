@@ -8,7 +8,7 @@ export const totalLeverageDegreeDefinition: MetricDefinitionSpec = {
   name: '總槓桿度',
   unit: '倍',
   formulaNote: '= EPS 年增率(%) ÷ 營收年增率(%)（本季 vs 去年同季），衡量營收變動對每股盈餘變動的放大效果（營業槓桿+財務槓桿的複合效果）。',
-  formulaLatex: '\\mathrm{DTL} = \\dfrac{\\%\\Delta \\mathrm{EPS}}{\\%\\Delta \\mathrm{Revenue}}',
+  formulaLatex: '\\mathrm{DTL} = \\dfrac{\\mathrm{EPSPctChange}}{\\mathrm{RevenuePctChange}}',
   referenceUrl: 'https://www.investopedia.com/terms/d/degreeoftotalleverage.asp',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],

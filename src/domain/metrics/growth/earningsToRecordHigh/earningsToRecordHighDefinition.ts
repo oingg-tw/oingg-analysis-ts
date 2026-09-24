@@ -19,7 +19,7 @@ export const earningsToRecordHighDefinition: MetricDefinitionSpec = {
     '= 本季淨利 / 近三年（前 12 季，不含本季）最高單季淨利 * 100。淨利優先採歸屬母公司口徑，缺漏退回' +
     '整體口徑（比照 pickNetIncome）。前 12 季任一季缺漏為 insufficient_history；前 12 季最高淨利 ≤ 0' +
     '（三年來沒有一季賺錢）為 zero_or_negative_denominator。100 以上代表本季創三年新高。只有 Q 一種 basis。',
-  formulaLatex: '\\mathrm{EarningsToRecordHigh} = \\frac{\\mathrm{NetIncome}_t}{\\max_{i=1}^{12} \\mathrm{NetIncome}_{t-i}} \\times 100',
+  formulaLatex: '\\mathrm{EarningsToRecordHigh} = \\frac{\\mathrm{NetIncome}_t}{\\mathrm{MaxNetIncome}_{t-12 \\ldots t-1}} \\times 100',
   academicSourceUrl: 'https://business.scu.edu.tw/sites/default/files/2025-12/IJ-01.PDF',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）'],
