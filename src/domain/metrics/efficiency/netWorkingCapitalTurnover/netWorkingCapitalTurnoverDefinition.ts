@@ -7,7 +7,7 @@ export const netWorkingCapitalTurnoverDefinition: MetricDefinitionSpec = {
   name: '淨營運資金週轉率',
   unit: '次',
   formulaNote: '= 近四季營收加總 ÷ 平均淨營運資金（流動資產-流動負債，近四季窗口 5 個季末平均），衡量每一元淨營運資金能支撐多少營收。（2026-09-22 formulaVersion 2：分母改近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',
-  formulaLatex: '\\mathrm{NWC\\ Turnover} = \\dfrac{\\mathrm{Revenue}_{\\mathrm{TTM}}}{\\mathrm{CurrentAssets} - \\mathrm{CurrentLiabilities}}',
+  formulaLatex: '\\mathrm{NWC\\ Turnover} = \\dfrac{\\mathrm{Revenue}_{\\mathrm{TTM}}}{\\overline{\\mathrm{CurrentAssets} - \\mathrm{CurrentLiabilities}}}',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',

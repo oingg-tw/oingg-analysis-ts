@@ -10,7 +10,7 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
     '。只遷移 RNOA 本身，不遷移 FLEV/NBC/SPREAD/reconstructedRoe' +
     '（沒有獨立查詢價值，範圍刻意限縮）。（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',
   formulaLatex:
-    '\\mathrm{RNOA} = \\frac{\\mathrm{NOPAT}}{\\mathrm{NOA}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{OperatingIncome}\\times(1-\\mathrm{TaxRate}),\\quad \\mathrm{NOA} = \\mathrm{Equity} + \\mathrm{NFO}',
+    '\\mathrm{RNOA} = \\frac{\\mathrm{NOPAT}}{\\overline{\\mathrm{NOA}}} \\times 100,\\quad \\mathrm{NOPAT} = \\mathrm{OperatingIncome}\\times(1-\\mathrm{TaxRate}),\\quad \\mathrm{NOA} = \\mathrm{Equity} + \\mathrm{NFO}',
   academicSourceUrl: 'https://doi.org/10.1023/A:1011338221623',
   // 2026-09-10 查證過：沒有專屬的中文/英文維基百科條目（只有一般 ROA/ROE 條目，概念不同），
   // referenceUrl 刻意留空，不要拿不相關的頁面充數。

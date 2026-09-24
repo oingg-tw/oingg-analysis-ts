@@ -9,7 +9,7 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
     'TTM 分子改用近四季（含本季）加總，分母同樣改用平均總資產。' +
     '（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）Sloan (1996) 原文就是 average total assets。',
   formulaLatex:
-    '\\mathrm{AccrualsRatio} = \\frac{\\mathrm{NetIncome} - \\mathrm{CFO} - \\mathrm{CFI}}{\\mathrm{TotalAssets}} \\times 100',
+    '\\mathrm{AccrualsRatio} = \\frac{\\mathrm{NetIncome} - \\mathrm{CFO} - \\mathrm{CFI}}{\\overline{\\mathrm{TotalAssets}}} \\times 100',
   // 2026-09-10 補：雖然算式本身是單一比率（tier 維持 derived，不因為出處升級成 composite，
   // 見 metricDefinitionSpec.ts 的判斷標準），但確實有單一可指名論文出處（Sloan 1996），
   // 是 web-nuxt 轉來的 badge 資料附帶查到的引用，一併補上。
