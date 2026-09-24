@@ -34,6 +34,18 @@ import { grossProfitPerShareDefinition } from '@/domain/metrics/profitability/gr
 import { operatingIncomePerShareDefinition } from '@/domain/metrics/profitability/operatingIncomePerShare/operatingIncomePerShareDefinition';
 import { costOfGoodsSoldPerShareDefinition } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/costOfGoodsSoldPerShareDefinition';
 import { operatingExpensePerShareDefinition } from '@/domain/metrics/profitability/operatingExpensePerShare/operatingExpensePerShareDefinition';
+import { nonOperatingIncomePerShareDefinition } from '@/domain/metrics/profitability/nonOperatingIncomePerShare/nonOperatingIncomePerShareDefinition';
+import { sellingExpensePerShareDefinition } from '@/domain/metrics/profitability/sellingExpensePerShare/sellingExpensePerShareDefinition';
+import { administrativeExpensePerShareDefinition } from '@/domain/metrics/profitability/administrativeExpensePerShare/administrativeExpensePerShareDefinition';
+import { researchAndDevelopmentExpensePerShareDefinition } from '@/domain/metrics/profitability/researchAndDevelopmentExpensePerShare/researchAndDevelopmentExpensePerShareDefinition';
+import { interestIncomePerShareDefinition } from '@/domain/metrics/profitability/interestIncomePerShare/interestIncomePerShareDefinition';
+import { otherIncomePerShareDefinition } from '@/domain/metrics/profitability/otherIncomePerShare/otherIncomePerShareDefinition';
+import { otherGainsLossesPerShareDefinition } from '@/domain/metrics/profitability/otherGainsLossesPerShare/otherGainsLossesPerShareDefinition';
+import { equityMethodIncomePerShareDefinition } from '@/domain/metrics/profitability/equityMethodIncomePerShare/equityMethodIncomePerShareDefinition';
+import { financeCostPerShareDefinition } from '@/domain/metrics/profitability/financeCostPerShare/financeCostPerShareDefinition';
+import { minorityInterestPerShareDefinition } from '@/domain/metrics/profitability/minorityInterestPerShare/minorityInterestPerShareDefinition';
+import { otherOperatingIncomeExpensePerShareDefinition } from '@/domain/metrics/profitability/otherOperatingIncomeExpensePerShare/otherOperatingIncomeExpensePerShareDefinition';
+import { expectedCreditLossPerShareDefinition } from '@/domain/metrics/profitability/expectedCreditLossPerShare/expectedCreditLossPerShareDefinition';
 import { incomeTaxExpensePerShareDefinition } from '@/domain/metrics/profitability/incomeTaxExpensePerShare/incomeTaxExpensePerShareDefinition';
 import { consecutiveDividendYearsDefinition } from '@/domain/metrics/dividend/consecutiveDividendYears/consecutiveDividendYearsDefinition';
 import { dividendDistributionCountDefinition } from '@/domain/metrics/dividend/dividendDistributionCount/dividendDistributionCountDefinition';
@@ -178,6 +190,18 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   operatingIncomePerShare: operatingIncomePerShareDefinition,
   costOfGoodsSoldPerShare: costOfGoodsSoldPerShareDefinition,
   operatingExpensePerShare: operatingExpensePerShareDefinition,
+  nonOperatingIncomePerShare: nonOperatingIncomePerShareDefinition,
+  sellingExpensePerShare: sellingExpensePerShareDefinition,
+  administrativeExpensePerShare: administrativeExpensePerShareDefinition,
+  researchAndDevelopmentExpensePerShare: researchAndDevelopmentExpensePerShareDefinition,
+  interestIncomePerShare: interestIncomePerShareDefinition,
+  otherIncomePerShare: otherIncomePerShareDefinition,
+  otherGainsLossesPerShare: otherGainsLossesPerShareDefinition,
+  equityMethodIncomePerShare: equityMethodIncomePerShareDefinition,
+  financeCostPerShare: financeCostPerShareDefinition,
+  minorityInterestPerShare: minorityInterestPerShareDefinition,
+  otherOperatingIncomeExpensePerShare: otherOperatingIncomeExpensePerShareDefinition,
+  expectedCreditLossPerShare: expectedCreditLossPerShareDefinition,
   incomeTaxExpensePerShare: incomeTaxExpensePerShareDefinition,
   bvps: bvpsDefinition,
   peRatio: peRatioDefinition,

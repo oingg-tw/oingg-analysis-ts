@@ -11,6 +11,10 @@
 // 這張表現成的 eps 欄位）。2026-09-18 補上 operating_expense（營業費用合計，給
 // operatingExpensePerShare 用，跟 operating_costs/income_tax_expense_continuing_operations 一樣
 // 是真實揭露的單一總計科目）。
+// 2026-09-24 再補 5 個欄位給「營收→股利」瀑布圖的業外與營業費用拆解用：research_and_development_expense、
+// revenue_from_interest、other_revenue、other_gains_losses、share_of_profit_loss_of_associates_and_jvs。
+// 全部在同一列，加進既有 SELECT 不增加查詢次數——研發費用先前是 incomeStatementXbrlExtra.ts 單獨再查一次，
+// 那支還有 rdIntensity/priceToResearchRatio 在用，沿用不動（TTM 要四季，走這裡可以少四次往返）。
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
@@ -33,6 +37,13 @@ interface RawIncomeStatementXbrlRow {
   operating_costs: bigint | null;
   selling_expense: bigint | null;
   operating_expense: bigint | null;
+  research_and_development_expense: bigint | null;
+  revenue_from_interest: bigint | null;
+  other_revenue: bigint | null;
+  other_gains_losses: bigint | null;
+  share_of_profit_loss_of_associates_and_jvs: bigint | null;
+  net_other_income_expenses: bigint | null;
+  impairment_loss_gain_reversal_ifrs9: bigint | null;
 }
 
 const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
@@ -49,6 +60,13 @@ const mapXbrlRow = (row: RawIncomeStatementXbrlRow): IncomeStatementFields => ({
   operatingCost: row.operating_costs,
   sellingExpenses: row.selling_expense,
   operatingExpense: row.operating_expense,
+  researchAndDevelopmentExpense: row.research_and_development_expense,
+  interestIncome: row.revenue_from_interest,
+  otherIncome: row.other_revenue,
+  otherGainsLosses: row.other_gains_losses,
+  equityMethodIncome: row.share_of_profit_loss_of_associates_and_jvs,
+  netOtherIncomeExpenses: row.net_other_income_expenses,
+  expectedCreditLoss: row.impairment_loss_gain_reversal_ifrs9,
 });
 
 export const getLatestQuarterWithIncomeStatementXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
@@ -64,7 +82,10 @@ export const getIncomeStatementXbrlFirst = async (key: QuarterlyKey): Promise<In
   const rows = await mopsExportPrisma.$queryRaw<RawIncomeStatementXbrlRow[]>`
     SELECT report_date, revenue, gross_profit, profit_loss_from_operating_activities, profit_loss_before_tax,
       profit_loss, administrative_expense, finance_costs, income_tax_expense_continuing_operations,
-      profit_loss_attributable_to_owners_of_parent, operating_costs, selling_expense, operating_expense
+      profit_loss_attributable_to_owners_of_parent, operating_costs, selling_expense, operating_expense,
+      research_and_development_expense, revenue_from_interest, other_revenue, other_gains_losses,
+      share_of_profit_loss_of_associates_and_jvs, net_other_income_expenses,
+      impairment_loss_gain_reversal_ifrs9
     FROM "export"."quarterly_income_statement_xbrl"
     WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
       AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}

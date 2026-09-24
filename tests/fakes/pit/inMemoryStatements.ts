@@ -57,6 +57,13 @@ const emptyIncome = (reportDate: Date): IncomeStatementFields => ({
   operatingCost: null,
   sellingExpenses: null,
   operatingExpense: null,
+  researchAndDevelopmentExpense: null,
+  interestIncome: null,
+  otherIncome: null,
+  otherGainsLosses: null,
+  equityMethodIncome: null,
+  netOtherIncomeExpenses: null,
+  expectedCreditLoss: null,
 });
 
 const emptyBalance = (reportDate: Date): BalanceSheetFields => ({

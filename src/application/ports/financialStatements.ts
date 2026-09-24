@@ -24,6 +24,15 @@ export interface IncomeStatementFields {
   netIncomeAttributableToParent: bigint | null;
   operatingCost: bigint | null;
   sellingExpenses: bigint | null;
+  // 2026-09-24「營收→股利」瀑布圖補完缺口新增。全部來自 quarterly_income_statement_xbrl 同一列，
+  // 跟上面那些欄位同一次查詢帶回來，不多打一次 DB。
+  researchAndDevelopmentExpense: bigint | null;
+  interestIncome: bigint | null;          // revenue_from_interest：業外的利息收入
+  otherIncome: bigint | null;             // other_revenue：業外的其他收入
+  otherGainsLosses: bigint | null;        // other_gains_losses：業外的其他利益及損失
+  equityMethodIncome: bigint | null;      // 採用權益法認列之關聯企業及合資損益份額
+  netOtherIncomeExpenses: bigint | null;  // net_other_income_expenses：其他收益及費損淨額（營業利益的調整項）
+  expectedCreditLoss: bigint | null;      // impairment_loss_gain_reversal_ifrs9：IFRS 9 預期信用減損損失，營業費用的第四個組成
 }
 
 export interface BalanceSheetFields {
