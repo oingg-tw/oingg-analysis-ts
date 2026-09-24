@@ -40,8 +40,22 @@ spec:
           resources:
             limits:
               cpu: '1'
-              memory: 512Mi
+              # 2026-09-24 從 512Mi 調高。**Node 的 V8 old-space 上限是從容器記憶體推算的（約一半）**，
+              # 所以 512Mi 容器的 heap 天花板只有約 260MB，不是把 memory 調大就會跟著變大——
+              # sitca-ts 在 prod 實測到這個關係（1Gi 容器只用到 55% 就
+              # FATAL ERROR: Ineffective mark-compacts near heap limit）。
+              # 我們本機同性質的批次實測 RSS 317~343MB，已經越過 512Mi 的 heap 天花板。
+              #
+              # 兩個上限必須一起設，只調一個會把一種 OOM 換成另一種：
+              #   memory                        管 RSS（容器層級）
+              #   NODE_OPTIONS --max-old-space-size  管 V8 heap，單位 MB
+              #
+              # 這裡的 768 + 1Gi **沒有 prod 量測支撐**——是照 sitca-ts 實測可行的 768 + 2Gi
+              # 按負載比例縮下來的。部署後要實際量一次再決定調降或調高。
+              memory: 1Gi
           env:
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=768
             - name: NODE_ENV
               value: production
             - name: ANALYSIS_DATABASE_URL

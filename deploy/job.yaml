@@ -55,8 +55,17 @@ spec:
               resources:
                 limits:
                   cpu: '1'
-                  memory: 512Mi
+                  # 2026-09-24 從 512Mi 調高，理由與設定方式跟 service.yaml 同一套（見該檔註解）：
+                  # V8 heap 天花板是從容器記憶體推算的（約一半），512Mi 只有約 260MB，
+                  # 而同性質批次實測 RSS 317~343MB。兩個上限要一起設。
+                  #
+                  # Job 比 service 更需要這個：maxRetries: 0，**OOM 就是整批不算、等下個排程**，
+                  # 不會有假成功但會有沉默的資料空窗。而且容器被殺時應用層沒機會寫任何紀錄，
+                  # 所以只靠 ingestion 類的表看不出來，要看 Cloud Run 的 job failure metric。
+                  memory: 1Gi
               env:
+                - name: NODE_OPTIONS
+                  value: --max-old-space-size=768
                 - name: NODE_ENV
                   value: production
                 - name: ANALYSIS_DATABASE_URL
