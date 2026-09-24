@@ -41,9 +41,14 @@ test('incomeStatementPerSharePit: 2330 115Q2 三個新 TTM-only 欄位都應該�
   assert.ok(Number(opexTtm!.value) > 0, '2330 每股營業費用應該是正值');
   assert.ok(Number(taxTtm!.value) > 0, '2330 獲利穩定，每股所得稅費用應該是正值');
 
-  // 三個新欄位只做 TTM，不寫 Q。
+  // 2026-09-24 這三支從 TTM-only 改成 Q + TTM（原本 TTM-only 是當初卡片鎖 TTM 的選擇，
+  // 上游 quarterly_income_statement_xbrl 本來就是單季表）。原本這裡斷言「不應該有 Q 列」，
+  // 現在反過來釘住「必須有 Q 列，而且單季值小於近四季值」——後者是真正有意義的關係：
+  // 單季成本必然小於四季加總，寫錯欄位或把 TTM 值寫進 Q 座標都會讓它垮。
   const cogsQ = await replay.findLatest({ symbol: '2330', metricCode: 'costOfGoodsSoldPerShare', periodType: 'Q', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' });
-  assert.equal(cogsQ, null, 'costOfGoodsSoldPerShare 不應該有 Q periodType 的列');
+  assert.ok(cogsQ, 'costOfGoodsSoldPerShare 應該有 Q periodType 的列');
+  assert.ok(Number(cogsQ!.value) > 0, '2330 單季每股營業成本應該是正值');
+  assert.ok(Number(cogsQ!.value) < Number(cogsTtm!.value), '單季營業成本應該小於近四季加總');
 });
 
 test('incomeStatementPerSharePit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {
