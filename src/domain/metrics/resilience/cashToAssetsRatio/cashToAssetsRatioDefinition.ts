@@ -7,7 +7,7 @@ export const cashToAssetsRatioDefinition: MetricDefinitionSpec = {
   name: '現金及約當現金占總資產比',
   unit: '%',
   formulaNote: '= 現金及約當現金 ÷ 資產總額，衡量資產配置中流動性最高的部位占比。',
-  formulaLatex: '\\mathrm{CashToAssets} = \\dfrac{\\mathrm{Cash}}{\\mathrm{TotalAssets}}',
+  formulaLatex: '\\mathrm{CashToAssets} = \\dfrac{\\mathrm{Cash}}{\\mathrm{TotalAssets}} \\times 100',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）'],
   group: 'period',

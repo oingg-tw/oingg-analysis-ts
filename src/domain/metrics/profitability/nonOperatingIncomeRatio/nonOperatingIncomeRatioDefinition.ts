@@ -7,7 +7,7 @@ export const nonOperatingIncomeRatioDefinition: MetricDefinitionSpec = {
   name: '業外損益占稅前淨利比',
   unit: '%',
   formulaNote: '= (稅前淨利 - 營業利益) ÷ 稅前淨利，數值越高代表獲利越依賴業外（非本業）活動。稅前淨利 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；虧損時比率符號翻轉無意義）。',
-  formulaLatex: '\\mathrm{NonOpIncomeRatio} = \\dfrac{\\mathrm{PretaxIncome} - \\mathrm{OperatingIncome}}{\\mathrm{PretaxIncome}}',
+  formulaLatex: '\\mathrm{NonOpIncomeRatio} = \\dfrac{\\mathrm{PretaxIncome} - \\mathrm{OperatingIncome}}{\\mathrm{PretaxIncome}} \\times 100',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',

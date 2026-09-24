@@ -8,7 +8,7 @@ export const croicDefinition: MetricDefinitionSpec = {
   name: 'CROIC',
   unit: '%',
   formulaNote: '= 近四季自由現金流（OCF-資本支出）加總 ÷ 投入資本（付息負債+股東權益-現金，跟既有 roic 同一套定義）× 100。（formulaVersion 1 漏乘 100，存的是比率不是百分比，2026-09-22 修正。）',
-  formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}}',
+  formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}} \\times 100',
   referenceUrl: 'https://www.investopedia.com/terms/c/cashreturnoninvestment.asp',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）'],

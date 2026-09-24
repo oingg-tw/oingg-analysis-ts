@@ -12,7 +12,7 @@ export const abnormalCapexRatioDefinition: MetricDefinitionSpec = {
     '慣例）加總，任一季缺漏視為該年度不完整。前三年任一年不完整 → insufficient_history，不用' +
     '更少年數頂替。前三年平均為 0 → zero_or_negative_denominator。原論文是橫斷面排序（CI 越高' +
     '的投資組合相對報酬越低），不是單一公司的絕對安全門檻，故不附 badge。只有 FY 一種 basis。',
-  formulaLatex: '\\mathrm{CI} = \\frac{\\mathrm{Capex}_t}{\\frac{1}{3}\\left(\\mathrm{Capex}_{t-1}+\\mathrm{Capex}_{t-2}+\\mathrm{Capex}_{t-3}\\right)} - 1',
+  formulaLatex: '\\mathrm{CI} = \\left(\\frac{\\mathrm{Capex}_t}{\\frac{1}{3}\\left(\\mathrm{Capex}_{t-1}+\\mathrm{Capex}_{t-2}+\\mathrm{Capex}_{t-3}\\right)} - 1\\right) \\times 100',
   academicSourceUrl: 'https://doi.org/10.1017/S0022109000003173',
   tier: 'derived',
   sources: ['公開發行公司現金流量表（XBRL）'],
