@@ -39,20 +39,31 @@ import { calculateSellingExpensePerShare } from '@/domain/metrics/profitability/
 // 複製貼上（Q/TTM × 各自的完整度判斷與 knowledgeDate），再加 23 個 slot 會變成六百行同構
 // 程式碼，任何一段改錯都很難看出來。改成一張 FIELDS 表 + 一個迴圈，**語意逐項保留**：
 //
-// - 既有 7 個 slot 的 slots key、metricCode、完整度分組、knowledgeDate 來源全部不變
+// - 既有 7 個 slot 的 slots key、metricCode、knowledgeDate 來源全部不變
 //   （parity 已用實際資料逐格對照驗證）。
 // - costOfGoodsSold/operatingExpense/incomeTaxExpense 三支**新增 Q**（原本 TTM-only）。
 //   上游 quarterly_income_statement_xbrl 本來就是單季表，TTM-only 是當初的選擇不是資料限制。
 // - 新增 10 個 metric_code 讓每一段都能加總還原（見 FIELDS 表的註解）。
 //
-// ## 完整度分組（groupId）為什麼不是全部共用一組
+// ## 為什麼沒有「完整度分組」
 //
-// TTM 要四季齊全才有值。既有的 core（毛利/營業利益）與 expense（成本/費用/所得稅）各自
-// 一組，是 2026-09-18 刻意分開的——避免新欄位的資料缺漏改變已上線指標的 null 判定。
-// **新欄位一律「一支一組」**，因為它們的覆蓋率差很多：權益法投資損益只有 41%（沒有關聯
-// 企業的公司本來就不揭露）、少數股東損益 50%、研發費用 67%。如果把業外五個子項綁成一組，
-// 任一個 null 就會讓另外四個一起變成 insufficient_history——等於用覆蓋率最低的那一支
-// 決定全組，59% 的公司會整組沒有值。分組只在「欄位必定同時出現」時才有意義。
+// 近四季要四季齊全才有值。2026-09-18 版本把幾支指標綁成一組共用這個判斷：毛利＋營業利益一組、
+// 營業成本＋營業費用＋所得稅一組——**三項四季都有才算**。2026-09-24 改寫時為了 parity 原封保留。
+//
+// 2026-09-25 拿掉，因為那兩組綁的科目**不必然同時出現**：
+//
+//     所得稅有值、營業成本沒有      1,024 格 / 47 家   ← 金融業大宗
+//     營業費用有值、營業成本沒有      712 格
+//     營業利益有值、毛利沒有          232 格 / 11 家
+//
+// 銀行沒有營業成本這個科目，於是整組近四季失效，把明明有資料的所得稅、營業費用一起拖成 null。
+// web-nuxt 要寫「每股所得稅」的說明時問「金融業為什麼沒有所得稅」——答案不是結構性沒有、也不是
+// 欄位沒接，是被這個分組擋掉。單季不走分組，所以單季一直有值（2801 彰銀單季 20/23、近四季 0/23）。
+//
+// 現在每支指標只看自己的科目。已經有值的格子不會變（同樣四季的加總、同樣的知識日期），
+// 只有先前被誤擋的 null 會變成有值。**不要再把指標綁成一組**——這支檔案裡的新欄位從一開始就是
+// 「一支一組」，理由也適用在舊欄位：權益法投資損益只有 41% 揭露、研發費用 67%，綁在一起就是用
+// 覆蓋率最低的那一支決定全組。
 
 export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
 
@@ -69,7 +80,6 @@ interface PerShareField {
   slot: string;
   metricCode: string;
   periodTypes: readonly ('Q' | 'TTM')[];
-  groupId: string; // 同 groupId 的欄位共用一次 TTM 完整度判斷
   pick: (row: IncomeStatementFields) => bigint | null;
   /**
    * 這支指標自己的 domain 計算函式。內容全部是 `toPerShare(amount, shares)`，看起來可以用一個
@@ -88,50 +98,50 @@ const amountOf = (field: PerShareField, row: IncomeStatementFields | null): bigi
 
 const FIELDS = [
   // ---- 既有（2026-09-15）：毛利、營業利益 ----
-  { slot: 'grossProfitPerShareQ', metricCode: 'grossProfitPerShare', periodTypes: ['Q'], groupId: 'core', pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
-  { slot: 'grossProfitPerShareTtm', metricCode: 'grossProfitPerShare', periodTypes: ['TTM'], groupId: 'core', pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
-  { slot: 'operatingIncomePerShareQ', metricCode: 'operatingIncomePerShare', periodTypes: ['Q'], groupId: 'core', pick: (r) => r.operatingIncome, calc: calculateOperatingIncomePerShare },
-  { slot: 'operatingIncomePerShareTtm', metricCode: 'operatingIncomePerShare', periodTypes: ['TTM'], groupId: 'core', pick: (r) => r.operatingIncome, calc: calculateOperatingIncomePerShare },
+  { slot: 'grossProfitPerShareQ', metricCode: 'grossProfitPerShare', periodTypes: ['Q'], pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
+  { slot: 'grossProfitPerShareTtm', metricCode: 'grossProfitPerShare', periodTypes: ['TTM'], pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
+  { slot: 'operatingIncomePerShareQ', metricCode: 'operatingIncomePerShare', periodTypes: ['Q'], pick: (r) => r.operatingIncome, calc: calculateOperatingIncomePerShare },
+  { slot: 'operatingIncomePerShareTtm', metricCode: 'operatingIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.operatingIncome, calc: calculateOperatingIncomePerShare },
 
   // ---- 既有（2026-09-18）：營業成本、營業費用、所得稅。2026-09-24 補上 Q ----
-  { slot: 'costOfGoodsSoldPerShareTtm', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['TTM'], groupId: 'expense', pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
-  { slot: 'costOfGoodsSoldPerShareQ', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['Q'], groupId: 'expense', pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
-  { slot: 'operatingExpensePerShareTtm', metricCode: 'operatingExpensePerShare', periodTypes: ['TTM'], groupId: 'expense', pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
-  { slot: 'operatingExpensePerShareQ', metricCode: 'operatingExpensePerShare', periodTypes: ['Q'], groupId: 'expense', pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
-  { slot: 'incomeTaxExpensePerShareTtm', metricCode: 'incomeTaxExpensePerShare', periodTypes: ['TTM'], groupId: 'expense', pick: (r) => r.incomeTaxExpense, calc: calculateIncomeTaxExpensePerShare },
-  { slot: 'incomeTaxExpensePerShareQ', metricCode: 'incomeTaxExpensePerShare', periodTypes: ['Q'], groupId: 'expense', pick: (r) => r.incomeTaxExpense, calc: calculateIncomeTaxExpensePerShare },
+  { slot: 'costOfGoodsSoldPerShareTtm', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['TTM'], pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
+  { slot: 'costOfGoodsSoldPerShareQ', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['Q'], pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
+  { slot: 'operatingExpensePerShareTtm', metricCode: 'operatingExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
+  { slot: 'operatingExpensePerShareQ', metricCode: 'operatingExpensePerShare', periodTypes: ['Q'], pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
+  { slot: 'incomeTaxExpensePerShareTtm', metricCode: 'incomeTaxExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.incomeTaxExpense, calc: calculateIncomeTaxExpensePerShare },
+  { slot: 'incomeTaxExpensePerShareQ', metricCode: 'incomeTaxExpensePerShare', periodTypes: ['Q'], pick: (r) => r.incomeTaxExpense, calc: calculateIncomeTaxExpensePerShare },
 
   // ---- 2026-09-24：營業費用四分拆。推銷 + 管理 + 研發 + IFRS9 預期信用減損 = 營業費用合計。
   // 原本以為只有三項，是瀑布圖恆等式測試在台達電（2308）身上抓到第四項的（差額剛好等於減損科目）。 ----
-  { slot: 'sellingExpensePerShareQ', metricCode: 'sellingExpensePerShare', periodTypes: ['Q'], groupId: 'selling', pick: (r) => r.sellingExpenses, calc: calculateSellingExpensePerShare },
-  { slot: 'sellingExpensePerShareTtm', metricCode: 'sellingExpensePerShare', periodTypes: ['TTM'], groupId: 'selling', pick: (r) => r.sellingExpenses, calc: calculateSellingExpensePerShare },
-  { slot: 'administrativeExpensePerShareQ', metricCode: 'administrativeExpensePerShare', periodTypes: ['Q'], groupId: 'admin', pick: (r) => r.adminExpenses, calc: calculateAdministrativeExpensePerShare },
-  { slot: 'administrativeExpensePerShareTtm', metricCode: 'administrativeExpensePerShare', periodTypes: ['TTM'], groupId: 'admin', pick: (r) => r.adminExpenses, calc: calculateAdministrativeExpensePerShare },
-  { slot: 'researchAndDevelopmentExpensePerShareQ', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['Q'], groupId: 'rnd', pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
-  { slot: 'researchAndDevelopmentExpensePerShareTtm', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['TTM'], groupId: 'rnd', pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
+  { slot: 'sellingExpensePerShareQ', metricCode: 'sellingExpensePerShare', periodTypes: ['Q'], pick: (r) => r.sellingExpenses, calc: calculateSellingExpensePerShare },
+  { slot: 'sellingExpensePerShareTtm', metricCode: 'sellingExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.sellingExpenses, calc: calculateSellingExpensePerShare },
+  { slot: 'administrativeExpensePerShareQ', metricCode: 'administrativeExpensePerShare', periodTypes: ['Q'], pick: (r) => r.adminExpenses, calc: calculateAdministrativeExpensePerShare },
+  { slot: 'administrativeExpensePerShareTtm', metricCode: 'administrativeExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.adminExpenses, calc: calculateAdministrativeExpensePerShare },
+  { slot: 'researchAndDevelopmentExpensePerShareQ', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['Q'], pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
+  { slot: 'researchAndDevelopmentExpensePerShareTtm', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
 
-  { slot: 'expectedCreditLossPerShareQ', metricCode: 'expectedCreditLossPerShare', periodTypes: ['Q'], groupId: 'ecl', pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
-  { slot: 'expectedCreditLossPerShareTtm', metricCode: 'expectedCreditLossPerShare', periodTypes: ['TTM'], groupId: 'ecl', pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
-  { slot: 'otherOperatingIncomeExpensePerShareQ', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['Q'], groupId: 'otherOperating', pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
-  { slot: 'otherOperatingIncomeExpensePerShareTtm', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['TTM'], groupId: 'otherOperating', pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
+  { slot: 'expectedCreditLossPerShareQ', metricCode: 'expectedCreditLossPerShare', periodTypes: ['Q'], pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
+  { slot: 'expectedCreditLossPerShareTtm', metricCode: 'expectedCreditLossPerShare', periodTypes: ['TTM'], pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
+  { slot: 'otherOperatingIncomeExpensePerShareQ', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['Q'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
+  { slot: 'otherOperatingIncomeExpensePerShareTtm', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
 
   // ---- 2026-09-24：業外損益合計 + 五個子項。子項相加（財務成本為減項）= 合計 ----
-  { slot: 'nonOperatingIncomePerShareQ', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['Q'], groupId: 'nonOp', pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
-  { slot: 'nonOperatingIncomePerShareTtm', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['TTM'], groupId: 'nonOp', pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
-  { slot: 'interestIncomePerShareQ', metricCode: 'interestIncomePerShare', periodTypes: ['Q'], groupId: 'interestIncome', pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
-  { slot: 'interestIncomePerShareTtm', metricCode: 'interestIncomePerShare', periodTypes: ['TTM'], groupId: 'interestIncome', pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
-  { slot: 'otherIncomePerShareQ', metricCode: 'otherIncomePerShare', periodTypes: ['Q'], groupId: 'otherIncome', pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
-  { slot: 'otherIncomePerShareTtm', metricCode: 'otherIncomePerShare', periodTypes: ['TTM'], groupId: 'otherIncome', pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
-  { slot: 'otherGainsLossesPerShareQ', metricCode: 'otherGainsLossesPerShare', periodTypes: ['Q'], groupId: 'otherGainsLosses', pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
-  { slot: 'otherGainsLossesPerShareTtm', metricCode: 'otherGainsLossesPerShare', periodTypes: ['TTM'], groupId: 'otherGainsLosses', pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
-  { slot: 'equityMethodIncomePerShareQ', metricCode: 'equityMethodIncomePerShare', periodTypes: ['Q'], groupId: 'equityMethod', pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
-  { slot: 'equityMethodIncomePerShareTtm', metricCode: 'equityMethodIncomePerShare', periodTypes: ['TTM'], groupId: 'equityMethod', pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
-  { slot: 'financeCostPerShareQ', metricCode: 'financeCostPerShare', periodTypes: ['Q'], groupId: 'financeCost', pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
-  { slot: 'financeCostPerShareTtm', metricCode: 'financeCostPerShare', periodTypes: ['TTM'], groupId: 'financeCost', pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
+  { slot: 'nonOperatingIncomePerShareQ', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['Q'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
+  { slot: 'nonOperatingIncomePerShareTtm', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['TTM'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
+  { slot: 'interestIncomePerShareQ', metricCode: 'interestIncomePerShare', periodTypes: ['Q'], pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
+  { slot: 'interestIncomePerShareTtm', metricCode: 'interestIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
+  { slot: 'otherIncomePerShareQ', metricCode: 'otherIncomePerShare', periodTypes: ['Q'], pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
+  { slot: 'otherIncomePerShareTtm', metricCode: 'otherIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
+  { slot: 'otherGainsLossesPerShareQ', metricCode: 'otherGainsLossesPerShare', periodTypes: ['Q'], pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
+  { slot: 'otherGainsLossesPerShareTtm', metricCode: 'otherGainsLossesPerShare', periodTypes: ['TTM'], pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
+  { slot: 'equityMethodIncomePerShareQ', metricCode: 'equityMethodIncomePerShare', periodTypes: ['Q'], pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
+  { slot: 'equityMethodIncomePerShareTtm', metricCode: 'equityMethodIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
+  { slot: 'financeCostPerShareQ', metricCode: 'financeCostPerShare', periodTypes: ['Q'], pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
+  { slot: 'financeCostPerShareTtm', metricCode: 'financeCostPerShare', periodTypes: ['TTM'], pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
 
   // ---- 2026-09-24：少數股東損益。「稅前−所得稅」與 EPS 之間唯一的差額來源 ----
-  { slot: 'minorityInterestPerShareQ', metricCode: 'minorityInterestPerShare', periodTypes: ['Q'], groupId: 'minority', pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
-  { slot: 'minorityInterestPerShareTtm', metricCode: 'minorityInterestPerShare', periodTypes: ['TTM'], groupId: 'minority', pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
+  { slot: 'minorityInterestPerShareQ', metricCode: 'minorityInterestPerShare', periodTypes: ['Q'], pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
+  { slot: 'minorityInterestPerShareTtm', metricCode: 'minorityInterestPerShare', periodTypes: ['TTM'], pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
 ] as const satisfies readonly PerShareField[];
 
 const SLOT_NAMES = FIELDS.map((f) => f.slot);
@@ -166,21 +176,19 @@ export const computeIncomeStatementPerShare = async (
     ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
 
-  // 每個 groupId 一次完整度判斷：四季都要有紀錄，且該組每個欄位在每一季都非 null。
-  const groupComplete = new Map<string, boolean>();
+  // 每支指標各自判斷近四季齊不齊：四季都要有紀錄，而且**這支指標自己的科目**每一季都非 null。
+  // 不跟其他指標共用判斷——見檔頭「為什麼沒有完整度分組」。
+  const ttmComplete = new Map<string, boolean>();
   for (const field of FIELDS) {
-    if (groupComplete.has(field.groupId)) continue;
-    const members = FIELDS.filter((f) => f.groupId === field.groupId);
-    groupComplete.set(
-      field.groupId,
-      ttmRecords.every((record) => record !== null && members.every((m) => amountOf(m, record) !== null))
-    );
+    if (!ttmComplete.has(field.metricCode)) {
+      ttmComplete.set(field.metricCode, ttmRecords.every((record) => record !== null && amountOf(field, record) !== null));
+    }
   }
 
   // 四季的 knowledgeDate 錨點跟欄位無關（只看四季的 reportDate），整批算一次就好——
   // 舊版每個分組各呼叫一次 resolveKnowledgeDate，參數完全相同、結果必然相同。
-  const anyGroupComplete = [...groupComplete.values()].some(Boolean);
-  const ttmAnchor = anyGroupComplete
+  const anyTtmComplete = [...ttmComplete.values()].some(Boolean);
+  const ttmAnchor = anyTtmComplete
     ? await resolveKnowledgeDate(symbol, ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null })), deps.announcements)
     : null;
 
@@ -196,7 +204,7 @@ export const computeIncomeStatementPerShare = async (
       continue;
     }
 
-    const complete = groupComplete.get(field.groupId) === true;
+    const complete = ttmComplete.get(field.metricCode) === true;
     if (complete) {
       // 四季齊全才加總；上面的完整度判斷已保證每一季都非 null。
       let sum = 0n;
