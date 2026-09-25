@@ -5,7 +5,7 @@ import type { MarketDataPort } from '@/application/ports/marketData';
 import type { MetricValueQueryPort, PeriodHistoryRow } from '@/application/ports/metricValueQueries';
 import { createTestDeps } from '../../../fakes/createTestDeps';
 
-// 歷年股利表的口徑用手工 seed 釘住：季配公司年度彙總、payoutRatio 用四季 EPS、yieldAtExDate 用除息日
+// 歷年股利表的口徑用手工 seed 釘住：季配公司年度彙總、payoutRatio 用年報 EPS（eps.FY）、yieldAtExDate 用除息日
 // 收盤價、EPS ≤ 0 / 四季不齊 / 查無股價的 null 分支。真實數字（2330）由 contract golden 守形狀。
 
 const day = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
@@ -27,13 +27,15 @@ const dividendEvents = (rows: DividendDistributionRow[]): Pick<DividendEventsPor
   listDividendDistributionRows: async () => rows,
 });
 
-// eps.Q 的原始列（getMetricHistory 會依期別去重取最新 knowledgeDate）。
+// eps.FY 的原始列（年報 EPS，座標是該年度第四季）。只回應 periodType 'FY'——退回拿 eps.Q 四季相加會直接丟錯，
+// 那正是 2026-09-25 拿掉的口徑（年度數字必須來自年報，見 UBIQUITOUS_LANGUAGE.md〈三〉）。
 const epsRows = (values: Record<string, number | null>): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows'> => ({
-  listPeriodMetricHistoryRows: async () =>
-    Object.entries(values).map(([key, value]): PeriodHistoryRow => {
-      const [fy, q] = key.split('Q');
-      return { fiscalYear: Number(fy), fiscalQuarter: Number(q), value, nullReason: value === null ? 'missing_input' : null, knowledgeDate: day(`${fy}-08-01`), knowledgeDateIsFallback: false };
-    }),
+  listPeriodMetricHistoryRows: async (_symbol, _metricCode, periodType) => {
+    if (periodType !== 'FY') throw new Error(`年度 EPS 必須讀 eps.FY（年報），不是 ${periodType}`);
+    return Object.entries(values).map(([fy, value]): PeriodHistoryRow => (
+      { fiscalYear: Number(fy), fiscalQuarter: 4, value, nullReason: value === null ? 'missing_input' : null, knowledgeDate: day(`${Number(fy) + 1}-03-15`), knowledgeDateIsFallback: false }
+    ));
+  },
 });
 
 const market = (closes: Record<string, number>): Pick<MarketDataPort, 'getStockPrice'> => ({
@@ -67,8 +69,8 @@ describe('getCompanyDividendHistory', () => {
         announcementDate: day(`2025-0${q + 1}-20`),
       })
     );
-    // 2024（民國 113）四季 EPS 合計 40 → payoutRatio = 16/40 = 40%；四個除息日收盤價都 400 → 每次 1%，加總 4%。
-    const deps = depsFor(rows, { '2024Q1': 10, '2024Q2': 10, '2024Q3': 10, '2024Q4': 10 }, { '2025-03-15': 400, '2025-04-15': 400, '2025-05-15': 400, '2025-06-15': 400 });
+    // 2024（民國 113）年報 EPS 40 → payoutRatio = 16/40 = 40%；四個除息日收盤價都 400 → 每次 1%，加總 4%。
+    const deps = depsFor(rows, { '2024': 40 }, { '2025-03-15': 400, '2025-04-15': 400, '2025-05-15': 400, '2025-06-15': 400 });
 
     const { entries } = await getCompanyDividendHistory('2330', deps);
     expect(entries).toHaveLength(1);
@@ -89,7 +91,7 @@ describe('getCompanyDividendHistory', () => {
     expect(entries[0]!.events.map((e) => e.yieldAtExDate)).toEqual([1, 1, 1, 1]);
   });
 
-  test('年配公司多年：舊 → 新排序；EPS 四季不齊為 null、EPS ≤ 0 時 payoutRatio 為 null、查無股價時殖利率為 null', async () => {
+  test('年配公司多年：舊 → 新排序；沒有年報時 EPS 為 null、EPS ≤ 0 時 payoutRatio 為 null、查無股價時殖利率為 null', async () => {
     const rows = [
       row({ rocFiscalYear: 112, cashDividendFromEarnings: 2, stockDividendFromEarnings: 0.5, exDividendDate: day('2024-07-01') }),
       row({ rocFiscalYear: 111, cashDividendFromEarnings: 1.5, exDividendDate: day('2023-07-01') }),
@@ -97,7 +99,7 @@ describe('getCompanyDividendHistory', () => {
     ];
     const deps = depsFor(
       rows,
-      { '2022Q1': 1, '2022Q2': 1, '2022Q3': 1, '2022Q4': 1, '2023Q1': 2, '2023Q2': 2, '2023Q3': 2 /* 2023Q4 缺 */, '2024Q1': -1, '2024Q2': -1, '2024Q3': -1, '2024Q4': -1 },
+      { '2022': 4 /* 2023 沒有年報 */, '2024': -4 },
       { '2023-07-01': 30 } // 只有 2023 那次有股價
     );
 

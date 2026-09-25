@@ -9,8 +9,9 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 // 彙總成年度列，同時把逐筆事件放在 events 裡，季配公司的四個除息日/發放日才不會被壓成一個。
 //
 // 三個衍生欄位的口徑（都是事實層的算術，不做任何「配息穩不穩」的判斷）：
-// - payoutRatio：該年度現金股利 ÷ 該年度 EPS × 100。EPS 用我們自己 metric_values 的 eps.Q 四季加總
-//   （跟 GET /companies/metric-history 同一份），四季不齊或 EPS ≤ 0 時為 null（虧損年度的配息率
+// - payoutRatio：該年度現金股利 ÷ 該年度 EPS × 100。EPS 用 eps.FY＝年報公告的基本每股盈餘（2026-09-25 起；
+//   原本是 eps.Q 四季加總——各季各用自己的期末股本，跟年報 EPS 不同，使用者拍板年度數字必須來自年報、
+//   不從季資料拼，見 UBIQUITOUS_LANGUAGE.md〈三〉）。該年度沒有年報（例如今年）或 EPS ≤ 0 時為 null（虧損年度的配息率
 //   沒有意義，不硬算成負數）。
 // - yieldAtExDate：各次除息日「當天收盤價（已除息）」算的殖利率加總——年配公司就是 DPS ÷ 除息日收盤價；
 //   季配公司是四次各自的殖利率相加，任一次查無當天股價整年為 null（目前只有種子公司有完整歷史股價，
@@ -53,7 +54,7 @@ export interface DividendHistoryEntry {
   exDividendDate: string | null; // 該年度最後一次除息日；逐次日期看 events
   exRightsDate: string | null;
   paymentDate: string | null; // 該年度最後一次現金股利發放日
-  eps: number | null; // 該年度 EPS（eps.Q 四季加總），四季不齊為 null
+  eps: number | null; // 該年度年報 EPS（eps.FY），沒有年報為 null
   payoutRatio: number | null; // %，EPS ≤ 0 或缺 EPS 時為 null
   yieldAtExDate: number | null; // %，各次除息日殖利率加總，任一次查無股價為 null
   knowledgeDate: string | null;
@@ -67,22 +68,10 @@ export interface DividendHistoryResult {
 
 export type DividendHistoryDeps = Pick<AppDeps, 'dividendEvents' | 'metricValueQueries' | 'market' | 'reportAvailability'>;
 
-// eps.Q 依西元年度彙總：四季都有值才算年度 EPS，缺任一季為 null。
+// 年度 EPS = eps.FY（年報公告值，一年一列、座標是該年度第四季）。沒有年報的年度不在 map 裡 → null。
 const buildAnnualEps = async (symbol: string, deps: DividendHistoryDeps): Promise<Map<number, number | null>> => {
-  const history = await getMetricHistory(symbol, 'eps', 'Q', await deps.reportAvailability.resolveDataType(symbol), '', 400, deps);
-  const byYear = new Map<number, Map<number, number>>();
-  for (const entry of history.entries) {
-    if (entry.fiscalQuarter === null || entry.value === null) continue;
-    const quarters = byYear.get(entry.fiscalYear) ?? new Map<number, number>();
-    quarters.set(entry.fiscalQuarter, entry.value);
-    byYear.set(entry.fiscalYear, quarters);
-  }
-  const annual = new Map<number, number | null>();
-  for (const [year, quarters] of byYear) {
-    const complete = [1, 2, 3, 4].every((q) => quarters.has(q));
-    annual.set(year, complete ? round2([1, 2, 3, 4].reduce((sum, q) => sum + quarters.get(q)!, 0)) : null);
-  }
-  return annual;
+  const history = await getMetricHistory(symbol, 'eps', 'FY', await deps.reportAvailability.resolveDataType(symbol), '', 400, deps);
+  return new Map(history.entries.map((entry) => [entry.fiscalYear, entry.value]));
 };
 
 const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: DividendHistoryDeps): Promise<DividendHistoryEvent> => {
