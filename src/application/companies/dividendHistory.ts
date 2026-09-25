@@ -35,6 +35,11 @@ const sumNonNull = (...values: (number | null)[]): number => values.reduce<numbe
 export interface DividendHistoryEvent {
   fiscalQuarter: number | null; // 季配公司才有值；年配公司這欄是 null
   cashDividend: number; // 元／股，盈餘 + 資本公積
+  // 2026-09-25 股利來源拆開：使用者要求說明「股利從哪來」——不一定來自當年盈餘。110~113 年有發現金股利的
+  // 4,265 個公司年度裡 520 個含資本公積、498 個「盈餘分配」超過當年 EPS（來自以前年度累積盈餘）。
+  // 公告只分盈餘／資本公積兩種，「當年 vs 以前年度盈餘」公告沒有拆，由下游拿 fromEarnings 對照 eps 說明。
+  cashDividendFromEarnings: number; // 元／股，盈餘分配（可能含以前年度累積的盈餘）
+  cashDividendFromCapitalReserve: number; // 元／股，資本公積發放
   stockDividend: number; // 元／股（股票股利以面額計），盈餘 + 資本公積
   exDividendDate: string | null; // YYYY-MM-DD
   exRightsDate: string | null;
@@ -48,6 +53,8 @@ export interface DividendHistoryEntry {
   fiscalYear: number; // 西元，股利所屬年度
   rocFiscalYear: number;
   cashDividend: number;
+  cashDividendFromEarnings: number; // 該年度各次加總，元／股
+  cashDividendFromCapitalReserve: number; // 該年度各次加總，元／股
   stockDividend: number;
   totalDividend: number;
   distributionCount: number; // 這個年度分派幾次（年配 1、季配 4…）
@@ -84,6 +91,8 @@ const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: Di
   return {
     fiscalQuarter: row.fiscalQuarter,
     cashDividend: round2(cashDividend),
+    cashDividendFromEarnings: round2(row.cashDividendFromEarnings ?? 0),
+    cashDividendFromCapitalReserve: round2(row.cashDividendFromCapitalReserve ?? 0),
     stockDividend: round2(stockDividend),
     exDividendDate: ISO_DATE(row.exDividendDate),
     exRightsDate: ISO_DATE(row.exRightsDate),
@@ -115,6 +124,8 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
       const fiscalYear = rocYearToGregorian(rocFiscalYear);
       const yearEvents = items.map((i) => i.event);
       const cashDividend = round2(yearEvents.reduce((s, e) => s + e.cashDividend, 0));
+      const cashDividendFromEarnings = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromEarnings, 0));
+      const cashDividendFromCapitalReserve = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromCapitalReserve, 0));
       const stockDividend = round2(yearEvents.reduce((s, e) => s + e.stockDividend, 0));
       const eps = annualEps.get(fiscalYear) ?? null;
       const cashEvents = yearEvents.filter((e) => e.cashDividend > 0);
@@ -123,6 +134,8 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
         fiscalYear,
         rocFiscalYear,
         cashDividend,
+        cashDividendFromEarnings,
+        cashDividendFromCapitalReserve,
         stockDividend,
         totalDividend: round2(cashDividend + stockDividend),
         distributionCount: yearEvents.length,

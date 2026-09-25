@@ -78,6 +78,8 @@ describe('getCompanyDividendHistory', () => {
       fiscalYear: 2024,
       rocFiscalYear: 113,
       cashDividend: 16,
+      cashDividendFromEarnings: 16,
+      cashDividendFromCapitalReserve: 0,
       stockDividend: 0,
       totalDividend: 16,
       distributionCount: 4,
@@ -94,7 +96,7 @@ describe('getCompanyDividendHistory', () => {
   test('年配公司多年：舊 → 新排序；沒有年報時 EPS 為 null、EPS ≤ 0 時 payoutRatio 為 null、查無股價時殖利率為 null', async () => {
     const rows = [
       row({ rocFiscalYear: 112, cashDividendFromEarnings: 2, stockDividendFromEarnings: 0.5, exDividendDate: day('2024-07-01') }),
-      row({ rocFiscalYear: 111, cashDividendFromEarnings: 1.5, exDividendDate: day('2023-07-01') }),
+      row({ rocFiscalYear: 111, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3, exDividendDate: day('2023-07-01') }),
       row({ rocFiscalYear: 113, cashDividendFromEarnings: 1, exDividendDate: day('2025-07-01') }),
     ];
     const deps = depsFor(
@@ -105,7 +107,9 @@ describe('getCompanyDividendHistory', () => {
 
     const { entries } = await getCompanyDividendHistory('1234', deps);
     expect(entries.map((e) => e.fiscalYear)).toEqual([2022, 2023, 2024]);
-    expect(entries[0]).toMatchObject({ cashDividend: 1.5, eps: 4, payoutRatio: 37.5, yieldAtExDate: 5 });
+    // 111 年 1.5 元 = 盈餘 1.2 + 資本公積 0.3：來源拆開、cashDividend 仍是合計（payoutRatio 照合計算）
+    expect(entries[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3, eps: 4, payoutRatio: 37.5, yieldAtExDate: 5 });
+    expect(entries[0]!.events[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3 });
     expect(entries[1]).toMatchObject({ cashDividend: 2, stockDividend: 0.5, totalDividend: 2.5, eps: null, payoutRatio: null, yieldAtExDate: null });
     expect(entries[2]).toMatchObject({ eps: -4, payoutRatio: null, yieldAtExDate: null });
   });

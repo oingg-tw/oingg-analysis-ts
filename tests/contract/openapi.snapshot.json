@@ -679,12 +679,20 @@
                             "description": "該年度全部分派案的現金股利加總，元／股",
                             "type": "number"
                           },
+                          "cashDividendFromCapitalReserve": {
+                            "description": "該年度各次「資本公積」發放加總，元／股",
+                            "type": "number"
+                          },
+                          "cashDividendFromEarnings": {
+                            "description": "該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01",
+                            "type": "number"
+                          },
                           "distributionCount": {
                             "description": "該年度分派幾次（年配 1、季配 4…）",
                             "type": "integer"
                           },
                           "eps": {
-                            "description": "該年度 EPS（metric_values 的 eps.Q 四季加總，跟 metric-history 同一份）；四季不齊為 null",
+                            "description": "該年度年報公告的基本每股盈餘（eps.FY）；該年度沒有年報為 null",
                             "nullable": true,
                             "type": "number"
                           },
@@ -698,6 +706,14 @@
                                 },
                                 "cashDividend": {
                                   "description": "元／股，盈餘 + 資本公積",
+                                  "type": "number"
+                                },
+                                "cashDividendFromCapitalReserve": {
+                                  "description": "元／股，現金股利中「資本公積」發放的部分",
+                                  "type": "number"
+                                },
+                                "cashDividendFromEarnings": {
+                                  "description": "元／股，現金股利中「盈餘分配」的部分（可能含以前年度累積的盈餘，不一定是當年盈餘）",
                                   "type": "number"
                                 },
                                 "closeAtExDate": {
@@ -737,6 +753,8 @@
                               "required": [
                                 "fiscalQuarter",
                                 "cashDividend",
+                                "cashDividendFromEarnings",
+                                "cashDividendFromCapitalReserve",
                                 "stockDividend",
                                 "exDividendDate",
                                 "exRightsDate",
@@ -796,6 +814,8 @@
                           "fiscalYear",
                           "rocFiscalYear",
                           "cashDividend",
+                          "cashDividendFromEarnings",
+                          "cashDividendFromCapitalReserve",
                           "stockDividend",
                           "totalDividend",
                           "distributionCount",
