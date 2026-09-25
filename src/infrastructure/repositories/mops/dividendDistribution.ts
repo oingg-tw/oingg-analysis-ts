@@ -57,9 +57,9 @@ interface RawDividendDistributionFullRow {
   fiscal_year: number;
   fiscal_quarter: number | null;
   cash_dividend_from_earnings: unknown;
-  cash_dividend_from_capital_reserve: unknown;
+  cash_dividend_from_legal_reserve_and_capital_surplus: unknown;
   stock_dividend_from_earnings: unknown;
-  stock_dividend_from_capital_reserve: unknown;
+  stock_dividend_from_legal_reserve_and_capital_surplus: unknown;
   ex_dividend_date: Date | null;
   ex_rights_date: Date | null;
   cash_dividend_payment_date: Date | null;
@@ -70,8 +70,8 @@ const toNumberOrNull = (value: unknown): number | null => (value === null || val
 
 export const listDividendDistributionRows = async (symbol: string): Promise<DividendDistributionRow[]> => {
   const rows = await mopsExportPrisma.$queryRawUnsafe<RawDividendDistributionFullRow[]>(
-    `SELECT fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_capital_reserve,
-            stock_dividend_from_earnings, stock_dividend_from_capital_reserve,
+    `SELECT fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
+            stock_dividend_from_earnings, stock_dividend_from_legal_reserve_and_capital_surplus,
             ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date
      FROM "export"."dividend_distribution"
      WHERE symbol = $1
@@ -82,9 +82,9 @@ export const listDividendDistributionRows = async (symbol: string): Promise<Divi
     rocFiscalYear: r.fiscal_year,
     fiscalQuarter: r.fiscal_quarter,
     cashDividendFromEarnings: toNumberOrNull(r.cash_dividend_from_earnings),
-    cashDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.cash_dividend_from_capital_reserve),
+    cashDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.cash_dividend_from_legal_reserve_and_capital_surplus),
     stockDividendFromEarnings: toNumberOrNull(r.stock_dividend_from_earnings),
-    stockDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.stock_dividend_from_capital_reserve),
+    stockDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.stock_dividend_from_legal_reserve_and_capital_surplus),
     exDividendDate: r.ex_dividend_date,
     exRightsDate: r.ex_rights_date,
     cashDividendPaymentDate: r.cash_dividend_payment_date,
@@ -96,8 +96,8 @@ export const listDividendDistributionRows = async (symbol: string): Promise<Divi
 // 兩個都 NULL 的列（只有股東會決議、還沒訂日期）自然不會被選到。
 export const listRealizedExDividendRows = async (startDate: Date, endDate: Date): Promise<RealizedExDividendRow[]> => {
   const rows = await mopsExportPrisma.$queryRaw<(RawDividendDistributionFullRow & { symbol: string; company_name: string | null; ex_date: Date; par_value: unknown })[]>`
-    SELECT symbol, company_name, fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_capital_reserve,
-           stock_dividend_from_earnings, stock_dividend_from_capital_reserve,
+    SELECT symbol, company_name, fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
+           stock_dividend_from_earnings, stock_dividend_from_legal_reserve_and_capital_surplus,
            ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date, par_value,
            LEAST(ex_dividend_date, ex_rights_date) AS ex_date
     FROM "export"."dividend_distribution"
@@ -111,9 +111,9 @@ export const listRealizedExDividendRows = async (startDate: Date, endDate: Date)
     rocFiscalYear: r.fiscal_year,
     fiscalQuarter: r.fiscal_quarter,
     cashDividendFromEarnings: toNumberOrNull(r.cash_dividend_from_earnings),
-    cashDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.cash_dividend_from_capital_reserve),
+    cashDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.cash_dividend_from_legal_reserve_and_capital_surplus),
     stockDividendFromEarnings: toNumberOrNull(r.stock_dividend_from_earnings),
-    stockDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.stock_dividend_from_capital_reserve),
+    stockDividendFromLegalReserveAndCapitalSurplus: toNumberOrNull(r.stock_dividend_from_legal_reserve_and_capital_surplus),
     exDividendDate: r.ex_dividend_date,
     exRightsDate: r.ex_rights_date,
     cashDividendPaymentDate: r.cash_dividend_payment_date,
