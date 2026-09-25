@@ -10,7 +10,7 @@ export const shareholderYieldDefinition: MetricDefinitionSpec = {
     '計算，不依賴 dividendYield（交易所每日公告 passthrough，EOD 快照）或 buybackYield' +
     '（TTM 自算值）已寫入的值，兩者的 TTM 口徑直接在這裡重算一次。買回庫藏股金額只存在' +
     'XBRL 現金流量表長表，查無整列資料視為 insufficient_history（可能還沒回填，不是沒' +
-    '買回）；股利發放現金缺漏視為 0（大多數季度本來就沒發放）。只有 TTM 一種 basis。',
+    '買回）；股利發放現金缺漏視為 0（大多數季度本來就沒發放）。只有 TTM 一種 basis。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{ShareholderYield} = \\frac{|\\mathrm{DividendsPaid}| + |\\mathrm{Buyback}|}{\\mathrm{MarketCap}} \\times 100',
   referenceUrl: 'https://en.wikipedia.org/wiki/Shareholder_yield',
   tier: 'derived',
@@ -18,5 +18,5 @@ export const shareholderYieldDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['dividendsPaid', 'payments_to_acquire_treasury_shares', 'marketCap'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

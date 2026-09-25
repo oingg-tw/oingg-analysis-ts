@@ -12,7 +12,7 @@ export const buybackYieldDefinition: MetricDefinitionSpec = {
     '有查到那一季但沒有這個 account_code 才視為 0）。跟 dividendYield（交易所公告殖利率）' +
     '刻意分開兩個獨立指標，不合併成單一「股東總回報率」——資料源/頻率本質不同，需要的話前端' +
     '自己把兩個值加起來即可。只有 TTM 一種 basis——庫藏股買回通常不定期不定額，單季數字會' +
-    '嚴重失真。',
+    '嚴重失真。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{BuybackYield} = \\frac{\\left|\\sum_{i=1}^{4}\\mathrm{BuybackCash}_i\\right|}{\\mathrm{Price}\\times\\mathrm{Shares}} \\times 100',
   referenceUrl: 'https://www.wallstreetprep.com/knowledge/buyback-yield/',
   tier: 'derived',
@@ -20,5 +20,5 @@ export const buybackYieldDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['payments_to_acquire_treasury_shares', 'daily_price.close', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

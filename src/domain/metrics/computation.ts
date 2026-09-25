@@ -29,6 +29,10 @@ export type ComputationSlot = MetricComputation | ComputationSkip;
 
 export const isComputationSkip = (slot: ComputationSlot): slot is ComputationSkip => 'action' in slot;
 
+// 整支 compute 的每個 slot 同一個公式版本時用（skip 不帶版本）；跟 turnover/dupont 逐格標的做法同一件事。
+export const withFormulaVersion = <S extends Record<string, ComputationSlot>>(slots: S, formulaVersion: number): S =>
+  Object.fromEntries(Object.entries(slots).map(([key, slot]) => [key, isComputationSkip(slot) ? slot : { ...slot, formulaVersion }])) as S;
+
 // 季報型指標的一批計算結果；逐日型指標（beta/marketRatios/live*）遷移時另外定義帶 tradeDate 的形狀。
 export interface ComputationBatch<K extends string> {
   symbol: string;

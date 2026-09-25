@@ -7,7 +7,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   formulaNote:
     'Q(單季) = 本季營收*1000/流通股數；TTM = 近四季（含本季）營收加總*1000/流通' +
     '股數，四季不齊為 null。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{RevenuePerShare} = \\frac{\\mathrm{Revenue}}{\\mathrm{Shares}}',
   referenceUrl: 'https://www.investing.com/academy/analysis/revenue-per-share-definition/',
   tier: 'derived',
@@ -15,5 +15,5 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['revenue', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

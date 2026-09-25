@@ -9,7 +9,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     '下降、流動比率較去年同季提升、流通股數未增加、毛利率較去年同季提升、總資產週轉率較去年' +
     '同季提升）通過數加總（0-9）。9 訊號需全部可判斷才有分數，任一無法判斷則整體為 null。' +
     '只有 Q 一種 basis——純粹本季 vs 去年同季的單點比較，沒有 TTM/年化概念。去年同季用' +
-    'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。',
+    'getPastNQuarters({rocYear,season},5)[0] 取得，不是專門的新機制。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{FScore} = \\sum_{i=1}^{9} \\mathrm{Signal}_i,\\quad \\mathrm{Signal}_i \\in \\{0,1\\}',
   academicSourceUrl: 'https://doi.org/10.2307/2672906',
   referenceUrl: 'https://en.wikipedia.org/wiki/Piotroski_F-score',
@@ -29,5 +29,5 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     'revenue',
     'outstandingCommonShares',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

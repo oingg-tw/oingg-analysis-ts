@@ -10,7 +10,7 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
     '股價/市值查詢邏輯同 psr。獨立重新計算淨負債+EBITDA（不依賴' +
     'netDebtToEbitda 這個 metric_code 已寫入的值，公式在兩個檔案各自重複一次，延續舊架構本身' +
     '在 interestCoverage/netDebtToEbitda/roic/roce 四個檔案各自重複定義 EBIT 的既有慣例）。' +
-    '沒有單季非年化版本。',
+    '沒有單季非年化版本。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex:
     '\\mathrm{EvEbitda} = \\frac{\\mathrm{EV}}{\\mathrm{EBITDA}},\\quad \\mathrm{EV} = \\mathrm{MarketCap} + \\mathrm{NetDebt}',
   referenceUrl: 'https://en.wikipedia.org/wiki/EV/EBITDA',
@@ -28,5 +28,5 @@ export const evEbitdaDefinition: MetricDefinitionSpec = {
     'depreciation',
     'amortization',
   ],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

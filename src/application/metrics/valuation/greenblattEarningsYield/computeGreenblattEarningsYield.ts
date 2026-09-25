@@ -5,8 +5,12 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const GREENBLATT_EARNINGS_YIELD_FORMULA_VERSION = 2;
 
 // Greenblatt 盈餘收益率 = EBIT(TTM) / EV * 100。EV = 市值 + 有息負債(本季期末) - 現金及約當
 // 現金(本季期末)——跟 netDebtToEbitda 的「有息負債」定義同一組欄位
@@ -152,5 +156,5 @@ export const computeGreenblattEarningsYield = async (
     });
   }
 
-  return { symbol, rocYear, season, slots: { ttm } };
+  return { symbol, rocYear, season, slots: withFormulaVersion({ ttm }, GREENBLATT_EARNINGS_YIELD_FORMULA_VERSION) };
 };

@@ -8,7 +8,7 @@ export const pretaxIncomePerShareDefinition: MetricDefinitionSpec = {
     'Q(單季) = 本季稅前淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆）；' +
     'TTM = 近四季（含本季）稅前淨利加總*1000/流通股數，四季不齊為 null。流通股數固定用' +
     '「本季報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{PretaxIncomePerShare} = \\frac{\\mathrm{ProfitBeforeTax}}{\\mathrm{Shares}}',
   // 沒有每股專屬條目，中文維基「稅前淨利」條目涵蓋稅前淨利本體概念。
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%A8%85%E5%89%8D%E6%B7%A8%E5%88%A9',
@@ -17,5 +17,5 @@ export const pretaxIncomePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['profit_loss_before_tax', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

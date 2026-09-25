@@ -10,7 +10,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 bvps.ts 一致）。
 // 2026-09-22 formulaVersion 2：BVPS 中繼值不再四捨五入到分（理由同 epsGrowthRate），只在最後的百分比四捨五入一次。
-export const BVPS_GROWTH_RATE_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const BVPS_GROWTH_RATE_FORMULA_VERSION = 3;
 const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
   if (equityInThousands === null || shares === null || shares === 0n) return null;
   return toPerShareExact(equityInThousands, shares);

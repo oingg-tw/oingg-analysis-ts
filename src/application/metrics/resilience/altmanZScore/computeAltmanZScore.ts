@@ -7,8 +7,12 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import type { MarketCapAsOf } from '@/application/ports/marketData';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const ALTMAN_Z_SCORE_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/altmanZScore.ts 的獨立重新實作——舊架構呼叫
 // calculateInterestCoverage()（取 EBIT-TTM）+ calculateTurnoverRatio()（取 assetTurnoverTtm
@@ -206,5 +210,5 @@ export const computeAltmanZScore = async (query: QuarterlyMetricQuery, deps: Alt
     });
   }
 
-  return { symbol, rocYear, season, slots: { ttm } };
+  return { symbol, rocYear, season, slots: withFormulaVersion({ ttm }, ALTMAN_Z_SCORE_FORMULA_VERSION) };
 };

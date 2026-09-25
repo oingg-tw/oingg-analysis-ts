@@ -5,8 +5,12 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { DIVIDEND_GROWTH_RATE_YEARS } from '../../../../domain/metrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const DIVIDEND_GROWTH_RATE_FORMULA_VERSION = 2;
 
 // 股利 3/5/8 年成長率（現金流量近似版）——同一組年度「近似每股股利」快取，拆多個回溯窗口，
 // 跟 revenueCagr/epsCagr 家族同一套設計。年度近似每股股利 = 4 季 dividendsPaid 加總的絕對值
@@ -105,5 +109,5 @@ export const computeDividendGrowthRateFamily = async (
     }
   }
 
-  return { symbol, rocYear: year, season, slots: results };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion(results, DIVIDEND_GROWTH_RATE_FORMULA_VERSION) };
 };

@@ -5,8 +5,12 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const TOBINS_Q_FORMULA_VERSION = 2;
 
 // 托賓Q值（Tobin's Q）= (市值 + 總負債) / 總資產（Tobin, 1969 的簡化版，市場對負債的評價
 // 假設等於帳面值——跟 Wikipedia「Tobin's q = (Equity Market Value + Liabilities Book
@@ -78,5 +82,5 @@ export const computeTobinsQ = async (
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q }, TOBINS_Q_FORMULA_VERSION) };
 };

@@ -8,7 +8,7 @@ export const pFcfDefinition: MetricDefinitionSpec = {
     '自由現金流 = 營業活動現金流+資本支出（資本支出來源資料是負值/流出，用加法）；' +
     'TTM = 市值/(近四季自由現金流加總*1000)。股價/市值查詢邏輯同 psr。' +
     '獨立重新計算自由現金流（不依賴 ocfPerShare/fcfPerShare 這兩個 metric_code 已寫入的值）。' +
-    '沒有單季非年化版本。',
+    '沒有單季非年化版本。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{PFcf} = \\frac{\\mathrm{MarketCap}}{\\mathrm{FCF}}',
   referenceUrl: 'https://corporatefinanceinstitute.com/resources/valuation/price-to-free-cash-flow-multiple/',
   tier: 'derived',
@@ -16,5 +16,5 @@ export const pFcfDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['netCashFromOperatingActivities', 'capitalExpenditures'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

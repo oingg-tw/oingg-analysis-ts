@@ -18,7 +18,7 @@ export const operatingExpensePerShareDefinition: MetricDefinitionSpec = {
     '營業費用+其他利益及損失淨額＝營業利益」，只是這個科目沒有獨立曝露成 per-share 指標，這裡' +
     '不吸收它，維持 operatingExpensePerShare 單純對應官方揭露的營業費用合計科目本身。' +
     '2026-09-24 補上 Q（單季）：原本只做 TTM 是因為當初那張瀑布圖卡片整張鎖 TTM，不是資料限制——上游 quarterly_income_statement_xbrl 本來就是單季表。使用者要求單季也要能看整條「營收→股利」的拆解，所以補齊。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{OperatingExpensePerShare} = \\frac{\\mathrm{OperatingExpense}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E7%87%9F%E4%B8%9A%E8%B4%B9%E7%94%A8',
   tier: 'derived',
@@ -26,5 +26,5 @@ export const operatingExpensePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['operating_expense', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

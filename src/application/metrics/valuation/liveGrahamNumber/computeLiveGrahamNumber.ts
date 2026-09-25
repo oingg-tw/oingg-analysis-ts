@@ -10,7 +10,9 @@ import { computation, type DailyComputationBatch } from '@/domain/metrics/comput
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-22 formulaVersion 2：同 grahamNumber：中繼值不四捨五入，只在最後一次（見 numericHelpers.ts toPerShareExact 的說明）。
-export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 3;
 
 // 2026-09-11 應 web-nuxt 要求新增——grahamNumber（季報快照，PER/PBR 都用財報公告當天的
 // 股價，凍結在 knowledge_date）的即時版本：基本面（EPS TTM/BVPS）維持用「最新已申報」的

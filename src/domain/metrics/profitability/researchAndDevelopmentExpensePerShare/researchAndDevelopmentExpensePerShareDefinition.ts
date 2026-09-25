@@ -9,7 +9,7 @@ export const researchAndDevelopmentExpensePerShareDefinition: MetricDefinitionSp
     'Q = 當季研發費用（research_and_development_expense）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +
     '加總還原而新增。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{ResearchAndDevelopmentExpensePerShare} = \\frac{\\mathrm{RnDExpense}}{\\mathrm{Shares}}',
   referenceUrl: 'https://mops.twse.com.tw/mops/web/t164sb04',
   tier: 'derived',
@@ -17,5 +17,5 @@ export const researchAndDevelopmentExpensePerShareDefinition: MetricDefinitionSp
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['research_and_development_expense', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

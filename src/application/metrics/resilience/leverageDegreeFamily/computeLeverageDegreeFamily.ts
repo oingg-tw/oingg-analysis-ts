@@ -6,8 +6,12 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const LEVERAGE_DEGREE_FORMULA_VERSION = 2;
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——財務槓桿度
 // （DFL）＝%ΔEPS÷%ΔEBIT、總槓桿度（DTL）＝%ΔEPS÷%ΔRevenue，本季 vs 去年同季（YoY），
@@ -90,5 +94,5 @@ export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, d
     totalLeverageDegree = computation({ ...coordinateFor('totalLeverageDegree'), ...periodTypeGroup('Q'), value: dtl, nullReason: dtlNullReason, knowledgeDate, knowledgeDateIsFallback });
   }
 
-  return { symbol, rocYear: year, season, slots: { financialLeverageDegree, totalLeverageDegree } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ financialLeverageDegree, totalLeverageDegree }, LEVERAGE_DEGREE_FORMULA_VERSION) };
 };

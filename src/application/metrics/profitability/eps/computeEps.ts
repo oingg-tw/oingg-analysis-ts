@@ -7,9 +7,13 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const EPS_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/eps.ts 的獨立重新實作，刻意不 import 它的私有函式，也不呼叫
 // calculateEps() 本身——保持這條新管線對舊系統唯讀，比照 computeRoaPit.ts 的既有模式。
@@ -115,5 +119,5 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
   const annualEps = annual?.annual.basicEps ?? null;
   const fy = annualReportSlot(annual, { symbol, metricCode: 'eps', dataType, subsidiaryCompanyId }, { value: annualEps, nullReason: annualEps === null ? 'missing_input' : null });
 
-  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q, ttm, fy }, EPS_FORMULA_VERSION) };
 };

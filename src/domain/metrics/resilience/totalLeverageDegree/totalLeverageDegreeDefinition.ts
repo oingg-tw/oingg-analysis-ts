@@ -7,7 +7,7 @@ export const totalLeverageDegreeDefinition: MetricDefinitionSpec = {
   metricCode: 'totalLeverageDegree',
   name: '總槓桿度',
   unit: '倍',
-  formulaNote: '= EPS 年增率(%) ÷ 營收年增率(%)（本季 vs 去年同季），衡量營收變動對每股盈餘變動的放大效果（營業槓桿+財務槓桿的複合效果）。',
+  formulaNote: '= EPS 年增率(%) ÷ 營收年增率(%)（本季 vs 去年同季），衡量營收變動對每股盈餘變動的放大效果（營業槓桿+財務槓桿的複合效果）。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{DTL} = \\dfrac{\\mathrm{EPSPctChange}}{\\mathrm{RevenuePctChange}}',
   referenceUrl: 'https://www.investopedia.com/terms/d/degreeoftotalleverage.asp',
   tier: 'derived',
@@ -15,5 +15,5 @@ export const totalLeverageDegreeDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

@@ -10,7 +10,7 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
     '的資料源（TWSE/TPEx 官方每日公布 passthrough，取 knowledge_date 當天或之前最近一筆）；' +
     '股利五年成長率沿用 dividendGrowthRate5y 同一套現金流量近似邏輯（variant_of，不是精確' +
     '宣告股利，見 dividendGrowthRateDefinition.ts 的說明）。兩者都獨立重新計算，不依賴' +
-    '已寫入的值。任一成分缺漏，整體視為缺漏，不補 0。只有 FY 一種 basis。',
+    '已寫入的值。任一成分缺漏，整體視為缺漏，不補 0。只有 FY 一種 basis。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{Chowder} = \\mathrm{DividendYield} + \\mathrm{DividendGrowthRate}_{5y}',
   // 2026-09-10：不是學術論文，沒有維基百科條目，但使用者提供了 Chowder 本人在 Seeking Alpha
   // 的作者頁（WebSearch 交叉驗證過確有其人、確實是這個規則的提出者），比隨便一篇二手部落格
@@ -21,5 +21,5 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

@@ -14,7 +14,7 @@ export const incomeTaxExpensePerShareDefinition: MetricDefinitionSpec = {
     '1109/2057（54%）家公司當季有非零少數股東權益，用減法會把少數股東權益的份額也算進' +
     '「所得稅費用」，數字會系統性地比實際所得稅大。應 web-nuxt「營收到股利去了哪裡」瀑布圖需求新增，只做 TTM。' +
     '2026-09-24 補上 Q（單季）：原本只做 TTM 是因為當初那張瀑布圖卡片整張鎖 TTM，不是資料限制——上游 quarterly_income_statement_xbrl 本來就是單季表。使用者要求單季也要能看整條「營收→股利」的拆解，所以補齊。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{IncomeTaxExpensePerShare} = \\frac{\\mathrm{IncomeTaxExpense}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%89%80%E5%BE%97%E7%A8%85%E8%B2%BB%E7%94%A8',
   tier: 'derived',
@@ -22,5 +22,5 @@ export const incomeTaxExpensePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['income_tax_expense_continuing_operations', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

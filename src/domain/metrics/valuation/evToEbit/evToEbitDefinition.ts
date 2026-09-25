@@ -9,7 +9,7 @@ export const evToEbitDefinition: MetricDefinitionSpec = {
     '企業價值 = 市值+淨負債*1000；EBIT = 稅前淨利+財務成本（不像 EV/EBITDA 那樣加回折舊' +
     '攤銷）；TTM = 企業價值/(近四季 EBIT 加總*1000)。' +
     '股價/市值/淨負債查詢邏輯同 evEbitda，獨立重新計算（不依賴 evEbitda/interestCoverage' +
-    '已寫入的值，延續舊架構在多個檔案各自重複定義 EBIT 的既有慣例）。沒有單季非年化版本。',
+    '已寫入的值，延續舊架構在多個檔案各自重複定義 EBIT 的既有慣例）。沒有單季非年化版本。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{EvToEbit} = \\frac{\\mathrm{EV}}{\\mathrm{EBIT}},\\quad \\mathrm{EV} = \\mathrm{MarketCap} + \\mathrm{NetDebt}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Earnings_yield#Acquirer%27s_Multiple',
   tier: 'derived',
@@ -17,5 +17,5 @@ export const evToEbitDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'profit_loss_before_tax', 'finance_costs'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

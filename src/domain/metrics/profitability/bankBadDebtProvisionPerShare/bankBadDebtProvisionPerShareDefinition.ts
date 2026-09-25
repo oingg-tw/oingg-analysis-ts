@@ -12,7 +12,7 @@ export const bankBadDebtProvisionPerShareDefinition: MetricDefinitionSpec = {
     '科目會漏算 adjustment 類科目，對不起來官方總計數字，改用這個官方已經算好的總計欄位' +
     '不必自行加總）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '正值代表費用支出，是瀑布圖裡從「淨收益」往下扣減的一段，不是資產負債表科目。只對' +
-    '銀行/金控有資料，非銀行公司從未寫入任何一列。',
+    '銀行/金控有資料，非銀行公司從未寫入任何一列。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{BankBadDebtProvisionPerShare} = \\frac{\\mathrm{BadDebtProvision}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E5%91%86%E5%B8%B3',
   tier: 'derived',
@@ -20,5 +20,5 @@ export const bankBadDebtProvisionPerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['bad_debt_expenses_and_guarantee_liability_provision', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

@@ -10,7 +10,9 @@ import { isComputationSkip, computation, type ComputationBatch, type Computation
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-22 formulaVersion 2：中繼 EPS 改用不四捨五入的 toPerShareExact（見 numericHelpers.ts toPerShareExact 的說明）。
-export const EARNINGS_YIELD_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const EARNINGS_YIELD_FORMULA_VERSION = 3;
 
 // 盈餘收益率（EY）= EPS(TTM) / 股價 * 100，是本益比的倒數換算成百分比呈現——獨立重新計算
 // EPS_TTM/股價（不依賴 eps/peRatio 這兩個 metric_code 已寫入的值，跟 sgr 對 roe/

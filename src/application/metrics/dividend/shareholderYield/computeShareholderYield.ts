@@ -3,9 +3,13 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/cale
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import type { MarketCapAsOf } from '@/application/ports/marketData';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const SHAREHOLDER_YIELD_FORMULA_VERSION = 2;
 
 // Shareholder Yield（Mebane Faber, 2013《Shareholder Yield: A Better Approach to
 // Dividend Investing》）= 股利殖利率 + 買回殖利率（Faber 完整版還有第三項「淨還債殖利率」，
@@ -134,5 +138,5 @@ export const computeShareholderYield = async (query: QuarterlyMetricQuery, deps:
 
   const ttm = periodSlot(mainAnchor, coordinateBase, 'TTM', shareholderYieldTtm, ttmNullReason);
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ ttm }, SHAREHOLDER_YIELD_FORMULA_VERSION) };
 };

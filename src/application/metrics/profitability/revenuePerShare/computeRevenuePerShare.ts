@@ -5,9 +5,13 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const REVENUE_PER_SHARE_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/revenuePerShare.ts 的獨立重新實作，結構跟 computeEpsPit.ts
 // 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome 那種欄位選擇邏輯）。
@@ -108,5 +112,5 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
     { value: fyValue, nullReason: fyValue === null ? determineNullReason(annualRevenue, annualShares) : null }
   );
 
-  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q, ttm, fy }, REVENUE_PER_SHARE_FORMULA_VERSION) };
 };

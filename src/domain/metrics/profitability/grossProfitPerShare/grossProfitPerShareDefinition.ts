@@ -11,7 +11,7 @@ export const grossProfitPerShareDefinition: MetricDefinitionSpec = {
     '當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。直接讀損益表毛利科目，不是用' +
     'grossMargin(TTM)×revenuePerShare 反推——避免 margin 欄位已經四捨五入過一次，' +
     '兩層捨入疊加出跟原始金額對不上的數字。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{GrossProfitPerShare} = \\frac{\\mathrm{GrossProfit}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%9B%E5%88%A9_(%E6%9C%83%E8%A8%88)',
   tier: 'derived',
@@ -19,5 +19,5 @@ export const grossProfitPerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['gross_profit', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

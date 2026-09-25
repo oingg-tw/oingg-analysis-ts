@@ -12,7 +12,7 @@ export const marketCapDefinition: MetricDefinitionSpec = {
   metricCode: 'marketCap',
   name: '市值',
   unit: '元',
-  formulaNote: '= knowledge_date 當天或之前最近一筆收盤價 × 當時流通股數（新台幣元）。查無股價或股本資料時為 null（missing_input）。',
+  formulaNote: '= knowledge_date 當天或之前最近一筆收盤價 × 當時流通股數（新台幣元）。查無股價或股本資料時為 null（missing_input）。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{MarketCap} = \\mathrm{Price} \\times \\mathrm{SharesOutstanding}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Market_capitalization',
   tier: 'derived',
@@ -20,5 +20,5 @@ export const marketCapDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: [],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

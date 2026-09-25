@@ -29,6 +29,15 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 有多種定義，這裡明確記錄採用的是哪一種。
 
 export const CROIC_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION = 2;
+const FORMULA_VERSION_BY_CODE: Record<string, number> = {
+  croic: CROIC_FORMULA_VERSION,
+  evToOcf: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
+  evToSales: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
+  priceToOcf: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
+};
 
 const toPctFromThousands = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
   if (denominatorInThousands === 0n) return null;
@@ -139,7 +148,7 @@ export const computeCashFlowValuationFamily = async (
     if (!mainAnchor) return skipped('skipped_no_quarter');
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
     const insufficientHistory = (metricCode: string): ComputationSlot =>
-      computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback });
+      computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', knowledgeDate, knowledgeDateIsFallback, formulaVersion: FORMULA_VERSION_BY_CODE[metricCode] });
 
     return {
       symbol,
@@ -187,15 +196,14 @@ export const computeCashFlowValuationFamily = async (
   };
 
   const write = (metricCode: string, value: number | null, nullReason: MetricNullReason | null): ComputationSlot =>
-    computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value, nullReason, knowledgeDate, knowledgeDateIsFallback });
+    computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value, nullReason, knowledgeDate, knowledgeDateIsFallback, formulaVersion: FORMULA_VERSION_BY_CODE[metricCode] });
 
   const evToOcf = write('evToOcf', evToOcfValue, nullReasonFor(evToOcfValue, enterpriseValue !== null));
   const evToSales = write('evToSales', evToSalesValue, nullReasonFor(evToSalesValue, enterpriseValue !== null));
   const priceToOcf = write('priceToOcf', priceToOcfValue, nullReasonFor(priceToOcfValue, marketCap !== null));
   const debtToFcf = write('debtToFcf', debtToFcfValue, nullReasonFor(debtToFcfValue, totalDebt !== null));
   const capexToOcfRatio = write('capexToOcfRatio', capexToOcfRatioValue, nullReasonFor(capexToOcfRatioValue, true));
-  const croicSlot = write('croic', croicValue, nullReasonFor(croicValue, investedCapital !== null));
-  const croic = { ...croicSlot, formulaVersion: CROIC_FORMULA_VERSION };
+  const croic = write('croic', croicValue, nullReasonFor(croicValue, investedCapital !== null));
   const ocfMargin = write('ocfMargin', ocfMarginValue, nullReasonFor(ocfMarginValue, true));
   const fcfConversionRate = write('fcfConversionRate', fcfConversionRateValue, nullReasonFor(fcfConversionRateValue, true));
 

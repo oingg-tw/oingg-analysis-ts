@@ -10,7 +10,9 @@ import { isComputationSkip, computation, type ComputationBatch, type Computation
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-22 formulaVersion 2：中繼 EPS 改用不四捨五入的 toPerShareExact（小 EPS 公司的本益比原本被「分」的進位誤差扭曲，台泥級的單季 EPS 一分錢佔 11–17%）（見 numericHelpers.ts toPerShareExact 的說明）。
-export const PE_RATIO_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const PE_RATIO_FORMULA_VERSION = 3;
 
 // 本益比（PE）= 股價(knowledge_date) / EPS(TTM，近四季淨利加總/流通股數)。獨立重新實作，
 // 不呼叫 computeEpsPit——分子分母的計算邏輯直接複製自 eps/computeEpsPit.ts 的 TTM 那段，

@@ -7,7 +7,7 @@ export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   metricCode: 'financialLeverageDegree',
   name: '財務槓桿度',
   unit: '倍',
-  formulaNote: '= EPS 年增率(%) ÷ EBIT 年增率(%)（本季 vs 去年同季），衡量 EBIT 變動對每股盈餘變動的放大效果，數值越高代表財務槓桿（負債利息）對盈餘波動的放大程度越大。',
+  formulaNote: '= EPS 年增率(%) ÷ EBIT 年增率(%)（本季 vs 去年同季），衡量 EBIT 變動對每股盈餘變動的放大效果，數值越高代表財務槓桿（負債利息）對盈餘波動的放大程度越大。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{DFL} = \\dfrac{\\mathrm{EPSPctChange}}{\\mathrm{EBITPctChange}}',
   referenceUrl: 'https://www.investopedia.com/terms/d/degreeoffinancialleverage.asp',
   tier: 'derived',
@@ -15,5 +15,5 @@ export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_from_operating_activities', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

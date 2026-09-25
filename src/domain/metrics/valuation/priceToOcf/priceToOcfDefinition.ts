@@ -6,7 +6,7 @@ export const priceToOcfDefinition: MetricDefinitionSpec = {
   metricCode: 'priceToOcf',
   name: '股價營業現金流比',
   unit: '倍',
-  formulaNote: '= 市值 ÷ 近四季營業活動現金流量加總。跟既有 pFcf（P/FCF）是姊妹指標，分母不扣資本支出。',
+  formulaNote: '= 市值 ÷ 近四季營業活動現金流量加總。跟既有 pFcf（P/FCF）是姊妹指標，分母不扣資本支出。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{PriceToOCF} = \\dfrac{\\mathrm{MarketCap}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/p/price-to-cash-flow-ratio.asp',
   tier: 'derived',
@@ -14,5 +14,5 @@ export const priceToOcfDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['cash_flows_from_used_in_operating_activities', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

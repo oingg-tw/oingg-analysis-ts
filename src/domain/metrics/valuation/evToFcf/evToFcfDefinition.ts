@@ -8,7 +8,7 @@ export const evToFcfDefinition: MetricDefinitionSpec = {
   formulaNote:
     '企業價值 = 市值+淨負債*1000；自由現金流 = 近四季（含本季）(營業活動現金流+投資性' +
     '資本支出) 加總；TTM = 企業價值/(自由現金流加總*1000)。股價/市值/淨負債查詢邏輯同' +
-    'evEbitda，獨立重新計算。只有 TTM 一種 basis——單季現金流波動大，年化沒有意義。',
+    'evEbitda，獨立重新計算。只有 TTM 一種 basis——單季現金流波動大，年化沒有意義。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{EvToFcf} = \\frac{\\mathrm{EV}}{\\mathrm{FCF}},\\quad \\mathrm{EV} = \\mathrm{MarketCap} + \\mathrm{NetDebt}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Free_cash_flow',
   tier: 'derived',
@@ -16,5 +16,5 @@ export const evToFcfDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'netCashFromOperatingActivities', 'capitalExpenditures'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

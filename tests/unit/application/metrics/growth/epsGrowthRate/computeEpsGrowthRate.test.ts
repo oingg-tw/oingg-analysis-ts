@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { computeEpsGrowthRate } from '@/application/metrics/growth/epsGrowthRate/computeEpsGrowthRate';
+import { computeEpsGrowthRate, EPS_GROWTH_RATE_FORMULA_VERSION } from '@/application/metrics/growth/epsGrowthRate/computeEpsGrowthRate';
 import { isComputationSkip, type MetricComputation } from '@/domain/metrics/computation';
 import { createInMemoryStatements } from '../../../../../fakes/pit/inMemoryStatements';
 import { createFixedAnnouncements } from '../../../../../fakes/pit/fixedAnnouncements';
@@ -25,5 +25,5 @@ test('epsGrowthRate 用未進位的 EPS 計算：0.0661 → 0.0900 是 36.16%，
   const q = batch.slots.q;
   if (isComputationSkip(q)) throw new Error(`預期算得出來，卻是 ${JSON.stringify(q)}`);
   expect((q as MetricComputation).value).toBe(36.16);
-  expect((q as MetricComputation).formulaVersion).toBe(2);
+  expect((q as MetricComputation).formulaVersion).toBe(EPS_GROWTH_RATE_FORMULA_VERSION);
 });

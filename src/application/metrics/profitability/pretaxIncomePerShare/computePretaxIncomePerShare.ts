@@ -5,9 +5,13 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const PRETAX_INCOME_PER_SHARE_FORMULA_VERSION = 2;
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——跟 computeEpsPit.ts
 // 幾乎同一種形狀，差別只在分子用 profitBeforeTax（稅前淨利，不分歸屬母公司/整體口徑，
@@ -146,5 +150,5 @@ export const computePretaxIncomePerShare = async (
     { value: fyValue, nullReason: fyValue === null ? determineNullReason(annualPretax, annualShares) : null }
   );
 
-  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q, ttm, fy }, PRETAX_INCOME_PER_SHARE_FORMULA_VERSION) };
 };

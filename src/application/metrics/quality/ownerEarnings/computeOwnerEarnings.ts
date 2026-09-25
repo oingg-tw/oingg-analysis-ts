@@ -6,8 +6,12 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const OWNER_EARNINGS_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/ownerEarnings.ts 的獨立重新實作。股東盈餘 = 淨利+折舊+攤銷
 // +資本支出（資本支出來源資料是負值/流出，用加法），結構跟 eps/revenuePerShare 一樣，只是
@@ -112,5 +116,5 @@ export const computeOwnerEarnings = async (query: QuarterlyMetricQuery, deps: Ow
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q, ttm }, OWNER_EARNINGS_FORMULA_VERSION) };
 };

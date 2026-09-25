@@ -6,8 +6,12 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { EPS_CAGR_YEARS } from '../../../../domain/metrics/growth/epsCagr/epsCagrDefinition';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const EPS_CAGR_FORMULA_VERSION = 2;
 
 // EPS 3/5/8 年複合成長率——同一組年度 EPS 快取，拆多個回溯窗口，跟 revenueCagr 家族同一套
 // 設計。年度 EPS = 4 季淨利加總（歸屬母公司優先，缺漏退回整體口徑）/ 當年 Q4 報告日流通股數。
@@ -105,5 +109,5 @@ export const computeEpsCagrFamily = async (
     }
   }
 
-  return { symbol, rocYear: year, season, slots: results };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion(results, EPS_CAGR_FORMULA_VERSION) };
 };

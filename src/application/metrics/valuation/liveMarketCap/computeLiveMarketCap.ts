@@ -2,8 +2,12 @@ import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { roundToSignificantFigures } from '../../../../domain/metrics/shared/numericHelpers';
 import { snapshotCadenceGroup } from '@/domain/metrics/coordinate';
-import { computation, type DailyComputationBatch } from '@/domain/metrics/computation';
+import { computation, type DailyComputationBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const LIVE_MARKET_CAP_FORMULA_VERSION = 2;
 
 // 2026-09-11 應 web-nuxt 要求新增——marketCap（季報快照，凍結在財報公告當天的
 // knowledge_date）的即時版本：用當下最新收盤價（getLatestDailyPrice）× 最新已申報流通
@@ -61,5 +65,5 @@ export const computeLiveMarketCap = async (query: LiveMarketCapPitQuery, deps: L
     knowledgeDateIsFallback: false,
   });
 
-  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod } };
+  return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: withFormulaVersion({ eod }, LIVE_MARKET_CAP_FORMULA_VERSION) };
 };

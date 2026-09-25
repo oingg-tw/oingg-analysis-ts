@@ -6,8 +6,12 @@ import { calculateBankNetNonInterestIncomePerShare } from '@/domain/metrics/prof
 import { calculateBankBadDebtProvisionPerShare } from '@/domain/metrics/profitability/bankBadDebtProvisionPerShare/calculateBankBadDebtProvisionPerShare';
 import { calculateBankOtherOperatingExpensePerShare } from '@/domain/metrics/profitability/bankOtherOperatingExpensePerShare/calculateBankOtherOperatingExpensePerShare';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const BANK_INCOME_WATERFALL_FORMULA_VERSION = 2;
 
 // 應「銀行業營收到股利去了哪裡」瀑布圖卡片需求新增——一次查詢
 // export.bank_income_statement_detail_xbrl，拆成 4 個獨立 metric_code（跟
@@ -165,5 +169,5 @@ export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, de
     bankOtherOperatingExpensePerShareTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: String(rocYear), season: String(seasonNum), slots: { bankNetInterestIncomePerShareQ, bankNetInterestIncomePerShareTtm, bankNetNonInterestIncomePerShareQ, bankNetNonInterestIncomePerShareTtm, bankBadDebtProvisionPerShareQ, bankBadDebtProvisionPerShareTtm, bankOtherOperatingExpensePerShareQ, bankOtherOperatingExpensePerShareTtm } };
+  return { symbol, rocYear: String(rocYear), season: String(seasonNum), slots: withFormulaVersion({ bankNetInterestIncomePerShareQ, bankNetInterestIncomePerShareTtm, bankNetNonInterestIncomePerShareQ, bankNetNonInterestIncomePerShareTtm, bankBadDebtProvisionPerShareQ, bankBadDebtProvisionPerShareTtm, bankOtherOperatingExpensePerShareQ, bankOtherOperatingExpensePerShareTtm }, BANK_INCOME_WATERFALL_FORMULA_VERSION) };
 };

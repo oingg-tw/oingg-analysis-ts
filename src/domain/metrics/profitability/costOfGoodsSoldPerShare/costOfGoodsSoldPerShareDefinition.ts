@@ -12,7 +12,7 @@ export const costOfGoodsSoldPerShareDefinition: MetricDefinitionSpec = {
     '已經各自捨入過的欄位的誤差。2026-09-18 應 web-nuxt「營收到股利去了哪裡」瀑布圖需求' +
     '新增，只做 TTM——這張卡片整張鎖 TTM，不需要單季。' +
     '2026-09-24 補上 Q（單季）：原本只做 TTM 是因為當初那張瀑布圖卡片整張鎖 TTM，不是資料限制——上游 quarterly_income_statement_xbrl 本來就是單季表。使用者要求單季也要能看整條「營收→股利」的拆解，所以補齊。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{COGSPerShare} = \\frac{\\mathrm{CostOfGoodsSold}}{\\mathrm{Shares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E9%94%80%E5%94%AE%E6%88%90%E6%9C%AC',
   tier: 'derived',
@@ -20,5 +20,5 @@ export const costOfGoodsSoldPerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['operating_costs', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

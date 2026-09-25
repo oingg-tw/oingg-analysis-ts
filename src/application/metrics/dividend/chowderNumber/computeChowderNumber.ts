@@ -3,8 +3,12 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const CHOWDER_NUMBER_FORMULA_VERSION = 2;
 
 // Chowder Number（Seeking Alpha 社群規則）= 現金殖利率 + 股利五年成長率，門檻 ≥12%（公用
 // 事業 8%）——門檻本身只記在這裡的說明供對照，不做「通過/不通過」判定（平台不自產「便宜/
@@ -117,5 +121,5 @@ export const computeChowderNumber = async (
 
   const fy = periodSlot(mainAnchor, coordinateBase, 'FY', chowderNumber, nullReason);
 
-  return { symbol, rocYear: year, season, slots: { fy } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ fy }, CHOWDER_NUMBER_FORMULA_VERSION) };
 };

@@ -11,7 +11,7 @@ export const expectedCreditLossPerShareDefinition: MetricDefinitionSpec = {
     '當下有效的股本。這是營業費用的**第四個組成**——推銷+管理+研發不一定等於營業費用合計，' +
     '差額就是它（實測 115Q2 有 1,445 家揭露，四項相加後 1,543/1,545 列完全還原）。' +
     '2026-09-24 為了讓「營收→股利」瀑布圖的營業費用那一段能加總還原而新增。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{ExpectedCreditLossPerShare} = \\frac{\\mathrm{ExpectedCreditLoss}}{\\mathrm{Shares}}',
   referenceUrl: 'https://www.ifrs.org/issued-standards/list-of-standards/ifrs-9-financial-instruments/',
   tier: 'derived',
@@ -19,5 +19,5 @@ export const expectedCreditLossPerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['impairment_loss_gain_reversal_ifrs9', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

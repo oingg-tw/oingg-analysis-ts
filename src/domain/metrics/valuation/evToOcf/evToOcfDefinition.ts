@@ -7,7 +7,7 @@ export const evToOcfDefinition: MetricDefinitionSpec = {
   metricCode: 'evToOcf',
   name: '企業價值對營業現金流比',
   unit: '倍',
-  formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營業活動現金流量加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用 OCF。',
+  formulaNote: '= 企業價值（市值+淨負債） ÷ 近四季營業活動現金流量加總。跟 evEbitda 共用同一套企業價值計算，只是分母改用 OCF。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{EVToOCF} = \\dfrac{\\mathrm{EnterpriseValue}}{\\mathrm{OCF}_{\\mathrm{TTM}}}',
   referenceUrl: 'https://www.investopedia.com/terms/e/ev-cash-flow.asp',
   tier: 'derived',
@@ -15,5 +15,5 @@ export const evToOcfDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['revenue', 'assets', 'liabilities', 'cash_and_cash_equivalents', 'cash_flows_from_used_in_operating_activities', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

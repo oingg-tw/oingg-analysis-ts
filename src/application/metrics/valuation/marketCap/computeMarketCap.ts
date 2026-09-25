@@ -5,8 +5,12 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { roundToSignificantFigures } from '../../../../domain/metrics/shared/numericHelpers';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const MARKET_CAP_FORMULA_VERSION = 2;
 
 // 市值 = 收盤價 × 流通股數，獨立立出 metric_code 的理由見 marketCapDefinition.ts 檔頭
 // 說明。knowledge_date 解析比照 stockPrice（只用資產負債表，不查損益表），保證跟
@@ -71,5 +75,5 @@ export const computeMarketCap = async (
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q }, MARKET_CAP_FORMULA_VERSION) };
 };

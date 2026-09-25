@@ -10,7 +10,7 @@ export const operatingIncomePerShareDefinition: MetricDefinitionSpec = {
     '近四季（含本季）營業利益加總*1000/流通股數，四季不齊為 null。流通股數固定用「本季' +
     '報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。直接讀損益表營業利益' +
     '科目，不是用 operatingMargin(TTM)×revenuePerShare 反推——理由同 grossProfitPerShare。' +
-    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{OperatingIncomePerShare} = \\frac{\\mathrm{OperatingIncome}}{\\mathrm{Shares}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Operating_margin',
   tier: 'derived',
@@ -18,5 +18,5 @@ export const operatingIncomePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['profit_loss_from_operating_activities', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

@@ -10,7 +10,7 @@ export const bankNetInterestIncomePerShareDefinition: MetricDefinitionSpec = {
     '（利息收入減利息費用後的淨額，官方單一欄位，不是本服務自己拆利息收入/支出相減）' +
     '*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。只對' +
     '銀行/金控（mops-ts export.bank_income_statement_detail_xbrl 有申報者，2026-09-15' +
-    '實測約10-11家）有資料，非銀行公司從未寫入任何一列（不是這一季算不出來）。',
+    '實測約10-11家）有資料，非銀行公司從未寫入任何一列（不是這一季算不出來）。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{BankNetInterestIncomePerShare} = \\frac{\\mathrm{NetInterestIncome}}{\\mathrm{Shares}}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Net_interest_income',
   tier: 'derived',
@@ -18,5 +18,5 @@ export const bankNetInterestIncomePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['net_income_loss_of_interest', 'outstandingCommonShares'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

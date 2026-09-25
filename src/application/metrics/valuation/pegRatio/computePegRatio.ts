@@ -10,7 +10,9 @@ import { isComputationSkip, computation, type ComputationBatch, type Computation
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-22 formulaVersion 2：中繼 EPS/PER/五年 CAGR 都不再各自四捨五入，只在最後的 PEG 四捨五入一次（見 numericHelpers.ts toPerShareExact 的說明）。
-export const PEG_RATIO_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const PEG_RATIO_FORMULA_VERSION = 3;
 
 // 本益成長比（PEG，Peter Lynch，《One Up on Wall Street》1989）= PER(TTM) / EPS 5年複合
 // 成長率(%)。PER 的算法直接複製自 peRatio/computePeRatioPit.ts 的 TTM 邏輯，EPS 5 年 CAGR

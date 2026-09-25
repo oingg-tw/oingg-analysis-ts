@@ -3,8 +3,12 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/cale
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
+import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const BUYBACK_YIELD_FORMULA_VERSION = 2;
 
 // 買回庫藏股金額（payments_to_acquire_treasury_shares）只存在 XBRL 現金流量表長表，舊表
 // quarterly_cash_flow_statement 沒有對應欄位、沒有 fallback 可用——跟 dividendsPaid 不同：
@@ -84,5 +88,5 @@ export const computeBuybackYield = async (
 
   const ttm = periodSlot(mainAnchor, coordinateBase, 'TTM', buybackYieldTtm, ttmNullReason);
 
-  return { symbol, rocYear: year, season, slots: { ttm } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ ttm }, BUYBACK_YIELD_FORMULA_VERSION) };
 };

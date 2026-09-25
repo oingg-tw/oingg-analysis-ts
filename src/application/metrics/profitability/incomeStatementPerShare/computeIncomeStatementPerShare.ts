@@ -4,7 +4,7 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
@@ -25,6 +25,10 @@ import { calculateOtherIncomePerShare } from '@/domain/metrics/profitability/oth
 import { calculateOtherOperatingIncomeExpensePerShare } from '@/domain/metrics/profitability/otherOperatingIncomeExpensePerShare/calculateOtherOperatingIncomeExpensePerShare';
 import { calculateResearchAndDevelopmentExpensePerShare } from '@/domain/metrics/profitability/researchAndDevelopmentExpensePerShare/calculateResearchAndDevelopmentExpensePerShare';
 import { calculateSellingExpensePerShare } from '@/domain/metrics/profitability/sellingExpensePerShare/calculateSellingExpensePerShare';
+
+// 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION = 2;
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——一次查詢損益表，
 // 拆成多個獨立 metric_code，跟 computeCashFlowPerSharePit.ts/computeDupontFamilyPit.ts
@@ -241,5 +245,5 @@ export const computeIncomeStatementPerShare = async (
     );
   }
 
-  return { symbol, rocYear: year, season, slots } as IncomeStatementPerShareComputationBatch;
+  return { symbol, rocYear: year, season, slots: withFormulaVersion(slots, INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION) } as IncomeStatementPerShareComputationBatch;
 };

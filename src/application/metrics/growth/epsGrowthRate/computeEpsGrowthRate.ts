@@ -11,7 +11,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 一致）。
 // 2026-09-22 formulaVersion 2：EPS 中繼值不再四捨五入到分——web-nuxt 實測台泥 2026Q1 用進位值算 28.57%、真值 36.2%
 // （0.07 → 0.09 兩個都是進位後的數字），小 EPS 公司的年增率整個失真；只在最後的百分比四捨五入一次。
-export const EPS_GROWTH_RATE_FORMULA_VERSION = 2;
+// 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
+// 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
+export const EPS_GROWTH_RATE_FORMULA_VERSION = 3;
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
   if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
   return toPerShareExact(netIncomeInThousands, shares);

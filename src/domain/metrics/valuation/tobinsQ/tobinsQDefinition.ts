@@ -9,7 +9,7 @@ export const tobinsQDefinition: MetricDefinitionSpec = {
     '總負債/總資產取本季資產負債表期末餘額。Q > 1 代表市場對企業資產的評價高於帳面重置成本' +
     '（可能反映品牌/專利等未入帳的無形資產），Q < 1 代表市場評價低於帳面資產，也可能是併購' +
     '溢價低/資產閒置的訊號。只有 Q 一種 basis——資產負債表時點快照，沒有 TTM/年化概念，' +
-    '跟 ncav/bvps 同一種性質。',
+    '跟 ncav/bvps 同一種性質。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{TobinsQ} = \\frac{\\mathrm{MarketCap} + \\mathrm{Liabilities}}{\\mathrm{Assets}}',
   academicSourceUrl: 'https://ideas.repec.org/a/mcb/jmoncb/v1y1969i1p15-29.html',
   referenceUrl: 'https://en.wikipedia.org/wiki/Tobin%27s_q',
@@ -18,5 +18,5 @@ export const tobinsQDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['liabilities', 'assets', 'outstandingCommonShares', 'daily_price.close'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

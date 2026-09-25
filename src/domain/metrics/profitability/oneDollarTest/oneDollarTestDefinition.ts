@@ -10,7 +10,7 @@ export const oneDollarTestDefinition: MetricDefinitionSpec = {
     ' - 累計股利發放現金) 。分母（累計保留盈餘）為 0 或負值時比率沒有意義，回傳 null' +
     '（zero_or_negative_denominator）。5 年窗口任一年度四季資料不齊全，回傳 null' +
     '（insufficient_history）。只有 FY 一種 basis——這是長期資本配置能力的檢驗，季度' +
-    '數字沒有意義。',
+    '數字沒有意義。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
   formulaLatex: '\\mathrm{OneDollarTest} = \\frac{\\Delta \\mathrm{MarketCap}}{\\sum \\mathrm{NetIncome} - \\sum |\\mathrm{DividendsPaid}|}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Warren_Buffett',
   tier: 'derived',
@@ -18,5 +18,5 @@ export const oneDollarTestDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'dividendsPaid', 'marketCap'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };
