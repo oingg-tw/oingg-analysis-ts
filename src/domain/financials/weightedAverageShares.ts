@@ -11,6 +11,10 @@
 // EPS 與股利仍照常有數值（都是公告值，不需要股數）。**不要退回用年底股本頂替**：那會在同一張圖混兩種口徑。
 //
 // 分子要跟官方 EPS 同口徑：歸屬母公司業主淨利（沒有揭露時退回合併淨利，跟 pickNetIncomeValue 同一個規則）。
+// ponytail: 已知偏誤——有特別股的公司（約 20 家，多為金控：1101/1522/2002/2348/2881/2882/2883/2887/2891/2897…），官方 EPS
+// 的分子是「歸屬母公司淨利 − 特別股股利」，這裡沒扣，反推股數偏高、每段每股偏低約「特別股股利 ÷ (淨利 − 特別股股利)」。
+// 瀑布圖照樣閉合、EPS 那格照樣等於公告值，閉合檢查抓不到（bff-ts 2026-09-25 指出「閉合不證明分母」）。
+// 「反推 vs 年底股本」對它們也失效：年底實收股數含特別股。要修：找到特別股股利總額（先查 XBRL 科目）從分子扣掉。
 export const MIN_ABS_EPS_FOR_SHARE_DERIVATION = 0.1;
 
 export const deriveWeightedAverageShares = (netIncomeInThousands: bigint | null, basicEps: number | null): bigint | null => {
