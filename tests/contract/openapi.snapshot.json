@@ -650,7 +650,7 @@
     },
     "/companies/dividend-history": {
       "get": {
-        "description": "2026-09-19 應 web-nuxt SEO 個股頁需求新增，「台積電 股利」這類頁面的核心表格。資料源是 mops-ts 的 export.dividend_distribution（MOPS 股利分派公告 t108sb27，每股數字），一列＝一次分派決議：年配公司一年一筆、季配公司一年四筆，這裡先依「股利所屬年度」彙總成年度列（cashDividend/stockDividend/totalDividend 加總、distributionCount 是分派次數、exDividendDate/paymentDate 取該年度最後一次），逐次事件放在 events。payoutRatio 的年度 EPS 是年報公告的基本每股盈餘（eps.FY），該年度沒有年報或 EPS ≤ 0 為 null。yieldAtExDate 是各次除息日「當天收盤價（已除息）」算的殖利率加總，任一次查無股價整年為 null——目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。查無任何分派紀錄回 entries: []，是 200 不是 404。",
+        "description": "2026-09-19 應 web-nuxt SEO 個股頁需求新增，「台積電 股利」這類頁面的核心表格。資料源是 mops-ts 的 export.dividend_distribution（MOPS 股利分派公告 t108sb27，每股數字），一列＝一次分派決議：年配公司一年一筆、季配公司一年四筆，這裡先依「股利所屬年度」彙總成年度列（cashDividend/stockDividend/totalDividend 加總、distributionCount 是分派次數、exDividendDate/paymentDate 取該年度最後一次），逐次事件放在 events。payoutRatio 是盈餘發放率＝盈餘分配的現金股利 ÷ 年報公告的基本每股盈餘（eps.FY），不含法定盈餘公積、資本公積發放，該年度沒有年報或 EPS ≤ 0 為 null。yieldAtExDate 是各次除息日「當天收盤價（已除息）」算的殖利率加總，任一次查無股價整年為 null——目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。查無任何分派紀錄回 entries: []，是 200 不是 404。",
         "parameters": [
           {
             "description": "公司代號",
@@ -679,12 +679,12 @@
                             "description": "該年度全部分派案的現金股利加總，元／股",
                             "type": "number"
                           },
-                          "cashDividendFromCapitalReserve": {
-                            "description": "該年度各次「資本公積」發放加總，元／股",
-                            "type": "number"
-                          },
                           "cashDividendFromEarnings": {
                             "description": "該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01",
+                            "type": "number"
+                          },
+                          "cashDividendFromLegalAndCapitalReserve": {
+                            "description": "該年度各次「法定盈餘公積、資本公積發放之現金」加總，元／股",
                             "type": "number"
                           },
                           "distributionCount": {
@@ -708,12 +708,12 @@
                                   "description": "元／股，盈餘 + 資本公積",
                                   "type": "number"
                                 },
-                                "cashDividendFromCapitalReserve": {
-                                  "description": "元／股，現金股利中「資本公積」發放的部分",
-                                  "type": "number"
-                                },
                                 "cashDividendFromEarnings": {
                                   "description": "元／股，現金股利中「盈餘分配」的部分（可能含以前年度累積的盈餘，不一定是當年盈餘）",
+                                  "type": "number"
+                                },
+                                "cashDividendFromLegalAndCapitalReserve": {
+                                  "description": "元／股，現金股利中「法定盈餘公積、資本公積發放之現金」（MOPS 原始欄位，兩種來源合在一欄、無法拆開）",
                                   "type": "number"
                                 },
                                 "closeAtExDate": {
@@ -754,7 +754,7 @@
                                 "fiscalQuarter",
                                 "cashDividend",
                                 "cashDividendFromEarnings",
-                                "cashDividendFromCapitalReserve",
+                                "cashDividendFromLegalAndCapitalReserve",
                                 "stockDividend",
                                 "exDividendDate",
                                 "exRightsDate",
@@ -791,7 +791,7 @@
                             "type": "string"
                           },
                           "payoutRatio": {
-                            "description": "%，cashDividend ÷ eps × 100；EPS ≤ 0 或缺 EPS 時為 null（虧損年度的配息率不硬算）",
+                            "description": "%，盈餘發放率 = cashDividendFromEarnings ÷ eps × 100——只算「盈餘分配之股東現金股利」，法定盈餘公積與資本公積發放不算；全部來自公積時為 0。EPS ≤ 0 或缺 EPS 時為 null（虧損年度不硬算）。2026-09-25 前分子是 cashDividend 合計",
                             "nullable": true,
                             "type": "number"
                           },
@@ -815,7 +815,7 @@
                           "rocFiscalYear",
                           "cashDividend",
                           "cashDividendFromEarnings",
-                          "cashDividendFromCapitalReserve",
+                          "cashDividendFromLegalAndCapitalReserve",
                           "stockDividend",
                           "totalDividend",
                           "distributionCount",

@@ -174,8 +174,8 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
   const announcedEntries = announced.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null }));
 
   const realizedEntries = realized.map((r) => {
-    const cashDividend = sumNonNull(r.cashDividendFromEarnings, r.cashDividendFromCapitalReserve);
-    const stockDividend = sumNonNull(r.stockDividendFromEarnings, r.stockDividendFromCapitalReserve);
+    const cashDividend = sumNonNull(r.cashDividendFromEarnings, r.cashDividendFromLegalAndCapitalReserve);
+    const stockDividend = sumNonNull(r.stockDividendFromEarnings, r.stockDividendFromLegalAndCapitalReserve);
     const hasCash = r.exDividendDate !== null;
     const hasStock = r.exRightsDate !== null;
     return {

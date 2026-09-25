@@ -13,9 +13,9 @@ const day = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
 const row = (partial: Partial<DividendDistributionRow> & { rocFiscalYear: number }): DividendDistributionRow => ({
   fiscalQuarter: null,
   cashDividendFromEarnings: null,
-  cashDividendFromCapitalReserve: null,
+  cashDividendFromLegalAndCapitalReserve: null,
   stockDividendFromEarnings: null,
-  stockDividendFromCapitalReserve: null,
+  stockDividendFromLegalAndCapitalReserve: null,
   exDividendDate: null,
   exRightsDate: null,
   cashDividendPaymentDate: null,
@@ -79,7 +79,7 @@ describe('getCompanyDividendHistory', () => {
       rocFiscalYear: 113,
       cashDividend: 16,
       cashDividendFromEarnings: 16,
-      cashDividendFromCapitalReserve: 0,
+      cashDividendFromLegalAndCapitalReserve: 0,
       stockDividend: 0,
       totalDividend: 16,
       distributionCount: 4,
@@ -96,7 +96,7 @@ describe('getCompanyDividendHistory', () => {
   test('年配公司多年：舊 → 新排序；沒有年報時 EPS 為 null、EPS ≤ 0 時 payoutRatio 為 null、查無股價時殖利率為 null', async () => {
     const rows = [
       row({ rocFiscalYear: 112, cashDividendFromEarnings: 2, stockDividendFromEarnings: 0.5, exDividendDate: day('2024-07-01') }),
-      row({ rocFiscalYear: 111, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3, exDividendDate: day('2023-07-01') }),
+      row({ rocFiscalYear: 111, cashDividendFromEarnings: 1.2, cashDividendFromLegalAndCapitalReserve: 0.3, exDividendDate: day('2023-07-01') }),
       row({ rocFiscalYear: 113, cashDividendFromEarnings: 1, exDividendDate: day('2025-07-01') }),
     ];
     const deps = depsFor(
@@ -107,10 +107,19 @@ describe('getCompanyDividendHistory', () => {
 
     const { entries } = await getCompanyDividendHistory('1234', deps);
     expect(entries.map((e) => e.fiscalYear)).toEqual([2022, 2023, 2024]);
-    // 111 年 1.5 元 = 盈餘 1.2 + 資本公積 0.3：來源拆開、cashDividend 仍是合計（payoutRatio 照合計算）
-    expect(entries[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3, eps: 4, payoutRatio: 37.5, yieldAtExDate: 5 });
-    expect(entries[0]!.events[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromCapitalReserve: 0.3 });
+    // 111 年 1.5 元 = 盈餘 1.2 + 資本公積 0.3：cashDividend 仍是合計，payoutRatio 只算盈餘分配 1.2 ÷ 4 = 30%
+    // （照合計算會是 37.5%——那是 2026-09-25 前的錯誤口徑）
+    expect(entries[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromLegalAndCapitalReserve: 0.3, eps: 4, payoutRatio: 30, yieldAtExDate: 5 });
+    expect(entries[0]!.events[0]).toMatchObject({ cashDividend: 1.5, cashDividendFromEarnings: 1.2, cashDividendFromLegalAndCapitalReserve: 0.3 });
     expect(entries[1]).toMatchObject({ cashDividend: 2, stockDividend: 0.5, totalDividend: 2.5, eps: null, payoutRatio: null, yieldAtExDate: null });
     expect(entries[2]).toMatchObject({ eps: -4, payoutRatio: null, yieldAtExDate: null });
+  });
+
+  test('現金股利全部來自法定盈餘公積／資本公積 → payoutRatio 是 0（盈餘分配一毛沒發），不是合計 ÷ EPS', async () => {
+    // 形狀照 2882 國泰金 111 年：EPS 2.58、現金股利 0.9 全部來自公積發放。
+    const rows = [row({ rocFiscalYear: 111, cashDividendFromLegalAndCapitalReserve: 0.9, exDividendDate: day('2023-07-01') })];
+    const deps = depsFor(rows, { '2022': 2.58 }, {});
+    const { entries } = await getCompanyDividendHistory('2882', deps);
+    expect(entries[0]).toMatchObject({ cashDividend: 0.9, cashDividendFromEarnings: 0, cashDividendFromLegalAndCapitalReserve: 0.9, eps: 2.58, payoutRatio: 0 });
   });
 });

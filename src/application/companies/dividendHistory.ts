@@ -9,7 +9,13 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 // 彙總成年度列，同時把逐筆事件放在 events 裡，季配公司的四個除息日/發放日才不會被壓成一個。
 //
 // 三個衍生欄位的口徑（都是事實層的算術，不做任何「配息穩不穩」的判斷）：
-// - payoutRatio：該年度現金股利 ÷ 該年度 EPS × 100。EPS 用 eps.FY＝年報公告的基本每股盈餘（2026-09-25 起；
+// - payoutRatio（盈餘發放率）：該年度**盈餘分配**的現金股利 ÷ 該年度 EPS × 100——法定盈餘公積、資本公積發放
+//   不算。2026-09-25 前分子是現金股利合計，對含公積發放的公司語意錯誤：2882 國泰金 111 年 0.9 元全部是公積發放，
+//   卻顯示「發了獲利的 34.88%」；3607 谷崧 114 年顯示 4000%，實際盈餘分配 0%。bff-ts 抽樣 287 個公司年度 15.3%
+//   含公積發放、5.9% 全部是公積發放。使用者拍板直接改這個欄位（讓定義符合名稱），不另開新欄位；要「現金股利合計
+//   ÷ EPS」的人自己用 cashDividend ÷ eps。注意：法定盈餘公積源自以前年度盈餘，公告卻跟資本公積合在一欄，所以
+//   分派法定盈餘公積的公司，這個比率會略低於「所有源自盈餘的發放」——公告拆不開，照公告的盈餘分配欄算。
+//   EPS 用 eps.FY＝年報公告的基本每股盈餘（2026-09-25 起；
 //   原本是 eps.Q 四季加總——各季各用自己的期末股本，跟年報 EPS 不同，使用者拍板年度數字必須來自年報、
 //   不從季資料拼，見 UBIQUITOUS_LANGUAGE.md〈三〉）。該年度沒有年報（例如今年）或 EPS ≤ 0 時為 null（虧損年度的配息率
 //   沒有意義，不硬算成負數）。
@@ -36,10 +42,14 @@ export interface DividendHistoryEvent {
   fiscalQuarter: number | null; // 季配公司才有值；年配公司這欄是 null
   cashDividend: number; // 元／股，盈餘 + 資本公積
   // 2026-09-25 股利來源拆開：使用者要求說明「股利從哪來」——不一定來自當年盈餘。110~113 年有發現金股利的
-  // 4,265 個公司年度裡 520 個含資本公積、498 個「盈餘分配」超過當年 EPS（來自以前年度累積盈餘）。
-  // 公告只分盈餘／資本公積兩種，「當年 vs 以前年度盈餘」公告沒有拆，由下游拿 fromEarnings 對照 eps 說明。
+  // 4,265 個公司年度裡 520 個含公積發放、498 個「盈餘分配」超過當年 EPS（來自以前年度累積盈餘）。
+  // 欄位照 MOPS t108sb27 原始表頭命名（mops-ts 從快取的原始 HTML 逐字抽出）：
+  //   「盈餘分配之股東現金股利」→ FromEarnings；「法定盈餘公積、資本公積發放之現金」→ FromLegalAndCapitalReserve。
+  // 後者是**兩種來源合在一欄、公告拆不開**：資本公積部分性質是退還股本，法定盈餘公積則是以前年度盈餘提存的。
+  // 一開始取名 FromCapitalReserve 漏了法定盈餘公積，同一天改名。
+  // 「當年 vs 以前年度盈餘」公告不分；實際提列與分配數在 XBRL 權益變動表（mops-ts equity_change_xbrl），目前沒接。
   cashDividendFromEarnings: number; // 元／股，盈餘分配（可能含以前年度累積的盈餘）
-  cashDividendFromCapitalReserve: number; // 元／股，資本公積發放
+  cashDividendFromLegalAndCapitalReserve: number; // 元／股，法定盈餘公積與資本公積發放（合在一欄，無法拆開）
   stockDividend: number; // 元／股（股票股利以面額計），盈餘 + 資本公積
   exDividendDate: string | null; // YYYY-MM-DD
   exRightsDate: string | null;
@@ -54,7 +64,7 @@ export interface DividendHistoryEntry {
   rocFiscalYear: number;
   cashDividend: number;
   cashDividendFromEarnings: number; // 該年度各次加總，元／股
-  cashDividendFromCapitalReserve: number; // 該年度各次加總，元／股
+  cashDividendFromLegalAndCapitalReserve: number; // 該年度各次加總，元／股
   stockDividend: number;
   totalDividend: number;
   distributionCount: number; // 這個年度分派幾次（年配 1、季配 4…）
@@ -62,7 +72,7 @@ export interface DividendHistoryEntry {
   exRightsDate: string | null;
   paymentDate: string | null; // 該年度最後一次現金股利發放日
   eps: number | null; // 該年度年報 EPS（eps.FY），沒有年報為 null
-  payoutRatio: number | null; // %，EPS ≤ 0 或缺 EPS 時為 null
+  payoutRatio: number | null; // %，盈餘分配 ÷ EPS（不含資本公積）；EPS ≤ 0 或缺 EPS 時為 null
   yieldAtExDate: number | null; // %，各次除息日殖利率加總，任一次查無股價為 null
   knowledgeDate: string | null;
   events: DividendHistoryEvent[];
@@ -82,8 +92,8 @@ const buildAnnualEps = async (symbol: string, deps: DividendHistoryDeps): Promis
 };
 
 const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: DividendHistoryDeps): Promise<DividendHistoryEvent> => {
-  const cashDividend = sumNonNull(row.cashDividendFromEarnings, row.cashDividendFromCapitalReserve);
-  const stockDividend = sumNonNull(row.stockDividendFromEarnings, row.stockDividendFromCapitalReserve);
+  const cashDividend = sumNonNull(row.cashDividendFromEarnings, row.cashDividendFromLegalAndCapitalReserve);
+  const stockDividend = sumNonNull(row.stockDividendFromEarnings, row.stockDividendFromLegalAndCapitalReserve);
   // 有現金股利且有除息日才去查股價；純除權（只有股票股利）不算殖利率。
   const price = cashDividend > 0 && row.exDividendDate ? await deps.market.getStockPrice(symbol, row.exDividendDate) : null;
   const closeAtExDate = price?.closePrice ?? null;
@@ -92,7 +102,7 @@ const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: Di
     fiscalQuarter: row.fiscalQuarter,
     cashDividend: round2(cashDividend),
     cashDividendFromEarnings: round2(row.cashDividendFromEarnings ?? 0),
-    cashDividendFromCapitalReserve: round2(row.cashDividendFromCapitalReserve ?? 0),
+    cashDividendFromLegalAndCapitalReserve: round2(row.cashDividendFromLegalAndCapitalReserve ?? 0),
     stockDividend: round2(stockDividend),
     exDividendDate: ISO_DATE(row.exDividendDate),
     exRightsDate: ISO_DATE(row.exRightsDate),
@@ -125,7 +135,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
       const yearEvents = items.map((i) => i.event);
       const cashDividend = round2(yearEvents.reduce((s, e) => s + e.cashDividend, 0));
       const cashDividendFromEarnings = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromEarnings, 0));
-      const cashDividendFromCapitalReserve = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromCapitalReserve, 0));
+      const cashDividendFromLegalAndCapitalReserve = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromLegalAndCapitalReserve, 0));
       const stockDividend = round2(yearEvents.reduce((s, e) => s + e.stockDividend, 0));
       const eps = annualEps.get(fiscalYear) ?? null;
       const cashEvents = yearEvents.filter((e) => e.cashDividend > 0);
@@ -135,7 +145,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
         rocFiscalYear,
         cashDividend,
         cashDividendFromEarnings,
-        cashDividendFromCapitalReserve,
+        cashDividendFromLegalAndCapitalReserve,
         stockDividend,
         totalDividend: round2(cashDividend + stockDividend),
         distributionCount: yearEvents.length,
@@ -143,7 +153,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
         exRightsDate: latestDate(yearEvents.map((e) => e.exRightsDate)),
         paymentDate: latestDate(yearEvents.map((e) => e.paymentDate)),
         eps,
-        payoutRatio: eps !== null && eps > 0 ? round2((cashDividend / eps) * 100) : null,
+        payoutRatio: eps !== null && eps > 0 ? round2((cashDividendFromEarnings / eps) * 100) : null,
         yieldAtExDate: yieldComplete ? round2(cashEvents.reduce((s, e) => s + e.yieldAtExDate!, 0)) : null,
         knowledgeDate: latestDate(yearEvents.map((e) => e.announcementDate)),
         events: yearEvents,

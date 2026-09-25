@@ -4,16 +4,16 @@
     "entries": [
       {
         "cashDividend": "<number>",
-        "cashDividendFromCapitalReserve": "<number>",
         "cashDividendFromEarnings": "<number>",
+        "cashDividendFromLegalAndCapitalReserve": "<number>",
         "distributionCount": "<number>",
         "eps": "<number>",
         "events": [
           {
             "announcementDate": "<date>",
             "cashDividend": "<number>",
-            "cashDividendFromCapitalReserve": "<number>",
             "cashDividendFromEarnings": "<number>",
+            "cashDividendFromLegalAndCapitalReserve": "<number>",
             "closeAtExDate": "<number>",
             "exDividendDate": "<date>",
             "exRightsDate": "<null>",

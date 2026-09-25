@@ -13,13 +13,19 @@ export interface DividendDistributionEvent {
 // 是「元／股」（mops-ts 的 t108sb27 就是每股數字，不是總金額）。cash/stock 各自拆成盈餘與資本公積
 // 兩個來源，呼叫端自己加總；特別股股利（preferred_stock_cash_dividend）不在這裡——這張表是普通股。
 // rocFiscalYear 是「股利所屬年度」（民國），不是除息年度。
+// 欄位名對應 MOPS t108sb27 原始表頭（mops-ts 2026-09-25 從快取原始 HTML 逐字確認）：
+//   cashDividendFromEarnings               ← 盈餘分配之股東現金股利(元/股)
+//   cashDividendFromLegalAndCapitalReserve ← 法定盈餘公積、資本公積發放之現金(元/股)
+//   stockDividendFromEarnings              ← 盈餘轉增資配股(元/股)
+//   stockDividendFromLegalAndCapitalReserve← 法定盈餘公積、資本公積轉增資配股(元/股)
+// 法定盈餘公積與資本公積在公告裡合在同一欄、拆不開；原本取名 *FromCapitalReserve 漏了前者，同日改名。
 export interface DividendDistributionRow {
   rocFiscalYear: number;
   fiscalQuarter: number | null;
   cashDividendFromEarnings: number | null;
-  cashDividendFromCapitalReserve: number | null;
+  cashDividendFromLegalAndCapitalReserve: number | null;
   stockDividendFromEarnings: number | null;
-  stockDividendFromCapitalReserve: number | null;
+  stockDividendFromLegalAndCapitalReserve: number | null;
   exDividendDate: Date | null;
   exRightsDate: Date | null;
   cashDividendPaymentDate: Date | null;
