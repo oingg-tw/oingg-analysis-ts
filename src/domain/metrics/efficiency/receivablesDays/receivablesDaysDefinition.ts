@@ -2,7 +2,9 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const receivablesDaysDefinition: MetricDefinitionSpec = {
   metricCode: 'receivablesDays',
-  name: 'DSO',
+  // 2026-09-25 web-nuxt：原本 name 是 'DSO'，是整個分類唯一用英文縮寫當名稱的，會直接出現在側邊欄與頁面 h1。
+  // 改成中文，縮寫放進 metricNarratives 的 description。
+  name: '應收帳款收現天數',
   unit: '天',
   formulaNote: 'DSO = 365/應收帳款周轉率（TTM）。只有 TTM 一種 basis，理由同 inventoryDays。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）',
   formulaLatex: '\\mathrm{DSO} = \\frac{365}{\\mathrm{ReceivablesTurnover}}',

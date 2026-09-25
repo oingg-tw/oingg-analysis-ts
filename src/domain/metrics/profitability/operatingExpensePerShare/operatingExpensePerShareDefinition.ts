@@ -12,7 +12,7 @@ export const operatingExpensePerShareDefinition: MetricDefinitionSpec = {
     'operatingIncomePerShare 反推——理由同 grossProfitPerShare。2026-09-18 應 web-nuxt' +
     '「營收到股利去了哪裡」瀑布圖需求新增，只做 TTM。**「毛利−這個欄位＝營業利益」不是完整' +
     '恆等式**：全市場 115Q2 實測 93%（1913/2057）完全吻合、2%（41家）缺 gross_profit（銀行/' +
-    '金控/證券期貨結構性沒有毛利概念、少數生技股尚無產品營收，皆為合理缺漏，已跟 mops-ts 核對' +
+    '金控/證券期貨結構性沒有毛利概念、少數生技股尚無產品營收，皆為結構性缺漏，已跟 mops-ts 核對' +
     '過剩下 4 家非金融公司的缺漏是否為解析遺漏），其餘 5%（103家）差額幾乎精確等於損益表' +
     '另一個科目 net_other_income_expenses（其他利益及損失淨額）——真正的恆等式是「毛利−' +
     '營業費用+其他利益及損失淨額＝營業利益」，只是這個科目沒有獨立曝露成 per-share 指標，這裡' +

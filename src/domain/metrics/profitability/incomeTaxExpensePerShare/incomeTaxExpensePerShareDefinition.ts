@@ -12,7 +12,7 @@ export const incomeTaxExpensePerShareDefinition: MetricDefinitionSpec = {
     'pretaxIncomePerShare − eps 反推——兩者不等價：eps 的淨利是歸屬母公司口徑，而' +
     '稅前淨利−所得稅費用等於整體淨利（含少數股東權益），2026-09-18 全市場實測 115Q2 有' +
     '1109/2057（54%）家公司當季有非零少數股東權益，用減法會把少數股東權益的份額也算進' +
-    '「所得稅費用」，系統性偏高。應 web-nuxt「營收到股利去了哪裡」瀑布圖需求新增，只做 TTM。' +
+    '「所得稅費用」，數字會系統性地比實際所得稅大。應 web-nuxt「營收到股利去了哪裡」瀑布圖需求新增，只做 TTM。' +
     '2026-09-24 補上 Q（單季）：原本只做 TTM 是因為當初那張瀑布圖卡片整張鎖 TTM，不是資料限制——上游 quarterly_income_statement_xbrl 本來就是單季表。使用者要求單季也要能看整條「營收→股利」的拆解，所以補齊。' +
     'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
   formulaLatex: '\\mathrm{IncomeTaxExpensePerShare} = \\frac{\\mathrm{IncomeTaxExpense}}{\\mathrm{Shares}}',

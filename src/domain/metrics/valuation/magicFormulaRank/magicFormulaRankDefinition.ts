@@ -23,7 +23,7 @@ export const magicFormulaRankDefinition: MetricDefinitionSpec = {
   formulaNote:
     '= greenblattRoc(TTM) 全市場排名（數值越高名次越前面）+ greenblattEarningsYield(TTM) ' +
     '全市場排名（數值越高名次越前面）。合併名次越小（例如 2）代表兩項指標同時排名都很前面，' +
-    '是「便宜又賺錢」的公司；只計算兩項指標皆非 null 的公司，排除金融保險業，沒有市值門檻。' +
+    '是盈餘殖利率與資本報酬率同時排名前面的公司；只計算兩項指標皆非 null 的公司，排除金融保險業，沒有市值門檻。' +
     '每次全市場批次重算，不是逐一公司獨立算出來的。',
   formulaLatex: '\\mathrm{MagicFormulaRank} = \\mathrm{Rank}(\\mathrm{GreenblattRoc}) + \\mathrm{Rank}(\\mathrm{GreenblattEarningsYield})',
   academicSourceUrl: 'https://www.wiley.com/en-us/The+Little+Book+That+Still+Beats+the+Market-p-9780470624159',
