@@ -12,6 +12,10 @@ import type { AnnualReportPort } from '@/application/ports/annualReport';
 // 114 年有 773 列是這種。那正是使用者要求不能當年報的東西——年報必須來自年報文件、不從季資料拼。
 // 分辨方式：寬表 raw_context_ref 是 null ＝ 推導列（沒有文件可解析）。這裡只認有 context 的文件列，
 // 推導列一律當成「沒有年報」回 null。長表沒有這欄，所以用寬表判斷。
+// ponytail: raw_context_ref 回答的是「解析出什麼」不是「來源是什麼」——mops-ts 量過兩個方向目前都精確，
+// 但**不是契約**（文件解析成功卻解不出 context 時，會被這裡誤丟）。mops-ts 在跟使用者討論加
+// source = 'document' | 'derived_from_quarters' 欄位，有了就換成讀那一欄。在那之前靠整合測試裡
+// 「各年度文件列家數」那支當偵測點。
 export const mopsAnnualReports: AnnualReportPort = {
   getAnnualIncomeStatement: async ({ symbol, rocYear, dataType, subsidiaryCompanyId }) => {
     const rows = await mopsExportPrisma.$queryRaw<{ report_date: Date | null; basic_eps: string | null }[]>`
