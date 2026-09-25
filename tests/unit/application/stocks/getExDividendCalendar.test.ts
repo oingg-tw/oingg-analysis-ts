@@ -55,9 +55,9 @@ const realized = (symbol: string, exDate: string, over: Partial<RealizedExDivide
   rocFiscalYear: 114,
   fiscalQuarter: null,
   cashDividendFromEarnings: 0.4,
-  cashDividendFromLegalAndCapitalReserve: 0.1,
+  cashDividendFromLegalReserveAndCapitalSurplus: 0.1,
   stockDividendFromEarnings: null,
-  stockDividendFromLegalAndCapitalReserve: null,
+  stockDividendFromLegalReserveAndCapitalSurplus: null,
   exDividendDate: new Date(exDate),
   exRightsDate: null,
   cashDividendPaymentDate: new Date('2026-10-22'),
@@ -69,7 +69,7 @@ let calls: { announced?: [Date, Date]; realized?: [Date, Date]; etf?: [Date, Dat
 const deps = createTestDeps({
   market: { getExDividendCalendar: async (s: Date, e: Date) => ((calls.announced = [s, e]), [notice('2330', '2026-09-25'), notice('1101', '2026-09-22')]) } as unknown as MarketDataPort,
   dividendEvents: {
-    listRealizedExDividendRows: async (s: Date, e: Date) => ((calls.realized = [s, e]), [realized('2614', '2026-09-06', { stockDividendFromEarnings: 0.8, exRightsDate: new Date('2026-09-06') }), realized('2890', '2026-09-10', { exDividendDate: null, exRightsDate: new Date('2026-09-10'), cashDividendFromEarnings: null, cashDividendFromLegalAndCapitalReserve: null })]),
+    listRealizedExDividendRows: async (s: Date, e: Date) => ((calls.realized = [s, e]), [realized('2614', '2026-09-06', { stockDividendFromEarnings: 0.8, exRightsDate: new Date('2026-09-06') }), realized('2890', '2026-09-10', { exDividendDate: null, exRightsDate: new Date('2026-09-10'), cashDividendFromEarnings: null, cashDividendFromLegalReserveAndCapitalSurplus: null })]),
   } as unknown as DividendEventsPort,
   companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])) } as unknown as CompanyProfilePort,
   etfData: {

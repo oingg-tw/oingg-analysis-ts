@@ -5,7 +5,7 @@
       {
         "cashDividend": "<number>",
         "cashDividendFromEarnings": "<number>",
-        "cashDividendFromLegalAndCapitalReserve": "<number>",
+        "cashDividendFromLegalReserveAndCapitalSurplus": "<number>",
         "distributionCount": "<number>",
         "eps": "<number>",
         "events": [
@@ -13,7 +13,7 @@
             "announcementDate": "<date>",
             "cashDividend": "<number>",
             "cashDividendFromEarnings": "<number>",
-            "cashDividendFromLegalAndCapitalReserve": "<number>",
+            "cashDividendFromLegalReserveAndCapitalSurplus": "<number>",
             "closeAtExDate": "<number>",
             "exDividendDate": "<date>",
             "exRightsDate": "<null>",

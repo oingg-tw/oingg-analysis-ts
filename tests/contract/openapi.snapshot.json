@@ -683,7 +683,7 @@
                             "description": "該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01",
                             "type": "number"
                           },
-                          "cashDividendFromLegalAndCapitalReserve": {
+                          "cashDividendFromLegalReserveAndCapitalSurplus": {
                             "description": "該年度各次「法定盈餘公積、資本公積發放之現金」加總，元／股",
                             "type": "number"
                           },
@@ -712,7 +712,7 @@
                                   "description": "元／股，現金股利中「盈餘分配」的部分（可能含以前年度累積的盈餘，不一定是當年盈餘）",
                                   "type": "number"
                                 },
-                                "cashDividendFromLegalAndCapitalReserve": {
+                                "cashDividendFromLegalReserveAndCapitalSurplus": {
                                   "description": "元／股，現金股利中「法定盈餘公積、資本公積發放之現金」（MOPS 原始欄位，兩種來源合在一欄、無法拆開）",
                                   "type": "number"
                                 },
@@ -754,7 +754,7 @@
                                 "fiscalQuarter",
                                 "cashDividend",
                                 "cashDividendFromEarnings",
-                                "cashDividendFromLegalAndCapitalReserve",
+                                "cashDividendFromLegalReserveAndCapitalSurplus",
                                 "stockDividend",
                                 "exDividendDate",
                                 "exRightsDate",
@@ -815,7 +815,7 @@
                           "rocFiscalYear",
                           "cashDividend",
                           "cashDividendFromEarnings",
-                          "cashDividendFromLegalAndCapitalReserve",
+                          "cashDividendFromLegalReserveAndCapitalSurplus",
                           "stockDividend",
                           "totalDividend",
                           "distributionCount",

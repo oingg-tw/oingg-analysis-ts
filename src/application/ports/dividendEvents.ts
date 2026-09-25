@@ -15,17 +15,20 @@ export interface DividendDistributionEvent {
 // rocFiscalYear 是「股利所屬年度」（民國），不是除息年度。
 // 欄位名對應 MOPS t108sb27 原始表頭（mops-ts 2026-09-25 從快取原始 HTML 逐字確認）：
 //   cashDividendFromEarnings               ← 盈餘分配之股東現金股利(元/股)
-//   cashDividendFromLegalAndCapitalReserve ← 法定盈餘公積、資本公積發放之現金(元/股)
+//   cashDividendFromLegalReserveAndCapitalSurplus ← 法定盈餘公積、資本公積發放之現金(元/股)
 //   stockDividendFromEarnings              ← 盈餘轉增資配股(元/股)
-//   stockDividendFromLegalAndCapitalReserve← 法定盈餘公積、資本公積轉增資配股(元/股)
+//   stockDividendFromLegalReserveAndCapitalSurplus← 法定盈餘公積、資本公積轉增資配股(元/股)
 // 法定盈餘公積與資本公積在公告裡合在同一欄、拆不開；原本取名 *FromCapitalReserve 漏了前者，同日改名。
+// 英文用 TIFRS 分類標準自己的詞（mops-ts 查 2026-03-31 ci.json）：資本公積＝CapitalSurplus（權益變動表有
+// tifrs-es:CashDividendsFromCapitalSurplus），法定盈餘公積＝LegalReserve。CapitalReserve 是 ifrs-full 的另一個概念，
+// 不是台灣的資本公積——同日第二次改名，mops-ts 的 DB 欄位也改成同一組詞。
 export interface DividendDistributionRow {
   rocFiscalYear: number;
   fiscalQuarter: number | null;
   cashDividendFromEarnings: number | null;
-  cashDividendFromLegalAndCapitalReserve: number | null;
+  cashDividendFromLegalReserveAndCapitalSurplus: number | null;
   stockDividendFromEarnings: number | null;
-  stockDividendFromLegalAndCapitalReserve: number | null;
+  stockDividendFromLegalReserveAndCapitalSurplus: number | null;
   exDividendDate: Date | null;
   exRightsDate: Date | null;
   cashDividendPaymentDate: Date | null;

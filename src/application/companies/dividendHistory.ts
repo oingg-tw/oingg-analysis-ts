@@ -44,12 +44,12 @@ export interface DividendHistoryEvent {
   // 2026-09-25 股利來源拆開：使用者要求說明「股利從哪來」——不一定來自當年盈餘。110~113 年有發現金股利的
   // 4,265 個公司年度裡 520 個含公積發放、498 個「盈餘分配」超過當年 EPS（來自以前年度累積盈餘）。
   // 欄位照 MOPS t108sb27 原始表頭命名（mops-ts 從快取的原始 HTML 逐字抽出）：
-  //   「盈餘分配之股東現金股利」→ FromEarnings；「法定盈餘公積、資本公積發放之現金」→ FromLegalAndCapitalReserve。
+  //   「盈餘分配之股東現金股利」→ FromEarnings；「法定盈餘公積、資本公積發放之現金」→ FromLegalReserveAndCapitalSurplus。
   // 後者是**兩種來源合在一欄、公告拆不開**：資本公積部分性質是退還股本，法定盈餘公積則是以前年度盈餘提存的。
   // 一開始取名 FromCapitalReserve 漏了法定盈餘公積，同一天改名。
   // 「當年 vs 以前年度盈餘」公告不分；實際提列與分配數在 XBRL 權益變動表（mops-ts equity_change_xbrl），目前沒接。
   cashDividendFromEarnings: number; // 元／股，盈餘分配（可能含以前年度累積的盈餘）
-  cashDividendFromLegalAndCapitalReserve: number; // 元／股，法定盈餘公積與資本公積發放（合在一欄，無法拆開）
+  cashDividendFromLegalReserveAndCapitalSurplus: number; // 元／股，法定盈餘公積與資本公積發放（合在一欄，無法拆開）
   stockDividend: number; // 元／股（股票股利以面額計），盈餘 + 資本公積
   exDividendDate: string | null; // YYYY-MM-DD
   exRightsDate: string | null;
@@ -64,7 +64,7 @@ export interface DividendHistoryEntry {
   rocFiscalYear: number;
   cashDividend: number;
   cashDividendFromEarnings: number; // 該年度各次加總，元／股
-  cashDividendFromLegalAndCapitalReserve: number; // 該年度各次加總，元／股
+  cashDividendFromLegalReserveAndCapitalSurplus: number; // 該年度各次加總，元／股
   stockDividend: number;
   totalDividend: number;
   distributionCount: number; // 這個年度分派幾次（年配 1、季配 4…）
@@ -92,8 +92,8 @@ const buildAnnualEps = async (symbol: string, deps: DividendHistoryDeps): Promis
 };
 
 const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: DividendHistoryDeps): Promise<DividendHistoryEvent> => {
-  const cashDividend = sumNonNull(row.cashDividendFromEarnings, row.cashDividendFromLegalAndCapitalReserve);
-  const stockDividend = sumNonNull(row.stockDividendFromEarnings, row.stockDividendFromLegalAndCapitalReserve);
+  const cashDividend = sumNonNull(row.cashDividendFromEarnings, row.cashDividendFromLegalReserveAndCapitalSurplus);
+  const stockDividend = sumNonNull(row.stockDividendFromEarnings, row.stockDividendFromLegalReserveAndCapitalSurplus);
   // 有現金股利且有除息日才去查股價；純除權（只有股票股利）不算殖利率。
   const price = cashDividend > 0 && row.exDividendDate ? await deps.market.getStockPrice(symbol, row.exDividendDate) : null;
   const closeAtExDate = price?.closePrice ?? null;
@@ -102,7 +102,7 @@ const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: Di
     fiscalQuarter: row.fiscalQuarter,
     cashDividend: round2(cashDividend),
     cashDividendFromEarnings: round2(row.cashDividendFromEarnings ?? 0),
-    cashDividendFromLegalAndCapitalReserve: round2(row.cashDividendFromLegalAndCapitalReserve ?? 0),
+    cashDividendFromLegalReserveAndCapitalSurplus: round2(row.cashDividendFromLegalReserveAndCapitalSurplus ?? 0),
     stockDividend: round2(stockDividend),
     exDividendDate: ISO_DATE(row.exDividendDate),
     exRightsDate: ISO_DATE(row.exRightsDate),
@@ -135,7 +135,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
       const yearEvents = items.map((i) => i.event);
       const cashDividend = round2(yearEvents.reduce((s, e) => s + e.cashDividend, 0));
       const cashDividendFromEarnings = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromEarnings, 0));
-      const cashDividendFromLegalAndCapitalReserve = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromLegalAndCapitalReserve, 0));
+      const cashDividendFromLegalReserveAndCapitalSurplus = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromLegalReserveAndCapitalSurplus, 0));
       const stockDividend = round2(yearEvents.reduce((s, e) => s + e.stockDividend, 0));
       const eps = annualEps.get(fiscalYear) ?? null;
       const cashEvents = yearEvents.filter((e) => e.cashDividend > 0);
@@ -145,7 +145,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
         rocFiscalYear,
         cashDividend,
         cashDividendFromEarnings,
-        cashDividendFromLegalAndCapitalReserve,
+        cashDividendFromLegalReserveAndCapitalSurplus,
         stockDividend,
         totalDividend: round2(cashDividend + stockDividend),
         distributionCount: yearEvents.length,
