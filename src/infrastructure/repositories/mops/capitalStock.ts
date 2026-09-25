@@ -19,6 +19,16 @@ interface RawCapitalStockRow {
 // 2026-09-03 使用者決定 curated 中台層現階段太早，改回直接查 mopsExportPrisma（etl_reader，
 // export.capital_stock_history 這張 view 沒有唯一識別欄位，走 $queryRaw）。
 //
+// 2026-09-25 排除「欄位錯位」的列（使用者拍板先擋，mops-ts 重抓修好前的暫時防線）：mops-ts 的 parser 遇到
+// 「一列標籤、下一列值」的 MOPS 版面時整體錯位一格，股數拿到資本的值（×10，40 列）或兩欄對調（×100，23 列，
+// 例：6546 2025-03 股數 668,484,490／資本 66,848,449）。判準是「股數 ÷（實收資本 ÷ 面額）剛好是 10 的 k 次方、k≠0」
+// ——這種比例不可能是真的（特別股、庫藏股造成的是 4157 那種 ×1.028 小差距，不會剛好是 10 倍），所以只擋這一種，
+// 其他比例的 55 列不動。**跳過不是修值**：mops-ts 明說不能用 ÷10 或對調修（×10 那種真實股數根本不在這一列），
+// 這裡只是不採用壞列、改用生效日更早的最新一筆一致的列。代價：壞列若同時是一次真的增減資，會暫時沿用舊股數。
+// 2026-09-25 量到最新一季（115Q2）受影響 6 家：1225、3131、6546、6861、7851、8171。mops-ts 修好（重抓＋修 parser）後，
+// 壞列消失，這個條件自然不再命中——不需要回來拿掉，但可以拿掉。見記憶 project_capital_stock_history_coverage_gap。
+// 所有讀股數的路徑（每股指標、市值 getMarketCapAsOf、liveMarketCap）都經過這支，擋一次就全部生效。
+//
 // 注意單位：這裡回傳的 paidInShares 是實際股數（不是千股），但三張季度財報表的金額欄位
 // （netIncome、equityValue…）單位是「千元」。算每股數字時分子要先 x1000 換算成元，
 // 見 src/api/bff/bvps/service.ts 的 toPerShare——BVPS 曾因為漏了這個換算算出差 1000 倍的錯誤值。
@@ -31,6 +41,12 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
     rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
       SELECT effective_year, effective_month, paid_in_shares FROM "export"."capital_stock_history"
       WHERE symbol = ${symbol} AND (effective_year < ${asOfYear} OR (effective_year = ${asOfYear} AND effective_month <= ${asOfMonth}))
+        AND NOT (
+          paid_in_shares > 0 AND paid_in_capital > 0 AND par_value > 0
+          AND ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))) <> 0
+          AND ABS(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))
+                  - ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value)))) < 0.0005
+        )
       ORDER BY effective_year DESC, effective_month DESC LIMIT 1
     `;
   } catch (error) {
