@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { getPaidInSharesAsOf } from '@/infrastructure/repositories/mops/capitalStock';
 import { disconnectAllDbs } from '@/bootstrap/db';
 
-// 2026-09-25 股本列欄位錯位的暫時防線（見 capitalStock.ts 的說明）。案例都是 2026-09-25 的真實資料：
-// mops-ts 重抓修好後，6546 2025-03 那列會變成一致的正確值，第一個斷言就會失敗——那時改成斷言新的正確股數，
-// 並確認防線不再命中，不要直接刪掉這支。
+// 2026-09-25 股本列「股數與實收資本對不上」的防線（見 capitalStock.ts 的說明）。案例都是真實資料；MOPS 頁面本身就是
+// 這樣印的（mops-ts 重抓原始 HTML 查明），所以這些斷言不會因為上游重抓而改變——如果改變了，代表 MOPS 更正了頁面，
+// 要回頭確認防線的判斷，不要直接改斷言。
 
 test('錯位列（6546 2025-03，股數與資本對調、比例 ×100）不採用，改用前一筆一致的列（2024-12）', async () => {
   const r = await getPaidInSharesAsOf('6546', new Date('2025-06-30'));
