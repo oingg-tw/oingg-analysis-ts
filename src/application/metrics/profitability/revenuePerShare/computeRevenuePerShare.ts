@@ -7,14 +7,15 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 
 // 這份檔案是 src/domainMetrics/revenuePerShare.ts 的獨立重新實作，結構跟 computeEpsPit.ts
 // 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome 那種欄位選擇邏輯）。
 
 
-export type RevenuePerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+export type RevenuePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
 
-export type RevenuePerShareComputationBatch = ComputationBatch<'q' | 'ttm'>;
+export type RevenuePerShareComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
 export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: RevenuePerShareDeps): Promise<RevenuePerShareComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -22,7 +23,7 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
+    return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
   }
 
   const { year, season } = resolvedQuarter;
@@ -96,5 +97,16 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  // FY（2026-09-25）：年報營收 ÷ 反推的全年加權平均股數（shared/annualReportSlot.ts）。
+  const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
+  const annualRevenue = annual?.annual.operatingRevenue ?? null;
+  const annualShares = annual?.weightedShares ?? null;
+  const fyValue = annualRevenue !== null && annualShares !== null ? toPerShare(annualRevenue, annualShares) : null;
+  const fy = annualReportSlot(
+    annual,
+    { symbol, metricCode: 'revenuePerShare', dataType, subsidiaryCompanyId },
+    { value: fyValue, nullReason: fyValue === null ? determineNullReason(annualRevenue, annualShares) : null }
+  );
+
+  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
 };

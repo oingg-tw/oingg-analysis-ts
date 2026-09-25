@@ -22,6 +22,8 @@ const asComputation = (slot: MetricComputation | { action: string }): MetricComp
 };
 
 const sharesPort = { getPaidInShares: async () => ({ paidInShares: 1_000_000_000n, effectiveYear: 2025, effectiveMonth: 1 }) };
+// 這幾個案例只測單季的銀行 fallback；年報口徑（FY）一律查無年報 → skipped_no_quarter，不影響 Q。
+const noAnnualReport = { getAnnualIncomeStatement: async () => null };
 
 describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
   test('一般損益表這一季查無資料、是銀行/金控 → 退回銀行監理專用表的稅前淨利', async () => {
@@ -36,6 +38,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       quarters: statements,
       announcements: createFixedAnnouncements(announced),
       shares: sharesPort,
+      annualReports: noAnnualReport,
       industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
     });
 
@@ -58,6 +61,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       quarters: statements,
       announcements: createFixedAnnouncements({ '2330-115Q2': new Date('2026-08-14T00:00:00.000Z') }),
       shares: sharesPort,
+      annualReports: noAnnualReport,
       industry: { isFinancialIndustryCompany: async () => false, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
     });
 
@@ -76,6 +80,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       quarters: statements,
       announcements: createFixedAnnouncements(announced),
       shares: sharesPort,
+      annualReports: noAnnualReport,
       industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
     });
 

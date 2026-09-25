@@ -10,13 +10,14 @@ export const expectedCreditLossPerShareDefinition: MetricDefinitionSpec = {
     'TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。流通股數固定用「本季報告日」' +
     '當下有效的股本。這是營業費用的**第四個組成**——推銷+管理+研發不一定等於營業費用合計，' +
     '差額就是它（實測 115Q2 有 1,445 家揭露，四項相加後 1,543/1,545 列完全還原）。' +
-    '2026-09-24 為了讓「營收→股利」瀑布圖的營業費用那一段能加總還原而新增。',
+    '2026-09-24 為了讓「營收→股利」瀑布圖的營業費用那一段能加總還原而新增。' +
+    'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。',
   formulaLatex: '\\mathrm{ExpectedCreditLossPerShare} = \\frac{\\mathrm{ExpectedCreditLoss}}{\\mathrm{Shares}}',
   referenceUrl: 'https://www.ifrs.org/issued-standards/list-of-standards/ifrs-9-financial-instruments/',
   tier: 'derived',
-  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['impairment_loss_gain_reversal_ifrs9', 'paidInShares'],
   currentFormulaVersion: 1,
 };

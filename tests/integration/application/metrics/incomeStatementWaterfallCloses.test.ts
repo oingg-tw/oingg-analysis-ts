@@ -32,7 +32,8 @@ import { disconnectAllDbs } from '@/bootstrap/db';
 const toleranceFor = (roundedTermCount: number): number => roundedTermCount * 0.005 + 1e-9;
 
 const SYMBOLS = ['2330', '2317', '2454', '1301', '2412', '1101', '6415', '2308'];
-const QUARTERS: [string, '1' | '2' | '3' | '4'][] = [['115', '2'], ['115', '1'], ['114', '4']];
+// 114Q1 是給 FY 用的：第一季的計算會寫上一個完整年度（113）的年報口徑，113 年全部是年報文件列。
+const QUARTERS: [string, '1' | '2' | '3' | '4'][] = [['115', '2'], ['115', '1'], ['114', '4'], ['114', '1']];
 
 const valueOf = (slot: ComputationSlot | undefined): number | null =>
   slot && !isComputationSkip(slot) ? slot.value : null;
@@ -53,7 +54,7 @@ interface Identity {
   equals: string;
 }
 
-const identitiesFor = (suffix: 'Q' | 'Ttm'): Identity[] => [
+const identitiesFor = (suffix: 'Q' | 'Ttm' | 'Fy'): Identity[] => [
   {
     name: '推銷 + 管理 + 研發 + 預期信用減損 = 營業費用',
     plus: [`sellingExpensePerShare${suffix}`, `administrativeExpensePerShare${suffix}`, `researchAndDevelopmentExpensePerShare${suffix}`],
@@ -77,8 +78,8 @@ const identitiesFor = (suffix: 'Q' | 'Ttm'): Identity[] => [
 ];
 
 describe('營收→股利瀑布圖：每一層加總都要還原', () => {
-  for (const suffix of ['Q', 'Ttm'] as const) {
-    test(`${suffix === 'Q' ? '單季' : '近四季'}的三條加總恆等式`, async () => {
+  for (const suffix of ['Q', 'Ttm', 'Fy'] as const) {
+    test(`${suffix === 'Q' ? '單季' : suffix === 'Ttm' ? '近四季' : '年報'}的三條加總恆等式`, async () => {
       const checkedCount = new Map<string, number>();
       const failures: string[] = [];
 
@@ -119,25 +120,30 @@ describe('營收→股利瀑布圖：每一層加總都要還原', () => {
 
   // 整條鏈的端點對端點：營收一路減到 EPS。這條橫跨三支不同的 compute，
   // 是「瀑布圖的第一格與最後一格對得起來」的唯一證明。
-  test('TTM：營收 − 成本 − 費用 + 其他 + 業外 − 所得稅 − 少數股東 = EPS', async () => {
+  //
+  // FY（2026-09-25）這條最有判別力：年報口徑的 EPS 是**公告值**，不是我們算的；其他格除以反推的加權平均
+  // 股數。反推股數錯了（分子口徑不同、單位錯），推導出來的就對不上公告 EPS。用 114Q1 → 113 年年報。
+  for (const [label, year, season, slot] of [['TTM', '115', '2', 'ttm'], ['FY（年報）', '114', '1', 'fy']] as const) {
+  test(`${label}：營收 − 成本 − 費用 + 其他 + 業外 − 所得稅 − 少數股東 = EPS`, async () => {
     let checked = 0;
     const failures: string[] = [];
+    const suffix = slot === 'ttm' ? 'Ttm' : 'Fy';
 
     for (const symbol of SYMBOLS) {
       const dataType = await appDeps.reportAvailability.resolveDataType(symbol);
-      const query = { symbol, year: '115', season: '2' as const, dataType, subsidiaryCompanyId: '' };
+      const query = { symbol, year, season, dataType, subsidiaryCompanyId: '' };
       const [{ slots }, epsBatch, revenueBatch] = await Promise.all([
         computeIncomeStatementPerShare(query, pitDeps),
         computeEps(query, pitDeps),
         computeRevenuePerShare(query, pitDeps),
       ]);
 
-      const revenue = valueOf(revenueBatch.slots.ttm);
-      const eps = valueOf(epsBatch.slots.ttm);
-      const required = ['costOfGoodsSoldPerShareTtm', 'operatingExpensePerShareTtm', 'nonOperatingIncomePerShareTtm', 'incomeTaxExpensePerShareTtm', 'minorityInterestPerShareTtm']
-        .map((s) => valueOf(slots[s as keyof typeof slots]));
+      const revenue = valueOf(revenueBatch.slots[slot]);
+      const eps = valueOf(epsBatch.slots[slot]);
+      const required = ['costOfGoodsSoldPerShare', 'operatingExpensePerShare', 'nonOperatingIncomePerShare', 'incomeTaxExpensePerShare', 'minorityInterestPerShare']
+        .map((code) => valueOf(slots[`${code}${suffix}` as keyof typeof slots]));
       // 其他營業收益費損只有約 5% 的公司揭露，缺了視為 0（見 Identity.optionalPlus 的說明）。
-      const otherOperating = valueOf(slots.otherOperatingIncomeExpensePerShareTtm) ?? 0;
+      const otherOperating = valueOf(slots[`otherOperatingIncomeExpensePerShare${suffix}` as keyof typeof slots]) ?? 0;
       if (revenue === null || eps === null || required.some((p) => p === null)) continue;
 
       const [cogs, opex, nonOperating, tax, minority] = required as number[];
@@ -150,6 +156,7 @@ describe('營收→股利瀑布圖：每一層加總都要還原', () => {
     assert.deepEqual(failures, [], `營收推不回 EPS：\n${failures.join('\n')}`);
     expect(checked, '一家都沒驗到——樣本公司都缺某個科目，這條測試等於沒跑').toBeGreaterThan(0);
   }, 120_000);
+  }
 });
 
 afterAll(async () => {

@@ -6,6 +6,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 import { calculateAdministrativeExpensePerShare } from '@/domain/metrics/profitability/administrativeExpensePerShare/calculateAdministrativeExpensePerShare';
 import { calculateCostOfGoodsSoldPerShare } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/calculateCostOfGoodsSoldPerShare';
@@ -65,7 +66,14 @@ import { calculateSellingExpensePerShare } from '@/domain/metrics/profitability/
 // 「一支一組」，理由也適用在舊欄位：權益法投資損益只有 41% 揭露、研發費用 67%，綁在一起就是用
 // 覆蓋率最低的那一支決定全組。
 
-export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+// ## 年報口徑（FY，2026-09-25）
+//
+// 每支指標多一格 `<metricCode>Fy`：全年金額讀年報（AnnualReportPort，不從四季拼），除以反推的全年加權平均
+// 股數（歸屬母公司淨利 ÷ 年報 EPS，見 domain/financials/weightedAverageShares.ts）。所以 FY 這一條鏈的
+// 最後一格等於年報公告的 EPS，每一段又除以同一個股數，瀑布圖照樣閉合。|EPS| < 0.1 時不反推（捨入誤差 > 5%），
+// 整批 FY 都是 null / missing_input——**不要退回用期末股本頂替**，那會在同一張圖裡混兩種分母。
+// 座標跟 eps.FY 一樣：(該年度, 第四季) 一年一列；第四季寫當年、第一~三季寫前一年（重寫會 skipped_unchanged）。
+export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
 
 // 相減型欄位：兩個運算元都是千元 bigint 原始金額，相減後才除以股數，只捨入一次。
 const nonOperatingIncomeOf = (r: IncomeStatementFields): bigint | null =>
@@ -144,9 +152,13 @@ const FIELDS = [
   { slot: 'minorityInterestPerShareTtm', metricCode: 'minorityInterestPerShare', periodTypes: ['TTM'], pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
 ] as const satisfies readonly PerShareField[];
 
-const SLOT_NAMES = FIELDS.map((f) => f.slot);
+type FieldMetricCode = (typeof FIELDS)[number]['metricCode'];
+// 每支指標一格 FY（FIELDS 裡每支有 Q、TTM 兩列，FY 不分）。
+const FY_FIELDS = FIELDS.filter((field, i) => FIELDS.findIndex((f) => f.metricCode === field.metricCode) === i);
+const fySlotOf = (metricCode: FieldMetricCode) => `${metricCode}Fy` as const;
+const SLOT_NAMES = [...FIELDS.map((f) => f.slot), ...FY_FIELDS.map((f) => fySlotOf(f.metricCode))];
 
-export type IncomeStatementPerShareComputationBatch = ComputationBatch<(typeof FIELDS)[number]['slot']>;
+export type IncomeStatementPerShareComputationBatch = ComputationBatch<(typeof FIELDS)[number]['slot'] | `${FieldMetricCode}Fy`>;
 
 export const computeIncomeStatementPerShare = async (
   query: QuarterlyMetricQuery,
@@ -217,6 +229,16 @@ export const computeIncomeStatementPerShare = async (
     } else {
       slots[field.slot] = { action: 'skipped_no_knowledge_date' };
     }
+  }
+
+  // ---- FY：年報金額 ÷ 反推的全年加權平均股數（見檔頭「年報口徑」）----
+  const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
+  for (const field of FY_FIELDS) {
+    slots[fySlotOf(field.metricCode)] = annualReportSlot(
+      annual,
+      { symbol, metricCode: field.metricCode, dataType, subsidiaryCompanyId },
+      field.calc(annual ? amountOf(field, annual.annual) : null, annual?.weightedShares ?? null)
+    );
   }
 
   return { symbol, rocYear: year, season, slots } as IncomeStatementPerShareComputationBatch;

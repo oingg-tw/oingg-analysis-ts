@@ -7,6 +7,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——跟 computeEpsPit.ts
 // 幾乎同一種形狀，差別只在分子用 profitBeforeTax（稅前淨利，不分歸屬母公司/整體口徑，
@@ -23,7 +24,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 這張表本來就沒有資料，fallback 對他們是 no-op——用 isFinancialIndustryCompany 先擋掉，
 // 避免全市場 2000+ 家非銀行公司每季都多打一次注定查無資料的查詢。
 
-export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'industry'>;
+export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'industry'>;
 
 // 一般損益表優先，缺資料時（且是銀行/金控）才查銀行監理專用表——見上方 2026-09-18 說明。
 const resolveProfitBeforeTax = async (
@@ -45,7 +46,7 @@ const resolveProfitBeforeTax = async (
   return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null };
 };
 
-export type PretaxIncomePerShareComputationBatch = ComputationBatch<'q' | 'ttm'>;
+export type PretaxIncomePerShareComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
 export const computePretaxIncomePerShare = async (
   query: QuarterlyMetricQuery,
@@ -56,7 +57,7 @@ export const computePretaxIncomePerShare = async (
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
+    return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
   }
 
   const { year, season } = resolvedQuarter;
@@ -133,5 +134,17 @@ export const computePretaxIncomePerShare = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  // FY（2026-09-25）：年報稅前淨利 ÷ 反推的全年加權平均股數（shared/annualReportSlot.ts）。年報只讀一般損益表，
+  // 沒有銀行專用表 fallback——那個 fallback 補的是「兩張季表申報進度不同步」，年報沒有這個問題。
+  const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
+  const annualPretax = annual?.annual.profitBeforeTax ?? null;
+  const annualShares = annual?.weightedShares ?? null;
+  const fyValue = annualPretax !== null && annualShares !== null ? toPerShare(annualPretax, annualShares) : null;
+  const fy = annualReportSlot(
+    annual,
+    { symbol, metricCode: 'pretaxIncomePerShare', dataType, subsidiaryCompanyId },
+    { value: fyValue, nullReason: fyValue === null ? determineNullReason(annualPretax, annualShares) : null }
+  );
+
+  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
 };

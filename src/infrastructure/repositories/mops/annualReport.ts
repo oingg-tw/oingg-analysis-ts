@@ -1,8 +1,10 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { AnnualReportPort } from '@/application/ports/annualReport';
+import { INCOME_STATEMENT_XBRL_COLUMNS, mapXbrlRow, type RawIncomeStatementXbrlRow } from './incomeStatementXbrlFirst';
 
-// 年報 = mops-ts 長表 statement_type='income_statement_cumulative' 的 quarter=4（累計到第四季 = 全年），
-// mops-ts 2026-09-25 確認這個定義可以依賴；他們另開明確的 export.annual_income_statement 之後改讀那裡。
+// 年報 = mops-ts 累計表的 quarter=4（累計到第四季 = 全年）且是年報文件列（見下）。全年金額讀累計寬表
+// （跟單季寬表同一組欄位、共用 mapper）；年報 EPS 讀長表 income_statement_cumulative。
+// 他們另開明確的 export.annual_income_statement 之後改讀那裡。
 // EPS 讀 `basic_earnings_loss_per_share`（總數）而不是寬表的 basic_eps_from_continuing_ops：
 // 總數覆蓋率約兩倍（113 年 1,868 vs 943），且有停業單位的公司兩者不同（108~114 年 75 筆）。
 // 單季表的第四季 EPS 一律是 null（加權平均股數不能相減，mops-ts 不推導），所以年度 EPS 只能從這裡來。
@@ -18,20 +20,22 @@ import type { AnnualReportPort } from '@/application/ports/annualReport';
 // 「各年度文件列家數」那支當偵測點。
 export const mopsAnnualReports: AnnualReportPort = {
   getAnnualIncomeStatement: async ({ symbol, rocYear, dataType, subsidiaryCompanyId }) => {
-    const rows = await mopsExportPrisma.$queryRaw<{ report_date: Date | null; basic_eps: string | null }[]>`
-      SELECT MAX(fiscal_period_end_date) AS report_date,
-             MAX(value) FILTER (WHERE account_code = 'basic_earnings_loss_per_share') AS basic_eps
-      FROM "export"."xbrl_three_statements_long"
+    // 全年金額：累計寬表第四季、只認文件列（raw_context_ref 非 null）。欄位與 mapper 跟單季讀取共用。
+    const rows = await mopsExportPrisma.$queryRaw<RawIncomeStatementXbrlRow[]>`
+      SELECT ${INCOME_STATEMENT_XBRL_COLUMNS}
+      FROM "export"."cumulative_income_statement_xbrl"
       WHERE symbol = ${symbol} AND year = ${rocYear} AND quarter = 4
         AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
-        AND statement_type = 'income_statement_cumulative'
-        AND EXISTS (
-          SELECT 1 FROM "export"."cumulative_income_statement_xbrl" w
-          WHERE w.symbol = ${symbol} AND w.year = ${rocYear} AND w.quarter = 4
-            AND w.data_type = ${dataType} AND w.subsidiary_company_id = ${subsidiaryCompanyId}
-            AND w.raw_context_ref IS NOT NULL)`;
-    const row = rows[0];
-    if (!row?.report_date) return null;
-    return { reportDate: row.report_date, basicEps: row.basic_eps === null ? null : Number(row.basic_eps) };
+        AND raw_context_ref IS NOT NULL
+      LIMIT 1`;
+    if (!rows[0]) return null;
+    // 年報 EPS 總數只在長表（寬表只有 continuing ops，見檔頭）。
+    const eps = await mopsExportPrisma.$queryRaw<{ value: string }[]>`
+      SELECT value FROM "export"."xbrl_three_statements_long"
+      WHERE symbol = ${symbol} AND year = ${rocYear} AND quarter = 4
+        AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
+        AND statement_type = 'income_statement_cumulative' AND account_code = 'basic_earnings_loss_per_share'
+      LIMIT 1`;
+    return { ...mapXbrlRow(rows[0]), basicEps: eps[0] ? Number(eps[0].value) : null };
   },
 };
