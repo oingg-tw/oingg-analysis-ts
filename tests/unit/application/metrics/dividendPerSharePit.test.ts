@@ -16,7 +16,8 @@ test('dividendPerSharePit: 2330 115Q2 合併報表，只寫入 TTM，值應該�
 
   const ttm = await replay.findLatest({ symbol: '2330', metricCode: 'dividendPerShare', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' });
   assert.ok(ttm, 'TTM 應該寫入');
-  assert.ok(Number(ttm!.value) >= 0, '每股股利不應該是負值（來源欄位已轉絕對值）');
+  // 2026-09-25 起是公告的普通股每股現金股利加總：2330 近一年（2025-07-01~2026-06-30）除息四次 5+5+6+6。
+  assert.equal(Number(ttm!.value), 22);
 });
 
 test('dividendPerSharePit: 9999（查無資料的公司）應該優雅降級，不寫入', async () => {
