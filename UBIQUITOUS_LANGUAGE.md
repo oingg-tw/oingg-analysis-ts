@@ -179,10 +179,24 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 **規則**：
 - `QuarterlyKey` 的 `quarter` 只能拿到單季。要年報的全年數字，走**不帶季別參數**的年報讀取
   介面（做 FY 口徑時才建），不准用 `quarter: 4` 去累計表撈。
-- 每股數字：年報 EPS 用加權平均股數；analysis-ts 的每股指標目前用報告日當下的期末股本
+- 每股數字：年報 EPS 用加權平均股數；analysis-ts 的每股指標用報告日當下的期末流通股數（見三之一）
   （2026-09-25 實測 112~114 年近四季 EPS 跟年報 EPS 差 ≤0.01 的只有 65%）——不同口徑，不能混著比。
 - 既有 11 支 `periodType='FY'` 指標（chowderNumber、dividendGrowthRate 家族、epsCagr 家族等）
   仍是四個單季相加，不是讀年報；股利類的 FY 是「當年度付出去的現金」，不是盈餘所屬年度。
+
+## 三之一、流通股數與普通股每股數字（2026-09-25 使用者拍板，IAS 33）
+
+| 詞 | 定義 | 資料 |
+|---|---|---|
+| **已發行股數** | 股本變動申報的實收股數，**含特別股與庫藏股** | `capital_stock_history.paid_in_shares`（API 欄位 `paidInShares` 維持原名） |
+| **流通股數**（＝流通在外普通股） | 已發行股數 − 特別股股數 − 庫藏股股數。所有每股指標的分母都是這個 | port `OutstandingCommonSharesPort`；`dependsOn` 寫 `outstandingCommonShares` |
+| **特別股股數** | 權益項下特別股股本（千元）× 1000 ÷ 面額 | 一般業 `preference_share`、金控 `preferred_stock`；銀行待 mops-ts 收 |
+| **庫藏股股數** | 本公司及子公司持有本公司股份數（最近一季季末），**不是**庫藏股金額 | 一般業 `number_of_shares_held_by_entity_and_subsidiaries`，金控／銀行各自欄位 |
+| **普通股淨利** | 歸屬母公司淨利 − 特別股股利（權益變動表宣告數；單季扣近四季的 1/4）；沒有權益類特別股股本就不扣 | `equity_change_xbrl.cash_dividends_of_preference_share` |
+| **普通股權益** | 歸屬母公司權益 − 特別股股本 | — |
+
+「流通股數」這個詞在 formulaNote 裡出現幾十次，指的一律是上表的定義；2026-09-25 之前的實作用的是已發行股數
+（沒扣特別股與庫藏股），是實作沒做到詞的意思，不是詞的意思變了，所以 formulaVersion 沒有跳。
 
 ## 四、股利來源與盈餘發放率（2026-09-25 使用者拍板）
 

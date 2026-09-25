@@ -12,11 +12,13 @@ export const epsDefinition: MetricDefinitionSpec = {
   name: 'EPS',
   unit: '元',
   formulaNote:
-    'Q(單季) = 本季淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆），淨利優先採歸屬' +
-    '母公司口徑，缺漏退回整體口徑；TTM = 近四季（含本季）淨利加總*1000/流通股數，' +
-    '四季不齊為 null。流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數。' +
+    'Q(單季) = (本季淨利 − 近四季特別股股利÷4)*1000/流通股數；TTM = (近四季（含本季）淨利加總 − 近四季特別股股利)' +
+    '*1000/流通股數，四季不齊為 null。照 IAS 33 基本每股盈餘的做法：分子只算屬於普通股的部分（特別股股利取權益變動表' +
+    '宣告數；沒有權益類特別股股本就不扣），流通股數 = 已發行股數（股本歷史生效日<=本季報告日的最新一筆）− 特別股股數' +
+    '（特別股股本÷面額）− 庫藏股股數（本公司及子公司持有，最近一季季末）。淨利優先採歸屬母公司口徑，缺漏退回整體口徑。' +
+    '流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數。' +
     'FY(年報) = 年報公告的基本每股盈餘，直接讀取不重算（官方用全年加權平均流通股數），座標是該年度第四季。',
-  formulaLatex: '\\mathrm{EPS} = \\frac{\\mathrm{NetIncome}}{\\mathrm{Shares}}',
+  formulaLatex: '\\mathrm{EPS} = \\frac{\\mathrm{NetIncome} - \\mathrm{PreferredDividends}}{\\mathrm{OutstandingCommonShares}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%8F%E8%82%A1%E7%9B%88%E9%A4%98',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司年度財務報告（XBRL）', '公開發行公司股本變動申報'],

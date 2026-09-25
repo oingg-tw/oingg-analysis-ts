@@ -3,7 +3,7 @@ import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
 import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
 import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
-import { computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
+import { effectivePreferredDividends, computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
 import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
 
@@ -90,7 +90,7 @@ export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: D
   ]);
   const common = computeOutstandingCommonShares({ issuedShares: issued.issuedShares, parValue: issued.parValue, ...adjustments, knownPreferredIssuer });
   if (!common) return null;
-  return { ...common, preferredDividendsTtmThousands, issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
+  return { ...common, preferredDividendsTtmThousands: effectivePreferredDividends(preferredDividendsTtmThousands, common.preferredCapitalThousands), issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
 };
 
 export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getOutstandingCommonShares: getOutstandingCommonSharesAsOf };

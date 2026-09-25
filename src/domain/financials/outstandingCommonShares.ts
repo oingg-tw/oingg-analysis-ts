@@ -33,6 +33,12 @@ export const computeOutstandingCommonShares = (
 //   特別股股利用權益變動表的年度宣告數，所以**單季扣近四季的四分之一**（按期間攤，不是宣告那一季才扣整筆）。
 //   ponytail: 宣告數 vs 當期應計——累積特別股的當期股利跟「今年宣告（通常是去年的）」不一定同額，差的是特別股股利的年增減。
 // - 每股淨值類：歸屬母公司權益 − 特別股股本（普通股每股淨值）。ponytail: 只扣面額部分的特別股股本，不含特別股溢價與積欠股利。
+// 2026-09-26 沒有特別股股本（權益項下）就不扣特別股股利：5213 亞昕 114Q3~Q4 把普通股股利 848,626 千元申報在權益變動表的
+// 特別股股利欄（普通股欄是 0），照抄會讓 EPS 從 0.42 掉到 0.12。會計上也該這樣：沒有權益類特別股時，
+// 被分類為負債的特別股股利已經當利息費用從淨利扣過（IAS 32），IAS 33 不再扣第二次。
+export const effectivePreferredDividends = (preferredDividendsTtmThousands: bigint, preferredCapitalThousands: bigint): bigint =>
+  preferredCapitalThousands > 0n ? preferredDividendsTtmThousands : 0n;
+
 export const toCommonEarnings = (netIncomeThousands: bigint | null, preferredDividendsTtmThousands: bigint, period: 'Q' | 'TTM'): bigint | null =>
   netIncomeThousands === null ? null : netIncomeThousands - (period === 'Q' ? preferredDividendsTtmThousands / 4n : preferredDividendsTtmThousands);
 

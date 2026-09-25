@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { computeOutstandingCommonShares, toCommonEarnings, toCommonEquity } from '@/domain/financials/outstandingCommonShares';
+import { computeOutstandingCommonShares, effectivePreferredDividends, toCommonEarnings, toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 
 const base = { issuedShares: 16_202_510_128n, parValue: 10, preferredCapitalThousands: null, treasuryShares: null, knownPreferredIssuer: false };
 
@@ -32,4 +32,9 @@ test('EPS 分子扣特別股股利：單季扣近四季的 1/4、近四季扣全
 test('每股淨值分子扣特別股股本', () => {
   expect(toCommonEquity(1_000_000n, 15_333n)).toBe(984_667n);
   expect(toCommonEquity(null, 15_333n)).toBeNull();
+});
+
+test('沒有權益類特別股股本就不扣特別股股利（5213 把普通股股利申報在特別股欄）', () => {
+  expect(effectivePreferredDividends(848_626n, 0n)).toBe(0n);
+  expect(effectivePreferredDividends(561_661n, 15_821_424n)).toBe(561_661n);
 });

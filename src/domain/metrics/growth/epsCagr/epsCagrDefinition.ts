@@ -13,7 +13,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
     '當年 Q4 報告日對應流通股數。本年或基期任一為 ≤0（虧損年度）→ zero_or_negative_denominator，' +
     '不產出變號扭曲值（負值開 N 次方根無意義）——跟原始定義「基期≤0 negative_denominator」' +
     '一致，但這裡額外把「本年為負」也擋下，理由是負值不只影響基期正確性，連 CAGR 公式本身' +
-    '在數學上都無定義。只有 FY 一種 basis。',
+    '在數學上都無定義。只有 FY 一種 basis。年度 EPS 的分子是全年淨利扣全年特別股股利，流通股數 = 已發行 − 特別股 − 庫藏股（IAS 33，2026-09-25 起）。',
   formulaLatex: `\\mathrm{EpsCagr}_{${years}y} = \\left(\\left(\\frac{\\mathrm{EPS}_t}{\\mathrm{EPS}_{t-${years}}}\\right)^{1/${years}} - 1\\right) \\times 100`,
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%A4%87%E5%90%88%E5%B9%B4%E5%9D%87%E5%A2%9E%E9%95%B7%E7%8E%87',
   tier: 'derived',
