@@ -1,15 +1,19 @@
-// 流通股數 port——每股型指標（EPS/BVPS/每股現金流…）跟市值都靠它。注意單位：paidInShares 是
-// 實際股數（不是千股），財報金額是千元，算每股數字時分子要先 ×1000，見
-// domain/metrics/shared/numericHelpers.ts 的 toPerShare。實作在
-// infrastructure/repositories/mops/capitalStock.ts（capital_stock_history，生效日 <= asOfDate 的最新一筆）。
-export interface PaidInSharesAsOf {
-  paidInShares: bigint;
-  effectiveYear: number; // 西元年
+// 流通在外普通股 port——每股型指標（EPS/BVPS/每股現金流…）跟市值都靠它。2026-09-25 起回傳的是 IAS 33 的
+// 「流通在外普通股」＝已發行 − 特別股 − 庫藏股（見 domain/financials/outstandingCommonShares.ts），不再是
+// capital_stock_history 的實收股數（那個含特別股與庫藏股）；名稱同日從 paidInShares 改成 outstandingCommonShares。
+// 注意單位：是實際股數（不是千股），財報金額是千元，算每股數字時分子要先 ×1000，見 numericHelpers.ts 的 toPerShare。
+// 有特別股卻查不到特別股股本的公司回 null（分母定義待補）。實作在 infrastructure/repositories/mops/capitalStock.ts。
+export interface OutstandingCommonSharesAsOf {
+  outstandingCommonShares: bigint;
+  issuedShares: bigint; // capital_stock_history 實收股數（含特別股、庫藏股），來源追溯用
+  preferredShares: bigint;
+  treasuryShares: bigint;
+  effectiveYear: number; // 已發行股數那筆股本異動的生效年（西元）
   effectiveMonth: number;
 }
 
-export interface PaidInSharesPort {
-  getPaidInShares(symbol: string, asOfDate: Date): Promise<PaidInSharesAsOf | null>;
+export interface OutstandingCommonSharesPort {
+  getOutstandingCommonShares(symbol: string, asOfDate: Date): Promise<OutstandingCommonSharesAsOf | null>;
 }
 
 // ---- 股本異動歷史（GET /companies/capital-stock-history）——跟上面的 PaidInSharesPort 刻意分開兩個 port：

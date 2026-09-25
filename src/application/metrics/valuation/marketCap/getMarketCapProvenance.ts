@@ -49,7 +49,7 @@ export const getMarketCapProvenance = async (query: QuarterlyMetricQuery, deps: 
       statementType: null,
       fieldKey: null,
       sourceDescription: '公開發行公司股本變動申報',
-      value: toProvenanceEntryValue(marketCapAsOf?.paidInShares ?? null),
+      value: toProvenanceEntryValue(marketCapAsOf?.outstandingCommonShares ?? null),
     },
   ];
 

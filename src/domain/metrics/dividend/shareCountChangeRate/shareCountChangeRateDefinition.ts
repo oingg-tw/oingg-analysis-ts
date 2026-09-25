@@ -16,6 +16,6 @@ export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
-  dependsOn: ['paidInShares'],
+  dependsOn: ['outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

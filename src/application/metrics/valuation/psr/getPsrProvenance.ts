@@ -52,7 +52,7 @@ export const getPsrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: marketCap ? `收盤價 ${marketCap.closePrice}（${marketCap.tradeDate}）× 流通股數 ${marketCap.paidInShares.toString()}` : null,
+      sourceDescription: marketCap ? `收盤價 ${marketCap.closePrice}（${marketCap.tradeDate}）× 流通股數 ${marketCap.outstandingCommonShares.toString()}` : null,
       value: toProvenanceEntryValue(marketCap?.marketCap ?? null),
     },
     ...ttmQuarters.map(

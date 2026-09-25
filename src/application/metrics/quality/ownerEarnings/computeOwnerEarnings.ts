@@ -40,8 +40,8 @@ export const computeOwnerEarnings = async (query: QuarterlyMetricQuery, deps: Ow
   const capitalExpenditures = cashFlowStatement?.capitalExpenditures ?? null;
   const reportDate = incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const currentOwnerEarnings =
     netIncome.value !== null && depreciation !== null && amortization !== null && capitalExpenditures !== null

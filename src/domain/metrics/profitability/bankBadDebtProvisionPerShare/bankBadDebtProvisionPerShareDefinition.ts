@@ -19,6 +19,6 @@ export const bankBadDebtProvisionPerShareDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司銀行業損益表明細（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
-  dependsOn: ['bad_debt_expenses_and_guarantee_liability_provision', 'paidInShares'],
+  dependsOn: ['bad_debt_expenses_and_guarantee_liability_provision', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

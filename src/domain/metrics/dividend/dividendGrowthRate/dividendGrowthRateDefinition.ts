@@ -22,7 +22,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['FY'],
-  dependsOn: ['dividendsPaid', 'paidInShares'],
+  dependsOn: ['dividendsPaid', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
   // 2026-09-24 使用者決定 8 年窗口先從 GET /metrics 目錄下架：mops-ts 用 40 家等距採樣確認 **iXBRL 從民國
   // 108 年起才強制、107 年以前結構上就是舊格式 HTML**（採樣成功率 0/40），所以最早年度是 FY108，8 年窗口

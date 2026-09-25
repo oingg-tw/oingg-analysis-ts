@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T09:57:53.569Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -155,18 +155,36 @@
       "quarter": 2,
       "year": 115
     },
-    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 5,
       "effectiveYear": 2026,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "25932370067"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932370067"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
-    "shares.getPaidInShares([\"2801\",{\"$date\":\"2025-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2801\",{\"$date\":\"2025-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 9,
       "effectiveYear": 2024,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "11205758337"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "11205758337"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
     "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2801\",\"year\":114}])": {

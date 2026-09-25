@@ -72,8 +72,8 @@ export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, de
       : null;
   const reportDate = statement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const netInterestQ = calculateBankNetInterestIncomePerShare(netInterestIncome, sharesValue);
   const netNonInterestQ = calculateBankNetNonInterestIncomePerShare(netNonInterestIncome, sharesValue);

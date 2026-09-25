@@ -14,6 +14,6 @@ export const epsGrowthRateDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q'],
-  dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares'],
+  dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'outstandingCommonShares'],
   currentFormulaVersion: 2,
 };

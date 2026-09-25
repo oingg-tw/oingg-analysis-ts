@@ -177,8 +177,8 @@ export const computeIncomeStatementPerShare = async (
   const incomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const reportDate = incomeStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 

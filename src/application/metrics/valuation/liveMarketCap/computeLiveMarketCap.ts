@@ -7,7 +7,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-11 應 web-nuxt 要求新增——marketCap（季報快照，凍結在財報公告當天的
 // knowledge_date）的即時版本：用當下最新收盤價（getLatestDailyPrice）× 最新已申報流通
-// 股數（getPaidInSharesAsOf 以交易日為 asOfDate），每個交易日都會變動。主要用途是讓
+// 股數（getOutstandingCommonSharesAsOf 以交易日為 asOfDate），每個交易日都會變動。主要用途是讓
 // NCAV（淨流動資產價值，純資產負債表快照，本身不隨股價變動）可以拿即時市值做「現在
 // 貴不貴」的比較，不用等下一次季報公告——ncavBadge 既有的
 // compareAgainstFieldId:'marketCap.Q' 是凍結的季報比較，liveMarketCapBadge 的
@@ -40,8 +40,8 @@ export const computeLiveMarketCap = async (query: LiveMarketCapPitQuery, deps: L
   }
   const { tradeDate, close } = latestPrice;
 
-  const shares = await deps.shares.getPaidInShares(symbol, tradeDate);
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = await deps.shares.getOutstandingCommonShares(symbol, tradeDate);
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const liveMarketCap = sharesValue !== null ? roundToSignificantFigures(close * Number(sharesValue), 4) : null;
   const nullReason: MetricNullReason | null = liveMarketCap === null ? determineNullReason() : null;

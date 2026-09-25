@@ -2,17 +2,20 @@ import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
 import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
-import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, PaidInSharesAsOf, PaidInSharesPort } from '@/application/ports/capitalStock';
+import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
+import { computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
+import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
 // CapitalStockChangeSource 在 Phase 4 跟進（對外回應的 zod schema 在 http/modules/companies/types.ts），
 // 這裡 re-export 給既有 import 路徑。
-export type { CapitalStockHistoryEntry, PaidInSharesAsOf };
+export type { CapitalStockHistoryEntry, OutstandingCommonSharesAsOf };
 
 interface RawCapitalStockRow {
   effective_year: number;
   effective_month: number;
   paid_in_shares: bigint | null;
+  par_value: unknown;
   misaligned: boolean; // 股數 ÷（資本÷面額）剛好 10^k、k≠0
 }
 
@@ -33,17 +36,18 @@ interface RawCapitalStockRow {
 // 2026-09-25 量到最新一季（115Q2）受影響 7 家：1225、3131、5512、6546、6861、7851、8171。見記憶 project_capital_stock_history_coverage_gap。
 // 所有讀股數的路徑（每股指標、市值 getMarketCapAsOf、liveMarketCap）都經過這支，擋一次就全部生效。
 //
-// 注意單位：這裡回傳的 paidInShares 是實際股數（不是千股），但三張季度財報表的金額欄位
+// 注意單位：這裡回傳的股數是實際股數（不是千股），但三張季度財報表的金額欄位
 // （netIncome、equityValue…）單位是「千元」。算每股數字時分子要先 x1000 換算成元，
 // 見 src/api/bff/bvps/service.ts 的 toPerShare——BVPS 曾因為漏了這個換算算出差 1000 倍的錯誤值。
-export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promise<PaidInSharesAsOf | null> => {
+// 已發行股數（capital_stock_history 實收股數，含特別股與庫藏股）＋面額。每股指標不要直接用它，用下面的 getOutstandingCommonSharesAsOf。
+const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ issuedShares: bigint; parValue: number | null; effectiveYear: number; effectiveMonth: number } | null> => {
   const asOfYear = asOfDate.getUTCFullYear();
   const asOfMonth = asOfDate.getUTCMonth() + 1;
 
   let rows: RawCapitalStockRow[];
   try {
     rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
-      SELECT effective_year, effective_month, paid_in_shares,
+      SELECT effective_year, effective_month, paid_in_shares, par_value,
         COALESCE(
           paid_in_shares > 0 AND paid_in_capital > 0 AND par_value > 0
           AND ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))) <> 0
@@ -66,10 +70,25 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   }
   const record = pickPaidInSharesRow(rows);
   if (!record || record.paid_in_shares === null) return null;
-  return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
+  return {
+    issuedShares: record.paid_in_shares,
+    parValue: record.par_value === null || record.par_value === undefined ? null : Number(record.par_value),
+    effectiveYear: record.effective_year,
+    effectiveMonth: record.effective_month,
+  };
 };
 
-export const mopsCapitalStockShares: PaidInSharesPort = { getPaidInShares: getPaidInSharesAsOf };
+// 流通在外普通股 = 已發行 − 特別股 − 庫藏股（IAS 33，見 domain/financials/outstandingCommonShares.ts）。
+export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: Date): Promise<OutstandingCommonSharesAsOf | null> => {
+  const issued = await getIssuedSharesAsOf(symbol, asOfDate);
+  if (!issued) return null;
+  const [adjustments, knownPreferredIssuer] = await Promise.all([getShareAdjustmentsAsOf(symbol, asOfDate), isKnownPreferredIssuer(symbol)]);
+  const common = computeOutstandingCommonShares({ issuedShares: issued.issuedShares, parValue: issued.parValue, ...adjustments, knownPreferredIssuer });
+  if (!common) return null;
+  return { ...common, issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
+};
+
+export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getOutstandingCommonShares: getOutstandingCommonSharesAsOf };
 
 interface RawCapitalStockHistoryRow {
   effective_year: number;

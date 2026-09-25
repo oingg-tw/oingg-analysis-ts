@@ -34,14 +34,14 @@ const getAnnualDividendPerShareProxy = async (
   const yearSum = quarters.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = quarters[3]!.reportDate;
-  const shares = await deps.shares.getPaidInShares(symbol, q4ReportDate);
+  const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
     return null;
   }
 
   // 金額單位是千元，股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 等既有慣例一致）。
-  const value = (Number(dividendsPaidAbs) * 1000) / Number(shares.paidInShares);
+  const value = (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares);
   cache.set(rocYear, value);
   return value;
 };

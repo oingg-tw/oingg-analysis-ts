@@ -22,6 +22,6 @@ export const epsDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司年度財務報告（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
-  dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'paidInShares', 'basic_earnings_loss_per_share'],
+  dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'outstandingCommonShares', 'basic_earnings_loss_per_share'],
   currentFormulaVersion: 1,
 };

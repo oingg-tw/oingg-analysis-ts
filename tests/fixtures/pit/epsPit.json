@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T08:40:09.684Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -56,37 +56,174 @@
       "source": "report_date_fallback"
     },
     "annualReports.getAnnualIncomeStatement([{\"dataType\":\"2\",\"rocYear\":113,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2454\"}])": {
+      "adminExpenses": {
+        "$bigint": "11946997"
+      },
       "basicEps": 66.92,
+      "equityMethodIncome": {
+        "$bigint": "516576"
+      },
+      "expectedCreditLoss": {
+        "$bigint": "-56111"
+      },
+      "financeCosts": {
+        "$bigint": "453291"
+      },
+      "grossProfit": {
+        "$bigint": "263385701"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "12378157"
+      },
+      "interestIncome": {
+        "$bigint": "11149734"
+      },
+      "netIncome": {
+        "$bigint": "107140623"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "106386578"
+      },
+      "netOtherIncomeExpenses": null,
+      "operatingCost": {
+        "$bigint": "267200185"
+      },
+      "operatingExpense": {
+        "$bigint": "160973734"
+      },
+      "operatingIncome": {
+        "$bigint": "102411967"
+      },
+      "operatingRevenue": {
+        "$bigint": "530585886"
+      },
+      "otherGainsLosses": {
+        "$bigint": "1959681"
+      },
+      "otherIncome": {
+        "$bigint": "3934113"
+      },
+      "profitBeforeTax": {
+        "$bigint": "119518780"
+      },
       "reportDate": {
         "$date": "2024-12-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "131993135"
+      },
+      "sellingExpenses": {
+        "$bigint": "17089713"
       }
     },
     "annualReports.getAnnualIncomeStatement([{\"dataType\":\"2\",\"rocYear\":114,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\"}])": {
+      "adminExpenses": {
+        "$bigint": "82304290"
+      },
       "basicEps": 66.26,
+      "equityMethodIncome": {
+        "$bigint": "5496594"
+      },
+      "expectedCreditLoss": null,
+      "financeCosts": {
+        "$bigint": "12370387"
+      },
+      "grossProfit": {
+        "$bigint": "2281293979"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "326266060"
+      },
+      "interestIncome": {
+        "$bigint": "105739081"
+      },
+      "netIncome": {
+        "$bigint": "1715396780"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "1717882627"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "447328"
+      },
+      "operatingCost": {
+        "$bigint": "1527760293"
+      },
+      "operatingExpense": {
+        "$bigint": "345649630"
+      },
+      "operatingIncome": {
+        "$bigint": "1936091677"
+      },
+      "operatingRevenue": {
+        "$bigint": "3809054272"
+      },
+      "otherGainsLosses": {
+        "$bigint": "6114146"
+      },
+      "otherIncome": {
+        "$bigint": "591729"
+      },
+      "profitBeforeTax": {
+        "$bigint": "2041662840"
+      },
       "reportDate": {
         "$date": "2025-12-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "246427264"
+      },
+      "sellingExpenses": {
+        "$bigint": "16918076"
       }
     },
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
-    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 5,
       "effectiveYear": 2026,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "25932370067"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932370067"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
-    "shares.getPaidInShares([\"2454\",{\"$date\":\"2024-12-31T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2454\",{\"$date\":\"2024-12-31T00:00:00.000Z\"}])": {
       "effectiveMonth": 11,
       "effectiveYear": 2024,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "1601687990"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "1593893905"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "7794085"
       }
     },
-    "shares.getPaidInShares([\"2454\",{\"$date\":\"2025-03-31T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2454\",{\"$date\":\"2025-03-31T00:00:00.000Z\"}])": {
       "effectiveMonth": 2,
       "effectiveYear": 2025,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "1601662351"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "1593868266"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "7794085"
       }
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {

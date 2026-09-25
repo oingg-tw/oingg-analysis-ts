@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "date": {
@@ -10,7 +10,7 @@
     "market.getMarketCap([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "closePrice": 2410,
       "marketCap": 62497011861470,
-      "paidInShares": {
+      "outstandingCommonShares": {
         "$bigint": "25932370067"
       },
       "tradeDate": "2026-06-30"
@@ -167,6 +167,9 @@
         "cash_flows_from_used_in_operations": {
           "$bigint": "700477402"
         },
+        "cash_per_balance_sheet": {
+          "$bigint": "3035637228"
+        },
         "change_in_noncontrolling_interests": {
           "$bigint": "-1035"
         },
@@ -278,6 +281,9 @@
         "proceeds_from_sales_of_ppe_investing": {
           "$bigint": "1812754"
         },
+        "profit_loss_before_tax": {
+          "$bigint": "687799687"
+        },
         "provision_reversal_of_provision_for_bad_debt_expense": {
           "$bigint": "17283"
         },
@@ -312,6 +318,9 @@
         "acquisition_of_financial_assets_at_amortised_cost": {
           "$bigint": "-93330916"
         },
+        "acquisition_of_use_of_right_assets": {
+          "$bigint": "-9441034"
+        },
         "adj_amortisation_expense": {
           "$bigint": "2309315"
         },
@@ -326,6 +335,9 @@
         },
         "adj_dividend_income": {
           "$bigint": "-1846711"
+        },
+        "adj_gain_loss_disposal_subsidiaries_jv_associates": {
+          "$bigint": "-63202285"
         },
         "adj_gain_loss_on_disposals_ppe": {
           "$bigint": "429850"
@@ -435,6 +447,9 @@
         "interest_received_investing": {
           "$bigint": "25800425"
         },
+        "loss_gain_on_disposal_of_intangible_assets": {
+          "$bigint": "-224968"
+        },
         "loss_gain_on_disposal_of_investments": {
           "$bigint": "24352"
         },
@@ -462,6 +477,9 @@
         "proceeds_from_disposal_fin_assets_fvtoci": {
           "$bigint": "24004688"
         },
+        "proceeds_from_disposal_fin_assets_fvtpl_designated": {
+          "$bigint": "15238"
+        },
         "proceeds_from_issuing_bonds": {
           "$bigint": "18381126"
         },
@@ -471,8 +489,14 @@
         "proceeds_from_repayments_fin_assets_amortised_cost": {
           "$bigint": "51664033"
         },
+        "proceeds_from_sales_equity_method_investments": {
+          "$bigint": "24301349"
+        },
         "proceeds_from_sales_of_ppe_investing": {
           "$bigint": "179434"
+        },
+        "profit_loss_before_tax": {
+          "$bigint": "862430086"
         },
         "provision_reversal_of_provision_for_bad_debt_expense": {
           "$bigint": "34460"
@@ -555,6 +579,9 @@
         },
         "cash_flows_from_used_in_operations": {
           "$bigint": "564095378"
+        },
+        "cash_per_balance_sheet": {
+          "$bigint": "2470759384"
         },
         "change_in_noncontrolling_interests": {
           "$bigint": "1007573"
@@ -676,6 +703,9 @@
         "proceeds_from_sales_of_ppe_investing": {
           "$bigint": "69498"
         },
+        "profit_loss_before_tax": {
+          "$bigint": "525369023"
+        },
         "provision_reversal_of_provision_for_bad_debt_expense": {
           "$bigint": "-262"
         },
@@ -725,6 +755,9 @@
         "adj_dividend_income": {
           "$bigint": "-47959"
         },
+        "adj_gain_loss_disposal_subsidiaries_jv_associates": {
+          "$bigint": "0"
+        },
         "adj_gain_loss_on_disposals_ppe": {
           "$bigint": "94292"
         },
@@ -757,6 +790,9 @@
         },
         "cash_flows_from_used_in_operations": {
           "$bigint": "726916419"
+        },
+        "cash_per_balance_sheet": {
+          "$bigint": "2767856402"
         },
         "change_in_noncontrolling_interests": {
           "$bigint": "4062159"
@@ -878,8 +914,14 @@
         "proceeds_from_sales_of_ppe_investing": {
           "$bigint": "482264"
         },
+        "profit_loss_before_tax": {
+          "$bigint": "592363201"
+        },
         "provision_reversal_of_provision_for_bad_debt_expense": {
           "$bigint": "21536"
+        },
+        "purchase_of_equity_method_investments": {
+          "$bigint": "0"
         },
         "purchase_of_intangible_assets_investing": {
           "$bigint": "-4552025"

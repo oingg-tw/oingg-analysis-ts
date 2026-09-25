@@ -1,51 +1,11 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "market.getEarliestTradeDate([\"2330\"])": {
       "$date": "2020-11-02T00:00:00.000Z"
     },
     "market.getEarliestTradeDate([\"9999\"])": null,
-    "market.listDailyClosesSince([\"2330\",{\"$date\":\"2021-09-16T20:40:02.230Z\"},{\"$undefined\":true}])": [
-      {
-        "close": {
-          "$decimal": "600"
-        },
-        "trade_date": {
-          "$date": "2021-09-16T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "600"
-        },
-        "trade_date": {
-          "$date": "2021-09-17T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "586"
-        },
-        "trade_date": {
-          "$date": "2021-09-22T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "588"
-        },
-        "trade_date": {
-          "$date": "2021-09-23T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "598"
-        },
-        "trade_date": {
-          "$date": "2021-09-24T00:00:00.000Z"
-        }
-      },
+    "market.listDailyClosesSince([\"2330\",{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [
       {
         "close": {
           "$decimal": "602"
@@ -9709,50 +9669,66 @@
         "trade_date": {
           "$date": "2026-09-15T00:00:00.000Z"
         }
+      },
+      {
+        "close": {
+          "$decimal": "2380"
+        },
+        "trade_date": {
+          "$date": "2026-09-16T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2425"
+        },
+        "trade_date": {
+          "$date": "2026-09-17T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2460"
+        },
+        "trade_date": {
+          "$date": "2026-09-18T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2480"
+        },
+        "trade_date": {
+          "$date": "2026-09-21T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2460"
+        },
+        "trade_date": {
+          "$date": "2026-09-22T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2500"
+        },
+        "trade_date": {
+          "$date": "2026-09-23T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "2475"
+        },
+        "trade_date": {
+          "$date": "2026-09-24T00:00:00.000Z"
+        }
       }
     ],
-    "market.listDailyClosesSince([\"9999\",{\"$date\":\"2021-09-16T20:40:02.230Z\"},{\"$undefined\":true}])": [],
-    "market.listTaiexClosesSince([{\"$date\":\"2021-09-16T20:40:02.230Z\"},{\"$undefined\":true}])": [
-      {
-        "close": {
-          "$decimal": "17278.7"
-        },
-        "trade_date": {
-          "$date": "2021-09-16T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "17276.79"
-        },
-        "trade_date": {
-          "$date": "2021-09-17T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "16925.82"
-        },
-        "trade_date": {
-          "$date": "2021-09-22T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "17078.22"
-        },
-        "trade_date": {
-          "$date": "2021-09-23T00:00:00.000Z"
-        }
-      },
-      {
-        "close": {
-          "$decimal": "17260.19"
-        },
-        "trade_date": {
-          "$date": "2021-09-24T00:00:00.000Z"
-        }
-      },
+    "market.listDailyClosesSince([\"9999\",{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [],
+    "market.listTaiexClosesSince([{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [
       {
         "close": {
           "$decimal": "17313.77"
@@ -19415,6 +19391,62 @@
         },
         "trade_date": {
           "$date": "2026-09-15T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "45848.9"
+        },
+        "trade_date": {
+          "$date": "2026-09-16T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "46288"
+        },
+        "trade_date": {
+          "$date": "2026-09-17T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "47180.75"
+        },
+        "trade_date": {
+          "$date": "2026-09-18T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "47718.84"
+        },
+        "trade_date": {
+          "$date": "2026-09-21T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "47800.17"
+        },
+        "trade_date": {
+          "$date": "2026-09-22T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "48157.29"
+        },
+        "trade_date": {
+          "$date": "2026-09-23T00:00:00.000Z"
+        }
+      },
+      {
+        "close": {
+          "$decimal": "48024.6"
+        },
+        "trade_date": {
+          "$date": "2026-09-24T00:00:00.000Z"
         }
       }
     ]

@@ -26,8 +26,8 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const currentIncomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = currentIncomeStatement?.reportDate ?? null;
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(

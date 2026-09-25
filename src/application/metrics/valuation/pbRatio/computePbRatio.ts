@@ -51,8 +51,8 @@ export const computePbRatio = async (
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
 

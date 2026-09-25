@@ -47,7 +47,7 @@ const getAnnualEps = async (
 
   const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
   const q4ReportDate = records[3]!.reportDate;
-  const shares = (await deps.shares.getPaidInShares(symbol, q4ReportDate))?.paidInShares ?? null;
+  const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
 
   const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
   const result: AnnualEpsResult = { eps, quarters, shares };

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "date": {
@@ -10,7 +10,7 @@
     "market.getMarketCap([\"2330\",{\"$date\":\"2026-08-11T00:00:00.000Z\"}])": {
       "closePrice": 2395,
       "marketCap": 62108026310465,
-      "paidInShares": {
+      "outstandingCommonShares": {
         "$bigint": "25932370067"
       },
       "tradeDate": "2026-08-11"

@@ -27,7 +27,7 @@ export const getBvpsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const shares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
 
   const value = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "date": {
@@ -8,11 +8,20 @@
       "source": "announcement"
     },
     "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
-    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 5,
       "effectiveYear": 2026,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "25932370067"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932370067"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
     "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {

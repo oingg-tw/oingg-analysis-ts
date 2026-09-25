@@ -19,6 +19,6 @@ export const buybackYieldDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: ['payments_to_acquire_treasury_shares', 'daily_price.close', 'paidInShares'],
+  dependsOn: ['payments_to_acquire_treasury_shares', 'daily_price.close', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

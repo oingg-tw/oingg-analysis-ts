@@ -32,7 +32,7 @@ const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 export interface AnnualDividendPerShareProxyResult {
   dps: number | null;
   quarters: { rocYear: number; season: number; dividendsPaid: bigint | null }[];
-  shares: { reportDate: Date; paidInShares: bigint } | null;
+  shares: { reportDate: Date; outstandingCommonShares: bigint } | null;
 }
 
 export const getAnnualDividendPerShareProxy = async (
@@ -60,10 +60,10 @@ export const getAnnualDividendPerShareProxy = async (
   const yearSum = quarterRecords.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = quarterRecords[3]!.reportDate;
-  const shares = await deps.shares.getPaidInShares(symbol, q4ReportDate);
+  const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) return { dps: null, quarters, shares: null };
 
-  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.paidInShares), quarters, shares: { reportDate: q4ReportDate, paidInShares: shares.paidInShares } };
+  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares), quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
 };
 
 export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>;

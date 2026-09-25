@@ -71,8 +71,8 @@ export const computePretaxIncomePerShare = async (
   const { profitBeforeTax, reportDate } = await resolveProfitBeforeTax(key, isBank, deps);
 
   // 流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const pretaxIncomePerShareQuarterly = profitBeforeTax !== null && sharesValue !== null ? toPerShare(profitBeforeTax, sharesValue) : null;
   const quarterlyNullReason: MetricNullReason | null = pretaxIncomePerShareQuarterly === null ? determineNullReason(profitBeforeTax, sharesValue) : null;

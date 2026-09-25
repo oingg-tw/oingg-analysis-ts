@@ -17,6 +17,6 @@ export const greenblattEarningsYieldDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: ['profit_loss_before_tax', 'finance_costs', 'shortTermBorrowings', 'bondsPayable', 'longTermBorrowings', 'cashAndEquivalents', 'paidInShares', 'daily_price.close'],
+  dependsOn: ['profit_loss_before_tax', 'finance_costs', 'shortTermBorrowings', 'bondsPayable', 'longTermBorrowings', 'cashAndEquivalents', 'outstandingCommonShares', 'daily_price.close'],
   currentFormulaVersion: 1,
 };

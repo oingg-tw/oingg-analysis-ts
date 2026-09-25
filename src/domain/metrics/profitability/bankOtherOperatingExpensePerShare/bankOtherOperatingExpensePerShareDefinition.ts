@@ -18,6 +18,6 @@ export const bankOtherOperatingExpensePerShareDefinition: MetricDefinitionSpec =
   sources: ['公開發行公司銀行業損益表明細（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
-  dependsOn: ['net_income_loss_of_interest', 'net_non_interest_income_loss', 'bad_debt_expenses_and_guarantee_liability_provision', 'profit_loss_before_tax', 'paidInShares'],
+  dependsOn: ['net_income_loss_of_interest', 'net_non_interest_income_loss', 'bad_debt_expenses_and_guarantee_liability_provision', 'profit_loss_before_tax', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

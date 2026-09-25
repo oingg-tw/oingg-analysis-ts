@@ -14,7 +14,7 @@ export interface MarketCapAsOf {
   marketCap: number; // 股價 x 流通股數（元）
   tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
   closePrice: number;
-  paidInShares: bigint;
+  outstandingCommonShares: bigint; // 2026-09-25 起是流通在外普通股（原 paidInShares）
 }
 
 export interface DailyValuationAsOf {

@@ -51,13 +51,13 @@ export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, d
     subsidiaryCompanyId,
   });
 
-  const currentShares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const priorShares = priorIncomeStatement?.reportDate ? await deps.shares.getPaidInShares(symbol, priorIncomeStatement.reportDate) : null;
+  const currentShares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const priorShares = priorIncomeStatement?.reportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorIncomeStatement.reportDate) : null;
 
   const currentNetIncome = pickNetIncome(currentIncomeStatement);
   const priorNetIncome = pickNetIncome(priorIncomeStatement);
-  const currentEps = currentNetIncome !== null && currentShares !== null ? toPerShare(currentNetIncome, currentShares.paidInShares) : null;
-  const priorEps = priorNetIncome !== null && priorShares !== null ? toPerShare(priorNetIncome, priorShares.paidInShares) : null;
+  const currentEps = currentNetIncome !== null && currentShares !== null ? toPerShare(currentNetIncome, currentShares.outstandingCommonShares) : null;
+  const priorEps = priorNetIncome !== null && priorShares !== null ? toPerShare(priorNetIncome, priorShares.outstandingCommonShares) : null;
 
   const currentEbit = currentIncomeStatement?.operatingIncome ?? null;
   const priorEbit = priorIncomeStatement?.operatingIncome ?? null;

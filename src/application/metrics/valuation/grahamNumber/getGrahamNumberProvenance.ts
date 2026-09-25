@@ -32,7 +32,7 @@ export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery, dep
   ]);
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
-  const shares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const shares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
   const bvps = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);

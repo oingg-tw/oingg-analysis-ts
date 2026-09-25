@@ -32,7 +32,7 @@ interface QuarterData {
   grossProfit: bigint | null;
   operatingRevenue: bigint | null;
   operatingCashFlow: bigint | null;
-  paidInShares: bigint | null;
+  outstandingCommonShares: bigint | null;
   reportDate: Date | null;
   available: boolean; // 三張表是否至少都存在（不論欄位是否為 null）
 }
@@ -52,7 +52,7 @@ const fetchQuarterData = async (
     deps.statements.getCashFlowStatement(key),
   ]);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
 
   return {
     totalAssets: balanceSheet?.totalAssets ?? null,
@@ -63,7 +63,7 @@ const fetchQuarterData = async (
     grossProfit: incomeStatement?.grossProfit ?? null,
     operatingRevenue: incomeStatement?.operatingRevenue ?? null,
     operatingCashFlow: cashFlowStatement?.netCashFromOperatingActivities ?? null,
-    paidInShares: shares?.paidInShares ?? null,
+    outstandingCommonShares: shares?.outstandingCommonShares ?? null,
     reportDate,
     available: balanceSheet !== null && incomeStatement !== null && cashFlowStatement !== null,
   };
@@ -142,7 +142,7 @@ export const resolvePiotroskiFScoreSignals = async (
     accrualQuality: curr.operatingCashFlow !== null && curr.netIncome !== null ? curr.operatingCashFlow > curr.netIncome : null,
     leverageDecreased: currLeverage !== null && prevLeverage !== null ? currLeverage < prevLeverage : null,
     liquidityImproved: currLiquidity !== null && prevLiquidity !== null ? currLiquidity > prevLiquidity : null,
-    noDilution: curr.paidInShares !== null && prev.paidInShares !== null ? curr.paidInShares <= prev.paidInShares : null,
+    noDilution: curr.outstandingCommonShares !== null && prev.outstandingCommonShares !== null ? curr.outstandingCommonShares <= prev.outstandingCommonShares : null,
     grossMarginImproved: currMargin !== null && prevMargin !== null ? currMargin > prevMargin : null,
     assetTurnoverImproved: currTurnover !== null && prevTurnover !== null ? currTurnover > prevTurnover : null,
   };

@@ -54,8 +54,8 @@ export const computeCashFlowPerShare = async (
   const depreciationAndAmortization = depreciation !== null && amortization !== null ? depreciation + amortization : null;
   const reportDate = cashFlowStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const currentFcf = calculateFcf(operatingCashFlow, capitalExpenditures);
 

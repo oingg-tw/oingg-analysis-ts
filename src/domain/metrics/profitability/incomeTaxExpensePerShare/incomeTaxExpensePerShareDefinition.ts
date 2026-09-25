@@ -21,6 +21,6 @@ export const incomeTaxExpensePerShareDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
-  dependsOn: ['income_tax_expense_continuing_operations', 'paidInShares'],
+  dependsOn: ['income_tax_expense_continuing_operations', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-16T20:40:02.230Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",115,2,{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "date": {
@@ -12,24 +12,46 @@
       "year": 115
     },
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
-    "shares.getPaidInShares([\"2330\",{\"$date\":\"2025-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2025-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 6,
       "effectiveYear": 2025,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "25932615521"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932615521"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
-    "shares.getPaidInShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 5,
       "effectiveYear": 2026,
-      "paidInShares": {
+      "issuedShares": {
         "$bigint": "25932370067"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932370067"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
       }
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":114}])": {
       "adminExpenses": {
         "$bigint": "18955373"
       },
+      "equityMethodIncome": {
+        "$bigint": "1220948"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "3691095"
       },
@@ -39,14 +61,23 @@
       "incomeTaxExpense": {
         "$bigint": "95541780"
       },
+      "interestIncome": {
+        "$bigint": "25191998"
+      },
       "netIncome": {
         "$bigint": "397493424"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "398273102"
       },
+      "netOtherIncomeExpenses": {
+        "$bigint": "562739"
+      },
       "operatingCost": {
         "$bigint": "386422631"
+      },
+      "operatingExpense": {
+        "$bigint": "84508339"
       },
       "operatingIncome": {
         "$bigint": "463423638"
@@ -54,11 +85,20 @@
       "operatingRevenue": {
         "$bigint": "933791869"
       },
+      "otherGainsLosses": {
+        "$bigint": "6477672"
+      },
+      "otherIncome": {
+        "$bigint": "412043"
+      },
       "profitBeforeTax": {
         "$bigint": "493035204"
       },
       "reportDate": {
         "$date": "2025-06-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "61279719"
       },
       "sellingExpenses": {
         "$bigint": "4273247"
@@ -68,6 +108,10 @@
       "adminExpenses": {
         "$bigint": "21366992"
       },
+      "equityMethodIncome": {
+        "$bigint": "1438471"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "3085049"
       },
@@ -77,14 +121,23 @@
       "incomeTaxExpense": {
         "$bigint": "155649163"
       },
+      "interestIncome": {
+        "$bigint": "30044721"
+      },
       "netIncome": {
         "$bigint": "706780923"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "706561938"
       },
+      "netOtherIncomeExpenses": {
+        "$bigint": "5274039"
+      },
       "operatingCost": {
         "$bigint": "410069555"
+      },
+      "operatingExpense": {
+        "$bigint": "98982083"
       },
       "operatingIncome": {
         "$bigint": "766602651"
@@ -92,11 +145,20 @@
       "operatingRevenue": {
         "$bigint": "1270380250"
       },
+      "otherGainsLosses": {
+        "$bigint": "65582581"
+      },
+      "otherIncome": {
+        "$bigint": "1846711"
+      },
       "profitBeforeTax": {
         "$bigint": "862430086"
       },
       "reportDate": {
         "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "73146138"
       },
       "sellingExpenses": {
         "$bigint": "4468953"

@@ -36,8 +36,8 @@ export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): 
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
   const nullReason: MetricNullReason | null = bvps === null ? determineNullReason(equity.value, sharesValue) : null;

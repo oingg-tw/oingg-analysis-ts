@@ -1,7 +1,7 @@
 import type { FinancialStatementsPort } from '@/application/ports/financialStatements';
 import type { QuarterResolverPort } from '@/application/ports/quarterResolver';
 import type { AnnouncementDatePort } from '@/application/ports/announcementDates';
-import type { PaidInSharesPort } from '@/application/ports/capitalStock';
+import type { OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
 import type { MarketDataPort } from '@/application/ports/marketData';
 import type { XbrlAccountsPort } from '@/application/ports/xbrlAccounts';
 import type { IndustryPort } from '@/application/ports/industry';
@@ -24,7 +24,7 @@ export interface PitDeps {
   annualReports: AnnualReportPort; // 年報（全年數字、官方 EPS）——跟第四季單季是不同概念，不帶季別
   quarters: QuarterResolverPort; // 各張表「最新到哪一季」
   announcements: AnnouncementDatePort; // 財報公告日（knowledge_date 傳染）
-  shares: PaidInSharesPort; // 流通股數（股本異動）
+  shares: OutstandingCommonSharesPort; // 流通股數（股本異動）
   market: MarketDataPort; // 股價/市值/每日估值/價格序列
   xbrlAccounts: XbrlAccountsPort; // 寬表沒有的 XBRL 原始科目
   industry: IndustryPort; // 產業別 gating

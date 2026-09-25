@@ -82,7 +82,7 @@ export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery, de
       statementType: null,
       fieldKey: null,
       sourceDescription: '公開發行公司股本變動申報',
-      value: currentProxy.shares ? currentProxy.shares.paidInShares.toString() : null,
+      value: currentProxy.shares ? currentProxy.shares.outstandingCommonShares.toString() : null,
     },
     {
       role: `${rocYearToGregorian(latestCompleteFiscalYear - DIVIDEND_GROWTH_LOOKBACK_YEARS)} 年底流通股數`,
@@ -92,7 +92,7 @@ export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery, de
       statementType: null,
       fieldKey: null,
       sourceDescription: '公開發行公司股本變動申報',
-      value: priorProxy.shares ? priorProxy.shares.paidInShares.toString() : null,
+      value: priorProxy.shares ? priorProxy.shares.outstandingCommonShares.toString() : null,
     },
   ];
 

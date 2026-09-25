@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-22T03:24:07.286Z",
+  "recordedAt": "2026-09-25T15:29:58.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2317\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -736,6 +736,10 @@
       "adminExpenses": {
         "$bigint": "22386747"
       },
+      "equityMethodIncome": {
+        "$bigint": "-2543933"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "11030838"
       },
@@ -745,12 +749,16 @@
       "incomeTaxExpense": {
         "$bigint": "17074953"
       },
+      "interestIncome": {
+        "$bigint": "7842249"
+      },
       "netIncome": {
         "$bigint": "56956277"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "49919449"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": {
         "$bigint": "1988552831"
       },
@@ -763,11 +771,20 @@
       "operatingRevenue": {
         "$bigint": "2119533391"
       },
+      "otherGainsLosses": {
+        "$bigint": "1811762"
+      },
+      "otherIncome": {
+        "$bigint": "2303301"
+      },
       "profitBeforeTax": {
         "$bigint": "74031230"
       },
       "reportDate": {
         "$date": "2026-03-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "26579120"
       },
       "sellingExpenses": {
         "$bigint": "6366004"
@@ -777,6 +794,10 @@
       "adminExpenses": {
         "$bigint": "21833650"
       },
+      "equityMethodIncome": {
+        "$bigint": "1684904"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "2716862"
       },
@@ -786,11 +807,17 @@
       "incomeTaxExpense": {
         "$bigint": "114998383"
       },
+      "interestIncome": {
+        "$bigint": "28862263"
+      },
       "netIncome": {
         "$bigint": "572801304"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "572479752"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "1676378"
       },
       "operatingCost": {
         "$bigint": "382808019"
@@ -804,11 +831,20 @@
       "operatingRevenue": {
         "$bigint": "1134103440"
       },
+      "otherGainsLosses": {
+        "$bigint": "878901"
+      },
+      "otherIncome": {
+        "$bigint": "124339"
+      },
       "profitBeforeTax": {
         "$bigint": "687799687"
       },
       "reportDate": {
         "$date": "2026-03-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "67756685"
       },
       "sellingExpenses": {
         "$bigint": "4415322"
@@ -816,10 +852,17 @@
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":115}])": {
       "adminExpenses": null,
+      "equityMethodIncome": {
+        "$bigint": "14659"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": null,
       "grossProfit": null,
       "incomeTaxExpense": {
         "$bigint": "4532177"
+      },
+      "interestIncome": {
+        "$bigint": "60095412"
       },
       "netIncome": {
         "$bigint": "21056577"
@@ -827,24 +870,32 @@
       "netIncomeAttributableToParent": {
         "$bigint": "21040510"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": null,
       "operatingExpense": {
         "$bigint": "17909768"
       },
       "operatingIncome": null,
       "operatingRevenue": null,
+      "otherGainsLosses": null,
+      "otherIncome": null,
       "profitBeforeTax": {
         "$bigint": "25588754"
       },
       "reportDate": {
         "$date": "2026-03-31T00:00:00.000Z"
       },
+      "researchAndDevelopmentExpense": null,
       "sellingExpenses": null
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2317\",\"year\":115}])": {
       "adminExpenses": {
         "$bigint": "23350519"
       },
+      "equityMethodIncome": {
+        "$bigint": "1594364"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "11457347"
       },
@@ -854,12 +905,16 @@
       "incomeTaxExpense": {
         "$bigint": "24810475"
       },
+      "interestIncome": {
+        "$bigint": "7520651"
+      },
       "netIncome": {
         "$bigint": "70055915"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "59973771"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": {
         "$bigint": "2371361112"
       },
@@ -872,11 +927,20 @@
       "operatingRevenue": {
         "$bigint": "2525894433"
       },
+      "otherGainsLosses": {
+        "$bigint": "-486899"
+      },
+      "otherIncome": {
+        "$bigint": "2892589"
+      },
       "profitBeforeTax": {
         "$bigint": "94866390"
       },
       "reportDate": {
         "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "30486836"
       },
       "sellingExpenses": {
         "$bigint": "5892934"
@@ -886,6 +950,10 @@
       "adminExpenses": {
         "$bigint": "21366992"
       },
+      "equityMethodIncome": {
+        "$bigint": "1438471"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "3085049"
       },
@@ -895,11 +963,17 @@
       "incomeTaxExpense": {
         "$bigint": "155649163"
       },
+      "interestIncome": {
+        "$bigint": "30044721"
+      },
       "netIncome": {
         "$bigint": "706780923"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "706561938"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "5274039"
       },
       "operatingCost": {
         "$bigint": "410069555"
@@ -913,11 +987,20 @@
       "operatingRevenue": {
         "$bigint": "1270380250"
       },
+      "otherGainsLosses": {
+        "$bigint": "65582581"
+      },
+      "otherIncome": {
+        "$bigint": "1846711"
+      },
       "profitBeforeTax": {
         "$bigint": "862430086"
       },
       "reportDate": {
         "$date": "2026-06-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "73146138"
       },
       "sellingExpenses": {
         "$bigint": "4468953"
@@ -925,10 +1008,17 @@
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": {
       "adminExpenses": null,
+      "equityMethodIncome": {
+        "$bigint": "2919"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": null,
       "grossProfit": null,
       "incomeTaxExpense": {
         "$bigint": "1349808"
+      },
+      "interestIncome": {
+        "$bigint": "21995395"
       },
       "netIncome": {
         "$bigint": "5489921"
@@ -936,24 +1026,32 @@
       "netIncomeAttributableToParent": {
         "$bigint": "5490505"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": null,
       "operatingExpense": {
         "$bigint": "9430601"
       },
       "operatingIncome": null,
       "operatingRevenue": null,
+      "otherGainsLosses": null,
+      "otherIncome": null,
       "profitBeforeTax": {
         "$bigint": "6839729"
       },
       "reportDate": {
         "$date": "2025-06-30T00:00:00.000Z"
       },
+      "researchAndDevelopmentExpense": null,
       "sellingExpenses": null
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2317\",\"year\":114}])": {
       "adminExpenses": {
         "$bigint": "23242928"
       },
+      "equityMethodIncome": {
+        "$bigint": "3464157"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "9773887"
       },
@@ -963,12 +1061,16 @@
       "incomeTaxExpense": {
         "$bigint": "20862628"
       },
+      "interestIncome": {
+        "$bigint": "7118038"
+      },
       "netIncome": {
         "$bigint": "66030624"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "57672785"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": {
         "$bigint": "1928192485"
       },
@@ -981,11 +1083,20 @@
       "operatingRevenue": {
         "$bigint": "2058949127"
       },
+      "otherGainsLosses": {
+        "$bigint": "12021782"
+      },
+      "otherIncome": {
+        "$bigint": "3526966"
+      },
       "profitBeforeTax": {
         "$bigint": "86893252"
       },
       "reportDate": {
         "$date": "2025-09-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "30220612"
       },
       "sellingExpenses": {
         "$bigint": "6756906"
@@ -995,6 +1106,10 @@
       "adminExpenses": {
         "$bigint": "20048234"
       },
+      "equityMethodIncome": {
+        "$bigint": "1424738"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "2958568"
       },
@@ -1004,11 +1119,17 @@
       "incomeTaxExpense": {
         "$bigint": "73613661"
       },
+      "interestIncome": {
+        "$bigint": "26180345"
+      },
       "netIncome": {
         "$bigint": "451755362"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "452301407"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "-93566"
       },
       "operatingCost": {
         "$bigint": "401375489"
@@ -1022,11 +1143,20 @@
       "operatingRevenue": {
         "$bigint": "989918318"
       },
+      "otherGainsLosses": {
+        "$bigint": "-42528"
+      },
+      "otherIncome": {
+        "$bigint": "80218"
+      },
       "profitBeforeTax": {
         "$bigint": "525369023"
       },
       "reportDate": {
         "$date": "2025-09-30T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "63742245"
       },
       "sellingExpenses": {
         "$bigint": "3973966"
@@ -1034,10 +1164,17 @@
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": {
       "adminExpenses": null,
+      "equityMethodIncome": {
+        "$bigint": "48676"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": null,
       "grossProfit": null,
       "incomeTaxExpense": {
         "$bigint": "775982"
+      },
+      "interestIncome": {
+        "$bigint": "48356683"
       },
       "netIncome": {
         "$bigint": "12410828"
@@ -1045,24 +1182,32 @@
       "netIncomeAttributableToParent": {
         "$bigint": "12387567"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": null,
       "operatingExpense": {
         "$bigint": "16668438"
       },
       "operatingIncome": null,
       "operatingRevenue": null,
+      "otherGainsLosses": null,
+      "otherIncome": null,
       "profitBeforeTax": {
         "$bigint": "13186810"
       },
       "reportDate": {
         "$date": "2025-09-30T00:00:00.000Z"
       },
+      "researchAndDevelopmentExpense": null,
       "sellingExpenses": null
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2317\",\"year\":114}])": {
       "adminExpenses": {
         "$bigint": "24142081"
       },
+      "equityMethodIncome": {
+        "$bigint": "3529730"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "12064576"
       },
@@ -1072,12 +1217,16 @@
       "incomeTaxExpense": {
         "$bigint": "28648302"
       },
+      "interestIncome": {
+        "$bigint": "8109335"
+      },
       "netIncome": {
         "$bigint": "53633545"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "45212455"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": {
         "$bigint": "2453045056"
       },
@@ -1090,11 +1239,20 @@
       "operatingRevenue": {
         "$bigint": "2606372027"
       },
+      "otherGainsLosses": {
+        "$bigint": "-6426117"
+      },
+      "otherIncome": {
+        "$bigint": "3542890"
+      },
       "profitBeforeTax": {
         "$bigint": "82281847"
       },
       "reportDate": {
         "$date": "2025-12-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "34654237"
       },
       "sellingExpenses": {
         "$bigint": "8940068"
@@ -1104,6 +1262,10 @@
       "adminExpenses": {
         "$bigint": "18416935"
       },
+      "equityMethodIncome": {
+        "$bigint": "1482601"
+      },
+      "expectedCreditLoss": null,
       "financeCosts": {
         "$bigint": "3043450"
       },
@@ -1113,11 +1275,17 @@
       "incomeTaxExpense": {
         "$bigint": "86947868"
       },
+      "interestIncome": {
+        "$bigint": "29507426"
+      },
       "netIncome": {
         "$bigint": "505415333"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "505743990"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "1106367"
       },
       "operatingCost": {
         "$bigint": "394103585"
@@ -1131,11 +1299,20 @@
       "operatingRevenue": {
         "$bigint": "1046090421"
       },
+      "otherGainsLosses": {
+        "$bigint": "-533748"
+      },
+      "otherIncome": {
+        "$bigint": "47959"
+      },
       "profitBeforeTax": {
         "$bigint": "592363201"
       },
       "reportDate": {
         "$date": "2025-12-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "64857807"
       },
       "sellingExpenses": {
         "$bigint": "4916048"
@@ -1143,27 +1320,34 @@
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": {
       "adminExpenses": null,
+      "equityMethodIncome": null,
+      "expectedCreditLoss": null,
       "financeCosts": null,
       "grossProfit": null,
       "incomeTaxExpense": {
         "$bigint": "760867"
       },
+      "interestIncome": null,
       "netIncome": {
         "$bigint": "14727561"
       },
       "netIncomeAttributableToParent": {
         "$bigint": "14716033"
       },
+      "netOtherIncomeExpenses": null,
       "operatingCost": null,
       "operatingExpense": null,
       "operatingIncome": null,
       "operatingRevenue": null,
+      "otherGainsLosses": null,
+      "otherIncome": null,
       "profitBeforeTax": {
         "$bigint": "15488428"
       },
       "reportDate": {
         "$date": "2025-12-31T00:00:00.000Z"
       },
+      "researchAndDevelopmentExpense": null,
       "sellingExpenses": null
     }
   }

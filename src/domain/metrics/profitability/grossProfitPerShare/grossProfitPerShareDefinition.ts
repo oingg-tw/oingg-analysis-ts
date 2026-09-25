@@ -18,6 +18,6 @@ export const grossProfitPerShareDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
-  dependsOn: ['gross_profit', 'paidInShares'],
+  dependsOn: ['gross_profit', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

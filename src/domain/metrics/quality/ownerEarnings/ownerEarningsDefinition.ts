@@ -21,7 +21,7 @@ export const ownerEarningsDefinition: MetricDefinitionSpec = {
     'depreciation',
     'amortization',
     'capitalExpenditures',
-    'paidInShares',
+    'outstandingCommonShares',
   ],
   currentFormulaVersion: 1,
 };

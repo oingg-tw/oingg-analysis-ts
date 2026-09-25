@@ -27,7 +27,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     'current_liabilities',
     'gross_profit',
     'revenue',
-    'paidInShares',
+    'outstandingCommonShares',
   ],
   currentFormulaVersion: 1,
 };

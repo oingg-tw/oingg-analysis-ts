@@ -1,6 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
-import { getPaidInSharesAsOf } from '../mops/capitalStock';
+import { getOutstandingCommonSharesAsOf } from '../mops/capitalStock';
 import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
 import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
 import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividendNotice';
@@ -54,7 +54,7 @@ export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise
 };
 
 // 市值 = 個股收盤價 x 流通股數（capital_stock_history，asOfDate 當下生效的股本，見
-// getPaidInSharesAsOf）——跨兩個資料庫組合：股價查 oingg-twse 的 daily_price，股本查 mops 的
+// getOutstandingCommonSharesAsOf）——跨兩個資料庫組合：股價查 oingg-twse 的 daily_price，股本查 mops 的
 // capital_stock_history，各自獨立查詢後在這裡合併，不是一個 join。
 //
 // **2026-08-30 改用 oingg-twse `daily_price`，不再用 mops `daily_stock_price`**：mops 那張表
@@ -70,15 +70,15 @@ export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise
 // 2020-11 起；tpex 有 11,197 檔、2021-09 起。不要在呼叫端寫死特定公司代號判斷「這家公司有沒有股價資料」，
 // 覆蓋率會繼續變（查無資料就回 null 讓指標記 missing_input）。
 export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<MarketCapAsOf | null> => {
-  const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getPaidInSharesAsOf(symbol, asOfDate)]);
+  const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getOutstandingCommonSharesAsOf(symbol, asOfDate)]);
 
   if (!priceRow || priceRow.close === null || !shares) return null;
 
   return {
-    marketCap: Number(priceRow.close) * Number(shares.paidInShares),
+    marketCap: Number(priceRow.close) * Number(shares.outstandingCommonShares),
     tradeDate: priceRow.tradeDate.toISOString().slice(0, 10),
     closePrice: Number(priceRow.close),
-    paidInShares: shares.paidInShares,
+    outstandingCommonShares: shares.outstandingCommonShares,
   };
 };
 

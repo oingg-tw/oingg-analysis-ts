@@ -42,7 +42,7 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const incomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
-  const currentShares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentShares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
   const currentEps = toEps(pickNetIncome(incomeStatement).value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
@@ -54,7 +54,7 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
     subsidiaryCompanyId,
   });
   const priorReportDate = priorIncomeStatement?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, priorReportDate))?.outstandingCommonShares ?? null : null;
   const priorEps = toEps(pickNetIncome(priorIncomeStatement).value, priorShares);
 
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps);

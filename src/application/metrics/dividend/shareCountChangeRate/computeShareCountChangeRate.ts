@@ -32,7 +32,7 @@ export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, d
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
+  const currentShares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorBalanceSheet = await deps.statements.getBalanceSheet({
@@ -43,10 +43,10 @@ export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, d
     subsidiaryCompanyId,
   });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? await deps.shares.getPaidInShares(symbol, priorReportDate) : null;
+  const priorShares = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
 
-  const currentValue = currentShares?.paidInShares ?? null;
-  const priorValue = priorShares?.paidInShares ?? null;
+  const currentValue = currentShares?.outstandingCommonShares ?? null;
+  const priorValue = priorShares?.outstandingCommonShares ?? null;
 
   const changeRate =
     currentValue !== null && priorValue !== null && priorValue !== 0n

@@ -33,7 +33,7 @@ export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery, d
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const currentEquity = pickEquity(balanceSheet);
   const currentReportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = currentReportDate ? (await deps.shares.getPaidInShares(symbol, currentReportDate))?.paidInShares ?? null : null;
+  const currentShares = currentReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, currentReportDate))?.outstandingCommonShares ?? null : null;
   const currentBvps = toBvps(currentEquity.value, currentShares);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
@@ -42,7 +42,7 @@ export const getBvpsGrowthRateProvenance = async (query: QuarterlyMetricQuery, d
   const priorBalanceSheet = await deps.statements.getBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorEquity = pickEquity(priorBalanceSheet);
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, priorReportDate))?.outstandingCommonShares ?? null : null;
   const priorBvps = toBvps(priorEquity.value, priorShares);
 
   const { value } = calculateYoyGrowthRate(currentBvps, priorBvps);

@@ -43,7 +43,7 @@ export const getTobinsQProvenance = async (query: QuarterlyMetricQuery, deps: Pi
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: marketCapAsOf ? `收盤價 ${marketCapAsOf.closePrice}（${marketCapAsOf.tradeDate}）× 流通股數 ${marketCapAsOf.paidInShares.toString()}` : null,
+      sourceDescription: marketCapAsOf ? `收盤價 ${marketCapAsOf.closePrice}（${marketCapAsOf.tradeDate}）× 流通股數 ${marketCapAsOf.outstandingCommonShares.toString()}` : null,
       value: toProvenanceEntryValue(marketCap),
     },
     { role: '本季期末總負債', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'liabilities', sourceDescription: null, value: toProvenanceEntryValue(totalLiabilities) },

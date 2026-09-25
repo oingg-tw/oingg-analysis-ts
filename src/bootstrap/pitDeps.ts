@@ -2,7 +2,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { xbrlAccounts, xbrlFinancialStatements, xbrlQuarterResolver } from '@/infrastructure/repositories/mops/financialStatementPorts';
 import { mopsAnnouncementDates } from '@/infrastructure/repositories/mops/reportAnnouncementDate';
-import { mopsCapitalStockShares } from '@/infrastructure/repositories/mops/capitalStock';
+import { mopsOutstandingCommonShares } from '@/infrastructure/repositories/mops/capitalStock';
 import { mopsDividendEvents } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { twseDevMonthlyRevenue } from '@/infrastructure/repositories/twse/monthlyRevenue';
 import { twseMarketData } from '@/infrastructure/repositories/twse/marketCap';
@@ -19,7 +19,7 @@ export const createPitDeps = (): PitDeps => ({
   annualReports: mopsAnnualReports,
   quarters: xbrlQuarterResolver,
   announcements: mopsAnnouncementDates,
-  shares: mopsCapitalStockShares,
+  shares: mopsOutstandingCommonShares,
   market: twseMarketData,
   xbrlAccounts,
   industry: exchangeIndustry,

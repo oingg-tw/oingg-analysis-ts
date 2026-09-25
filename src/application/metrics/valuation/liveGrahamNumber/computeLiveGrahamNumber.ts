@@ -56,8 +56,8 @@ export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, d
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
   const pbRatio = bvps !== null && bvps !== 0 ? close / bvps : null;

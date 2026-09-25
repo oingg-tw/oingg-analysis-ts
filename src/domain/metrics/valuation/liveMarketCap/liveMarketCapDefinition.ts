@@ -20,6 +20,6 @@ export const liveMarketCapDefinition: MetricDefinitionSpec = {
   sources: ['證交所／櫃買中心每日收盤價', '公開發行公司股本變動申報'],
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
-  dependsOn: ['paidInShares', 'daily_price.close'],
+  dependsOn: ['outstandingCommonShares', 'daily_price.close'],
   currentFormulaVersion: 1,
 };

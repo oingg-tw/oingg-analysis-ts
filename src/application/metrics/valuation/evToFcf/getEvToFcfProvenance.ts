@@ -64,7 +64,7 @@ export const getEvToFcfProvenance = async (query: QuarterlyMetricQuery, deps: Pi
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: marketCap ? `收盤價 ${marketCap.closePrice}（${marketCap.tradeDate}）× 流通股數 ${marketCap.paidInShares.toString()}` : null,
+      sourceDescription: marketCap ? `收盤價 ${marketCap.closePrice}（${marketCap.tradeDate}）× 流通股數 ${marketCap.outstandingCommonShares.toString()}` : null,
       value: toProvenanceEntryValue(marketCap?.marketCap ?? null),
     },
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {

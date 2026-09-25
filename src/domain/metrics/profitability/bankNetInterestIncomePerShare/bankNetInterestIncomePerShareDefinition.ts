@@ -17,6 +17,6 @@ export const bankNetInterestIncomePerShareDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司銀行業損益表明細（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
-  dependsOn: ['net_income_loss_of_interest', 'paidInShares'],
+  dependsOn: ['net_income_loss_of_interest', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };

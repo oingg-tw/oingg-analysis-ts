@@ -1,7 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
-import { getPaidInSharesAsOf, getCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
+import { getOutstandingCommonSharesAsOf, getCapitalStockHistory } from '@/infrastructure/repositories/mops/capitalStock';
 
 // 沒有唯一識別欄位，Prisma Client 不會產生存取子，一律走 $queryRaw（見
 // prisma/mopsExport/schema.prisma、src/models/mops/capitalStock.ts 的說明）。
@@ -59,12 +59,12 @@ test('capital_stock_history: 全資料庫涵蓋多家公司、多筆歷史紀錄
   assert.ok(Number(distinctSymbols[0]!.cnt) > 1, '應該涵蓋不只一家公司');
 });
 
-test('getPaidInSharesAsOf: 查特定日期會找到「當時生效」的那一筆，不是永遠回傳最新一筆', async () => {
+test('getOutstandingCommonSharesAsOf: 查特定日期會找到「當時生效」的那一筆，不是永遠回傳最新一筆', async () => {
   // 2330 115Q2（2026-06-30）報告日對應的股本紀錄——跟 eps/bvps/cashFlowPerShare 等服務
   // 實際查詢用的是同一支 helper，這裡驗證的就是它們背後依賴的邏輯。
-  const asOf = await getPaidInSharesAsOf('2330', new Date('2026-06-30T00:00:00.000Z'));
+  const asOf = await getOutstandingCommonSharesAsOf('2330', new Date('2026-06-30T00:00:00.000Z'));
   assert.ok(asOf !== null, '應該要能查到 2026-06-30 之前生效的股本紀錄');
-  assert.equal(asOf!.paidInShares, 25932370067n);
+  assert.equal(asOf!.outstandingCommonShares, 25932370067n); // 2330 沒有特別股、庫藏股 0，流通在外普通股 = 實收股數
 
   // 查一個很早以前的日期，應該找不到生效中的紀錄（如果 capital_stock_history 真的有涵蓋
   // 歷史股本變動，理論上還是可能查到更早的一筆；這裡只驗證「查得到的紀錄生效日一定 <= 查詢日」，

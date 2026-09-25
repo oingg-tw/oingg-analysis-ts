@@ -57,14 +57,14 @@ export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetr
   });
 
   const [currentShares, priorShares] = await Promise.all([
-    reportDate ? deps.shares.getPaidInShares(symbol, reportDate) : null,
-    priorIncomeStatement?.reportDate ? deps.shares.getPaidInShares(symbol, priorIncomeStatement.reportDate) : null,
+    reportDate ? deps.shares.getOutstandingCommonShares(symbol, reportDate) : null,
+    priorIncomeStatement?.reportDate ? deps.shares.getOutstandingCommonShares(symbol, priorIncomeStatement.reportDate) : null,
   ]);
 
   const currentNetIncome = pickNetIncome(currentIncomeStatement);
   const priorNetIncome = pickNetIncome(priorIncomeStatement);
-  const currentEps = currentNetIncome.value !== null && currentShares !== null ? toPerShare(currentNetIncome.value, currentShares.paidInShares) : null;
-  const priorEps = priorNetIncome.value !== null && priorShares !== null ? toPerShare(priorNetIncome.value, priorShares.paidInShares) : null;
+  const currentEps = currentNetIncome.value !== null && currentShares !== null ? toPerShare(currentNetIncome.value, currentShares.outstandingCommonShares) : null;
+  const priorEps = priorNetIncome.value !== null && priorShares !== null ? toPerShare(priorNetIncome.value, priorShares.outstandingCommonShares) : null;
 
   return {
     symbol,
@@ -74,7 +74,7 @@ export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetr
       fiscalYear,
       fiscalQuarter: seasonNum,
       netIncome: currentNetIncome,
-      shares: currentShares?.paidInShares ?? null,
+      shares: currentShares?.outstandingCommonShares ?? null,
       operatingIncome: currentIncomeStatement?.operatingIncome ?? null,
       operatingRevenue: currentIncomeStatement?.operatingRevenue ?? null,
       eps: currentEps,
@@ -83,7 +83,7 @@ export const resolveLeverageDegreeProvenanceInputs = async (query: QuarterlyMetr
       fiscalYear: rocYearToGregorian(Number(priorQuarter.year)),
       fiscalQuarter: Number(priorQuarter.season),
       netIncome: priorNetIncome,
-      shares: priorShares?.paidInShares ?? null,
+      shares: priorShares?.outstandingCommonShares ?? null,
       operatingIncome: priorIncomeStatement?.operatingIncome ?? null,
       operatingRevenue: priorIncomeStatement?.operatingRevenue ?? null,
       eps: priorEps,

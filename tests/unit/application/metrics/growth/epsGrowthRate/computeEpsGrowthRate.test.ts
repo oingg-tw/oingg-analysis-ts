@@ -18,7 +18,7 @@ test('epsGrowthRate 用未進位的 EPS 計算：0.0661 → 0.0900 是 36.16%，
     statements,
     quarters: statements,
     announcements: createFixedAnnouncements({ '1101-114Q1': new Date('2025-05-14T00:00:00.000Z'), '1101-115Q1': new Date('2026-05-14T00:00:00.000Z') }),
-    shares: { getPaidInShares: async () => ({ paidInShares: 10_000_000n, effectiveYear: 2025, effectiveMonth: 1 }) },
+    shares: { getOutstandingCommonShares: async () => ({ outstandingCommonShares: 10_000_000n, issuedShares: 10_000_000n, preferredShares: 0n, treasuryShares: 0n, effectiveYear: 2025, effectiveMonth: 1 }) },
   });
 
   const batch = await computeEpsGrowthRate({ symbol: '1101', year: '115', season: '1', dataType: '2', subsidiaryCompanyId: '' }, deps);

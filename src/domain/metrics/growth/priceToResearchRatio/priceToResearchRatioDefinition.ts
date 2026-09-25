@@ -16,6 +16,6 @@ export const priceToResearchRatioDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司損益表（XBRL）', '證交所／櫃買中心每日收盤價', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: ['research_and_development_expense', 'paidInShares', 'daily_price.close'],
+  dependsOn: ['research_and_development_expense', 'outstandingCommonShares', 'daily_price.close'],
   currentFormulaVersion: 1,
 };

@@ -23,7 +23,8 @@ test('epsPit: 2330 115Q2 合併報表，跟 eps.test.ts 的既有基準數字交
 });
 
 // FY 是年報公告的 EPS（全年加權平均股數），不是四季相加。2454 113 年刻意選兩者不同的案例：
-// 年報 66.92、我們期末股本口徑的近四季 66.42——FY 若退化成四季相加，這支會抓到。
+// 年報 66.92、我們期末股本口徑的近四季 66.75——FY 若退化成四季相加，這支會抓到。
+// （2026-09-25 分母改成流通在外普通股、扣掉庫藏股後，近四季從 66.42 變 66.75，更接近年報；剩下的差是期末股數 vs 全年加權平均。）
 test('epsPit: FY 讀年報 EPS，不是四季相加（2454 113 年）', async () => {
   await replay.run(computeEps)({ symbol: '2454', year: '114', season: '1', dataType: '2', subsidiaryCompanyId: '' });
 
@@ -34,7 +35,7 @@ test('epsPit: FY 讀年報 EPS，不是四季相加（2454 113 年）', async ()
 
   await replay.run(computeEps)({ symbol: '2454', year: '113', season: '4', dataType: '2', subsidiaryCompanyId: '' });
   const ttmAtQ4 = await replay.findLatest({ symbol: '2454', metricCode: 'eps', periodType: 'TTM', fiscalYear: 2024, fiscalQuarter: 4, dataType: '2', subsidiaryCompanyId: '' });
-  assert.equal(Number(ttmAtQ4!.value), 66.42, '對照組：同一年度的近四季（期末股本）');
+  assert.equal(Number(ttmAtQ4!.value), 66.75, '對照組：同一年度的近四季（期末流通在外普通股）');
 });
 
 test('epsPit: 9999（查無資料的公司）應該優雅降級，都不寫入', async () => {

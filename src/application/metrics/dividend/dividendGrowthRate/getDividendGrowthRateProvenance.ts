@@ -48,7 +48,7 @@ const getAnnualDividendPerShareProxy = async (
   const yearSum = records.reduce((sum, r) => sum + r!.dividendsPaid!, 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = records[3]!.reportDate;
-  const shares = (await deps.shares.getPaidInShares(symbol, q4ReportDate))?.paidInShares ?? null;
+  const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
 
   const dps = shares !== null && shares !== 0n ? (Number(dividendsPaidAbs) * 1000) / Number(shares) : null;
   const result: AnnualDpsResult = { dps, quarters, shares };

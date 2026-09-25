@@ -38,13 +38,13 @@ const getAnnualEps = async (
 
   const netIncomeSum = quarters.reduce((sum, q) => sum + pickNetIncome(q).value!, 0n);
   const q4ReportDate = quarters[3]!.reportDate;
-  const shares = await deps.shares.getPaidInShares(symbol, q4ReportDate);
+  const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
     return null;
   }
 
-  const value = (Number(netIncomeSum) * 1000) / Number(shares.paidInShares);
+  const value = (Number(netIncomeSum) * 1000) / Number(shares.outstandingCommonShares);
   cache.set(rocYear, value);
   return value;
 };
@@ -82,8 +82,8 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
   const mainIncomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = mainIncomeStatement?.reportDate ?? null;
 
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(

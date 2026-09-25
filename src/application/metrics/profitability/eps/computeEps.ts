@@ -39,8 +39,8 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
   const reportDate = incomeStatement?.reportDate ?? null;
 
   // 流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps.ts 一致）。
-  const shares = reportDate ? await deps.shares.getPaidInShares(symbol, reportDate) : null;
-  const sharesValue = shares?.paidInShares ?? null;
+  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const epsQuarterly = netIncome.value !== null && sharesValue !== null ? toPerShare(netIncome.value, sharesValue) : null;
   const quarterlyNullReason: MetricNullReason | null = epsQuarterly === null ? determineNullReason(netIncome.value, sharesValue) : null;

@@ -24,14 +24,14 @@ export const getShareCountChangeRateProvenance = async (query: QuarterlyMetricQu
 
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const reportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = reportDate ? (await deps.shares.getPaidInShares(symbol, reportDate))?.paidInShares ?? null : null;
+  const currentShares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorRocYear = Number(prior.year);
   const priorSeason = Number(prior.season);
   const priorBalanceSheet = await deps.statements.getBalanceSheet({ symbol, year: priorRocYear, quarter: priorSeason, dataType, subsidiaryCompanyId });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await deps.shares.getPaidInShares(symbol, priorReportDate))?.paidInShares ?? null : null;
+  const priorShares = priorReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, priorReportDate))?.outstandingCommonShares ?? null : null;
 
   const value =
     currentShares !== null && priorShares !== null && priorShares !== 0n

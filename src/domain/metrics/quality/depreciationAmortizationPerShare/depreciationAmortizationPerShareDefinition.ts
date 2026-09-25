@@ -15,6 +15,6 @@ export const depreciationAmortizationPerShareDefinition: MetricDefinitionSpec = 
   sources: ['公開發行公司現金流量表（XBRL）', '公開發行公司股本變動申報'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
-  dependsOn: ['adj_depreciation_expense', 'adj_amortisation_expense', 'paidInShares'],
+  dependsOn: ['adj_depreciation_expense', 'adj_amortisation_expense', 'outstandingCommonShares'],
   currentFormulaVersion: 1,
 };
