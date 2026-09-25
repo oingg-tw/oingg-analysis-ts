@@ -8,7 +8,7 @@
         "criteriaDetails": [
           {
             "endDate": "<date>",
-            "observationDays": "<number>",
+            "observationDays": "<null>",
             "startDate": "<date>",
             "times": "<number>"
           }
