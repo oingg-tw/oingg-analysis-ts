@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:37:59.308Z",
+  "recordedAt": "2026-09-25T16:35:11.506Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -155,6 +155,28 @@
       "quarter": 2,
       "year": 115
     },
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2025-12-31T00:00:00.000Z\"}])": {
+      "effectiveMonth": 11,
+      "effectiveYear": 2025,
+      "issuedShares": {
+        "$bigint": "25932524521"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932524521"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
+      }
+    },
     "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"}])": {
       "effectiveMonth": 5,
       "effectiveYear": 2026,
@@ -163,6 +185,28 @@
       },
       "outstandingCommonShares": {
         "$bigint": "25932370067"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
+      }
+    },
+    "shares.getOutstandingCommonShares([\"2801\",{\"$date\":\"2024-12-31T00:00:00.000Z\"}])": {
+      "effectiveMonth": 9,
+      "effectiveYear": 2024,
+      "issuedShares": {
+        "$bigint": "11205758337"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "11205758337"
       },
       "preferredCapitalThousands": {
         "$bigint": "0"

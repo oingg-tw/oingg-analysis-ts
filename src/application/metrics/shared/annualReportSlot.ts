@@ -1,6 +1,7 @@
 import type { AnnualIncomeStatement } from '@/application/ports/annualReport';
 import type { PitDeps } from '@/application/metrics/deps';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { toCommonEarnings } from '@/domain/financials/outstandingCommonShares';
 import { deriveWeightedAverageShares } from '@/domain/financials/weightedAverageShares';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationSlot, type KnowledgeAnchor } from '@/domain/metrics/computation';
@@ -25,7 +26,7 @@ export interface AnnualReportContext {
 
 export const resolveAnnualReportContext = async (
   key: { symbol: string; rocYear: number; season: number; dataType: string; subsidiaryCompanyId: string },
-  deps: Pick<PitDeps, 'annualReports' | 'announcements'>
+  deps: Pick<PitDeps, 'annualReports' | 'announcements' | 'shares'>
 ): Promise<AnnualReportContext | null> => {
   const annualRocYear = key.season === 4 ? key.rocYear : key.rocYear - 1;
   const annual = await deps.annualReports.getAnnualIncomeStatement({
@@ -36,10 +37,14 @@ export const resolveAnnualReportContext = async (
   });
   if (!annual) return null;
   const anchor = await resolveKnowledgeDate(key.symbol, [{ rocYear: annualRocYear, season: 4, reportDate: annual.reportDate }], deps.announcements);
+  // 2026-09-26 反推股數的分子跟官方 EPS 同口徑：歸屬母公司淨利 − 全年特別股股利（第四季報告日的近四季＝全年）。
+  // 沒扣時特別股公司反推股數偏高、每段每股偏低（weightedAverageShares.ts 的 ponytail）；web-nuxt 量到 FY 閉合、TTM 差特別股股利，
+  // 兩個口徑的鏈對不齊。股數查不到（沒有股本紀錄的 KY/DR、查不到特別股股本的銀行）→ 不扣，維持原本的反推，不讓 FY 覆蓋率倒退。
+  const preferredDividends = (await deps.shares.getOutstandingCommonShares(key.symbol, annual.reportDate))?.preferredDividendsTtmThousands ?? 0n;
   return {
     annual,
     fiscalYear: rocYearToGregorian(annualRocYear),
-    weightedShares: deriveWeightedAverageShares(pickNetIncomeValue(annual), annual.basicEps),
+    weightedShares: deriveWeightedAverageShares(toCommonEarnings(pickNetIncomeValue(annual), preferredDividends, 'TTM'), annual.basicEps),
     anchor,
   };
 };
