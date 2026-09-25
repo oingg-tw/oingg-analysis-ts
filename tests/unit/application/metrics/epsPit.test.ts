@@ -22,10 +22,26 @@ test('epsPit: 2330 115Q2 合併報表，跟 eps.test.ts 的既有基準數字交
   assert.equal(q!.nullReason, null);
 });
 
+// FY 是年報公告的 EPS（全年加權平均股數），不是四季相加。2454 113 年刻意選兩者不同的案例：
+// 年報 66.92、我們期末股本口徑的近四季 66.42——FY 若退化成四季相加，這支會抓到。
+test('epsPit: FY 讀年報 EPS，不是四季相加（2454 113 年）', async () => {
+  await replay.run(computeEps)({ symbol: '2454', year: '114', season: '1', dataType: '2', subsidiaryCompanyId: '' });
+
+  const fy = await replay.findLatest({ symbol: '2454', metricCode: 'eps', periodType: 'FY', fiscalYear: 2024, fiscalQuarter: 4, dataType: '2', subsidiaryCompanyId: '' });
+  assert.ok(fy, '第一季的計算要順便寫上一個完整年度的 FY');
+  assert.equal(Number(fy!.value), 66.92);
+  assert.equal(fy!.nullReason, null);
+
+  await replay.run(computeEps)({ symbol: '2454', year: '113', season: '4', dataType: '2', subsidiaryCompanyId: '' });
+  const ttmAtQ4 = await replay.findLatest({ symbol: '2454', metricCode: 'eps', periodType: 'TTM', fiscalYear: 2024, fiscalQuarter: 4, dataType: '2', subsidiaryCompanyId: '' });
+  assert.equal(Number(ttmAtQ4!.value), 66.42, '對照組：同一年度的近四季（期末股本）');
+});
+
 test('epsPit: 9999（查無資料的公司）應該優雅降級，都不寫入', async () => {
   const outcome = await replay.run(computeEps)({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.deepEqual(outcome.q, { action: 'skipped_no_quarter' });
+  assert.deepEqual(outcome.fy, { action: 'skipped_no_quarter' });
   const count = await replay.count({ symbol: '9999', metricCode: 'eps' });
   assert.equal(count, 0);
 });

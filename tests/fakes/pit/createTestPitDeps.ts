@@ -15,6 +15,7 @@ const unusedPort = <T extends object>(name: keyof PitDeps): T =>
 
 export const createTestPitDeps = (overrides: Partial<PitDeps> = {}): PitDeps => ({
   statements: unusedPort('statements'),
+  annualReports: unusedPort('annualReports'),
   quarters: unusedPort('quarters'),
   announcements: unusedPort('announcements'),
   shares: unusedPort('shares'),

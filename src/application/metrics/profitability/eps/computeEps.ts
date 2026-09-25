@@ -14,9 +14,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元。
 
-export type EpsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+export type EpsDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
 
-export type EpsComputationBatch = ComputationBatch<'q' | 'ttm'>;
+export type EpsComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
 export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Promise<EpsComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -24,7 +24,7 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
+    return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
   }
 
   const { year, season } = resolvedQuarter;
@@ -102,5 +102,27 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { q, ttm } };
+  // FY（2026-09-25）＝年報公告的基本每股盈餘，**不是**四季相加：年報 EPS 用全年加權平均流通股數，
+  // Q/TTM 用本季報告日的期末股本，兩者約三分之一的公司年度差超過 0.01 元（112~114 年近四季 vs 年報
+  // 吻合 64.7%）。使用者要求 EPS 三種口徑並存、年報另成一個概念（UBIQUITOUS_LANGUAGE.md〈三〉）。
+  // 座標是 (該年度, 第四季)，一年一列——不是其他 FY 指標那種「每季一列、存截至當季最近完整年度」。
+  // 每一季都順便寫「最近一個完整年度」：第四季寫當年、第一~三季寫前一年；同一列重寫會 skipped_unchanged，
+  // 所以回填任何季度都會把年度值補齊。
+  const annualRocYear = seasonNum === 4 ? rocYear : rocYear - 1;
+  const annual = await deps.annualReports.getAnnualIncomeStatement({ symbol, rocYear: annualRocYear, dataType, subsidiaryCompanyId });
+  let fy: ComputationSlot;
+  if (!annual) {
+    fy = { action: 'skipped_no_quarter' };
+  } else {
+    const annualAnchor = await resolveKnowledgeDate(symbol, [{ rocYear: annualRocYear, season: 4, reportDate: annual.reportDate }], deps.announcements);
+    fy = periodSlot(
+      annualAnchor,
+      { ...coordinateBase, fiscalYear: rocYearToGregorian(annualRocYear), fiscalQuarter: 4 },
+      'FY',
+      annual.basicEps,
+      annual.basicEps === null ? 'missing_input' : null
+    );
+  }
+
+  return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
 };
