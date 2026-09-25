@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const evToEbitDefinition: MetricDefinitionSpec = {
   metricCode: 'evToEbit',
-  name: 'EV/EBIT',
+  name: '企業價值對息稅前盈餘比',
   nameEn: "Acquirer's Multiple",
   unit: '倍',
   formulaNote:

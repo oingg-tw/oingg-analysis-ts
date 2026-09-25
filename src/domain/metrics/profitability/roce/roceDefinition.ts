@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const roceDefinition: MetricDefinitionSpec = {
   metricCode: 'roce',
-  name: 'ROCE',
+  name: '已動用資本報酬率',
   unit: '%',
   formulaNote:
     'EBIT = 稅前淨利+利息費用；使用資本(Capital Employed) = 總資產-流動負債（期間平均）；' +

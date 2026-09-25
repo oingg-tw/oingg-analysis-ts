@@ -9,7 +9,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // Bernard & Thomas 1989）放 referenceUrl 那條維基頁的脈絡裡。
 export const sueDefinition: MetricDefinitionSpec = {
   metricCode: 'sue',
-  name: 'SUE',
+  name: '標準化未預期盈餘',
   unit: '分',
   formulaNote:
     'SUE_t = (E_t − E_{t−4}) / σ，E 是單季稅後淨利（金額，歸屬母公司優先，缺漏退回整體口徑），' +

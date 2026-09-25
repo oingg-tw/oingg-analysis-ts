@@ -9,7 +9,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
   // ocfPerShare/fcfPerShare 這些已寫入的 metric_value，維持每條 pipeline 獨立的原則。
 export const epsDefinition: MetricDefinitionSpec = {
   metricCode: 'eps',
-  name: 'EPS',
+  name: '每股盈餘',
   unit: '元',
   formulaNote:
     'Q(單季) = (本季淨利 − 近四季特別股股利÷4)*1000/流通股數；TTM = (近四季（含本季）淨利加總 − 近四季特別股股利)' +

@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const ruleOf40Definition: MetricDefinitionSpec = {
   metricCode: 'ruleOf40',
-  name: 'Rule of 40',
+  name: '40法則',
   nameEn: 'Rule of 40',
   unit: '%',
   formulaNote:

@@ -6,7 +6,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
   // (knowledge_date) 查，跟 fcfYield/psr/pFcf/evEbitda 同一個模式。
 export const peRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'peRatio',
-  name: 'PER',
+  name: '本益比',
   unit: '倍',
   formulaNote:
     '= 股價(knowledge_date當天或之前最近一筆收盤價) / EPS(TTM，近四季淨利加總*1000/流通股數)。' +

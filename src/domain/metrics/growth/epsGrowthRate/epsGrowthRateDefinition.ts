@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const epsGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'epsGrowthRate',
-  name: 'EPS 成長年增率',
+  name: '每股盈餘成長年增率',
   unit: '%',
   formulaNote:
     '= (本季 EPS - 去年同季 EPS) / |去年同季 EPS| * 100——獨立重新計算本季/去年同季各自的' +

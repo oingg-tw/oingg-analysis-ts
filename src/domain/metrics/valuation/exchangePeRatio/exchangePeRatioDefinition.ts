@@ -7,7 +7,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
   // account_code——這是本 registry 第一批「依賴市場資料而非財報資料」的 metricCode。
 export const exchangePeRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'exchangePeRatio',
-  name: 'PER',
+  name: '本益比',
   nameSuffix: '交易所',
   unit: '倍',
   formulaNote:

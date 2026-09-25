@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const bvpsGrowthRateDefinition: MetricDefinitionSpec = {
   metricCode: 'bvpsGrowthRate',
-  name: 'BVPS 成長年增率',
+  name: '每股淨值成長年增率',
   unit: '%',
   formulaNote:
     '= (本季 BVPS - 去年同季 BVPS) / |去年同季 BVPS| * 100——獨立重新計算本季/去年同季各自的' +

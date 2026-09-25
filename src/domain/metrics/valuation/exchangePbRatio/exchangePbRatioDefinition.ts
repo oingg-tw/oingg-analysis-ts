@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const exchangePbRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'exchangePbRatio',
-  name: 'PBR',
+  name: '股價淨值比',
   nameSuffix: '交易所',
   unit: '倍',
   formulaNote:

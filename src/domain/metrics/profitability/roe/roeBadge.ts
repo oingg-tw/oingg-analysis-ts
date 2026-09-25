@@ -5,7 +5,7 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 只實作單期不低於 15% 這一半（沒有 10 年序列可驗證均值），跟 AAII 的 Buffett-Hagstrom
 // 篩選器做法一致（近四季 ROE > 15%）。
 export const roeBadge: MetricBadge = {
-  name: '巴菲特 ROE 門檻',
+  name: '巴菲特股東權益報酬率門檻',
   nameEn: 'Buffett ROE Threshold',
   author: 'Warren Buffett, 1987; Robert Hagstrom, 1994',
   // 2026-09-20 sourceUrl 實際 fetch 驗證：Berkshire 官網 1987 年致股東信原文，逐字寫著 two tests of economic excellence - an average return on equity of over 20% in the ten years, 1977 through 1986, and no year worse than 15%。

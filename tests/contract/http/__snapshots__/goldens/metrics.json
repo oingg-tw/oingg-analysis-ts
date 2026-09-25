@@ -47,7 +47,7 @@
             "limitations": "<string>",
             "metricCode": "beta",
             "misreadings": "<string>",
-            "name": "Beta",
+            "name": "<string>",
             "nameEn": "<string>",
             "nameSuffix": "<string>",
             "referenceUrl": "<string>",

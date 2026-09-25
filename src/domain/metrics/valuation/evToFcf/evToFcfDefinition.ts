@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const evToFcfDefinition: MetricDefinitionSpec = {
   metricCode: 'evToFcf',
-  name: 'EV/FCF',
+  name: '企業價值對自由現金流比',
   nameEn: 'EV/FCF Ratio',
   unit: '倍',
   formulaNote:

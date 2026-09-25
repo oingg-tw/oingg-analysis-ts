@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // 檔頭說明。逐日型（snapshot），不是季報型。
 export const livePegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'livePegRatio',
-  name: 'PEG',
+  name: '本益成長比',
   nameSuffix: '即時',
   unit: '倍',
   formulaNote:

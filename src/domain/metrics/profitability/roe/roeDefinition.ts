@@ -4,7 +4,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // application/metrics/shared/averageBalances.ts——期末分母在台股會因 6 月股東會決議股利轉列負債，讓每年 Q2 的 TTM 值假性跳升。
 export const roeDefinition: MetricDefinitionSpec = {
   metricCode: 'roe',
-  name: 'ROE',
+  name: '股東權益報酬率',
   unit: '%',
   formulaNote:
     'Q(單季) = 本季淨利/平均權益*100，平均權益 = (本季期末 + 上季期末)/2，淨利/權益優先採歸屬於母公司口徑，缺漏退回整體口徑；' +

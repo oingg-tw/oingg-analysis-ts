@@ -2,7 +2,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 
 export const roicDefinition: MetricDefinitionSpec = {
   metricCode: 'roic',
-  name: 'ROIC',
+  name: '投入資本報酬率',
   unit: '%',
   formulaNote:
     'EBIT = 稅前淨利+利息費用；有效稅率 = 所得稅費用/稅前淨利（稅前淨利須為正，否則 NOPAT 為 ' +

@@ -17,7 +17,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // 週期 4→12）、每股→金額（避開股本變動污染序列，同 sue 從 EPS 改用淨利金額的取捨）。詳見 calculateSus.ts。
 export const susDefinition: MetricDefinitionSpec = {
   metricCode: 'sus',
-  name: 'SUS',
+  name: '標準化未預期營收',
   unit: '分',
   formulaNote:
     'SUS_t = (R_t − E(R_t)) / ξ，R 是單月營收金額；E(R_t) = R_{t−12} + drift（季節性隨機漫步加漂移項），' +

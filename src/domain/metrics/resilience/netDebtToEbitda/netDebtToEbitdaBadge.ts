@@ -14,7 +14,7 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 全部現金，數字偏樂觀；Table 17 是 standard volatility 表，低波動產業（Table 18/19）門檻更寬（minimal < 1.75/< 2）。
 // 負 EBITDA 的公司自 formulaVersion 2 起不計算（見 computeNetDebtToEbitda.ts），不會以負倍數誤判通過。
 export const netDebtToEbitdaBadge: MetricBadge = {
-  name: '淨負債對 EBITDA 比信評最低槓桿級',
+  name: '淨負債對息稅折舊攤銷前盈餘比信評最低槓桿級',
   nameEn: 'Net Debt to EBITDA Minimal-Leverage Band',
   author: 'S&P Global Ratings',
   sourceUrl: 'https://www.maalot.co.il/Publications/MT20240214173645.PDF',

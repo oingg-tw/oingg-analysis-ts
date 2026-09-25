@@ -24,7 +24,7 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 //       後微弱支持），CAPM alpha 高 beta 組較高、Carhart alpha 低 beta 組較高；樣本外低減高五分位月 −0.13% 不顯著。
 // 更早的四篇（樣本止於 2011 年前）為負面。結論：徽章可以站，但文案只寫「風險調整後報酬」、不寫台灣有原始報酬優勢。
 export const betaBadge: MetricBadge = {
-  name: 'Beta 最低五分位',
+  name: '貝他係數最低五分位',
   nameEn: 'Low-Beta Bottom Quintile',
   author: 'Malcolm Baker, Brendan Bradley & Jeffrey Wurgler, 2011',
   sourceUrl: 'https://pages.stern.nyu.edu/~jwurgler/papers/faj-benchmarks.pdf',
