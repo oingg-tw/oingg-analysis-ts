@@ -26,6 +26,16 @@ test('對照：小比例差距（4157 ×1.028，可能是特別股／庫藏股�
   assert.equal(r!.paidInShares, 717_844_175n);
 });
 
+test('錯位列但股數跟前一筆連貫（6841 2025-06：95,152,250 vs 97,240,250）→ 錯的是資本欄，股數照用', async () => {
+  const r = await getPaidInSharesAsOf('6841', new Date('2025-06-30'));
+  assert.equal(r!.paidInShares, 95_152_250n);
+  assert.deepEqual([r!.effectiveYear, r!.effectiveMonth], [2025, 6]);
+});
+
+test('錯位列且沒有一致的前一筆（5512 唯一一筆 2024-10）→ 判斷不了，保守回 null', async () => {
+  assert.equal(await getPaidInSharesAsOf('5512', new Date('2025-06-30')), null);
+});
+
 afterAll(async () => {
   await disconnectAllDbs();
 });

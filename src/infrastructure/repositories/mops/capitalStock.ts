@@ -1,6 +1,7 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
+import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
 import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, PaidInSharesAsOf, PaidInSharesPort } from '@/application/ports/capitalStock';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
@@ -12,6 +13,7 @@ interface RawCapitalStockRow {
   effective_year: number;
   effective_month: number;
   paid_in_shares: bigint | null;
+  misaligned: boolean; // 股數 ÷（資本÷面額）剛好 10^k、k≠0
 }
 
 // 股本是歷史異動紀錄（現金增資、盈餘轉增資、減資…生效當月各一筆），不能直接抓整張表最新一筆。
@@ -25,6 +27,10 @@ interface RawCapitalStockRow {
 // ——這種比例不可能是真的（特別股、庫藏股造成的是 4157 那種 ×1.028 小差距，不會剛好是 10 倍），所以只擋這一種，
 // 其他比例的 55 列不動。**跳過不是修值**：mops-ts 明說不能用 ÷10 或對調修（×10 那種真實股數根本不在這一列），
 // 這裡只是不採用壞列、改用生效日更早的最新一筆一致的列。代價：壞列若同時是一次真的增減資，會暫時沿用舊股數。
+// 同日修正：錯位不一定是股數欄錯——×10 那種有時是資本欄錯、股數其實對（6841 2025-06：股數 95,152,250 跟前一筆
+// 97,240,250 連貫）。所以錯位列若股數跟前一筆一致列差距 ±50% 內就照用（pickPaidInSharesRow）。沒有一致前一筆的
+// （5512 唯一一筆 2024-10、3131、7851、8171 2025 那幾筆）判斷不了，保守跳過——5512 因此暫時沒有股數（它的股數
+// 766,312,494 可能是對的、錯的是資本欄，但沒有證據），等 mops-ts 重抓。
 // 2026-09-25 量到最新一季（115Q2）受影響 6 家：1225、3131、6546、6861、7851、8171。mops-ts 修好（重抓＋修 parser）後，
 // 壞列消失，這個條件自然不再命中——不需要回來拿掉，但可以拿掉。見記憶 project_capital_stock_history_coverage_gap。
 // 所有讀股數的路徑（每股指標、市值 getMarketCapAsOf、liveMarketCap）都經過這支，擋一次就全部生效。
@@ -39,15 +45,16 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
   let rows: RawCapitalStockRow[];
   try {
     rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
-      SELECT effective_year, effective_month, paid_in_shares FROM "export"."capital_stock_history"
-      WHERE symbol = ${symbol} AND (effective_year < ${asOfYear} OR (effective_year = ${asOfYear} AND effective_month <= ${asOfMonth}))
-        AND NOT (
+      SELECT effective_year, effective_month, paid_in_shares,
+        COALESCE(
           paid_in_shares > 0 AND paid_in_capital > 0 AND par_value > 0
           AND ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))) <> 0
           AND ABS(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))
-                  - ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value)))) < 0.0005
-        )
-      ORDER BY effective_year DESC, effective_month DESC LIMIT 1
+                  - ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value)))) < 0.0005,
+          false) AS misaligned
+      FROM "export"."capital_stock_history"
+      WHERE symbol = ${symbol} AND (effective_year < ${asOfYear} OR (effective_year = ${asOfYear} AND effective_month <= ${asOfMonth}))
+      ORDER BY effective_year DESC, effective_month DESC
     `;
   } catch (error) {
     // 2026-09-13：mops-ts 準備移除這張表（查無官方替代），見 prismaErrors.ts 的說明——
@@ -59,7 +66,7 @@ export const getPaidInSharesAsOf = async (symbol: string, asOfDate: Date): Promi
     }
     throw error;
   }
-  const record = rows[0];
+  const record = pickPaidInSharesRow(rows);
   if (!record || record.paid_in_shares === null) return null;
   return { paidInShares: record.paid_in_shares, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
 };
