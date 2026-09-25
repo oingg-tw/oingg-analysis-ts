@@ -8,6 +8,10 @@ export interface OutstandingCommonSharesAsOf {
   issuedShares: bigint; // capital_stock_history 實收股數（含特別股、庫藏股），來源追溯用
   preferredShares: bigint;
   treasuryShares: bigint;
+  // 分子端也要只算普通股（方案 1 第二段）：每股淨值類從權益扣特別股股本、EPS 類從淨利扣特別股股利。
+  // 兩者跟特別股股數同一次查詢、同一個「asOf 前最近一季」，所以一起帶回來，各指標不用另外接資料來源。
+  preferredCapitalThousands: bigint; // 特別股股本（千元），沒有特別股為 0
+  preferredDividendsTtmThousands: bigint; // 近四季特別股股利（權益變動表宣告數，千元），沒有特別股為 0
   effectiveYear: number; // 已發行股數那筆股本異動的生效年（西元）
   effectiveMonth: number;
 }

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 import { toRatioFromNumbers, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity } from '@/domain/metrics/shared/pickers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
@@ -54,7 +55,9 @@ export const computePbRatio = async (
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
+  // 2026-09-25 分子只算普通股：權益扣特別股股本（見 domain/financials/outstandingCommonShares.ts）。
+  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
+  const bvps = commonEquity !== null && sharesValue !== null ? toPerShareExact(commonEquity, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
@@ -55,7 +56,9 @@ export const computeGrahamNumber = async (
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShareExact(equity.value, sharesValue) : null;
+  // 2026-09-25 分子只算普通股：權益扣特別股股本、淨利扣特別股股利（見 domain/financials/outstandingCommonShares.ts）。
+  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
+  const bvps = commonEquity !== null && sharesValue !== null ? toPerShareExact(commonEquity, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
@@ -78,7 +81,7 @@ export const computeGrahamNumber = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(netIncomeTtmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(netIncomeTtmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const peRatioTtm = epsTtm !== null && epsTtm !== 0 && stockPrice !== null ? stockPrice.closePrice / epsTtm : null;
 
   // grahamNumber = PER × PBR，跟 peRatio/pbRatio 自己的 null_reason 判斷同一套哲學：

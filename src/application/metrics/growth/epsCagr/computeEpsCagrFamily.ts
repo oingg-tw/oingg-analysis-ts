@@ -38,7 +38,8 @@ const getAnnualEps = async (
   }
 
   // 金額單位是千元，股數是實際股數，分子要先 x1000 換算成元（跟 eps.ts 等既有慣例一致）。
-  const value = (Number(netIncomeSum) * 1000) / Number(shares.outstandingCommonShares);
+  // 2026-09-25 分子只算普通股：全年淨利扣全年特別股股利（第四季報告日的近四季＝全年），見 domain/financials/outstandingCommonShares.ts。
+  const value = (Number(netIncomeSum - shares.preferredDividendsTtmThousands) * 1000) / Number(shares.outstandingCommonShares);
   cache.set(rocYear, value);
   return value;
 };

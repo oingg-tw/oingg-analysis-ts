@@ -44,7 +44,8 @@ const getAnnualEps = async (
     return null;
   }
 
-  const value = (Number(netIncomeSum) * 1000) / Number(shares.outstandingCommonShares);
+  // 2026-09-25 分子只算普通股：全年淨利扣全年特別股股利（第四季報告日的近四季＝全年），見 domain/financials/outstandingCommonShares.ts。
+  const value = (Number(netIncomeSum - shares.preferredDividendsTtmThousands) * 1000) / Number(shares.outstandingCommonShares);
   cache.set(rocYear, value);
   return value;
 };
@@ -101,7 +102,7 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;

@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEarnings } from '@/domain/financials/outstandingCommonShares';
 import { calculateYoyGrowthRate, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
@@ -42,8 +43,9 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const incomeStatement = await deps.statements.getIncomeStatement(key);
   const reportDate = incomeStatement?.reportDate ?? null;
-  const currentShares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
-  const currentEps = toEps(pickNetIncome(incomeStatement).value, currentShares);
+  // 2026-09-25 分子只算普通股：單季淨利扣近四季特別股股利的 1/4（見 domain/financials/outstandingCommonShares.ts）。
+  const currentSharesInfo = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const currentEps = toEps(toCommonEarnings(pickNetIncome(incomeStatement).value, currentSharesInfo?.preferredDividendsTtmThousands ?? 0n, 'Q'), currentSharesInfo?.outstandingCommonShares ?? null);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorIncomeStatement = await deps.statements.getIncomeStatement({
@@ -54,8 +56,8 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
     subsidiaryCompanyId,
   });
   const priorReportDate = priorIncomeStatement?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, priorReportDate))?.outstandingCommonShares ?? null : null;
-  const priorEps = toEps(pickNetIncome(priorIncomeStatement).value, priorShares);
+  const priorSharesInfo = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
+  const priorEps = toEps(toCommonEarnings(pickNetIncome(priorIncomeStatement).value, priorSharesInfo?.preferredDividendsTtmThousands ?? 0n, 'Q'), priorSharesInfo?.outstandingCommonShares ?? null);
 
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps);
 

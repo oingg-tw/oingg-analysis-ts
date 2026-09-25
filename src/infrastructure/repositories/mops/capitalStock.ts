@@ -5,6 +5,7 @@ import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
 import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
 import { computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
 import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
+import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
 // CapitalStockChangeSource 在 Phase 4 跟進（對外回應的 zod schema 在 http/modules/companies/types.ts），
@@ -82,10 +83,14 @@ const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ is
 export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: Date): Promise<OutstandingCommonSharesAsOf | null> => {
   const issued = await getIssuedSharesAsOf(symbol, asOfDate);
   if (!issued) return null;
-  const [adjustments, knownPreferredIssuer] = await Promise.all([getShareAdjustmentsAsOf(symbol, asOfDate), isKnownPreferredIssuer(symbol)]);
+  const [adjustments, knownPreferredIssuer, preferredDividendsTtmThousands] = await Promise.all([
+    getShareAdjustmentsAsOf(symbol, asOfDate),
+    isKnownPreferredIssuer(symbol),
+    getPreferredDividendsTtmAsOf(symbol, asOfDate),
+  ]);
   const common = computeOutstandingCommonShares({ issuedShares: issued.issuedShares, parValue: issued.parValue, ...adjustments, knownPreferredIssuer });
   if (!common) return null;
-  return { ...common, issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
+  return { ...common, preferredDividendsTtmThousands, issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
 };
 
 export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getOutstandingCommonShares: getOutstandingCommonSharesAsOf };

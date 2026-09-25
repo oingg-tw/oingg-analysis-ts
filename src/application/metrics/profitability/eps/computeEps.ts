@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEarnings } from '@/domain/financials/outstandingCommonShares';
 import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
@@ -42,7 +43,9 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const epsQuarterly = netIncome.value !== null && sharesValue !== null ? toPerShare(netIncome.value, sharesValue) : null;
+  // 2026-09-25 分子只算普通股：淨利扣特別股股利（單季扣近四季的 1/4），見 domain/financials/outstandingCommonShares.ts。
+  const commonEarningsQ = toCommonEarnings(netIncome.value, shares?.preferredDividendsTtmThousands ?? 0n, 'Q');
+  const epsQuarterly = commonEarningsQ !== null && sharesValue !== null ? toPerShare(commonEarningsQ, sharesValue) : null;
   const quarterlyNullReason: MetricNullReason | null = epsQuarterly === null ? determineNullReason(netIncome.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
@@ -69,7 +72,7 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const ttmNullReason: MetricNullReason | null = epsTtm !== null ? null : ttmComplete ? determineNullReason(ttmSum, sharesValue) : 'insufficient_history';
 
   let ttm: ComputationSlot;

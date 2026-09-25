@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity } from '@/domain/metrics/shared/pickers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
@@ -39,7 +40,9 @@ export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const bvps = equity.value !== null && sharesValue !== null ? toPerShare(equity.value, sharesValue) : null;
+  // 2026-09-25 分子只算普通股：權益扣特別股股本（普通股每股淨值），見 domain/financials/outstandingCommonShares.ts。
+  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
+  const bvps = commonEquity !== null && sharesValue !== null ? toPerShare(commonEquity, sharesValue) : null;
   const nullReason: MetricNullReason | null = bvps === null ? determineNullReason(equity.value, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);

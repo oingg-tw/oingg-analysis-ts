@@ -1,4 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
+import { toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 import { calculateYoyGrowthRate, toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
@@ -46,8 +47,9 @@ export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: B
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const reportDate = balanceSheet?.reportDate ?? null;
-  const currentShares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
-  const currentBvps = toBvps(pickEquity(balanceSheet).value, currentShares);
+  // 2026-09-25 分子只算普通股：權益扣特別股股本（見 domain/financials/outstandingCommonShares.ts）。
+  const currentSharesInfo = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const currentBvps = toBvps(toCommonEquity(pickEquity(balanceSheet).value, currentSharesInfo?.preferredCapitalThousands ?? 0n), currentSharesInfo?.outstandingCommonShares ?? null);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorBalanceSheet = await deps.statements.getBalanceSheet({
@@ -58,8 +60,8 @@ export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: B
     subsidiaryCompanyId,
   });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
-  const priorShares = priorReportDate ? (await deps.shares.getOutstandingCommonShares(symbol, priorReportDate))?.outstandingCommonShares ?? null : null;
-  const priorBvps = toBvps(pickEquity(priorBalanceSheet).value, priorShares);
+  const priorSharesInfo = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
+  const priorBvps = toBvps(toCommonEquity(pickEquity(priorBalanceSheet).value, priorSharesInfo?.preferredCapitalThousands ?? 0n), priorSharesInfo?.outstandingCommonShares ?? null);
 
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentBvps, priorBvps);
 

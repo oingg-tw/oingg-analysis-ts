@@ -50,7 +50,8 @@ const getAnnualEps = async (
     return null;
   }
 
-  const value = (Number(netIncomeSum) * 1000) / Number(shares.outstandingCommonShares);
+  // 2026-09-25 分子只算普通股：全年淨利扣全年特別股股利（第四季報告日的近四季＝全年），見 domain/financials/outstandingCommonShares.ts。
+  const value = (Number(netIncomeSum - shares.preferredDividendsTtmThousands) * 1000) / Number(shares.outstandingCommonShares);
   cache.set(rocYear, value);
   return value;
 };
@@ -104,7 +105,7 @@ export const computePegRatio = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const peRatioTtm = epsTtm !== null && epsTtm !== 0 && stockPrice !== null ? stockPrice.closePrice / epsTtm : null;
 
   // EPS 5 年複合成長率——固定 5 年，取「最近一個資料完整的完整會計年度」跟「5 年前的那個

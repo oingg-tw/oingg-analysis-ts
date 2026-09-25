@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:29:58.506Z",
+  "recordedAt": "2026-09-25T15:37:59.308Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -164,6 +164,12 @@
       "outstandingCommonShares": {
         "$bigint": "25932370067"
       },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
       "preferredShares": {
         "$bigint": "0"
       },
@@ -179,6 +185,12 @@
       },
       "outstandingCommonShares": {
         "$bigint": "11205758337"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
       },
       "preferredShares": {
         "$bigint": "0"

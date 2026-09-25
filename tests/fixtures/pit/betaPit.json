@@ -1,11 +1,11 @@
 {
-  "recordedAt": "2026-09-25T15:29:58.506Z",
+  "recordedAt": "2026-09-25T15:37:59.308Z",
   "entries": {
     "market.getEarliestTradeDate([\"2330\"])": {
       "$date": "2020-11-02T00:00:00.000Z"
     },
     "market.getEarliestTradeDate([\"9999\"])": null,
-    "market.listDailyClosesSince([\"2330\",{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [
+    "market.listDailyClosesSince([\"2330\",{\"$date\":\"2021-09-25T15:37:59.308Z\"},{\"$undefined\":true}])": [
       {
         "close": {
           "$decimal": "602"
@@ -9727,8 +9727,8 @@
         }
       }
     ],
-    "market.listDailyClosesSince([\"9999\",{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [],
-    "market.listTaiexClosesSince([{\"$date\":\"2021-09-25T15:29:58.506Z\"},{\"$undefined\":true}])": [
+    "market.listDailyClosesSince([\"9999\",{\"$date\":\"2021-09-25T15:37:59.308Z\"},{\"$undefined\":true}])": [],
+    "market.listTaiexClosesSince([{\"$date\":\"2021-09-25T15:37:59.308Z\"},{\"$undefined\":true}])": [
       {
         "close": {
           "$decimal": "17313.77"

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:29:58.506Z",
+  "recordedAt": "2026-09-25T15:37:59.308Z",
   "entries": {
     "market.getLatestDailyPrice([\"2330\"])": {
       "close": 2475,
@@ -25,6 +25,12 @@
       "outstandingCommonShares": {
         "$bigint": "25930380458"
       },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
       "preferredShares": {
         "$bigint": "0"
       },
@@ -40,6 +46,12 @@
       },
       "outstandingCommonShares": {
         "$bigint": "25932524521"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
       },
       "preferredShares": {
         "$bigint": "0"
@@ -57,6 +69,12 @@
       "outstandingCommonShares": {
         "$bigint": "25932370067"
       },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
       "preferredShares": {
         "$bigint": "0"
       },
@@ -72,6 +90,12 @@
       },
       "outstandingCommonShares": {
         "$bigint": "25932370067"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
       },
       "preferredShares": {
         "$bigint": "0"

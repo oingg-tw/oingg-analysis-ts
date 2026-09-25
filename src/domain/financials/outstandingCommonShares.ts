@@ -16,12 +16,25 @@ export interface ShareCountInputs {
   knownPreferredIssuer: boolean; // 近幾年有特別股配息紀錄
 }
 
-export const computeOutstandingCommonShares = (i: ShareCountInputs): { outstandingCommonShares: bigint; preferredShares: bigint; treasuryShares: bigint } | null => {
+export const computeOutstandingCommonShares = (
+  i: ShareCountInputs
+): { outstandingCommonShares: bigint; preferredShares: bigint; treasuryShares: bigint; preferredCapitalThousands: bigint } | null => {
   const preferredCapital = i.preferredCapitalThousands ?? 0n;
   if (i.knownPreferredIssuer && preferredCapital === 0n) return null;
   const par = i.parValue && i.parValue > 0 ? i.parValue : 10;
   const preferredShares = BigInt(Math.round((Number(preferredCapital) * 1000) / par));
   const treasuryShares = i.treasuryShares ?? 0n;
   const outstanding = i.issuedShares - preferredShares - treasuryShares;
-  return outstanding > 0n ? { outstandingCommonShares: outstanding, preferredShares, treasuryShares } : null;
+  return outstanding > 0n ? { outstandingCommonShares: outstanding, preferredShares, treasuryShares, preferredCapitalThousands: preferredCapital } : null;
 };
+
+// 分子端（方案 1 第二段）：分母只算普通股，分子也要只算屬於普通股的部分，否則有特別股的公司反而更不準。
+// - EPS 類：歸屬母公司淨利 − 特別股股利（IAS 33；ARDF 釋例：累積特別股不論是否宣告都扣當期股利）。
+//   特別股股利用權益變動表的年度宣告數，所以**單季扣近四季的四分之一**（按期間攤，不是宣告那一季才扣整筆）。
+//   ponytail: 宣告數 vs 當期應計——累積特別股的當期股利跟「今年宣告（通常是去年的）」不一定同額，差的是特別股股利的年增減。
+// - 每股淨值類：歸屬母公司權益 − 特別股股本（普通股每股淨值）。ponytail: 只扣面額部分的特別股股本，不含特別股溢價與積欠股利。
+export const toCommonEarnings = (netIncomeThousands: bigint | null, preferredDividendsTtmThousands: bigint, period: 'Q' | 'TTM'): bigint | null =>
+  netIncomeThousands === null ? null : netIncomeThousands - (period === 'Q' ? preferredDividendsTtmThousands / 4n : preferredDividendsTtmThousands);
+
+export const toCommonEquity = (equityThousands: bigint | null, preferredCapitalThousands: bigint): bigint | null =>
+  equityThousands === null ? null : equityThousands - preferredCapitalThousands;

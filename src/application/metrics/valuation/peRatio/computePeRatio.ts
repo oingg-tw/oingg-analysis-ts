@@ -73,7 +73,8 @@ export const computePeRatio = async (
     }
   }
 
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum, sharesValue) : null;
+  // 2026-09-25 分子只算普通股：近四季淨利扣近四季特別股股利（見 domain/financials/outstandingCommonShares.ts）。
+  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const peRatioTtm = epsTtm !== null && stockPrice !== null ? toRatioFromNumbers(stockPrice.closePrice, epsTtm) : null;
 
   let ttmNullReason: MetricNullReason | null = null;
