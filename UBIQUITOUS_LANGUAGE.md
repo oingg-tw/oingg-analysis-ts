@@ -162,7 +162,7 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 |---|---|---|
 | **單季（Q）** | quarter=1~4 **全部**是單季；第四季 = 年報全年 − (Q1 + Q2 + Q3 單季)（mops-ts 的推導式，見他們的 `deriveQ4XbrlAmounts.ts`；EPS 不推導，第四季單季 EPS 一律 null）。**第四季絕不代表全年** | `quarterly_income_statement_xbrl`、長表 `cash_flow_quarterly`、銀行/保險表的 `*_quarter` 欄位（`QuarterlyKey` 讀的都是這些） |
 | **近四季（TTM）** | 四個單季相加 | 由單季相加，不讀累計表 |
-| **年報** | 公司年度財務報告的全年數字，含官方公告的基本每股盈餘（加權平均股數） | 累計表的第四季（`cumulative_income_statement_xbrl` quarter=4、長表 `cash_flow`／`income_statement_cumulative` quarter=4），mops-ts 2026-09-25 確認可以依賴；另開明確的 `export.annual_income_statement` 待他們的使用者同意 |
+| **年報** | 公司年度財務報告的全年數字，含官方公告的基本每股盈餘（加權平均股數） | 累計表的第四季（`cumulative_income_statement_xbrl` quarter=4、長表 `cash_flow`／`income_statement_cumulative` quarter=4）**而且必須是年報文件解析出來的列**（寬表 `raw_context_ref` 非 null）——沒 ingest 過年報的公司，mops-ts 會用四個單季相加補一列累計第四季（114 年 773 列），那不是年報。讀取介面：`AnnualReportPort`（不帶季別，只認文件列）。另開明確的 `export.annual_income_statement` 待 mops-ts 的使用者同意 |
 
 **為什麼要硬性區分**：台灣沒有「第四季季報」，第四季單季是 mops-ts 從年報減前三季推出來的。
 兩者共用 quarter=4 這個座標，一旦單季表的第四季混進年報的全年數字，近四季會安靜地變成
