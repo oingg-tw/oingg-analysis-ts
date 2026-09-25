@@ -16,6 +16,8 @@
               "sourceUrl": "<string>",
               "summary": "<string>",
               "threshold": {
+                "comparator": "lt",
+                "compareAgainstFieldId": "marketCap.Q",
                 "denominator": "<number>",
                 "description": "<string>",
                 "note": "<string>",
@@ -24,7 +26,17 @@
                   "scope": "market",
                   "topPercent": "<number>"
                 },
-                "thresholdLatex": "<string>"
+                "thresholdLatex": "<string>",
+                "value": "<number>",
+                "valueMax": "<number>",
+                "valueMin": "<number>",
+                "warning": {
+                  "comparator": "lt",
+                  "description": "<string>",
+                  "note": "<string>",
+                  "thresholdLatex": "<string>",
+                  "value": "<number>"
+                }
               },
               "timeframe": "<string>"
             },
@@ -36,6 +48,8 @@
             "metricCode": "beta",
             "misreadings": "<string>",
             "name": "Beta",
+            "nameEn": "<string>",
+            "nameSuffix": "<string>",
             "referenceUrl": "<string>",
             "sources": [
               "<string>"

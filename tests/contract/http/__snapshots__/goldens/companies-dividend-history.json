@@ -5,18 +5,18 @@
       {
         "cashDividend": "<number>",
         "distributionCount": "<number>",
-        "eps": "<null>",
+        "eps": "<number>",
         "events": [
           {
             "announcementDate": "<date>",
             "cashDividend": "<number>",
-            "closeAtExDate": "<null>",
+            "closeAtExDate": "<number>",
             "exDividendDate": "<date>",
             "exRightsDate": "<null>",
-            "fiscalQuarter": "<null>",
+            "fiscalQuarter": "<number>",
             "paymentDate": "<date>",
             "stockDividend": "<number>",
-            "yieldAtExDate": "<null>"
+            "yieldAtExDate": "<number>"
           }
         ],
         "exDividendDate": "<date>",
@@ -24,11 +24,11 @@
         "fiscalYear": "<number>",
         "knowledgeDate": "<date>",
         "paymentDate": "<date>",
-        "payoutRatio": "<null>",
+        "payoutRatio": "<number>",
         "rocFiscalYear": "<number>",
         "stockDividend": "<number>",
         "totalDividend": "<number>",
-        "yieldAtExDate": "<null>"
+        "yieldAtExDate": "<number>"
       }
     ],
     "symbol": "<numeric-string>"

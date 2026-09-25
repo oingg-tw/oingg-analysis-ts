@@ -3,7 +3,7 @@
   "body": {
     "entries": [
       {
-        "cashDividend": "<null>",
+        "cashDividend": "<number>",
         "companyName": "<string>",
         "composition": {
           "dividendIncomePct": "<number>",
@@ -15,7 +15,7 @@
         "distributionPerUnit": "<number>",
         "exDate": "<date>",
         "exType": "<string>",
-        "fiscalYear": "<null>",
+        "fiscalYear": "<number>",
         "paymentDate": "<date>",
         "recordDate": "<date>",
         "securityType": "ETF",
@@ -23,7 +23,7 @@
         "sharesholderOwner": "<null>",
         "sharesOffered": "<null>",
         "status": "realized",
-        "stockDividendRatio": "<null>",
+        "stockDividendRatio": "<number>",
         "stockHoldingRatio": "<null>",
         "subscriptionPricePerShare": "<null>",
         "subscriptionRatio": "<null>",

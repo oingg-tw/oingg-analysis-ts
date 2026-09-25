@@ -10,7 +10,7 @@
         "industry": "<string>",
         "lastYearSameMonthRevenue": "<numeric-string>",
         "momChangePercent": "<number>",
-        "note": "<null>",
+        "note": "<string>",
         "reportDate": "<date>",
         "yearMonth": "<string>",
         "yoyChangePercent": "<number>"

@@ -11,7 +11,7 @@
     ],
     "entries": [
       {
-        "conversionStartDate": "<null>",
+        "conversionStartDate": "<date>",
         "convertible": "<boolean>",
         "cumulativeDividend": "<boolean>",
         "currentYieldPct": "<number>",

@@ -10,6 +10,7 @@
             "field": "market",
             "kind": "categorical",
             "label": "<string>",
+            "unit": "<string>",
             "values": [
               "TWSE"
             ]

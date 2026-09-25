@@ -18,7 +18,7 @@
             "timeframe": "<string>",
             "totalCount": "<number>",
             "value": "<number>",
-            "warning": "<null>"
+            "warning": "<boolean>"
           }
         ],
         "categoryDisplayName": "<string>",

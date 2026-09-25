@@ -8,7 +8,7 @@
           "capitalReserveTransfer": "<numeric-string>",
           "cashIncrease": "<numeric-string>",
           "mergerIncrease": "<numeric-string>",
-          "other": "<null>",
+          "other": "<string>",
           "retainedEarningsTransfer": "<numeric-string>"
         },
         "effectiveDate": "<string>",
