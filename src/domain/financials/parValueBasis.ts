@@ -51,24 +51,36 @@ const parAt = (initialPar: number | null, changes: ParChange[], date: Date): num
   return applicable.length > 0 ? applicable.at(-1)!.newPar : initialPar;
 };
 
-// closesAsc：最近一次面額變更生效月月初到股價日的收盤價（由舊到新）
+// closesAsc：最近一次面額變更生效月前 120 天到股價日的收盤價（由舊到新）。
 export const lastConfirmedParChangeBefore = (rowsAsc: ParRow[], priceDate: Date): ParChange | null =>
   confirmedChanges(rowsAsc).changes.filter((c) => c.ym <= ymOf(priceDate)).at(-1) ?? null;
 
-export const parBasisFactor = (rowsAsc: ParRow[], closesAsc: number[], priceDate: Date, basisDate: Date): number => {
+const monthStart = (ym: number) => new Date(Date.UTC(Math.floor(ym / 100), (ym % 100) - 1, 1));
+const SWITCH_ASSUMED_AFTER_DAYS = 180;
+
+// 換發判斷（2026-09-26 第二版，第一版在 8476／7803 誤判「未換發」）：
+// - 窗口內找到「÷(舊面額/新面額)」那一跳 → 已換發。窗口從生效月前 120 天起算：換發前常停止交易一段時間（8476 換發前最後一筆
+//   成交在 11 月前、跳動在 2024-11-11），市場換發也可能早於股本歷史記的月份（5314 在 2025-03-31 跳、紀錄在 2025-07）。
+// - 沒找到，但股價序列沒涵蓋到變更之前（7803 股價 2026-05 才有）→ 無從觀察，視為已換發。
+// - 沒找到，但距生效已超過 180 天 → 視為已換發（新股不會半年都還沒換發）。
+const isSwitched = (change: ParChange, closesAsc: { date: Date; close: number }[], priceDate: Date): boolean => {
+  const expected = change.newPar / change.oldPar;
+  for (let i = 1; i < closesAsc.length; i++) {
+    const r = closesAsc[i]!.close / closesAsc[i - 1]!.close / expected;
+    if (r > 0.4 && r < 1.6) return true;
+  }
+  const start = monthStart(change.ym);
+  if (closesAsc.length === 0 || closesAsc[0]!.date >= start) return true;
+  return (priceDate.getTime() - start.getTime()) / 86_400_000 > SWITCH_ASSUMED_AFTER_DAYS;
+};
+
+export const parBasisFactor = (rowsAsc: ParRow[], closesAsc: { date: Date; close: number }[], priceDate: Date, basisDate: Date): number => {
   const { initialPar, changes } = confirmedChanges(rowsAsc);
   if (changes.length === 0) return 1;
+  // 一年內兩次以上面額變更（5314 10→0.5→10→0.5）＝股本歷史本身不可信，不換算（維持原始成交價），不要在亂的資料上疊換算。
+  for (let i = 1; i < changes.length; i++) if (changes[i]!.ym - changes[i - 1]!.ym < 100) return 1;
   const basisPar = parAt(initialPar, changes, basisDate);
   const last = changes.filter((c) => c.ym <= ymOf(priceDate)).at(-1);
-  let tradingPar = parAt(initialPar, changes, priceDate);
-  if (last) {
-    const expectedPriceRatio = last.newPar / last.oldPar;
-    let switched = false;
-    for (let i = 1; i < closesAsc.length && !switched; i++) {
-      const r = closesAsc[i]! / closesAsc[i - 1]!;
-      if (r / expectedPriceRatio > 0.4 && r / expectedPriceRatio < 1.6) switched = true;
-    }
-    tradingPar = switched ? last.newPar : last.oldPar;
-  }
+  const tradingPar = last ? (isSwitched(last, closesAsc, priceDate) ? last.newPar : last.oldPar) : parAt(initialPar, changes, priceDate);
   return basisPar !== null && tradingPar !== null ? basisPar / tradingPar : 1;
 };

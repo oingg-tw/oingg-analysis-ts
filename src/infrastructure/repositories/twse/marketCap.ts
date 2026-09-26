@@ -66,8 +66,8 @@ const getParRows = (symbol: string): Promise<ParRow[]> => {
 };
 
 const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
-  db.$queryRaw<{ close: unknown }[]>`
-    SELECT close FROM "export"."daily_price"
+  db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
+    SELECT trade_date, close FROM "export"."daily_price"
     WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close IS NOT NULL
     ORDER BY trade_date ASC
   `;
@@ -76,10 +76,11 @@ const priceBasisFactor = async (symbol: string, priceDate: Date, basisDate: Date
   const rows = await getParRows(symbol);
   const last = lastConfirmedParChangeBefore(rows, priceDate);
   if (!last) return 1;
-  const since = new Date(Date.UTC(Math.floor(last.ym / 100), (last.ym % 100) - 1, 1));
-  const listed = await queryClosesBetween(twseExportPrisma, symbol, since, priceDate);
-  const closes = listed.length > 0 ? listed : await queryClosesBetween(tpexExportPrisma, symbol, since, priceDate);
-  return parBasisFactor(rows, closes.map((c) => Number(c.close)), priceDate, basisDate);
+  // 窗口從生效月前 120 天起（見 parValueBasis.ts isSwitched）；上市櫃轉板的公司兩邊各有一段，合併起來（8476 2023-10 轉上市）。
+  const since = new Date(Date.UTC(Math.floor(last.ym / 100), (last.ym % 100) - 1, 1) - 120 * 86_400_000);
+  const [listed, otc] = await Promise.all([queryClosesBetween(twseExportPrisma, symbol, since, priceDate), queryClosesBetween(tpexExportPrisma, symbol, since, priceDate)]);
+  const closes = [...listed, ...otc].sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime()).map((c) => ({ date: c.trade_date, close: Number(c.close) }));
+  return parBasisFactor(rows, closes, priceDate, basisDate);
 };
 
 export const getStockPriceAsOf = async (symbol: string, asOfDate: Date, basisDate?: Date): Promise<StockPriceAsOf | null> => {
