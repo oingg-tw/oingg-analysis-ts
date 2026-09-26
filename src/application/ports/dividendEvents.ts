@@ -5,7 +5,7 @@
 export interface DividendDistributionEvent {
   exDividendDate: Date;
   announcementDate: Date | null;
-  rocFiscalYear: number;
+  rocFiscalYear: number | null; // 股利所屬年度（民國）；mops 少數列是 null
 }
 
 // 2026-09-19 給 GET /companies/dividend-history（歷年股利表）用的完整分派列——一列＝一次董事會/股東會

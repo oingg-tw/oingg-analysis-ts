@@ -1,6 +1,7 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationSlot } from '@/domain/metrics/computation';
+import { computation, withFormulaVersion, type ComputationSlot } from '@/domain/metrics/computation';
+import { calculateDistributionsPerFiscalYear } from '@/domain/metrics/dividend/dividendDistributionCount/calculateDividendDistributionCount';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-15 應使用者要求新增——「過去一年配息次數」，用 mops-ts 的股利分派公告
@@ -19,6 +20,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 除息交易日的西元年+月份反推的日曆季度（不是這次分派案自己的 fiscal_quarter 欄位——
 // 那個欄位對年配公司是 null，用它當座標會缺一角；日曆季度對年配/季配公司都一定存在）。
 
+
+// 2026-09-26 formulaVersion 2：改成「盈餘所屬年度」計次，見 domain calculateDividendDistributionCount.ts。
+export const DIVIDEND_DISTRIBUTION_COUNT_FORMULA_VERSION = 2;
 
 export type DividendDistributionCountDeps = Pick<PitDeps, 'dividendEvents'>;
 
@@ -43,14 +47,8 @@ export const computeDividendDistributionCount = async (query: QuarterlyMetricQue
   }
 
   const latest = events[0]!; // getDividendDistributionEvents 已經依 exDividendDate DESC 排序
-  const windowStart = new Date(latest.exDividendDate);
-  windowStart.setUTCDate(windowStart.getUTCDate() - 365);
-
-  // 窗口起點刻意排除（> 不是 >=）——實測抓到真實邊界案例：季配公司（每季約91天配一次）
-  // 若最新基準日剛好落在跟某次歷史事件相差恰好 365 天的位置，用 >= 會把「整整一年前的
-  // 那一次」也算進來，湊出 5 次而不是符合直覺的 4 次。改成排除起點當天，只算「基準日
-  // 往前不滿 365 天」內的事件，季配公司才會穩定算出 4 次。
-  const count = events.filter((e) => e.exDividendDate > windowStart && e.exDividendDate <= latest.exDividendDate).length;
+  // 座標仍用最新一次除息日（日曆季度）、knowledge date 仍用那次的公告日；次數改用盈餘所屬年度計（2026-09-26）。
+  const count = calculateDistributionsPerFiscalYear(events);
 
   const fiscalYear = latest.exDividendDate.getUTCFullYear();
   const fiscalQuarter = Math.floor(latest.exDividendDate.getUTCMonth() / 3) + 1;
@@ -67,10 +65,10 @@ export const computeDividendDistributionCount = async (query: QuarterlyMetricQue
     dataType,
     subsidiaryCompanyId,
     value: count,
-    nullReason: null,
+    nullReason: count === null ? 'missing_input' : null,
     knowledgeDate,
     knowledgeDateIsFallback,
   });
 
-  return { symbol, slots: { ttm } };
+  return { symbol, slots: withFormulaVersion({ ttm }, DIVIDEND_DISTRIBUTION_COUNT_FORMULA_VERSION) };
 };
