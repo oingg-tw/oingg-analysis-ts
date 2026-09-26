@@ -3,18 +3,47 @@
 // 錯位不一定是股數欄錯：有時錯的是資本欄、股數其實對（6841 2025-06）。判斷方式是跟**前一筆一致列**比股數，
 // ±50% 內算連貫、股數照用；否則跳過往更早找。只看前一筆不看後一筆——時間點查詢不能偷看未來。
 // 沒有一致的前一筆就判斷不了，保守跳過（不猜）。
+//
+// 2026-09-26 疊上第二條、跟時間序列獨立的判準（mops-ts 提出）：**實收股數不可能超過核定股數**（公司法）。
+// 股數與「實收資本 ÷ 面額」差超過 1% 的列，兩個候選值各自跟核定股數比——只有一邊合法就用那一邊（另一邊被法規排除），
+// 兩邊都合法才退回上面的連貫性判斷。這條也涵蓋不是 10^k 的「其他比例」錯列（原本照用股數）。
+// 用「資本 ÷ 面額」不是猜值：那是 MOPS 同一列另一格申報的數字。mops-ts 對 138 列的分類：股數可信 42、金額可信 51、
+// 判別不出 45、都不通過 0（5512 2024-10：金額換算 7,663,124,940 股超過核定 1,010,000,000 股 7.6 倍，股數 766,312,494 才對）。
+// 1% 容差：MOPS 的數字有四捨五入，完全相等會製造假不符。
 const SHARES_CONTINUITY_MAX_RATIO = 1.5;
+const CELL_MISMATCH_TOLERANCE = 0.01;
 
-export const pickPaidInSharesRow = <R extends { paid_in_shares: bigint | null; misaligned: boolean }>(rowsNewestFirst: R[]): R | null => {
+interface CapitalStockRow {
+  paid_in_shares: bigint | null;
+  misaligned: boolean;
+  amount_shares: bigint | null; // 實收資本 ÷ 面額
+  authorized_shares: bigint | null;
+}
+
+const legalVerdict = (row: CapitalStockRow): 'shares' | 'amount' | 'undecided' => {
+  const { paid_in_shares: shares, amount_shares: amount, authorized_shares: authorized } = row;
+  if (shares === null || amount === null || authorized === null || amount <= 0n) return 'undecided';
+  if (Math.abs(Number(shares - amount)) <= CELL_MISMATCH_TOLERANCE * Number(amount)) return 'undecided';
+  const sharesLegal = shares <= authorized;
+  const amountLegal = amount <= authorized;
+  if (sharesLegal && !amountLegal) return 'shares';
+  if (!sharesLegal && amountLegal) return 'amount';
+  return 'undecided';
+};
+
+export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: R[]): { row: R; shares: bigint } | null => {
   for (let i = 0; i < rowsNewestFirst.length; i++) {
     const row = rowsNewestFirst[i]!;
     if (row.paid_in_shares === null) continue;
-    if (!row.misaligned) return row;
+    const verdict = legalVerdict(row);
+    if (verdict === 'shares') return { row, shares: row.paid_in_shares };
+    if (verdict === 'amount') return { row, shares: row.amount_shares! };
+    if (!row.misaligned) return { row, shares: row.paid_in_shares };
     const previousConsistent = rowsNewestFirst.slice(i + 1).find((r) => !r.misaligned && r.paid_in_shares !== null);
     if (previousConsistent) {
       const a = Number(row.paid_in_shares);
       const b = Number(previousConsistent.paid_in_shares);
-      if (Math.max(a / b, b / a) <= SHARES_CONTINUITY_MAX_RATIO) return row;
+      if (Math.max(a / b, b / a) <= SHARES_CONTINUITY_MAX_RATIO) return { row, shares: row.paid_in_shares };
     }
   }
   return null;

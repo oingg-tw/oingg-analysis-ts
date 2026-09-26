@@ -18,6 +18,8 @@ interface RawCapitalStockRow {
   paid_in_shares: bigint | null;
   par_value: unknown;
   misaligned: boolean; // 股數 ÷（資本÷面額）剛好 10^k、k≠0
+  amount_shares: bigint | null; // 實收資本 ÷ 面額（2026-09-26 核定股數判準用）
+  authorized_shares: bigint | null;
 }
 
 // 股本是歷史異動紀錄（現金增資、盈餘轉增資、減資…生效當月各一筆），不能直接抓整張表最新一筆。
@@ -48,7 +50,8 @@ const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ is
   let rows: RawCapitalStockRow[];
   try {
     rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
-      SELECT effective_year, effective_month, paid_in_shares, par_value,
+      SELECT effective_year, effective_month, paid_in_shares, par_value, authorized_shares,
+        CASE WHEN par_value > 0 AND paid_in_capital > 0 THEN ROUND(paid_in_capital / par_value)::bigint END AS amount_shares,
         COALESCE(
           paid_in_shares > 0 AND paid_in_capital > 0 AND par_value > 0
           AND ROUND(LOG(paid_in_shares::numeric / (paid_in_capital / par_value))) <> 0
@@ -69,10 +72,11 @@ const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ is
     }
     throw error;
   }
-  const record = pickPaidInSharesRow(rows);
-  if (!record || record.paid_in_shares === null) return null;
+  const picked = pickPaidInSharesRow(rows);
+  if (!picked) return null;
+  const record = picked.row;
   return {
-    issuedShares: record.paid_in_shares,
+    issuedShares: picked.shares,
     parValue: record.par_value === null || record.par_value === undefined ? null : Number(record.par_value),
     effectiveYear: record.effective_year,
     effectiveMonth: record.effective_month,
