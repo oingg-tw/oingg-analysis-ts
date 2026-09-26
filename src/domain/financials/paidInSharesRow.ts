@@ -31,13 +31,28 @@ const legalVerdict = (row: CapitalStockRow): 'shares' | 'amount' | 'undecided' =
   return 'undecided';
 };
 
+// 2026-09-26 兩格都錯、方向相反（股數 ÷ 資本換算 恰為 100 或 1/100，mops-ts 稱 both_wrong_opposite）：真值是兩格的幾何中位
+// （股數 ÷ 10 ＝ 資本換算 × 10）。原本一律跳過，代價是沿用增資前的舊股數——8171 2025-05 增資到約 1.13 億股，四列全是這種形狀，
+// 跳過後用 2024-08 的 7,746 萬股，每股淨值高估 45%（交易所股價淨值比反推的每股淨值 ÷ 我們的 = 0.68 ≈ 77.46/112.85）。
+// 幾何中位有兩個獨立旁證：6546、6861 跟前一筆一致列連貫；8171 跟交易所每股淨值吻合。仍要過核定上限與連貫性檢查。
+const geometricMiddle = (row: CapitalStockRow): bigint | null => {
+  const { paid_in_shares: shares, amount_shares: amount } = row;
+  if (shares === null || amount === null || amount <= 0n) return null;
+  const ratio = Number(shares) / Number(amount);
+  if (Math.abs(ratio / 100 - 1) < 0.0005) return shares / 10n;
+  if (Math.abs(ratio * 100 - 1) < 0.0005) return shares * 10n;
+  return null;
+};
+
 export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: R[]): { row: R; shares: bigint } | null => {
   for (let i = 0; i < rowsNewestFirst.length; i++) {
     const row = rowsNewestFirst[i]!;
     if (row.paid_in_shares === null) continue;
     const verdict = legalVerdict(row);
     if (!row.misaligned && verdict !== 'amount') return { row, shares: row.paid_in_shares };
-    const candidate = verdict === 'amount' ? row.amount_shares! : row.paid_in_shares;
+    const middle = geometricMiddle(row);
+    const legalMiddle = middle !== null && (row.authorized_shares === null || middle <= row.authorized_shares) ? middle : null;
+    const candidate = legalMiddle ?? (verdict === 'amount' ? row.amount_shares! : row.paid_in_shares);
     const previousConsistent = rowsNewestFirst.slice(i + 1).find((r) => !r.misaligned && r.paid_in_shares !== null);
     if (previousConsistent) {
       // 2026-09-26 核定判準選出的那一格也要跟前一筆一致列連貫才採用：6546 2025-03 兩格都錯（股數 ×10 超過核定、資本格 ÷10），
@@ -49,6 +64,7 @@ export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: 
     }
     // 沒有前一筆一致列可比：只接受「股數合法、金額換算超過核定」（5512 2024-10，mops-ts 用原始文件印證）。
     // 錯位列（10^k）的「只有金額合法」不收——3131 2026-06 兩格都錯，資本格換算 2,925,893 股會讓 EPS 變 177。
+    if (legalMiddle !== null) return { row, shares: legalMiddle };
     if (verdict === 'shares') return { row, shares: candidate };
     if (verdict === 'amount' && !row.misaligned) return { row, shares: candidate };
   }
