@@ -55,7 +55,7 @@ export const computeFcfYield = async (
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
 
   const coordinateBase = { symbol, metricCode: 'fcfYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

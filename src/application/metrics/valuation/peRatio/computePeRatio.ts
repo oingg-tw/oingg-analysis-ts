@@ -56,7 +56,7 @@ export const computePeRatio = async (
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
 
   // TTM：近四季（含本季）淨利加總 / 流通股數，跟 eps.ts 的 TTM 算法完全相同。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

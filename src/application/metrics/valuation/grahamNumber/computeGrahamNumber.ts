@@ -63,7 +63,7 @@ export const computeGrahamNumber = async (
   const bvps = commonEquity !== null && sharesValue !== null ? toPerShareExact(commonEquity, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
   const pbRatio = bvps !== null && bvps !== 0 && stockPrice !== null ? stockPrice.closePrice / bvps : null;
 
   // EPS(TTM)：近四季（含本季）淨利加總，算法跟 peRatio/eps 的 TTM 完全相同。

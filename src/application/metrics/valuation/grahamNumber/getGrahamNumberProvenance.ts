@@ -36,7 +36,7 @@ export const getGrahamNumberProvenance = async (query: QuarterlyMetricQuery, dep
   const bvps = equity.value !== null && shares !== null ? toPerShare(equity.value, shares) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate) : null;
+  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
   const pbRatio = bvps !== null && stockPrice !== null && bvps !== 0 ? Math.round((stockPrice.closePrice / bvps) * 100) / 100 : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);

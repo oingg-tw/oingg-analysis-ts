@@ -7,6 +7,8 @@ import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividen
 import { getForeignShareholdingHistory } from './foreignShareholding';
 import { getStockPledgeRatioHistory } from './stockPledgeRatio';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import { lastConfirmedParChangeBefore, parBasisFactor, type ParRow } from '@/domain/financials/parValueBasis';
 
 // 兩個回傳型別 2026-09-17 Phase 3 搬到 application/ports/marketData.ts，這裡 re-export 給既有 import 路徑。
 export type { MarketCapAsOf, StockPriceAsOf };
@@ -47,10 +49,44 @@ const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeD
   return row ? { tradeDate: row.trade_date, close: row.close } : null;
 };
 
-export const getStockPriceAsOf = async (symbol: string, asOfDate: Date): Promise<StockPriceAsOf | null> => {
+// 2026-09-26 面額基準換算（見 domain/financials/parValueBasis.ts）：面額變更生效到新股換發之間，成交價跟股本歷史的股數
+// 不同基準。股本歷史每家一次查詢、快取一小時（面額變更一年全市場十來筆，絕大多數公司沒有 → 係數 1、不查股價序列）。
+const PAR_ROWS_TTL_MS = 60 * 60 * 1000;
+const parRowsCache = new Map<string, { at: number; rows: Promise<ParRow[]> }>();
+const getParRows = (symbol: string): Promise<ParRow[]> => {
+  const hit = parRowsCache.get(symbol);
+  if (hit && Date.now() - hit.at < PAR_ROWS_TTL_MS) return hit.rows;
+  const rows = mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_shares: bigint | null }[]>`
+      SELECT effective_year * 100 + effective_month AS ym, par_value, paid_in_shares
+      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY ym ASC`
+    .then((r) => r.map((x) => ({ ym: Number(x.ym), parValue: x.par_value === null ? null : Number(x.par_value), shares: x.paid_in_shares })))
+    .catch(() => []);
+  parRowsCache.set(symbol, { at: Date.now(), rows });
+  return rows;
+};
+
+const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
+  db.$queryRaw<{ close: unknown }[]>`
+    SELECT close FROM "export"."daily_price"
+    WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close IS NOT NULL
+    ORDER BY trade_date ASC
+  `;
+
+const priceBasisFactor = async (symbol: string, priceDate: Date, basisDate: Date): Promise<number> => {
+  const rows = await getParRows(symbol);
+  const last = lastConfirmedParChangeBefore(rows, priceDate);
+  if (!last) return 1;
+  const since = new Date(Date.UTC(Math.floor(last.ym / 100), (last.ym % 100) - 1, 1));
+  const listed = await queryClosesBetween(twseExportPrisma, symbol, since, priceDate);
+  const closes = listed.length > 0 ? listed : await queryClosesBetween(tpexExportPrisma, symbol, since, priceDate);
+  return parBasisFactor(rows, closes.map((c) => Number(c.close)), priceDate, basisDate);
+};
+
+export const getStockPriceAsOf = async (symbol: string, asOfDate: Date, basisDate?: Date): Promise<StockPriceAsOf | null> => {
   const priceRow = await getPriceRowAsOf(symbol, asOfDate);
   if (!priceRow || priceRow.close === null) return null;
-  return { closePrice: Number(priceRow.close), tradeDate: priceRow.tradeDate.toISOString().slice(0, 10) };
+  const factor = basisDate ? await priceBasisFactor(symbol, priceRow.tradeDate, basisDate) : 1;
+  return { closePrice: Number(priceRow.close) * factor, tradeDate: priceRow.tradeDate.toISOString().slice(0, 10) };
 };
 
 // 市值 = 個股收盤價 x 流通股數（capital_stock_history，asOfDate 當下生效的股本，見
@@ -73,11 +109,13 @@ export const getMarketCapAsOf = async (symbol: string, asOfDate: Date): Promise<
   const [priceRow, shares] = await Promise.all([getPriceRowAsOf(symbol, asOfDate), getOutstandingCommonSharesAsOf(symbol, asOfDate)]);
 
   if (!priceRow || priceRow.close === null || !shares) return null;
+  // 股數是 asOfDate 當下生效的股本 → 股價換算到同一天的面額基準（5904：06-30 還沒換發，成交價是舊股 → ×1/10）。
+  const close = Number(priceRow.close) * (await priceBasisFactor(symbol, priceRow.tradeDate, asOfDate));
 
   return {
-    marketCap: Number(priceRow.close) * Number(shares.outstandingCommonShares),
+    marketCap: close * Number(shares.outstandingCommonShares),
     tradeDate: priceRow.tradeDate.toISOString().slice(0, 10),
-    closePrice: Number(priceRow.close),
+    closePrice: close,
     outstandingCommonShares: shares.outstandingCommonShares,
   };
 };

@@ -36,7 +36,9 @@ export interface DailyCloseRow {
 }
 
 export interface StockPricePort {
-  getStockPrice(symbol: string, asOfDate: Date): Promise<StockPriceAsOf | null>;
+  // basisDate（選填，2026-09-26）：股價要跟「哪一天的股數」同一個面額基準——每股指標用報告日的股數，所以拿股價跟每股數字比的
+  // 估值指標要傳報告日；面額變更生效到換發之間，原始成交價跟報告日股數不同基準（5904、6949），會換算。不傳＝原始成交價。
+  getStockPrice(symbol: string, asOfDate: Date, basisDate?: Date): Promise<StockPriceAsOf | null>;
 }
 
 export interface MarketCapPort {
