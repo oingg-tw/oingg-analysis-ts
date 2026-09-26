@@ -14,7 +14,10 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
   // 拿去年同季的 year/season，不是新機制。
 export const grahamNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'grahamNumber',
-  name: '葛拉漢數字',
+  // 2026-09-27 使用者拍板改名：算的是 PER × PBR（跟 22.5 比）是倍數，文獻上的 Graham Number 是 √(22.5 × EPS × BVPS) 的價位。
+  // metricCode 維持 grahamNumber（下游在用）；公式不改成價位版——價位型數字踩投顧法規（web-nuxt 提醒）。
+  name: '葛拉漢倍數',
+  nameEn: 'Graham Multiplier',
   unit: '倍',
   // 2026-09-10 使用者要求：公式改成 PER(TTM) × PBR，不要讓股價變成單獨要比較的變量——
   // 原本 sqrt(22.5×EPS×BVPS) vs 股價的寫法，股價是拿來跟這支指標的結果比較用的額外

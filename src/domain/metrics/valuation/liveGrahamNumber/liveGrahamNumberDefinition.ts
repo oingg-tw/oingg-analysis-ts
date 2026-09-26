@@ -5,7 +5,8 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 // 的 group:'period' 不同。
 export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
   metricCode: 'liveGrahamNumber',
-  name: '葛拉漢數字',
+  name: '葛拉漢倍數',
+  nameEn: 'Graham Multiplier',
   nameSuffix: '即時',
   unit: '倍',
   formulaNote:

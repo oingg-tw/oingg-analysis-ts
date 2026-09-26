@@ -7,7 +7,7 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 財報的基本面數據。
 export const liveGrahamNumberBadge: MetricBadge = {
   name: '葛拉漢倍數',
-  nameEn: 'Graham Number',
+  nameEn: 'Graham Multiplier',
   author: 'Benjamin Graham, 1949',
   // 2026-09-20 sourceUrl 實際 fetch 驗證：有完整公式，並逐字寫出 The product of these two maximum multiples is 15 x 1.5 = 22.5。
   sourceUrl: 'https://en.wikipedia.org/wiki/Graham_number',
