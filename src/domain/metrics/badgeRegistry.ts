@@ -20,6 +20,7 @@ import { altmanZDoublePrimeScoreBadge } from './resilience/altmanZDoublePrimeSco
 import { altmanZScoreBadge } from './resilience/altmanZScore/altmanZScoreBadge';
 import { currentRatioBadge } from './resilience/currentRatio/currentRatioBadge';
 import { interestCoverageBadge } from './resilience/interestCoverage/interestCoverageBadge';
+import { croicBadge } from './profitability/croic/croicBadge';
 import { netDebtToEbitdaBadge } from './resilience/netDebtToEbitda/netDebtToEbitdaBadge';
 import { cashConversionCycleBadge } from './efficiency/cashConversionCycle/cashConversionCycleBadge';
 import { rdIntensityBadge } from './growth/rdIntensity/rdIntensityBadge';
@@ -255,6 +256,8 @@ export const badgeRegistry: Record<string, MetricBadge> = {
   altmanZScore: altmanZScoreBadge,
   currentRatio: currentRatioBadge,
   interestCoverage: interestCoverageBadge,
+  // 2026-09-26：croicBadge 新增，出處 Joe Ponzio《F Wall Street》（2009）10%，完整查證脈絡見 croicBadge.ts 檔頭。
+  croic: croicBadge,
   netDebtToEbitda: netDebtToEbitdaBadge,
   cashConversionCycle: cashConversionCycleBadge,
   rdIntensity: rdIntensityBadge,
