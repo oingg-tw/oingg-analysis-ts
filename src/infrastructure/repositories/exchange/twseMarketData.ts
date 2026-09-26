@@ -5,13 +5,6 @@ import type { DailyPriceAsOf, DailyValuationAsOf } from '@/application/ports/mar
 // DailyValuationAsOf / DailyPriceAsOf 2026-09-17 Phase 3 搬到 application/ports/marketData.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
 export type { DailyPriceAsOf, DailyValuationAsOf };
 
-interface RawTpexDailyValuationRow {
-  trade_date: Date;
-  pe_ratio: unknown;
-  pb_ratio: unknown;
-  dividend_yield: unknown;
-}
-
 interface RawTwseDailyValuationRow {
   trade_date: Date;
   pe_ratio: unknown;
@@ -27,46 +20,33 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 //
 // 2026-09-03 使用者決定 curated 中台層現階段太早，TWSE 這邊改回直接查 twseExportPrisma（跟
 // TPEx 同一種模式——export schema 沒有唯一識別欄位，走 $queryRaw）。
-export const getDailyValuationAsOf = async (symbol: string, asOfDate?: Date): Promise<DailyValuationAsOf | null> => {
-  const twseRows = asOfDate
-    ? await twseExportPrisma.$queryRaw<RawTwseDailyValuationRow[]>`
-        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
-        WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
-        ORDER BY trade_date DESC LIMIT 1
-      `
-    : await twseExportPrisma.$queryRaw<RawTwseDailyValuationRow[]>`
-        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
-        WHERE symbol = ${symbol}
-        ORDER BY trade_date DESC LIMIT 1
-      `;
-  const twseRecord = twseRows[0];
-  if (twseRecord) {
-    return {
-      tradeDate: twseRecord.trade_date,
-      peRatio: toNullableNumber(twseRecord.pe_ratio),
-      pbRatio: toNullableNumber(twseRecord.pb_ratio),
-      dividendYield: toNullableNumber(twseRecord.dividend_yield),
-    };
-  }
+// 2026-09-26 上市、上櫃兩邊都查、取交易日較新的那筆（轉板公司兩邊都有資料：8476 2023-10 上櫃轉上市，舊版「上市查得到就不查上櫃」
+// 在反向轉板時會拿到舊值；批次版本更是用上櫃的舊價蓋掉上市的新價，bff-ts 量到 8476 股價停在 2023-10-30）。
+const newerOf = <R extends { trade_date: Date }>(a: R | undefined, b: R | undefined): R | undefined =>
+  !a ? b : !b ? a : a.trade_date >= b.trade_date ? a : b;
 
-  const tpexRows = asOfDate
-    ? await tpexExportPrisma.$queryRaw<RawTpexDailyValuationRow[]>`
+const queryDailyValuation = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, asOfDate?: Date) =>
+  asOfDate
+    ? db.$queryRaw<RawTwseDailyValuationRow[]>`
         SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
         WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
         ORDER BY trade_date DESC LIMIT 1
       `
-    : await tpexExportPrisma.$queryRaw<RawTpexDailyValuationRow[]>`
+    : db.$queryRaw<RawTwseDailyValuationRow[]>`
         SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
         WHERE symbol = ${symbol}
         ORDER BY trade_date DESC LIMIT 1
       `;
-  const tpexRecord = tpexRows[0];
-  if (!tpexRecord) return null;
+
+export const getDailyValuationAsOf = async (symbol: string, asOfDate?: Date): Promise<DailyValuationAsOf | null> => {
+  const [twseRows, tpexRows] = await Promise.all([queryDailyValuation(twseExportPrisma, symbol, asOfDate), queryDailyValuation(tpexExportPrisma, symbol, asOfDate)]);
+  const record = newerOf(twseRows[0], tpexRows[0]);
+  if (!record) return null;
   return {
-    tradeDate: tpexRecord.trade_date,
-    peRatio: toNullableNumber(tpexRecord.pe_ratio),
-    pbRatio: toNullableNumber(tpexRecord.pb_ratio),
-    dividendYield: toNullableNumber(tpexRecord.dividend_yield),
+    tradeDate: record.trade_date,
+    peRatio: toNullableNumber(record.pe_ratio),
+    pbRatio: toNullableNumber(record.pb_ratio),
+    dividendYield: toNullableNumber(record.dividend_yield),
   };
 };
 
@@ -75,20 +55,13 @@ interface RawTpexDailyPriceRow {
   close: unknown;
 }
 
-// 單一公司查最新股價（GET /stocks/:symbol/quote 用）——一樣先查 TWSE 再查 TPEx。
+// 單一公司查最新股價（GET /stocks/:symbol/quote 用）——兩邊都查、取較新（見 newerOf）。
 export const getLatestDailyPrice = async (symbol: string): Promise<DailyPriceAsOf | null> => {
-  const twseRows = await twseExportPrisma.$queryRaw<RawTpexDailyPriceRow[]>`
-    SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} ORDER BY trade_date DESC LIMIT 1
-  `;
-  const twseRecord = twseRows[0];
-  if (twseRecord) return { tradeDate: twseRecord.trade_date, close: toNullableNumber(twseRecord.close) };
-
-  const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexDailyPriceRow[]>`
-    SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} ORDER BY trade_date DESC LIMIT 1
-  `;
-  const tpexRecord = tpexRows[0];
-  if (!tpexRecord) return null;
-  return { tradeDate: tpexRecord.trade_date, close: toNullableNumber(tpexRecord.close) };
+  const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
+    db.$queryRaw<RawTpexDailyPriceRow[]>`SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} ORDER BY trade_date DESC LIMIT 1`;
+  const [twseRows, tpexRows] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)]);
+  const record = newerOf(twseRows[0], tpexRows[0]);
+  return record ? { tradeDate: record.trade_date, close: toNullableNumber(record.close) } : null;
 };
 
 export interface DailyPriceHistoryEntry {
@@ -133,31 +106,22 @@ export const getDailyPriceHistory = async (symbol: string, limit: number): Promi
       volume: toNullableNumber(row.volume),
     }));
 
-  const twseRows = await twseExportPrisma.$queryRaw<RawDailyPriceHistoryRow[]>`
-    SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
-    WHERE symbol = ${symbol}
-    ORDER BY trade_date DESC LIMIT ${limit}
-  `;
-  if (twseRows.length > 0) {
-    const earliestRows = await twseExportPrisma.$queryRaw<{ earliest: Date | null }[]>`
-      SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}
+  // 2026-09-26 兩邊合併（轉板公司轉板前的歷史在另一個市場；舊版只要上市有資料就不看上櫃，8476 轉上市前的走勢整段不見）。
+  const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
+    db.$queryRaw<RawDailyPriceHistoryRow[]>`
+      SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
+      WHERE symbol = ${symbol}
+      ORDER BY trade_date DESC LIMIT ${limit}
     `;
-    const earliestAvailableTradeDate = earliestRows[0]?.earliest?.toISOString().slice(0, 10) ?? null;
-    return { entries: toEntries(twseRows).reverse(), earliestAvailableTradeDate };
-  }
-
-  const tpexRows = await tpexExportPrisma.$queryRaw<RawDailyPriceHistoryRow[]>`
-    SELECT trade_date, open, high, low, close, volume FROM "export"."daily_price"
-    WHERE symbol = ${symbol}
-    ORDER BY trade_date DESC LIMIT ${limit}
-  `;
-  if (tpexRows.length === 0) return { entries: [], earliestAvailableTradeDate: null };
-
-  const earliestRows = await tpexExportPrisma.$queryRaw<{ earliest: Date | null }[]>`
-    SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}
-  `;
-  const earliestAvailableTradeDate = earliestRows[0]?.earliest?.toISOString().slice(0, 10) ?? null;
-  return { entries: toEntries(tpexRows).reverse(), earliestAvailableTradeDate };
+  const earliest = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
+    db.$queryRaw<{ earliest: Date | null }[]>`SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}`;
+  const [twseRows, tpexRows, twseEarliest, tpexEarliest] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma), earliest(twseExportPrisma), earliest(tpexExportPrisma)]);
+  const byDate = new Map<string, RawDailyPriceHistoryRow>();
+  for (const row of [...tpexRows, ...twseRows]) byDate.set(row.trade_date.toISOString().slice(0, 10), row); // 同一天兩邊都有時以上市為準
+  const rows = [...byDate.values()].sort((a, b) => b.trade_date.getTime() - a.trade_date.getTime()).slice(0, limit);
+  const earliestDates = [twseEarliest[0]?.earliest, tpexEarliest[0]?.earliest].filter((d): d is Date => !!d);
+  const earliestAvailableTradeDate = earliestDates.length > 0 ? new Date(Math.min(...earliestDates.map((d) => d.getTime()))).toISOString().slice(0, 10) : null;
+  return { entries: toEntries(rows).reverse(), earliestAvailableTradeDate };
 };
 
 // 一次查多家公司的最新股價（GET /stocks/prices?symbols=... 用）——不知道每個 symbol 掛在哪個
@@ -180,12 +144,11 @@ export const getLatestDailyPricesBatch = async (symbols: string[]): Promise<Map<
     ORDER BY symbol, trade_date DESC
   `;
 
+  // 同一家兩邊都有（轉板）時取交易日較新的——舊版用上櫃蓋上市，8476／1752／6446 停在轉板前的舊價。
   const result = new Map<string, DailyPriceAsOf>();
-  for (const row of twseRows) {
-    result.set(row.symbol, { tradeDate: row.trade_date, close: toNullableNumber(row.close) });
-  }
-  for (const row of tpexRows) {
-    result.set(row.symbol, { tradeDate: row.trade_date, close: toNullableNumber(row.close) });
+  for (const row of [...twseRows, ...tpexRows]) {
+    const existing = result.get(row.symbol);
+    if (!existing || row.trade_date > existing.tradeDate) result.set(row.symbol, { tradeDate: row.trade_date, close: toNullableNumber(row.close) });
   }
   return result;
 };

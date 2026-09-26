@@ -43,9 +43,9 @@ const queryPriceRow = (db: typeof twseExportPrisma | typeof tpexExportPrisma, sy
   `;
 
 const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeDate: Date; close: unknown } | null> => {
-  const listed = await queryPriceRow(twseExportPrisma, symbol, asOfDate);
-  const rows = listed.length > 0 ? listed : await queryPriceRow(tpexExportPrisma, symbol, asOfDate);
-  const row = rows[0];
+  // 2026-09-26 兩邊都查、取較新（轉板公司兩邊都有資料，見 exchange/twseMarketData.ts newerOf 的說明）
+  const [listed, otc] = await Promise.all([queryPriceRow(twseExportPrisma, symbol, asOfDate), queryPriceRow(tpexExportPrisma, symbol, asOfDate)]);
+  const row = !listed[0] ? otc[0] : !otc[0] ? listed[0] : listed[0].trade_date >= otc[0].trade_date ? listed[0] : otc[0];
   return row ? { tradeDate: row.trade_date, close: row.close } : null;
 };
 
