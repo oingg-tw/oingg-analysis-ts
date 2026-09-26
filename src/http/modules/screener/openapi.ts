@@ -24,6 +24,7 @@ const screenerValueSchema = z.object({
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])
     .nullable()
     .meta({ description: 'value 為 null 時的原因；value 非 null 時一律是 null；查無此列（從沒被算過）時也是 null' }),
+  formulaVersion: z.number().int().nullable().meta({ description: '2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。查無此列時是 null。' }),
 });
 
 const screenerRowSchema = z.object({

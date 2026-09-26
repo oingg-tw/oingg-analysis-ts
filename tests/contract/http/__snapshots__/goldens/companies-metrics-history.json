@@ -7,12 +7,14 @@
         "fiscalYear": "<number>",
         "values": {
           "eps": {
+            "formulaVersion": "<number>",
             "knowledgeDate": "<date>",
             "knowledgeDateIsFallback": "<boolean>",
             "nullReason": "<null>",
             "value": "<number>"
           },
           "roe": {
+            "formulaVersion": "<number>",
             "knowledgeDate": "<date>",
             "knowledgeDateIsFallback": "<boolean>",
             "nullReason": "<null>",

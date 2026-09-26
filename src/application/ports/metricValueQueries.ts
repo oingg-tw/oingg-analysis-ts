@@ -15,6 +15,7 @@ export interface PeriodHistoryRow {
   nullReason: string | null;
   knowledgeDate: Date;
   knowledgeDateIsFallback: boolean;
+  formulaVersion: number;
 }
 
 export interface DailyCadenceHistoryRow {
@@ -23,6 +24,7 @@ export interface DailyCadenceHistoryRow {
   nullReason: string | null;
   knowledgeDate: Date;
   knowledgeDateIsFallback: boolean;
+  formulaVersion: number;
 }
 
 export interface DailyCadenceCoordinateGroup {

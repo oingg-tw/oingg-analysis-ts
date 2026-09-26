@@ -15,7 +15,7 @@ const queriesWithPiotroski = (
 ): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows' | 'listDailyCadenceMetricHistoryRows' | 'findLatestSnapshotValue' | 'companyRank'> => ({
   listPeriodMetricHistoryRows: async (_symbol, metricCode): Promise<PeriodHistoryRow[]> =>
     metricCode === 'piotroskiFScore'
-      ? [{ fiscalYear: 2026, fiscalQuarter: 2, value: score, nullReason: score === null ? 'missing_input' : null, knowledgeDate: day('2026-08-11'), knowledgeDateIsFallback: false }]
+      ? [{ fiscalYear: 2026, fiscalQuarter: 2, value: score, nullReason: score === null ? 'missing_input' : null, knowledgeDate: day('2026-08-11'), knowledgeDateIsFallback: false, formulaVersion: 1 }]
       : [],
   listDailyCadenceMetricHistoryRows: async () => [], // EOD 型徽章（liveGrahamNumber/livePegRatio）走這條，回空＝不適用略過
   findLatestSnapshotValue: async () => null,

@@ -26,6 +26,7 @@ export const metricHistoryEntrySchema = z.object({
   knowledgeDateIsFallback: z
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),
+  formulaVersion: z.number().int().meta({ description: '2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。' }),
 });
 export type MetricHistoryEntry = z.infer<typeof metricHistoryEntrySchema>;
 
@@ -82,6 +83,7 @@ export const getMetricHistory = async (
       nullReason: row.nullReason as MetricHistoryEntry['nullReason'],
       knowledgeDate: row.knowledgeDate.toISOString().slice(0, 10),
       knowledgeDateIsFallback: row.knowledgeDateIsFallback,
+      formulaVersion: row.formulaVersion,
     }));
 
   return { entries, total, hasMore: total > entries.length };

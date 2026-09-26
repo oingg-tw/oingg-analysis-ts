@@ -1401,6 +1401,10 @@
                             "description": "西元年（民國+1911）",
                             "type": "number"
                           },
+                          "formulaVersion": {
+                            "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。",
+                            "type": "integer"
+                          },
                           "knowledgeDate": {
                             "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                             "type": "string"
@@ -1437,7 +1441,8 @@
                           "value",
                           "nullReason",
                           "knowledgeDate",
-                          "knowledgeDateIsFallback"
+                          "knowledgeDateIsFallback",
+                          "formulaVersion"
                         ],
                         "type": "object"
                       },
@@ -1560,6 +1565,10 @@
                               "description": "這個 metricCode 在這一期的值；null 代表這個 metricCode 在這一期完全沒有列（例如不同指標 backfill 範圍不同步）",
                               "nullable": true,
                               "properties": {
+                                "formulaVersion": {
+                                  "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。",
+                                  "type": "integer"
+                                },
                                 "knowledgeDate": {
                                   "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                                   "type": "string"
@@ -1590,7 +1599,8 @@
                                 "value",
                                 "nullReason",
                                 "knowledgeDate",
-                                "knowledgeDateIsFallback"
+                                "knowledgeDateIsFallback",
+                                "formulaVersion"
                               ],
                               "type": "object"
                             },
@@ -2334,6 +2344,10 @@
                             "description": "西元年（民國+1911）",
                             "type": "number"
                           },
+                          "formulaVersion": {
+                            "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。",
+                            "type": "integer"
+                          },
                           "knowledgeDate": {
                             "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 杜邦分母改成期間平均，2330 的 2022Q4 從 34.91 變成 40.14，knowledgeDate 仍是 2023-02-14）。我們重算後會主動通知下游清快取。",
                             "type": "string"
@@ -2370,7 +2384,8 @@
                           "value",
                           "nullReason",
                           "knowledgeDate",
-                          "knowledgeDateIsFallback"
+                          "knowledgeDateIsFallback",
+                          "formulaVersion"
                         ],
                         "type": "object"
                       },
@@ -6198,7 +6213,7 @@
                                   "type": "string"
                                 },
                                 "formulaVersion": {
-                                  "description": "2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。",
+                                  "description": "2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。2026-09-26 明訂語意：這是「目前的算法版本」，不是「你拿到的值的版本」——每個值實際用哪一版算，看 metric-history／screener 格子裡的 formulaVersion；兩者不一致代表該值還沒重算到（可正常顯示、不應快取）。",
                                   "type": "integer"
                                 },
                                 "hasProvenance": {
@@ -6795,6 +6810,11 @@
                           "values": {
                             "additionalProperties": {
                               "properties": {
+                                "formulaVersion": {
+                                  "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。查無此列時是 null。",
+                                  "nullable": true,
+                                  "type": "integer"
+                                },
                                 "knowledgeDate": {
                                   "description": "knowledge_date（YYYY-MM-DD）——這個值哪天被市場公告知道，不是財報期末日；value 為 null 時也是 null",
                                   "nullable": true,
@@ -6820,7 +6840,8 @@
                               "required": [
                                 "value",
                                 "knowledgeDate",
-                                "nullReason"
+                                "nullReason",
+                                "formulaVersion"
                               ],
                               "type": "object"
                             },
@@ -7221,6 +7242,11 @@
                           "values": {
                             "additionalProperties": {
                               "properties": {
+                                "formulaVersion": {
+                                  "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。查無此列時是 null。",
+                                  "nullable": true,
+                                  "type": "integer"
+                                },
                                 "knowledgeDate": {
                                   "description": "knowledge_date（YYYY-MM-DD）——這個值哪天被市場公告知道，不是財報期末日；value 為 null 時也是 null",
                                   "nullable": true,
@@ -7246,7 +7272,8 @@
                               "required": [
                                 "value",
                                 "knowledgeDate",
-                                "nullReason"
+                                "nullReason",
+                                "formulaVersion"
                               ],
                               "type": "object"
                             },
@@ -7346,6 +7373,11 @@
                           "values": {
                             "additionalProperties": {
                               "properties": {
+                                "formulaVersion": {
+                                  "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。查無此列時是 null。",
+                                  "nullable": true,
+                                  "type": "integer"
+                                },
                                 "knowledgeDate": {
                                   "description": "knowledge_date（YYYY-MM-DD）——這個值哪天被市場公告知道，不是財報期末日；value 為 null 時也是 null",
                                   "nullable": true,
@@ -7371,7 +7403,8 @@
                               "required": [
                                 "value",
                                 "knowledgeDate",
-                                "nullReason"
+                                "nullReason",
+                                "formulaVersion"
                               ],
                               "type": "object"
                             },

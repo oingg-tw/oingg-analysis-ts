@@ -29,7 +29,9 @@ const parseRows = (rows: Record<string, unknown>[], fields: ScreenerIndexedField
       const date = row[`k${f.index}`];
       const knowledgeDate = date ? (date instanceof Date ? date.toISOString().slice(0, 10) : String(date).slice(0, 10)) : null;
       const nullReason = (row[`n${f.index}`] as ScreenerNullReason | null | undefined) ?? null;
-      values[f.field] = { value, knowledgeDate, nullReason };
+      const rawVersion = row[`f${f.index}`];
+      const formulaVersion = rawVersion !== null && rawVersion !== undefined ? Number(rawVersion) : null;
+      values[f.field] = { value, knowledgeDate, nullReason, formulaVersion };
     }
     return { symbol: row.symbol as string, values };
   });

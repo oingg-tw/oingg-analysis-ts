@@ -15,6 +15,7 @@ const multiMetricValueSchema = z
     nullReason: metricHistoryEntrySchema.shape.nullReason,
     knowledgeDate: metricHistoryEntrySchema.shape.knowledgeDate,
     knowledgeDateIsFallback: metricHistoryEntrySchema.shape.knowledgeDateIsFallback,
+    formulaVersion: metricHistoryEntrySchema.shape.formulaVersion,
   })
   .nullable()
   .meta({ description: '這個 metricCode 在這一期的值；null 代表這個 metricCode 在這一期完全沒有列（例如不同指標 backfill 範圍不同步）' });
@@ -69,7 +70,7 @@ export const getMultiMetricHistory = async (
     const values: MultiMetricHistoryEntry['values'] = {};
     metricCodes.forEach((metricCode, i) => {
       const row = rowsByCodeByPeriod[i]!.get(key);
-      values[metricCode] = row ? { value: row.value, nullReason: row.nullReason, knowledgeDate: row.knowledgeDate, knowledgeDateIsFallback: row.knowledgeDateIsFallback } : null;
+      values[metricCode] = row ? { value: row.value, nullReason: row.nullReason, knowledgeDate: row.knowledgeDate, knowledgeDateIsFallback: row.knowledgeDateIsFallback, formulaVersion: row.formulaVersion } : null;
     });
     return { fiscalYear: period.fiscalYear, fiscalQuarter: period.fiscalQuarter, values };
   });

@@ -5,6 +5,7 @@
       {
         "fiscalQuarter": "<number>",
         "fiscalYear": "<number>",
+        "formulaVersion": "<number>",
         "knowledgeDate": "<date>",
         "knowledgeDateIsFallback": "<boolean>",
         "nullReason": "<null>",

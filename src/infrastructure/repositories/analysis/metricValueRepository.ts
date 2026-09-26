@@ -86,7 +86,7 @@ export const listPeriodMetricHistoryRows = (
   analysisPrisma.metricValue.findMany({
     where: { symbol, metricCode, periodType, dataType, subsidiaryCompanyId },
     orderBy: [{ fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { knowledgeDate: 'desc' }],
-    select: { fiscalYear: true, fiscalQuarter: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true },
+    select: { fiscalYear: true, fiscalQuarter: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true, formulaVersion: true },
   });
 
 export const listDailyCadenceMetricHistoryRows = (
@@ -99,5 +99,5 @@ export const listDailyCadenceMetricHistoryRows = (
   analysisPrisma.metricDailyCadenceValue.findMany({
     where: { symbol, metricCode, ...coordinate, dataType, subsidiaryCompanyId },
     orderBy: [{ tradeDate: 'desc' }, { knowledgeDate: 'desc' }],
-    select: { tradeDate: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true },
+    select: { tradeDate: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true, formulaVersion: true },
   });

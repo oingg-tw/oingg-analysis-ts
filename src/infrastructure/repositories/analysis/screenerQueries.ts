@@ -151,6 +151,7 @@ const buildSelectColumnsSql = (fields: IndexedField[], cteRefs: Map<string, CteR
         Prisma.sql`${alias}.${q('value')} AS ${Prisma.raw(`v${f.index}`)}`,
         Prisma.sql`${alias}.${q('knowledge_date')} AS ${Prisma.raw(`k${f.index}`)}`,
         Prisma.sql`${alias}.${q('null_reason')} AS ${Prisma.raw(`n${f.index}`)}`,
+        Prisma.sql`${alias}.${q('formula_version')} AS ${Prisma.raw(`f${f.index}`)}`,
       ],
       ', '
     );

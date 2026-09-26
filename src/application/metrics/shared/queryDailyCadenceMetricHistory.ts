@@ -46,6 +46,7 @@ export const getDailyCadenceMetricHistory = async (
       nullReason: row.nullReason as MetricHistoryEntry['nullReason'],
       knowledgeDate: row.knowledgeDate.toISOString().slice(0, 10),
       knowledgeDateIsFallback: row.knowledgeDateIsFallback,
+      formulaVersion: row.formulaVersion,
     }));
 
   return { entries, total, hasMore: total > entries.length };

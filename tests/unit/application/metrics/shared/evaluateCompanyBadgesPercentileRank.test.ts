@@ -14,7 +14,7 @@ import { createTestDeps } from '../../../../fakes/createTestDeps';
 
 // threshold_value 是 SQL 算好的分界線值（見 buildCompanyRankSql），這裡直接給。
 const rankRow = (value: number, rank: number, totalCount: number, thresholdValue: number | null = 30): CompanyRankRow => ({ symbol: '2330', value, rank: BigInt(rank), quintile: 1n, total_count: BigInt(totalCount), threshold_value: thresholdValue });
-const latestRow = (value: number | null, nullReason: string | null): PeriodHistoryRow => ({ fiscalYear: 2026, fiscalQuarter: 2, value, nullReason, knowledgeDate: new Date('2026-08-14'), knowledgeDateIsFallback: false });
+const latestRow = (value: number | null, nullReason: string | null): PeriodHistoryRow => ({ fiscalYear: 2026, fiscalQuarter: 2, value, nullReason, knowledgeDate: new Date('2026-08-14'), knowledgeDateIsFallback: false, formulaVersion: 1 });
 
 // 2026-09-21 起 percentileRank 徽章跟一般徽章共用同一段「先查最新值」的路徑（web-nuxt 回報 bug 後合併）：
 // latest 是 fetchLatestMetricValue 會看到的最新列（[] = 從未計算過），rows 是 companyRank 的排名結果。

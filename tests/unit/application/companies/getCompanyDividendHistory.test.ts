@@ -33,7 +33,7 @@ const epsRows = (values: Record<string, number | null>): Pick<MetricValueQueryPo
   listPeriodMetricHistoryRows: async (_symbol, _metricCode, periodType) => {
     if (periodType !== 'FY') throw new Error(`年度 EPS 必須讀 eps.FY（年報），不是 ${periodType}`);
     return Object.entries(values).map(([fy, value]): PeriodHistoryRow => (
-      { fiscalYear: Number(fy), fiscalQuarter: 4, value, nullReason: value === null ? 'missing_input' : null, knowledgeDate: day(`${Number(fy) + 1}-03-15`), knowledgeDateIsFallback: false }
+      { fiscalYear: Number(fy), fiscalQuarter: 4, value, nullReason: value === null ? 'missing_input' : null, knowledgeDate: day(`${Number(fy) + 1}-03-15`), knowledgeDateIsFallback: false, formulaVersion: 1 }
     ));
   },
 });

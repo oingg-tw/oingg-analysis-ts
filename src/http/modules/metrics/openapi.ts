@@ -40,7 +40,7 @@ const metricFolderCatalogEntrySchema = z.object({
       '繼續 fallback 顯示 name 就好。建議用 mathlive（唯讀模式）或 KaTeX 渲染。',
   }),
   formulaVersion: z.number().int().meta({
-    description: '2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。',
+    description: '2026-09-22 新增：公式版本號，公式語意改變（分母口徑、定義換出處…）時遞增；metric_values.formula_version 寫的就是這個值。前端釘文案/指紋請用它當明確訊號，不要只靠 formulaLatex 字串比對。2026-09-26 明訂語意：這是「目前的算法版本」，不是「你拿到的值的版本」——每個值實際用哪一版算，看 metric-history／screener 格子裡的 formulaVersion；兩者不一致代表該值還沒重算到（可正常顯示、不應快取）。',
   }),
   academicSourceUrl: z.string().optional().meta({
     description:

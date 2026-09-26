@@ -32,6 +32,7 @@ export interface ScreenerValue {
   // 呼叫端無法單靠這個欄位分辨「算過但為 null」跟「根本沒算過」，需要精確分辨時應改查
   // GET /companies/metric-history（entries 陣列本身有沒有那一筆）。
   nullReason: ScreenerNullReason | null;
+  formulaVersion: number | null; // 2026-09-26：這個值是第幾版公式算的；查無此列時 null（見 metricHistoryEntrySchema 的說明）
 }
 
 export interface ScreenerRow {
