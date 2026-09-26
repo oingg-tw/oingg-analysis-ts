@@ -10,6 +10,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const epsDefinition: MetricDefinitionSpec = {
   metricCode: 'eps',
   name: '每股盈餘',
+  nameEn: 'EPS',
   unit: '元',
   formulaNote:
     'Q(單季) = (本季淨利 − 近四季特別股股利÷4)*1000/流通股數；TTM = (近四季（含本季）淨利加總 − 近四季特別股股利)' +

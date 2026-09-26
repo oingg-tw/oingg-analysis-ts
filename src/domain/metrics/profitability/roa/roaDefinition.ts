@@ -11,6 +11,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const roaDefinition: MetricDefinitionSpec = {
   metricCode: 'roa',
   name: '資產報酬率',
+  nameEn: 'ROA',
   unit: '%',
   formulaNote:
     'Q(單季) = 本季淨利/平均總資產*100，平均總資產 = (本季期末 + 上季期末)/2，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +

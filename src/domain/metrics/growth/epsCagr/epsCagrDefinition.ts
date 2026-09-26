@@ -6,6 +6,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   metricCode: `epsCagr${years}y`,
   folderName: 'epsCagr',
   name: `每股盈餘${years}年複合成長率`,
+  nameEn: `EPS ${years}Y CAGR`,
   unit: '%',
   formulaNote:
     `= (本年 EPS / ${years}年前 EPS)^(1/${years}) - 1，取「最近一個資料完整的完整會計年度」` +

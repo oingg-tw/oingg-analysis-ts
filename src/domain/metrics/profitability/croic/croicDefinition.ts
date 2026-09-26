@@ -6,6 +6,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const croicDefinition: MetricDefinitionSpec = {
   metricCode: 'croic',
   name: '現金投入資本報酬率',
+  nameEn: 'CROIC',
   unit: '%',
   formulaNote: '= 近四季自由現金流（OCF-資本支出）加總 ÷ 投入資本（付息負債+股東權益-現金，跟既有 roic 同一套定義）× 100。（formulaVersion 1 漏乘 100，存的是比率不是百分比，2026-09-22 修正。）',
   formulaLatex: '\\mathrm{CROIC} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{InvestedCapital}} \\times 100',

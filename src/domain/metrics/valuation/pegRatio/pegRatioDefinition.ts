@@ -7,6 +7,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const pegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'pegRatio',
   name: '本益成長比',
+  nameEn: 'PEG',
   unit: '倍',
   formulaNote:
     '= PER(TTM) / EPS 5年複合成長率(%)。PER 跟成長率各自獨立重新計算，不依賴 peRatio/' +

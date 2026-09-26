@@ -10,6 +10,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const sueDefinition: MetricDefinitionSpec = {
   metricCode: 'sue',
   name: '標準化未預期盈餘',
+  nameEn: 'SUE',
   unit: '分',
   formulaNote:
     'SUE_t = (E_t − E_{t−4}) / σ，E 是單季稅後淨利（金額，歸屬母公司優先，缺漏退回整體口徑），' +

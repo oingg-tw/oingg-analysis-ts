@@ -3,6 +3,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const pbRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'pbRatio',
   name: '股價淨值比',
+  nameEn: 'PBR',
   unit: '倍',
   formulaNote:
     '= 股價(knowledge_date當天或之前最近一筆收盤價) / BVPS(本季期末權益*1000/流通股數)。只有 Q' +

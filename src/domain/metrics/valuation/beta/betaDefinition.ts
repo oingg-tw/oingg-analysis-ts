@@ -11,6 +11,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const betaDefinition: MetricDefinitionSpec = {
   metricCode: 'beta',
   name: '貝他係數',
+  nameEn: 'Beta',
   unit: '無單位',
   formulaNote:
     'Cov(個股報酬率, 加權股價指數報酬率) / Var(加權股價指數報酬率)，樣本共變異數/變異數' +

@@ -7,6 +7,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const peRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'peRatio',
   name: '本益比',
+  nameEn: 'PER',
   unit: '倍',
   formulaNote:
     '= 股價(knowledge_date當天或之前最近一筆收盤價) / EPS(TTM，近四季淨利加總*1000/流通股數)。' +

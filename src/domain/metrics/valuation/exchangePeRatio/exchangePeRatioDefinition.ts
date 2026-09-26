@@ -8,6 +8,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const exchangePeRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'exchangePeRatio',
   name: '本益比',
+  nameEn: 'PER',
   nameSuffix: '交易所',
   unit: '倍',
   formulaNote:

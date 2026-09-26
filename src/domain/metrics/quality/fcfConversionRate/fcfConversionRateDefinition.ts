@@ -6,6 +6,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const fcfConversionRateDefinition: MetricDefinitionSpec = {
   metricCode: 'fcfConversionRate',
   name: '自由現金流轉換率',
+  nameEn: 'FCF Conversion Rate',
   unit: '%',
   formulaNote:
     '= 近四季自由現金流（OCF-資本支出）加總 ÷ 近四季淨利加總，衡量帳面獲利有多少比例真的轉換成自由現金流。' +

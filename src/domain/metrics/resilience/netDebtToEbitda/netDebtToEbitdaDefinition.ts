@@ -3,6 +3,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const netDebtToEbitdaDefinition: MetricDefinitionSpec = {
   metricCode: 'netDebtToEbitda',
   name: '淨負債對息稅折舊攤銷前盈餘比',
+  nameEn: 'Net Debt/EBITDA',
   unit: '倍',
   formulaNote:
     '淨負債 = 有息負債(短期借款+應付公司債+長期借款) - 現金及約當現金；EBITDA = 稅前淨利+利息費用' +

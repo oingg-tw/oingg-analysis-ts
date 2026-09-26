@@ -7,6 +7,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const ocfMarginDefinition: MetricDefinitionSpec = {
   metricCode: 'ocfMargin',
   name: '營業現金流利潤率',
+  nameEn: 'OCF Margin',
   unit: '%',
   formulaNote: '= 近四季營業活動現金流量加總 ÷ 近四季營收加總，衡量每一元營收能轉換成多少營業現金流入，跟損益表口徑的獲利率互為對照。',
   formulaLatex: '\\mathrm{OCF\\ Margin} = \\dfrac{\\mathrm{OCF}_{\\mathrm{TTM}}}{\\mathrm{Revenue}_{\\mathrm{TTM}}} \\times 100',

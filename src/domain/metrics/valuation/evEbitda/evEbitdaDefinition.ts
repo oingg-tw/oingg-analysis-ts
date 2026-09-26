@@ -3,6 +3,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const evEbitdaDefinition: MetricDefinitionSpec = {
   metricCode: 'evEbitda',
   name: '企業價值對息稅折舊攤銷前盈餘比',
+  nameEn: 'EV/EBITDA',
   unit: '倍',
   formulaNote:
     '企業價值 = 市值+淨負債*1000；TTM = 企業價值/' +

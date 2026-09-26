@@ -48,7 +48,7 @@
             "metricCode": "beta",
             "misreadings": "<string>",
             "name": "<string>",
-            "nameEn": "<string>",
+            "nameEn": "Beta",
             "nameSuffix": "<string>",
             "referenceUrl": "<string>",
             "sources": [

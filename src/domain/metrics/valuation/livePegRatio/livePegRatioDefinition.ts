@@ -5,6 +5,7 @@ import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec
 export const livePegRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'livePegRatio',
   name: '本益成長比',
+  nameEn: 'PEG',
   nameSuffix: '即時',
   unit: '倍',
   formulaNote:
