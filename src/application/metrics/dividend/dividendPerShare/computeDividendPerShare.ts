@@ -18,9 +18,10 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 的時間（除息日）晚，是保守的，而且跟舊版同一個 knowledge date，重算時直接覆蓋舊值（updated_same_knowledge_date）。
 // 改用除息日當 knowledge date 會比舊列早，查「最新一版」時反而拿到舊的現金流量表值。
 // 定義檔 currentFormulaVersion 2（2026-09-25 從現金流量表改成公告值），compute 要標同一個版本，writer 才會收。
-const DIVIDEND_PER_SHARE_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+const DIVIDEND_PER_SHARE_FORMULA_VERSION = 3;
 
-export type DividendPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'dividendEvents'>;
+export type DividendPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'dividendEvents' | 'shares'>;
 
 export type DividendPerShareComputationBatch = ComputationBatch<'ttm'>;
 
@@ -43,7 +44,20 @@ export const computeDividendPerShare = async (query: QuarterlyMetricQuery, deps:
   // 窗口終點＝該季季末（UTC），跟舊版「近四季」同一段期間。
   const windowEnd = new Date(Date.UTC(fiscalYear, seasonNum * 3, 0));
   const events = await deps.dividendEvents.listDividendDistributionRows(symbol);
-  const calc = calculateDividendPerShare(events, windowEnd);
+  // 窗口內跨過面額變更（股票分割）的除息，每股金額換算到窗口結束時的股數基準再加總。
+  const restated = await Promise.all(
+    events.map(async (e) => {
+      if (!e.exDividendDate || e.exDividendDate > windowEnd) return e;
+      const f = await deps.shares.getShareSplitFactor(symbol, e.exDividendDate, windowEnd);
+      if (f === 1) return e;
+      return {
+        ...e,
+        cashDividendFromEarnings: e.cashDividendFromEarnings === null ? null : e.cashDividendFromEarnings / f,
+        cashDividendFromLegalReserveAndCapitalSurplus: e.cashDividendFromLegalReserveAndCapitalSurplus === null ? null : e.cashDividendFromLegalReserveAndCapitalSurplus / f,
+      };
+    })
+  );
+  const calc = calculateDividendPerShare(restated, windowEnd);
 
   const ttm = computation({
     symbol,

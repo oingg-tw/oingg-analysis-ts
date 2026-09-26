@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { parBasisFactor } from '@/domain/financials/parValueBasis';
+import { parBasisFactor, shareSplitFactor } from '@/domain/financials/parValueBasis';
 
 const row = (ym: number, parValue: number, shares: number) => ({ ym, parValue, shares: BigInt(shares) });
 // 收盤價序列：第一筆預設在變更前（涵蓋到變更之前才判斷得出「未換發」）
@@ -34,4 +34,17 @@ test('股價沒涵蓋到變更之前（7803 股價 2026-05 才有）或距生效
 test('一年內兩次以上面額變更（5314 形狀）→ 股本歷史不可信，不換算', () => {
   const p = [row(202210, 10, 14_700_000), row(202501, 0.5, 294_000_000), row(202503, 10, 14_700_000), row(202507, 0.5, 292_000_000)];
   expect(parBasisFactor(p, cl('2025-06-01', 70, 71), new Date('2025-09-30'), new Date('2025-09-30'))).toBe(1);
+});
+
+test('跨期面額還原：5314 股本歷史 10→0.5→10→0.5 來回跳，連乘後跟兩期實際用到的股數列一致', () => {
+  const p = [row(202210, 10, 14_700_000), row(202501, 0.5, 294_000_000), row(202503, 10, 14_700_000), row(202507, 0.5, 292_000_000)];
+  // 2024Q3（用 202210 那列 1,470 萬股）→ 2025Q3（用 202507 那列 2.92 億股）：股數 ×20，前期每股 ÷20
+  expect(shareSplitFactor(p, new Date('2024-09-30'), new Date('2025-09-30'))).toBe(20);
+  // 2024Q1 → 2025Q1（兩期都用 1,470 萬股那一列）：10→0.5→10 抵銷
+  expect(shareSplitFactor(p, new Date('2024-03-31'), new Date('2025-03-31'))).toBe(1);
+});
+
+test('跨期面額還原：印錯的面額（股數沒跟著變）不算；沒有變更 → 1', () => {
+  expect(shareSplitFactor([row(202510, 0.03, 50_000_000), row(202511, 0.003, 50_100_000)], new Date('2025-01-01'), new Date('2025-12-31'))).toBe(1);
+  expect(shareSplitFactor([row(202606, 10, 100), row(202607, 1, 1000)], new Date('2025-06-30'), new Date('2026-06-30'))).toBe(1);
 });

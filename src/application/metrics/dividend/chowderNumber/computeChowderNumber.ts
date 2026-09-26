@@ -8,7 +8,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const CHOWDER_NUMBER_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const CHOWDER_NUMBER_FORMULA_VERSION = 3;
 
 // Chowder Number（Seeking Alpha 社群規則）= 現金殖利率 + 股利五年成長率，門檻 ≥12%（公用
 // 事業 8%）——門檻本身只記在這裡的說明供對照，不做「通過/不通過」判定（平台不自產「便宜/
@@ -39,6 +40,9 @@ export interface AnnualDividendPerShareProxyResult {
   shares: { reportDate: Date; outstandingCommonShares: bigint } | null;
 }
 
+// 面額還原：每一年的每股數字都換算到「所有已知面額變更之後」的股數基準，CAGR 比的是兩年比值，基準日選哪天都會抵銷。
+// 每次呼叫才建立（模組載入時建的 Date 常數在錄製器凍結 Date 之後會被當成非 Date 編碼，cassette 對不上）。
+const splitRestateBasis = (): Date => new Date(Date.UTC(9999, 0, 1));
 export const getAnnualDividendPerShareProxy = async (
   symbol: string,
   rocYear: number,
@@ -67,7 +71,8 @@ export const getAnnualDividendPerShareProxy = async (
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) return { dps: null, quarters, shares: null };
 
-  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares), quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
+  const splitFactor = await deps.shares.getShareSplitFactor(symbol, q4ReportDate, splitRestateBasis());
+  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares) / splitFactor, quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
 };
 
 export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>;

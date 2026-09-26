@@ -13,7 +13,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // （0.07 → 0.09 兩個都是進位後的數字），小 EPS 公司的年增率整個失真；只在最後的百分比四捨五入一次。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const EPS_GROWTH_RATE_FORMULA_VERSION = 3;
+// 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const EPS_GROWTH_RATE_FORMULA_VERSION = 4;
 const toEps = (netIncomeInThousands: bigint | null, shares: bigint | null): number | null => {
   if (netIncomeInThousands === null || shares === null || shares === 0n) return null;
   return toPerShareExact(netIncomeInThousands, shares);
@@ -61,7 +62,9 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
   const priorSharesInfo = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
   const priorEps = toEps(toCommonEarnings(pickNetIncome(priorIncomeStatement).value, priorSharesInfo?.preferredDividendsTtmThousands ?? 0n, 'Q'), priorSharesInfo?.outstandingCommonShares ?? null);
 
-  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps);
+  // 去年同季的 EPS 換算到本季的股數基準（中間若有面額變更／股票分割，前期 EPS ÷ 股數倍數）。
+  const splitFactor = priorReportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorReportDate, reportDate) : 1;
+  const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps === null ? null : priorEps / splitFactor);
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'epsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

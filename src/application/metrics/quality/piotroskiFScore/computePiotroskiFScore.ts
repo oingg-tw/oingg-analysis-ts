@@ -10,7 +10,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const PIOTROSKI_F_SCORE_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const PIOTROSKI_F_SCORE_FORMULA_VERSION = 3;
 
 // 這份檔案是 src/domainMetrics/piotroskiFScore.ts 的獨立重新實作。9 個二元訊號本季 vs
 // 去年同季比較——去年同季用 getPastNQuarters({rocYear,season},5)[0]（5 季前，取最舊那一筆）
@@ -123,10 +124,13 @@ export const resolvePiotroskiFScoreSignals = async (
   const priorRocYear = Number(prior.year);
   const priorSeasonNum = Number(prior.season);
 
-  const [curr, prev] = await Promise.all([
+  const [curr, prevRaw] = await Promise.all([
     fetchQuarterData(symbol, rocYear, seasonNum, dataType, subsidiaryCompanyId, deps),
     fetchQuarterData(symbol, priorRocYear, priorSeasonNum, dataType, subsidiaryCompanyId, deps),
   ]);
+  // 「沒有發行新股」比的是股數：去年同季股數換算到本期面額基準，股票分割不算發行新股。
+  const splitFactor = prevRaw.reportDate && curr.reportDate ? await deps.shares.getShareSplitFactor(symbol, prevRaw.reportDate, curr.reportDate) : 1;
+  const prev = prevRaw.outstandingCommonShares === null || splitFactor === 1 ? prevRaw : { ...prevRaw, outstandingCommonShares: BigInt(Math.round(Number(prevRaw.outstandingCommonShares) * splitFactor)) };
 
   const currRoa = ratio(curr.netIncome, curr.totalAssets);
   const prevRoa = ratio(prev.netIncome, prev.totalAssets);

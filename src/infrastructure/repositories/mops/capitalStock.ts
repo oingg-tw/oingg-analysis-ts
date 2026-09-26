@@ -6,6 +6,7 @@ import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingComm
 import { effectivePreferredDividends, computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
 import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
+import { shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
 // CapitalStockChangeSource 在 Phase 4 跟進（對外回應的 zod schema 在 http/modules/companies/types.ts），
@@ -97,7 +98,26 @@ export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: D
   return { ...common, preferredDividendsTtmThousands: effectivePreferredDividends(preferredDividendsTtmThousands, common.preferredCapitalThousands), issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
 };
 
-export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getOutstandingCommonShares: getOutstandingCommonSharesAsOf };
+// 2026-09-26 面額基準（原在 twse/marketCap.ts，2026-09-27 搬來股本資料的家，跨期還原也要用）：
+const PAR_ROWS_TTL_MS = 60 * 60 * 1000;
+const parRowsCache = new Map<string, { at: number; rows: Promise<ParRow[]> }>();
+export const getParRows = (symbol: string): Promise<ParRow[]> => {
+  const hit = parRowsCache.get(symbol);
+  if (hit && Date.now() - hit.at < PAR_ROWS_TTL_MS) return hit.rows;
+  const rows = mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_shares: bigint | null }[]>`
+      SELECT effective_year * 100 + effective_month AS ym, par_value, paid_in_shares
+      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY ym ASC`
+    .then((r) => r.map((x) => ({ ym: Number(x.ym), parValue: x.par_value === null ? null : Number(x.par_value), shares: x.paid_in_shares })))
+    .catch(() => []);
+  parRowsCache.set(symbol, { at: Date.now(), rows });
+  return rows;
+};
+
+// 2026-09-27 跨期比較每股數字的面額還原係數（見 domain/financials/parValueBasis.ts shareSplitFactor）。
+export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate: Date): Promise<number> =>
+  shareSplitFactor(await getParRows(symbol), fromDate, toDate);
+
+export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getShareSplitFactor, getOutstandingCommonShares: getOutstandingCommonSharesAsOf };
 
 interface RawCapitalStockHistoryRow {
   effective_year: number;

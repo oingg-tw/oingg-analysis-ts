@@ -8,7 +8,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const SHARE_COUNT_CHANGE_RATE_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const SHARE_COUNT_CHANGE_RATE_FORMULA_VERSION = 3;
 
 export type ShareCountChangeRateDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
 
@@ -50,7 +51,9 @@ export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, d
   const priorShares = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
 
   const currentValue = currentShares?.outstandingCommonShares ?? null;
-  const priorValue = priorShares?.outstandingCommonShares ?? null;
+  // 去年同季的股數換算到本季的面額基準：面額變更（股票分割）讓股數翻倍不是增資稀釋，不該算進股本變化率。
+  const splitFactor = priorReportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorReportDate, reportDate) : 1;
+  const priorValue = priorShares ? BigInt(Math.round(Number(priorShares.outstandingCommonShares) * splitFactor)) : null;
 
   const changeRate =
     currentValue !== null && priorValue !== null && priorValue !== 0n

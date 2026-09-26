@@ -11,7 +11,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const LEVERAGE_DEGREE_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const LEVERAGE_DEGREE_FORMULA_VERSION = 3;
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——財務槓桿度
 // （DFL）＝%ΔEPS÷%ΔEBIT、總槓桿度（DTL）＝%ΔEPS÷%ΔRevenue，本季 vs 去年同季（YoY），
@@ -61,7 +62,9 @@ export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, d
   const currentNetIncome = pickNetIncome(currentIncomeStatement);
   const priorNetIncome = pickNetIncome(priorIncomeStatement);
   const currentEps = currentNetIncome !== null && currentShares !== null ? toPerShare(currentNetIncome, currentShares.outstandingCommonShares) : null;
-  const priorEps = priorNetIncome !== null && priorShares !== null ? toPerShare(priorNetIncome, priorShares.outstandingCommonShares) : null;
+  const splitFactor = priorIncomeStatement?.reportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorIncomeStatement.reportDate, reportDate) : 1;
+  const priorEpsRaw = priorNetIncome !== null && priorShares !== null ? toPerShare(priorNetIncome, priorShares.outstandingCommonShares) : null;
+  const priorEps = priorEpsRaw === null ? null : priorEpsRaw / splitFactor;
 
   const currentEbit = currentIncomeStatement?.operatingIncome ?? null;
   const priorEbit = priorIncomeStatement?.operatingIncome ?? null;

@@ -11,7 +11,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-22 formulaVersion 2：同 pegRatio：中繼值不四捨五入，只在最後一次（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const LIVE_PEG_RATIO_FORMULA_VERSION = 3;
+// 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
+export const LIVE_PEG_RATIO_FORMULA_VERSION = 4;
 
 // 2026-09-11 應 web-nuxt 要求新增——pegRatio（季報快照，PER 用財報公告當天股價）的即時
 // 版本：EPS 5 年 CAGR 維持用「最新已申報」的完整會計年度資料，PER 的股價改用當下最新
@@ -21,6 +22,9 @@ export const LIVE_PEG_RATIO_FORMULA_VERSION = 3;
 
 const PEG_GROWTH_YEARS = 5;
 
+// 面額還原：每一年的每股數字都換算到「所有已知面額變更之後」的股數基準，CAGR 比的是兩年比值，基準日選哪天都會抵銷。
+// 每次呼叫才建立（模組載入時建的 Date 常數在錄製器凍結 Date 之後會被當成非 Date 編碼，cassette 對不上）。
+const splitRestateBasis = (): Date => new Date(Date.UTC(9999, 0, 1));
 const getAnnualEps = async (
   cache: Map<number, number | null>,
   symbol: string,
@@ -48,8 +52,9 @@ const getAnnualEps = async (
 
   // 2026-09-25 分子只算普通股：全年淨利扣全年特別股股利（第四季報告日的近四季＝全年），見 domain/financials/outstandingCommonShares.ts。
   const value = (Number(netIncomeSum - shares.preferredDividendsTtmThousands) * 1000) / Number(shares.outstandingCommonShares);
-  cache.set(rocYear, value);
-  return value;
+  const restated = value / (await deps.shares.getShareSplitFactor(symbol, q4ReportDate, splitRestateBasis()));
+  cache.set(rocYear, restated);
+  return restated;
 };
 
 export interface LivePegRatioPitQuery {

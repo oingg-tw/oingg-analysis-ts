@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:37:59.308Z",
+  "recordedAt": "2026-09-26T23:51:02.870Z",
   "entries": {
     "market.getLatestDailyPrice([\"2330\"])": {
       "close": 2475,
@@ -104,6 +104,8 @@
         "$bigint": "0"
       }
     },
+    "shares.getShareSplitFactor([\"2330\",{\"$date\":\"2020-12-31T00:00:00.000Z\"},{\"$date\":\"9999-01-01T00:00:00.000Z\"}])": 1,
+    "shares.getShareSplitFactor([\"2330\",{\"$date\":\"2025-12-31T00:00:00.000Z\"},{\"$date\":\"9999-01-01T00:00:00.000Z\"}])": 1,
     "statements.getBalanceSheet([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
       "accountsPayable": {
         "$bigint": "108890080"
@@ -648,7 +650,9 @@
       "incomeTaxExpense": {
         "$bigint": "18282837"
       },
-      "interestIncome": null,
+      "interestIncome": {
+        "$bigint": "1653006"
+      },
       "netIncome": {
         "$bigint": "142824524"
       },

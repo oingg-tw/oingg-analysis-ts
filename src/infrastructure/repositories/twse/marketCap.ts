@@ -1,14 +1,13 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
-import { getOutstandingCommonSharesAsOf } from '../mops/capitalStock';
+import { getOutstandingCommonSharesAsOf, getParRows } from '../mops/capitalStock';
 import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
 import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
 import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividendNotice';
 import { getForeignShareholdingHistory } from './foreignShareholding';
 import { getStockPledgeRatioHistory } from './stockPledgeRatio';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
-import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
-import { lastConfirmedParChangeBefore, parBasisFactor, type ParRow } from '@/domain/financials/parValueBasis';
+import { lastConfirmedParChangeBefore, parBasisFactor } from '@/domain/financials/parValueBasis';
 
 // 兩個回傳型別 2026-09-17 Phase 3 搬到 application/ports/marketData.ts，這裡 re-export 給既有 import 路徑。
 export type { MarketCapAsOf, StockPriceAsOf };
@@ -51,20 +50,6 @@ const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeD
 
 // 2026-09-26 面額基準換算（見 domain/financials/parValueBasis.ts）：面額變更生效到新股換發之間，成交價跟股本歷史的股數
 // 不同基準。股本歷史每家一次查詢、快取一小時（面額變更一年全市場十來筆，絕大多數公司沒有 → 係數 1、不查股價序列）。
-const PAR_ROWS_TTL_MS = 60 * 60 * 1000;
-const parRowsCache = new Map<string, { at: number; rows: Promise<ParRow[]> }>();
-const getParRows = (symbol: string): Promise<ParRow[]> => {
-  const hit = parRowsCache.get(symbol);
-  if (hit && Date.now() - hit.at < PAR_ROWS_TTL_MS) return hit.rows;
-  const rows = mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_shares: bigint | null }[]>`
-      SELECT effective_year * 100 + effective_month AS ym, par_value, paid_in_shares
-      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY ym ASC`
-    .then((r) => r.map((x) => ({ ym: Number(x.ym), parValue: x.par_value === null ? null : Number(x.par_value), shares: x.paid_in_shares })))
-    .catch(() => []);
-  parRowsCache.set(symbol, { at: Date.now(), rows });
-  return rows;
-};
-
 const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
   db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
     SELECT trade_date, close FROM "export"."daily_price"

@@ -84,3 +84,12 @@ export const parBasisFactor = (rowsAsc: ParRow[], closesAsc: { date: Date; close
   const tradingPar = last ? (isSwitched(last, closesAsc, priceDate) ? last.newPar : last.oldPar) : parAt(initialPar, changes, priceDate);
   return basisPar !== null && tradingPar !== null ? basisPar / tradingPar : 1;
 };
+
+// 2026-09-27 跨期比較每股數字時的面額還原（使用者：「算法要盡可能反映內在價值的變化」，IAS 33 對股票分割追溯調整前期每股數字）。
+// 回傳 from 之後、to 當月以前（含）生效的已確認面額變更累積「股數倍數」：前期每股數字 ÷ 倍數、前期股數 × 倍數，就換算到 to 的股數基準。
+// 跟每股指標讀股本的規則一致（生效年月 ≤ 查詢日的最新一筆），所以股本歷史裡來回跳的面額（5314 10→0.5→10→0.5）連乘會自然抵銷，
+// 結果跟兩期實際用到的股數列一致；只有股數沒跟著反比例變動的面額（印錯）不算。
+export const shareSplitFactor = (rowsAsc: ParRow[], fromDate: Date, toDate: Date): number =>
+  confirmedChanges(rowsAsc)
+    .changes.filter((c) => c.ym > ymOf(fromDate) && c.ym <= ymOf(toDate))
+    .reduce((factor, c) => factor * (c.oldPar / c.newPar), 1);

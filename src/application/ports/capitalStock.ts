@@ -18,6 +18,9 @@ export interface OutstandingCommonSharesAsOf {
 
 export interface OutstandingCommonSharesPort {
   getOutstandingCommonShares(symbol: string, asOfDate: Date): Promise<OutstandingCommonSharesAsOf | null>;
+  // 2026-09-27：from 之後、to 以前生效的面額變更累積股數倍數（前期每股 ÷ 倍數、前期股數 × 倍數 = 換算到 to 的股數基準）。
+  // 跨期比較每股數字的指標（成長率、CAGR、股本變化率…）要用它，否則股票分割會被當成每股價值的變化。
+  getShareSplitFactor(symbol: string, fromDate: Date, toDate: Date): Promise<number>;
 }
 
 // ---- 股本異動歷史（GET /companies/capital-stock-history）——跟上面的 PaidInSharesPort 刻意分開兩個 port：
