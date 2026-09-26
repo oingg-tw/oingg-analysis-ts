@@ -36,15 +36,21 @@ export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: 
     const row = rowsNewestFirst[i]!;
     if (row.paid_in_shares === null) continue;
     const verdict = legalVerdict(row);
-    if (verdict === 'shares') return { row, shares: row.paid_in_shares };
-    if (verdict === 'amount') return { row, shares: row.amount_shares! };
-    if (!row.misaligned) return { row, shares: row.paid_in_shares };
+    if (!row.misaligned && verdict !== 'amount') return { row, shares: row.paid_in_shares };
+    const candidate = verdict === 'amount' ? row.amount_shares! : row.paid_in_shares;
     const previousConsistent = rowsNewestFirst.slice(i + 1).find((r) => !r.misaligned && r.paid_in_shares !== null);
     if (previousConsistent) {
-      const a = Number(row.paid_in_shares);
+      // 2026-09-26 核定判準選出的那一格也要跟前一筆一致列連貫才採用：6546 2025-03 兩格都錯（股數 ×10 超過核定、資本格 ÷10），
+      // 「只有金額合法」選了資本格，EPS 變 10 倍（近四季 27.32 vs 年報 2.73）。核定判準只能排除一邊，不保證另一邊對。
+      const a = Number(candidate);
       const b = Number(previousConsistent.paid_in_shares);
-      if (Math.max(a / b, b / a) <= SHARES_CONTINUITY_MAX_RATIO) return { row, shares: row.paid_in_shares };
+      if (Math.max(a / b, b / a) <= SHARES_CONTINUITY_MAX_RATIO) return { row, shares: candidate };
+      continue;
     }
+    // 沒有前一筆一致列可比：只接受「股數合法、金額換算超過核定」（5512 2024-10，mops-ts 用原始文件印證）。
+    // 錯位列（10^k）的「只有金額合法」不收——3131 2026-06 兩格都錯，資本格換算 2,925,893 股會讓 EPS 變 177。
+    if (verdict === 'shares') return { row, shares: candidate };
+    if (verdict === 'amount' && !row.misaligned) return { row, shares: candidate };
   }
   return null;
 };
