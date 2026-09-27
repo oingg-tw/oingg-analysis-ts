@@ -7,8 +7,11 @@ import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowle
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { CashFlowFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+
+// 2026-09-27 formulaVersion 2：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
+const DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION = 2;
 
 // 這份檔案是 src/domainMetrics/dividendPayoutRatio.ts 的獨立重新實作。只有 TTM 一種
 // basis——股利通常一年發放 1-2 次，單季配息率會嚴重失真，舊架構本來就沒有 Q/Q_ANN。
@@ -83,8 +86,11 @@ export const resolveDividendPayoutRatioInputs = async (
   let netIncomeTtmSum = 0n;
   let dividendsPaidTtmSum = 0n;
   let ttmComplete = true;
+  // 2026-09-27 整份現金流量表缺席不能當成「沒發股利」：2412 114Q3 現金流量表缺（mops 114Q1~Q2 還沒補，單季推不出來），
+  // 中華電的股利剛好在第三季付，近四季發放率被算成 0、nullReason 還是 null（web-nuxt 抓到）。科目 null 才視為 0（mops-ts 確認的語意），
+  // 跟 chowderNumber／dividendGrowthRate／consecutiveDividendYears／dividendCoverageRatio 一致。
   for (const detail of ttmQuarterDetails) {
-    if (detail.netIncome.value === null) {
+    if (detail.netIncome.value === null || detail.cashFlow === null) {
       ttmComplete = false;
     } else {
       netIncomeTtmSum += detail.netIncome.value;
@@ -150,5 +156,5 @@ export const computeDividendPayoutRatio = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear, season, slots: { ttm } };
+  return { symbol, rocYear, season, slots: withFormulaVersion({ ttm }, DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION) };
 };

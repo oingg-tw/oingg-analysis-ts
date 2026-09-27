@@ -20,7 +20,8 @@ import { resolveAverageBalances } from '../../shared/averageBalances';
 export type SgrDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
 
 // 2026-09-22 formulaVersion 2：內部的 ROE(TTM) 分母跟 roe 指標同步改成 5 個季末權益平均（見 shared/averageBalances.ts）。
-export const SGR_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
+export const SGR_FORMULA_VERSION = 3;
 
 export type SgrComputationBatch = ComputationBatch<'ttm'>;
 
@@ -61,9 +62,12 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   let netIncomeTtmSum = 0n;
   let dividendsPaidTtmSum = 0n;
   let ttmComplete = true;
+  // 2026-09-27 整份現金流量表缺席不能當成「沒發股利」：2412 114Q3 現金流量表缺（mops 114Q1~Q2 還沒補，單季推不出來），
+  // 中華電的股利剛好在第三季付，近四季發放率被算成 0、nullReason 還是 null（web-nuxt 抓到）。科目 null 才視為 0（mops-ts 確認的語意），
+  // 跟 chowderNumber／dividendGrowthRate／consecutiveDividendYears／dividendCoverageRatio 一致。
   for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
     const picked = pickNetIncome(incomeRecord);
-    if (picked.value === null) {
+    if (picked.value === null || cashFlowRecord === null) {
       ttmComplete = false;
     } else {
       netIncomeTtmSum += picked.value;

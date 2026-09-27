@@ -23,5 +23,5 @@ export const sgrDefinition: MetricDefinitionSpec = {
     'equity',
     'dividendsPaid',
   ],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };
