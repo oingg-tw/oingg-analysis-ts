@@ -23,6 +23,7 @@ const multiMetricValueSchema = z
 export const multiMetricHistoryEntrySchema = z.object({
   fiscalYear: z.number().meta({ description: '西元年（民國+1911）' }),
   fiscalQuarter: z.number().nullable(),
+  dataType: metricHistoryEntrySchema.shape.dataType,
   values: z.record(z.string(), multiMetricValueSchema).meta({ description: '以 metricCode 為 key，對照請求時的 metricCodes 清單' }),
 });
 export type MultiMetricHistoryEntry = z.infer<typeof multiMetricHistoryEntrySchema>;
@@ -55,10 +56,10 @@ export const getMultiMetricHistory = async (
 
   const rowsByCodeByPeriod = metricCodes.map((_, i) => new Map(results[i]!.entries.map((row) => [periodKey(row), row])));
 
-  const periods = new Map<string, { fiscalYear: number; fiscalQuarter: number | null }>();
+  const periods = new Map<string, { fiscalYear: number; fiscalQuarter: number | null; dataType: '1' | '2' | undefined }>();
   for (const result of results) {
     for (const row of result.entries) {
-      periods.set(periodKey(row), { fiscalYear: row.fiscalYear, fiscalQuarter: row.fiscalQuarter });
+      periods.set(periodKey(row), { fiscalYear: row.fiscalYear, fiscalQuarter: row.fiscalQuarter, dataType: row.dataType }); // 同一期各指標口徑相同（按期別決定）
     }
   }
 
@@ -72,7 +73,7 @@ export const getMultiMetricHistory = async (
       const row = rowsByCodeByPeriod[i]!.get(key);
       values[metricCode] = row ? { value: row.value, nullReason: row.nullReason, knowledgeDate: row.knowledgeDate, knowledgeDateIsFallback: row.knowledgeDateIsFallback, formulaVersion: row.formulaVersion } : null;
     });
-    return { fiscalYear: period.fiscalYear, fiscalQuarter: period.fiscalQuarter, values };
+    return { fiscalYear: period.fiscalYear, fiscalQuarter: period.fiscalQuarter, dataType: period.dataType, values };
   });
 
   const total = Math.max(0, ...results.map((r) => r.total));

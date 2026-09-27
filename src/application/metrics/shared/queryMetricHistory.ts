@@ -26,6 +26,7 @@ export const metricHistoryEntrySchema = z.object({
   knowledgeDateIsFallback: z
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),
+  dataType: z.enum(['1', '2']).optional().meta({ description: "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。" }),
   formulaVersion: z.number().int().meta({ description: '2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。' }),
 });
 export type MetricHistoryEntry = z.infer<typeof metricHistoryEntrySchema>;
@@ -74,7 +75,8 @@ export const getMetricHistory = async (
     const keep = await Promise.all(list.map(async (row) => (await deps.reportAvailability.resolveDataTypeForPeriod(symbol, row.fiscalYear - 1911, row.fiscalQuarter ?? 4)) === type));
     return list.filter((_, i) => keep[i]);
   };
-  const rows = secondary.length === 0 ? primary : [...(await keepForPeriod(primary, dataType)), ...(await keepForPeriod(secondary, otherType))].sort(
+  const tag = (list: typeof primary, type: '1' | '2') => list.map((row) => ({ ...row, dataType: type }));
+  const rows = secondary.length === 0 ? tag(primary, dataType) : [...tag(await keepForPeriod(primary, dataType), dataType), ...tag(await keepForPeriod(secondary, otherType), otherType)].sort(
     (a, b) => b.fiscalYear - a.fiscalYear || (b.fiscalQuarter ?? 0) - (a.fiscalQuarter ?? 0) || b.knowledgeDate.getTime() - a.knowledgeDate.getTime()
   );
 
@@ -97,6 +99,7 @@ export const getMetricHistory = async (
       nullReason: row.nullReason as MetricHistoryEntry['nullReason'],
       knowledgeDate: row.knowledgeDate.toISOString().slice(0, 10),
       knowledgeDateIsFallback: row.knowledgeDateIsFallback,
+      dataType: row.dataType,
       formulaVersion: row.formulaVersion,
     }));
 

@@ -563,6 +563,14 @@
                             "description": "元／股，換算到今天的股數基準。期末（當年底）普通股每股淨值",
                             "type": "number"
                           },
+                          "dataType": {
+                            "description": "這一年的財報口徑：'2' 合併報表、'1' 個體報表。合併報表停掉、之後只編個體報表的公司，歷史會在某一年從 '2' 換成 '1'（2026-09-27 新增）",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
+                          },
                           "fiscalYear": {
                             "description": "西元年度（權益變動表全年）",
                             "type": "integer"
@@ -597,7 +605,8 @@
                           "capitalIssued",
                           "shareCountEffect",
                           "other",
-                          "closingBvps"
+                          "closingBvps",
+                          "dataType"
                         ],
                         "type": "object"
                       },
@@ -1017,6 +1026,14 @@
                             "description": "總資產週轉率（次）",
                             "nullable": true,
                             "type": "number"
+                          },
+                          "dataType": {
+                            "description": "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
                           },
                           "decomposedRoePct": {
                             "description": "三因子杜邦拆解組裝出來的 ROE 百分比 = netProfitMarginPct x assetTurnover x equityMultiplier",
@@ -1496,6 +1513,14 @@
                     "entries": {
                       "items": {
                         "properties": {
+                          "dataType": {
+                            "description": "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
+                          },
                           "fiscalQuarter": {
                             "nullable": true,
                             "type": "number"
@@ -1655,6 +1680,14 @@
                     "entries": {
                       "items": {
                         "properties": {
+                          "dataType": {
+                            "description": "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
+                          },
                           "fiscalQuarter": {
                             "nullable": true,
                             "type": "number"
@@ -2439,6 +2472,14 @@
                     "entries": {
                       "items": {
                         "properties": {
+                          "dataType": {
+                            "description": "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
+                          },
                           "fiscalQuarter": {
                             "nullable": true,
                             "type": "number"

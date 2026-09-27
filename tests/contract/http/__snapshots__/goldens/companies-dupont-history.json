@@ -4,6 +4,7 @@
     "entries": [
       {
         "assetTurnover": "<number>",
+        "dataType": "<numeric-string>",
         "decomposedRoePct": "<number>",
         "dupontEbitMarginPct": "<number>",
         "dupontExtendedRoeNullReason": "<null>",

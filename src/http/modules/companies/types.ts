@@ -165,6 +165,7 @@ export const bookValueBreakdownEntrySchema = z.object({
   shareCountEffect: perShare('股數變動影響：期初淨值在期末股數下每股的變化（增資稀釋為負、買回註銷為正）；分割、配股已換算不會出現在這裡'),
   other: perShare('其他（未分類）：期末 − 期初 − 以上各項（用四捨五入後的值倒推，所以也吸收進位差額），多半是庫藏股買回、員工酬勞、子公司持股變動等權益變動表沒有獨立欄位的項目'),
   closingBvps: perShare('期末（當年底）普通股每股淨值'),
+  dataType: z.enum(['1', '2']).meta({ description: "這一年的財報口徑：'2' 合併報表、'1' 個體報表。合併報表停掉、之後只編個體報表的公司，歷史會在某一年從 '2' 換成 '1'（2026-09-27 新增）" }),
 }) satisfies z.ZodType<BookValueBreakdownEntry>;
 
 export const monthlyRevenueEntrySchema = z.object({

@@ -3,6 +3,7 @@
   "body": {
     "entries": [
       {
+        "dataType": "<numeric-string>",
         "fiscalQuarter": "<number>",
         "fiscalYear": "<number>",
         "values": {

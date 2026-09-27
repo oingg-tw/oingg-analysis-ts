@@ -8,6 +8,7 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 // 見 application/metrics/shared/restatePerShareHistory.ts）：分割、配股不會被當成「股數變動影響」，期末每股淨值也跟 bvps 走勢對得上。
 export interface BookValueBreakdownEntry extends BookValueBreakdown {
   fiscalYear: number;
+  dataType: '1' | '2';
 }
 
 export interface BookValueBreakdownResult {
@@ -21,11 +22,11 @@ export const getCompanyBookValueBreakdown = async (symbol: string, deps: BookVal
   // 2026-09-27 每一年用那一年的財報口徑（domain/financials/reportDataType.ts），改只編個體報表的公司歷史才接得起來。
   const [consolidated, individual] = await Promise.all([deps.equityChanges.listAnnualEquityChanges(symbol, '2'), deps.equityChanges.listAnnualEquityChanges(symbol, '1')]);
   const keep = await Promise.all(
-    [...consolidated.map((y) => ({ y, type: '2' })), ...individual.map((y) => ({ y, type: '1' }))].map(async ({ y, type }) =>
-      (await deps.reportAvailability.resolveDataTypeForPeriod(symbol, y.rocYear, 4)) === type ? y : null
+    [...consolidated.map((y) => ({ y, dataType: '2' as const })), ...individual.map((y) => ({ y, dataType: '1' as const }))].map(async (row) =>
+      (await deps.reportAvailability.resolveDataTypeForPeriod(symbol, row.y.rocYear, 4)) === row.dataType ? row : null
     )
   );
-  const years = keep.filter((y) => y !== null).sort((a, b) => a.rocYear - b.rocYear);
+  const years = keep.filter((row) => row !== null).sort((a, b) => a.y.rocYear - b.y.rocYear);
   if (years.length === 0) return { symbol, entries: [] };
 
   const now = new Date();
@@ -38,7 +39,7 @@ export const getCompanyBookValueBreakdown = async (symbol: string, deps: BookVal
   };
 
   const entries: BookValueBreakdownEntry[] = [];
-  for (const y of years) {
+  for (const { y, dataType } of years) {
     const fiscalYear = rocYearToGregorian(y.rocYear);
     const [opening, closing] = await Promise.all([sharesOnTodayBasis(new Date(Date.UTC(fiscalYear - 1, 11, 31))), sharesOnTodayBasis(new Date(Date.UTC(fiscalYear, 11, 31)))]);
     if (!opening || !closing) continue;
@@ -47,7 +48,7 @@ export const getCompanyBookValueBreakdown = async (symbol: string, deps: BookVal
       { opening: opening.preferredCapitalThousands, closing: closing.preferredCapitalThousands },
       { opening: opening.shares, closing: closing.shares }
     );
-    if (breakdown) entries.push({ fiscalYear, ...breakdown });
+    if (breakdown) entries.push({ fiscalYear, ...breakdown, dataType });
   }
   return { symbol, entries };
 };

@@ -6,6 +6,7 @@
         "capitalIssued": "<number>",
         "cashDividends": "<number>",
         "closingBvps": "<number>",
+        "dataType": "<numeric-string>",
         "fiscalYear": "<number>",
         "netIncome": "<number>",
         "openingBvps": "<number>",
