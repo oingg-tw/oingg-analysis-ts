@@ -12,7 +12,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const BVPS_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+export const BVPS_FORMULA_VERSION = 3;
 
 // 這份檔案是 src/domainMetrics/bvps.ts 的獨立重新實作。BVPS 是資產負債表時點快照，跟
 // equityMultiplier 同一種形狀，只有 Q 一種 basis，沒有 TTM/年化概念。
@@ -45,7 +47,7 @@ export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): 
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   // 2026-09-25 分子只算普通股：權益扣特別股股本（普通股每股淨值），見 domain/financials/outstandingCommonShares.ts。
-  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
+  const commonEquity = toCommonEquity(equity.value, shares?.preferredClaimThousands ?? 0n);
   const bvps = commonEquity !== null && sharesValue !== null ? toPerShare(commonEquity, sharesValue) : null;
   const nullReason: MetricNullReason | null = bvps === null ? determineNullReason(equity.value, sharesValue) : null;
 

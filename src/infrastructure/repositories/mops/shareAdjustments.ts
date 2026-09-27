@@ -72,3 +72,38 @@ export const isKnownPreferredIssuer = async (symbol: string): Promise<boolean> =
     });
   return (await preferredIssuers).has(symbol);
 };
+
+// 2026-09-27 特別股扣發行價（domain/financials/outstandingCommonShares.ts preferredClaimThousands）的輸入：各檔特別股（代號＝普通股代號＋英文字母，
+// 2887Z1 這種帶數字的也算）最接近 asOf 的一次股利分派的參與股數，配上特別股權利表最新一版的發行價。
+// 窗口 asOf 前 18 個月到後 12 個月：特別股多半一年配一次；新發行的第一次配息會晚於發行（2887 併新光後的 G／H 第一次配息 2026-07-01，
+// 但 114Q3 起就在股本裡）。借用的是「那一檔有幾股」這個發行當下就確定的事實，而且 domain 端要股數加總對上當季資產負債表的特別股股本才採用。
+// 贖回後就不會再有分派，自然掉出清單。另外回傳這家公司特別股權利表裡所有的發行價，給「沒有分派紀錄、但只有一種發行價」時用（6958）。
+export const getPreferredSeriesAsOf = async (
+  symbol: string,
+  asOf: Date
+): Promise<{ series: { participatingShares: number; issuePrice: number }[]; knownIssuePrices: number[] }> => {
+  const since = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 18, asOf.getUTCDate()));
+  const until = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 12, asOf.getUTCDate()));
+  const pattern = `^${symbol}[A-Z][0-9]?$`;
+  const [rows, prices] = await Promise.all([
+    mopsExportPrisma.$queryRaw<{ tps: number | null; price: number | null }[]>`
+      WITH ev AS (
+        SELECT DISTINCT ON (symbol) symbol AS code, total_participating_shares::float8 AS tps
+        FROM "export"."dividend_distribution"
+        WHERE symbol ~ ${pattern} AND total_participating_shares > 0
+          AND COALESCE(ex_dividend_date, announcement_date) > ${since} AND COALESCE(ex_dividend_date, announcement_date) <= ${until}
+        ORDER BY symbol, (COALESCE(ex_dividend_date, announcement_date) > ${asOf}),
+          ABS(COALESCE(ex_dividend_date, announcement_date) - ${asOf}::date)),
+      pr AS (
+        SELECT DISTINCT ON (preferred_stock_code) preferred_stock_code AS code, issue_price::float8 AS price
+        FROM "export"."preferred_stock_right" WHERE symbol = ${symbol}
+        ORDER BY preferred_stock_code, series_no DESC)
+      SELECT ev.tps, pr.price FROM ev JOIN pr USING (code)`,
+    mopsExportPrisma.$queryRaw<{ price: number }[]>`
+      SELECT DISTINCT issue_price::float8 AS price FROM "export"."preferred_stock_right" WHERE symbol = ${symbol} AND issue_price > 0`,
+  ]);
+  return {
+    series: rows.filter((r) => r.tps && r.price).map((r) => ({ participatingShares: r.tps!, issuePrice: r.price! })),
+    knownIssuePrices: prices.map((p) => p.price),
+  };
+};

@@ -10,7 +10,9 @@ import { computation, type DailyComputationBatch, withFormulaVersion } from '@/d
 // （見 application/metrics/shared/livePerShare.ts）。實測交易所的股價淨值比在除息日、減資恢復交易日都不動
 // （6669 除息 144 元、1808 減資兩成，反推的每股淨值要到下一季財報那天才變）。跟 pbRatio、exchangePbRatio 刻意並存。
 // 每股淨值為負仍算出負值（跟 pbRatio 一致），剛好 0 才是 null。逐日型，knowledgeDate＝交易日。
-export const LIVE_PB_RATIO_FORMULA_VERSION = 1;
+// 2026-09-27 formulaVersion 2：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+export const LIVE_PB_RATIO_FORMULA_VERSION = 2;
 
 export type LivePbRatioComputationBatch = DailyComputationBatch<'eod'>;
 

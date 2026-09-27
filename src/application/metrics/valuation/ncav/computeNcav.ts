@@ -4,7 +4,11 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
+
+// 2026-09-27 formulaVersion 2：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+const NCAV_FORMULA_VERSION = 2;
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 這份檔案是 src/domainMetrics/ncav.ts 的獨立重新實作。純資產負債表時點快照，只有 Q 一種
@@ -16,7 +20,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 const toTotalValue = (valueInThousands: bigint): number => Math.round(Number(valueInThousands) * 1000 * 100) / 100;
 
 
-export type NcavDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type NcavDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
 
 export type NcavComputationBatch = ComputationBatch<'q'>;
 
@@ -38,8 +42,11 @@ export const computeNcav = async (query: QuarterlyMetricQuery, deps: NcavDeps): 
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const currentAssets = balanceSheet?.currentAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
-  const preferredStockCapital = balanceSheet?.preferredStockCapital ?? 0n;
   const reportDate = balanceSheet?.reportDate ?? null;
+  // 2026-09-27 特別股扣發行價（清償時特別股股東拿回的金額，Graham NCAV 本來就是扣清算價值），不是面額；使用者拍板。
+  // 發行價的扣除額由股數 port 算（domain/financials/outstandingCommonShares.ts preferredClaimThousands），查不到股數時退回資產負債表的面額。
+  const preferredClaim = balanceSheet?.preferredStockCapital && reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.preferredClaimThousands : undefined;
+  const preferredStockCapital = preferredClaim ?? balanceSheet?.preferredStockCapital ?? 0n;
 
   const netCurrentAssetValueInThousands = currentAssets !== null && totalLiabilities !== null ? currentAssets - totalLiabilities - preferredStockCapital : null;
   const ncav = netCurrentAssetValueInThousands !== null ? toTotalValue(netCurrentAssetValueInThousands) : null;
@@ -66,5 +73,5 @@ export const computeNcav = async (query: QuarterlyMetricQuery, deps: NcavDeps): 
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q }, NCAV_FORMULA_VERSION) };
 };

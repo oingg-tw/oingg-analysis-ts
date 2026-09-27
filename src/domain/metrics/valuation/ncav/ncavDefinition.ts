@@ -24,5 +24,5 @@ export const ncavDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['current_assets', 'liabilities'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

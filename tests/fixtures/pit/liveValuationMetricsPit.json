@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-27T02:04:09.535Z",
+  "recordedAt": "2026-09-27T07:53:00.403Z",
   "entries": {
     "market.getLatestDailyPrice([\"2330\"])": {
       "close": 2475,
@@ -28,6 +28,9 @@
       "preferredCapitalThousands": {
         "$bigint": "0"
       },
+      "preferredClaimThousands": {
+        "$bigint": "0"
+      },
       "preferredDividendsTtmThousands": {
         "$bigint": "0"
       },
@@ -48,6 +51,9 @@
         "$bigint": "25932524521"
       },
       "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredClaimThousands": {
         "$bigint": "0"
       },
       "preferredDividendsTtmThousands": {
@@ -72,6 +78,9 @@
       "preferredCapitalThousands": {
         "$bigint": "0"
       },
+      "preferredClaimThousands": {
+        "$bigint": "0"
+      },
       "preferredDividendsTtmThousands": {
         "$bigint": "0"
       },
@@ -92,6 +101,9 @@
         "$bigint": "25932370067"
       },
       "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredClaimThousands": {
         "$bigint": "0"
       },
       "preferredDividendsTtmThousands": {

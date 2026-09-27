@@ -44,3 +44,33 @@ export const toCommonEarnings = (netIncomeThousands: bigint | null, preferredDiv
 
 export const toCommonEquity = (equityThousands: bigint | null, preferredCapitalThousands: bigint): bigint | null =>
   equityThousands === null ? null : equityThousands - preferredCapitalThousands;
+
+// 2026-09-27 普通股權益要扣的是特別股的**發行價**（清償時特別股股東拿回的金額），不是面額（使用者拍板「改成扣發行價」）。
+// 特別股多半溢價發行（2838A 50 元、2881／2882 60 元、1101B 50 元），只扣面額會把溢價算成普通股淨值（2838 每股淨值高估約 1.8 元）。
+// 各檔流通股數用股利公告的「參與分派股數」：挑出股數加總等於資產負債表特別股股數（股本 ÷ 面額 10，±1%）的那組，
+// 扣除金額 = Σ 參與股數 × 發行價。這樣會自動排除已贖回的（2897A 最後配息 2025、B 250M 股剛好對上股本 25 億）
+// 跟不在權益特別股股本裡的（2887I 30.96 億股；E+F+G+H+Z1 13.93 億股對上股本 139.5 億）。
+// 找不到吻合的組合：近期各檔發行價都一樣就用它；沒有任何分派紀錄、但特別股權利表只有一種發行價（6958A）也用它；否則退回面額（不猜）。
+// ponytail: 累積型特別股積欠未發的股息理論上也該扣，台股近年少見、資料也沒有，先不扣。
+export interface PreferredSeries {
+  participatingShares: number;
+  issuePrice: number;
+}
+
+const PREFERRED_PAR = 10;
+const MAX_SERIES_FOR_SUBSET = 12;
+
+export const preferredClaimThousands = (preferredCapitalThousands: bigint, series: PreferredSeries[], knownIssuePrices: number[] = []): bigint => {
+  if (preferredCapitalThousands <= 0n) return 0n;
+  const targetShares = (Number(preferredCapitalThousands) * 1000) / PREFERRED_PAR;
+  const candidates = series.filter((s) => s.participatingShares > 0 && s.issuePrice > 0).slice(0, MAX_SERIES_FOR_SUBSET);
+  for (let mask = 1; mask < 1 << candidates.length; mask++) {
+    const subset = candidates.filter((_, i) => mask & (1 << i));
+    const shares = subset.reduce((sum, s) => sum + s.participatingShares, 0);
+    if (Math.abs(shares / targetShares - 1) <= 0.01) {
+      return BigInt(Math.round(subset.reduce((sum, s) => sum + s.participatingShares * s.issuePrice, 0) / 1000));
+    }
+  }
+  const prices = [...new Set(candidates.length > 0 ? candidates.map((s) => s.issuePrice) : knownIssuePrices)];
+  return prices.length === 1 ? BigInt(Math.round((Number(preferredCapitalThousands) * prices[0]!) / PREFERRED_PAR)) : preferredCapitalThousands;
+};

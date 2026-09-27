@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { computeOutstandingCommonShares, effectivePreferredDividends, toCommonEarnings, toCommonEquity } from '@/domain/financials/outstandingCommonShares';
+import { computeOutstandingCommonShares, effectivePreferredDividends, preferredClaimThousands, toCommonEarnings, toCommonEquity } from '@/domain/financials/outstandingCommonShares';
 
 const base = { issuedShares: 16_202_510_128n, parValue: 10, preferredCapitalThousands: null, treasuryShares: null, knownPreferredIssuer: false };
 
@@ -37,4 +37,33 @@ test('每股淨值分子扣特別股股本', () => {
 test('沒有權益類特別股股本就不扣特別股股利（5213 把普通股股利申報在特別股欄）', () => {
   expect(effectivePreferredDividends(848_626n, 0n)).toBe(0n);
   expect(effectivePreferredDividends(561_661n, 15_821_424n)).toBe(561_661n);
+});
+
+// 2026-09-27 特別股扣發行價（preferredClaimThousands）
+
+test('2838：單一代號 2838A 發行價 50，股本 20 億（2 億股）→ 扣 100 億', () => {
+  expect(preferredClaimThousands(2_000_000n, [{ participatingShares: 200_000_000, issuePrice: 50 }])).toBe(10_000_000n);
+});
+
+test('2897：A 已贖回（最後配息 2025）、只有 B 2.5 億股對上股本 25 億 → 只算 B × 12', () => {
+  expect(preferredClaimThousands(2_500_000n, [{ participatingShares: 227_600_000, issuePrice: 10 }, { participatingShares: 250_000_000, issuePrice: 12 }])).toBe(3_000_000n);
+});
+
+test('2887：I 股不在權益特別股股本裡，E+F+G+H+Z1 對上 139.47 億', () => {
+  const series = [
+    { participatingShares: 499_200_000, issuePrice: 50 }, { participatingShares: 299_000_000, issuePrice: 50 },
+    { participatingShares: 75_000_000, issuePrice: 45 }, { participatingShares: 219_700_000, issuePrice: 45 },
+    { participatingShares: 3_096_400_000, issuePrice: 10 }, { participatingShares: 300_000_000, issuePrice: 17.65 },
+  ];
+  expect(preferredClaimThousands(13_947_000n, series)).toBe(BigInt(Math.round((499_200_000 * 50 + 299_000_000 * 50 + 75_000_000 * 45 + 219_700_000 * 45 + 300_000_000 * 17.65) / 1000)));
+});
+
+test('對不上又有多種發行價 → 退回面額；沒有特別股 → 0', () => {
+  expect(preferredClaimThousands(1_000_000n, [{ participatingShares: 30_000_000, issuePrice: 50 }, { participatingShares: 40_000_000, issuePrice: 40 }])).toBe(1_000_000n);
+  expect(preferredClaimThousands(0n, [{ participatingShares: 1, issuePrice: 50 }])).toBe(0n);
+});
+
+test('6958：沒有任何分派紀錄、特別股權利表只有一種發行價 25 → 用它；有多種發行價 → 面額', () => {
+  expect(preferredClaimThousands(400_000n, [], [25])).toBe(1_000_000n);
+  expect(preferredClaimThousands(400_000n, [], [25, 50])).toBe(400_000n);
 });

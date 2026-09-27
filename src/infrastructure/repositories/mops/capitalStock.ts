@@ -3,8 +3,8 @@ import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
 import { pickPaidInSharesRow, reconcileWithBalanceSheet, type BalanceSheetCapital } from '@/domain/financials/paidInSharesRow';
 import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort, ShareBasisEventsAsOf } from '@/application/ports/capitalStock';
-import { effectivePreferredDividends, computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
-import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
+import { effectivePreferredDividends, computeOutstandingCommonShares, preferredClaimThousands } from '@/domain/financials/outstandingCommonShares';
+import { getPreferredSeriesAsOf, getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
 import { capitalReductionResumption, confirmedParChanges, inferUnrecordedParChange, parSwitchDate, shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
 import { matchDividendDeclarations, type ShareBasisEvent } from '@/domain/financials/liveShareBasis';
@@ -167,7 +167,9 @@ export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: D
   ]);
   const common = computeOutstandingCommonShares({ issuedShares: issued.issuedShares, parValue: issued.parValue, ...adjustments, knownPreferredIssuer });
   if (!common) return null;
-  return { ...common, preferredDividendsTtmThousands: effectivePreferredDividends(preferredDividendsTtmThousands, common.preferredCapitalThousands), issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
+  const preferred = common.preferredCapitalThousands > 0n ? await getPreferredSeriesAsOf(symbol, asOfDate) : null;
+  const claim = preferred ? preferredClaimThousands(common.preferredCapitalThousands, preferred.series, preferred.knownIssuePrices) : 0n;
+  return { ...common, preferredClaimThousands: claim, preferredDividendsTtmThousands: effectivePreferredDividends(preferredDividendsTtmThousands, common.preferredCapitalThousands), issuedShares: issued.issuedShares, effectiveYear: issued.effectiveYear, effectiveMonth: issued.effectiveMonth };
 };
 
 // 2026-09-26 面額基準（原在 twse/marketCap.ts，2026-09-27 搬來股本資料的家，跨期還原也要用）：

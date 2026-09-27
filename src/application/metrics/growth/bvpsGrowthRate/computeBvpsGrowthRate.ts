@@ -14,7 +14,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 // 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
 // 2026-09-28 formulaVersion 5：跨期還原加上股票股利（配股）與股數合併式減資（使用者：「只是股數變了、公司價值沒變」的都換算，IAS 33 對配股、分割、反分割都追溯調整）。
-export const BVPS_GROWTH_RATE_FORMULA_VERSION = 5;
+// 2026-09-27 formulaVersion 6：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+export const BVPS_GROWTH_RATE_FORMULA_VERSION = 6;
 const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
   if (equityInThousands === null || shares === null || shares === 0n) return null;
   return toPerShareExact(equityInThousands, shares);
@@ -53,7 +55,7 @@ export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: B
   const reportDate = balanceSheet?.reportDate ?? null;
   // 2026-09-25 分子只算普通股：權益扣特別股股本（見 domain/financials/outstandingCommonShares.ts）。
   const currentSharesInfo = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
-  const currentBvps = toBvps(toCommonEquity(pickEquity(balanceSheet).value, currentSharesInfo?.preferredCapitalThousands ?? 0n), currentSharesInfo?.outstandingCommonShares ?? null);
+  const currentBvps = toBvps(toCommonEquity(pickEquity(balanceSheet).value, currentSharesInfo?.preferredClaimThousands ?? 0n), currentSharesInfo?.outstandingCommonShares ?? null);
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
   const priorBalanceSheet = await deps.statements.getBalanceSheet({
@@ -65,7 +67,7 @@ export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: B
   });
   const priorReportDate = priorBalanceSheet?.reportDate ?? null;
   const priorSharesInfo = priorReportDate ? await deps.shares.getOutstandingCommonShares(symbol, priorReportDate) : null;
-  const priorBvps = toBvps(toCommonEquity(pickEquity(priorBalanceSheet).value, priorSharesInfo?.preferredCapitalThousands ?? 0n), priorSharesInfo?.outstandingCommonShares ?? null);
+  const priorBvps = toBvps(toCommonEquity(pickEquity(priorBalanceSheet).value, priorSharesInfo?.preferredClaimThousands ?? 0n), priorSharesInfo?.outstandingCommonShares ?? null);
 
   const splitFactor = priorReportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorReportDate, reportDate) : 1;
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentBvps, priorBvps === null ? null : priorBvps / splitFactor);

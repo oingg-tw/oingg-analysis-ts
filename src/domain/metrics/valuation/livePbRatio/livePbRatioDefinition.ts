@@ -20,5 +20,5 @@ export const livePbRatioDefinition: MetricDefinitionSpec = {
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'outstandingCommonShares', 'dividend_distribution', 'daily_price.close'],
-  currentFormulaVersion: 1,
+  currentFormulaVersion: 2,
 };

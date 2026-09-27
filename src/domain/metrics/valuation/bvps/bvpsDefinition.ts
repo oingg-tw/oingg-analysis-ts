@@ -16,5 +16,5 @@ export const bvpsDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'outstandingCommonShares'],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };

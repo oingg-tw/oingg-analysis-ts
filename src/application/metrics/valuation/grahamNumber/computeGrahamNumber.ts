@@ -13,7 +13,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-22 formulaVersion 2：中繼 EPS/BVPS/PER/PBR 都不再各自四捨五入，只在最後的 PER×PBR 四捨五入一次（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const GRAHAM_NUMBER_FORMULA_VERSION = 3;
+// 2026-09-27 formulaVersion 4：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+export const GRAHAM_NUMBER_FORMULA_VERSION = 4;
 
 // 這份檔案是 src/domainMetrics/grahamNumber.ts 的獨立重新實作——舊架構呼叫
 // calculateEps()+calculateBvps()，這裡不依賴 eps/bvps 這兩個 metric_code 已寫入的值，
@@ -59,7 +61,7 @@ export const computeGrahamNumber = async (
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   // 2026-09-25 分子只算普通股：權益扣特別股股本、淨利扣特別股股利（見 domain/financials/outstandingCommonShares.ts）。
-  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
+  const commonEquity = toCommonEquity(equity.value, shares?.preferredClaimThousands ?? 0n);
   const bvps = commonEquity !== null && sharesValue !== null ? toPerShareExact(commonEquity, sharesValue) : null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);

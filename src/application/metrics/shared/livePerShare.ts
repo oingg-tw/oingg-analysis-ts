@@ -67,7 +67,7 @@ export const resolveLivePerShare = async (
   const basis = await deps.shares.getShareBasisEvents(symbol, reportDate, tradeDate);
   const sharesAtBasis = Number(shares.outstandingCommonShares) * basis.basisMultiplier;
   // 普通股口徑：權益扣特別股股本、淨利扣特別股股利（見 domain/financials/outstandingCommonShares.ts）；三大表金額是千元。
-  const commonEquity = toCommonEquity(pickEquity(balanceSheet).value, shares.preferredCapitalThousands);
+  const commonEquity = toCommonEquity(pickEquity(balanceSheet).value, shares.preferredClaimThousands);
   const rolled = rollForwardPerShare(
     {
       shares: sharesAtBasis,

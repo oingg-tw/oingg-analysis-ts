@@ -27,7 +27,7 @@ export const getCompanyBookValueBreakdown = async (symbol: string, deps: BookVal
     const s = await deps.shares.getOutstandingCommonShares(symbol, date);
     if (!s) return null;
     const factor = (await deps.shares.getShareSplitFactor(symbol, date, now)) * basisMultiplier;
-    return { shares: Number(s.outstandingCommonShares) * factor, preferredCapitalThousands: Number(s.preferredCapitalThousands) };
+    return { shares: Number(s.outstandingCommonShares) * factor, preferredCapitalThousands: Number(s.preferredClaimThousands) };
   };
 
   const entries: BookValueBreakdownEntry[] = [];

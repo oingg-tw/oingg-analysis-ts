@@ -9,7 +9,9 @@ import { computation, type DailyComputationBatch } from '@/domain/metrics/comput
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 // 2026-09-27 formulaVersion 4：每股淨值與 EPS 換算到跟當天股價同一基準——季末之後的除息、除權、面額換發、減資恢復交易、增資都套用
 // （見 application/metrics/shared/livePerShare.ts；使用者：「希望我們網站的數據不要跟交易所一樣慢，除息當天股價就變了」）。
-export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 4;
+// 2026-09-27 formulaVersion 5：普通股權益扣特別股改扣發行價（清償時特別股拿回的金額），不是面額（使用者拍板「改成扣發行價」；
+// 2838 每股淨值 19.65 → 17.8，見 domain/financials/outstandingCommonShares.ts preferredClaimThousands）。
+export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 5;
 
 // 2026-09-11 應 web-nuxt 要求新增——grahamNumber（季報快照，PER/PBR 都用財報公告當天的
 // 股價，凍結在 knowledge_date）的即時版本：基本面（EPS TTM/BVPS）維持用「最新已申報」的

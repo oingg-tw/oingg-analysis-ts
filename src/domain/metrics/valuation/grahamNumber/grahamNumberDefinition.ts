@@ -39,5 +39,5 @@ export const grahamNumberDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };
