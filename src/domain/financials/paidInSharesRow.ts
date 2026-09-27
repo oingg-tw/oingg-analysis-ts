@@ -44,6 +44,9 @@ const geometricMiddle = (row: CapitalStockRow): bigint | null => {
   return null;
 };
 
+const exceedsAuthorized = (row: CapitalStockRow): boolean =>
+  row.paid_in_shares !== null && row.authorized_shares !== null && row.authorized_shares > 0n && Number(row.paid_in_shares) > Number(row.authorized_shares) * (1 + CELL_MISMATCH_TOLERANCE);
+
 export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: R[]): { row: R; shares: bigint } | null => {
   for (let i = 0; i < rowsNewestFirst.length; i++) {
     const row = rowsNewestFirst[i]!;
@@ -53,7 +56,9 @@ export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: 
     const middle = geometricMiddle(row);
     const legalMiddle = middle !== null && (row.authorized_shares === null || middle <= row.authorized_shares) ? middle : null;
     const candidate = legalMiddle ?? (verdict === 'amount' ? row.amount_shares! : row.paid_in_shares);
-    const previousConsistent = rowsNewestFirst.slice(i + 1).find((r) => !r.misaligned && r.paid_in_shares !== null);
+    // 2026-09-27 超過核定股數的列不當連貫性的參考：2237 2026-03 實收／核定對調（實收 2 億 > 核定 1.22 億），拿它當參考會讓
+    // 2026-09 的幾何中位 1.29 億（跟現況基本資料一致）被判成不連貫、退回那列錯的 2 億。
+    const previousConsistent = rowsNewestFirst.slice(i + 1).find((r) => !r.misaligned && r.paid_in_shares !== null && !exceedsAuthorized(r));
     if (previousConsistent) {
       // 2026-09-26 核定判準選出的那一格也要跟前一筆一致列連貫才採用：6546 2025-03 兩格都錯（股數 ×10 超過核定、資本格 ÷10），
       // 「只有金額合法」選了資本格，EPS 變 10 倍（近四季 27.32 vs 年報 2.73）。核定判準只能排除一邊，不保證另一邊對。
@@ -69,4 +74,33 @@ export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: 
     if (verdict === 'amount' && !row.misaligned) return { row, shares: candidate };
   }
   return null;
+};
+
+// 2026-09-27 規則 A：資產負債表股本當裁判（使用者：「實作，畢竟確實 MOPS 有錯的機會」）。
+// 股本歷史漏記減資／增資（4702：24 季資產負債表都是 723,332 千元＝7,233 萬股，股本歷史停在 2.25 億股）、
+// 實收與核定兩欄對調（2237 2026-03 實收 2 億、核定 121,772,901——兩格一起錯，恆等式與核定上限都抓不到；
+// 2363、4171、4195、7715 同形狀），只有每季資產負債表的（普通股＋特別股）股本看得出來。
+// 觸發條件：**整列都跟資產負債表對不上**——「選出的股數 × 面額」與「同列實收資本」都差超過 20%。
+// 比金額不比股數：MOPS 自己的面額欄有寫錯的（7851 寫 0.5 實為 5、6564 寫 32 實為 10，mops-ts 原始頁確認），
+// 用股數比會誤判 10 倍；同列實收資本跟資產負債表一致就代表這列沒漏事件。
+// 20%：114Q4 實測差距 >20% 時資產負債表較接近年報 EPS 隱含股數 14:2，≤20% 約各半（增資登記時間差），留給股本歷史。
+// 只裁判「資產負債表季末之前生效」的列：季末之後的新異動資產負債表還沒反映，不能拿舊季末去蓋。
+// ponytail: 除數用面額欄，面額欄寫錯又同時漏記事件會算錯（mops 點名面額污染 10 列，目前都沒有漏記事件）。
+// ponytail: 逐日型指標用「季末 ≤ 查詢日」的資產負債表，季報公告前那一個多月有前視（只影響被這條改寫的列）。
+const BALANCE_SHEET_MAX_GAP = 0.2;
+
+export interface BalanceSheetCapital {
+  quarterEndYm: number; // 季末 年*100+月
+  capitalThousands: bigint; // 普通股＋特別股股本（千元）
+}
+
+export const reconcileWithBalanceSheet = (
+  picked: { shares: bigint; ym: number; parValue: number | null; paidInCapital: bigint | null },
+  bs: BalanceSheetCapital | null
+): bigint => {
+  if (!bs || bs.quarterEndYm < picked.ym || !picked.parValue || picked.parValue <= 0 || bs.capitalThousands <= 0n) return picked.shares;
+  const bsCapital = Number(bs.capitalThousands) * 1000;
+  const near = (capital: number) => Math.abs(capital / bsCapital - 1) <= BALANCE_SHEET_MAX_GAP;
+  if (near(Number(picked.shares) * picked.parValue) || (picked.paidInCapital !== null && near(Number(picked.paidInCapital)))) return picked.shares;
+  return BigInt(Math.round(bsCapital / picked.parValue));
 };

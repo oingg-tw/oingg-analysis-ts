@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
+import { pickPaidInSharesRow, reconcileWithBalanceSheet } from '@/domain/financials/paidInSharesRow';
 
 // 預設：金額換算的股數等於股數（兩格一致）、沒有核定股數資料
 const row = (shares: number, misaligned = false, amount: number | null = shares, authorized: number | null = null) => ({
@@ -51,4 +51,40 @@ test('8171：2025 四列都是 ratio 100，增資後幾何中位 1.12 億跟 202
 test('沒有前一筆一致列：ratio 100 用幾何中位（3131 2026-06）；只有金額合法的 10^1 錯位列仍不收', () => {
   expect(shares([row(292_589_270, true, 2_925_893, 50_000_000)])).toBe(29_258_927n);
   expect(shares([row(1000, true, 100, 500)])).toBeNull();
+});
+
+// 規則 A：資產負債表股本（千元）當裁判
+const pick = (shares: number, ym: number, parValue: number, paidInCapital: number) => ({ shares: BigInt(shares), ym, parValue, paidInCapital: BigInt(paidInCapital) });
+const bs = (quarterEndYm: number, capitalThousands: number) => ({ quarterEndYm, capitalThousands: BigInt(capitalThousands) });
+
+test('2237 2026-03 實收／核定對調：整列跟 115Q1 資產負債表差 64% → 資產負債表股本 ÷ 面額', () => {
+  expect(reconcileWithBalanceSheet(pick(200_000_000, 202603, 10, 2_000_000_000), bs(202603, 1_217_729))).toBe(121_772_900n);
+});
+
+test('4702 漏記減資：股本歷史 2.25 億股、資產負債表 723,332 千元 → 7,233 萬股', () => {
+  expect(reconcileWithBalanceSheet(pick(225_000_000, 202001, 10, 2_250_000_000), bs(202512, 723_332))).toBe(72_333_200n);
+});
+
+test('7851／6564 面額欄寫錯但同列實收資本跟資產負債表一致 → 不觸發（比金額不比股數）', () => {
+  expect(reconcileWithBalanceSheet(pick(67_691_145, 202508, 0.5, 338_455_725), bs(202606, 338_456))).toBe(67_691_145n);
+  expect(reconcileWithBalanceSheet(pick(72_050_000, 202406, 32, 720_500_000), bs(202606, 720_500))).toBe(72_050_000n);
+});
+
+test('差距 20% 以內（增資登記時間差）照用股本歷史', () => {
+  expect(reconcileWithBalanceSheet(pick(115_000_000, 202509, 10, 1_150_000_000), bs(202509, 1_000_000))).toBe(115_000_000n);
+});
+
+test('2237 2026-09 兩格方向相反（資本格 ÷10）：幾何中位 × 面額跟資產負債表一致 → 不觸發', () => {
+  expect(reconcileWithBalanceSheet(pick(128_885_901, 202609, 10, 128_885_901), bs(202609, 1_288_859))).toBe(128_885_901n);
+});
+
+test('股本列在資產負債表季末之後才生效 → 資產負債表還沒反映，不裁判；沒有資產負債表也不動', () => {
+  expect(reconcileWithBalanceSheet(pick(128_885_901, 202609, 10, 1_288_859_010), bs(202606, 1_217_429))).toBe(128_885_901n);
+  expect(reconcileWithBalanceSheet(pick(200_000_000, 202603, 10, 2_000_000_000), null)).toBe(200_000_000n);
+});
+
+test('2237：2026-03 實收／核定對調（實收 > 核定）不當連貫性參考 → 2026-09 幾何中位跟 2025-12 連貫', () => {
+  expect(
+    shares([row(1_288_859_010, true, 12_888_590, 200_000_000), row(200_000_000, false, 200_000_000, 121_772_901), row(121_792_901, false, 121_792_901, 200_000_000)])
+  ).toBe(128_885_901n);
 });

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { parBasisFactor, shareSplitFactor } from '@/domain/financials/parValueBasis';
+import { inferUnrecordedParChange, parBasisFactor, shareSplitFactor } from '@/domain/financials/parValueBasis';
 
 const row = (ym: number, parValue: number, shares: number) => ({ ym, parValue, shares: BigInt(shares) });
 // 收盤價序列：第一筆預設在變更前（涵蓋到變更之前才判斷得出「未換發」）
@@ -47,4 +47,26 @@ test('跨期面額還原：5314 股本歷史 10→0.5→10→0.5 來回跳，連
 test('跨期面額還原：印錯的面額（股數沒跟著變）不算；沒有變更 → 1', () => {
   expect(shareSplitFactor([row(202510, 0.03, 50_000_000), row(202511, 0.003, 50_100_000)], new Date('2025-01-01'), new Date('2025-12-31'))).toBe(1);
   expect(shareSplitFactor([row(202606, 10, 100), row(202607, 1, 1000)], new Date('2025-06-30'), new Date('2026-06-30'))).toBe(1);
+});
+
+// 規則 B：股本歷史漏記的面額變更（現況面額不同、實收資本相同、股價跳動）
+const cap = (parValue: number, paidInCapital: number) => ({ parValue, paidInCapital: BigInt(paidInCapital) });
+
+test('3093 面額 10→2.5：2022-12-12 股價跳成 1/4 → 補 2022-12 生效、股數＝資本 ÷ 2.5', () => {
+  const closes = [{ date: new Date('2022-11-30'), close: 43.8 }, { date: new Date('2022-12-12'), close: 11.12 }, { date: new Date('2022-12-13'), close: 11.2 }];
+  expect(inferUnrecordedParChange(cap(10, 362_888_940), cap(2.5, 362_888_940), closes)).toEqual({ ym: 202212, parValue: 2.5, shares: 145_155_576n });
+});
+
+test('6564 面額欄寫錯（32 vs 現況 10）：股價沒有跳 3.2 倍 → 不補', () => {
+  expect(inferUnrecordedParChange(cap(32, 720_500_000), cap(10, 720_500_000), cl('2024-07-01', 50, 45.5, 50))).toBeNull();
+});
+
+test('實收資本也不同（漏的是增減資，不是面額變更）→ 不補；面額相同 → 不補', () => {
+  expect(inferUnrecordedParChange(cap(10, 600_024_170), cap(1, 810_024_170), cl('2026-01-08', 100, 11))).toBeNull();
+  expect(inferUnrecordedParChange(cap(10, 600_024_170), cap(10, 600_024_170), cl('2026-01-08', 100, 11))).toBeNull();
+});
+
+test('補出的列接在股本歷史後面，shareSplitFactor 把跳動前的每股數字換成新股數基準', () => {
+  const rows = [row(200908, 10, 36_288_894), { ym: 202212, parValue: 2.5, shares: 145_155_576n }];
+  expect(shareSplitFactor(rows, new Date('2021-12-31'), new Date('2022-12-31'))).toBeCloseTo(4);
 });

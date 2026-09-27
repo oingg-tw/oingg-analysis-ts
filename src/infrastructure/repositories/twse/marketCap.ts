@@ -2,7 +2,7 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getOutstandingCommonSharesAsOf, getParRows } from '../mops/capitalStock';
 import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
-import { getEarliestTradeDate, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
+import { getEarliestTradeDate, listClosesBothExchanges, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
 import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividendNotice';
 import { getForeignShareholdingHistory } from './foreignShareholding';
 import { getStockPledgeRatioHistory } from './stockPledgeRatio';
@@ -50,22 +50,13 @@ const getPriceRowAsOf = async (symbol: string, asOfDate: Date): Promise<{ tradeD
 
 // 2026-09-26 面額基準換算（見 domain/financials/parValueBasis.ts）：面額變更生效到新股換發之間，成交價跟股本歷史的股數
 // 不同基準。股本歷史每家一次查詢、快取一小時（面額變更一年全市場十來筆，絕大多數公司沒有 → 係數 1、不查股價序列）。
-const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
-  db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
-    SELECT trade_date, close FROM "export"."daily_price"
-    WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close IS NOT NULL
-    ORDER BY trade_date ASC
-  `;
-
 const priceBasisFactor = async (symbol: string, priceDate: Date, basisDate: Date): Promise<number> => {
   const rows = await getParRows(symbol);
   const last = lastConfirmedParChangeBefore(rows, priceDate);
   if (!last) return 1;
   // 窗口從生效月前 120 天起（見 parValueBasis.ts isSwitched）；上市櫃轉板的公司兩邊各有一段，合併起來（8476 2023-10 轉上市）。
   const since = new Date(Date.UTC(Math.floor(last.ym / 100), (last.ym % 100) - 1, 1) - 120 * 86_400_000);
-  const [listed, otc] = await Promise.all([queryClosesBetween(twseExportPrisma, symbol, since, priceDate), queryClosesBetween(tpexExportPrisma, symbol, since, priceDate)]);
-  const closes = [...listed, ...otc].sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime()).map((c) => ({ date: c.trade_date, close: Number(c.close) }));
-  return parBasisFactor(rows, closes, priceDate, basisDate);
+  return parBasisFactor(rows, await listClosesBothExchanges(symbol, since, priceDate), priceDate, basisDate);
 };
 
 export const getStockPriceAsOf = async (symbol: string, asOfDate: Date, basisDate?: Date): Promise<StockPriceAsOf | null> => {

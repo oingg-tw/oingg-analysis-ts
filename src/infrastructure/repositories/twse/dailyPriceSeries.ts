@@ -1,4 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
+import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { DailyCloseRow } from '@/application/ports/marketData';
 
 // Beta 計算用的個股/大盤收盤價序列（export.daily_price / export.daily_taiex_index）——2026-09-17
@@ -39,4 +40,18 @@ export const listTaiexClosesSince = (since: Date, until?: Date): Promise<RawDail
 export const getEarliestTradeDate = async (symbol: string): Promise<Date | null> => {
   const rows = await twseExportPrisma.$queryRaw<{ min_date: Date | null }[]>`SELECT MIN(trade_date) AS min_date FROM "export"."daily_price" WHERE symbol = ${symbol}`;
   return rows[0]?.min_date ?? null;
+};
+
+// 2026-09-26 面額換發偵測用（原在 twse/marketCap.ts，2026-09-27 股本規則 B 也要用，搬來共用）：上市＋上櫃合併、只取有成交的日子。
+// 上市櫃轉板的公司兩邊各有一段（8476 2023-10 轉上市），合併起來才是完整序列。
+const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
+  db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
+    SELECT trade_date, close FROM "export"."daily_price"
+    WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close IS NOT NULL
+    ORDER BY trade_date ASC
+  `;
+
+export const listClosesBothExchanges = async (symbol: string, since: Date, until: Date): Promise<{ date: Date; close: number }[]> => {
+  const [listed, otc] = await Promise.all([queryClosesBetween(twseExportPrisma, symbol, since, until), queryClosesBetween(tpexExportPrisma, symbol, since, until)]);
+  return [...listed, ...otc].sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime()).map((c) => ({ date: c.trade_date, close: Number(c.close) }));
 };

@@ -93,3 +93,27 @@ export const shareSplitFactor = (rowsAsc: ParRow[], fromDate: Date, toDate: Date
   confirmedChanges(rowsAsc)
     .changes.filter((c) => c.ym > ymOf(fromDate) && c.ym <= ymOf(toDate))
     .reduce((factor, c) => factor * (c.oldPar / c.newPar), 1);
+
+// 2026-09-27 規則 B：股本歷史漏記面額變更（3093 2022-12 面額 10→2.5、4763 2025-06 10→1、7780 2026-01 10→1）。
+// 面額變更不改股本金額、只改股數，資產負債表（規則 A）看不出來。兩個獨立證據都要成立才補一筆變更：
+// 1. company_profile（現況快照）的面額跟股本歷史最新一列不同、實收資本相同（±2%）——排除「漏的其實是增減資」。
+// 2. 最新一列生效之後，股價出現「÷(舊面額/新面額)」那一跳（容許 ±40%，比漲跌停 10% 寬、比反向跳動窄）——日期取跳動那天。
+// 面額欄寫錯的（6564 股本歷史寫 32、現況 10）股價不會跳 3.2 倍，不會被補成變更。
+// 補出的列：生效月＝跳動當月、面額＝現況面額、股數＝實收資本 ÷ 新面額（資本不變）。
+// ponytail: 跳動在股價資料起點（2020-11）之前、或換發期間停牌跨過跳動的，找不到就不補（維持現狀）；目前 3 家都找得到。
+export const inferUnrecordedParChange = (
+  latest: { parValue: number | null; paidInCapital: bigint | null },
+  profile: { parValue: number | null; paidInCapital: bigint | null },
+  closesSinceLatestAsc: { date: Date; close: number }[]
+): ParRow | null => {
+  const oldPar = latest.parValue;
+  const newPar = profile.parValue;
+  if (!oldPar || !newPar || oldPar <= 0 || newPar <= 0 || oldPar === newPar) return null;
+  if (!latest.paidInCapital || !profile.paidInCapital || Math.abs(Number(profile.paidInCapital) / Number(latest.paidInCapital) - 1) > 0.02) return null;
+  const expected = newPar / oldPar;
+  for (let i = 1; i < closesSinceLatestAsc.length; i++) {
+    const r = closesSinceLatestAsc[i]!.close / closesSinceLatestAsc[i - 1]!.close / expected;
+    if (r > 0.6 && r < 1.4) return { ym: ymOf(closesSinceLatestAsc[i]!.date), parValue: newPar, shares: BigInt(Math.round(Number(latest.paidInCapital) / newPar)) };
+  }
+  return null;
+};

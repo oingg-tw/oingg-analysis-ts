@@ -1,12 +1,13 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
-import { pickPaidInSharesRow } from '@/domain/financials/paidInSharesRow';
+import { pickPaidInSharesRow, reconcileWithBalanceSheet, type BalanceSheetCapital } from '@/domain/financials/paidInSharesRow';
 import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
 import { effectivePreferredDividends, computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
 import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
-import { shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
+import { inferUnrecordedParChange, shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
+import { listClosesBothExchanges } from '../twse/dailyPriceSeries';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
 // CapitalStockChangeSource 在 Phase 4 跟進（對外回應的 zod schema 在 http/modules/companies/types.ts），
@@ -21,7 +22,61 @@ interface RawCapitalStockRow {
   misaligned: boolean; // 股數 ÷（資本÷面額）剛好 10^k、k≠0
   amount_shares: bigint | null; // 實收資本 ÷ 面額（2026-09-26 核定股數判準用）
   authorized_shares: bigint | null;
+  paid_in_capital: bigint | null;
 }
+
+// 每家一次查詢、快取一小時（回填時同一家會被問幾十次；面額變更、漏記事件一年全市場十來筆，絕大多數公司查完就結束）。
+const HOURLY_TTL_MS = 60 * 60 * 1000;
+const hourly = <T>(load: (symbol: string) => Promise<T>) => {
+  const cache = new Map<string, { at: number; value: Promise<T> }>();
+  return (symbol: string): Promise<T> => {
+    const hit = cache.get(symbol);
+    if (hit && Date.now() - hit.at < HOURLY_TTL_MS) return hit.value;
+    const value = load(symbol);
+    cache.set(symbol, { at: Date.now(), value });
+    return value;
+  };
+};
+
+// 2026-09-27 規則 B（見 domain/financials/parValueBasis.ts inferUnrecordedParChange）：股本歷史漏記的面額變更，
+// 用 company_profile 現況面額＋股價跳動補一筆。股數（getIssuedSharesAsOf）與面額基準（getParRows）兩邊都要看到同一筆。
+const getUnrecordedParChange = hourly(async (symbol: string): Promise<ParRow | null> => {
+  const [latest, profile] = await Promise.all([
+    mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_capital: bigint | null }[]>`
+      SELECT effective_year * 100 + effective_month AS ym, par_value, paid_in_capital FROM "export"."capital_stock_history"
+      WHERE symbol = ${symbol} ORDER BY effective_year DESC, effective_month DESC LIMIT 1`,
+    mopsExportPrisma.$queryRaw<{ par_value: unknown; paid_in_capital: bigint | null }[]>`
+      SELECT par_value, paid_in_capital FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+  ]).catch(() => [[], []] as const);
+  const l = latest[0];
+  const p = profile[0];
+  if (!l || !p || l.par_value === null || p.par_value === null || Number(l.par_value) === Number(p.par_value)) return null;
+  const ym = Number(l.ym);
+  const closes = await listClosesBothExchanges(symbol, new Date(Date.UTC(Math.floor(ym / 100), (ym % 100) - 1, 1)), new Date(Date.UTC(9999, 0, 1)));
+  return inferUnrecordedParChange(
+    { parValue: Number(l.par_value), paidInCapital: l.paid_in_capital === null ? null : BigInt(l.paid_in_capital) },
+    { parValue: Number(p.par_value), paidInCapital: p.paid_in_capital === null ? null : BigInt(p.paid_in_capital) },
+    closes
+  );
+});
+
+// 2026-09-27 規則 A（見 domain/financials/paidInSharesRow.ts reconcileWithBalanceSheet）：每季資產負債表的普通股＋特別股股本（千元）。
+// mops-ts export.quarterly_balance_sheet_xbrl，109Q3 起；兩種財報口徑的股本相同，合併報表優先。
+const getBalanceSheetCapitalRows = hourly(async (symbol: string): Promise<(BalanceSheetCapital & { quarterEnd: Date })[]> =>
+  mopsExportPrisma.$queryRaw<{ year: number; quarter: number; cap: bigint | null }[]>`
+      SELECT DISTINCT ON (year, quarter) year, quarter, ROUND(COALESCE(ordinary_share, 0) + COALESCE(preference_share, 0))::bigint AS cap
+      FROM "export"."quarterly_balance_sheet_xbrl"
+      WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND ordinary_share > 0
+      ORDER BY year, quarter, data_type DESC`
+    .then((rows) =>
+      rows.map((r) => ({
+        quarterEnd: new Date(Date.UTC(r.year + 1911, r.quarter * 3, 0)),
+        quarterEndYm: (r.year + 1911) * 100 + r.quarter * 3,
+        capitalThousands: BigInt(r.cap ?? 0),
+      }))
+    )
+    .catch(() => [])
+);
 
 // 股本是歷史異動紀錄（現金增資、盈餘轉增資、減資…生效當月各一筆），不能直接抓整張表最新一筆。
 // 查某個時間點（例如某季資產負債表的報告日）對應的流通股數，要找生效日 <= asOfDate 的最新一筆。
@@ -51,7 +106,7 @@ const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ is
   let rows: RawCapitalStockRow[];
   try {
     rows = await mopsExportPrisma.$queryRaw<RawCapitalStockRow[]>`
-      SELECT effective_year, effective_month, paid_in_shares, par_value, authorized_shares,
+      SELECT effective_year, effective_month, paid_in_shares, par_value, authorized_shares, paid_in_capital,
         CASE WHEN par_value > 0 AND paid_in_capital > 0 THEN ROUND(paid_in_capital / par_value)::bigint END AS amount_shares,
         COALESCE(
           paid_in_shares > 0 AND paid_in_capital > 0 AND par_value > 0
@@ -73,15 +128,31 @@ const getIssuedSharesAsOf = async (symbol: string, asOfDate: Date): Promise<{ is
     }
     throw error;
   }
+  // 規則 B：漏記的面額變更生效後，當成最新一列（股數＝實收資本 ÷ 新面額）。
+  const unrecorded = await getUnrecordedParChange(symbol);
+  if (unrecorded && unrecorded.ym <= asOfYear * 100 + asOfMonth) {
+    rows.unshift({
+      effective_year: Math.floor(unrecorded.ym / 100),
+      effective_month: unrecorded.ym % 100,
+      paid_in_shares: unrecorded.shares,
+      par_value: unrecorded.parValue,
+      misaligned: false,
+      amount_shares: unrecorded.shares,
+      authorized_shares: null,
+      paid_in_capital: BigInt(Math.round(Number(unrecorded.shares) * unrecorded.parValue!)),
+    });
+  }
   const picked = pickPaidInSharesRow(rows);
   if (!picked) return null;
   const record = picked.row;
-  return {
-    issuedShares: picked.shares,
-    parValue: record.par_value === null || record.par_value === undefined ? null : Number(record.par_value),
-    effectiveYear: record.effective_year,
-    effectiveMonth: record.effective_month,
-  };
+  const parValue = record.par_value === null || record.par_value === undefined ? null : Number(record.par_value);
+  // 規則 A：整列跟 asOf 前最近一季資產負債表股本對不上（漏記減增資、實收／核定對調）→ 改用資產負債表股本 ÷ 面額。
+  const bs = (await getBalanceSheetCapitalRows(symbol)).filter((r) => r.quarterEnd <= asOfDate).at(-1) ?? null;
+  const issuedShares = reconcileWithBalanceSheet(
+    { shares: picked.shares, ym: record.effective_year * 100 + record.effective_month, parValue, paidInCapital: record.paid_in_capital === null ? null : BigInt(record.paid_in_capital) },
+    bs
+  );
+  return { issuedShares, parValue, effectiveYear: record.effective_year, effectiveMonth: record.effective_month };
 };
 
 // 流通在外普通股 = 已發行 − 特別股 − 庫藏股（IAS 33，見 domain/financials/outstandingCommonShares.ts）。
@@ -99,19 +170,16 @@ export const getOutstandingCommonSharesAsOf = async (symbol: string, asOfDate: D
 };
 
 // 2026-09-26 面額基準（原在 twse/marketCap.ts，2026-09-27 搬來股本資料的家，跨期還原也要用）：
-const PAR_ROWS_TTL_MS = 60 * 60 * 1000;
-const parRowsCache = new Map<string, { at: number; rows: Promise<ParRow[]> }>();
-export const getParRows = (symbol: string): Promise<ParRow[]> => {
-  const hit = parRowsCache.get(symbol);
-  if (hit && Date.now() - hit.at < PAR_ROWS_TTL_MS) return hit.rows;
-  const rows = mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_shares: bigint | null }[]>`
+// 規則 B 補的面額變更接在最後（生效月一定在股本歷史最新一列之後）。
+export const getParRows = hourly(async (symbol: string): Promise<ParRow[]> => {
+  const rows = await mopsExportPrisma.$queryRaw<{ ym: number; par_value: unknown; paid_in_shares: bigint | null }[]>`
       SELECT effective_year * 100 + effective_month AS ym, par_value, paid_in_shares
       FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY ym ASC`
     .then((r) => r.map((x) => ({ ym: Number(x.ym), parValue: x.par_value === null ? null : Number(x.par_value), shares: x.paid_in_shares })))
-    .catch(() => []);
-  parRowsCache.set(symbol, { at: Date.now(), rows });
-  return rows;
-};
+    .catch((): ParRow[] => []);
+  const unrecorded = await getUnrecordedParChange(symbol);
+  return unrecorded ? [...rows, unrecorded] : rows;
+});
 
 // 2026-09-27 跨期比較每股數字的面額還原係數（見 domain/financials/parValueBasis.ts shareSplitFactor）。
 export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate: Date): Promise<number> =>
