@@ -4,6 +4,7 @@ export const depreciationAmortizationPerShareDefinition: MetricDefinitionSpec = 
   metricCode: 'depreciationAmortizationPerShare',
   name: '每股折舊攤銷',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q(單季) = 本季（折舊費用+攤銷費用）*1000/流通股數；TTM = 近四季（含本季）折舊攤銷' +
     '加總*1000/流通股數，四季不齊為 null。折舊/攤銷來源欄位跟 evEbitda/netDebtToEbitda ' +

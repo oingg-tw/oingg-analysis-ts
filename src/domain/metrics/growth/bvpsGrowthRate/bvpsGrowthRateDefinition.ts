@@ -19,5 +19,5 @@ export const bvpsGrowthRateDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['equity_attributable_to_owners_of_parent', 'equity', 'outstandingCommonShares'],
-  currentFormulaVersion: 4,
+  currentFormulaVersion: 5,
 };

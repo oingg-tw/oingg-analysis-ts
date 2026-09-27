@@ -4,6 +4,7 @@ export const ocfPerShareDefinition: MetricDefinitionSpec = {
   metricCode: 'ocfPerShare',
   name: '每股營業現金流',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q(單季) = 本季營業活動現金流*1000/流通股數；TTM = 近四季（含本季）營業活動' +
     '現金流加總*1000/流通股數，四季不齊為 null。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',

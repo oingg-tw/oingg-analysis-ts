@@ -17,5 +17,5 @@ export const shareCountChangeRateDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

@@ -5,6 +5,7 @@ export const administrativeExpensePerShareDefinition: MetricDefinitionSpec = {
   name: '每股管理費用',
   nameEn: 'Administrative Expense Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q = 當季管理費用（administrative_expense）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +

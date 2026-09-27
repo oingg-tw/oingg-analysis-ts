@@ -5,6 +5,7 @@ export const bankOtherOperatingExpensePerShareDefinition: MetricDefinitionSpec =
   name: '每股其他營業費用',
   nameEn: 'Other Operating Expenses Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '銀行業「營收到股利去了哪裡」瀑布圖最後一段扣減項——用殘差法算出：' +
     '（利息淨收益+非利息淨收益）− 呆帳費用及保證責任準備 − 稅前淨利。這裡沒有對應的' +

@@ -13,7 +13,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 // 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
-export const BVPS_GROWTH_RATE_FORMULA_VERSION = 4;
+// 2026-09-28 formulaVersion 5：跨期還原加上股票股利（配股）與股數合併式減資（使用者：「只是股數變了、公司價值沒變」的都換算，IAS 33 對配股、分割、反分割都追溯調整）。
+export const BVPS_GROWTH_RATE_FORMULA_VERSION = 5;
 const toBvps = (equityInThousands: bigint | null, shares: bigint | null): number | null => {
   if (equityInThousands === null || shares === null || shares === 0n) return null;
   return toPerShareExact(equityInThousands, shares);

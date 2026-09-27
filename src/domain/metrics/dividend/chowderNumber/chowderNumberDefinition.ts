@@ -21,5 +21,5 @@ export const chowderNumberDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['daily_valuation.dividend_yield', 'dividendsPaid', 'outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

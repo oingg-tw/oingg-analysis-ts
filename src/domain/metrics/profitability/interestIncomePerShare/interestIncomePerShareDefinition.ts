@@ -5,6 +5,7 @@ export const interestIncomePerShareDefinition: MetricDefinitionSpec = {
   name: '每股利息收入',
   nameEn: 'Interest Income Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q = 當季利息收入（revenue_from_interest）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +

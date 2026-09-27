@@ -5,6 +5,7 @@ export const nonOperatingIncomePerShareDefinition: MetricDefinitionSpec = {
   name: '每股業外損益',
   nameEn: 'Non-Operating Income Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '業外損益 = 稅前淨利 − 營業利益（兩者都是千元原始金額，相減後才除以股數，只捨入一次）。' +
     'Q = 當季業外損益*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +

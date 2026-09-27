@@ -5,6 +5,7 @@ export const operatingExpensePerShareDefinition: MetricDefinitionSpec = {
   name: '每股營業費用',
   nameEn: 'Operating Expenses Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'TTM = 近四季（含本季）營業費用合計加總*1000/流通股數，四季不齊為 null。流通股數固定用' +
     '「本季報告日」當下有效的股本。直接讀損益表營業費用合計科目（operating_expense，是推銷+' +

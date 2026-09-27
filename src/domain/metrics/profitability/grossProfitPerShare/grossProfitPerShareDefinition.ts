@@ -5,6 +5,7 @@ export const grossProfitPerShareDefinition: MetricDefinitionSpec = {
   name: '每股毛利',
   nameEn: 'Gross Profit Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q(單季) = 本季毛利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆）；TTM = ' +
     '近四季（含本季）毛利加總*1000/流通股數，四季不齊為 null。流通股數固定用「本季報告日」' +

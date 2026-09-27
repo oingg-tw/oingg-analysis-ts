@@ -19,5 +19,5 @@ export const livePegRatioDefinition: MetricDefinitionSpec = {
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'outstandingCommonShares', 'daily_price.close'],
-  currentFormulaVersion: 5,
+  currentFormulaVersion: 6,
 };

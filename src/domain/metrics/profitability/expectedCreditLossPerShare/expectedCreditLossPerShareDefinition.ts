@@ -5,6 +5,7 @@ export const expectedCreditLossPerShareDefinition: MetricDefinitionSpec = {
   name: '每股預期信用減損損失',
   nameEn: 'Expected Credit Loss Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q = 當季預期信用減損損失（IFRS 9，impairment_loss_gain_reversal_ifrs9）*1000/流通股數；' +
     'TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。流通股數固定用「本季報告日」' +

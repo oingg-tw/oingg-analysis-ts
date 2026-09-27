@@ -16,5 +16,5 @@ export const epsGrowthRateDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'outstandingCommonShares'],
-  currentFormulaVersion: 4,
+  currentFormulaVersion: 5,
 };

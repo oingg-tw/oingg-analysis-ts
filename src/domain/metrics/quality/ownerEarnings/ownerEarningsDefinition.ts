@@ -4,6 +4,7 @@ export const ownerEarningsDefinition: MetricDefinitionSpec = {
   metricCode: 'ownerEarnings',
   name: '業主盈餘',
   unit: '元',
+  perShare: true,
   formulaNote:
     '每股股東盈餘 = (本季淨利+折舊+攤銷+資本支出)/流通股數（資本支出來源資料是負值/流出，' +
     '用加法）。Q(單季)/TTM（近四季各分項各自加總再除以流通股數），跟 eps/' +

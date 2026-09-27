@@ -4,6 +4,7 @@ export const bvpsDefinition: MetricDefinitionSpec = {
   metricCode: 'bvps',
   name: '每股淨值',
   unit: '元',
+  perShare: true,
   formulaNote:
     '= (本季期末權益 − 特別股股本)*1000/流通股數（普通股每股淨值），權益優先採歸屬母公司口徑，缺漏退回整體口徑。' +
     '流通股數 = 已發行 − 特別股 − 庫藏股（IAS 33，2026-09-26 formulaVersion 2）。純資產負債表' +

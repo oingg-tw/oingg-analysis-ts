@@ -5,6 +5,7 @@ export const equityMethodIncomePerShareDefinition: MetricDefinitionSpec = {
   name: '每股權益法投資損益',
   nameEn: 'Equity Method Income Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q = 當季採用權益法認列之關聯企業及合資損益份額*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +

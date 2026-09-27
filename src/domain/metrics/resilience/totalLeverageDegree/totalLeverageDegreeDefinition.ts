@@ -15,5 +15,5 @@ export const totalLeverageDegreeDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'revenue', 'outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

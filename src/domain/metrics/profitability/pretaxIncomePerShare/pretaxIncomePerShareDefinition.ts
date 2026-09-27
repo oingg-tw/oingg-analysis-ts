@@ -4,6 +4,7 @@ export const pretaxIncomePerShareDefinition: MetricDefinitionSpec = {
   metricCode: 'pretaxIncomePerShare',
   name: '每股稅前淨利',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q(單季) = 本季稅前淨利*1000/流通股數（股本歷史生效日<=本季報告日的最新一筆）；' +
     'TTM = 近四季（含本季）稅前淨利加總*1000/流通股數，四季不齊為 null。流通股數固定用' +

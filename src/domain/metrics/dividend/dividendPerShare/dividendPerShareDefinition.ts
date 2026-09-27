@@ -5,6 +5,7 @@ export const dividendPerShareDefinition: MetricDefinitionSpec = {
   name: '每股股利',
   nameEn: 'Dividend Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'TTM = 除息日落在近一年（該季季末往前一年，不含起點當天）的普通股每股現金股利加總，取自公司公告的每股配發金額' +
     '（盈餘分配 + 法定盈餘公積與資本公積發放）。只含普通股、不含特別股股利；公告本來就是每股金額，不需要除以股數。' +
@@ -18,5 +19,5 @@ export const dividendPerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['cash_dividend_from_earnings', 'cash_dividend_from_legal_reserve_and_capital_surplus', 'ex_dividend_date'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

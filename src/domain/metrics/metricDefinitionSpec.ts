@@ -169,6 +169,9 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // 沒有時維持 undefined，不是空字串。三個欄位（name/nameSuffix/nameEn）都繼承自
   // NamedEntity，跟 MetricBadge 共用同一組欄位名稱，不用各自維護一份。
   unit: string;
+  // 2026-09-28 每股數字（元／股）。對外的歷史端點會把這類指標換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，
+  // 見 application/metrics/shared/restatePerShareHistory.ts）。總額（市值、NCAV）與股價不是每股數字，不標。
+  perShare?: true;
   formulaNote: string;
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種
   // 自然語言說明）由這裡儲存，前端忠實顯示，不要各自維護一份、算式跟後端實際公式對不上。

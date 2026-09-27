@@ -20,5 +20,5 @@ export const pegRatioDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['TTM'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'outstandingCommonShares'],
-  currentFormulaVersion: 4,
+  currentFormulaVersion: 5,
 };

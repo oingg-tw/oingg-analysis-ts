@@ -12,7 +12,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
 // 2026-09-27 formulaVersion 5：每股淨值與 EPS 換算到跟當天股價同一基準——季末之後的除息、除權、面額換發、減資恢復交易、增資都套用
 // （見 application/metrics/shared/livePerShare.ts；使用者：「希望我們網站的數據不要跟交易所一樣慢，除息當天股價就變了」）。
-export const LIVE_PEG_RATIO_FORMULA_VERSION = 5;
+// 2026-09-28 formulaVersion 6：跨期還原加上股票股利（配股）與股數合併式減資（使用者：「只是股數變了、公司價值沒變」的都換算，IAS 33 對配股、分割、反分割都追溯調整）。
+export const LIVE_PEG_RATIO_FORMULA_VERSION = 6;
 
 // 2026-09-11 應 web-nuxt 要求新增——pegRatio（季報快照，PER 用財報公告當天股價）的即時
 // 版本：EPS 5 年 CAGR 維持用「最新已申報」的完整會計年度資料，PER 的股價改用當下最新

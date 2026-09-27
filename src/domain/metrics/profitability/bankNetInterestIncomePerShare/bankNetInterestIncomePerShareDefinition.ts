@@ -5,6 +5,7 @@ export const bankNetInterestIncomePerShareDefinition: MetricDefinitionSpec = {
   name: '每股利息淨收益',
   nameEn: 'Net Interest Income Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '銀行業「營收到股利去了哪裡」瀑布圖第一段——Q(單季) = 本季利息淨收益' +
     '（利息收入減利息費用後的淨額，官方單一欄位，不是本服務自己拆利息收入/支出相減）' +

@@ -29,5 +29,5 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
     'revenue',
     'outstandingCommonShares',
   ],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

@@ -6,6 +6,7 @@ import { getDupontHistory } from '@/application/metrics/shared/dupont/queryDupon
 import { getMetricHistory } from '@/application/metrics/shared/queryMetricHistory';
 import { getDailyCadenceMetricHistory } from '@/application/metrics/shared/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/application/metrics/shared/queryMultiMetricHistory';
+import { restatePerShareHistory } from '@/application/metrics/shared/restatePerShareHistory';
 import { resolveTimeframeForMetric } from '@/application/metrics/resolveTimeframeForMetric';
 import { BETA_WINDOWS } from '@/domain/metrics/betaWindows';
 import type { PeriodType } from '@/domain/metrics/metricBasis';
@@ -65,7 +66,7 @@ export interface MetricHistoryQuery {
 // 都回來改一次這裡的型別。roe-history/roa-history/dupont-history 三支既有端點維持不動，
 // 這支只是之後新增指標的曝露管道，不是要取代它們。
 // 2026-09-14：query 參數 token 改名 timeframe（金融/交易類 API 常見用語），是對外契約變更。
-export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, limit }: MetricHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
+export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, limit }: MetricHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability' | 'shares'>) => {
   // 2026-09-11 使用者要求：beta 不畫河流圖，沒有查詢單一公司歷史/最新值的需求，直接從
   // 這支端點移除——beta 全市場只回填最新一筆快照（不像 exchangePeRatio/exchangePbRatio/
   // dividendYield 那樣有完整歷史），真正需要 beta 的情境是排行/篩選（screener 的
@@ -84,7 +85,9 @@ export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, l
   const { entries, total, hasMore } = fieldRef.isDailyCadence
     ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, dataType, '', limit, deps)
     : await getMetricHistory(symbol, metricCode, fieldRef.periodType, dataType, '', limit, deps);
-  return { symbol, metricCode, timeframe, total, hasMore, entries };
+  // 2026-09-28 每股類指標換算到今天的股數基準（見 restatePerShareHistory.ts）；逐日型沒有每股類指標。
+  const restated = fieldRef.isDailyCadence ? entries : await restatePerShareHistory(symbol, metricCode, fieldRef.periodType, entries, deps);
+  return { symbol, metricCode, timeframe, total, hasMore, entries: restated };
 };
 
 export const MAX_METRIC_CODES_PER_REQUEST = 10;
@@ -101,7 +104,7 @@ export interface MetricsHistoryQuery {
 // 具名欄位的組合端點；這支是任意 metricCode 清單、用 metricCode 當 key 合併回傳，不要求
 // 彼此有語意組裝關係。timeframe 對清單裡每個 metricCode 都要合法，只要有一個不允許就整體回 400
 // （附上是哪個 metricCode 不允許），不會部分成功。
-export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
+export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability' | 'shares'>) => {
   const { symbol, timeframe, limit } = query;
   const metricCodes = [...new Set(query.metricCodes.split(',').map((code) => code.trim()).filter((code) => code.length > 0))];
 
@@ -126,6 +129,14 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
   }
 
   const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);
+  // 2026-09-28 每股類指標逐一換算到今天的股數基準（見 restatePerShareHistory.ts）
+  for (const metricCode of metricCodes) {
+    const cells = entries.flatMap((e) => (e.values[metricCode] ? [{ ...e.values[metricCode]!, fiscalYear: e.fiscalYear, fiscalQuarter: e.fiscalQuarter, entry: e }] : []));
+    const restated = await restatePerShareHistory(symbol, metricCode, periodType!, cells, deps);
+    restated.forEach(({ entry, fiscalYear: _y, fiscalQuarter: _q, ...cell }) => {
+      entry.values[metricCode] = cell;
+    });
+  }
   return { symbol, metricCodes, timeframe, total, hasMore, entries };
 };
 

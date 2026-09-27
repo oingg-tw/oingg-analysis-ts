@@ -5,6 +5,7 @@ export const incomeTaxExpensePerShareDefinition: MetricDefinitionSpec = {
   name: '每股所得稅費用',
   nameEn: 'Income Tax Expense Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     'TTM = 近四季（含本季）所得稅費用加總*1000/流通股數，四季不齊為 null。流通股數固定用' +
     '「本季報告日」當下有效的股本。直接讀損益表所得稅費用科目（income_tax_expense_' +

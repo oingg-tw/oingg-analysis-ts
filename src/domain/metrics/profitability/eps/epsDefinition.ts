@@ -12,6 +12,7 @@ export const epsDefinition: MetricDefinitionSpec = {
   name: '每股盈餘',
   nameEn: 'EPS',
   unit: '元',
+  perShare: true,
   formulaNote:
     'Q(單季) = (本季淨利 − 近四季特別股股利÷4)*1000/流通股數；TTM = (近四季（含本季）淨利加總 − 近四季特別股股利)' +
     '*1000/流通股數，四季不齊為 null。照 IAS 33 基本每股盈餘的做法：分子只算屬於普通股的部分（特別股股利取權益變動表' +

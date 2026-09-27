@@ -33,6 +33,18 @@
   （commit 931cc5b6），跑完後 `GET /companies/metric-history` 之類的序列從只有 113Q1 起變成 109Q3 起，
   web-nuxt 的指標走勢圖才畫得出 2020~2023。進度見 `tmp/history-109-112.log`，腳本有逐公司續跑機制。
 
+## 即時指標（2026-09-27 上線 livePeRatio／livePbRatio 時記下的限制）
+
+- **每日排程是空的，即時指標不會自己更新**：`application/batch/daily/indicatorRegistry.ts` 從 2026-09-08 起是空陣列，
+  `liveGrahamNumber`／`livePegRatio`／`liveMarketCap`／`livePeRatio`／`livePbRatio` 跟交易所比率（`exchangePeRatio` 等）
+  都只有手動跑 `scripts/backfillLiveValuationMetricsFullMarketPit.ts` 才會更新（全市場約 16 分鐘）。
+  個股頁的本益比／股價淨值比現在優先讀即時版，沒排程就會停在最後一次手動跑的那天。上 Cloud Run 時要排成每個交易日收盤後跑。
+- **現金增資的認購折價沒有反映**：mops-ts `dividend_distribution` 的 `capital_increase_subscription_price` 全是空值
+  （2026-09-27 抽 1727、2890、6129、2614 都是 null），只能在股本登記生效月加上新股數、假設照每股淨值發行
+  （`infrastructure/repositories/mops/capitalStock.ts` getShareBasisEvents 的「其他發行」）。除權日股價已經扣掉認購權價值，
+  到登記生效前的那段、以及折價大的增資，每股淨值會有落差（IAS 33 紅利因子沒做）。twse-ts `ex_dividend_notice` 有
+  `subscription_price_per_share`，但只有上市、沒有上櫃；要做就請 mops-ts 補認購價，或上市上櫃各自接。
+
 ## 卡在其他微服務，等對方排期
 
 - **股利分派公告表**（mops-ts `DividendDistribution` domain，資料源 MOPS t108sb27）：

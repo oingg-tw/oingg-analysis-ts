@@ -23,7 +23,7 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   group: 'period',
   allowedPeriodTypes: ['FY'],
   dependsOn: ['dividendsPaid', 'outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
   // 2026-09-24 使用者決定 8 年窗口先從 GET /metrics 目錄下架：mops-ts 用 40 家等距採樣確認 **iXBRL 從民國
   // 108 年起才強制、107 年以前結構上就是舊格式 HTML**（採樣成功率 0/40），所以最早年度是 FY108，8 年窗口
   // 要 FY115 才滿——**約 2027 年初**才會出現第一個值，在那之前全市場 0 家有值，掛在目錄裡對使用者是雜訊。

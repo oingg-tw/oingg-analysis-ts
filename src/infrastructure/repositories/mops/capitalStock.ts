@@ -183,8 +183,15 @@ export const getParRows = hourly(async (symbol: string): Promise<ParRow[]> => {
 });
 
 // 2026-09-27 跨期比較每股數字的面額還原係數（見 domain/financials/parValueBasis.ts shareSplitFactor）。
-export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate: Date): Promise<number> =>
-  shareSplitFactor(await getParRows(symbol), fromDate, toDate);
+// 2026-09-28 加股票股利與股數合併式減資（使用者：股價照下單軟體、每股數字換算到今天的股數基準——「只是股數變了、公司價值沒變」的都換算，
+// IAS 33 對配股、分割、反分割都追溯調整）。時點用股本歷史的登記月，跟每期每股數字實際讀到的股本列一致（跟面額變更同一個規則）。
+export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate: Date): Promise<number> => {
+  const [parRows, { stock, reductions }] = await Promise.all([getParRows(symbol), getShareCountEvents(symbol)]);
+  const inRange = (ym: number | null) => ym !== null && ym > ymOf(fromDate) && ym <= ymOf(toDate);
+  const stockFactor = stock.filter((d) => inRange(d.registeredYm)).reduce((f, d) => f * d.multiplier, 1);
+  const consolidationFactor = reductions.filter((r) => inRange(r.ym) && 1 / r.multiplier >= CONSOLIDATION_MIN_RATIO).reduce((f, r) => f * r.multiplier, 1);
+  return shareSplitFactor(parRows, fromDate, toDate) * stockFactor * consolidationFactor;
+};
 
 // 2026-09-27 即時每股基準的事件（見 domain/financials/liveShareBasis.ts）。basisDate＝財報季末，asOf＝交易日。
 // basisMultiplier：季末那天股本歷史股數 × 它 ＝ 季末當天市場交易的股數基準（登記跟市場換基準的日子不同）：
@@ -197,39 +204,74 @@ const monthStart = (ym: number) => new Date(Date.UTC(Math.floor(ym / 100), (ym %
 const DAY = 86_400_000;
 const parOr10 = (par: number | null) => (par && par > 0 ? par : 10);
 
+// 2026-09-28 股票股利、減資、其他發行的時間軸（跨期還原 getShareSplitFactor 與即時基準 getShareBasisEvents 共用，每家快取一小時）。
+// 只用實收資本金額的逐列變化，不用股本來源欄：來源欄的語意各家不一（5904 是這一列的變動、2436 連續兩列一模一樣），
+// 也不用股數格（MOPS 股數格有 10^k 錯位）。面額變更那列資本不變、差額自然是 0。
+// - 股票股利：登記那列＝除權之後第一個「資本增加至少九成配股金額（每股配發 × 參與股數）」的列，那部分金額從「其他發行」扣掉。
+// - 減資：資本減少的列，倍數＝這列資本 ÷ 前一列資本。
+interface CapitalRow {
+  ym: number;
+  par: number;
+  prevCapital: number | null;
+  delta: number;
+  stockAttributed: number;
+}
+const getShareCountEvents = hourly(async (symbol: string) => {
+  const [stockDividends, history] = await Promise.all([
+    mopsExportPrisma.$queryRaw<{ ex_rights: Date; stock: number; par: number | null; tps: number | null }[]>`
+      SELECT ex_rights_date AS ex_rights,
+        (COALESCE(stock_dividend_from_earnings, 0) + COALESCE(stock_dividend_from_legal_reserve_and_capital_surplus, 0))::float8 AS stock,
+        par_value::float8 AS par, total_participating_shares::float8 AS tps
+      FROM "export"."dividend_distribution"
+      WHERE symbol = ${symbol} AND ex_rights_date IS NOT NULL
+        AND COALESCE(stock_dividend_from_earnings, 0) + COALESCE(stock_dividend_from_legal_reserve_and_capital_surplus, 0) > 0
+      ORDER BY ex_rights_date`,
+    mopsExportPrisma.$queryRaw<{ ym: number; capital: number | null; par: number | null }[]>`
+      SELECT effective_year * 100 + effective_month AS ym, paid_in_capital::float8 AS capital, par_value::float8 AS par
+      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY 1`,
+  ]).catch(() => [[], []] as const);
+  const rows: CapitalRow[] = history.map((h, i) => {
+    const prevCapital = i > 0 ? history[i - 1]!.capital : null;
+    return { ym: Number(h.ym), par: parOr10(h.par), prevCapital, delta: h.capital && prevCapital ? h.capital - prevCapital : 0, stockAttributed: 0 };
+  });
+  const stock = stockDividends.map((d) => {
+    const amount = d.stock * (d.tps ?? 0);
+    const registered = rows.find((r) => r.ym >= ymOf(d.ex_rights) && amount > 0 && r.delta - r.stockAttributed >= 0.9 * amount);
+    if (registered) registered.stockAttributed += amount;
+    return { exRights: d.ex_rights, multiplier: 1 + d.stock / parOr10(d.par), registeredYm: registered?.ym ?? null };
+  });
+  const reductions = rows.filter((r) => r.delta < 0 && r.prevCapital).map((r) => ({ ym: r.ym, par: r.par, multiplier: (r.prevCapital! + r.delta) / r.prevCapital! }));
+  return { rows, stock, reductions };
+});
+
+// 跨期還原只算「減少約兩成以上」的減資（反分割式的股數合併）：註銷庫藏股、限制員工權利新股這類小額減資，流通股數本來就不含，
+// 已發行股數變了、流通股數沒變，不能換算（跟 capitalReductionResumption 同一個門檻）。
+const CONSOLIDATION_MIN_RATIO = 1.2;
+
 export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf: Date): Promise<ShareBasisEventsAsOf> => {
   const since = addMonths(basisDate, -24);
   const basisYm = ymOf(basisDate);
   const asOfYm = ymOf(asOf);
   const oldestRelevantYm = ymOf(addMonths(basisDate, -12));
-  const [dividends, equityChanges, history, parRows] = await Promise.all([
-    mopsExportPrisma.$queryRaw<{ ex_div: Date | null; ex_rights: Date | null; cash: number; cash_earnings: number; stock: number; par: number | null; tps: number | null }[]>`
-      SELECT ex_dividend_date AS ex_div, ex_rights_date AS ex_rights,
+  const [dividends, equityChanges, shareCountEvents, parRows] = await Promise.all([
+    mopsExportPrisma.$queryRaw<{ ex_div: Date; cash: number; cash_earnings: number; tps: number | null }[]>`
+      SELECT ex_dividend_date AS ex_div,
         (COALESCE(cash_dividend_from_earnings, 0) + COALESCE(cash_dividend_from_legal_reserve_and_capital_surplus, 0))::float8 AS cash,
-        COALESCE(cash_dividend_from_earnings, 0)::float8 AS cash_earnings,
-        (COALESCE(stock_dividend_from_earnings, 0) + COALESCE(stock_dividend_from_legal_reserve_and_capital_surplus, 0))::float8 AS stock,
-        par_value::float8 AS par, total_participating_shares::float8 AS tps
+        COALESCE(cash_dividend_from_earnings, 0)::float8 AS cash_earnings, total_participating_shares::float8 AS tps
       FROM "export"."dividend_distribution"
-      WHERE symbol = ${symbol} AND COALESCE(ex_dividend_date, ex_rights_date) > ${since}`,
+      WHERE symbol = ${symbol} AND ex_dividend_date > ${since}`,
     // 權益變動表普通股現金股利：年初至今累計、宣告時認列、存成負數
     mopsExportPrisma.$queryRaw<{ year: number; quarter: number; v: number | null }[]>`
       SELECT DISTINCT ON (year, quarter) year, quarter, cash_dividends_of_ordinary_share::float8 AS v
       FROM "export"."equity_change_xbrl"
       WHERE symbol = ${symbol} AND member = 'TotalEquityMember' AND year >= ${since.getUTCFullYear() - 1912}
       ORDER BY year, quarter, data_type DESC`,
-    // 只用實收資本金額的逐列變化，不用股本來源欄：來源欄的語意各家不一（5904 是這一列的變動、2436 連續兩列一模一樣），
-    // 也不用股數格（MOPS 股數格有 10^k 錯位）。面額變更那列資本不變、差額自然是 0。
-    mopsExportPrisma.$queryRaw<{ ym: number; capital: number | null; par: number | null }[]>`
-      SELECT effective_year * 100 + effective_month AS ym, paid_in_capital::float8 AS capital, par_value::float8 AS par
-      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY 1`,
+    getShareCountEvents(symbol),
     getParRows(symbol),
   ]);
   let basisMultiplier = 1;
   const events: ShareBasisEvent[] = [];
-  const rows = history.map((h, i) => {
-    const prevCapital = i > 0 ? history[i - 1]!.capital : null;
-    return { ym: Number(h.ym), par: parOr10(h.par), prevCapital, delta: h.capital && prevCapital ? h.capital - prevCapital : 0, stockAttributed: 0 };
-  });
+  const { rows } = shareCountEvents;
 
   // 現金股利：季末前宣告（權益已扣）的，逐筆對到權益變動表的季差分。只用盈餘配發那部分對（權益變動表這一欄只有盈餘分配；
   // 7769 每股 64.99 = 盈餘 54.99 + 資本公積 10，權益變動表 9,894,665 千元 = 54.99 × 1.8 億股），同一次決議、同時認列。
@@ -241,7 +283,7 @@ export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf:
       return { quarterEnd: new Date(Date.UTC(r.year + 1911, r.quarter * 3, 0)), amountThousands: r.quarter === 1 ? ytd : ytd - prevYtd };
     })
     .filter((d) => d.quarterEnd <= basisDate);
-  const cashRows = dividends.filter((d) => d.ex_div !== null && d.cash > 0);
+  const cashRows = dividends.filter((d) => d.cash > 0);
   const declaredAt = matchDividendDeclarations(
     declarations,
     cashRows.map((d) => ({ exDate: d.ex_div!, amountThousands: d.tps ? (d.cash_earnings * d.tps) / 1000 : NaN }))
@@ -250,18 +292,12 @@ export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf:
     if (d.ex_div! > basisDate) events.push({ kind: 'cashDividend', date: d.ex_div!, perShare: d.cash, recognizedAtBasis: declaredAt[i] !== null });
   });
 
-  // 股票股利：除權日換基準。登記那列＝除權之後第一個資本增加至少九成配股金額（每股配發 × 參與股數）的列，
-  // 那部分金額記下來，下面算「其他發行」時扣掉。
-  for (const d of [...dividends].sort((a, b) => (a.ex_rights?.getTime() ?? 0) - (b.ex_rights?.getTime() ?? 0))) {
-    if (d.ex_rights === null || d.stock <= 0) continue;
-    const amount = d.stock * (d.tps ?? 0);
-    const registered = rows.find((r) => r.ym >= ymOf(d.ex_rights!) && amount > 0 && r.delta - r.stockAttributed >= 0.9 * amount);
-    if (registered) registered.stockAttributed += amount;
-    if (d.ex_rights > asOf) continue;
-    const multiplier = 1 + d.stock / parOr10(d.par);
-    if (d.ex_rights <= basisDate) {
-      if (!registered || registered.ym > basisYm) basisMultiplier *= multiplier;
-    } else events.push({ kind: 'shareChange', date: d.ex_rights, multiplier, cashPerOldShare: 0 });
+  // 股票股利：除權日換基準（登記月見 getShareCountEvents）
+  for (const d of shareCountEvents.stock) {
+    if (d.exRights > asOf) continue;
+    if (d.exRights <= basisDate) {
+      if (d.registeredYm === null || d.registeredYm > basisYm) basisMultiplier *= d.multiplier;
+    } else events.push({ kind: 'shareChange', date: d.exRights, multiplier: d.multiplier, cashPerOldShare: 0 });
   }
 
   // 面額變更（含規則 B 補的）：換發日看股價跳動
@@ -278,12 +314,10 @@ export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf:
   }
 
   // 減資（資本減少的列）：恢復交易日看停止交易後的股價跳動；沒跳的（註銷庫藏股之類）不處理。倍數＝這列資本 ÷ 前一列資本。
-  for (const r of rows) {
-    const ym = r.ym;
-    if (r.delta >= 0 || !r.prevCapital || ym > asOfYm || ym < oldestRelevantYm) continue;
-    const multiplier = (r.prevCapital + r.delta) / r.prevCapital;
+  for (const { ym, multiplier, par } of shareCountEvents.reductions) {
+    if (ym > asOfYm || ym < oldestRelevantYm) continue;
     const closes = await listClosesBothExchanges(symbol, new Date(monthStart(ym).getTime() - 60 * DAY), asOf);
-    const resumed = capitalReductionResumption(multiplier, r.par, closes);
+    const resumed = capitalReductionResumption(multiplier, par, closes);
     if (!resumed) continue;
     const registeredByBasis = ym <= basisYm;
     const resumedByBasis = resumed.date <= basisDate;

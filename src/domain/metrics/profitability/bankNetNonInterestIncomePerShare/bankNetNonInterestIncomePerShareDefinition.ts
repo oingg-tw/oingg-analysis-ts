@@ -5,6 +5,7 @@ export const bankNetNonInterestIncomePerShareDefinition: MetricDefinitionSpec = 
   name: '每股非利息淨收益',
   nameEn: 'Net Non-Interest Income Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '銀行業「營收到股利去了哪裡」瀑布圖第二段——Q(單季) = 本季非利息淨收益' +
     '（手續費、投資損益、匯兌損益等全部非利息項目加總後的官方單一淨額欄位）' +

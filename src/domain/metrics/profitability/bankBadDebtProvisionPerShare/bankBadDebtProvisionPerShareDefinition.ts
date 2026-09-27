@@ -5,6 +5,7 @@ export const bankBadDebtProvisionPerShareDefinition: MetricDefinitionSpec = {
   name: '每股呆帳費用及保證責任準備',
   nameEn: 'Bad Debt Expenses and Guarantee Liability Provision Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '銀行業「營收到股利去了哪裡」瀑布圖扣減項——Q(單季) = 本季呆帳費用及保證責任準備' +
     '（官方單一總計欄位 bad_debt_expenses_and_guarantee_liability_provision，不拆放款/' +

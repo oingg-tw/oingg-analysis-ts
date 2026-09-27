@@ -19,7 +19,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 改用除息日當 knowledge date 會比舊列早，查「最新一版」時反而拿到舊的現金流量表值。
 // 定義檔 currentFormulaVersion 2（2026-09-25 從現金流量表改成公告值），compute 要標同一個版本，writer 才會收。
 // 2026-09-27 formulaVersion 3：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
-const DIVIDEND_PER_SHARE_FORMULA_VERSION = 3;
+// 2026-09-28 formulaVersion 4：跨期還原加上股票股利（配股）與股數合併式減資（使用者：「只是股數變了、公司價值沒變」的都換算，IAS 33 對配股、分割、反分割都追溯調整）。
+const DIVIDEND_PER_SHARE_FORMULA_VERSION = 4;
 
 export type DividendPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'dividendEvents' | 'shares'>;
 

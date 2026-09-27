@@ -5,6 +5,7 @@ export const minorityInterestPerShareDefinition: MetricDefinitionSpec = {
   name: '每股少數股東損益',
   nameEn: 'Minority Interest Per Share',
   unit: '元',
+  perShare: true,
   formulaNote:
     '少數股東損益 = 稅後淨利 − 歸屬母公司業主淨利（兩者都是千元原始金額，相減後才除以股數）。' +
     'Q = 當季少數股東損益*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +

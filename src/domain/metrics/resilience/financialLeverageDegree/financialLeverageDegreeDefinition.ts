@@ -15,5 +15,5 @@ export const financialLeverageDegreeDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'profit_loss_from_operating_activities', 'outstandingCommonShares'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

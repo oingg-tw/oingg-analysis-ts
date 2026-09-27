@@ -274,7 +274,11 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'timeframe 允許的值由 metricCode 決定（例如 bvps 只允許 periodType "Q"，' +
       'exchangePeRatio 只允許 "EOD"），傳不允許的值會回 400 並附上這個 metricCode 實際允許的' +
       '清單，完整組合見 GET /metrics。knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history' +
-      '一致。**metricCode="beta" 不支援這支端點**（2026-09-11 使用者確認 beta 不畫河流圖，' +
+      '一致。' +
+      '**2026-09-28 起每股類指標（元／股：eps、bvps、每股股利、各種每股科目…）換算到今天的股數基準**——分割、配股、股數合併式減資' +
+      '追溯調整（IAS 33），讓走勢只反映價值變化、不會因為拆股突然掉成十分之一；現金股利與退還股款不換算。年報的 FY 值從年報公告日起算' +
+      '（期後分割年報已重編）。比率、總額、股價不受影響。資料庫存的值不動，這個換算只在回應時做。' +
+      '**metricCode="beta" 不支援這支端點**（2026-09-11 使用者確認 beta 不畫河流圖，' +
       '沒有查單一公司歷史/最新值的需求）——固定回 400，請改用 screener/ranking' +
       '（field: "beta.1Y_1D" 等）。' +
       '**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是' +
@@ -306,6 +310,9 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '是任意 metricCode 的通用合併，沒有假設彼此有數學關係，純粹省去前端自己併多次呼叫結果的' +
       '麻煩。某個 metricCode 在某一期完全沒有列時（例如不同指標 backfill 範圍不同步），對應' +
       'values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。' +
+      '**2026-09-28 起每股類指標（元／股：eps、bvps、每股股利、各種每股科目…）換算到今天的股數基準**——分割、配股、股數合併式減資' +
+      '追溯調整（IAS 33），讓走勢只反映價值變化、不會因為拆股突然掉成十分之一；現金股利與退還股款不換算。年報的 FY 值從年報公告日起算' +
+      '（期後分割年報已重編）。比率、總額、股價不受影響。資料庫存的值不動，這個換算只在回應時做。' +
       '（2026-09-08：query 參數原本叫 basis，改名 token；2026-09-14 再改名 timeframe，理由同' +
       'GET /companies/metric-history。）',
     tags: ['System'],
