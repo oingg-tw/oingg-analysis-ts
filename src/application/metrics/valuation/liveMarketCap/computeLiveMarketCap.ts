@@ -7,7 +7,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const LIVE_MARKET_CAP_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：股數換算到跟當天股價同一基準——除權了還沒登記、登記了還沒換發／恢復交易的，照市場實際交易的股數
+// （見 infrastructure/repositories/mops/capitalStock.ts getShareBasisEvents；使用者：「會當下股數變更的都要」）。
+export const LIVE_MARKET_CAP_FORMULA_VERSION = 3;
 
 // 2026-09-11 應 web-nuxt 要求新增——marketCap（季報快照，凍結在財報公告當天的
 // knowledge_date）的即時版本：用當下最新收盤價（getLatestDailyPrice）× 最新已申報流通
@@ -47,7 +49,8 @@ export const computeLiveMarketCap = async (query: LiveMarketCapPitQuery, deps: L
   const shares = await deps.shares.getOutstandingCommonShares(symbol, tradeDate);
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const liveMarketCap = sharesValue !== null ? roundToSignificantFigures(close * Number(sharesValue), 4) : null;
+  const basisMultiplier = sharesValue !== null ? (await deps.shares.getShareBasisEvents(symbol, tradeDate, tradeDate)).basisMultiplier : 1;
+  const liveMarketCap = sharesValue !== null ? roundToSignificantFigures(close * Number(sharesValue) * basisMultiplier, 4) : null;
   const nullReason: MetricNullReason | null = liveMarketCap === null ? determineNullReason() : null;
 
   const { knowledgeDate } = resolveDailyCadenceKnowledgeDate(tradeDate);

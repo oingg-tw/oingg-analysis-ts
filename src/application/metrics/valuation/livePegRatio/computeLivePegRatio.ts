@@ -1,7 +1,5 @@
-import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
+import { resolveLivePerShare } from '@/application/metrics/shared/livePerShare';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, type Season } from '@/domain/calendar/rocQuarter';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { snapshotCadenceGroup } from '@/domain/metrics/coordinate';
@@ -12,7 +10,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 // 2026-09-27 formulaVersion 4：跨期比較的每股數字做面額還原（股票分割不算每股價值變化，IAS 33 追溯調整前期；使用者：「盡可能反映內在價值的變化」）。
-export const LIVE_PEG_RATIO_FORMULA_VERSION = 4;
+// 2026-09-27 formulaVersion 5：每股淨值與 EPS 換算到跟當天股價同一基準——季末之後的除息、除權、面額換發、減資恢復交易、增資都套用
+// （見 application/metrics/shared/livePerShare.ts；使用者：「希望我們網站的數據不要跟交易所一樣慢，除息當天股價就變了」）。
+export const LIVE_PEG_RATIO_FORMULA_VERSION = 5;
 
 // 2026-09-11 應 web-nuxt 要求新增——pegRatio（季報快照，PER 用財報公告當天股價）的即時
 // 版本：EPS 5 年 CAGR 維持用「最新已申報」的完整會計年度資料，PER 的股價改用當下最新
@@ -71,45 +71,12 @@ export type LivePegRatioComputationBatch = DailyComputationBatch<'eod'>;
 export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: LivePegRatioDeps): Promise<LivePegRatioComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const latestPrice = await deps.market.getLatestDailyPrice(symbol);
-  if (!latestPrice || latestPrice.close === null) {
-    return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
-  }
-  const { tradeDate, close } = latestPrice;
-
-  const resolvedQuarter = await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement'], deps.quarters);
-  if (!resolvedQuarter) {
-    return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod: { action: 'skipped_no_quarter' } } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainIncomeStatement = await deps.statements.getIncomeStatement(key);
-  const reportDate = mainIncomeStatement?.reportDate ?? null;
-
-  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
-  const sharesValue = shares?.outstandingCommonShares ?? null;
-
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
-
-  let ttmSum = 0n;
-  let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = pickNetIncome(record);
-    if (picked.value === null) {
-      ttmComplete = false;
-    } else {
-      ttmSum += picked.value;
-    }
-  }
-
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
+  const live = await resolveLivePerShare(query, ['incomeStatement'], deps);
+  if (live.status === 'no_trade_date') return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
+  if (live.status === 'no_quarter') return { symbol, tradeDate: live.tradeDate.toISOString().slice(0, 10), slots: { eod: { action: 'skipped_no_quarter' } } };
+  const { tradeDate, close, epsTtm, ttmComplete } = live;
+  const rocYear = live.rocYear;
+  const seasonNum = live.season;
   const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;

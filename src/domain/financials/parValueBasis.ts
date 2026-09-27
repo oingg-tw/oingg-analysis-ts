@@ -14,7 +14,7 @@ export interface ParRow {
   shares: bigint | null;
 }
 
-interface ParChange {
+export interface ParChange {
   ym: number;
   oldPar: number;
   newPar: number;
@@ -63,15 +63,26 @@ const SWITCH_ASSUMED_AFTER_DAYS = 180;
 //   成交在 11 月前、跳動在 2024-11-11），市場換發也可能早於股本歷史記的月份（5314 在 2025-03-31 跳、紀錄在 2025-07）。
 // - 沒找到，但股價序列沒涵蓋到變更之前（7803 股價 2026-05 才有）→ 無從觀察，視為已換發。
 // - 沒找到，但距生效已超過 180 天 → 視為已換發（新股不會半年都還沒換發）。
-const isSwitched = (change: ParChange, closesAsc: { date: Date; close: number }[], priceDate: Date): boolean => {
+// 2026-09-27 回傳換發「日期」（即時每股基準要知道哪天換算），規則同上；null＝到 priceDate 還沒換發。
+export const parSwitchDate = (change: ParChange, closesAsc: { date: Date; close: number }[], priceDate: Date): Date | null => {
   const expected = change.newPar / change.oldPar;
   for (let i = 1; i < closesAsc.length; i++) {
     const r = closesAsc[i]!.close / closesAsc[i - 1]!.close / expected;
-    if (r > 0.4 && r < 1.6) return true;
+    if (r > 0.4 && r < 1.6) return closesAsc[i]!.date;
   }
   const start = monthStart(change.ym);
-  if (closesAsc.length === 0 || closesAsc[0]!.date >= start) return true;
-  return (priceDate.getTime() - start.getTime()) / 86_400_000 > SWITCH_ASSUMED_AFTER_DAYS;
+  if (closesAsc.length === 0 || closesAsc[0]!.date >= start) return start;
+  const assumed = new Date(start.getTime() + SWITCH_ASSUMED_AFTER_DAYS * 86_400_000);
+  return priceDate > assumed ? assumed : null;
+};
+
+const isSwitched = (change: ParChange, closesAsc: { date: Date; close: number }[], priceDate: Date): boolean => parSwitchDate(change, closesAsc, priceDate) !== null;
+
+// 已確認的面額變更；一年內兩次以上（5314）視為股本歷史不可信，回空（跟 parBasisFactor 同一條規則）。
+export const confirmedParChanges = (rowsAsc: ParRow[]): ParChange[] => {
+  const { changes } = confirmedChanges(rowsAsc);
+  for (let i = 1; i < changes.length; i++) if (changes[i]!.ym - changes[i - 1]!.ym < 100) return [];
+  return changes;
 };
 
 export const parBasisFactor = (rowsAsc: ParRow[], closesAsc: { date: Date; close: number }[], priceDate: Date, basisDate: Date): number => {
@@ -114,6 +125,31 @@ export const inferUnrecordedParChange = (
   for (let i = 1; i < closesSinceLatestAsc.length; i++) {
     const r = closesSinceLatestAsc[i]!.close / closesSinceLatestAsc[i - 1]!.close / expected;
     if (r > 0.6 && r < 1.4) return { ym: ymOf(closesSinceLatestAsc[i]!.date), parValue: newPar, shares: BigInt(Math.round(Number(latest.paidInCapital) / newPar)) };
+  }
+  return null;
+};
+
+// 2026-09-27 減資恢復交易日（即時每股基準用）：股本歷史記的是登記月，市場上舊股停止交易、換發新股後才以新基準恢復交易。
+// 找「停止交易 5 天以上之後」的第一筆收盤價跳動：彌補虧損的減資 ≈ ÷倍數（股數 ×0.8 → 股價 ×1.25）；退還股款 ≈ (停止前收盤 − 每舊股退還現金) ÷ 倍數，
+// 退還現金＝面額 × 減少比例（照面額退）。兩種預期取比較接近的，差 10% 內才算（恢復交易當天漲跌停 10%）。
+// 只看停止交易後那一筆：退還股款的預期跳幅可能接近 1（例如 ×1.17），一般交易日的漲停就會誤判（單元測試抓到）。
+// 減少不到約兩成的（多半是註銷庫藏股、限制員工權利新股，流通股數本來就不含、股價也不跳）跟一般漲跌分不開，不處理。
+const RESUMPTION_MIN_GAP_DAYS = 5;
+export const capitalReductionResumption = (
+  multiplier: number,
+  parValue: number,
+  closesAsc: { date: Date; close: number }[]
+): { date: Date; cashPerOldShare: number } | null => {
+  if (!(multiplier > 0) || 1 / multiplier < 1.2) return null;
+  const cash = parValue * (1 - multiplier);
+  for (let i = 1; i < closesAsc.length; i++) {
+    if ((closesAsc[i]!.date.getTime() - closesAsc[i - 1]!.date.getTime()) / 86_400_000 < RESUMPTION_MIN_GAP_DAYS) continue;
+    const prev = closesAsc[i - 1]!.close;
+    const r = closesAsc[i]!.close / prev;
+    const lossOffset = Math.abs(r * multiplier - 1);
+    const cashReturnExpected = (1 - cash / prev) / multiplier;
+    const cashReturn = cashReturnExpected > 0 ? Math.abs(r / cashReturnExpected - 1) : Infinity;
+    if (Math.min(lossOffset, cashReturn) <= 0.1) return { date: closesAsc[i]!.date, cashPerOldShare: cashReturn < lossOffset ? cash : 0 };
   }
   return null;
 };

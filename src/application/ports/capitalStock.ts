@@ -1,3 +1,5 @@
+import type { ShareBasisEvent } from '@/domain/financials/liveShareBasis';
+
 // 流通在外普通股 port——每股型指標（EPS/BVPS/每股現金流…）跟市值都靠它。2026-09-25 起回傳的是 IAS 33 的
 // 「流通在外普通股」＝已發行 − 特別股 − 庫藏股（見 domain/financials/outstandingCommonShares.ts），不再是
 // capital_stock_history 的實收股數（那個含特別股與庫藏股）；名稱同日從 paidInShares 改成 outstandingCommonShares。
@@ -16,11 +18,19 @@ export interface OutstandingCommonSharesAsOf {
   effectiveMonth: number;
 }
 
+// 2026-09-27 即時每股基準（見 domain/financials/liveShareBasis.ts、infrastructure/repositories/mops/capitalStock.ts getShareBasisEvents）：
+// basisDate（財報季末）的股數 × basisMultiplier ＝ 季末當天市場交易的股數基準，之後到 asOf 的事件逐日套用。
+export interface ShareBasisEventsAsOf {
+  basisMultiplier: number;
+  events: ShareBasisEvent[];
+}
+
 export interface OutstandingCommonSharesPort {
   getOutstandingCommonShares(symbol: string, asOfDate: Date): Promise<OutstandingCommonSharesAsOf | null>;
   // 2026-09-27：from 之後、to 以前生效的面額變更累積股數倍數（前期每股 ÷ 倍數、前期股數 × 倍數 = 換算到 to 的股數基準）。
   // 跨期比較每股數字的指標（成長率、CAGR、股本變化率…）要用它，否則股票分割會被當成每股價值的變化。
   getShareSplitFactor(symbol: string, fromDate: Date, toDate: Date): Promise<number>;
+  getShareBasisEvents(symbol: string, basisDate: Date, asOf: Date): Promise<ShareBasisEventsAsOf>;
 }
 
 // ---- 股本異動歷史（GET /companies/capital-stock-history）——跟上面的 PaidInSharesPort 刻意分開兩個 port：

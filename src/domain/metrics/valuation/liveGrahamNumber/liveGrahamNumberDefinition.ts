@@ -12,7 +12,7 @@ export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
   formulaNote:
     '= PER(TTM，當下最新收盤價/最新已申報 EPS TTM) × PBR（當下最新收盤價/最新已申報 BVPS）。基本面跟' +
     'grahamNumber 完全相同，股價改用當下最新收盤價，每個交易日更新，跟 grahamNumber（凍結在財報公告' +
-    '當天）是刻意並存、互不影響的兩支獨立 metricCode。（2026-09-22 formulaVersion 2：中繼的每股值改用不四捨五入的精確值，只在最後結果四捨五入一次；v1 拿已進位到分的 EPS/BVPS 再算，小 EPS 公司失真。）EPS 照 IAS 33 基本每股盈餘的做法計算：淨利先扣特別股股利，流通股數 = 已發行 − 特別股 − 庫藏股（2026-09-26 formulaVersion 3）。BVPS 是普通股每股淨值：權益先扣特別股股本，流通股數 = 已發行 − 特別股 − 庫藏股（2026-09-26 formulaVersion 3）。',
+    '當天）是刻意並存、互不影響的兩支獨立 metricCode。（2026-09-22 formulaVersion 2：中繼的每股值改用不四捨五入的精確值，只在最後結果四捨五入一次；v1 拿已進位到分的 EPS/BVPS 再算，小 EPS 公司失真。）EPS 照 IAS 33 基本每股盈餘的做法計算：淨利先扣特別股股利，流通股數 = 已發行 − 特別股 − 庫藏股（2026-09-26 formulaVersion 3）。BVPS 是普通股每股淨值：權益先扣特別股股本，流通股數 = 已發行 − 特別股 − 庫藏股（2026-09-26 formulaVersion 3）。（2026-09-27 formulaVersion 4：每股淨值與 EPS 換算到跟當天股價同一個基準——最新財報季末之後的除息、除權、面額換發、減資恢復交易、增資都在當天套用，不等下一季財報。）',
   formulaLatex: '\\mathrm{LiveGrahamNumber} = \\mathrm{PER}_{\\mathrm{TTM}} \\times \\mathrm{PBR}',
   // 2026-09-20 移除原本的 academicSourceUrl（archive.org/details/intelligentinves00grah_1）——
   // 實際打開確認那是 **2005 年版**（不是徽章宣稱的 1949 初版）、而且是 access-restricted 需要
@@ -25,5 +25,5 @@ export const liveGrahamNumberDefinition: MetricDefinitionSpec = {
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity', 'outstandingCommonShares', 'daily_price.close'],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

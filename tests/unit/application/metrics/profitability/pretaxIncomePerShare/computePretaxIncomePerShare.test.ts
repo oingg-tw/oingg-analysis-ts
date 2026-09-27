@@ -21,7 +21,7 @@ const asComputation = (slot: MetricComputation | { action: string }): MetricComp
   return slot as MetricComputation;
 };
 
-const sharesPort = { getShareSplitFactor: async () => 1, getOutstandingCommonShares: async () => ({ outstandingCommonShares: 1_000_000_000n, issuedShares: 1_000_000_000n, preferredShares: 0n, treasuryShares: 0n, preferredCapitalThousands: 0n, preferredDividendsTtmThousands: 0n, effectiveYear: 2025, effectiveMonth: 1 }) };
+const sharesPort = { getShareSplitFactor: async () => 1, getShareBasisEvents: async () => ({ basisMultiplier: 1, events: [] }), getOutstandingCommonShares: async () => ({ outstandingCommonShares: 1_000_000_000n, issuedShares: 1_000_000_000n, preferredShares: 0n, treasuryShares: 0n, preferredCapitalThousands: 0n, preferredDividendsTtmThousands: 0n, effectiveYear: 2025, effectiveMonth: 1 }) };
 // 這幾個案例只測單季的銀行 fallback；年報口徑（FY）一律查無年報 → skipped_no_quarter，不影響 Q。
 const noAnnualReport = { getAnnualIncomeStatement: async () => null };
 

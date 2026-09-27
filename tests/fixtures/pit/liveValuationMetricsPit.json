@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-26T23:51:02.870Z",
+  "recordedAt": "2026-09-27T02:04:09.535Z",
   "entries": {
     "market.getLatestDailyPrice([\"2330\"])": {
       "close": 2475,
@@ -103,6 +103,23 @@
       "treasuryShares": {
         "$bigint": "0"
       }
+    },
+    "shares.getShareBasisEvents([\"2330\",{\"$date\":\"2026-06-30T00:00:00.000Z\"},{\"$date\":\"2026-09-24T00:00:00.000Z\"}])": {
+      "basisMultiplier": 1,
+      "events": [
+        {
+          "date": {
+            "$date": "2026-09-16T00:00:00.000Z"
+          },
+          "kind": "cashDividend",
+          "perShare": 7.00000137,
+          "recognizedAtBasis": true
+        }
+      ]
+    },
+    "shares.getShareBasisEvents([\"2330\",{\"$date\":\"2026-09-24T00:00:00.000Z\"},{\"$date\":\"2026-09-24T00:00:00.000Z\"}])": {
+      "basisMultiplier": 1,
+      "events": []
     },
     "shares.getShareSplitFactor([\"2330\",{\"$date\":\"2020-12-31T00:00:00.000Z\"},{\"$date\":\"9999-01-01T00:00:00.000Z\"}])": 1,
     "shares.getShareSplitFactor([\"2330\",{\"$date\":\"2025-12-31T00:00:00.000Z\"},{\"$date\":\"9999-01-01T00:00:00.000Z\"}])": 1,

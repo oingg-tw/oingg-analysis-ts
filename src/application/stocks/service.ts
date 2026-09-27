@@ -32,6 +32,14 @@ const MARKET_RATIOS_SUBSIDIARY_COMPANY_ID = '';
 const getLatestMarketRatioValue = async (deps: StocksDeps, symbol: string, metricCode: string): Promise<{ tradeDate: Date; value: number | null } | null> =>
   deps.metricValueQueries.findLatestSnapshotValue(symbol, metricCode, 'EOD', await deps.reportAvailability.resolveDataType(symbol), MARKET_RATIOS_SUBSIDIARY_COMPANY_ID);
 
+// 2026-09-27 本益比、股價淨值比改用我們自己的即時版（livePeRatio／livePbRatio：除息、除權、面額換發、減資恢復交易當天就換算；
+// 交易所公告的每股淨值與 EPS 要等下一季財報才更新，使用者：「希望我們網站的數據不要跟交易所一樣慢」）。
+// 我們算不出來的（例如查無股本歷史的 KY 公司）退回交易所公告值，不讓個股頁比原本少資料。殖利率仍是交易所公告值。
+const getLatestRatioPreferLive = async (deps: StocksDeps, symbol: string, liveCode: string, exchangeCode: string) => {
+  const [live, exchange] = await Promise.all([getLatestMarketRatioValue(deps, symbol, liveCode), getLatestMarketRatioValue(deps, symbol, exchangeCode)]);
+  return live?.value !== null && live?.value !== undefined ? live : exchange;
+};
+
 // 給 bff-ts 的 GET /stocks/:symbol/quote 用（取代他們拆掉直連 twse/tpex DB 後留的 503）。
 // 回傳 null 代表這家公司在上市、上櫃都查無登記資料，controller 那層轉成 404；公司存在但查無
 // 股價/估值資料是另一回事，price/valuation 個別是 null，仍然是 200——bff-ts 的規格明確要求
@@ -40,8 +48,8 @@ export const getStockQuote = async (symbol: string, deps: StocksDeps): Promise<S
   const [exists, price, peRatioRow, pbRatioRow, dividendYieldRow] = await Promise.all([
     deps.companyProfiles.companyExists(symbol),
     deps.market.getLatestDailyPrice(symbol),
-    getLatestMarketRatioValue(deps, symbol, 'exchangePeRatio'),
-    getLatestMarketRatioValue(deps, symbol, 'exchangePbRatio'),
+    getLatestRatioPreferLive(deps, symbol, 'livePeRatio', 'exchangePeRatio'),
+    getLatestRatioPreferLive(deps, symbol, 'livePbRatio', 'exchangePbRatio'),
     getLatestMarketRatioValue(deps, symbol, 'dividendYield'),
   ]);
 
@@ -77,8 +85,8 @@ export const getStockSummary = async (symbol: string, deps: StocksDeps): Promise
   const [exists, priceHistory, peRatioRow, pbRatioRow, dividendYieldRow, marketCapRow] = await Promise.all([
     deps.companyProfiles.companyExists(symbol),
     deps.market.getDailyPriceHistory(symbol, 2),
-    getLatestMarketRatioValue(deps, symbol, 'exchangePeRatio'),
-    getLatestMarketRatioValue(deps, symbol, 'exchangePbRatio'),
+    getLatestRatioPreferLive(deps, symbol, 'livePeRatio', 'exchangePeRatio'),
+    getLatestRatioPreferLive(deps, symbol, 'livePbRatio', 'exchangePbRatio'),
     getLatestMarketRatioValue(deps, symbol, 'dividendYield'),
     getLatestMarketRatioValue(deps, symbol, 'liveMarketCap'),
   ]);

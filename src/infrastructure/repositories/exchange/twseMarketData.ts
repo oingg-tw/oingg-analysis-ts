@@ -56,9 +56,12 @@ interface RawTpexDailyPriceRow {
 }
 
 // 單一公司查最新股價（GET /stocks/:symbol/quote 用）——兩邊都查、取較新（見 newerOf）。
+// 2026-09-27 只取有成交的日子（close IS NOT NULL，跟 twse/marketCap.ts getStockPriceAsOf 2026-09-06 同一個修法）：
+// 最新交易日沒成交的股票（2321 2026-09-24、冷門股、停止交易中）原本拿到 close null，所有即時指標整支跳過、個股報價顯示沒有股價；
+// 改成最近一筆實際成交（tradeDate 是那筆成交的日期）。
 export const getLatestDailyPrice = async (symbol: string): Promise<DailyPriceAsOf | null> => {
   const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
-    db.$queryRaw<RawTpexDailyPriceRow[]>`SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} ORDER BY trade_date DESC LIMIT 1`;
+    db.$queryRaw<RawTpexDailyPriceRow[]>`SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} AND close IS NOT NULL ORDER BY trade_date DESC LIMIT 1`;
   const [twseRows, tpexRows] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)]);
   const record = newerOf(twseRows[0], tpexRows[0]);
   return record ? { tradeDate: record.trade_date, close: toNullableNumber(record.close) } : null;

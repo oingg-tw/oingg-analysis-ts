@@ -1,18 +1,15 @@
-import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { toCommonEquity } from '@/domain/financials/outstandingCommonShares';
-import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveLivePerShare, type LivePerShareDeps } from '@/application/metrics/shared/livePerShare';
 import { resolveDailyCadenceKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { snapshotCadenceGroup } from '@/domain/metrics/coordinate';
 import { computation, type DailyComputationBatch } from '@/domain/metrics/computation';
-import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-22 formulaVersion 2：同 grahamNumber：中繼值不四捨五入，只在最後一次（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 3;
+// 2026-09-27 formulaVersion 4：每股淨值與 EPS 換算到跟當天股價同一基準——季末之後的除息、除權、面額換發、減資恢復交易、增資都套用
+// （見 application/metrics/shared/livePerShare.ts；使用者：「希望我們網站的數據不要跟交易所一樣慢，除息當天股價就變了」）。
+export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 4;
 
 // 2026-09-11 應 web-nuxt 要求新增——grahamNumber（季報快照，PER/PBR 都用財報公告當天的
 // 股價，凍結在 knowledge_date）的即時版本：基本面（EPS TTM/BVPS）維持用「最新已申報」的
@@ -32,58 +29,19 @@ export interface LiveGrahamNumberPitQuery {
   subsidiaryCompanyId: string;
 }
 
-export type LiveGrahamNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'market'>;
+export type LiveGrahamNumberDeps = LivePerShareDeps;
 
 export type LiveGrahamNumberComputationBatch = DailyComputationBatch<'eod'>;
 
 export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, deps: LiveGrahamNumberDeps): Promise<LiveGrahamNumberComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const latestPrice = await deps.market.getLatestDailyPrice(symbol);
-  if (!latestPrice || latestPrice.close === null) {
-    return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
-  }
-  const { tradeDate, close } = latestPrice;
+  const live = await resolveLivePerShare(query, ['balanceSheet', 'incomeStatement'], deps);
+  if (live.status === 'no_trade_date') return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
+  if (live.status === 'no_quarter') return { symbol, tradeDate: live.tradeDate.toISOString().slice(0, 10), slots: { eod: { action: 'skipped_no_quarter' } } };
+  const { tradeDate, close, epsTtm, bvps, ttmComplete } = live;
 
-  const resolvedQuarter = await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['balanceSheet', 'incomeStatement'], deps.quarters);
-  if (!resolvedQuarter) {
-    return { symbol, tradeDate: tradeDate.toISOString().slice(0, 10), slots: { eod: { action: 'skipped_no_quarter' } } };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const [balanceSheet, incomeStatement] = await Promise.all([deps.statements.getBalanceSheet(key), deps.statements.getIncomeStatement(key)]);
-  const equity = pickEquity(balanceSheet);
-  const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
-
-  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
-  const sharesValue = shares?.outstandingCommonShares ?? null;
-
-  // 2026-09-25 分子只算普通股：權益扣特別股股本、淨利扣特別股股利（見 domain/financials/outstandingCommonShares.ts）。
-  const commonEquity = toCommonEquity(equity.value, shares?.preferredCapitalThousands ?? 0n);
-  const bvps = commonEquity !== null && sharesValue !== null ? toPerShareExact(commonEquity, sharesValue) : null;
   const pbRatio = bvps !== null && bvps !== 0 ? close / bvps : null;
-
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
-
-  let netIncomeTtmSum = 0n;
-  let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = pickNetIncome(record);
-    if (picked.value === null) {
-      ttmComplete = false;
-    } else {
-      netIncomeTtmSum += picked.value;
-    }
-  }
-
-  const epsTtm = ttmComplete && sharesValue !== null ? toPerShareExact(netIncomeTtmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
 
   const liveGrahamNumber = peRatioTtm !== null && pbRatio !== null ? Math.round(peRatioTtm * pbRatio * 100) / 100 : null;

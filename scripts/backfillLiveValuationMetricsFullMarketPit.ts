@@ -6,12 +6,13 @@
 // 之後要更新只要重跑這支腳本，不需要額外參數）。
 //
 // 用法：pnpm tsx scripts/backfillLiveValuationMetricsFullMarketPit.ts
-import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePegRatioPit } from '../src/bootstrap/pitMetrics';
+import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePbRatioPit, computeAndWriteLivePegRatioPit, computeAndWriteLivePeRatioPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
-const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap'];
+// 2026-09-27 加 livePeRatio／livePbRatio（即時本益比、股價淨值比，取代個股頁原本用的交易所數字）。
+const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap', 'livePeRatio', 'livePbRatio'];
 const PROGRESS_EVERY = 50;
 const SYMBOL_CONCURRENCY = 8; // 同一套固定併發池，避免打爆 Neon DB 連線數，見 backfillAllMetricsLatestFullMarketPit.ts 的說明。
 
@@ -26,6 +27,8 @@ const computeSymbol = async (symbol: string): Promise<void> => {
     computeAndWriteLiveGrahamNumberPit(query),
     computeAndWriteLivePegRatioPit(query),
     computeAndWriteLiveMarketCapPit(query),
+    computeAndWriteLivePeRatioPit(query),
+    computeAndWriteLivePbRatioPit(query),
   ]);
 };
 
@@ -35,7 +38,7 @@ const main = async () => {
   const symbolsFull = await getFullMarketSymbols();
   const PILOT_LIMIT = process.env.PILOT_LIMIT ? Number(process.env.PILOT_LIMIT) : undefined;
   const symbols = PILOT_LIMIT ? symbolsFull.slice(0, PILOT_LIMIT) : symbolsFull;
-  console.log(`[live-valuation-pit] 共 ${symbols.length} 家公司，開始跑 liveGrahamNumber/livePegRatio/liveMarketCap（各自最新一筆），併發數 ${SYMBOL_CONCURRENCY}`);
+  console.log(`[live-valuation-pit] 共 ${symbols.length} 家公司，開始跑 ${METRIC_CODES.join('/')}（各自最新一筆），併發數 ${SYMBOL_CONCURRENCY}`);
 
   const t0 = Date.now();
   let done = 0;

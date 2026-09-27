@@ -2,11 +2,12 @@ import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import { isUndefinedTableError } from './prismaErrors';
 import { logger } from '@/infrastructure/logger';
 import { pickPaidInSharesRow, reconcileWithBalanceSheet, type BalanceSheetCapital } from '@/domain/financials/paidInSharesRow';
-import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort } from '@/application/ports/capitalStock';
+import type { CapitalStockHistoryEntry, CapitalStockHistoryPort, OutstandingCommonSharesAsOf, OutstandingCommonSharesPort, ShareBasisEventsAsOf } from '@/application/ports/capitalStock';
 import { effectivePreferredDividends, computeOutstandingCommonShares } from '@/domain/financials/outstandingCommonShares';
 import { getShareAdjustmentsAsOf, isKnownPreferredIssuer } from './shareAdjustments';
 import { getPreferredDividendsTtmAsOf } from './equityChangeXbrl';
-import { inferUnrecordedParChange, shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
+import { capitalReductionResumption, confirmedParChanges, inferUnrecordedParChange, parSwitchDate, shareSplitFactor, type ParRow } from '@/domain/financials/parValueBasis';
+import { matchDividendDeclarations, type ShareBasisEvent } from '@/domain/financials/liveShareBasis';
 import { listClosesBothExchanges } from '../twse/dailyPriceSeries';
 
 // PaidInSharesAsOf 型別 2026-09-17 Phase 3 搬到 application/ports/capitalStock.ts；CapitalStockHistoryEntry/
@@ -185,7 +186,123 @@ export const getParRows = hourly(async (symbol: string): Promise<ParRow[]> => {
 export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate: Date): Promise<number> =>
   shareSplitFactor(await getParRows(symbol), fromDate, toDate);
 
-export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getShareSplitFactor, getOutstandingCommonShares: getOutstandingCommonSharesAsOf };
+// 2026-09-27 即時每股基準的事件（見 domain/financials/liveShareBasis.ts）。basisDate＝財報季末，asOf＝交易日。
+// basisMultiplier：季末那天股本歷史股數 × 它 ＝ 季末當天市場交易的股數基準（登記跟市場換基準的日子不同）：
+// - 股票股利季末前已除權、季末後才登記 → ×(1+配股率)
+// - 面額變更／減資季末前已登記、市場還沒換發或恢復交易 → ÷倍數；反過來市場先換、登記在後 → ×倍數
+// events：季末之後到 asOf（現金股利含 asOf 之後已公告的，給「已認列、還沒除息」加回用）。
+const addMonths = (d: Date, n: number) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate()));
+const ymOf = (d: Date) => d.getUTCFullYear() * 100 + d.getUTCMonth() + 1;
+const monthStart = (ym: number) => new Date(Date.UTC(Math.floor(ym / 100), (ym % 100) - 1, 1));
+const DAY = 86_400_000;
+const parOr10 = (par: number | null) => (par && par > 0 ? par : 10);
+
+export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf: Date): Promise<ShareBasisEventsAsOf> => {
+  const since = addMonths(basisDate, -24);
+  const basisYm = ymOf(basisDate);
+  const asOfYm = ymOf(asOf);
+  const oldestRelevantYm = ymOf(addMonths(basisDate, -12));
+  const [dividends, equityChanges, history, parRows] = await Promise.all([
+    mopsExportPrisma.$queryRaw<{ ex_div: Date | null; ex_rights: Date | null; cash: number; cash_earnings: number; stock: number; par: number | null; tps: number | null }[]>`
+      SELECT ex_dividend_date AS ex_div, ex_rights_date AS ex_rights,
+        (COALESCE(cash_dividend_from_earnings, 0) + COALESCE(cash_dividend_from_legal_reserve_and_capital_surplus, 0))::float8 AS cash,
+        COALESCE(cash_dividend_from_earnings, 0)::float8 AS cash_earnings,
+        (COALESCE(stock_dividend_from_earnings, 0) + COALESCE(stock_dividend_from_legal_reserve_and_capital_surplus, 0))::float8 AS stock,
+        par_value::float8 AS par, total_participating_shares::float8 AS tps
+      FROM "export"."dividend_distribution"
+      WHERE symbol = ${symbol} AND COALESCE(ex_dividend_date, ex_rights_date) > ${since}`,
+    // 權益變動表普通股現金股利：年初至今累計、宣告時認列、存成負數
+    mopsExportPrisma.$queryRaw<{ year: number; quarter: number; v: number | null }[]>`
+      SELECT DISTINCT ON (year, quarter) year, quarter, cash_dividends_of_ordinary_share::float8 AS v
+      FROM "export"."equity_change_xbrl"
+      WHERE symbol = ${symbol} AND member = 'TotalEquityMember' AND year >= ${since.getUTCFullYear() - 1912}
+      ORDER BY year, quarter, data_type DESC`,
+    // 只用實收資本金額的逐列變化，不用股本來源欄：來源欄的語意各家不一（5904 是這一列的變動、2436 連續兩列一模一樣），
+    // 也不用股數格（MOPS 股數格有 10^k 錯位）。面額變更那列資本不變、差額自然是 0。
+    mopsExportPrisma.$queryRaw<{ ym: number; capital: number | null; par: number | null }[]>`
+      SELECT effective_year * 100 + effective_month AS ym, paid_in_capital::float8 AS capital, par_value::float8 AS par
+      FROM "export"."capital_stock_history" WHERE symbol = ${symbol} ORDER BY 1`,
+    getParRows(symbol),
+  ]);
+  let basisMultiplier = 1;
+  const events: ShareBasisEvent[] = [];
+  const rows = history.map((h, i) => {
+    const prevCapital = i > 0 ? history[i - 1]!.capital : null;
+    return { ym: Number(h.ym), par: parOr10(h.par), prevCapital, delta: h.capital && prevCapital ? h.capital - prevCapital : 0, stockAttributed: 0 };
+  });
+
+  // 現金股利：季末前宣告（權益已扣）的，逐筆對到權益變動表的季差分。只用盈餘配發那部分對（權益變動表這一欄只有盈餘分配；
+  // 7769 每股 64.99 = 盈餘 54.99 + 資本公積 10，權益變動表 9,894,665 千元 = 54.99 × 1.8 億股），同一次決議、同時認列。
+  const declarations = equityChanges
+    .map((r, i) => {
+      const prev = equityChanges[i - 1];
+      const ytd = Math.abs(r.v ?? 0);
+      const prevYtd = prev && prev.year === r.year && prev.quarter === r.quarter - 1 ? Math.abs(prev.v ?? 0) : 0;
+      return { quarterEnd: new Date(Date.UTC(r.year + 1911, r.quarter * 3, 0)), amountThousands: r.quarter === 1 ? ytd : ytd - prevYtd };
+    })
+    .filter((d) => d.quarterEnd <= basisDate);
+  const cashRows = dividends.filter((d) => d.ex_div !== null && d.cash > 0);
+  const declaredAt = matchDividendDeclarations(
+    declarations,
+    cashRows.map((d) => ({ exDate: d.ex_div!, amountThousands: d.tps ? (d.cash_earnings * d.tps) / 1000 : NaN }))
+  );
+  cashRows.forEach((d, i) => {
+    if (d.ex_div! > basisDate) events.push({ kind: 'cashDividend', date: d.ex_div!, perShare: d.cash, recognizedAtBasis: declaredAt[i] !== null });
+  });
+
+  // 股票股利：除權日換基準。登記那列＝除權之後第一個資本增加至少九成配股金額（每股配發 × 參與股數）的列，
+  // 那部分金額記下來，下面算「其他發行」時扣掉。
+  for (const d of [...dividends].sort((a, b) => (a.ex_rights?.getTime() ?? 0) - (b.ex_rights?.getTime() ?? 0))) {
+    if (d.ex_rights === null || d.stock <= 0) continue;
+    const amount = d.stock * (d.tps ?? 0);
+    const registered = rows.find((r) => r.ym >= ymOf(d.ex_rights!) && amount > 0 && r.delta - r.stockAttributed >= 0.9 * amount);
+    if (registered) registered.stockAttributed += amount;
+    if (d.ex_rights > asOf) continue;
+    const multiplier = 1 + d.stock / parOr10(d.par);
+    if (d.ex_rights <= basisDate) {
+      if (!registered || registered.ym > basisYm) basisMultiplier *= multiplier;
+    } else events.push({ kind: 'shareChange', date: d.ex_rights, multiplier, cashPerOldShare: 0 });
+  }
+
+  // 面額變更（含規則 B 補的）：換發日看股價跳動
+  for (const c of confirmedParChanges(parRows)) {
+    if (c.ym > asOfYm || c.ym < oldestRelevantYm) continue;
+    const closes = await listClosesBothExchanges(symbol, new Date(monthStart(c.ym).getTime() - 120 * DAY), asOf);
+    const switched = parSwitchDate(c, closes, asOf);
+    const multiplier = c.oldPar / c.newPar;
+    const registeredByBasis = c.ym <= basisYm;
+    const switchedByBasis = switched !== null && switched <= basisDate;
+    if (registeredByBasis && !switchedByBasis) basisMultiplier /= multiplier;
+    if (!registeredByBasis && switchedByBasis) basisMultiplier *= multiplier;
+    if (switched && switched > basisDate) events.push({ kind: 'shareChange', date: switched, multiplier, cashPerOldShare: 0 });
+  }
+
+  // 減資（資本減少的列）：恢復交易日看停止交易後的股價跳動；沒跳的（註銷庫藏股之類）不處理。倍數＝這列資本 ÷ 前一列資本。
+  for (const r of rows) {
+    const ym = r.ym;
+    if (r.delta >= 0 || !r.prevCapital || ym > asOfYm || ym < oldestRelevantYm) continue;
+    const multiplier = (r.prevCapital + r.delta) / r.prevCapital;
+    const closes = await listClosesBothExchanges(symbol, new Date(monthStart(ym).getTime() - 60 * DAY), asOf);
+    const resumed = capitalReductionResumption(multiplier, r.par, closes);
+    if (!resumed) continue;
+    const registeredByBasis = ym <= basisYm;
+    const resumedByBasis = resumed.date <= basisDate;
+    if (registeredByBasis && !resumedByBasis) basisMultiplier /= multiplier;
+    if (!registeredByBasis && resumedByBasis) basisMultiplier *= multiplier;
+    if (!resumedByBasis) events.push({ kind: 'shareChange', date: resumed.date, multiplier, cashPerOldShare: resumed.cashPerOldShare });
+  }
+
+  // 其他發行（現金增資、合併、可轉債轉換、員工認股、私募）：登記生效月加股數＝資本增加扣掉股票股利那部分 ÷ 面額。
+  // 資本格 10^k 錯位的列會算出離譜的差額，超過一倍的不收。
+  for (const r of rows) {
+    const issued = r.delta - r.stockAttributed;
+    if (r.ym > basisYm && r.ym <= asOfYm && r.prevCapital && issued > 0 && issued <= r.prevCapital) events.push({ kind: 'issue', date: monthStart(r.ym), newShares: issued / r.par });
+  }
+
+  return { basisMultiplier, events };
+};
+
+export const mopsOutstandingCommonShares: OutstandingCommonSharesPort = { getShareSplitFactor, getShareBasisEvents, getOutstandingCommonShares: getOutstandingCommonSharesAsOf };
 
 interface RawCapitalStockHistoryRow {
   effective_year: number;

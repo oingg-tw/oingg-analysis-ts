@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { inferUnrecordedParChange, parBasisFactor, shareSplitFactor } from '@/domain/financials/parValueBasis';
+import { capitalReductionResumption, confirmedParChanges, inferUnrecordedParChange, parBasisFactor, parSwitchDate, shareSplitFactor } from '@/domain/financials/parValueBasis';
 
 const row = (ym: number, parValue: number, shares: number) => ({ ym, parValue, shares: BigInt(shares) });
 // 收盤價序列：第一筆預設在變更前（涵蓋到變更之前才判斷得出「未換發」）
@@ -69,4 +69,30 @@ test('實收資本也不同（漏的是增減資，不是面額變更）→ 不�
 test('補出的列接在股本歷史後面，shareSplitFactor 把跳動前的每股數字換成新股數基準', () => {
   const rows = [row(200908, 10, 36_288_894), { ym: 202212, parValue: 2.5, shares: 145_155_576n }];
   expect(shareSplitFactor(rows, new Date('2021-12-31'), new Date('2022-12-31'))).toBeCloseTo(4);
+});
+
+test('換發日：股價跳動那天；沒跳、股價涵蓋到變更前、未滿 180 天 → null', () => {
+  const [c] = confirmedParChanges(p5904);
+  expect(parSwitchDate(c!, cl('2026-05-20', 667, 66.9, 70), new Date('2026-08-20'))).toEqual(new Date('2026-05-21'));
+  expect(parSwitchDate(c!, cl('2026-05-20', 680, 667, 667), new Date('2026-06-30'))).toBeNull();
+});
+
+test('一年內多次面額變更（5314）→ 不採信任何變更', () => {
+  expect(confirmedParChanges([row(202501, 10, 100), row(202503, 0.5, 2000), row(202507, 10, 100), row(202510, 0.5, 2000)])).toEqual([]);
+});
+
+// 停止交易一段時間後恢復：第一筆與第二筆收盤差 10 天
+const halted = (before: number[], after: number[]) => [...cl('2026-08-01', ...before), ...cl('2026-08-20', ...after)];
+
+test('減資恢復交易：彌補虧損（×0.8 → 股價 ×1.25）、退還股款（停止前 30 元、每舊股退 2 元 → (30−2)/0.8 = 35）', () => {
+  expect(capitalReductionResumption(0.8, 10, halted([20, 20.2], [25.1, 25]))).toEqual({ date: new Date('2026-08-20'), cashPerOldShare: 0 });
+  const cashReturn = capitalReductionResumption(0.8, 10, halted([30, 30], [35]));
+  expect(cashReturn?.date).toEqual(new Date('2026-08-20'));
+  expect(cashReturn?.cashPerOldShare).toBeCloseTo(2);
+});
+
+test('一般交易日的漲停不算（沒有停止交易）；減少不到兩成、恢復後沒跳 → null', () => {
+  expect(capitalReductionResumption(0.8, 10, cl('2026-08-01', 30, 33, 35))).toBeNull();
+  expect(capitalReductionResumption(0.95, 10, halted([20], [21]))).toBeNull();
+  expect(capitalReductionResumption(0.5, 10, halted([20], [21]))).toBeNull();
 });

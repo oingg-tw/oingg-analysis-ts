@@ -13,7 +13,7 @@ export const liveMarketCapDefinition: MetricDefinitionSpec = {
   formulaNote:
     '= 當下最新收盤價 × 當下最新已申報流通股數（新台幣元）。跟 marketCap（凍結在財報公告當天的' +
     'knowledge_date）是刻意並存、互不影響的兩支獨立 metricCode，每個交易日都會變動。查無股價或股本' +
-    '資料時為 null（missing_input）。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
+    '資料時為 null（missing_input）。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）（2026-09-27 formulaVersion 3：股數換算到當天市場實際交易的基準——已除權還沒登記、已登記還沒換發或恢復交易的，照市場當天的股數。）',
   formulaLatex: '\\mathrm{LiveMarketCap} = \\mathrm{Price}_{\\mathrm{latest}} \\times \\mathrm{SharesOutstanding}',
   referenceUrl: 'https://en.wikipedia.org/wiki/Market_capitalization',
   tier: 'derived',
@@ -21,5 +21,5 @@ export const liveMarketCapDefinition: MetricDefinitionSpec = {
   group: 'snapshot',
   allowedSnapshotCadences: ['EOD'],
   dependsOn: ['outstandingCommonShares', 'daily_price.close'],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };
