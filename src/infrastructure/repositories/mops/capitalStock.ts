@@ -189,7 +189,7 @@ export const getShareSplitFactor = async (symbol: string, fromDate: Date, toDate
   const [parRows, { stock, reductions }] = await Promise.all([getParRows(symbol), getShareCountEvents(symbol)]);
   const inRange = (ym: number | null) => ym !== null && ym > ymOf(fromDate) && ym <= ymOf(toDate);
   const stockFactor = stock.filter((d) => inRange(d.registeredYm)).reduce((f, d) => f * d.multiplier, 1);
-  const consolidationFactor = reductions.filter((r) => inRange(r.ym) && 1 / r.multiplier >= CONSOLIDATION_MIN_RATIO).reduce((f, r) => f * r.multiplier, 1);
+  const consolidationFactor = reductions.filter((r) => inRange(r.ym) && r.consolidation).reduce((f, r) => f * r.multiplier, 1);
   return shareSplitFactor(parRows, fromDate, toDate) * stockFactor * consolidationFactor;
 };
 
@@ -240,12 +240,29 @@ const getShareCountEvents = hourly(async (symbol: string) => {
     if (registered) registered.stockAttributed += amount;
     return { exRights: d.ex_rights, multiplier: 1 + d.stock / parOr10(d.par), registeredYm: registered?.ym ?? null };
   });
-  const reductions = rows.filter((r) => r.delta < 0 && r.prevCapital).map((r) => ({ ym: r.ym, par: r.par, multiplier: (r.prevCapital! + r.delta) / r.prevCapital! }));
+  const reductions = await Promise.all(
+    rows
+      .filter((r) => r.delta < 0 && r.prevCapital)
+      .map(async (r) => {
+        const multiplier = (r.prevCapital! + r.delta) / r.prevCapital!;
+        // 跨期還原只算「確認是彌補虧損」的股數合併：停止交易後恢復交易那天股價跳 ÷倍數、沒有退還現金。退還股款的減資是還錢給股東
+        // （IAS 33.29：跟特別股利合併的股數合併不追溯調整），追溯換算會把它算成每股淨值衰退（1441 2023-07 減資 37%，換算後成長率從 −14% 變 −46%）。
+        // 減資類型公告欄位多半空白（2017 起減少兩成以上 250 列只有 25 列寫了），只能靠股價；2020-11 以前沒股價的判斷不了，不換算。
+        let consolidation = false;
+        if (1 / multiplier >= CONSOLIDATION_MIN_RATIO) {
+          const start = new Date(monthStart(r.ym).getTime() - 60 * DAY);
+          const closes = await listClosesBothExchanges(symbol, start, new Date(start.getTime() + 300 * DAY));
+          const resumed = capitalReductionResumption(multiplier, r.par, closes);
+          consolidation = resumed !== null && resumed.cashPerOldShare === 0;
+        }
+        return { ym: r.ym, par: r.par, multiplier, consolidation };
+      })
+  );
   return { rows, stock, reductions };
 });
 
-// 跨期還原只算「減少約兩成以上」的減資（反分割式的股數合併）：註銷庫藏股、限制員工權利新股這類小額減資，流通股數本來就不含，
-// 已發行股數變了、流通股數沒變，不能換算（跟 capitalReductionResumption 同一個門檻）。
+// 跨期還原只算「減少約兩成以上、而且股價確認是彌補虧損」的減資（反分割式的股數合併，見 getShareCountEvents）：註銷庫藏股、
+// 限制員工權利新股這類小額減資，流通股數本來就不含，已發行股數變了、流通股數沒變，不能換算（跟 capitalReductionResumption 同一個門檻）。
 const CONSOLIDATION_MIN_RATIO = 1.2;
 
 export const getShareBasisEvents = async (symbol: string, basisDate: Date, asOf: Date): Promise<ShareBasisEventsAsOf> => {
