@@ -11,16 +11,20 @@ import type { PitDeps } from '@/application/metrics/deps';
 import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
 
 // 2026-09-22 formulaVersion 2：投入資本從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
-export const ROIC_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3：虧損季（稅前淨利 ≤ 0）稅率當 0、NOPAT = EBIT，不再整筆 null（使用者拍板「虧損季稅率當 0」）。
+// web-nuxt 量到全市場最新一期 TTM 有 40.8% 是 null（ROE/ROA 2.6%、ROCE 5.3%），而且全部誤標 insufficient_history：
+// 1301 台塑 111Q4 稅前 −73.5 億，之後只要近四季含一季虧損 TTM 就整筆 null，2022Q3 有值、2022Q4 反而「歷史不足」。
+// 虧損季沒有稅可繳，稅率 0 讓 ROIC 可以是負的，跟 ROE/ROCE 一致；獲利季的數字完全不變。
+export const ROIC_FORMULA_VERSION = 3;
 
 // 這份檔案是 src/domainMetrics/roic.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
 // 在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，延續既有慣例。
 
-// 稅前淨利須為正，否則有效稅率沒有意義，NOPAT 視為 null（跟 roic.ts 現有行為一致）。
-const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
+// 稅前淨利 ≤ 0（虧損）時有效稅率沒有意義，稅率當 0、NOPAT = EBIT（2026-09-28 v3，之前是 null）。provenance 共用這支。
+export const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
   if (!record || record.profitBeforeTax === null || record.financeCosts === null || record.incomeTaxExpense === null) return null;
-  if (record.profitBeforeTax <= 0n) return null;
   const ebit = record.profitBeforeTax + record.financeCosts;
+  if (record.profitBeforeTax <= 0n) return ebit;
   // 2026-09-22 公式稽核：有效稅率夾在 [0, 1]——所得稅費用為負（遞延稅資產迴轉）或超過稅前淨利時，原式會讓 NOPAT 大於
   // EBIT 或變負，不是模型要表達的「稅後」概念。
   const effectiveTaxRate = Math.min(1, Math.max(0, Number(record.incomeTaxExpense) / Number(record.profitBeforeTax)));

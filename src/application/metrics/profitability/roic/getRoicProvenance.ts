@@ -5,20 +5,13 @@ import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
+import { computeNopat } from './computeRoic';
 
 // 2026-09-13 使用者要求擴大稽核鏈——roic(TTM) = 近四季 NOPAT 加總 / 投入資本（本季期末
 // 快照，有息負債+權益-現金）。NOPAT = (稅前淨利+財務費用) × (1-有效稅率)，有效稅率 =
-// 所得稅費用/稅前淨利，稅前淨利須為正否則 NOPAT 視為 null（跟 computeRoicPit.ts 一致）。
+// 所得稅費用/稅前淨利（夾在 0~1），稅前淨利 ≤ 0 時稅率當 0（2026-09-28 起，computeNopat 跟 computeRoic.ts 共用）。
 // 固定回傳 TTM。NOPAT 是計算出的中繼值不是原始欄位，用 methodologyNote 逐季說明換算，
 // 三個組成欄位（稅前淨利/財務費用/所得稅費用）都列成 entries。
-
-const computeNopat = (record: { profitBeforeTax: bigint | null; financeCosts: bigint | null; incomeTaxExpense: bigint | null } | null): bigint | null => {
-  if (!record || record.profitBeforeTax === null || record.financeCosts === null || record.incomeTaxExpense === null) return null;
-  if (record.profitBeforeTax <= 0n) return null;
-  const ebit = record.profitBeforeTax + record.financeCosts;
-  const effectiveTaxRate = Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
-  return BigInt(Math.round(Number(ebit) * (1 - effectiveTaxRate)));
-};
 
 export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -113,6 +106,6 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
     value,
     entries,
     methodologyNote:
-      'NOPAT（各季）= (稅前淨利+財務費用) × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利；稅前淨利非正時該季 NOPAT 視為 null。投入資本 = 有息負債+權益-現金及約當現金（本季期末快照，不平均不加總）。',
+      'NOPAT（各季）= (稅前淨利+財務費用) × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利（夾在 0~1）；稅前淨利非正（虧損）時該季稅率當 0、NOPAT=EBIT。投入資本 = 有息負債+權益-現金及約當現金（本季期末快照，不平均不加總）。',
   };
 };
