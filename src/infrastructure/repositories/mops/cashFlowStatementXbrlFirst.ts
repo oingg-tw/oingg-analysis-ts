@@ -19,19 +19,11 @@
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
+import { resolveNetCashFromInvestingActivities } from '@/domain/financials/cashFlowIdentity';
 import type { CashFlowFields } from '@/application/ports/financialStatements';
 
 // CashFlowFields 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
 export type { CashFlowFields };
-
-const deriveNetCashFromInvestingActivities = (accounts: Record<string, bigint>): bigint | null => {
-  const netChangeInCash = accounts.increase_decrease_in_cash_and_cash_equivalents;
-  const cfo = accounts.cash_flows_from_used_in_operating_activities;
-  const cff = accounts.cash_flows_from_used_in_financing_activities;
-  if (netChangeInCash === undefined || cfo === undefined || cff === undefined) return null;
-  const fxEffect = accounts.effect_of_exchange_rate_changes_on_cash_and_cash_equivalents ?? 0n;
-  return netChangeInCash - cfo - cff - fxEffect;
-};
 
 export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<CashFlowFields | null> => {
   const xbrl = await getXbrlCashFlowQuarterly(key);
@@ -44,7 +36,6 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
     depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
     amortization: xbrl.accounts.adj_amortisation_expense ?? null,
     dividendsPaid: xbrl.accounts.dividends_paid_financing ?? null,
-    netCashFromInvestingActivities:
-      xbrl.accounts.net_cash_flows_from_used_in_investing_activities ?? deriveNetCashFromInvestingActivities(xbrl.accounts),
+    netCashFromInvestingActivities: resolveNetCashFromInvestingActivities(xbrl.accounts),
   };
 };

@@ -13,7 +13,9 @@ import { resolveAverageBalances } from '../../shared/averageBalances';
 
 // 2026-09-22 formulaVersion 2：分母總資產從本季期末改成期間平均（Q 兩點、TTM 5 個季末）——Sloan (1996) 原文就是
 // average total assets，見 shared/averageBalances.ts。
-export const ACCRUALS_RATIO_FORMULA_VERSION = 2;
+// 2026-09-27 formulaVersion 3：單季投資活動現金流在原生小計跟恆等式對不上時改用恆等式（mops 單季表第四季裝了全年，114Q4 有 674 家，
+// 見 domain/financials/cashFlowIdentity.ts），含 114Q4 的近四季（114Q4、115Q1、115Q2）原本重複算了第三季的投資。
+export const ACCRUALS_RATIO_FORMULA_VERSION = 3;
 
 // 這份檔案是 src/domainMetrics/accrualsRatio.ts 的獨立重新實作。分母固定用本季期末總資產
 // （不平均、不加總 TTM），跟 ROE/ROA 用期末值同一種簡化。

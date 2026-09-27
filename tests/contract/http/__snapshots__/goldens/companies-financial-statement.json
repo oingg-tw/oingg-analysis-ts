@@ -114,6 +114,7 @@
       "shortterm_borrowings": "<null>",
       "special_reserve": "<numeric-string>",
       "statutory_reserve": "<numeric-string>",
+      "stock_dividend_to_be_distributed": "<null>",
       "trade_payables_to_related_parties": "<numeric-string>",
       "trade_payables_to_trade_suppliers": "<numeric-string>",
       "treasury_shares": "<null>",

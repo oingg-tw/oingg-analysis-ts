@@ -25,5 +25,5 @@ export const accrualsRatioDefinition: MetricDefinitionSpec = {
     'netCashFromInvestingActivities',
     'assets',
   ],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };
