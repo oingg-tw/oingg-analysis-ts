@@ -9,6 +9,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 從最新已申報那一季的普通股權益、近四季淨利、季末流通股數出發，套用季末之後到交易日的除息、除權、面額換發、減資恢復交易、
 // 增資（見 domain/financials/liveShareBasis.ts）。livePeRatio／livePbRatio／liveGrahamNumber／livePegRatio 都從這裡取，
 // 原本各支自己用「最新收盤價 ÷ 季末每股數字」，面額變更、配股後基準對不上（5904 換發後會差 10 倍）。
+const MAX_BASIS_AGE_DAYS = 200;
+
 export type LivePerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'market'>;
 
 export interface LivePerShareQuery {
@@ -56,7 +58,10 @@ export const resolveLivePerShare = async (
     }
   }
 
-  const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  // 最新一季財報季末離交易日超過 200 天（正常最多落後一份：3/30 還只有前一年第三季 ≈ 181 天）就不算——2941、4126 的合併報表停在
+  // 111Q4，從 2022 年的每股淨值往後扣三年股利、卻沒有這三年的獲利，算出來的數字比交易所還離譜。回 null（missing_input），個股頁退回交易所值。
+  const stale = !reportDate || (tradeDate.getTime() - reportDate.getTime()) / 86_400_000 > MAX_BASIS_AGE_DAYS;
+  const shares = reportDate && !stale ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   if (!shares || !reportDate) return { status: 'ok', tradeDate, close, rocYear, season, epsTtm: null, bvps: null, ttmComplete };
 
   const basis = await deps.shares.getShareBasisEvents(symbol, reportDate, tradeDate);
