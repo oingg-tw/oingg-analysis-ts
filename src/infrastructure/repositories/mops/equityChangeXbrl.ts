@@ -1,4 +1,5 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
+import type { AnnualEquityChangeRow, EquityChangePort } from '@/application/ports/equityChanges';
 import { latestEndedRocQuarterCode } from './shareAdjustments';
 
 // 2026-09-25 權益變動表（mops-ts export.equity_change_xbrl，逐 member 有期初／變動／期末）——只讀特別股現金股利。
@@ -24,3 +25,36 @@ export const getPreferredDividendsTtmAsOf = async (symbol: string, asOf: Date): 
   const ttm = q === 4 ? ytd(y, 4) : ytd(y, q) + ytd(y - 1, 4) - ytd(y - 1, q);
   return ttm > 0n ? ttm : 0n;
 };
+
+// 2026-09-27 淨值變動拆解（application/ports/equityChanges.ts）：第四季（全年）歸屬母公司權益那一欄。沒有非控制權益的公司
+// 不一定申報 EquityAttributableToOwnersOfParentMember，那時權益合計就是歸屬母公司，退回 TotalEquityMember。
+// 期初有追溯重編時用重編後（重編不是當年度的流量）。
+export const listAnnualEquityChanges = async (symbol: string, dataType: '1' | '2'): Promise<AnnualEquityChangeRow[]> => {
+  const rows = await mopsExportPrisma.$queryRaw<
+    { year: number; o: number | null; c: number | null; ni: number | null; oci: number | null; div: number | null; pdiv: number | null; issued: number | null }[]
+  >`
+    SELECT DISTINCT ON (year) year,
+      COALESCE(opening_balance_after_restatement, opening_balance)::float8 AS o, closing_balance::float8 AS c,
+      profit_loss::float8 AS ni, other_comprehensive_income::float8 AS oci,
+      cash_dividends_of_ordinary_share::float8 AS div, cash_dividends_of_preference_share::float8 AS pdiv,
+      (COALESCE(issue_of_shares, 0) + COALESCE(due_to_recognition_of_equity_component_of_convertible_bonds, 0)
+        + COALESCE(shares_issued_for_pursuant_to_reorganization, 0))::float8 AS issued
+    FROM "export"."equity_change_xbrl"
+    WHERE symbol = ${symbol} AND quarter = 4 AND data_type = ${dataType} AND subsidiary_company_id = ''
+      AND member IN ('EquityAttributableToOwnersOfParentMember', 'TotalEquityMember')
+    ORDER BY year, (member = 'EquityAttributableToOwnersOfParentMember') DESC`;
+  return rows
+    .filter((r) => r.o !== null && r.c !== null)
+    .map((r) => ({
+      rocYear: r.year,
+      openingEquityThousands: r.o!,
+      closingEquityThousands: r.c!,
+      netIncomeThousands: r.ni ?? 0,
+      otherComprehensiveIncomeThousands: r.oci ?? 0,
+      commonCashDividendsThousands: r.div ?? 0,
+      preferredCashDividendsThousands: r.pdiv ?? 0,
+      capitalIssuedThousands: r.issued ?? 0,
+    }));
+};
+
+export const mopsEquityChanges: EquityChangePort = { listAnnualEquityChanges };

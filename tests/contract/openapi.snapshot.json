@@ -524,6 +524,109 @@
         ]
       }
     },
+    "/companies/book-value-breakdown": {
+      "get": {
+        "description": "2026-09-27 新增——回答「每股淨值這一年為什麼變動」：期初每股淨值 → +歸屬普通股淨利 → ±其他綜合損益 → −現金股利 → +增資 → ±股數變動影響 → ±其他（未分類）→ 期末每股淨值，每一列恆等成立（四捨五入差 0.01 內）。資料源是 mops-ts 權益變動表（XBRL）第四季＝全年，歸屬母公司那一欄（沒有非控制權益的公司用權益合計）；普通股口徑跟 bvps 一致（扣特別股股本、淨利扣特別股股利）。現金股利是宣告時認列的金額（權益變動表），不是現金流量表的實付，所以不會因為某季現金流量表缺漏而斷掉。股數換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，跟 metric-history 的每股歷史同一原則），期末每股淨值跟 bvps 走勢對得上。「其他（未分類）」是權益變動表沒有獨立欄位的項目（庫藏股買回、員工酬勞、子公司持股變動…）加上對帳差額，照實列出、不硬塞進別的項目；2025 年全市場約 73% 的公司這一項在期初淨值 1% 以內。XBRL 從 109Q3 開始，最早 2020 年。查無資料回 entries: []，是 200 不是 404。",
+        "parameters": [
+          {
+            "description": "公司代號",
+            "in": "query",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "description": "公司代號",
+              "example": "2330",
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "每年一列，舊 → 新；查無權益變動表時是空陣列",
+                      "items": {
+                        "properties": {
+                          "capitalIssued": {
+                            "description": "元／股，換算到今天的股數基準。增資：現金增資、可轉債權益組成、組織重整發行",
+                            "type": "number"
+                          },
+                          "cashDividends": {
+                            "description": "元／股，換算到今天的股數基準。普通股現金股利，宣告時認列（權益變動表），負數",
+                            "type": "number"
+                          },
+                          "closingBvps": {
+                            "description": "元／股，換算到今天的股數基準。期末（當年底）普通股每股淨值",
+                            "type": "number"
+                          },
+                          "fiscalYear": {
+                            "description": "西元年度（權益變動表全年）",
+                            "type": "integer"
+                          },
+                          "netIncome": {
+                            "description": "元／股，換算到今天的股數基準。歸屬普通股淨利（歸屬母公司淨利 − 特別股股利），除以期末股數",
+                            "type": "number"
+                          },
+                          "openingBvps": {
+                            "description": "元／股，換算到今天的股數基準。期初（前一年底）普通股每股淨值",
+                            "type": "number"
+                          },
+                          "other": {
+                            "description": "元／股，換算到今天的股數基準。其他（未分類）：期末 − 期初 − 以上各項，多半是庫藏股買回、員工酬勞、子公司持股變動等權益變動表沒有獨立欄位的項目",
+                            "type": "number"
+                          },
+                          "otherComprehensiveIncome": {
+                            "description": "元／股，換算到今天的股數基準。其他綜合損益（國外營運機構換算差額、透過其他綜合損益按公允價值衡量之金融資產評價…），可為負",
+                            "type": "number"
+                          },
+                          "shareCountEffect": {
+                            "description": "元／股，換算到今天的股數基準。股數變動影響：期初淨值在期末股數下每股的變化（增資稀釋為負、買回註銷為正）；分割、配股已換算不會出現在這裡",
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "fiscalYear",
+                          "openingBvps",
+                          "netIncome",
+                          "otherComprehensiveIncome",
+                          "cashDividends",
+                          "capitalIssued",
+                          "shareCountEffect",
+                          "other",
+                          "closingBvps"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "每年一列（舊 → 新），查無資料時 entries 是空陣列。"
+          },
+          "400": {
+            "description": "缺少 symbol。"
+          }
+        },
+        "summary": "單一公司淨值變動拆解（每股，每年一列，畫瀑布圖用）",
+        "tags": [
+          "System"
+        ]
+      }
+    },
     "/companies/capital-stock-history": {
       "get": {
         "description": "給個股頁面「股本變化」卡片用——讓使用者對照流通股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。資料來源是 mops-ts 的 export.capital_stock_history，是「異動事件序列」不是固定季度/年度快照，entries 依 effectiveDate 由新到舊排序。changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。sharesChangePercent 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。",

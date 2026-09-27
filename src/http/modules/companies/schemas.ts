@@ -32,6 +32,11 @@ export const getCompanyCapitalStockHistoryQuerySchema = z.object({
   symbol: symbolField,
 });
 
+// 2026-09-27 淨值變動拆解（每股）——查無權益變動表回 entries: []，不是 404。
+export const getCompanyBookValueBreakdownQuerySchema = z.object({
+  symbol: symbolField,
+});
+
 // 2026-09-19 歷年股利表——同樣查無分派紀錄回 entries: []，不是 404。
 export const getCompanyDividendHistoryQuerySchema = z.object({
   symbol: symbolField,

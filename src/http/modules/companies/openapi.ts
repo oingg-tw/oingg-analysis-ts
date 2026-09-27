@@ -18,6 +18,7 @@ import {
   getCompanyMetricHistoryQuerySchema,
   getCompanyMetricsHistoryQuerySchema,
   getCompanyMonthlyRevenueHistoryQuerySchema,
+  getCompanyBookValueBreakdownQuerySchema,
   getCompanyFinancialStatementQuerySchema,
   getCompanyPiotroskiBreakdownQuerySchema,
   getCompanyMetricProvenanceQuerySchema,
@@ -28,6 +29,7 @@ import {
 import {
   capitalStockHistoryEntrySchema,
   dividendHistoryEntrySchema,
+  bookValueBreakdownEntrySchema,
   monthlyRevenueEntrySchema,
   companyProfileDetailSchema,
   companiesListResultSchema,
@@ -42,6 +44,11 @@ import {
 const dividendHistoryResultSchema = z.object({
   symbol: z.string(),
   entries: z.array(dividendHistoryEntrySchema).meta({ description: '每個股利所屬年度一列，舊 → 新；查無分派紀錄時是空陣列' }),
+});
+
+const bookValueBreakdownResultSchema = z.object({
+  symbol: z.string(),
+  entries: z.array(bookValueBreakdownEntrySchema).meta({ description: '每年一列，舊 → 新；查無權益變動表時是空陣列' }),
 });
 
 const capitalStockHistoryResultSchema = z.object({
@@ -198,6 +205,26 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     request: { query: getCompanyDividendHistoryQuerySchema },
     responses: {
       200: { description: '歷年股利表（舊 → 新），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dividendHistoryResultSchema } } },
+      400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/book-value-breakdown',
+    summary: '單一公司淨值變動拆解（每股，每年一列，畫瀑布圖用）',
+    description:
+      '2026-09-27 新增——回答「每股淨值這一年為什麼變動」：期初每股淨值 → +歸屬普通股淨利 → ±其他綜合損益 → −現金股利 → +增資 → ' +
+      '±股數變動影響 → ±其他（未分類）→ 期末每股淨值，每一列恆等成立（四捨五入差 0.01 內）。資料源是 mops-ts 權益變動表（XBRL）第四季＝全年，' +
+      '歸屬母公司那一欄（沒有非控制權益的公司用權益合計）；普通股口徑跟 bvps 一致（扣特別股股本、淨利扣特別股股利）。' +
+      '現金股利是宣告時認列的金額（權益變動表），不是現金流量表的實付，所以不會因為某季現金流量表缺漏而斷掉。' +
+      '股數換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，跟 metric-history 的每股歷史同一原則），期末每股淨值跟 bvps 走勢對得上。' +
+      '「其他（未分類）」是權益變動表沒有獨立欄位的項目（庫藏股買回、員工酬勞、子公司持股變動…）加上對帳差額，照實列出、不硬塞進別的項目；' +
+      '2025 年全市場約 73% 的公司這一項在期初淨值 1% 以內。XBRL 從 109Q3 開始，最早 2020 年。查無資料回 entries: []，是 200 不是 404。',
+    tags: ['System'],
+    request: { query: getCompanyBookValueBreakdownQuerySchema },
+    responses: {
+      200: { description: '每年一列（舊 → 新），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: bookValueBreakdownResultSchema } } },
       400: { description: '缺少 symbol。' },
     },
   });

@@ -4,6 +4,7 @@ import type { CapitalStockChangeSource, CapitalStockHistoryEntry } from '@/appli
 import type { MonthlyRevenueEntry } from '@/application/ports/monthlyRevenue';
 import type { CompanyProfileDetail } from '@/application/companies/types';
 import type { DividendHistoryEntry, DividendHistoryEvent } from '@/application/companies/dividendHistory';
+import type { BookValueBreakdownEntry } from '@/application/companies/bookValueBreakdown';
 
 // 2026-09-05 起改成 zod schema 當唯一真理來源，TypeScript 型別用 z.infer 反推——原本這裡是
 // 純 TypeScript interface，跟 Swagger 文件（原本手寫 JSDoc）是兩份要手動保持同步的東西，
@@ -151,6 +152,20 @@ export const dividendHistoryEntrySchema = z.object({
   knowledgeDate: z.string().nullable().meta({ description: '該年度最後一次分派決議的公告日——這列數字最早何時被市場知道' }),
   events: z.array(dividendHistoryEventSchema).meta({ description: '逐次分派事件，依所屬季度/除息日由舊到新' }),
 }) satisfies z.ZodType<DividendHistoryEntry>;
+
+// 2026-09-27 淨值變動拆解（每股），口徑見 domain/financials/bookValueBreakdown.ts。每一列 openingBvps + 各項 = closingBvps（四捨五入差 0.01 內）。
+const perShare = (description: string) => z.number().meta({ description: `元／股，換算到今天的股數基準。${description}` });
+export const bookValueBreakdownEntrySchema = z.object({
+  fiscalYear: z.number().int().meta({ description: '西元年度（權益變動表全年）' }),
+  openingBvps: perShare('期初（前一年底）普通股每股淨值'),
+  netIncome: perShare('歸屬普通股淨利（歸屬母公司淨利 − 特別股股利），除以期末股數'),
+  otherComprehensiveIncome: perShare('其他綜合損益（國外營運機構換算差額、透過其他綜合損益按公允價值衡量之金融資產評價…），可為負'),
+  cashDividends: perShare('普通股現金股利，宣告時認列（權益變動表），負數'),
+  capitalIssued: perShare('增資：現金增資、可轉債權益組成、組織重整發行'),
+  shareCountEffect: perShare('股數變動影響：期初淨值在期末股數下每股的變化（增資稀釋為負、買回註銷為正）；分割、配股已換算不會出現在這裡'),
+  other: perShare('其他（未分類）：期末 − 期初 − 以上各項，多半是庫藏股買回、員工酬勞、子公司持股變動等權益變動表沒有獨立欄位的項目'),
+  closingBvps: perShare('期末（當年底）普通股每股淨值'),
+}) satisfies z.ZodType<BookValueBreakdownEntry>;
 
 export const monthlyRevenueEntrySchema = z.object({
   yearMonth: z.string().meta({ description: '"YYYY-MM"' }),

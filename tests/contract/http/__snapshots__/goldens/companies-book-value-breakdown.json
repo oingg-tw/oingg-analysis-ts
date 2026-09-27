@@ -1,0 +1,19 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "capitalIssued": "<number>",
+        "cashDividends": "<number>",
+        "closingBvps": "<number>",
+        "fiscalYear": "<number>",
+        "netIncome": "<number>",
+        "openingBvps": "<number>",
+        "other": "<number>",
+        "otherComprehensiveIncome": "<number>",
+        "shareCountEffect": "<number>"
+      }
+    ],
+    "symbol": "<numeric-string>"
+  }
+}

@@ -13,6 +13,7 @@ import {
   getCompanyBeta,
 } from '@/application/companies/history';
 import { getCompanyDividendHistory } from '@/application/companies/dividendHistory';
+import { getCompanyBookValueBreakdown } from '@/application/companies/bookValueBreakdown';
 import { getCompanyFinancialStatement } from '@/application/companies/financialStatement';
 import { getCompanyBadges, getCompanyMetricCompleteness, getCompanyPiotroskiBreakdown, getCompanyMetricProvenance } from '@/application/companies/insights';
 import { jsonRoute } from '@/http/route';
@@ -21,6 +22,7 @@ import {
   getCompanyProfileQuerySchema,
   getCompanyCapitalStockHistoryQuerySchema,
   getCompanyDividendHistoryQuerySchema,
+  getCompanyBookValueBreakdownQuerySchema,
   getCompanyRoeHistoryQuerySchema,
   getCompanyRoaHistoryQuerySchema,
   getCompanyDupontHistoryQuerySchema,
@@ -45,6 +47,7 @@ export const createCompaniesRouter = (deps: AppDeps): Router => {
   router.get('/companies/profile', ...jsonRoute({ query: getCompanyProfileQuerySchema }, ({ query }) => getCompanyProfile(query.symbol, deps)));
   router.get('/companies/capital-stock-history', ...jsonRoute({ query: getCompanyCapitalStockHistoryQuerySchema }, ({ query }) => getCompanyCapitalStockHistory(query.symbol, deps)));
   router.get('/companies/dividend-history', ...jsonRoute({ query: getCompanyDividendHistoryQuerySchema }, ({ query }) => getCompanyDividendHistory(query.symbol, deps)));
+  router.get('/companies/book-value-breakdown', ...jsonRoute({ query: getCompanyBookValueBreakdownQuerySchema }, ({ query }) => getCompanyBookValueBreakdown(query.symbol, deps)));
   router.get('/companies/roe-history', ...jsonRoute({ query: getCompanyRoeHistoryQuerySchema }, ({ query }) => getCompanyRoeHistory(query, deps)));
   router.get('/companies/roa-history', ...jsonRoute({ query: getCompanyRoaHistoryQuerySchema }, ({ query }) => getCompanyRoaHistory(query, deps)));
   router.get('/companies/dupont-history', ...jsonRoute({ query: getCompanyDupontHistoryQuerySchema }, ({ query }) => getCompanyDupontHistory(query, deps)));
