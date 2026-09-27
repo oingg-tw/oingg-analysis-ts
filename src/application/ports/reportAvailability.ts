@@ -9,7 +9,11 @@ import type { StatementDataType } from '@/domain/financials/quarterlyMetric';
 // screener/provenance/財報透傳）都要經過它，不再寫死 '2'。逐日型指標（beta/marketRatios/live*）也用同一個
 // 口徑鍵——live* 本來就讀損益表，beta/marketRatios 雖是純市場數字，但同一家公司只該有一種 data_type，
 // 否則 metrics-history 會拆成兩條序列。
+// 2026-09-27 按期別決定（見 domain/financials/reportDataType.ts）：合併報表申報範圍內用 '2'（缺列照舊 insufficient，不拿個體頂），
+// 合併停掉 2 季以上、改只編個體的公司（31 家：2941、4126、5403、1623、1727、1524…）之後的期別用 '1'，歷史接起來。
 export interface ReportAvailabilityPort {
-  // 查無這家公司（view 沒列到）時回 '2'，維持既有行為。
+  // 最新一期的口徑（逐日型指標、最新值、沒有期別的查詢）。查無這家公司（view 沒列到）時回 '2'，維持既有行為。
   resolveDataType(symbol: string): Promise<StatementDataType>;
+  // 某一期（民國年、季）的口徑——季報型指標的計算與歷史查詢按期別用它。
+  resolveDataTypeForPeriod(symbol: string, rocYear: number, quarter: number): Promise<StatementDataType>;
 }

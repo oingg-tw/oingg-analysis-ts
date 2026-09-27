@@ -52,7 +52,7 @@ export interface QuarterlyLookupQuery {
 // 2026-09-10 web-nuxt 要求：piotroskiFScore 只寫入最終 0-9 分，9 個子訊號依 Piotroski (2000)
 // 原始論文的分組現查現算回傳，不是新的 metric_code。查無資料（found: false）是正常情境，不是 404。
 export const getCompanyPiotroskiBreakdown = async ({ symbol, year, season }: QuarterlyLookupQuery, deps: PiotroskiFScoreDeps & Pick<AppDeps, 'reportAvailability'>): Promise<PiotroskiFScoreBreakdown> =>
-  getPiotroskiFScoreBreakdown({ symbol, year, season, dataType: await deps.reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' }, deps);
+  getPiotroskiFScoreBreakdown({ symbol, year, season, dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' }, deps);
 
 export type ProvenanceMetricCode = keyof ProvenanceResolvers;
 
@@ -67,4 +67,4 @@ export interface GetCompanyMetricProvenanceQuery {
 // 現查現算，不持久化。試點範圍見 PILOT_PROVENANCE_METRIC_CODES——metricCode 在 http schema 用
 // z.enum 驗證，不支援的指標直接被擋成 400。resolver 對應表見 provenanceResolvers.ts。
 export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResult> =>
-  createProvenanceResolvers(deps)[metricCode]({ symbol, year, season, dataType: await deps.reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
+  createProvenanceResolvers(deps)[metricCode]({ symbol, year, season, dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });

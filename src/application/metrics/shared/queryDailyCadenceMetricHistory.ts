@@ -22,7 +22,12 @@ export const getDailyCadenceMetricHistory = async (
   limit: number,
   deps: MetricHistoryDeps
 ): Promise<MetricHistoryResult> => {
-  const rows = await deps.metricValueQueries.listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType, subsidiaryCompanyId);
+  // 2026-09-27 改只編個體報表的公司，逐日型的列在改制前後掛在兩種口徑下（口徑鍵跟著最新一期走）；兩種都查、同一天以最新口徑為準，歷史接起來。
+  const [primary, secondary] = await Promise.all([
+    deps.metricValueQueries.listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType, subsidiaryCompanyId),
+    deps.metricValueQueries.listDailyCadenceMetricHistoryRows(symbol, metricCode, coordinate, dataType === '1' ? '2' : '1', subsidiaryCompanyId),
+  ]);
+  const rows = secondary.length === 0 ? primary : [...primary, ...secondary].sort((a, b) => b.tradeDate.getTime() - a.tradeDate.getTime());
 
   // 依 tradeDate 去重取最大 knowledgeDate 那筆——理論上同一個 tradeDate 只會有一筆
   // （每個交易日只重算一次），這裡跟季報型的 dedup 邏輯一致，防禦同一天重編疊加的情境。

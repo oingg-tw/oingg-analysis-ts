@@ -62,7 +62,21 @@ export const getMetricHistory = async (
   limit: number,
   deps: MetricHistoryDeps
 ): Promise<MetricHistoryResult> => {
-  const rows = await deps.metricValueQueries.listPeriodMetricHistoryRows(symbol, metricCode, periodType, dataType, subsidiaryCompanyId);
+  // 2026-09-27 財報口徑按期別決定（domain/financials/reportDataType.ts）：dataType 是最新一期的口徑，另一種口徑也查，
+  // 每一期只留「那一期該用的口徑」的列，歷史接起來——改只編個體報表的公司（1727 合併到 113Q4、個體 114Q1 起）才看得到完整序列。
+  // 一般公司另一種口徑查回空陣列，結果跟以前一樣。
+  const otherType = dataType === '1' ? '2' : '1';
+  const [primary, secondary] = await Promise.all([
+    deps.metricValueQueries.listPeriodMetricHistoryRows(symbol, metricCode, periodType, dataType, subsidiaryCompanyId),
+    deps.metricValueQueries.listPeriodMetricHistoryRows(symbol, metricCode, periodType, otherType, subsidiaryCompanyId),
+  ]);
+  const keepForPeriod = async (list: typeof primary, type: '1' | '2') => {
+    const keep = await Promise.all(list.map(async (row) => (await deps.reportAvailability.resolveDataTypeForPeriod(symbol, row.fiscalYear - 1911, row.fiscalQuarter ?? 4)) === type));
+    return list.filter((_, i) => keep[i]);
+  };
+  const rows = secondary.length === 0 ? primary : [...(await keepForPeriod(primary, dataType)), ...(await keepForPeriod(secondary, otherType))].sort(
+    (a, b) => b.fiscalYear - a.fiscalYear || (b.fiscalQuarter ?? 0) - (a.fiscalQuarter ?? 0) || b.knowledgeDate.getTime() - a.knowledgeDate.getTime()
+  );
 
   const latestPerPeriod = new Map<string, (typeof rows)[number]>();
   for (const row of rows) {

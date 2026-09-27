@@ -18,7 +18,14 @@ export interface BookValueBreakdownResult {
 export type BookValueBreakdownDeps = Pick<AppDeps, 'equityChanges' | 'shares' | 'reportAvailability'>;
 
 export const getCompanyBookValueBreakdown = async (symbol: string, deps: BookValueBreakdownDeps): Promise<BookValueBreakdownResult> => {
-  const years = await deps.equityChanges.listAnnualEquityChanges(symbol, await deps.reportAvailability.resolveDataType(symbol));
+  // 2026-09-27 每一年用那一年的財報口徑（domain/financials/reportDataType.ts），改只編個體報表的公司歷史才接得起來。
+  const [consolidated, individual] = await Promise.all([deps.equityChanges.listAnnualEquityChanges(symbol, '2'), deps.equityChanges.listAnnualEquityChanges(symbol, '1')]);
+  const keep = await Promise.all(
+    [...consolidated.map((y) => ({ y, type: '2' })), ...individual.map((y) => ({ y, type: '1' }))].map(async ({ y, type }) =>
+      (await deps.reportAvailability.resolveDataTypeForPeriod(symbol, y.rocYear, 4)) === type ? y : null
+    )
+  );
+  const years = keep.filter((y) => y !== null).sort((a, b) => a.rocYear - b.rocYear);
   if (years.length === 0) return { symbol, entries: [] };
 
   const now = new Date();

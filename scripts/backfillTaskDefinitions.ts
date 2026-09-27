@@ -67,7 +67,13 @@ export type BackfillTask = [string, () => Promise<unknown>];
 // '1'，見 application/ports/reportAvailability.ts），所以 query 變成 async 工廠，在每個 task 執行時才解析
 // （整張表載一次進記憶體，之後是 Map 查找）。逐日型的 dailyQuery 同一個口徑鍵，理由見該 port 檔頭。
 export const buildGeneralTasks = (symbol: string, quarter?: { year: string; season: '1' | '2' | '3' | '4' }): BackfillTask[] => {
-  const query = async () => ({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '', ...quarter });
+  // 2026-09-27 季報型按期別決定口徑（改只編個體報表的公司，合併停掉之後的季用 '1'，見 domain/financials/reportDataType.ts）；沒指定季（最新）用最新口徑。
+  const query = async () => ({
+    symbol,
+    dataType: quarter ? await reportAvailability.resolveDataTypeForPeriod(symbol, Number(quarter.year), Number(quarter.season)) : await reportAvailability.resolveDataType(symbol),
+    subsidiaryCompanyId: '',
+    ...quarter,
+  });
   const dailyQuery = async () => ({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
 
   const periodTasks: BackfillTask[] = [
@@ -174,7 +180,13 @@ export const buildGeneralTasks = (symbol: string, quarter?: { year: string; seas
 };
 
 export const buildBankTasks = (symbol: string, quarter?: { year: string; season: '1' | '2' | '3' | '4' }): BackfillTask[] => {
-  const query = async () => ({ symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '', ...quarter });
+  // 2026-09-27 季報型按期別決定口徑（改只編個體報表的公司，合併停掉之後的季用 '1'，見 domain/financials/reportDataType.ts）；沒指定季（最新）用最新口徑。
+  const query = async () => ({
+    symbol,
+    dataType: quarter ? await reportAvailability.resolveDataTypeForPeriod(symbol, Number(quarter.year), Number(quarter.season)) : await reportAvailability.resolveDataType(symbol),
+    subsidiaryCompanyId: '',
+    ...quarter,
+  });
   return [
     ['bankAssetQuality', async () => computeAndWriteBankAssetQualityFamilyPit(await query())],
     ['bankCapitalAdequacy', async () => computeAndWriteBankCapitalAdequacyFamilyPit(await query())],

@@ -1,6 +1,7 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { ReportAvailabilityPort } from '@/application/ports/reportAvailability';
 import type { StatementDataType } from '@/domain/financials/quarterlyMetric';
+import { dataTypeForPeriod, latestDataType, type ReportAvailability } from '@/domain/financials/reportDataType';
 
 // mops-ts 2026-09-22 開的 export.company_report_availability：一列一家，欄位 symbol / has_consolidated /
 // has_individual / latest_consolidated_yq / latest_individual_yq / earliest_* / *_quarters（yq = 民國年×10＋季）。
@@ -11,21 +12,51 @@ import type { StatementDataType } from '@/domain/financials/quarterlyMetric';
 // （取得第一家子公司）要重啟 process 才看得到。回填腳本每次都是新 process；長駐的 HTTP server 讀取端拿到
 // 過期口徑的後果只是「查不到列」（跟今天的行為一樣），不會拿錯數字。之後若要即時，升級成 startupCache
 // 那種有 reload 的 lifecycle。
-let cache: Promise<Map<string, StatementDataType>> | null = null;
+let cache: Promise<Map<string, ReportAvailability>> | null = null;
 
-const load = (): Promise<Map<string, StatementDataType>> =>
+const load = (): Promise<Map<string, ReportAvailability>> =>
   mopsExportPrisma
-    .$queryRaw<{ symbol: string; has_consolidated: boolean; has_individual: boolean }[]>`
-      SELECT symbol, has_consolidated, has_individual FROM "export"."company_report_availability"
+    .$queryRaw<
+      { symbol: string; has_consolidated: boolean; has_individual: boolean; ec: number | null; lc: number | null; ei: number | null; li: number | null }[]
+    >`
+      SELECT symbol, has_consolidated, has_individual, earliest_consolidated_yq AS ec, latest_consolidated_yq AS lc,
+        earliest_individual_yq AS ei, latest_individual_yq AS li
+      FROM "export"."company_report_availability"
     `
-    .then((rows) => new Map(rows.filter((r) => r.has_consolidated || r.has_individual).map((r) => [r.symbol, r.has_consolidated ? '2' : '1'])));
+    .then(
+      (rows) =>
+        new Map(
+          rows
+            .filter((r) => r.has_consolidated || r.has_individual)
+            .map((r) => [
+              r.symbol,
+              {
+                hasConsolidated: r.has_consolidated,
+                hasIndividual: r.has_individual,
+                earliestConsolidatedYq: r.ec === null ? null : Number(r.ec),
+                latestConsolidatedYq: r.lc === null ? null : Number(r.lc),
+                earliestIndividualYq: r.ei === null ? null : Number(r.ei),
+                latestIndividualYq: r.li === null ? null : Number(r.li),
+              },
+            ])
+        )
+    );
+
+const availabilityOf = async (symbol: string): Promise<ReportAvailability | undefined> => {
+  cache ??= load().catch((error: unknown) => {
+    cache = null; // 載入失敗不要把 rejected promise 留著，下一次呼叫重試。
+    throw error;
+  });
+  return (await cache).get(symbol);
+};
 
 export const mopsReportAvailability: ReportAvailabilityPort = {
-  resolveDataType: async (symbol) => {
-    cache ??= load().catch((error: unknown) => {
-      cache = null; // 載入失敗不要把 rejected promise 留著，下一次呼叫重試。
-      throw error;
-    });
-    return (await cache).get(symbol) ?? '2';
+  resolveDataType: async (symbol): Promise<StatementDataType> => {
+    const a = await availabilityOf(symbol);
+    return a ? latestDataType(a) : '2';
+  },
+  resolveDataTypeForPeriod: async (symbol, rocYear, quarter): Promise<StatementDataType> => {
+    const a = await availabilityOf(symbol);
+    return a ? dataTypeForPeriod(a, rocYear * 10 + quarter) : '2';
   },
 };

@@ -10,7 +10,7 @@ import { createTestDeps } from '../../../fakes/createTestDeps';
 
 const seen: string[] = [];
 const deps = createTestDeps({
-  reportAvailability: { resolveDataType: async (symbol) => (symbol === '5863' ? '1' : '2') },
+  reportAvailability: { resolveDataType: async (symbol) => (symbol === '5863' ? '1' : '2'), resolveDataTypeForPeriod: async (symbol) => (symbol === '5863' ? '1' : '2') },
   metricValueQueries: {
     listPeriodMetricHistoryRows: async (_s: string, _m: string, _p: string, dataType: string) => (seen.push(dataType), []),
   } as unknown as MetricValueQueryPort,
@@ -22,12 +22,13 @@ describe('讀取端的 data_type 由 ReportAvailabilityPort 決定', () => {
     await getCompanyMetricHistory({ symbol: '5863', metricCode: 'roe', timeframe: 'TTM', limit: 10 }, deps);
     await getCompanyMetricsHistory({ symbol: '5863', metricCodes: 'roe,roa', timeframe: 'TTM', limit: 10 }, deps);
     await fetchLatestMetricValue('5863', 'roe', 'TTM', deps);
-    expect(seen).toEqual(['1', '1', '1', '1']); // metrics-history 兩支各查一次
+    // 2026-09-27 起每次歷史查詢兩種口徑都查（最新口徑在前），按期別留列
+    expect(seen).toEqual(['1', '2', '1', '2', '1', '2', '1', '2']); // metrics-history 兩支各查一次
   });
 
   test('有合併報表的公司維持 data_type=2', async () => {
     seen.length = 0;
     await getCompanyMetricHistory({ symbol: '2330', metricCode: 'roe', timeframe: 'TTM', limit: 10 }, deps);
-    expect(seen).toEqual(['2']);
+    expect(seen).toEqual(['2', '1']);
   });
 });

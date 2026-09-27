@@ -78,7 +78,8 @@ const serializeStatementRow = (row: FinancialStatementRow): Record<string, strin
 // 跟 roe-history/capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyFinancialStatement = async (query: GetCompanyFinancialStatementQuery, deps: FinancialStatementDeps): Promise<FinancialStatementResult> => {
   const { symbol, statementType, year, season } = query;
-  const dataType = await deps.reportAvailability.resolveDataType(symbol);
+  // 2026-09-27 指定期別時用那一期的口徑（domain/financials/reportDataType.ts）：改只編個體報表的公司，舊季還是合併報表。
+  const dataType = year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol);
   const subsidiaryCompanyId = '';
 
   const resolvedQuarter =
