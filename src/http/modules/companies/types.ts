@@ -153,7 +153,7 @@ export const dividendHistoryEntrySchema = z.object({
   events: z.array(dividendHistoryEventSchema).meta({ description: '逐次分派事件，依所屬季度/除息日由舊到新' }),
 }) satisfies z.ZodType<DividendHistoryEntry>;
 
-// 2026-09-27 淨值變動拆解（每股），口徑見 domain/financials/bookValueBreakdown.ts。每一列 openingBvps + 各項 = closingBvps（四捨五入差 0.01 內）。
+// 2026-09-27 淨值變動拆解（每股），口徑見 domain/financials/bookValueBreakdown.ts。每一列 openingBvps + 各項 = closingBvps 到分精確成立（四捨五入差額由 other 吸收）。
 const perShare = (description: string) => z.number().meta({ description: `元／股，換算到今天的股數基準。${description}` });
 export const bookValueBreakdownEntrySchema = z.object({
   fiscalYear: z.number().int().meta({ description: '西元年度（權益變動表全年）' }),
@@ -163,7 +163,7 @@ export const bookValueBreakdownEntrySchema = z.object({
   cashDividends: perShare('普通股現金股利，宣告時認列（權益變動表），負數'),
   capitalIssued: perShare('增資：現金增資、可轉債權益組成、組織重整發行'),
   shareCountEffect: perShare('股數變動影響：期初淨值在期末股數下每股的變化（增資稀釋為負、買回註銷為正）；分割、配股已換算不會出現在這裡'),
-  other: perShare('其他（未分類）：期末 − 期初 − 以上各項，多半是庫藏股買回、員工酬勞、子公司持股變動等權益變動表沒有獨立欄位的項目'),
+  other: perShare('其他（未分類）：期末 − 期初 − 以上各項（用四捨五入後的值倒推，所以也吸收進位差額），多半是庫藏股買回、員工酬勞、子公司持股變動等權益變動表沒有獨立欄位的項目'),
   closingBvps: perShare('期末（當年底）普通股每股淨值'),
 }) satisfies z.ZodType<BookValueBreakdownEntry>;
 

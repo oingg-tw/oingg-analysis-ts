@@ -35,23 +35,17 @@ export const breakDownBookValueChange = (
   shares: { opening: number; closing: number }
 ): BookValueBreakdown | null => {
   if (!(shares.opening > 0) || !(shares.closing > 0)) return null;
-  const perShare = (thousands: number) => (thousands * 1000) / shares.closing;
-  const openingBvps = ((y.openingEquityThousands - preferredCapitalThousands.opening) * 1000) / shares.opening;
-  const closingBvps = ((y.closingEquityThousands - preferredCapitalThousands.closing) * 1000) / shares.closing;
+  const perShare = (thousands: number) => round2((thousands * 1000) / shares.closing);
+  const openingCommon = y.openingEquityThousands - preferredCapitalThousands.opening;
+  const openingBvps = round2((openingCommon * 1000) / shares.opening);
+  const closingBvps = round2(((y.closingEquityThousands - preferredCapitalThousands.closing) * 1000) / shares.closing);
   const netIncome = perShare(y.netIncomeThousands + y.preferredCashDividendsThousands);
   const otherComprehensiveIncome = perShare(y.otherComprehensiveIncomeThousands);
   const cashDividends = perShare(y.commonCashDividendsThousands);
   const capitalIssued = perShare(y.capitalIssuedThousands);
-  const shareCountEffect = ((y.openingEquityThousands - preferredCapitalThousands.opening) * 1000) / shares.closing - openingBvps;
-  const other = closingBvps - openingBvps - shareCountEffect - netIncome - otherComprehensiveIncome - cashDividends - capitalIssued;
-  return {
-    openingBvps: round2(openingBvps),
-    netIncome: round2(netIncome),
-    otherComprehensiveIncome: round2(otherComprehensiveIncome),
-    cashDividends: round2(cashDividends),
-    capitalIssued: round2(capitalIssued),
-    shareCountEffect: round2(shareCountEffect),
-    other: round2(other),
-    closingBvps: round2(closingBvps),
-  };
+  const shareCountEffect = round2((openingCommon * 1000) / shares.closing - (openingCommon * 1000) / shares.opening);
+  // 2026-09-27 「其他」用四捨五入後的各項倒推：各項各自進位的差額（bff-ts 量到 197 列有 37 列加總差 0.01~0.02）由它吸收，
+  // 期初 + 各項 = 期末 到分都精確成立，下游拿恆等式驗證不用設容差。
+  const other = round2(closingBvps - openingBvps - shareCountEffect - netIncome - otherComprehensiveIncome - cashDividends - capitalIssued);
+  return { openingBvps, netIncome, otherComprehensiveIncome, cashDividends, capitalIssued, shareCountEffect, other, closingBvps };
 };
