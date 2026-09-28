@@ -5,6 +5,7 @@ export const novyMarxGpToAssetsDefinition: MetricDefinitionSpec = {
   name: '毛利資產比',
   nameEn: 'Novy-Marx Gross Profitability (GP/A)',
   unit: '%',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季毛利 / 本季期末總資產 * 100；TTM = 近四季（含本季）毛利' +
     '加總 / 本季期末總資產 * 100（分母固定用本季單一期末總資產，不平均、不加總，' +

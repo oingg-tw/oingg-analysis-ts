@@ -4,6 +4,7 @@ export const rdIntensityDefinition: MetricDefinitionSpec = {
   metricCode: 'rdIntensity',
   name: '研發費用率',
   unit: '%',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季研發費用/本季營收*100；TTM = 近四季（含本季）加總/近四季營收加總*100。' +
     '研發費用（research_and_development_expense）只存在 XBRL 損益表寬表，沒有舊表 fallback，' +

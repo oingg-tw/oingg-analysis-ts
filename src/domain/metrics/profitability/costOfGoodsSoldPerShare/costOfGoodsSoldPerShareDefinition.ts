@@ -5,6 +5,7 @@ export const costOfGoodsSoldPerShareDefinition: MetricDefinitionSpec = {
   name: '每股營業成本',
   nameEn: 'Cost of Goods Sold Per Share',
   unit: '元',
+  notApplicableToFinancialIndustry: true,
   perShare: true,
   formulaNote:
     'TTM = 近四季（含本季）營業成本加總*1000/流通股數，四季不齊為 null。流通股數固定用' +

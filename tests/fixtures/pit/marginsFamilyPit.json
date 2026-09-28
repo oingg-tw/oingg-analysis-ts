@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:37:59.308Z",
+  "recordedAt": "2026-09-28T02:35:35.979Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -31,6 +31,7 @@
       },
       "source": "report_date_fallback"
     },
+    "industry.isFinancialIndustryCompany([\"2851\"])": true,
     "quarters.latestQuarterWith([\"incomeStatement\",\"2851\",\"2\",\"\"])": {
       "quarter": 2,
       "year": 115

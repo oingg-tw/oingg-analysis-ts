@@ -4,6 +4,7 @@ export const fixedAssetTurnoverDefinition: MetricDefinitionSpec = {
   metricCode: 'fixedAssetTurnover',
   name: '固定資產週轉率',
   unit: '次',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季營收/平均不動產、廠房及設備（次）；TTM = 近四季（含本季）' +
     '營收加總/平均不動產、廠房及設備。（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',

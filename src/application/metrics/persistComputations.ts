@@ -148,15 +148,25 @@ export const validateCoordinate = (input: MetricComputation, definition: MetricD
 // 撞 metric_values_identity_key 唯一鍵（2026-09-11 真實發生過，見 tmp/backfill-failures-general.json
 // 的 revenuePerShare/2104）。upsert 讓 Postgres 原子地決定 insert 還是 update，多 instance/多併發
 // 都不會再噴例外，這是 Cloud Run 多 instance 部署後的必要條件。
-export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions'>): Promise<MetricValueWriteOutcome> => {
+export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry'>): Promise<MetricValueWriteOutcome> => {
   const definition = deps.definitions.get(input.metricCode);
   const rejection = validateCoordinate(input, definition);
   if (rejection) return rejection;
 
+  // 2026-09-28 金融業不適用改標（見 metricDefinitionSpec.ts notApplicableToFinancialIndustry）：集中在這裡而不是 30 支 compute 各寫一份。
+  // 只改「本來就是 null、而且原因是缺少輸入／歷史不足」的列；有值的、分母為零的不動。
+  const nullReason =
+    input.value === null &&
+    definition?.notApplicableToFinancialIndustry &&
+    (input.nullReason === 'missing_input' || input.nullReason === 'insufficient_history') &&
+    (await deps.industry.isFinancialIndustryCompany(input.symbol))
+      ? 'not_applicable_industry'
+      : input.nullReason;
+
   const formulaVersion = input.formulaVersion ?? 1;
   const values = {
     value: input.value,
-    nullReason: input.nullReason,
+    nullReason,
     knowledgeDate: input.knowledgeDate,
     knowledgeDateIsFallback: input.knowledgeDateIsFallback,
     formulaVersion,
@@ -226,7 +236,7 @@ export type PersistedBatch<B extends { slots: Record<string, ComputationSlot> }>
 // 逐槽、依插入順序、一次一筆 await（跟舊架構相同的資料庫負載與順序，不用 Promise.all）。
 export const persistComputations = async <B extends { slots: Record<string, ComputationSlot> }>(
   batch: B,
-  deps: Pick<PitDeps, 'metricValues' | 'definitions'>
+  deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry'>
 ): Promise<PersistedBatch<B>> => {
   const { slots, ...context } = batch;
   const outcomes: Record<string, BasisOutcome> = {};

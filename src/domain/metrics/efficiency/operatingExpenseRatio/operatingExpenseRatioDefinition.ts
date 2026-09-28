@@ -4,6 +4,7 @@ export const operatingExpenseRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingExpenseRatio',
   name: '營業費用率',
   unit: '%',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季營業費用(推銷費用+管理費用)/本季營收*100；TTM = 近四季（含本季）加總/' +
     '近四季營收加總*100。只用推銷+管理費用，不含研發費用（損益表沒有獨立的研發費用欄位），' +

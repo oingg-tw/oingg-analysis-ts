@@ -5,6 +5,7 @@ export const otherOperatingIncomeExpensePerShareDefinition: MetricDefinitionSpec
   name: '每股其他營業收益及費損淨額',
   nameEn: 'Other Operating Income and Expense Per Share',
   unit: '元',
+  notApplicableToFinancialIndustry: true,
   perShare: true,
   formulaNote:
     'Q = 當季其他收益及費損淨額（net_other_income_expenses）*1000/流通股數；TTM = 近四季（含本季）' +

@@ -5,6 +5,7 @@ export const researchAndDevelopmentExpensePerShareDefinition: MetricDefinitionSp
   name: '每股研發費用',
   nameEn: 'R&D Expense Per Share',
   unit: '元',
+  notApplicableToFinancialIndustry: true,
   perShare: true,
   formulaNote:
     'Q = 當季研發費用（research_and_development_expense）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null；某一季沒有這一行、而營業費用恆等式（推銷+管理+研發+預期信用減損=營業費用）成立時該季視為 0（2026-09-28 formulaVersion 3）。' +

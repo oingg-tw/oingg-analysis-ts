@@ -5,6 +5,7 @@ export const otherIncomePerShareDefinition: MetricDefinitionSpec = {
   name: '每股其他收入',
   nameEn: 'Other Income Per Share',
   unit: '元',
+  notApplicableToFinancialIndustry: true,
   perShare: true,
   formulaNote:
     'Q = 當季其他收入（other_revenue）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +

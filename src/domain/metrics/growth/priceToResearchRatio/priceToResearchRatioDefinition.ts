@@ -5,6 +5,7 @@ export const priceToResearchRatioDefinition: MetricDefinitionSpec = {
   name: '市值研發支出比',
   nameEn: 'Price-to-Research Ratio (PRR)',
   unit: '倍',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     '市值 / 近四季（含本季）研發支出加總。研發費用（research_and_development_expense）' +
     '只存在 XBRL 損益表寬表，舊表沒有對應欄位、沒有 fallback 可用——跟 rdIntensity 同一種' +

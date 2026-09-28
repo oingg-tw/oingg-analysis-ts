@@ -4,6 +4,7 @@ export const cashConversionCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'cashConversionCycle',
   name: '現金轉換循環',
   unit: '天',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'CCC = DIO + DSO − DPO。只有 TTM 一種 basis（跟三個組成天數一致）。三個組成任一為' +
     'null，不管原因為何，一律回報 missing_input——除非是因為 TTM 四季不齊，這種情況回報' +

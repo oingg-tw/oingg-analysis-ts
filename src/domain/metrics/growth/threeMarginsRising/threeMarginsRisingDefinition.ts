@@ -5,6 +5,7 @@ export const threeMarginsRisingDefinition: MetricDefinitionSpec = {
   name: '三率三升',
   nameEn: 'Three Margins Rising',
   unit: '分',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     '毛利率、營業利益率、稅後淨利率三個比率，各自「本季 > 上一季」且「本季 > 去年同季」（雙重驗證，' +
     '任一邊只打平或下滑都不算）通過數加總（0-3）。三項判定需全部可算才有分數，任一算不出來整體為 ' +

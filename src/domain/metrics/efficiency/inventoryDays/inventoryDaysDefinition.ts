@@ -4,6 +4,7 @@ export const inventoryDaysDefinition: MetricDefinitionSpec = {
   metricCode: 'inventoryDays',
   name: '存貨週轉天數',
   unit: '天',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'DIO = 365/存貨周轉率（TTM）。只有 TTM 一種 basis——365/單季周轉率算出來是' +
     '「一季裡的天數」，不是有意義的週轉天數，週轉天數的定義本來就以一年為基準。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）',

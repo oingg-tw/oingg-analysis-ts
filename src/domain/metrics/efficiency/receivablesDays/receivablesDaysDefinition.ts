@@ -6,6 +6,7 @@ export const receivablesDaysDefinition: MetricDefinitionSpec = {
   // 改成中文，縮寫放進 metricNarratives 的 description。
   name: '應收帳款收現天數',
   unit: '天',
+  notApplicableToFinancialIndustry: true,
   formulaNote: 'DSO = 365/應收帳款周轉率（TTM）。只有 TTM 一種 basis，理由同 inventoryDays。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）',
   formulaLatex: '\\mathrm{DSO} = \\frac{365}{\\mathrm{ReceivablesTurnover}}',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%87%89%E6%94%B6%E5%B8%B3%E6%AC%BE%E9%80%B1%E8%BD%89%E5%A4%A9%E6%95%B8',

@@ -4,6 +4,7 @@ export const famaFrenchOperatingProfitabilityDefinition: MetricDefinitionSpec = 
   metricCode: 'famaFrenchOperatingProfitability',
   name: 'Fama-French 營業獲利力',
   unit: '%',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     '(營收-銷貨成本-推銷費用-管理費用-利息費用)/帳面權益*100，即 Fama & French (2015) ' +
     '五因子模型 RMW 因子背後、單一公司版的營業獲利力比率（operating profitability = ' +

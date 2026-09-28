@@ -4,6 +4,7 @@ export const inventoryTurnoverDefinition: MetricDefinitionSpec = {
   metricCode: 'inventoryTurnover',
   name: '存貨週轉率',
   unit: '次',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季營業成本/平均存貨（次）；TTM = 近四季（含本季）營業成本' +
     '加總/平均存貨。（2026-09-22 formulaVersion 2：分母改期間平均——Q 取本季與上季期末兩點、TTM 取近四季窗口 5 個季末的平均，理由見 application/metrics/shared/averageBalances.ts；v1 用本季單一期末值。）',

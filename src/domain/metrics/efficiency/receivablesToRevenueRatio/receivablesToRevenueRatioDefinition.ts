@@ -6,6 +6,7 @@ export const receivablesToRevenueRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'receivablesToRevenueRatio',
   name: '應收帳款占營收比',
   unit: '%',
+  notApplicableToFinancialIndustry: true,
   formulaNote: '= 本季期末應收帳款 ÷ 近四季營收加總，衡量應收帳款水位相對於營收規模的大小。',
   formulaLatex: '\\mathrm{ReceivablesToRevenue} = \\dfrac{\\mathrm{Receivables}}{\\mathrm{Revenue}_{\\mathrm{TTM}}} \\times 100',
   tier: 'derived',

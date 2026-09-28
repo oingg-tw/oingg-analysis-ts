@@ -4,6 +4,7 @@ export const piotroskiFScoreDefinition: MetricDefinitionSpec = {
   metricCode: 'piotroskiFScore',
   name: 'Piotroski F-Score 財務體質評分',
   unit: '分',
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     '9 個二元訊號（ROA 為正、CFO 為正、ROA 較去年同季提升、CFO>淨利、長期負債比率較去年同季' +
     '下降、流動比率較去年同季提升、流通股數未增加、毛利率較去年同季提升、總資產週轉率較去年' +

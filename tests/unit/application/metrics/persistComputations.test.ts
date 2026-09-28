@@ -5,6 +5,7 @@ import { periodTypeGroup, rollingWindowGroup } from '@/domain/metrics/coordinate
 import { periodSlot, noQuarterBatch, type ComputationBatch, type MetricComputation } from '@/domain/metrics/computation';
 import { roeDefinition } from '@/domain/metrics/profitability/roe/roeDefinition';
 import { betaDefinition } from '@/domain/metrics/valuation/beta/betaDefinition';
+import { grossMarginDefinition } from '@/domain/metrics/profitability/grossMargin/grossMarginDefinition';
 import { createInMemoryMetricValues } from '../../../fakes/pit/inMemoryMetricValues';
 
 // persistComputations 是舊 metricValueWriter.writeMetricValue 的本體搬家（Phase 3），這裡用記憶體
@@ -12,7 +13,13 @@ import { createInMemoryMetricValues } from '../../../fakes/pit/inMemoryMetricVal
 // 直接決定 metric_values 落地的內容，重構期間一個分支都不能漂。
 
 const definitions: MetricDefinitionLookup = {
-  get: (metricCode) => ({ roe: roeDefinition, beta: betaDefinition })[metricCode],
+  get: (metricCode) => ({ roe: roeDefinition, beta: betaDefinition, grossMargin: grossMarginDefinition })[metricCode],
+};
+// 2330 一般業、2881 金融業（交易所產業代碼 '17'）。
+const industry = {
+  isFinancialIndustryCompany: async (symbol: string) => symbol === '2881',
+  isSoftwareOrCloudIndustryCompany: async () => false,
+  getCompanySectionCode: async () => null,
 };
 
 const roeQ = (overrides: Partial<MetricComputation> = {}): MetricComputation => ({
@@ -103,7 +110,7 @@ describe('validateCoordinate：spec v0.2 §5.5 的強制檢查', () => {
 describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
   test('第一次 inserted、原樣重跑 skipped_unchanged、同一天改值就地覆蓋（列數不變）、更新的 knowledgeDate 疊加新列', async () => {
     const metricValues = createInMemoryMetricValues();
-    const deps = { metricValues, definitions };
+    const deps = { metricValues, definitions, industry };
 
     expect(await persistOne(roeQ(), deps)).toEqual({ action: 'inserted' });
     expect(await persistOne(roeQ(), deps)).toEqual({ action: 'skipped_unchanged' });
@@ -123,7 +130,7 @@ describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
 
   test('座標驗證失敗時什麼都不寫', async () => {
     const metricValues = createInMemoryMetricValues();
-    const outcome = await persistOne(roeQ({ periodType: 'FY' }), { metricValues, definitions });
+    const outcome = await persistOne(roeQ({ periodType: 'FY' }), { metricValues, definitions, industry });
     expect(outcome.action).toBe('rejected');
     expect(metricValues.rows()).toHaveLength(0);
   });
@@ -144,7 +151,7 @@ describe('persistComputations：整批攤平成舊 outcome 形狀', () => {
       },
     };
 
-    const persisted = await persistComputations(batch, { metricValues, definitions });
+    const persisted = await persistComputations(batch, { metricValues, definitions, industry });
 
     expect(persisted).toEqual({ symbol: '2330', rocYear: '115', season: '2', q: { action: 'inserted' }, ttm: { action: 'skipped_no_knowledge_date' } });
     expect(metricValues.rows()).toHaveLength(1);
@@ -152,7 +159,27 @@ describe('persistComputations：整批攤平成舊 outcome 形狀', () => {
   });
 
   test('noQuarterBatch 攤平後就是舊架構的 skipped_no_quarter 回傳值', async () => {
-    const persisted = await persistComputations(noQuarterBatch('9999', ['q', 'ttm']), { metricValues: createInMemoryMetricValues(), definitions });
+    const persisted = await persistComputations(noQuarterBatch('9999', ['q', 'ttm']), { metricValues: createInMemoryMetricValues(), definitions, industry });
     expect(persisted).toEqual({ symbol: '9999', rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } });
+  });
+});
+
+describe('金融業不適用改標（2026-09-28）', () => {
+  const grossMarginQ = (symbol: string, overrides: Partial<MetricComputation> = {}): MetricComputation =>
+    roeQ({ symbol, metricCode: 'grossMargin', value: null, nullReason: 'missing_input', formulaVersion: grossMarginDefinition.currentFormulaVersion, ...overrides });
+
+  test('金融業 + 標記的指標 + null（缺少輸入／歷史不足）→ not_applicable_industry', async () => {
+    const metricValues = createInMemoryMetricValues();
+    await persistOne(grossMarginQ('2881'), { metricValues, definitions, industry });
+    await persistOne(grossMarginQ('2881', { fiscalQuarter: 1, nullReason: 'insufficient_history' }), { metricValues, definitions, industry });
+    expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['not_applicable_industry', 'not_applicable_industry']);
+  });
+
+  test('一般業、金融業算得出值、沒標記的指標都不動', async () => {
+    const metricValues = createInMemoryMetricValues();
+    await persistOne(grossMarginQ('2330'), { metricValues, definitions, industry });
+    await persistOne(grossMarginQ('2881', { fiscalQuarter: 1, value: 25.1, nullReason: null }), { metricValues, definitions, industry });
+    await persistOne(roeQ({ symbol: '2881', value: null, nullReason: 'missing_input' }), { metricValues, definitions, industry });
+    expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['missing_input', null, 'missing_input']);
   });
 });

@@ -172,6 +172,11 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // 2026-09-28 每股數字（元／股）。對外的歷史端點會把這類指標換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，
   // 見 application/metrics/shared/restatePerShareHistory.ts）。總額（市值、NCAV）與股價不是每股數字，不標。
   perShare?: true;
+  // 2026-09-28 金融業（交易所產業代碼 '17'：銀行、金控、保險、證券）的財報格式不拆這些科目（推銷／管理／研發、營業成本與毛利、
+  // 流動與非流動分類、存貨與應收應付），算不出來是結構性的——使用者：「金融業不適用的就標示不適用」。寫入時（application/metrics/
+  // persistComputations.ts）金融業公司這支指標若結果為 null（缺少輸入／歷史不足），原因改成 not_applicable_industry；
+  // 算得出值的（保險業毛利率走保險損益表 fallback、少數一般格式的公司）照樣保留數值。
+  notApplicableToFinancialIndustry?: true;
   formulaNote: string;
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種
   // 自然語言說明）由這裡儲存，前端忠實顯示，不要各自維護一份、算式跟後端實際公式對不上。

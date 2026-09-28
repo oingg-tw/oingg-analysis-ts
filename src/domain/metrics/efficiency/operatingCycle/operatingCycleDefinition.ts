@@ -6,6 +6,7 @@ export const operatingCycleDefinition: MetricDefinitionSpec = {
   metricCode: 'operatingCycle',
   name: '營運週期',
   unit: '天',
+  notApplicableToFinancialIndustry: true,
   formulaNote: '= 存貨週轉天數(DIO) + 應收帳款收現天數(DSO)，不扣應付帳款付現天數（DPO）——跟既有 cashConversionCycle（CCC=DIO+DSO-DPO）的差異是這支不考慮付款緩衝期。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）',
   formulaLatex: '\\mathrm{OperatingCycle} = \\mathrm{DIO} + \\mathrm{DSO}',
   referenceUrl: 'https://www.investopedia.com/terms/o/operatingcycle.asp',
