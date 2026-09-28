@@ -5,24 +5,13 @@ import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
+import { calculateNopat } from './computeNissimPenmanRnoa';
 
 // 2026-09-13 使用者要求擴大稽核鏈——nissimPenmanRnoa(TTM) = 近四季 NOPAT 加總 / 本季期末
 // NOA（單一期末值）。NOPAT = 營業利益 × (1-有效稅率)，有效稅率 = 所得稅費用/稅前淨利
 // （稅前淨利須為正）。NOA = 權益 + NFO，NFO(淨財務負債) = 有息負債(短期借款+應付公司債+
 // 長期借款) - 現金及約當現金。跟 computeNissimPenmanRnoaPit.ts 一致，只遷移 RNOA 本身，
 // 不遷移 FLEV/NBC/SPREAD 這些模型內部機制。固定回傳 TTM。
-
-interface IncomeStatementSlice {
-  operatingIncome: bigint | null;
-  profitBeforeTax: bigint | null;
-  incomeTaxExpense: bigint | null;
-}
-
-const calculateNopat = (record: IncomeStatementSlice | null): bigint | null => {
-  if (!record || record.operatingIncome === null || record.profitBeforeTax === null || record.incomeTaxExpense === null || record.profitBeforeTax <= 0n) return null;
-  const effectiveTaxRate = Number(record.incomeTaxExpense) / Number(record.profitBeforeTax);
-  return BigInt(Math.round(Number(record.operatingIncome) * (1 - effectiveTaxRate)));
-};
 
 export const getNissimPenmanRnoaProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -118,6 +107,6 @@ export const getNissimPenmanRnoaProvenance = async (query: QuarterlyMetricQuery,
     value,
     entries,
     methodologyNote:
-      'NOPAT（各季）= 營業利益 × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利；稅前淨利非正時該季 NOPAT 視為 null。NOA(淨營運資產) = 權益 + NFO(淨財務負債)，NFO = 有息負債-現金及約當現金（本季期末快照，不平均不加總）。',
+      'NOPAT（各季）= 營業利益 × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利（夾在 0~1）；稅前淨利非正（虧損）時該季稅率當 0。NOA(淨營運資產) = 權益 + NFO(淨財務負債)，NFO = 有息負債-現金及約當現金（本季期末快照，不平均不加總）。',
   };
 };

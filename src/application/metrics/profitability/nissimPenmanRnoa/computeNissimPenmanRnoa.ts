@@ -11,7 +11,9 @@ import type { PitDeps } from '@/application/metrics/deps';
 import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
 
 // 2026-09-22 formulaVersion 2：NOA 從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
-export const RNOA_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3：虧損季（稅前淨利 ≤ 0）稅率當 0，不再整筆 null——跟 roic v3 同一個修正（使用者拍板「比照 ROIC 改」）。
+// 115Q2 近四季 1,161/2,336 家（50%）是 null 且全標 insufficient_history，單季則誤標 missing_input。
+export const RNOA_FORMULA_VERSION = 3;
 
 // 這份檔案是 src/domainMetrics/nissimPenmanRnoa.ts 的獨立重新實作，只遷移 RNOA 本身
 // （= NOPAT / NOA），不遷移 FLEV/NBC/SPREAD/reconstructedRoe（模型內部機制，不是獨立
@@ -26,12 +28,14 @@ interface IncomeStatementSlice {
 }
 
 const calculateEffectiveTaxRate = (record: IncomeStatementSlice | null): number | null => {
-  if (!record || record.profitBeforeTax === null || record.incomeTaxExpense === null || record.profitBeforeTax <= 0n) return null;
+  if (!record || record.profitBeforeTax === null || record.incomeTaxExpense === null) return null;
+  if (record.profitBeforeTax <= 0n) return 0; // 虧損季沒有稅可繳（2026-09-28 v3，之前回 null）
   // 2026-09-22 公式稽核：夾在 [0, 1]，理由同 roic 的 computeNopat。
   return Math.min(1, Math.max(0, Number(record.incomeTaxExpense) / Number(record.profitBeforeTax)));
 };
 
-const calculateNopat = (record: IncomeStatementSlice | null): bigint | null => {
+// provenance 共用這支（2026-09-28 起，之前各寫一份、provenance 沒跟上 09-22 的稅率夾限）。
+export const calculateNopat = (record: IncomeStatementSlice | null): bigint | null => {
   const effectiveTaxRate = calculateEffectiveTaxRate(record);
   if (!record || record.operatingIncome === null || effectiveTaxRate === null) return null;
   return BigInt(Math.round(Number(record.operatingIncome) * (1 - effectiveTaxRate)));
