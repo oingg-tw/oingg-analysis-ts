@@ -16,7 +16,7 @@ import { computeDupontFamily } from '@/application/metrics/shared/dupont/compute
 // 門檻/出處見 threeMarginsRisingBadge.ts——這是「單一可指名出處」標準唯一的例外，使用者明確
 // 要求放行，不是查證疏漏。
 
-export type ThreeMarginsRisingDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type ThreeMarginsRisingDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
 export type ThreeMarginsRisingComputationBatch = ComputationBatch<'q'>;
 
 interface MarginTriple {

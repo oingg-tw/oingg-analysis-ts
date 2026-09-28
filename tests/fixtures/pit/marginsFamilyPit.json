@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-28T02:35:35.979Z",
+  "recordedAt": "2026-09-28T03:02:29.839Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -31,6 +31,7 @@
       },
       "source": "report_date_fallback"
     },
+    "industry.isFinancialIndustryCompany([\"2330\"])": false,
     "industry.isFinancialIndustryCompany([\"2851\"])": true,
     "quarters.latestQuarterWith([\"incomeStatement\",\"2851\",\"2\",\"\"])": {
       "quarter": 2,
@@ -38,6 +39,10 @@
     },
     "quarters.latestQuarterWith([\"incomeStatement\",\"2867\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
+    "quarters.latestQuarterWith([\"insuranceIncomeStatement\",\"2851\",\"2\",\"\"])": {
+      "quarter": 2,
+      "year": 115
+    },
     "quarters.latestQuarterWith([\"insuranceIncomeStatement\",\"2867\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"insuranceIncomeStatement\",\"9999\",\"2\",\"\"])": null,
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {

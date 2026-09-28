@@ -12,7 +12,7 @@ export const grossMarginDefinition: MetricDefinitionSpec = {
   metricCode: 'grossMargin',
   name: '毛利率',
   unit: '%',
-  notApplicableToFinancialIndustry: true,
+  // 金融業不適用改在 computeMarginsFamily 判斷（保險業有替代科目，對它們適用），不用 notApplicableToFinancialIndustry。
   formulaNote:
     'Q(單季) = 本季毛利/本季營收*100；TTM = 近四季（含本季）毛利加總/近四季營收加總*100。' +
     '沒有 Q_ANN——flow/flow 比率年化沒有意義。',

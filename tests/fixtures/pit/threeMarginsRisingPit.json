@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:37:59.308Z",
+  "recordedAt": "2026-09-28T03:02:34.015Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",112,3,{\"$date\":\"2023-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -73,6 +73,7 @@
       },
       "source": "announcement"
     },
+    "industry.isFinancialIndustryCompany([\"2330\"])": false,
     "quarters.latestQuarterWith([\"balanceSheet\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"insuranceIncomeStatement\",\"9999\",\"2\",\"\"])": null,
@@ -92,8 +93,12 @@
       "currentAssets": {
         "$bigint": "2452767394"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1026180079"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "12500151"
       },
       "equityAttributableToParent": {
         "$bigint": "3635731930"
@@ -104,6 +109,10 @@
       "longTermBorrowings": {
         "$bigint": "10020132"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "7700892"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3051847989"
@@ -115,6 +124,7 @@
         "$bigint": "3294563704"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "5787891082"
       },
@@ -141,8 +151,12 @@
       "currentAssets": {
         "$bigint": "3345663882"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1399802998"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "61771648"
       },
       "equityAttributableToParent": {
         "$bigint": "4564162580"
@@ -153,6 +167,10 @@
       "longTermBorrowings": {
         "$bigint": "38726925"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "5378586"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3400806154"
@@ -164,6 +182,7 @@
         "$bigint": "4162277269"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "7133287420"
       },
@@ -190,8 +209,12 @@
       "currentAssets": {
         "$bigint": "4265512176"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1714253448"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "156241738"
       },
       "equityAttributableToParent": {
         "$bigint": "5890960252"
@@ -201,6 +224,12 @@
       },
       "longTermBorrowings": {
         "$bigint": "40991672"
+      },
+      "netDefinedBenefitLiability": {
+        "$bigint": "5940382"
+      },
+      "noncurrentLeaseLiabilities": {
+        "$bigint": "33509235"
       },
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
@@ -213,6 +242,7 @@
         "$bigint": "5520488484"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "8660949685"
       },
@@ -239,8 +269,12 @@
       "currentAssets": {
         "$bigint": "1959964207"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "810829007"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "8125556"
       },
       "equityAttributableToParent": {
         "$bigint": "3188750455"
@@ -251,6 +285,10 @@
       "longTermBorrowings": {
         "$bigint": "5611138"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "8604642"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "2947233393"
@@ -264,6 +302,7 @@
       "shortTermBorrowings": {
         "$bigint": "0"
       },
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "5149465045"
       },
@@ -290,8 +329,12 @@
       "currentAssets": {
         "$bigint": "2591658093"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1048915680"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "23075426"
       },
       "equityAttributableToParent": {
         "$bigint": "3791402874"
@@ -302,6 +345,10 @@
       "longTermBorrowings": {
         "$bigint": "9029765"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "7702315"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3105860057"
@@ -313,6 +360,7 @@
         "$bigint": "3438674715"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "5982364014"
       },
@@ -339,8 +387,12 @@
       "currentAssets": {
         "$bigint": "3264917475"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1377314334"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "94213641"
       },
       "equityAttributableToParent": {
         "$bigint": "4581073975"
@@ -351,6 +403,10 @@
       "longTermBorrowings": {
         "$bigint": "35136246"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "5355403"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3386206352"
@@ -362,6 +418,7 @@
         "$bigint": "4430887293"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "7006349549"
       },
@@ -388,8 +445,12 @@
       "currentAssets": {
         "$bigint": "4565700742"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1857761825"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "167409865"
       },
       "equityAttributableToParent": {
         "$bigint": "6432518334"
@@ -399,6 +460,12 @@
       },
       "longTermBorrowings": {
         "$bigint": "49226958"
+      },
+      "netDefinedBenefitLiability": {
+        "$bigint": "5893691"
+      },
+      "noncurrentLeaseLiabilities": {
+        "$bigint": "33276056"
       },
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
@@ -411,6 +478,7 @@
         "$bigint": "6051113099"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "9375654727"
       },
@@ -437,8 +505,12 @@
       "currentAssets": {
         "$bigint": "2082477636"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "970034816"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "7420132"
       },
       "equityAttributableToParent": {
         "$bigint": "3348349657"
@@ -449,6 +521,10 @@
       "longTermBorrowings": {
         "$bigint": "5013050"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "8615678"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3132664367"
@@ -460,6 +536,7 @@
         "$bigint": "3010532799"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "5484556381"
       },
@@ -486,8 +563,12 @@
       "currentAssets": {
         "$bigint": "2773913863"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1080399099"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "58804983"
       },
       "equityAttributableToParent": {
         "$bigint": "3990019153"
@@ -498,6 +579,10 @@
       "longTermBorrowings": {
         "$bigint": "26459677"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "7704373"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3071599327"
@@ -509,6 +594,7 @@
         "$bigint": "3657379241"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "6165658176"
       },
@@ -535,8 +621,12 @@
       "currentAssets": {
         "$bigint": "3436015312"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1275906624"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "76225613"
       },
       "equityAttributableToParent": {
         "$bigint": "4998306972"
@@ -547,6 +637,10 @@
       "longTermBorrowings": {
         "$bigint": "37795501"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "5306777"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3499340761"
@@ -558,6 +652,7 @@
         "$bigint": "4753530544"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "7354107076"
       },
@@ -584,8 +679,12 @@
       "currentAssets": {
         "$bigint": "2194032910"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "913583316"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "9293266"
       },
       "equityAttributableToParent": {
         "$bigint": "3458913627"
@@ -596,6 +695,10 @@
       "longTermBorrowings": {
         "$bigint": "4382965"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "9257224"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3064474984"
@@ -607,6 +710,7 @@
         "$bigint": "3158030792"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "5532371215"
       },
@@ -633,8 +737,12 @@
       "currentAssets": {
         "$bigint": "3088352120"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1264524964"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "59857879"
       },
       "equityAttributableToParent": {
         "$bigint": "4288545167"
@@ -645,6 +753,10 @@
       "longTermBorrowings": {
         "$bigint": "31824386"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "7580657"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3234980070"
@@ -656,6 +768,7 @@
         "$bigint": "3917252023"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "6691938000"
       },
@@ -682,8 +795,12 @@
       "currentAssets": {
         "$bigint": "3817130817"
       },
+      "currentLeaseLiabilities": null,
       "currentLiabilities": {
         "$bigint": "1458019289"
+      },
+      "currentPortionOfLongTermLiabilities": {
+        "$bigint": "136925710"
       },
       "equityAttributableToParent": {
         "$bigint": "5419595994"
@@ -694,6 +811,10 @@
       "longTermBorrowings": {
         "$bigint": "39834496"
       },
+      "netDefinedBenefitLiability": {
+        "$bigint": "6012286"
+      },
+      "noncurrentLeaseLiabilities": null,
       "preferredStockCapital": null,
       "propertyPlantEquipment": {
         "$bigint": "3691840916"
@@ -705,6 +826,7 @@
         "$bigint": "5103501560"
       },
       "shortTermBorrowings": null,
+      "shortTermNotesAndBillsPayable": null,
       "totalAssets": {
         "$bigint": "7933023878"
       },

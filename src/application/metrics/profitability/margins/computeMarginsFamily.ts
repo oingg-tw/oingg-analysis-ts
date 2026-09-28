@@ -5,7 +5,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateGrossMargin } from '@/domain/metrics/profitability/grossMargin/calculateGrossMargin';
 import { calculateOperatingMargin } from '@/domain/metrics/profitability/operatingMargin/calculateOperatingMargin';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
@@ -71,7 +71,7 @@ export const getMarginInputs = async (
 // knowledge_date、呼叫 writeMetricValue。
 
 
-export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
 
 export type MarginsFamilyComputationBatch = ComputationBatch<'grossMarginQ' | 'grossMarginTtm' | 'operatingMarginQ' | 'operatingMarginTtm'>;
 
@@ -198,5 +198,18 @@ export const computeMarginsFamily = async (
     operatingMarginTtm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear: year, season, slots: { grossMarginQ, grossMarginTtm, operatingMarginQ, operatingMarginTtm } };
+  // 2026-09-28 金融業不適用改在這裡判斷，不走通用的 notApplicableToFinancialIndustry 標記：保險業有保險損益表替代科目，
+  // 毛利率／營業利益率對它們適用。IFRS 17 保險收入 115Q1 才開始有資料，近四季要到 115Q4 才湊滿——那段期間 TTM 是
+  // insufficient_history（真的歷史不足），不是不適用（bff-ts／web-nuxt 抓到：產險 5 家 Q 有值、TTM 卻被標不適用，
+  // 「不適用是公司層級的事實，不該隨基準改變」）。只有沒有任何保險損益表的金融業（銀行、金控、證券）才標不適用。
+  const notApplicable =
+    (await deps.industry.isFinancialIndustryCompany(symbol)) && !(await deps.quarters.latestQuarterWith('insuranceIncomeStatement', symbol, dataType, subsidiaryCompanyId));
+  const relabel = (slot: ComputationSlot): ComputationSlot =>
+    notApplicable && !isComputationSkip(slot) && slot.value === null ? { ...slot, nullReason: 'not_applicable_industry' } : slot;
+  return {
+    symbol,
+    rocYear: year,
+    season,
+    slots: { grossMarginQ: relabel(grossMarginQ), grossMarginTtm: relabel(grossMarginTtm), operatingMarginQ: relabel(operatingMarginQ), operatingMarginTtm: relabel(operatingMarginTtm) },
+  };
 };
