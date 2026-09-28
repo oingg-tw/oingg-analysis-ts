@@ -8,6 +8,7 @@ import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatc
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
+import { fillAbsentOperatingExpenseComponents } from '@/domain/financials/operatingExpenseComponents';
 import { calculateAdministrativeExpensePerShare } from '@/domain/metrics/profitability/administrativeExpensePerShare/calculateAdministrativeExpensePerShare';
 import { calculateCostOfGoodsSoldPerShare } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/calculateCostOfGoodsSoldPerShare';
 import { calculateEquityMethodIncomePerShare } from '@/domain/metrics/profitability/equityMethodIncomePerShare/calculateEquityMethodIncomePerShare';
@@ -29,6 +30,10 @@ import { calculateSellingExpensePerShare } from '@/domain/metrics/profitability/
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 export const INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION = 2;
+// 2026-09-28 營業費用四分拆 formulaVersion 3：某一季缺行、而營業費用恆等式成立時那一行當 0（domain/financials/operatingExpenseComponents.ts），
+// 不再讓近四季整期 null。只有這四支的值會變，所以只有這四支跳版，族內其他指標維持 2。
+const OPEX_COMPONENT_FORMULA_VERSION = 3;
+const OPEX_COMPONENT_CODES = new Set(['sellingExpensePerShare', 'administrativeExpensePerShare', 'researchAndDevelopmentExpensePerShare', 'expectedCreditLossPerShare']);
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——一次查詢損益表，
 // 拆成多個獨立 metric_code，跟 computeCashFlowPerSharePit.ts/computeDupontFamilyPit.ts
@@ -178,7 +183,8 @@ export const computeIncomeStatementPerShare = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const incomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const rawIncomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  const incomeStatement = rawIncomeStatement && fillAbsentOperatingExpenseComponents(rawIncomeStatement);
   const reportDate = incomeStatement?.reportDate ?? null;
 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
@@ -189,7 +195,10 @@ export const computeIncomeStatementPerShare = async (
   // TTM：近四季（含本季）加總。
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
+    ttmQuarters.map(async (tq) => {
+      const record = await deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
+      return record && fillAbsentOperatingExpenseComponents(record);
+    })
   );
 
   // 每支指標各自判斷近四季齊不齊：四季都要有紀錄，而且**這支指標自己的科目**每一季都非 null。
@@ -241,9 +250,17 @@ export const computeIncomeStatementPerShare = async (
     slots[fySlotOf(field.metricCode)] = annualReportSlot(
       annual,
       { symbol, metricCode: field.metricCode, dataType, subsidiaryCompanyId },
-      field.calc(annual ? amountOf(field, annual.annual) : null, annual?.weightedShares ?? null)
+      field.calc(annual ? amountOf(field, fillAbsentOperatingExpenseComponents(annual.annual)) : null, annual?.weightedShares ?? null)
     );
   }
 
-  return { symbol, rocYear: year, season, slots: withFormulaVersion(slots, INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION) } as IncomeStatementPerShareComputationBatch;
+  const versioned = withFormulaVersion(slots, INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION);
+  for (const field of FY_FIELDS) {
+    if (!OPEX_COMPONENT_CODES.has(field.metricCode)) continue;
+    for (const slot of [...FIELDS.filter((f) => f.metricCode === field.metricCode).map((f) => f.slot), fySlotOf(field.metricCode)]) {
+      const s = versioned[slot];
+      if (s && 'formulaVersion' in s) versioned[slot] = { ...s, formulaVersion: OPEX_COMPONENT_FORMULA_VERSION };
+    }
+  }
+  return { symbol, rocYear: year, season, slots: versioned } as IncomeStatementPerShareComputationBatch;
 };

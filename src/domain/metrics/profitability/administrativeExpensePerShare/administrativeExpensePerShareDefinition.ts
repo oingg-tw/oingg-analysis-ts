@@ -7,7 +7,7 @@ export const administrativeExpensePerShareDefinition: MetricDefinitionSpec = {
   unit: '元',
   perShare: true,
   formulaNote:
-    'Q = 當季管理費用（administrative_expense）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
+    'Q = 當季管理費用（administrative_expense）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null；某一季沒有這一行、而營業費用恆等式（推銷+管理+研發+預期信用減損=營業費用）成立時該季視為 0（2026-09-28 formulaVersion 3）。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +
     '加總還原而新增。' +
     'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
@@ -18,5 +18,5 @@ export const administrativeExpensePerShareDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['administrative_expense', 'outstandingCommonShares'],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };
