@@ -80,7 +80,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
         statementType: 'cashFlowStatement',
-        fieldKey: 'dividends_paid_financing',
+        fieldKey: ttmRecords[i]?.dividendsPaidFieldKey ?? null,
         sourceDescription: null,
         value: toProvenanceEntryValue(dividends[i]),
       },

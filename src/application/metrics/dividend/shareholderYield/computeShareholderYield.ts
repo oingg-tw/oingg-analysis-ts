@@ -50,7 +50,8 @@ export interface ShareholderYieldQuarter {
   rocYear: number;
   season: number;
   fiscalYear: number;
-  dividendsPaid: bigint | null; // 現金流量表 dividends_paid_financing（缺漏視為 0 計入）
+  dividendsPaid: bigint | null; // 現金流量表股利發放（籌資＋營業，缺漏視為 0 計入）
+  dividendsPaidFieldKey: string | null;
   treasuryShares: bigint | null; // XBRL 長表 payments_to_acquire_treasury_shares（整列缺漏 = null，不是沒買回）
 }
 
@@ -93,6 +94,7 @@ export const resolveShareholderYieldInputs = async (query: QuarterlyMetricQuery,
         season: Number(tq.season),
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         dividendsPaid: cashFlow === null ? null : (cashFlow.dividendsPaid ?? null),
+        dividendsPaidFieldKey: cashFlow?.dividendsPaidFieldKey ?? null,
         treasuryShares: cashFlow === null ? null : treasuryShares,
       };
     })

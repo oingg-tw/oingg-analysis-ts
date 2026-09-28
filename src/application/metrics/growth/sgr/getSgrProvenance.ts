@@ -79,7 +79,7 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
           statementType: 'cashFlowStatement' as const,
-          fieldKey: 'dividends_paid_financing',
+          fieldKey: ttmRecords[i]?.[1]?.dividendsPaidFieldKey ?? null,
           sourceDescription: null,
           value: toProvenanceEntryValue(dividendsPaid[i]),
         },

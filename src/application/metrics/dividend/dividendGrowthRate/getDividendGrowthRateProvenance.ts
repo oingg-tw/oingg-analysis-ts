@@ -17,6 +17,7 @@ interface AnnualDpsQuarterDetail {
   fiscalYear: number;
   fiscalQuarter: number;
   dividendsPaid: bigint | null;
+  dividendsPaidFieldKey: string | null;
 }
 
 interface AnnualDpsResult {
@@ -37,7 +38,7 @@ const getAnnualDividendPerShareProxy = async (
   const records = await Promise.all(
     [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
   );
-  const quarters: AnnualDpsQuarterDetail[] = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, dividendsPaid: r?.dividendsPaid ?? null }));
+  const quarters: AnnualDpsQuarterDetail[] = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, dividendsPaid: r?.dividendsPaid ?? null, dividendsPaidFieldKey: r?.dividendsPaidFieldKey ?? null }));
 
   if (records.some((r) => r === null || r.dividendsPaid === null)) {
     const result: AnnualDpsResult = { dps: null, quarters, shares: null };
@@ -91,7 +92,7 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
           fiscalQuarter: q.fiscalQuarter,
           type: 'statementField',
           statementType: 'cashFlowStatement',
-          fieldKey: 'dividends_paid_financing',
+          fieldKey: q.dividendsPaidFieldKey,
           sourceDescription: null,
           value: toProvenanceEntryValue(q.dividendsPaid),
         })

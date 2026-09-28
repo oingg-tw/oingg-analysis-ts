@@ -37,7 +37,7 @@ const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 // 不變，只是多讀一個欄位（.dps）。
 export interface AnnualDividendPerShareProxyResult {
   dps: number | null;
-  quarters: { rocYear: number; season: number; dividendsPaid: bigint | null }[];
+  quarters: { rocYear: number; season: number; dividendsPaid: bigint | null; dividendsPaidFieldKey: string | null }[];
   shares: { reportDate: Date; outstandingCommonShares: bigint } | null;
 }
 
@@ -58,6 +58,7 @@ export const getAnnualDividendPerShareProxy = async (
     rocYear,
     season: i + 1,
     dividendsPaid: record?.dividendsPaid ?? null,
+    dividendsPaidFieldKey: record?.dividendsPaidFieldKey ?? null,
   }));
 
   // 2026-09-22 mops-ts 確認單季現金流量表的語意：該季有整份表但 dividends_paid_financing 為 null = 「本年度到這季為止還沒付過股利」

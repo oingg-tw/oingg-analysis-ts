@@ -98,6 +98,7 @@ const emptyCashFlow = (reportDate: Date): CashFlowFields => ({
   depreciation: null,
   amortization: null,
   dividendsPaid: null,
+  dividendsPaidFieldKey: null,
   netCashFromInvestingActivities: null,
 });
 

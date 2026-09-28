@@ -43,6 +43,9 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
       xbrl.accounts.dividends_paid_financing === undefined && xbrl.accounts.dividends_paid_operating === undefined
         ? null
         : (xbrl.accounts.dividends_paid_financing ?? 0n) + (xbrl.accounts.dividends_paid_operating ?? 0n),
+    // 兩個同時有的 (公司,期別) bff-ts 實測 44 組 0 件；真的出現時單一 fieldKey 表達不了，那時再改（先標籌資）。
+    dividendsPaidFieldKey:
+      xbrl.accounts.dividends_paid_financing !== undefined ? 'dividends_paid_financing' : xbrl.accounts.dividends_paid_operating !== undefined ? 'dividends_paid_operating' : null,
     netCashFromInvestingActivities: resolveNetCashFromInvestingActivities(xbrl.accounts),
   };
 };

@@ -69,6 +69,9 @@ export interface CashFlowFields {
   depreciation: bigint | null;
   amortization: bigint | null;
   dividendsPaid: bigint | null;
+  // 2026-09-28 這一期的股利實際來自哪個 XBRL 科目（provenance 連結原始財報那一列用）：逐期判斷，同一家公司可能換科目（1410 115Q2 營業、之前籌資）；
+  // 兩個都沒有是 null（不要填假的鍵，前端 null 就不畫跳轉按鈕）。
+  dividendsPaidFieldKey: 'dividends_paid_financing' | 'dividends_paid_operating' | null;
   netCashFromInvestingActivities: bigint | null;
 }
 

@@ -20,7 +20,7 @@ export const getShareholderYieldProvenance = async (query: QuarterlyMetricQuery,
         fiscalQuarter: q.season,
         type: 'statementField',
         statementType: 'cashFlowStatement',
-        fieldKey: 'dividends_paid_financing',
+        fieldKey: q.dividendsPaidFieldKey,
         sourceDescription: null,
         value: toProvenanceEntryValue(q.dividendsPaid),
       })

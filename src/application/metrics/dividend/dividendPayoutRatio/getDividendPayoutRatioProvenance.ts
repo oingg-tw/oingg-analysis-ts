@@ -37,7 +37,7 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
       fiscalQuarter: detail.season,
       type: 'statementField',
       statementType: 'cashFlowStatement',
-      fieldKey: 'dividends_paid_financing',
+      fieldKey: detail.cashFlow?.dividendsPaidFieldKey ?? null,
       sourceDescription: null,
       value: toProvenanceEntryValue(detail.cashFlow?.dividendsPaid ?? null),
     };
@@ -52,6 +52,6 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
     fiscalQuarter,
     value: payoutRatioTtm,
     entries,
-    methodologyNote: '股利發放（dividends_paid_financing）為 null 的季度視為當季沒有發放（計算時當 0 加總），不是資料缺漏；entries 裡如實顯示原始欄位的 null 值，不做替代。',
+    methodologyNote: '股利發放（籌資活動或營業活動的支付股利科目，兩處都有則相加）為 null 的季度視為當季沒有發放（計算時當 0 加總），不是資料缺漏；entries 裡如實顯示原始欄位的 null 值，不做替代。',
   };
 };
