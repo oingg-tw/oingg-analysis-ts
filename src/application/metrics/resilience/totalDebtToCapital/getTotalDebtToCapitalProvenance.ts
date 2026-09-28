@@ -1,9 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——totalDebtToCapital = 有息負債 / (有息負債+權益) × 100。
@@ -28,7 +29,7 @@ export const getTotalDebtToCapitalProvenance = async (query: QuarterlyMetricQuer
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
-  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const totalDebt = balanceSheet ? interestBearingDebt(balanceSheet) : null;
   const equity = pickEquity(balanceSheet);
   const denominator = totalDebt !== null && equity.value !== null ? totalDebt + equity.value : null;
   const value = totalDebt !== null && denominator !== null ? toPercent(totalDebt, denominator) : null;
@@ -55,6 +56,7 @@ export const getTotalDebtToCapitalProvenance = async (query: QuarterlyMetricQuer
       sourceDescription: null,
       value: toProvenanceEntryValue(longTermBorrowings),
     },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
     { role: '本季期末權益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
   ];
 

@@ -16,6 +16,6 @@ export const evToEbitDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'profit_loss_before_tax', 'finance_costs'],
-  currentFormulaVersion: 2,
+  dependsOn: ['current_cp_issued_and_portion', 'longterm_liabilities_current_portion', 'shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'profit_loss_before_tax', 'finance_costs'],
+  currentFormulaVersion: 3,
 };

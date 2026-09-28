@@ -40,6 +40,13 @@ interface RawBalanceSheetXbrlRow {
   noncurrent_portion_of_bonds_issued: bigint | null;
   shortterm_borrowings: bigint | null;
   preference_share: bigint | null;
+  current_cp_issued_and_portion: bigint | null;
+  longterm_liabilities_current_portion: bigint | null;
+  current_bonds_issued_and_portion: bigint | null;
+  current_portion_of_longterm_borrowings: bigint | null;
+  current_lease_liabilities: bigint | null;
+  noncurrent_lease_liabilities: bigint | null;
+  noncurrent_liabilities_defined_benefit: bigint | null;
 }
 
 const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
@@ -60,6 +67,17 @@ const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   bondsPayable: row.noncurrent_portion_of_bonds_issued,
   shortTermBorrowings: row.shortterm_borrowings,
   preferredStockCapital: row.preference_share,
+  shortTermNotesAndBillsPayable: row.current_cp_issued_and_portion,
+  // 2026-09-28 一年內到期長期負債優先取母科目（1301 115Q2：12,871,487 = 一年內到期公司債 8,474,161 + 一年內到期長期借款 4,397,326，
+  // 上下層加總一致）；母科目缺才用兩個子科目相加（1,439 家有母科目、子科目各只有 150／522 家）。
+  currentPortionOfLongTermLiabilities:
+    row.longterm_liabilities_current_portion ??
+    (row.current_bonds_issued_and_portion === null && row.current_portion_of_longterm_borrowings === null
+      ? null
+      : (row.current_bonds_issued_and_portion ?? 0n) + (row.current_portion_of_longterm_borrowings ?? 0n)),
+  currentLeaseLiabilities: row.current_lease_liabilities,
+  noncurrentLeaseLiabilities: row.noncurrent_lease_liabilities,
+  netDefinedBenefitLiability: row.noncurrent_liabilities_defined_benefit,
 });
 
 export const getLatestQuarterWithBalanceSheetXbrl = async (symbol: string, dataType: string, subsidiaryCompanyId: string): Promise<{ year: number; quarter: number } | null> => {
@@ -76,7 +94,9 @@ export const getBalanceSheetXbrlFirst = async (key: QuarterlyKey): Promise<Balan
     SELECT report_date, assets, liabilities, current_assets, current_liabilities, inventories,
       longterm_borrowings, property_plant_and_equipment, retained_earnings, cash_and_cash_equivalents,
       equity_attributable_to_owners_of_parent, equity, trade_payables_to_trade_suppliers,
-      accounts_receivable_net, noncurrent_portion_of_bonds_issued, shortterm_borrowings, preference_share
+      accounts_receivable_net, noncurrent_portion_of_bonds_issued, shortterm_borrowings, preference_share,
+      current_cp_issued_and_portion, longterm_liabilities_current_portion, current_bonds_issued_and_portion,
+      current_portion_of_longterm_borrowings, current_lease_liabilities, noncurrent_lease_liabilities, noncurrent_liabilities_defined_benefit
     FROM "export"."quarterly_balance_sheet_xbrl"
     WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
       AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}

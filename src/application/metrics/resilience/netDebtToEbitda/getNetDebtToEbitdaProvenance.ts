@@ -2,6 +2,8 @@ import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
+import { sAndPAdjustedDebt } from './computeNetDebtToEbitda';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——netDebtToEbitda = 淨負債(本季期末快照) / EBITDA(TTM
@@ -28,7 +30,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
-  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const totalDebt = balanceSheet ? sAndPAdjustedDebt(balanceSheet) : null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -80,6 +82,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
       sourceDescription: null,
       value: toProvenanceEntryValue(longTermBorrowings),
     },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum, { sAndP: true }),
     {
       role: '本季期末現金及約當現金',
       fiscalYear,

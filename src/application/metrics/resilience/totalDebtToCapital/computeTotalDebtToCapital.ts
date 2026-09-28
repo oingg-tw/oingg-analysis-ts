@@ -1,12 +1,15 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquityValue as pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquityValue as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
+
+// 2026-09-28 formulaVersion 2：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+const TOTAL_DEBT_TO_CAPITAL_FORMULA_VERSION = 2;
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 量化選股盤點使用者要求新增。有息負債定義同 evEbitda/evToEbit（短期借款+應付公司債+
@@ -35,7 +38,7 @@ export const computeTotalDebtToCapital = async (query: QuarterlyMetricQuery, dep
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const totalDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+    ? interestBearingDebt(balanceSheet)
     : null;
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
@@ -65,5 +68,5 @@ export const computeTotalDebtToCapital = async (query: QuarterlyMetricQuery, dep
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q }, TOTAL_DEBT_TO_CAPITAL_FORMULA_VERSION) };
 };

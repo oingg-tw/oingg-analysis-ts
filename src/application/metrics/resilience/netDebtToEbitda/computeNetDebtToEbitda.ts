@@ -6,6 +6,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 這份檔案是 src/domainMetrics/netDebtToEbitda.ts 的獨立重新實作。2026-09-14 應使用者
@@ -17,7 +18,20 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-22 formulaVersion 2：EBITDA ≤ 0 改回 zero_or_negative_denominator（原本只擋 0）。負 EBITDA
 // 配正淨負債會算出負倍數，跟「淨現金」的負倍數長得一樣，掛 S&P 分級表（< 1.5x）的徽章時會誤判通過；
 // 信評慣例對負 EBITDA 的槓桿倍數就是「不具意義」（n/m）。同座標舊值會被重算覆蓋，是刻意的公式變更。
-export const NET_DEBT_TO_EBITDA_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3：負債改成貼近 S&P 調整後負債（使用者問「為什麼不能單純用人家的算法」、拍板「這支照 S&P」）：
+// 共用有息負債（補上一年內到期長期負債與應付短期票券，見 domain/metrics/shared/pickers.ts interestBearingDebt）
+// ＋租賃負債＋淨確定福利負債（退休金提撥不足）× (1 − 20%)。仍然做不到的只有 S&P 的「只扣剩餘現金（surplus cash）」——
+// 那是分析師對營運所需／受限／海外現金的個案判斷，財報沒有對應欄位，這裡照舊扣全部現金。
+// 退休金稅後：S&P 用公司的邊際稅率，這裡用台灣營所稅法定稅率 20% 近似（推論，S&P Ratios And Adjustments 原文未逐字核對）。
+export const NET_DEBT_TO_EBITDA_FORMULA_VERSION = 3;
+const PENSION_TAX_RATE = 0.2;
+
+// provenance 共用。
+export const sAndPAdjustedDebt = (bs: NonNullable<Awaited<ReturnType<NetDebtToEbitdaDeps['statements']['getBalanceSheet']>>>): bigint =>
+  interestBearingDebt(bs) +
+  (bs.currentLeaseLiabilities ?? 0n) +
+  (bs.noncurrentLeaseLiabilities ?? 0n) +
+  BigInt(Math.round(Number(bs.netDefinedBenefitLiability ?? 0n) * (1 - PENSION_TAX_RATE)));
 
 
 export type NetDebtToEbitdaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
@@ -45,9 +59,7 @@ export const computeNetDebtToEbitda = async (query: QuarterlyMetricQuery, deps: 
     deps.statements.getCashFlowStatement(key),
   ]);
 
-  const totalDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
-    : null;
+  const totalDebt = balanceSheet ? sAndPAdjustedDebt(balanceSheet) : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 

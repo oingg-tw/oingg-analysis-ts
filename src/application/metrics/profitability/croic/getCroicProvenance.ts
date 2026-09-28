@@ -1,9 +1,10 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toRatio } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——croic(TTM) = FCF(TTM，OCF+資本支出加總) / 投入資本
@@ -29,7 +30,7 @@ export const getCroicProvenance = async (query: QuarterlyMetricQuery, deps: Pick
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
-  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const totalDebt = balanceSheet ? interestBearingDebt(balanceSheet) : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const equity = pickEquity(balanceSheet);
   const investedCapital = totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
@@ -67,6 +68,7 @@ export const getCroicProvenance = async (query: QuarterlyMetricQuery, deps: Pick
       value: toProvenanceEntryValue(bondsPayable),
     },
     { role: '本季期末長期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'longterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(longTermBorrowings) },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
     { role: '本季期末權益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
     { role: '本季期末現金及約當現金', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'cash_and_cash_equivalents', sourceDescription: null, value: toProvenanceEntryValue(cashAndEquivalents) },
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {

@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -15,7 +15,8 @@ import { averageOf, resolveAverageBalances } from '../../shared/averageBalances'
 // web-nuxt 量到全市場最新一期 TTM 有 40.8% 是 null（ROE/ROA 2.6%、ROCE 5.3%），而且全部誤標 insufficient_history：
 // 1301 台塑 111Q4 稅前 −73.5 億，之後只要近四季含一季虧損 TTM 就整筆 null，2022Q3 有值、2022Q4 反而「歷史不足」。
 // 虧損季沒有稅可繳，稅率 0 讓 ROIC 可以是負的，跟 ROE/ROCE 一致；獲利季的數字完全不變。
-export const ROIC_FORMULA_VERSION = 3;
+// 2026-09-28 formulaVersion 4：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+export const ROIC_FORMULA_VERSION = 4;
 
 // 這份檔案是 src/domainMetrics/roic.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用，這個公式
 // 在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，延續既有慣例。
@@ -56,7 +57,7 @@ export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): 
   const nopat = computeNopat(incomeStatement);
   const equity = pickEquity(balanceSheet);
   const totalDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+    ? interestBearingDebt(balanceSheet)
     : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const investedCapital =
@@ -66,7 +67,7 @@ export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): 
   const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const pickInvestedCapital = (bs: NonNullable<typeof balanceSheet>): bigint | null => {
     const e = pickEquity(bs).value;
-    return e !== null && bs.cashAndEquivalents !== null ? (bs.shortTermBorrowings ?? 0n) + (bs.bondsPayable ?? 0n) + (bs.longTermBorrowings ?? 0n) + e - bs.cashAndEquivalents : null;
+    return e !== null && bs.cashAndEquivalents !== null ? interestBearingDebt(bs) + e - bs.cashAndEquivalents : null;
   };
   const investedCapitalAvgQ = averageOf(balances, pickInvestedCapital, 'q');
   const investedCapitalAvgTtm = averageOf(balances, pickInvestedCapital, 'ttm');

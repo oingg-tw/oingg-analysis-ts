@@ -15,6 +15,6 @@ export const evToFcfDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）', '證交所／櫃買中心每日收盤價'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: ['shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'netCashFromOperatingActivities', 'capitalExpenditures'],
-  currentFormulaVersion: 2,
+  dependsOn: ['current_cp_issued_and_portion', 'longterm_liabilities_current_portion', 'shortTermBorrowings', 'bondsPayable', 'longterm_borrowings', 'cash_and_cash_equivalents', 'netCashFromOperatingActivities', 'capitalExpenditures'],
+  currentFormulaVersion: 3,
 };

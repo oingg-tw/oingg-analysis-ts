@@ -3,6 +3,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/cale
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
+import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——evToFcf(TTM) = 企業價值(EV=市值+淨負債，本季知識
@@ -27,7 +29,7 @@ export const getEvToFcfProvenance = async (query: QuarterlyMetricQuery, deps: Pi
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
-  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const totalDebt = balanceSheet ? interestBearingDebt(balanceSheet) : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
   const reportDate = balanceSheet?.reportDate ?? null;
@@ -56,6 +58,7 @@ export const getEvToFcfProvenance = async (query: QuarterlyMetricQuery, deps: Pi
     { role: '本季期末有息負債—短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(shortTermBorrowings) },
     { role: '本季期末有息負債—應付公司債（非流動部分）', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'noncurrent_portion_of_bonds_issued', sourceDescription: null, value: toProvenanceEntryValue(bondsPayable) },
     { role: '本季期末有息負債—長期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'longterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(longTermBorrowings) },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
     { role: '本季期末現金及約當現金', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'cash_and_cash_equivalents', sourceDescription: null, value: toProvenanceEntryValue(cashAndEquivalents) },
     {
       role: '市值（本季知識時點：收盤價 × 流通股數）',

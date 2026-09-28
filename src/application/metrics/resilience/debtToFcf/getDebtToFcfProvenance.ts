@@ -3,6 +3,8 @@ import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/cale
 import { toRatio } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
+import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-13 使用者要求擴大稽核鏈——debtToFcf = 有息負債(本季期末快照，短期借款+應付
@@ -29,7 +31,7 @@ export const getDebtToFcfProvenance = async (query: QuarterlyMetricQuery, deps: 
   const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
   const bondsPayable = balanceSheet?.bondsPayable ?? null;
   const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
-  const totalDebt = balanceSheet ? (shortTermBorrowings ?? 0n) + (bondsPayable ?? 0n) + (longTermBorrowings ?? 0n) : null;
+  const totalDebt = balanceSheet ? interestBearingDebt(balanceSheet) : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const ttmRecords = await Promise.all(
@@ -73,6 +75,7 @@ export const getDebtToFcfProvenance = async (query: QuarterlyMetricQuery, deps: 
       sourceDescription: null,
       value: toProvenanceEntryValue(longTermBorrowings),
     },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
       const entryFiscalYear = rocYearToGregorian(Number(tq.year));
       const entryFiscalQuarter = Number(tq.season);

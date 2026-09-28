@@ -53,6 +53,13 @@ export interface BalanceSheetFields {
   bondsPayable: bigint | null;
   shortTermBorrowings: bigint | null;
   preferredStockCapital: bigint | null;
+  // 2026-09-28 有息負債補齊（使用者拍板）：之前共用的有息負債只有短期借款＋非流動公司債＋長期借款，漏了下面兩項。
+  shortTermNotesAndBillsPayable: bigint | null; // current_cp_issued_and_portion：應付短期票券（商業本票，折價後帳面淨額），115Q2 378 家
+  currentPortionOfLongTermLiabilities: bigint | null; // longterm_liabilities_current_portion，缺時退回一年內到期公司債＋一年內到期長期借款
+  // S&P 調整後負債（netDebtToEbitda 專用）額外加回的兩項。
+  currentLeaseLiabilities: bigint | null; // current_lease_liabilities
+  noncurrentLeaseLiabilities: bigint | null; // noncurrent_lease_liabilities
+  netDefinedBenefitLiability: bigint | null; // noncurrent_liabilities_defined_benefit：淨確定福利負債（退休金提撥不足）
 }
 
 export interface CashFlowFields {

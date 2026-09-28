@@ -6,11 +6,13 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
+import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
-export const GREENBLATT_EARNINGS_YIELD_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+export const GREENBLATT_EARNINGS_YIELD_FORMULA_VERSION = 3;
 
 // Greenblatt 盈餘收益率 = EBIT(TTM) / EV * 100。EV = 市值 + 有息負債(本季期末) - 現金及約當
 // 現金(本季期末)——跟 netDebtToEbitda 的「有息負債」定義同一組欄位
@@ -65,7 +67,7 @@ export const resolveGreenblattEarningsYieldInputs = async (
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const totalDebt =
-    balanceSheet !== null ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n) : null;
+    balanceSheet !== null ? interestBearingDebt(balanceSheet) : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const reportDate = balanceSheet?.reportDate ?? null;
 

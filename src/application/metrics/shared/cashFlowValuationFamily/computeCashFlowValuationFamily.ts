@@ -6,6 +6,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
+import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——一次查詢
@@ -28,15 +29,20 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 真的轉換成自由現金流），不是 FCF/OCF 或 FCF/EBITDA 版本——業界對「conversion rate」
 // 有多種定義，這裡明確記錄採用的是哪一種。
 
-export const CROIC_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+export const CROIC_FORMULA_VERSION = 3;
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
 export const CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION = 2;
+// 2026-09-28 formulaVersion 3（evToOcf/evToSales）、2（debtToFcf）：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+const EV_FORMULA_VERSION = 3;
+const DEBT_TO_FCF_FORMULA_VERSION = 2;
 const FORMULA_VERSION_BY_CODE: Record<string, number> = {
   croic: CROIC_FORMULA_VERSION,
-  evToOcf: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
-  evToSales: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
+  evToOcf: EV_FORMULA_VERSION,
+  evToSales: EV_FORMULA_VERSION,
   priceToOcf: CASH_FLOW_VALUATION_MARKET_CAP_FORMULA_VERSION,
+  debtToFcf: DEBT_TO_FCF_FORMULA_VERSION,
 };
 
 const toPctFromThousands = (numeratorInThousands: bigint, denominatorInThousands: bigint): number | null => {
@@ -93,7 +99,7 @@ export const computeCashFlowValuationFamily = async (
   ]);
 
   const totalDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+    ? interestBearingDebt(balanceSheet)
     : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;

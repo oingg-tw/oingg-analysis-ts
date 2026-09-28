@@ -54,3 +54,23 @@ export const pickEquityWithFieldKey = (record: EquityRecord | null): PickedField
   if (record.totalEquity !== null) return { value: record.totalEquity, fieldKey: 'equity' };
   return { value: null, fieldKey: null };
 };
+
+// 2026-09-28 有息負債（使用者拍板「共用負債補到期」）：短期借款＋應付短期票券＋一年內到期長期負債＋非流動公司債＋長期借款。
+// 之前只有短期借款＋非流動公司債＋長期借款三項，漏了一年內到期的長期借款與公司債（1301 台塑 115Q2 少算 128.7 億）與
+// 應付短期票券（台塑集團 1301/1303/1326 相當於短期借款的 35~62%）。roic、RNOA、負債權益比、負債資本比、淨負債對 EBITDA、
+// EV 系列、Greenblatt 盈餘殖利率共用這一個定義；longTermDebtToNetCurrentAssets 刻意不用（一年內到期的部分已在流動負債、
+// 算進淨流動資產，再加會重複計算）。個別科目缺漏視為 0，跟既有三項同一慣例。
+export interface InterestBearingDebtRecord {
+  shortTermBorrowings: bigint | null;
+  shortTermNotesAndBillsPayable?: bigint | null;
+  currentPortionOfLongTermLiabilities?: bigint | null;
+  bondsPayable: bigint | null;
+  longTermBorrowings: bigint | null;
+}
+
+export const interestBearingDebt = (record: InterestBearingDebtRecord): bigint =>
+  (record.shortTermBorrowings ?? 0n) +
+  (record.shortTermNotesAndBillsPayable ?? 0n) +
+  (record.currentPortionOfLongTermLiabilities ?? 0n) +
+  (record.bondsPayable ?? 0n) +
+  (record.longTermBorrowings ?? 0n);

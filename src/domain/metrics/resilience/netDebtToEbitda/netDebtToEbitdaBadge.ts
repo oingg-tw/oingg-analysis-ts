@@ -10,8 +10,8 @@ import type { MetricBadge } from '@/domain/metrics/metricDefinitionSpec';
 // 跟已上線的 interestCoverageBadge（Damodaran 合成信評表）同一種「機構分級表」性質，門檻選最好一級（minimal）
 // 的上緣 1.5x，warning 選最差一級（highly leveraged）的下緣 5x——出處本身就給了兩條線，符合 threshold.warning
 // 「只有出處寫了低端數字才填」的規則。中華信評（Taiwan Ratings）是 S&P 子公司，對台灣發行人適用同一套準則。
-// 已知落差：S&P 的 debt 是調整後負債（租賃、退休金加回、只扣 surplus cash），本站 netDebtToEbitda 是有息負債減
-// 全部現金，數字偏樂觀；Table 17 是 standard volatility 表，低波動產業（Table 18/19）門檻更寬（minimal < 1.75/< 2）。
+// 已知落差：2026-09-28 起 netDebtToEbitda 的負債照 S&P 調整後負債（有息負債補上一年內到期與應付短期票券、加回租賃與稅後退休金缺口），
+// 唯一做不到的是只扣 surplus cash（分析師個案判斷，財報沒有欄位），仍扣全部現金，數字略偏樂觀；Table 17 是 standard volatility 表，低波動產業（Table 18/19）門檻更寬（minimal < 1.75/< 2）。
 // 負 EBITDA 的公司自 formulaVersion 2 起不計算（見 computeNetDebtToEbitda.ts），不會以負倍數誤判通過。
 export const netDebtToEbitdaBadge: MetricBadge = {
   name: '淨負債對息稅折舊攤銷前盈餘比信評最低槓桿級',
@@ -22,8 +22,9 @@ export const netDebtToEbitdaBadge: MetricBadge = {
   detail:
     'S&P Global Ratings 的企業信評準則公開一張「現金流／槓桿分級表」，把 Debt/EBITDA 分成六級：低於 1.5 倍是最低' +
     '槓桿（minimal）、1.5–2 倍為 modest、2–3 倍為 intermediate、3–4 倍為 significant、4–5 倍為 aggressive、超過 5 倍' +
-    '是高槓桿（highly leveraged）。這張表是信評機構評估財務風險的標準工具之一，不是本站或任何機構給這家公司的' +
-    '實際信用評等。本站的淨負債是有息負債減去全部現金及約當現金，比 S&P 的調整後負債口徑寬鬆，倍數會比信評口徑小；' +
+    '是高槓桿（highly leveraged）。這張表是信評機構評估財務風險的標準工具之一，不是任何機構給這家公司的' +
+    '實際信用評等。淨負債照 S&P 的調整後負債計算（有息負債加上租賃負債與扣稅後的退休金提撥不足），但扣除的是全部現金及約當現金，' +
+    'S&P 只扣營運用不到的剩餘現金，所以現金多的公司倍數會比信評口徑小；' +
     '淨現金公司（淨負債為負）的倍數為負，同樣落在最低槓桿一級。',
   timeframe: 'TTM',
   threshold: {

@@ -1,10 +1,11 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
+import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
 import { calculateNopat } from './computeNissimPenmanRnoa';
 
 // 2026-09-13 使用者要求擴大稽核鏈——nissimPenmanRnoa(TTM) = 近四季 NOPAT 加總 / 本季期末
@@ -28,12 +29,12 @@ export const getNissimPenmanRnoaProvenance = async (query: QuarterlyMetricQuery,
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const interestBearingDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+  const debt = balanceSheet
+    ? interestBearingDebt(balanceSheet)
     : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const equity = pickEquity(balanceSheet);
-  const nfo = interestBearingDebt !== null && cashAndEquivalents !== null ? interestBearingDebt - cashAndEquivalents : null;
+  const nfo = debt !== null && cashAndEquivalents !== null ? debt - cashAndEquivalents : null;
   const noa = nfo !== null && equity.value !== null ? equity.value + nfo : null;
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
@@ -58,6 +59,7 @@ export const getNissimPenmanRnoaProvenance = async (query: QuarterlyMetricQuery,
     { role: '本季期末有息負債—短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.shortTermBorrowings ?? null) },
     { role: '本季期末有息負債—應付公司債（非流動部分）', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'noncurrent_portion_of_bonds_issued', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.bondsPayable ?? null) },
     { role: '本季期末有息負債—長期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'longterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.longTermBorrowings ?? null) },
+    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
     { role: '本季期末現金及約當現金', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'cash_and_cash_equivalents', sourceDescription: null, value: toProvenanceEntryValue(cashAndEquivalents) },
     { role: '本季期末權益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {

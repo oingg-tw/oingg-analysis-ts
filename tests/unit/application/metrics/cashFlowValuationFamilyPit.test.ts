@@ -33,7 +33,7 @@ test('cashFlowValuationFamilyPit: capexToOcfRatio 應該是正數（絕對值）
   // 以比率看一定 < 1——用這個量級守住尺度，不釘死數字。
   const croic = await replay.findLatest({ symbol: '2330', metricCode: 'croic', periodType: 'TTM', fiscalYear: 2026, fiscalQuarter: 2 });
   assert.ok(croic && croic.value !== null && Math.abs(Number(croic.value)) > 1, `croic 應該是百分比尺度，收到 ${croic?.value}`);
-  assert.equal(croic!.formulaVersion, 2);
+  assert.equal(croic!.formulaVersion, 3); // 2026-09-28 v3：有息負債補上一年內到期長期負債與應付短期票券
 });
 
 test('cashFlowValuationFamilyPit: 9999（查無資料的公司）應該優雅降級，全部 skipped_no_quarter', async () => {

@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquityValue as pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquityValue as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -13,7 +13,8 @@ import { averageOf, resolveAverageBalances } from '../../shared/averageBalances'
 // 2026-09-22 formulaVersion 2：NOA 從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
 // 2026-09-28 formulaVersion 3：虧損季（稅前淨利 ≤ 0）稅率當 0，不再整筆 null——跟 roic v3 同一個修正（使用者拍板「比照 ROIC 改」）。
 // 115Q2 近四季 1,161/2,336 家（50%）是 null 且全標 insufficient_history，單季則誤標 missing_input。
-export const RNOA_FORMULA_VERSION = 3;
+// 2026-09-28 formulaVersion 4：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+export const RNOA_FORMULA_VERSION = 4;
 
 // 這份檔案是 src/domainMetrics/nissimPenmanRnoa.ts 的獨立重新實作，只遷移 RNOA 本身
 // （= NOPAT / NOA），不遷移 FLEV/NBC/SPREAD/reconstructedRoe（模型內部機制，不是獨立
@@ -64,18 +65,18 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
   const [balanceSheet, incomeStatement] = await Promise.all([deps.statements.getBalanceSheet(key), deps.statements.getIncomeStatement(key)]);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
 
-  const interestBearingDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+  const debt = balanceSheet
+    ? interestBearingDebt(balanceSheet)
     : null;
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const equity = pickEquity(balanceSheet);
-  const nfo = interestBearingDebt !== null && cashAndEquivalents !== null ? interestBearingDebt - cashAndEquivalents : null;
+  const nfo = debt !== null && cashAndEquivalents !== null ? debt - cashAndEquivalents : null;
   const noa = nfo !== null && equity !== null ? equity + nfo : null;
 
   const balances = await resolveAverageBalances({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const pickNoa = (bs: NonNullable<typeof balanceSheet>): bigint | null => {
     const e = pickEquity(bs);
-    return e !== null && bs.cashAndEquivalents !== null ? e + (bs.shortTermBorrowings ?? 0n) + (bs.bondsPayable ?? 0n) + (bs.longTermBorrowings ?? 0n) - bs.cashAndEquivalents : null;
+    return e !== null && bs.cashAndEquivalents !== null ? e + interestBearingDebt(bs) - bs.cashAndEquivalents : null;
   };
   const noaAvgQ = averageOf(balances, pickNoa, 'q');
   const noaAvgTtm = averageOf(balances, pickNoa, 'ttm');

@@ -1,12 +1,15 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquity } from '@/domain/metrics/shared/pickers';
+import { pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
-import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
+import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
+
+// 2026-09-28 formulaVersion 2：有息負債補上一年內到期長期負債與應付短期票券（使用者拍板「共用負債補到期」，見 domain/metrics/shared/pickers.ts interestBearingDebt）。
+const DE_RATIO_FORMULA_VERSION = 2;
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 這份檔案是 src/domainMetrics/deRatio.ts 的獨立重新實作。純資產負債表時點快照，只有 Q
@@ -37,7 +40,7 @@ export const computeDeRatio = async (query: QuarterlyMetricQuery, deps: DeRatioD
   const reportDate = balanceSheet?.reportDate ?? null;
 
   const totalDebt = balanceSheet
-    ? (balanceSheet.shortTermBorrowings ?? 0n) + (balanceSheet.bondsPayable ?? 0n) + (balanceSheet.longTermBorrowings ?? 0n)
+    ? interestBearingDebt(balanceSheet)
     : null;
 
   const deRatioPct = totalDebt !== null && equity.value !== null ? toPercent(totalDebt, equity.value) : null;
@@ -64,5 +67,5 @@ export const computeDeRatio = async (query: QuarterlyMetricQuery, deps: DeRatioD
     });
   }
 
-  return { symbol, rocYear: year, season, slots: { q } };
+  return { symbol, rocYear: year, season, slots: withFormulaVersion({ q }, DE_RATIO_FORMULA_VERSION) };
 };

@@ -20,7 +20,7 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM'],
-  dependsOn: [
+  dependsOn: ['current_cp_issued_and_portion', 'longterm_liabilities_current_portion', 
     'operatingIncome',
     'profit_loss_before_tax',
     'income_tax_expense_continuing_operations',
@@ -31,5 +31,5 @@ export const nissimPenmanRnoaDefinition: MetricDefinitionSpec = {
     'equity_attributable_to_owners_of_parent',
     'equity',
   ],
-  currentFormulaVersion: 3,
+  currentFormulaVersion: 4,
 };

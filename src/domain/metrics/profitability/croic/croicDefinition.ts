@@ -15,7 +15,7 @@ export const croicDefinition: MetricDefinitionSpec = {
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['TTM'],
-  dependsOn: [
+  dependsOn: ['current_cp_issued_and_portion', 'longterm_liabilities_current_portion', 
     'shortterm_borrowings',
     'noncurrent_portion_of_bonds_issued',
     'longterm_borrowings',
@@ -25,5 +25,5 @@ export const croicDefinition: MetricDefinitionSpec = {
     'cash_flows_from_used_in_operating_activities',
     'purchase_of_ppe_investing',
   ],
-  currentFormulaVersion: 2,
+  currentFormulaVersion: 3,
 };

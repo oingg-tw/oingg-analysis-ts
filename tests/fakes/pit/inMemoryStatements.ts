@@ -84,6 +84,11 @@ const emptyBalance = (reportDate: Date): BalanceSheetFields => ({
   bondsPayable: null,
   shortTermBorrowings: null,
   preferredStockCapital: null,
+  shortTermNotesAndBillsPayable: null,
+  currentPortionOfLongTermLiabilities: null,
+  currentLeaseLiabilities: null,
+  noncurrentLeaseLiabilities: null,
+  netDefinedBenefitLiability: null,
 });
 
 const emptyCashFlow = (reportDate: Date): CashFlowFields => ({
