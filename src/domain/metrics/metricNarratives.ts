@@ -157,7 +157,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   rdIntensity: {
     description: '研發費用率是研發費用除以營收的百分比，代表公司把多少比例的營收投入研發。',
-    limitations: '研發費用只存在 XBRL 損益表寬表，查無整列資料時本站不猜測是「真的沒有研發費用」還是「還沒回填」，一律視為缺漏不提供數值；不同產業研發密度天生差距極大（半導體、製藥高，傳產、零售低），只能跟同業比較。',
+    limitations: '研發費用取自損益表的研發費用科目，查無該季資料時本站不猜測是「真的沒有研發費用」還是「還沒回填」，一律視為缺漏不提供數值；不同產業研發密度天生差距極大（半導體、製藥高，傳產、零售低），只能跟同業比較。',
     misreadings: '研發費用率高不代表研發有成效，要搭配後續的營收/毛利成長才看得出轉換效率；單季數字可能因為個別大型研發計畫認列時點而波動，看趨勢建議用近四季口徑。',
   },
   sgr: {
@@ -239,7 +239,7 @@ export const metricNarrativeRegistry: Record<string, MetricNarrative> = {
   },
   bankCet1Ratio: {
     description: '普通股權益第一類資本比率（CET1）是品質最高的自有資本（普通股股本、資本公積、保留盈餘）除以風險性資產，是 Basel III 三個資本比率中最嚴格的一個。',
-    limitations: '只有銀行與金控有值，半年揭露一次；本站直接讀取 mops-ts 已經算好的比率，不自己重算；4.5% 是 Basel III 框架的最低線，各國實際要求會疊加緩衝。',
+    limitations: '只有銀行與金控有值，半年揭露一次；數字直接取自銀行在財報中揭露的比率，不重新計算；4.5% 是 Basel III 框架的最低線，各國實際要求會疊加緩衝。',
     misreadings: '跟資本適足率（總資本）與第一類資本比率是三個不同分母口徑的數字，不能互換；CET1 比率下降可能是風險性資產成長（放款增加）而不是資本減少。',
   },
   bankTier1Ratio: {
