@@ -1,6 +1,7 @@
 import type { AppDeps } from '@/application/deps';
 import type { DividendDistributionRow } from '@/application/ports/dividendEvents';
 import { getMetricHistory } from '@/application/metrics/shared/queryMetricHistory';
+import { earningsPayoutRatio } from '@/domain/financials/earningsPayoutRatio';
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 
 // 2026-09-19 應 web-nuxt SEO 個股頁需求新增——「台積電 股利」這類頁面的核心表格：每個「股利所屬年度」
@@ -153,7 +154,7 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
         exRightsDate: latestDate(yearEvents.map((e) => e.exRightsDate)),
         paymentDate: latestDate(yearEvents.map((e) => e.paymentDate)),
         eps,
-        payoutRatio: eps !== null && eps > 0 ? round2((cashDividendFromEarnings / eps) * 100) : null,
+        payoutRatio: earningsPayoutRatio(cashDividendFromEarnings, eps),
         yieldAtExDate: yieldComplete ? round2(cashEvents.reduce((s, e) => s + e.yieldAtExDate!, 0)) : null,
         knowledgeDate: latestDate(yearEvents.map((e) => e.announcementDate)),
         events: yearEvents,

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-25T15:37:59.308Z",
+  "recordedAt": "2026-09-28T03:21:27.041Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -25,8 +25,636 @@
       },
       "source": "announcement"
     },
+    "annualReports.getAnnualIncomeStatement([{\"dataType\":\"2\",\"rocYear\":114,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\"}])": {
+      "adminExpenses": {
+        "$bigint": "82304290"
+      },
+      "basicEps": 66.26,
+      "equityMethodIncome": {
+        "$bigint": "5496594"
+      },
+      "expectedCreditLoss": null,
+      "financeCosts": {
+        "$bigint": "12370387"
+      },
+      "grossProfit": {
+        "$bigint": "2281293979"
+      },
+      "incomeTaxExpense": {
+        "$bigint": "326266060"
+      },
+      "interestIncome": {
+        "$bigint": "105739081"
+      },
+      "netIncome": {
+        "$bigint": "1715396780"
+      },
+      "netIncomeAttributableToParent": {
+        "$bigint": "1717882627"
+      },
+      "netOtherIncomeExpenses": {
+        "$bigint": "447328"
+      },
+      "operatingCost": {
+        "$bigint": "1527760293"
+      },
+      "operatingExpense": {
+        "$bigint": "345649630"
+      },
+      "operatingIncome": {
+        "$bigint": "1936091677"
+      },
+      "operatingRevenue": {
+        "$bigint": "3809054272"
+      },
+      "otherGainsLosses": {
+        "$bigint": "6114146"
+      },
+      "otherIncome": {
+        "$bigint": "591729"
+      },
+      "profitBeforeTax": {
+        "$bigint": "2041662840"
+      },
+      "reportDate": {
+        "$date": "2025-12-31T00:00:00.000Z"
+      },
+      "researchAndDevelopmentExpense": {
+        "$bigint": "246427264"
+      },
+      "sellingExpenses": {
+        "$bigint": "16918076"
+      }
+    },
+    "dividendEvents.listDividendDistributionRows([\"2330\"])": [
+      {
+        "announcementDate": {
+          "$date": "2019-06-06T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 8,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2019-07-18T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2019-06-24T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": null,
+        "rocFiscalYear": 107,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2019-07-09T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2019-10-17T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2019-09-19T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 108,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2019-08-14T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2020-01-16T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2019-12-19T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 108,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2019-11-14T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2020-04-16T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2020-03-19T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 108,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2020-02-14T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2020-07-16T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2020-06-18T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 108,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2020-05-14T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2020-10-15T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2020-09-17T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 109,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2020-08-17T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2021-01-14T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2020-12-17T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 109,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2020-11-12T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2021-04-15T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2021-03-17T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 109,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2021-03-22T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.5,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2021-07-15T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2021-06-17T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 109,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2021-06-16T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2021-10-14T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2021-09-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 110,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2021-08-13T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2022-01-13T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2021-12-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 110,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2022-03-01T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2022-04-14T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2022-03-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 110,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2022-05-18T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2022-07-14T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2022-06-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 110,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2022-08-30T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2022-10-13T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2022-09-15T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 111,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2022-11-30T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.75,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2023-01-12T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2022-12-15T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 111,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2023-03-01T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.74982072,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2023-04-13T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2023-03-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 111,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2023-05-31T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 2.74982072,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2023-07-13T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2023-06-15T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 111,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2023-08-30T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 3,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2023-10-12T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2023-09-14T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 112,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2023-11-29T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 3,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2024-01-11T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2023-12-14T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 112,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2024-03-01T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 3.49978969,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2024-04-11T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2024-03-18T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 112,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2024-05-28T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 3.49978969,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2024-07-11T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2024-06-13T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 112,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2024-08-28T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 4.0001382,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2024-10-09T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2024-09-12T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 113,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2024-11-27T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 3.99963706,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2025-01-09T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2024-12-12T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 113,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2025-03-03T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 4.50002042,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2025-04-10T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2025-03-18T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 113,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2025-05-28T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 4.50002042,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2025-07-10T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2025-06-12T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 113,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2025-09-01T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 5.00001754,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2025-10-09T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2025-09-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 114,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2025-11-26T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 5.00001118,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2026-01-08T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2025-12-11T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 2,
+        "rocFiscalYear": 114,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2026-03-02T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 6.00003573,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2026-04-09T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2026-03-17T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 3,
+        "rocFiscalYear": 114,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2026-05-27T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 6.00003573,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2026-07-09T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2026-06-11T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 4,
+        "rocFiscalYear": 114,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      },
+      {
+        "announcementDate": {
+          "$date": "2026-09-01T00:00:00.000Z"
+        },
+        "cashDividendFromEarnings": 7.00000137,
+        "cashDividendFromLegalReserveAndCapitalSurplus": null,
+        "cashDividendPaymentDate": {
+          "$date": "2026-10-08T00:00:00.000Z"
+        },
+        "exDividendDate": {
+          "$date": "2026-09-16T00:00:00.000Z"
+        },
+        "exRightsDate": null,
+        "fiscalQuarter": 1,
+        "rocFiscalYear": 115,
+        "stockDividendFromEarnings": null,
+        "stockDividendFromLegalReserveAndCapitalSurplus": null
+      }
+    ],
     "quarters.latestQuarterWith([\"cashFlowStatement\",\"9999\",\"2\",\"\"])": null,
     "quarters.latestQuarterWith([\"incomeStatement\",\"9999\",\"2\",\"\"])": null,
+    "shares.getOutstandingCommonShares([\"2330\",{\"$date\":\"2025-12-31T00:00:00.000Z\"}])": {
+      "effectiveMonth": 11,
+      "effectiveYear": 2025,
+      "issuedShares": {
+        "$bigint": "25932524521"
+      },
+      "outstandingCommonShares": {
+        "$bigint": "25932524521"
+      },
+      "preferredCapitalThousands": {
+        "$bigint": "0"
+      },
+      "preferredClaimThousands": {
+        "$bigint": "0"
+      },
+      "preferredDividendsTtmThousands": {
+        "$bigint": "0"
+      },
+      "preferredShares": {
+        "$bigint": "0"
+      },
+      "treasuryShares": {
+        "$bigint": "0"
+      }
+    },
     "statements.getCashFlowStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2330\",\"year\":115}])": {
       "amortization": {
         "$bigint": "2137832"

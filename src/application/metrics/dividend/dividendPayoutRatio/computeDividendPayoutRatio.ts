@@ -8,6 +8,8 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import type { CashFlowFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
+import { resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+import { cashDividendFromEarningsPerShare, earningsPayoutRatio } from '@/domain/financials/earningsPayoutRatio';
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-27 formulaVersion 2：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
@@ -114,16 +116,17 @@ export const resolveDividendPayoutRatioInputs = async (
 
 
 export type DividendPayoutRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type DividendPayoutRatioComputeDeps = DividendPayoutRatioDeps & Pick<PitDeps, 'annualReports' | 'shares' | 'dividendEvents'>;
 
-export type DividendPayoutRatioComputationBatch = ComputationBatch<'ttm'>;
+export type DividendPayoutRatioComputationBatch = ComputationBatch<'ttm' | 'fy'>;
 
 export const computeDividendPayoutRatio = async (
   query: QuarterlyMetricQuery,
-  deps: DividendPayoutRatioDeps
+  deps: DividendPayoutRatioComputeDeps
 ): Promise<DividendPayoutRatioComputationBatch> => {
   const resolution = await resolveDividendPayoutRatioInputs(query, deps);
   if (!resolution) {
-    return noQuarterBatch(query.symbol, ['ttm']);
+    return noQuarterBatch(query.symbol, ['ttm', 'fy']);
   }
 
   const { symbol, rocYear, season, fiscalYear, fiscalQuarter, ttmComplete, payoutRatioTtm, ttmNullReason, mainAnchor, ttmAnchor } = resolution;
@@ -156,5 +159,39 @@ export const computeDividendPayoutRatio = async (
     ttm = { action: 'skipped_no_knowledge_date' };
   }
 
-  return { symbol, rocYear, season, slots: withFormulaVersion({ ttm }, DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION) };
+  const fy = await resolveEarningsPayoutRatioFy(query, Number(rocYear), fiscalQuarter, deps);
+  return { symbol, rocYear, season, slots: withFormulaVersion({ ttm, fy }, DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION) };
+};
+
+// 2026-09-28 FY：使用者點名「盈餘發放率這一頁應該用 FY 而不是近四季」——近四季把「公司在獲利下滑那年提高配息」
+// 變成分母縮小的假訊號（2330 2023：近四季 27.94% → 34.79% 是 EPS 從 39.36 掉到 32.33 撐出來的；按盈餘所屬年度是
+// 28.06% → 40.20%，配息從 11 元拉到 13 元）。口徑跟股利歷史頁的 payoutRatio 完全相同（domain/financials/earningsPayoutRatio.ts）：
+// 該盈餘所屬年度的盈餘分配現金股利 ÷ 年報基本每股盈餘。座標、哪一年照 shared/annualReportSlot.ts（一年一列，第四季座標）；
+// knowledge date = 年報公告日與該年度最後一次股利分派公告日取晚者（兩個數字都公開之後才算得出來）。
+// 該年度還沒有任何分派公告（例如年報已出、董事會還沒決議）→ missing_input：分不出「不配息」還是「還沒公告」，不硬寫 0。
+const resolveEarningsPayoutRatioFy = async (query: QuarterlyMetricQuery, rocYear: number, season: number, deps: DividendPayoutRatioComputeDeps): Promise<ComputationSlot> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+  const annual = await resolveAnnualReportContext({ symbol, rocYear, season, dataType, subsidiaryCompanyId }, deps);
+  if (!annual) return { action: 'skipped_no_quarter' };
+  if (!annual.anchor) return { action: 'skipped_no_knowledge_date' };
+  const annualRocYear = annual.fiscalYear - 1911;
+  const rows = (await deps.dividendEvents.listDividendDistributionRows(symbol)).filter((row) => row.rocFiscalYear === annualRocYear);
+  const eps = annual.annual.basicEps;
+  const value = rows.length === 0 ? null : earningsPayoutRatio(cashDividendFromEarningsPerShare(rows), eps);
+  const nullReason: MetricNullReason | null = value !== null ? null : rows.length === 0 || eps === null ? 'missing_input' : 'zero_or_negative_denominator';
+  const announced = rows.map((row) => row.announcementDate).filter((d): d is Date => d !== null);
+  const knowledgeDate = [annual.anchor.knowledgeDate, ...announced].reduce((latest, d) => (d > latest ? d : latest));
+  return computation({
+    symbol,
+    metricCode: 'dividendPayoutRatio',
+    fiscalYear: annual.fiscalYear,
+    fiscalQuarter: 4,
+    dataType,
+    subsidiaryCompanyId,
+    ...periodTypeGroup('FY'),
+    value,
+    nullReason,
+    knowledgeDate,
+    knowledgeDateIsFallback: annual.anchor.isFallback,
+  });
 };
