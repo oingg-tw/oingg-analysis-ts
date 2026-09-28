@@ -22,7 +22,7 @@
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { BankRegulatoryKey } from './bankRegulatoryXbrl';
 
-import type { BankIncomeStatementFields } from '@/application/ports/financialStatements';
+import type { BankIncomeStatementFields, BankOperatingExpenseFields } from '@/application/ports/financialStatements';
 
 // 回傳列型別 2026-09-17 Phase 3 搬到 application/ports/financialStatements.ts 的 BankIncomeStatementFields（port 的 DTO，
 // 各欄位對應的 XBRL 欄位說明在那裡），這裡沿用舊名 re-export。
@@ -75,4 +75,38 @@ export const getLatestQuarterWithBankIncomeStatement = async (symbol: string, da
     ORDER BY year DESC, quarter DESC LIMIT 1
   `;
   return rows[0] ?? null;
+};
+
+// 2026-09-28 營業費用三分拆（見 ports/financialStatements.ts BankOperatingExpenseFields）。不用 net_income_loss_of_interest 當「有申報」
+// 判斷——金控在這張表那一欄是 null（getBankIncomeStatementQuarter 因此對 13 家金控一律回 null），這裡改看三個成分是否至少一個有值。
+// 其他業務及管理費用：銀行在 bank_income_statement_detail_xbrl.general_and_administrative_expense，金控在
+// financial_holding_income_statement_detail_xbrl.other_general_and_administrative_expenses（mops-ts 2026-09-28 確認）。
+interface RawBankOperatingExpenseRow {
+  report_date: Date;
+  employee_benefits: bigint | null;
+  depreciation_amortisation: bigint | null;
+  other_general_administrative: bigint | null;
+}
+
+export const getBankOperatingExpenseQuarter = async (key: BankRegulatoryKey): Promise<BankOperatingExpenseFields | null> => {
+  const rows = await mopsExportPrisma.$queryRaw<RawBankOperatingExpenseRow[]>`
+    SELECT b.report_date,
+           b.employee_benefits_expense_quarter AS employee_benefits,
+           b.depreciation_and_amortisation_expense_quarter AS depreciation_amortisation,
+           COALESCE(b.general_and_administrative_expense_quarter, f.other_general_and_administrative_expenses_quarter) AS other_general_administrative
+    FROM "export"."bank_income_statement_detail_xbrl" b
+    LEFT JOIN "export"."financial_holding_income_statement_detail_xbrl" f
+      ON f.symbol = b.symbol AND f.year = b.year AND f.quarter = b.quarter AND f.data_type = b.data_type AND f.subsidiary_company_id = b.subsidiary_company_id
+    WHERE b.symbol = ${key.symbol} AND b.year = ${key.year} AND b.quarter = ${key.quarter}
+      AND b.data_type = ${key.dataType} AND b.subsidiary_company_id = ${key.subsidiaryCompanyId}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row || (row.employee_benefits === null && row.depreciation_amortisation === null && row.other_general_administrative === null)) return null;
+  return {
+    reportDate: row.report_date,
+    employeeBenefits: row.employee_benefits,
+    depreciationAmortisation: row.depreciation_amortisation,
+    otherGeneralAdministrative: row.other_general_administrative,
+  };
 };

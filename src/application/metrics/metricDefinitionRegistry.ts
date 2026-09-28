@@ -148,6 +148,9 @@ import { bankTier1RatioDefinition } from '@/domain/metrics/resilience/bankTier1R
 import { bankNetInterestIncomePerShareDefinition } from '@/domain/metrics/profitability/bankNetInterestIncomePerShare/bankNetInterestIncomePerShareDefinition';
 import { bankNetNonInterestIncomePerShareDefinition } from '@/domain/metrics/profitability/bankNetNonInterestIncomePerShare/bankNetNonInterestIncomePerShareDefinition';
 import { bankBadDebtProvisionPerShareDefinition } from '@/domain/metrics/profitability/bankBadDebtProvisionPerShare/bankBadDebtProvisionPerShareDefinition';
+import { bankEmployeeBenefitsExpensePerShareDefinition } from '@/domain/metrics/profitability/bankEmployeeBenefitsExpensePerShare/bankEmployeeBenefitsExpensePerShareDefinition';
+import { bankDepreciationAmortisationExpensePerShareDefinition } from '@/domain/metrics/profitability/bankDepreciationAmortisationExpensePerShare/bankDepreciationAmortisationExpensePerShareDefinition';
+import { bankOtherGeneralAdministrativeExpensePerShareDefinition } from '@/domain/metrics/profitability/bankOtherGeneralAdministrativeExpensePerShare/bankOtherGeneralAdministrativeExpensePerShareDefinition';
 import { bankOtherOperatingExpensePerShareDefinition } from '@/domain/metrics/profitability/bankOtherOperatingExpensePerShare/bankOtherOperatingExpensePerShareDefinition';
 import { exchangePeRatioDefinition } from '@/domain/metrics/valuation/exchangePeRatio/exchangePeRatioDefinition';
 import { exchangePbRatioDefinition } from '@/domain/metrics/valuation/exchangePbRatio/exchangePbRatioDefinition';
@@ -318,6 +321,9 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   bankNetInterestIncomePerShare: bankNetInterestIncomePerShareDefinition,
   bankNetNonInterestIncomePerShare: bankNetNonInterestIncomePerShareDefinition,
   bankBadDebtProvisionPerShare: bankBadDebtProvisionPerShareDefinition,
+  bankEmployeeBenefitsExpensePerShare: bankEmployeeBenefitsExpensePerShareDefinition,
+  bankDepreciationAmortisationExpensePerShare: bankDepreciationAmortisationExpensePerShareDefinition,
+  bankOtherGeneralAdministrativeExpensePerShare: bankOtherGeneralAdministrativeExpensePerShareDefinition,
   bankOtherOperatingExpensePerShare: bankOtherOperatingExpensePerShareDefinition,
   exchangePeRatio: exchangePeRatioDefinition,
   exchangePbRatio: exchangePbRatioDefinition,

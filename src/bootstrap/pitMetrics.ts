@@ -35,6 +35,7 @@ import { computeThreeMarginsRising } from '@/application/metrics/growth/threeMar
 import { computeEarningsToRecordHigh } from '@/application/metrics/growth/earningsToRecordHigh/computeEarningsToRecordHigh';
 import { computeSue } from '@/application/metrics/growth/sue/computeSue';
 import { computeBankIncomeWaterfall } from '@/application/metrics/profitability/bankIncomeWaterfall/computeBankIncomeWaterfall';
+import { computeBankOperatingExpenseBreakdown } from '@/application/metrics/profitability/bankOperatingExpenseBreakdown/computeBankOperatingExpenseBreakdown';
 import { computeCroci } from '@/application/metrics/profitability/croci/computeCroci';
 import { computeEps } from '@/application/metrics/profitability/eps/computeEps';
 import { computeFamaFrenchOperatingProfitability } from '@/application/metrics/profitability/famaFrenchOperatingProfitability/computeFamaFrenchOperatingProfitability';
@@ -167,6 +168,7 @@ export const computeAndWriteThreeMarginsRisingPit = runPit(computeThreeMarginsRi
 export const computeAndWriteEarningsToRecordHighPit = runPit(computeEarningsToRecordHigh);
 export const computeAndWriteSuePit = runPit(computeSue);
 export const computeAndWriteBankIncomeWaterfallPit = runPit(computeBankIncomeWaterfall);
+export const computeAndWriteBankOperatingExpenseBreakdownPit = runPit(computeBankOperatingExpenseBreakdown);
 export const computeAndWriteCrociPit = runPit(computeCroci);
 export const computeAndWriteEpsPit = runPit(computeEps);
 export const computeAndWriteFamaFrenchOperatingProfitabilityPit = runPit(computeFamaFrenchOperatingProfitability);

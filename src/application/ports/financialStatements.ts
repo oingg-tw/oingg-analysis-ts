@@ -125,6 +125,20 @@ export interface BankIncomeStatementFields {
   profitBeforeTax: bigint | null; // 稅前淨利，跟一般三大表（xbrl_three_statements_long）的 profit_loss_before_tax 是同一份文件的同一個數字，可交叉驗證
 }
 
+// 2026-09-28 銀行／金控營業費用三分拆（使用者：「做」）：營業費用 = 員工福利 + 折舊及攤銷 + 其他業務及管理費用
+// （taxonomy 就這 3 個子科目，mops-ts 實測 115Q2 20 家逐家差額 0；單季與累計各自閉合）。一般業、保險、券商沒有這組科目。
+// 第三項銀行與金控在兩張不同的表、欄位名不同，repository 內 coalesce——只接銀行表會讓 13 家金控缺第三塊（現象像資料不全而非接錯表）。
+export interface BankOperatingExpenseFields {
+  reportDate: Date;
+  employeeBenefits: bigint | null; // 員工福利費用（單季）
+  depreciationAmortisation: bigint | null; // 折舊及攤銷費用（單季）
+  otherGeneralAdministrative: bigint | null; // 其他業務及管理費用（單季；銀行表或金控表）
+}
+
+export interface BankOperatingExpensePort {
+  getBankOperatingExpense(key: QuarterlyKey): Promise<BankOperatingExpenseFields | null>;
+}
+
 export interface BankAssetQualityPort {
   getBankAssetQuality(key: QuarterlyKey): Promise<BankAssetQualityFields | null>;
 }
@@ -138,6 +152,7 @@ export interface BankIncomeStatementPort {
 }
 
 export type FinancialStatementsPort = IncomeStatementPort &
+  BankOperatingExpensePort &
   BalanceSheetPort &
   CashFlowStatementPort &
   InsuranceIncomeStatementPort &

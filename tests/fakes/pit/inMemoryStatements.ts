@@ -3,6 +3,7 @@ import type {
   BankAssetQualityFields,
   BankCapitalAdequacyFields,
   BankIncomeStatementFields,
+  BankOperatingExpenseFields,
   CashFlowFields,
   FinancialStatementsPort,
   IncomeStatementFields,
@@ -26,6 +27,7 @@ export interface QuarterStatementSeed {
   bankAssetQuality?: Partial<BankAssetQualityFields>;
   bankCapitalAdequacy?: Partial<BankCapitalAdequacyFields>;
   bankIncome?: Partial<BankIncomeStatementFields>;
+  bankOperatingExpense?: Partial<BankOperatingExpenseFields>;
 }
 
 export type StatementsSeed = Record<string, Record<string, QuarterStatementSeed>>;
@@ -120,6 +122,8 @@ const emptyBankIncome = (reportDate: Date): BankIncomeStatementFields => ({
   profitBeforeTax: null,
 });
 
+const emptyBankOperatingExpense = (reportDate: Date): BankOperatingExpenseFields => ({ reportDate, employeeBenefits: null, depreciationAmortisation: null, otherGeneralAdministrative: null });
+
 const sourceOf: Record<StatementSource, keyof QuarterStatementSeed> = {
   balanceSheet: 'balance',
   incomeStatement: 'income',
@@ -149,6 +153,7 @@ export const createInMemoryStatements = (seed: StatementsSeed): FinancialStateme
     getBankAssetQuality: async (key) => statement(key, lookup(key)?.bankAssetQuality, emptyBankAssetQuality),
     getBankCapitalAdequacy: async (key) => statement(key, lookup(key)?.bankCapitalAdequacy, emptyBankCapitalAdequacy),
     getBankIncomeStatement: async (key) => statement(key, lookup(key)?.bankIncome, emptyBankIncome),
+    getBankOperatingExpense: async (key) => statement(key, lookup(key)?.bankOperatingExpense, emptyBankOperatingExpense),
     // 該張表有資料的最大 (year, quarter)，任何一季都沒有這張表就 null——跟 XBRL 寬表的
     // `ORDER BY year DESC, quarter DESC LIMIT 1` 同義。
     latestQuarterWith: async (source, symbol) => {

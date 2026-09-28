@@ -12,7 +12,7 @@ import {
   getLatestQuarterWithBankAssetQuality,
   getLatestQuarterWithBankCapitalAdequacy,
 } from './bankRegulatoryXbrl';
-import { getBankIncomeStatementQuarter, getLatestQuarterWithBankIncomeStatement } from './bankIncomeStatementXbrl';
+import { getBankIncomeStatementQuarter, getBankOperatingExpenseQuarter, getLatestQuarterWithBankIncomeStatement } from './bankIncomeStatementXbrl';
 import { getResearchAndDevelopmentExpense } from './incomeStatementXbrlExtra';
 
 // XBRL 寬表/長表對 application/ports 三個財報相關 port 的實作——只是把既有的查詢函式綁到介面的
@@ -26,6 +26,7 @@ export const xbrlFinancialStatements: FinancialStatementsPort = {
   getBankAssetQuality: getBankAssetQualityTotalLoans,
   getBankCapitalAdequacy,
   getBankIncomeStatement: getBankIncomeStatementQuarter,
+  getBankOperatingExpense: getBankOperatingExpenseQuarter,
 };
 
 // 2026-09-11：舊三大表（mopsQuarterlyStatements.ts）已退役，這裡單純查 XBRL 寬表最新一季，
