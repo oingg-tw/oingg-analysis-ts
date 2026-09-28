@@ -1,18 +1,17 @@
 # Cloud Run「服務」——常駐 HTTP API，對應 Dockerfile 預設的 CMD（node dist/src/index.js）。
-# 部署：gcloud run services replace deploy/service.yaml --region=REGION --project=PROJECT_ID
+# 部署：gcloud run services replace deploy/service.yaml --region=asia-southeast1 --project=oingg-analysis
+# 2026-09-28 使用者拍板：專案 oingg-analysis、地區 asia-southeast1（新加坡，跟 Neon 資料庫同區——台灣到資料庫實測每次查詢
+# 約 59 毫秒、一個請求查 10~30 次；台灣使用者只多 bff→analysis 一跳）；只允許授權帳號呼叫（不綁 allUsers，bff-ts 用自己的
+# 服務帳號帶 ID token 呼叫，並照舊帶 X-Api-Key）；執行帳號 oingg-analysis-run 只能讀下面這幾把密鑰。
 #
-# 套用前要填的地方（搜尋 TODO）：
-#   - PROJECT_ID / REGION：你的 GCP 專案代號跟部署地區
-#   - image 那行的完整映像檔路徑（Artifact Registry）
-#   - 每個 secretKeyRef 的 name：對應 Secret Manager 裡實際建立的密鑰名稱，這裡先用
-#     跟 .env 變數名稱一致的命名（DATABASE-URL 等，Secret Manager 名稱不能用底線，
-#     改用連字號），你們自己命名規則不同的話直接改
+# 密鑰名稱跟 .env 變數同名、底線改連字號（Secret Manager 名稱不能用底線）；ANALYSIS-DATABASE-URL 指向 PRD 分支。
+# 映像：gcloud builds submit --tag asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest --project=oingg-analysis
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: oingg-analysis-ts
   labels:
-    cloud.googleapis.com/location: REGION # TODO
+    cloud.googleapis.com/location: asia-southeast1
 spec:
   template:
     metadata:
@@ -22,10 +21,11 @@ spec:
         # 啟動要 3~5 秒，正式環境保守抓大一點，避免健康檢查太早判定失敗。
         run.googleapis.com/startup-cpu-boost: 'true'
     spec:
+      serviceAccountName: oingg-analysis-run@oingg-analysis.iam.gserviceaccount.com
       containerConcurrency: 80
       timeoutSeconds: 30
       containers:
-        - image: REGION-docker.pkg.dev/PROJECT_ID/oingg/oingg-analysis-ts:latest # TODO
+        - image: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest
           ports:
             - containerPort: 8080
           # 健康檢查固定打 GET /（src/domains/system/root.ts），不要用 /healthz——
@@ -58,35 +58,28 @@ spec:
               value: --max-old-space-size=768
             - name: NODE_ENV
               value: production
+            # 2026-09-28：正式環境沒有 BFF_API_KEY 會拒絕啟動（src/infrastructure/config.ts）；正式環境另發一把，跟 dev 分開，
+            # bff-ts 的服務帳號被授權直接讀這把密鑰（跨專案），值不經過任何訊息。
+            - name: BFF_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: BFF-API-KEY
+                  key: latest
+            # *_DIRECT_URL 只有 prisma CLI（migrate）用，執行期不讀，2026-09-28 從這裡拿掉，少掛幾把密鑰。
             - name: ANALYSIS_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: ANALYSIS-DATABASE-URL
-                  key: latest
-            - name: ANALYSIS_DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: ANALYSIS-DIRECT-URL
                   key: latest
             - name: MOPS_EXPORT_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: MOPS-EXPORT-DATABASE-URL
                   key: latest
-            - name: MOPS_EXPORT_DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: MOPS-EXPORT-DIRECT-URL
-                  key: latest
             - name: GOV_EXPORT_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: GOV-EXPORT-DATABASE-URL
-                  key: latest
-            - name: GOV_EXPORT_DIRECT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: GOV-EXPORT-DIRECT-URL
                   key: latest
             # tpex-ts/sitca-ts 的 export 連線是 dev/prod 分開兩個變數（見 .env），Cloud Run
             # 上只會用到 _PROD 那組，_DEV 那組不用設。
@@ -101,7 +94,7 @@ spec:
                   name: SITCA-EXPORT-DATABASE-URL-PROD
                   key: latest
             # 2026-09-03 新增：twse-ts 開的獨立 export schema 專案（實體隔離，不是同專案換角色，
-            # 見 prisma/twseExport/schema.prisma 的說明）——TODO：這組 Secret Manager 密鑰還沒建，
+            # 見 prisma/twseExport/schema.prisma 的說明）——2026-09-28 密鑰已建，
             # 部署前要先用 gcloud secrets create 建好，不然 Cloud Run 啟動會因為讀不到密鑰失敗。
             - name: TWSE_EXPORT_DATABASE_URL
               valueFrom:
