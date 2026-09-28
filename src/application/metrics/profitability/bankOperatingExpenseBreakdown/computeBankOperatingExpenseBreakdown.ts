@@ -14,7 +14,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 2026-09-28 銀行／金控營業費用三分拆（使用者：「做」）：營業費用 = 員工福利 + 折舊及攤銷 + 其他業務及管理費用
 // （mops-ts 查 taxonomy：這個母項就只有這 3 個子科目；115Q2 20 家逐家差額 0，單季與累計各自閉合，110Q3 起每季 18~20 家）。
 // 三支加總還原 operatingExpensePerShare（web-nuxt 的營業費用組成圖用同一個恆等式守門）。
-// 只算金融業、而且這一季三個成分至少有一個有值的公司——券商（母項是「支出及費用合計」）、保險、一般業沒有這組科目，
+// 只算金融業、而且這一季有「其他業務及管理費用」的公司（銀行與金控格式才有，判斷理由見下方）——券商（母項是「支出及費用合計」）、保險、一般業沒有這組科目，
 // 整批跳過不寫（跟 bankIncomeWaterfall 一樣「從未寫入」，徽章與前端據此判斷不適用），不寫一堆 missing_input。
 // 資料來源的 coalesce（銀行表 vs 金控表）在 repository（bankIncomeStatementXbrl.ts getBankOperatingExpenseQuarter）。
 export const BANK_OPERATING_EXPENSE_BREAKDOWN_FORMULA_VERSION = 1;
@@ -57,7 +57,10 @@ export const computeBankOperatingExpenseBreakdown = async (
   const rocYear = Number(resolved.year);
   const seasonNum = Number(resolved.season);
   const statement = await deps.statements.getBankOperatingExpense({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  if (!statement) return skippedAll(symbol); // 這一季沒有這組科目（券商、保險，或金融業還沒申報）
+  // 這一季沒有這組科目就整批不寫。判斷看「其他業務及管理費用」而不是三項任一：券商（2855、5864、6005…10 家）也申報員工福利與
+  // 折舊攤銷（通用 IFRS 科目），但它們的母項是「支出及費用合計」、沒有其他業管這一項——2026-09-28 第一次回填用「三項全空才跳過」，
+  // 這 10 家被寫進了員工福利／折舊攤銷，已刪除重跑。其他業管只有銀行與金控格式有。
+  if (!statement || statement.otherGeneralAdministrative === null) return skippedAll(symbol);
 
   const fiscalYear = rocYearToGregorian(rocYear);
   const shares = (await deps.shares.getOutstandingCommonShares(symbol, statement.reportDate))?.outstandingCommonShares ?? null;

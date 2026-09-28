@@ -41,4 +41,7 @@ test('非金融業、或這一季沒有這組科目（券商、保險）→ 整�
   expect(Object.values(general.slots).every(isComputationSkip)).toBe(true);
   const broker = await run({ '2801': { '115Q2': { income: {} } } });
   expect(Object.values(broker.slots).every(isComputationSkip)).toBe(true);
+  // 券商有員工福利與折舊攤銷、沒有其他業管（母項是支出及費用合計）→ 也整批不寫
+  const brokerWithTwo = await run({ '2801': { '115Q2': { income: {}, bankOperatingExpense: { employeeBenefits: 100n, depreciationAmortisation: 10n, otherGeneralAdministrative: null } } } });
+  expect(Object.values(brokerWithTwo.slots).every(isComputationSkip)).toBe(true);
 });
