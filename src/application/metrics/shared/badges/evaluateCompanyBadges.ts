@@ -46,6 +46,9 @@ export interface CompanyBadgeResult {
   totalCount: number | null;
   // 2026-09-22 web-nuxt 要求：門檻分界線對應的指標值（單位同 value），讓「前 20%」可以印成「前 20%（研發密度 ≥ 12.34%）」；
   // 只有 percentileRank 徽章才會填，其餘一律 null。
+  // 2026-09-28 使用者要求（「市值 < NCAV 這邊要加上括弧 NCAV 現在多少」「Higgins 永續成長率警訊也要讓我看出門檻數字」）：
+  // compareAgainstFieldId 徽章（ncav vs marketCap.Q、sgr vs revenueCagr3y.FY）填比較對象那一支的值——就是 passed 判斷當下用的那個
+  // compareValue，期別一定一致（前端自己另外抓可能抓到不同期，印出「數字對不上 passed」的表）。
   thresholdValue: number | null;
 }
 
@@ -217,7 +220,7 @@ export const evaluateCompanyBadges = async (symbol: string, deps: EvaluateCompan
             percentile: ranked.percentile,
             rank: ranked.rank,
             totalCount: ranked.totalCount,
-            thresholdValue: ranked.thresholdValue,
+            thresholdValue: badge.threshold.compareAgainstFieldId ? compareValue : ranked.thresholdValue,
           };
         })
       );

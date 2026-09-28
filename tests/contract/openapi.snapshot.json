@@ -331,7 +331,7 @@
                                   "type": "integer"
                                 },
                                 "thresholdValue": {
-                                  "description": "2026-09-22 新增：只有 percentileRank 徽章才會填，其餘一律 null。門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPercent 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPercent/100）。",
+                                  "description": "2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPercent 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPercent/100）。(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。",
                                   "nullable": true,
                                   "type": "number"
                                 },
