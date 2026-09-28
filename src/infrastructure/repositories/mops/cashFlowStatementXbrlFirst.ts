@@ -35,7 +35,14 @@ export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<
     capitalExpenditures: xbrl.accounts.purchase_of_ppe_investing ?? null,
     depreciation: xbrl.accounts.adj_depreciation_expense ?? null,
     amortization: xbrl.accounts.adj_amortisation_expense ?? null,
-    dividendsPaid: xbrl.accounts.dividends_paid_financing ?? null,
+    // 2026-09-28 股利發放 = 籌資活動＋營業活動兩處相加（mops-ts 補收 dividends_paid_operating 後確認可以相加）：
+    // 11 家（2483、3581、4994、5203、6223…）把支付股利列在營業活動，之前只讀籌資活動，這幾家的股利類指標看不到股利。
+    // 照申報存（壓倒性為負，16,083 負 vs 25 正），**先相加**，呼叫端再對總和取絕對值——不能各自取絕對值（正值若是收回會加錯方向）。
+    // 兩處都缺才是 null（科目 null = 那一季沒發，跟 mops 確認過的語意一致）。
+    dividendsPaid:
+      xbrl.accounts.dividends_paid_financing === undefined && xbrl.accounts.dividends_paid_operating === undefined
+        ? null
+        : (xbrl.accounts.dividends_paid_financing ?? 0n) + (xbrl.accounts.dividends_paid_operating ?? 0n),
     netCashFromInvestingActivities: resolveNetCashFromInvestingActivities(xbrl.accounts),
   };
 };
