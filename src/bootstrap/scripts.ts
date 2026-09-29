@@ -1,4 +1,4 @@
-import { listSymbolsWithIncomeStatement, listBankSymbols, listBankSymbolsForQuarter, listSymbolsWithBankIncomeStatement } from '@/infrastructure/repositories/mops/backfillUniverse';
+import { listSymbolsWithIncomeStatement, listBankSymbols, listBankSymbolsForQuarter, listSymbolsWithBankIncomeStatement, getLatestIncomeStatementQuarter } from '@/infrastructure/repositories/mops/backfillUniverse';
 import { getSymbolsWithDividendDistribution } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { listDailyPriceTradeDates, listDailyValuationTradeDates, listSymbolsWithMonthlyRevenue } from '@/infrastructure/repositories/twse/backfillUniverse';
 import { listManufacturingSymbols } from '@/infrastructure/repositories/gov/backfillUniverse';
@@ -18,6 +18,7 @@ export const backfillUniverse = {
   listBankSymbols,
   listBankSymbolsForQuarter,
   listSymbolsWithBankIncomeStatement,
+  getLatestIncomeStatementQuarter,
   listSymbolsWithDividendDistribution: getSymbolsWithDividendDistribution,
   listDailyPriceTradeDates,
   listDailyValuationTradeDates,

@@ -14,7 +14,7 @@ import { pitDeps } from './pitDeps';
 // 再換成 LRU 或按季度分批清。
 const MEMOIZED_METHODS = ['getIncomeStatement', 'getBalanceSheet', 'getCashFlowStatement', 'getInsuranceIncomeStatement'] as const;
 
-export const memoizeStatementsForBackfill = (): { size: () => number } => {
+export const memoizeStatementsForBackfill = (): { size: () => number; clear: () => void } => {
   const cache = new Map<string, Promise<unknown>>();
   const target = pitDeps.statements;
   const memoized = new Proxy(target, {
@@ -33,7 +33,9 @@ export const memoizeStatementsForBackfill = (): { size: () => number } => {
     },
   });
   Object.assign(pitDeps, { statements: memoized });
-  return { size: () => cache.size };
+  // clear：長時間跑很多家公司的腳本（refreshChangedQuartersPit）分批清，避免上面說的無上限 Map 吃光記憶體；
+  // 清掉時正在進行中的呼叫手上已經拿到 Promise，不受影響，只是之後同 key 會重查一次。
+  return { size: () => cache.size, clear: () => cache.clear() };
 };
 
 // 2026-09-23 月頻回填（scripts/backfillSusPit.ts）用：同一家公司的 60 個月各自呼叫一次 computeSus，

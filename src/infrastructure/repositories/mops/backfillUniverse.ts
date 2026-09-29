@@ -50,3 +50,12 @@ export const listSymbolsWithBankIncomeStatement = (): Promise<{ symbol: string }
     WHERE net_income_loss_of_interest_quarter IS NOT NULL
     ORDER BY symbol
   `;
+
+// 目前最新一季（任何一家公司有損益表列就算）——依變動清單精準重算時「往後重算到哪一季」的終點。
+export const getLatestIncomeStatementQuarter = async (): Promise<{ year: string; quarter: string } | null> => {
+  const rows = await mopsExportPrisma.$queryRaw<{ year: string; quarter: string }[]>`
+    SELECT year::text AS year, quarter::text AS quarter FROM "export"."quarterly_income_statement_xbrl"
+    ORDER BY year::int DESC, quarter::int DESC LIMIT 1
+  `;
+  return rows[0] ?? null;
+};

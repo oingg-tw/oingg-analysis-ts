@@ -10,6 +10,9 @@
 #
 # 部署：gcloud run jobs replace deploy/job-dev.yaml --region=asia-southeast1 --project=oingg-analysis
 # 試跑：gcloud run jobs execute oingg-analysis-ts-refresh-dev --region=asia-southeast1 --project=oingg-analysis --update-env-vars=PILOT_LIMIT=30
+# 精準重算（只算上游給的變動清單，見 scripts/refreshChangedQuartersPit.ts）用同一個 Job 換入口：
+#   gcloud run jobs execute oingg-analysis-ts-refresh-dev --region=asia-southeast1 --project=oingg-analysis \n#     --args=dist/scripts/refreshChangedQuartersPit.js --update-env-vars=^@^CHANGES='109Q4:1101,1102;112Q4:3716' --task-timeout=5h
+#   （^@^ 把 gcloud 的清單分隔符從逗號換掉，不然 CHANGES 裡的逗號會被拆開）
 # 失敗清單/動作統計寫在容器內 tmp/，容器結束就消失——要看結果讀 Cloud Logging（腳本會把統計印到 stdout）。
 apiVersion: run.googleapis.com/v1
 kind: Job
@@ -34,8 +37,8 @@ spec:
               args: ['dist/scripts/backfillAllMetricsLatestFullMarketPit.js']
               resources:
                 limits:
-                  # ponytail: 首跑 CPU 整段貼 100%（平均 98%）——瓶頸是 CPU 不是 DB，要更快就加到 2，併發維持 8 不動。
-                  cpu: '1'
+                  # 首跑 CPU 整段貼 100%（平均 98%）——瓶頸是 CPU 不是 DB，2026-09-29 為了 3 萬多組的精準重算加到 2，併發維持 8 不動。
+                  cpu: '2'
                   # 首跑 2Gi 下記憶體 p99 峰值 21%（約 430MB），降回跟 service 同一套 1Gi＋heap 768（兩個上限一起設的理由見 service.yaml）。
                   memory: 1Gi
               env:
