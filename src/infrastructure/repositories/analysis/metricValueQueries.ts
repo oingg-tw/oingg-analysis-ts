@@ -82,6 +82,26 @@ const fetchDistribution = async (field: FieldRef, bins: number, excludeZero: boo
   return { totalCount, trueMin, trueMax, clippedMin: p1, clippedMax: p99, bins: buildDistributionBins(p1, p99, bins, countsByBucket), quantiles };
 };
 
+// 2026-09-29 web-nuxt 回報 GET /companies/badges 要 1～1.5 秒（個股頁首屏關鍵路徑）：量過是 8 支全市場排名徽章各自
+// 對全市場跑一次 RANK()，每支 0.2～0.4 秒；排名表對每家公司都一樣，只有「取哪一列」不同。使用者同意快取整張排名表、
+// 重算後最多 TTL 才反映。同一個 key 的並行請求共用同一個 Promise（不會一起打 DB）；查詢失敗不快取。
+// ponytail: 行程內 Map＋固定 TTL，不跨 Cloud Run 實例共用、過期列要等同 key 再被問到才換掉（key 數量上限是
+// 欄位數 × 類股數，幾百個、每個約 2,000 列）；要重算後立即反映，就在回填結束時呼叫清除，或把 TTL 換成資料版本號。
+const RANK_TABLE_TTL_MS = 10 * 60 * 1000;
+const rankTables = new Map<string, { expiresAt: number; rows: Promise<CompanyRankRow[]> }>();
+
+const companyRankFromCachedTable: MetricValueQueryPort['companyRank'] = async (symbol, field, direction, excludeZero, candidateSymbols = null, thresholdTopPercent = null) => {
+  const key = JSON.stringify([field, direction, excludeZero, candidateSymbols, thresholdTopPercent]);
+  let entry = rankTables.get(key);
+  if (!entry || entry.expiresAt <= Date.now()) {
+    const rows = runAnalysisRawQuery<CompanyRankRow>(buildCompanyRankSql(null, field, direction, excludeZero, candidateSymbols, thresholdTopPercent));
+    entry = { expiresAt: Date.now() + RANK_TABLE_TTL_MS, rows };
+    rankTables.set(key, entry);
+    rows.catch(() => rankTables.delete(key));
+  }
+  return (await entry.rows).filter((row) => row.symbol === symbol);
+};
+
 export const analysisMetricValueQueries: MetricValueQueryPort = {
   findLatestSnapshotValue,
   countMetricRowsWrittenSince,
@@ -89,8 +109,7 @@ export const analysisMetricValueQueries: MetricValueQueryPort = {
   listDailyCadenceMetricHistoryRows,
   screen: (filters, columns, page, pageSize, sort, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildScreenerSql(filters, columns, page, pageSize, sort, scope)),
   rank: (rankedField, direction, limit, columns, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildRankingSql(rankedField, direction, limit, columns, scope)),
-  companyRank: (symbol, field, direction, excludeZero, candidateSymbols, thresholdTopPercent) =>
-    runAnalysisRawQuery<CompanyRankRow>(buildCompanyRankSql(symbol, field, direction, excludeZero, candidateSymbols ?? null, thresholdTopPercent ?? null)),
+  companyRank: companyRankFromCachedTable,
   values: (symbols, columns) => runAnalysisRawQuery<Record<string, unknown>>(buildValuesSql(symbols, columns)),
   distribution: fetchDistribution,
 };

@@ -281,6 +281,7 @@ export const buildRankingSql = (
   `;
 };
 
+// symbol 傳 null 時回整張排名表（每家公司一列），給 metricValueQueries.ts 的排名表快取用。
 // 查單一公司在全市場某個欄位的排名——跟 buildRankingSql（取前 N 名清單）是互補的兩種查詢，
 // 這支不是「抓全市場清單再自己數」，是用 RANK() window function 在同一次查詢裡對全市場
 // 算好名次跟總數，最後只取目標 symbol 那一列。RANK()（不是 ROW_NUMBER()）讓並列數值拿到
@@ -297,7 +298,7 @@ export const buildRankingSql = (
 // 從低到高的哪一段」，是敘述用途，不是名次），1 代表最低 20%、5 代表最高 20%——後端算好直接
 // 給，前端不用自己猜切點。
 export const buildCompanyRankSql = (
-  symbol: string,
+  symbol: string | null,
   field: FieldRef,
   direction: 'asc' | 'desc',
   excludeZero: boolean,
@@ -332,7 +333,7 @@ export const buildCompanyRankSql = (
       ${thresholdTopPercent === null
         ? Prisma.sql`NULL`
         : Prisma.sql`(SELECT r2.value FROM ranked r2 WHERE r2.rank::numeric / r2.total_count <= ${thresholdTopPercent / 100} ORDER BY r2.rank DESC LIMIT 1)`} AS threshold_value
-    FROM ranked WHERE symbol = ${symbol}
+    FROM ranked ${symbol === null ? Prisma.empty : Prisma.sql`WHERE symbol = ${symbol}`}
   `;
 };
 
