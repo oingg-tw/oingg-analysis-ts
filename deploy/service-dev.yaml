@@ -1,0 +1,78 @@
+# Cloud Run「開發環境」服務——跟 service.yaml（正式環境 oingg-analysis-ts）同映像、同設定，只差四處：
+# 服務名、執行帳號（oingg-analysis-run-dev）、ANALYSIS-DATABASE-URL-DEV（analysis DEV 分支）、BFF-API-KEY-DEV。
+# 2026-09-29 使用者拍板：analysis 自己要有開發/正式兩套環境（先上開發、驗過再上正式）；但上游 export（mops/gov/twse/tpex/sitca）
+# 開發環境照樣讀 PRD——開發環境用量小不太占連線、而且只讀不改沒有風險，所以沿用正式那幾把密鑰，NODE_ENV 維持 production
+# （config.ts 才會選 _PROD 那組 tpex/sitca）。bff-ts 的 dev 環境接這個服務，bff-ts 正式環境接 oingg-analysis-ts。
+# 部署：gcloud run services replace deploy/service-dev.yaml --region=asia-southeast1 --project=oingg-analysis
+#
+# 以下設定的理由見 service.yaml 的註解，這裡不重複。
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: oingg-analysis-ts-dev
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      serviceAccountName: oingg-analysis-run-dev@oingg-analysis.iam.gserviceaccount.com
+      containerConcurrency: 80
+      timeoutSeconds: 30
+      containers:
+        - image: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest
+          ports:
+            - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            failureThreshold: 10
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          env:
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=768
+            - name: NODE_ENV
+              value: production
+            - name: BFF_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: BFF-API-KEY-DEV
+                  key: latest
+            - name: ANALYSIS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ANALYSIS-DATABASE-URL-DEV
+                  key: latest
+            - name: MOPS_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: MOPS-EXPORT-DATABASE-URL
+                  key: latest
+            - name: GOV_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: GOV-EXPORT-DATABASE-URL
+                  key: latest
+            - name: TPEX_EXPORT_DATABASE_URL_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: TPEX-EXPORT-DATABASE-URL-PROD
+                  key: latest
+            - name: SITCA_EXPORT_DATABASE_URL_PROD
+              valueFrom:
+                secretKeyRef:
+                  name: SITCA-EXPORT-DATABASE-URL-PROD
+                  key: latest
+            - name: TWSE_EXPORT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: TWSE-EXPORT-DATABASE-URL
+                  key: latest

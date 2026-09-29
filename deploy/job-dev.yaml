@@ -1,0 +1,80 @@
+# Cloud Run「工作」開發環境：跑一次就結束的全市場最新一季重算，寫 analysis DEV 分支。
+# 2026-09-29 使用者要先實驗「雲端觸發能不能正常更新資料」，開發環境先跑、驗過再建正式環境的 Job。
+#
+# 為什麼不是 job.yaml 原本的 batchComputeIndicators.js：它跑的 indicatorJobs 自 2026-09-08 起兩份都是空陣列（見
+# src/application/batch/indicatorRegistry.ts），部署了也只會空跑。實際更新資料的是 backfillAllMetricsLatestFullMarketPit.ts
+# （全市場每支指標的最新一筆，本機一直用的就是這支；公司併發 8，守「DB 工作併發不超過 8」）。
+#
+# 執行帳號、密鑰跟 service-dev.yaml 同一套：analysis 讀寫 DEV 分支，上游 export 讀 PRD（只讀）；NODE_ENV=production 才會選
+# _PROD 那組 tpex/sitca，而 production 模式下 config.ts 要求 BFF_API_KEY 存在，所以這裡也掛 dev 那把（Job 本身不收請求）。
+#
+# 部署：gcloud run jobs replace deploy/job-dev.yaml --region=asia-southeast1 --project=oingg-analysis
+# 試跑：gcloud run jobs execute oingg-analysis-ts-refresh-dev --region=asia-southeast1 --project=oingg-analysis --update-env-vars=PILOT_LIMIT=30
+# 失敗清單/動作統計寫在容器內 tmp/，容器結束就消失——要看結果讀 Cloud Logging（腳本會把統計印到 stdout）。
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: oingg-analysis-ts-refresh-dev
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: oingg-analysis-run-dev@oingg-analysis.iam.gserviceaccount.com
+          # 失敗不自動重試：多半是設定問題（連線、密鑰），重跑不會自己好；單一 (公司, 指標) 失敗腳本自己接住、繼續下一家。
+          maxRetries: 0
+          # 本機全市場一輪約 1 小時上下（記憶化後），抓 3 小時；試跑量到實際時間再調。
+          timeoutSeconds: 10800
+          containers:
+            - image: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest
+              command: ['node']
+              args: ['dist/scripts/backfillAllMetricsLatestFullMarketPit.js']
+              resources:
+                limits:
+                  cpu: '1'
+                  # 比 service 大一級：8 家公司併發 + 三大表記憶化快取，本機沒量過雲端的峰值。heap 上限要跟著一起調（理由見 service.yaml）。
+                  # 試跑後看 Cloud Run 的記憶體指標再決定要不要調回。
+                  memory: 2Gi
+              env:
+                - name: NODE_OPTIONS
+                  value: --max-old-space-size=1536
+                - name: NODE_ENV
+                  value: production
+                - name: BFF_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: BFF-API-KEY-DEV
+                      key: latest
+                - name: ANALYSIS_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: ANALYSIS-DATABASE-URL-DEV
+                      key: latest
+                - name: MOPS_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: MOPS-EXPORT-DATABASE-URL
+                      key: latest
+                - name: GOV_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: GOV-EXPORT-DATABASE-URL
+                      key: latest
+                - name: TWSE_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: TWSE-EXPORT-DATABASE-URL
+                      key: latest
+                - name: TPEX_EXPORT_DATABASE_URL_PROD
+                  valueFrom:
+                    secretKeyRef:
+                      name: TPEX-EXPORT-DATABASE-URL-PROD
+                      key: latest
+                - name: SITCA_EXPORT_DATABASE_URL_PROD
+                  valueFrom:
+                    secretKeyRef:
+                      name: SITCA-EXPORT-DATABASE-URL-PROD
+                      key: latest
