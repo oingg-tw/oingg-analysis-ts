@@ -25,6 +25,19 @@
       "startMonth": "<number>",
       "startYear": "<number>"
     },
+    "supplySide": {
+      "dividendYield": "<number>",
+      "dividendYieldCompanyCount": "<number>",
+      "dividendYieldMarketCapCoverage": "<number>",
+      "dividendYieldTradeDate": "<date>",
+      "erp": "<number>",
+      "expectedInflation": "<number>",
+      "gdpQuarters": "<number>",
+      "inflationMonths": "<number>",
+      "peGrowth": "<number>",
+      "realEarningsGrowth": "<number>",
+      "riskFreeRate": "<number>"
+    },
     "warnings": [
       "<string>"
     ],
