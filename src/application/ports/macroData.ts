@@ -42,11 +42,22 @@ export interface UsPolicyRateEvent {
   targetLower: number;
 }
 
+// 歐洲央行三大政策利率一次調整事件（gov-ts export.ecb_policy_rate）。百分比數字，可為負。
+export interface EcbPolicyRateEvent {
+  effectiveDate: Date;
+  depositFacilityRate: number | null;
+  mainRefinancingRate: number | null;
+  marginalLendingRate: number | null;
+  mainRefinancingIsMinimumBid: boolean;
+}
+
 export interface MacroDataPort {
   // 央行政策利率歷次調整事件，全部歷史依生效日升冪（GET /macro/cbc-policy-rate 要跟前一列相減算幅度）。
   listCbcPolicyRatesAsc(): Promise<CbcPolicyRateEvent[]>;
   // 美國政策利率歷次調整事件，全部歷史依生效日升冪（GET /macro/us-policy-rate）。
   listUsPolicyRatesAsc(): Promise<UsPolicyRateEvent[]>;
+  // 歐洲央行政策利率歷次調整事件，全部歷史依生效日升冪（GET /macro/ecb-policy-rate）。
+  listEcbPolicyRatesAsc(): Promise<EcbPolicyRateEvent[]>;
   // 全部歷史，依年月升冪（ERP 要跟 TAIEX 月底收盤對齊重疊區間）。
   listGovBondYields10yAsc(): Promise<GovBondYieldMonth[]>;
   // 最新一筆（GET /macro/gov-bond-yield-10y 只要最新值）。
