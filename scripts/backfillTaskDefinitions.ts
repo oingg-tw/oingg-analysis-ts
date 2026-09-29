@@ -48,7 +48,7 @@ export const BANK_METRIC_CODES = [
   'bankOtherOperatingExpensePerShare',
   'bankEmployeeBenefitsExpensePerShare',
   'bankDepreciationAmortisationExpensePerShare',
-  'bankOtherGeneralAdministrativeExpensePerShare',
+  'bankGeneralAdministrativeExpensePerShare',
 ];
 
 export type BackfillTask = [string, () => Promise<unknown>];

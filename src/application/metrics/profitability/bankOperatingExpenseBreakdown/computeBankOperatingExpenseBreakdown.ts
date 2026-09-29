@@ -5,7 +5,7 @@ import type { BankOperatingExpenseFields } from '@/application/ports/financialSt
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateBankEmployeeBenefitsExpensePerShare } from '@/domain/metrics/profitability/bankEmployeeBenefitsExpensePerShare/calculateBankEmployeeBenefitsExpensePerShare';
 import { calculateBankDepreciationAmortisationExpensePerShare } from '@/domain/metrics/profitability/bankDepreciationAmortisationExpensePerShare/calculateBankDepreciationAmortisationExpensePerShare';
-import { calculateBankOtherGeneralAdministrativeExpensePerShare } from '@/domain/metrics/profitability/bankOtherGeneralAdministrativeExpensePerShare/calculateBankOtherGeneralAdministrativeExpensePerShare';
+import { calculateBankGeneralAdministrativeExpensePerShare } from '@/domain/metrics/profitability/bankGeneralAdministrativeExpensePerShare/calculateBankGeneralAdministrativeExpensePerShare';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
@@ -22,7 +22,7 @@ export const BANK_OPERATING_EXPENSE_BREAKDOWN_FORMULA_VERSION = 1;
 const COMPONENTS = [
   { code: 'bankEmployeeBenefitsExpensePerShare', pick: (r: BankOperatingExpenseFields) => r.employeeBenefits, calc: calculateBankEmployeeBenefitsExpensePerShare },
   { code: 'bankDepreciationAmortisationExpensePerShare', pick: (r: BankOperatingExpenseFields) => r.depreciationAmortisation, calc: calculateBankDepreciationAmortisationExpensePerShare },
-  { code: 'bankOtherGeneralAdministrativeExpensePerShare', pick: (r: BankOperatingExpenseFields) => r.otherGeneralAdministrative, calc: calculateBankOtherGeneralAdministrativeExpensePerShare },
+  { code: 'bankGeneralAdministrativeExpensePerShare', pick: (r: BankOperatingExpenseFields) => r.otherGeneralAdministrative, calc: calculateBankGeneralAdministrativeExpensePerShare },
 ] as const;
 
 type SlotName = `${(typeof COMPONENTS)[number]['code']}${'Q' | 'Ttm'}`;

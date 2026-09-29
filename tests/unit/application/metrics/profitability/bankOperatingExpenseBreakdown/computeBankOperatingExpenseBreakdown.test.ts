@@ -24,16 +24,16 @@ test('單季每股 = 金額 × 1000 ÷ 股數；近四季四季齊才加總，�
   const v = (slot: string) => (batch.slots[slot as keyof typeof batch.slots] as MetricComputation).value;
   expect(v('bankEmployeeBenefitsExpensePerShareQ')).toBe(3681.32);
   expect(v('bankDepreciationAmortisationExpensePerShareQ')).toBe(464.18);
-  expect(v('bankOtherGeneralAdministrativeExpensePerShareQ')).toBe(1587.45);
+  expect(v('bankGeneralAdministrativeExpensePerShareQ')).toBe(1587.45);
   expect(v('bankEmployeeBenefitsExpensePerShareTtm')).toBe(7296.35); // 10+10+3,615,011+3,681,321
 });
 
 test('近四季缺一季的某個成分 → TTM insufficient_history，單季照算', async () => {
   const batch = await run({ '2801': { '114Q4': opex(10n, 1n, 5n), '115Q1': opex(1n, 1n, 1n), '115Q2': opex(3681321n, 464183n, 1587453n) } });
-  const ttm = batch.slots.bankOtherGeneralAdministrativeExpensePerShareTtm as MetricComputation;
+  const ttm = batch.slots.bankGeneralAdministrativeExpensePerShareTtm as MetricComputation;
   expect(ttm.value).toBeNull();
   expect(ttm.nullReason).toBe('insufficient_history');
-  expect((batch.slots.bankOtherGeneralAdministrativeExpensePerShareQ as MetricComputation).value).toBe(1587.45);
+  expect((batch.slots.bankGeneralAdministrativeExpensePerShareQ as MetricComputation).value).toBe(1587.45);
 });
 
 test('非金融業、或這一季沒有這組科目（券商、保險）→ 整批跳過不寫', async () => {
