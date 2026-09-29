@@ -26,21 +26,21 @@ spec:
           serviceAccountName: oingg-analysis-run-dev@oingg-analysis.iam.gserviceaccount.com
           # 失敗不自動重試：多半是設定問題（連線、密鑰），重跑不會自己好；單一 (公司, 指標) 失敗腳本自己接住、繼續下一家。
           maxRetries: 0
-          # 本機全市場一輪約 1 小時上下（記憶化後），抓 3 小時；試跑量到實際時間再調。
-          timeoutSeconds: 10800
+          # 2026-09-29 雲端首跑實測：全市場 2,335 家＋銀行 12 家 13.9 分鐘、0 錯誤；抓 4 倍餘裕。
+          timeoutSeconds: 3600
           containers:
             - image: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest
               command: ['node']
               args: ['dist/scripts/backfillAllMetricsLatestFullMarketPit.js']
               resources:
                 limits:
+                  # ponytail: 首跑 CPU 整段貼 100%（平均 98%）——瓶頸是 CPU 不是 DB，要更快就加到 2，併發維持 8 不動。
                   cpu: '1'
-                  # 比 service 大一級：8 家公司併發 + 三大表記憶化快取，本機沒量過雲端的峰值。heap 上限要跟著一起調（理由見 service.yaml）。
-                  # 試跑後看 Cloud Run 的記憶體指標再決定要不要調回。
-                  memory: 2Gi
+                  # 首跑 2Gi 下記憶體 p99 峰值 21%（約 430MB），降回跟 service 同一套 1Gi＋heap 768（兩個上限一起設的理由見 service.yaml）。
+                  memory: 1Gi
               env:
                 - name: NODE_OPTIONS
-                  value: --max-old-space-size=1536
+                  value: --max-old-space-size=768
                 - name: NODE_ENV
                   value: production
                 - name: BFF_API_KEY
