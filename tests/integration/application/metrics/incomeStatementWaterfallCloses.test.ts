@@ -58,22 +58,22 @@ const identitiesFor = (suffix: 'Q' | 'Ttm' | 'Fy'): Identity[] => [
   {
     name: '推銷 + 管理 + 研發 + 預期信用減損 = 營業費用',
     plus: [`sellingExpensePerShare${suffix}`, `administrativeExpensePerShare${suffix}`, `researchAndDevelopmentExpensePerShare${suffix}`],
-    optionalPlus: [`expectedCreditLossPerShare${suffix}`],
+    optionalPlus: [`impairmentLossGainIfrs9PerShare${suffix}`],
     minus: [],
     equals: `operatingExpensePerShare${suffix}`,
   },
   {
     name: '毛利 − 營業費用 + 其他營業收益費損 = 營業利益',
     plus: [`grossProfitPerShare${suffix}`],
-    optionalPlus: [`otherOperatingIncomeExpensePerShare${suffix}`],
+    optionalPlus: [`netOtherIncomeExpensesPerShare${suffix}`],
     minus: [`operatingExpensePerShare${suffix}`],
     equals: `operatingIncomePerShare${suffix}`,
   },
   {
     name: '利息收入 + 其他收入 + 其他利益損失 + 權益法 − 財務成本 = 業外損益',
-    plus: [`interestIncomePerShare${suffix}`, `otherIncomePerShare${suffix}`, `otherGainsLossesPerShare${suffix}`, `equityMethodIncomePerShare${suffix}`],
+    plus: [`interestRevenuePerShare${suffix}`, `otherRevenuePerShare${suffix}`, `otherGainsLossesPerShare${suffix}`, `shareOfProfitLossOfAssociatesPerShare${suffix}`],
     minus: [`financeCostPerShare${suffix}`],
-    equals: `nonOperatingIncomePerShare${suffix}`,
+    equals: `nonOperatingIncomeExpensesPerShare${suffix}`,
   },
 ];
 
@@ -140,10 +140,10 @@ describe('營收→股利瀑布圖：每一層加總都要還原', () => {
 
       const revenue = valueOf(revenueBatch.slots[slot]);
       const eps = valueOf(epsBatch.slots[slot]);
-      const required = ['costOfGoodsSoldPerShare', 'operatingExpensePerShare', 'nonOperatingIncomePerShare', 'incomeTaxExpensePerShare', 'minorityInterestPerShare']
+      const required = ['operatingCostsPerShare', 'operatingExpensePerShare', 'nonOperatingIncomeExpensesPerShare', 'incomeTaxExpensePerShare', 'nonControllingInterestsPerShare']
         .map((code) => valueOf(slots[`${code}${suffix}` as keyof typeof slots]));
       // 其他營業收益費損只有約 5% 的公司揭露，缺了視為 0（見 Identity.optionalPlus 的說明）。
-      const otherOperating = valueOf(slots[`otherOperatingIncomeExpensePerShare${suffix}` as keyof typeof slots]) ?? 0;
+      const otherOperating = valueOf(slots[`netOtherIncomeExpensesPerShare${suffix}` as keyof typeof slots]) ?? 0;
       if (revenue === null || eps === null || required.some((p) => p === null)) continue;
 
       const [cogs, opex, nonOperating, tax, minority] = required as number[];

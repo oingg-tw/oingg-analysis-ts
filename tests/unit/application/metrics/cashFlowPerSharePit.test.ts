@@ -18,8 +18,8 @@ test('cashFlowPerSharePit: 2330 115Q2 合併報表，跟既有基準數字交叉
   const ocfTtm = await findLatest('ocfPerShare', 'TTM');
   const fcfQ = await findLatest('fcfPerShare', 'Q');
   const fcfTtm = await findLatest('fcfPerShare', 'TTM');
-  const daQ = await findLatest('depreciationAmortizationPerShare', 'Q');
-  const daTtm = await findLatest('depreciationAmortizationPerShare', 'TTM');
+  const daQ = await findLatest('depreciationAmortisationPerShare', 'Q');
+  const daTtm = await findLatest('depreciationAmortisationPerShare', 'TTM');
 
   assert.ok(ocfQ && ocfTtm && fcfQ && fcfTtm && daQ && daTtm, '三個 metric_code 各 2 個 periodType 應該全部寫入');
   assert.equal(Number(ocfQ!.value), 30.21);
@@ -34,7 +34,7 @@ test('cashFlowPerSharePit: 9999（查無資料的公司）應該優雅降級，�
   const outcome = await replay.run(computeCashFlowPerShare)({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' });
 
   assert.deepEqual(outcome.ocfPerShareQ, { action: 'skipped_no_quarter' });
-  const count = await replay.count({ symbol: '9999', metricCode: { in: ['ocfPerShare', 'fcfPerShare', 'depreciationAmortizationPerShare'] } });
+  const count = await replay.count({ symbol: '9999', metricCode: { in: ['ocfPerShare', 'fcfPerShare', 'depreciationAmortisationPerShare'] } });
   assert.equal(count, 0);
 });
 

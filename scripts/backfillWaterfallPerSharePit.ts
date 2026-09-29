@@ -1,6 +1,6 @@
-// 2026-09-15：depreciationAmortizationPerShare/pretaxIncomePerShare 上線後的全市場首次
+// 2026-09-15：depreciationAmortisationPerShare/pretaxIncomePerShare 上線後的全市場首次
 // 回填，兩支都是應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增的指標，一起回填。
-// depreciationAmortizationPerShare 是併進既有 computeAndWriteCashFlowPerSharePit 的第三個
+// depreciationAmortisationPerShare 是併進既有 computeAndWriteCashFlowPerSharePit 的第三個
 // metric_code（同一次查詢，會順便重算/重寫 ocfPerShare/fcfPerShare，冪等安全，不是問題）；
 // pretaxIncomePerShare 是獨立的 computeAndWritePretaxIncomePerSharePit。跟
 // backfillLongTermDebtToNetCurrentAssetsPit.ts 同一份全市場清單標準（115Q2 dataType='2'
@@ -21,7 +21,7 @@ const getFullMarketSymbols = async (): Promise<string[]> => {
 };
 
 const main = async () => {
-  await upsertMetricDefinition(metricDefinitionRegistry.depreciationAmortizationPerShare!);
+  await upsertMetricDefinition(metricDefinitionRegistry.depreciationAmortisationPerShare!);
   await upsertMetricDefinition(metricDefinitionRegistry.pretaxIncomePerShare!);
 
   const symbols = await getFullMarketSymbols();
@@ -42,7 +42,7 @@ const main = async () => {
         const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
         const cashFlowOutcome = await computeAndWriteCashFlowPerSharePit(query);
         const pretaxOutcome = await computeAndWritePretaxIncomePerSharePit(query);
-        const daAction = cashFlowOutcome.depreciationAmortizationPerShareQ.action;
+        const daAction = cashFlowOutcome.depreciationAmortisationPerShareQ.action;
         const pretaxAction = pretaxOutcome.q?.action ?? 'missing_q';
         daActionCounts[daAction] = (daActionCounts[daAction] ?? 0) + 1;
         pretaxActionCounts[pretaxAction] = (pretaxActionCounts[pretaxAction] ?? 0) + 1;
@@ -68,7 +68,7 @@ const main = async () => {
   await Promise.all(Array.from({ length: Math.min(SYMBOL_CONCURRENCY, symbols.length) }, () => worker()));
 
   console.log(`[waterfall-per-share-pit] 完成，共 ${symbols.length} 家，總耗時 ${((Date.now() - t0) / 60000).toFixed(1)} 分鐘`);
-  console.log('[waterfall-per-share-pit] depreciationAmortizationPerShare action 統計：', daActionCounts);
+  console.log('[waterfall-per-share-pit] depreciationAmortisationPerShare action 統計：', daActionCounts);
   console.log('[waterfall-per-share-pit] pretaxIncomePerShare action 統計：', pretaxActionCounts);
   if (errors.length > 0) {
     console.log(`[waterfall-per-share-pit] 錯誤 ${errors.length} 筆：`, errors.map((e) => e.symbol).join(','));

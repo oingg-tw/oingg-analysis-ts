@@ -135,7 +135,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'fcfPerShare',
   'ocfMargin',
   'ocfPerShare',
-  'depreciationAmortizationPerShare',
+  'depreciationAmortisationPerShare',
   'ocfToNetIncome',
   'ownerEarnings',
   // 2026-09-21 web-nuxt 要求（徽章專頁的「計算依據表」是唯一的 SSR 表格，沒有稽核鏈就開不了專頁；

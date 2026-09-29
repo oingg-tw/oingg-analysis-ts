@@ -1,22 +1,22 @@
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 
-export const equityMethodIncomePerShareDefinition: MetricDefinitionSpec = {
-  metricCode: 'equityMethodIncomePerShare',
-  name: '每股權益法投資損益',
-  nameEn: 'Equity Method Income Per Share',
+export const interestRevenuePerShareDefinition: MetricDefinitionSpec = {
+  metricCode: 'interestRevenuePerShare',
+  name: '每股利息收入',
+  nameEn: 'Interest Income Per Share',
   unit: '元',
   perShare: true,
   formulaNote:
-    'Q = 當季採用權益法認列之關聯企業及合資損益份額*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
+    'Q = 當季利息收入（revenue_from_interest）*1000/流通股數；TTM = 近四季（含本季）加總*1000/流通股數，四季不齊為 null。' +
     '流通股數固定用「本季報告日」當下有效的股本。2026-09-24 為了讓「營收→股利」瀑布圖每一段都能' +
     '加總還原而新增。' +
     'FY(年報) = 年報全年金額*1000/全年加權平均流通股數（歸屬母公司淨利÷年報基本每股盈餘反推；|EPS|<0.1 不提供），座標是該年度第四季。（2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股，已發行 − 特別股 − 庫藏股。）',
-  formulaLatex: '\\mathrm{EquityMethodIncomePerShare} = \\frac{\\mathrm{EquityMethodIncome}}{\\mathrm{Shares}}',
+  formulaLatex: '\\mathrm{InterestIncomePerShare} = \\frac{\\mathrm{InterestIncome}}{\\mathrm{Shares}}',
   referenceUrl: 'https://mops.twse.com.tw/mops/web/t164sb04',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
-  dependsOn: ['share_of_profit_loss_of_associates_and_jvs', 'outstandingCommonShares'],
+  dependsOn: ['revenue_from_interest', 'outstandingCommonShares'],
   currentFormulaVersion: 2,
 };

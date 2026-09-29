@@ -1,7 +1,7 @@
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 
-export const expectedCreditLossPerShareDefinition: MetricDefinitionSpec = {
-  metricCode: 'expectedCreditLossPerShare',
+export const impairmentLossGainIfrs9PerShareDefinition: MetricDefinitionSpec = {
+  metricCode: 'impairmentLossGainIfrs9PerShare',
   name: '每股預期信用減損損失',
   nameEn: 'Expected Credit Loss Per Share',
   unit: '元',

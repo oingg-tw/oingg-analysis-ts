@@ -1,7 +1,7 @@
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 
-export const costOfGoodsSoldPerShareDefinition: MetricDefinitionSpec = {
-  metricCode: 'costOfGoodsSoldPerShare',
+export const operatingCostsPerShareDefinition: MetricDefinitionSpec = {
+  metricCode: 'operatingCostsPerShare',
   name: '每股營業成本',
   nameEn: 'Cost of Goods Sold Per Share',
   unit: '元',

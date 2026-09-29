@@ -10,20 +10,20 @@ import { annualReportSlot, resolveAnnualReportContext } from '@/application/metr
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 import { fillAbsentOperatingExpenseComponents } from '@/domain/financials/operatingExpenseComponents';
 import { calculateAdministrativeExpensePerShare } from '@/domain/metrics/profitability/administrativeExpensePerShare/calculateAdministrativeExpensePerShare';
-import { calculateCostOfGoodsSoldPerShare } from '@/domain/metrics/profitability/costOfGoodsSoldPerShare/calculateCostOfGoodsSoldPerShare';
-import { calculateEquityMethodIncomePerShare } from '@/domain/metrics/profitability/equityMethodIncomePerShare/calculateEquityMethodIncomePerShare';
-import { calculateExpectedCreditLossPerShare } from '@/domain/metrics/profitability/expectedCreditLossPerShare/calculateExpectedCreditLossPerShare';
+import { calculateOperatingCostsPerShare } from '@/domain/metrics/profitability/operatingCostsPerShare/calculateOperatingCostsPerShare';
+import { calculateShareOfProfitLossOfAssociatesPerShare } from '@/domain/metrics/profitability/shareOfProfitLossOfAssociatesPerShare/calculateShareOfProfitLossOfAssociatesPerShare';
+import { calculateImpairmentLossGainIfrs9PerShare } from '@/domain/metrics/profitability/impairmentLossGainIfrs9PerShare/calculateImpairmentLossGainIfrs9PerShare';
 import { calculateFinanceCostPerShare } from '@/domain/metrics/profitability/financeCostPerShare/calculateFinanceCostPerShare';
 import { calculateGrossProfitPerShare } from '@/domain/metrics/profitability/grossProfitPerShare/calculateGrossProfitPerShare';
 import { calculateIncomeTaxExpensePerShare } from '@/domain/metrics/profitability/incomeTaxExpensePerShare/calculateIncomeTaxExpensePerShare';
-import { calculateInterestIncomePerShare } from '@/domain/metrics/profitability/interestIncomePerShare/calculateInterestIncomePerShare';
-import { calculateMinorityInterestPerShare } from '@/domain/metrics/profitability/minorityInterestPerShare/calculateMinorityInterestPerShare';
-import { calculateNonOperatingIncomePerShare } from '@/domain/metrics/profitability/nonOperatingIncomePerShare/calculateNonOperatingIncomePerShare';
+import { calculateInterestRevenuePerShare } from '@/domain/metrics/profitability/interestRevenuePerShare/calculateInterestRevenuePerShare';
+import { calculateNonControllingInterestsPerShare } from '@/domain/metrics/profitability/nonControllingInterestsPerShare/calculateNonControllingInterestsPerShare';
+import { calculateNonOperatingIncomeExpensesPerShare } from '@/domain/metrics/profitability/nonOperatingIncomeExpensesPerShare/calculateNonOperatingIncomeExpensesPerShare';
 import { calculateOperatingExpensePerShare } from '@/domain/metrics/profitability/operatingExpensePerShare/calculateOperatingExpensePerShare';
 import { calculateOperatingIncomePerShare } from '@/domain/metrics/profitability/operatingIncomePerShare/calculateOperatingIncomePerShare';
 import { calculateOtherGainsLossesPerShare } from '@/domain/metrics/profitability/otherGainsLossesPerShare/calculateOtherGainsLossesPerShare';
-import { calculateOtherIncomePerShare } from '@/domain/metrics/profitability/otherIncomePerShare/calculateOtherIncomePerShare';
-import { calculateOtherOperatingIncomeExpensePerShare } from '@/domain/metrics/profitability/otherOperatingIncomeExpensePerShare/calculateOtherOperatingIncomeExpensePerShare';
+import { calculateOtherRevenuePerShare } from '@/domain/metrics/profitability/otherRevenuePerShare/calculateOtherRevenuePerShare';
+import { calculateNetOtherIncomeExpensesPerShare } from '@/domain/metrics/profitability/netOtherIncomeExpensesPerShare/calculateNetOtherIncomeExpensesPerShare';
 import { calculateResearchAndDevelopmentExpensePerShare } from '@/domain/metrics/profitability/researchAndDevelopmentExpensePerShare/calculateResearchAndDevelopmentExpensePerShare';
 import { calculateSellingExpensePerShare } from '@/domain/metrics/profitability/sellingExpensePerShare/calculateSellingExpensePerShare';
 
@@ -33,7 +33,7 @@ export const INCOME_STATEMENT_PER_SHARE_FORMULA_VERSION = 2;
 // 2026-09-28 營業費用四分拆 formulaVersion 3：某一季缺行、而營業費用恆等式成立時那一行當 0（domain/financials/operatingExpenseComponents.ts），
 // 不再讓近四季整期 null。只有這四支的值會變，所以只有這四支跳版，族內其他指標維持 2。
 const OPEX_COMPONENT_FORMULA_VERSION = 3;
-const OPEX_COMPONENT_CODES = new Set(['sellingExpensePerShare', 'administrativeExpensePerShare', 'researchAndDevelopmentExpensePerShare', 'expectedCreditLossPerShare']);
+const OPEX_COMPONENT_CODES = new Set(['sellingExpensePerShare', 'administrativeExpensePerShare', 'researchAndDevelopmentExpensePerShare', 'impairmentLossGainIfrs9PerShare']);
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——一次查詢損益表，
 // 拆成多個獨立 metric_code，跟 computeCashFlowPerSharePit.ts/computeDupontFamilyPit.ts
@@ -121,8 +121,8 @@ const FIELDS = [
   { slot: 'operatingIncomePerShareTtm', metricCode: 'operatingIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.operatingIncome, calc: calculateOperatingIncomePerShare },
 
   // ---- 既有（2026-09-18）：營業成本、營業費用、所得稅。2026-09-24 補上 Q ----
-  { slot: 'costOfGoodsSoldPerShareTtm', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['TTM'], pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
-  { slot: 'costOfGoodsSoldPerShareQ', metricCode: 'costOfGoodsSoldPerShare', periodTypes: ['Q'], pick: (r) => r.operatingCost, calc: calculateCostOfGoodsSoldPerShare },
+  { slot: 'operatingCostsPerShareTtm', metricCode: 'operatingCostsPerShare', periodTypes: ['TTM'], pick: (r) => r.operatingCost, calc: calculateOperatingCostsPerShare },
+  { slot: 'operatingCostsPerShareQ', metricCode: 'operatingCostsPerShare', periodTypes: ['Q'], pick: (r) => r.operatingCost, calc: calculateOperatingCostsPerShare },
   { slot: 'operatingExpensePerShareTtm', metricCode: 'operatingExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
   { slot: 'operatingExpensePerShareQ', metricCode: 'operatingExpensePerShare', periodTypes: ['Q'], pick: (r) => r.operatingExpense, calc: calculateOperatingExpensePerShare },
   { slot: 'incomeTaxExpensePerShareTtm', metricCode: 'incomeTaxExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.incomeTaxExpense, calc: calculateIncomeTaxExpensePerShare },
@@ -137,28 +137,28 @@ const FIELDS = [
   { slot: 'researchAndDevelopmentExpensePerShareQ', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['Q'], pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
   { slot: 'researchAndDevelopmentExpensePerShareTtm', metricCode: 'researchAndDevelopmentExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.researchAndDevelopmentExpense, calc: calculateResearchAndDevelopmentExpensePerShare },
 
-  { slot: 'expectedCreditLossPerShareQ', metricCode: 'expectedCreditLossPerShare', periodTypes: ['Q'], pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
-  { slot: 'expectedCreditLossPerShareTtm', metricCode: 'expectedCreditLossPerShare', periodTypes: ['TTM'], pick: (r) => r.expectedCreditLoss, calc: calculateExpectedCreditLossPerShare },
-  { slot: 'otherOperatingIncomeExpensePerShareQ', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['Q'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
-  { slot: 'otherOperatingIncomeExpensePerShareTtm', metricCode: 'otherOperatingIncomeExpensePerShare', periodTypes: ['TTM'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateOtherOperatingIncomeExpensePerShare },
+  { slot: 'impairmentLossGainIfrs9PerShareQ', metricCode: 'impairmentLossGainIfrs9PerShare', periodTypes: ['Q'], pick: (r) => r.expectedCreditLoss, calc: calculateImpairmentLossGainIfrs9PerShare },
+  { slot: 'impairmentLossGainIfrs9PerShareTtm', metricCode: 'impairmentLossGainIfrs9PerShare', periodTypes: ['TTM'], pick: (r) => r.expectedCreditLoss, calc: calculateImpairmentLossGainIfrs9PerShare },
+  { slot: 'netOtherIncomeExpensesPerShareQ', metricCode: 'netOtherIncomeExpensesPerShare', periodTypes: ['Q'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateNetOtherIncomeExpensesPerShare },
+  { slot: 'netOtherIncomeExpensesPerShareTtm', metricCode: 'netOtherIncomeExpensesPerShare', periodTypes: ['TTM'], pick: (r) => r.netOtherIncomeExpenses, calc: calculateNetOtherIncomeExpensesPerShare },
 
   // ---- 2026-09-24：業外損益合計 + 五個子項。子項相加（財務成本為減項）= 合計 ----
-  { slot: 'nonOperatingIncomePerShareQ', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['Q'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
-  { slot: 'nonOperatingIncomePerShareTtm', metricCode: 'nonOperatingIncomePerShare', periodTypes: ['TTM'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomePerShare },
-  { slot: 'interestIncomePerShareQ', metricCode: 'interestIncomePerShare', periodTypes: ['Q'], pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
-  { slot: 'interestIncomePerShareTtm', metricCode: 'interestIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.interestIncome, calc: calculateInterestIncomePerShare },
-  { slot: 'otherIncomePerShareQ', metricCode: 'otherIncomePerShare', periodTypes: ['Q'], pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
-  { slot: 'otherIncomePerShareTtm', metricCode: 'otherIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.otherIncome, calc: calculateOtherIncomePerShare },
+  { slot: 'nonOperatingIncomeExpensesPerShareQ', metricCode: 'nonOperatingIncomeExpensesPerShare', periodTypes: ['Q'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomeExpensesPerShare },
+  { slot: 'nonOperatingIncomeExpensesPerShareTtm', metricCode: 'nonOperatingIncomeExpensesPerShare', periodTypes: ['TTM'], pick: nonOperatingIncomeOf, calc: calculateNonOperatingIncomeExpensesPerShare },
+  { slot: 'interestRevenuePerShareQ', metricCode: 'interestRevenuePerShare', periodTypes: ['Q'], pick: (r) => r.interestIncome, calc: calculateInterestRevenuePerShare },
+  { slot: 'interestRevenuePerShareTtm', metricCode: 'interestRevenuePerShare', periodTypes: ['TTM'], pick: (r) => r.interestIncome, calc: calculateInterestRevenuePerShare },
+  { slot: 'otherRevenuePerShareQ', metricCode: 'otherRevenuePerShare', periodTypes: ['Q'], pick: (r) => r.otherIncome, calc: calculateOtherRevenuePerShare },
+  { slot: 'otherRevenuePerShareTtm', metricCode: 'otherRevenuePerShare', periodTypes: ['TTM'], pick: (r) => r.otherIncome, calc: calculateOtherRevenuePerShare },
   { slot: 'otherGainsLossesPerShareQ', metricCode: 'otherGainsLossesPerShare', periodTypes: ['Q'], pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
   { slot: 'otherGainsLossesPerShareTtm', metricCode: 'otherGainsLossesPerShare', periodTypes: ['TTM'], pick: (r) => r.otherGainsLosses, calc: calculateOtherGainsLossesPerShare },
-  { slot: 'equityMethodIncomePerShareQ', metricCode: 'equityMethodIncomePerShare', periodTypes: ['Q'], pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
-  { slot: 'equityMethodIncomePerShareTtm', metricCode: 'equityMethodIncomePerShare', periodTypes: ['TTM'], pick: (r) => r.equityMethodIncome, calc: calculateEquityMethodIncomePerShare },
+  { slot: 'shareOfProfitLossOfAssociatesPerShareQ', metricCode: 'shareOfProfitLossOfAssociatesPerShare', periodTypes: ['Q'], pick: (r) => r.equityMethodIncome, calc: calculateShareOfProfitLossOfAssociatesPerShare },
+  { slot: 'shareOfProfitLossOfAssociatesPerShareTtm', metricCode: 'shareOfProfitLossOfAssociatesPerShare', periodTypes: ['TTM'], pick: (r) => r.equityMethodIncome, calc: calculateShareOfProfitLossOfAssociatesPerShare },
   { slot: 'financeCostPerShareQ', metricCode: 'financeCostPerShare', periodTypes: ['Q'], pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
   { slot: 'financeCostPerShareTtm', metricCode: 'financeCostPerShare', periodTypes: ['TTM'], pick: (r) => r.financeCosts, calc: calculateFinanceCostPerShare },
 
   // ---- 2026-09-24：少數股東損益。「稅前−所得稅」與 EPS 之間唯一的差額來源 ----
-  { slot: 'minorityInterestPerShareQ', metricCode: 'minorityInterestPerShare', periodTypes: ['Q'], pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
-  { slot: 'minorityInterestPerShareTtm', metricCode: 'minorityInterestPerShare', periodTypes: ['TTM'], pick: minorityInterestOf, calc: calculateMinorityInterestPerShare },
+  { slot: 'nonControllingInterestsPerShareQ', metricCode: 'nonControllingInterestsPerShare', periodTypes: ['Q'], pick: minorityInterestOf, calc: calculateNonControllingInterestsPerShare },
+  { slot: 'nonControllingInterestsPerShareTtm', metricCode: 'nonControllingInterestsPerShare', periodTypes: ['TTM'], pick: minorityInterestOf, calc: calculateNonControllingInterestsPerShare },
 ] as const satisfies readonly PerShareField[];
 
 type FieldMetricCode = (typeof FIELDS)[number]['metricCode'];

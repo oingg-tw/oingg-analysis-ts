@@ -1,7 +1,7 @@
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 
-export const depreciationAmortizationPerShareDefinition: MetricDefinitionSpec = {
-  metricCode: 'depreciationAmortizationPerShare',
+export const depreciationAmortisationPerShareDefinition: MetricDefinitionSpec = {
+  metricCode: 'depreciationAmortisationPerShare',
   name: '每股折舊攤銷',
   unit: '元',
   perShare: true,

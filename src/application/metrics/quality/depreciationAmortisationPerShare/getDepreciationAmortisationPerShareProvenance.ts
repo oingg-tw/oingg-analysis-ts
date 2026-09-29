@@ -6,18 +6,18 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 import type { PitDeps } from '@/application/metrics/deps';
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增——
-// depreciationAmortizationPerShare(TTM) = 近四季（折舊費用+攤銷費用）加總×1000（千元換元）
+// depreciationAmortisationPerShare(TTM) = 近四季（折舊費用+攤銷費用）加總×1000（千元換元）
 // / 流通股數（本季報告日）。跟 computeCashFlowPerSharePit.ts / getOcfPerShareProvenance.ts
 // 一致，股數用 reportDate 不是 knowledgeDate（不涉及股價，沒有 resolveKnowledgeDate 的
 // 必要）。固定回傳 TTM（跟其餘試點慣例一致）。
 
-export const getDepreciationAmortizationPerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
+export const getDepreciationAmortisationPerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return { symbol, metricCode: 'depreciationAmortizationPerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+    return { symbol, metricCode: 'depreciationAmortisationPerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
   const { year, season } = resolvedQuarter;
@@ -75,5 +75,5 @@ export const getDepreciationAmortizationPerShareProvenance = async (query: Quart
     ),
   ];
 
-  return { symbol, metricCode: 'depreciationAmortizationPerShare', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote: null };
+  return { symbol, metricCode: 'depreciationAmortisationPerShare', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote: null };
 };

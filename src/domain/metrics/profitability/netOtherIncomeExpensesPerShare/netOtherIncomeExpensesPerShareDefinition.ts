@@ -1,7 +1,7 @@
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 
-export const otherOperatingIncomeExpensePerShareDefinition: MetricDefinitionSpec = {
-  metricCode: 'otherOperatingIncomeExpensePerShare',
+export const netOtherIncomeExpensesPerShareDefinition: MetricDefinitionSpec = {
+  metricCode: 'netOtherIncomeExpensesPerShare',
   name: '每股其他營業收益及費損淨額',
   nameEn: 'Other Operating Income and Expense Per Share',
   unit: '元',

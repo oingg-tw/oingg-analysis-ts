@@ -103,7 +103,7 @@ import { getFcfMarginProvenance } from '@/application/metrics/quality/fcfMargin/
 import { getFcfPerShareProvenance } from '@/application/metrics/quality/fcfPerShare/getFcfPerShareProvenance';
 import { getOcfMarginProvenance } from '@/application/metrics/quality/ocfMargin/getOcfMarginProvenance';
 import { getOcfPerShareProvenance } from '@/application/metrics/quality/ocfPerShare/getOcfPerShareProvenance';
-import { getDepreciationAmortizationPerShareProvenance } from '@/application/metrics/quality/depreciationAmortizationPerShare/getDepreciationAmortizationPerShareProvenance';
+import { getDepreciationAmortisationPerShareProvenance } from '@/application/metrics/quality/depreciationAmortisationPerShare/getDepreciationAmortisationPerShareProvenance';
 import { getOcfToNetIncomeProvenance } from '@/application/metrics/quality/ocfToNetIncome/getOcfToNetIncomeProvenance';
 import { getOwnerEarningsProvenance } from '@/application/metrics/quality/ownerEarnings/getOwnerEarningsProvenance';
 import { getEarningsToRecordHighProvenance } from '@/application/metrics/growth/earningsToRecordHigh/getEarningsToRecordHighProvenance';
@@ -237,7 +237,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   fcfPerShare: (query) => getFcfPerShareProvenance(query, deps),
   ocfMargin: (query) => getOcfMarginProvenance(query, deps),
   ocfPerShare: (query) => getOcfPerShareProvenance(query, deps),
-  depreciationAmortizationPerShare: (query) => getDepreciationAmortizationPerShareProvenance(query, deps),
+  depreciationAmortisationPerShare: (query) => getDepreciationAmortisationPerShareProvenance(query, deps),
   ocfToNetIncome: (query) => getOcfToNetIncomeProvenance(query, deps),
   ownerEarnings: (query) => getOwnerEarningsProvenance(query, deps),
   earningsToRecordHigh: (query) => getEarningsToRecordHighProvenance(query, deps),
