@@ -1,6 +1,7 @@
 import type { MacroDataPort } from '@/application/ports/macroData';
 import { getLatestGovBondYield10yRow, listAllGovBondYields10yAsc } from '../gov/govBondYield';
 import { listAllCbcPolicyRatesAsc } from '../gov/cbcPolicyRate';
+import { listAllUsPolicyRatesAsc } from '../gov/usPolicyRate';
 import { listAllTaiexDailyPricesAsc } from '../twse/taiexIndex';
 import { upsertEquityRiskPremiumResult } from '../analysis/equityRiskPremiumCache';
 
@@ -15,6 +16,8 @@ export const macroData: MacroDataPort = {
       collateralAccommodationRate: Number(row.collateral_accommodation_rate),
       unsecuredAccommodationRate: Number(row.unsecured_accommodation_rate),
     })),
+  listUsPolicyRatesAsc: async () =>
+    (await listAllUsPolicyRatesAsc()).map((row) => ({ effectiveDate: row.effective_date, targetUpper: Number(row.target_upper), targetLower: Number(row.target_lower) })),
   listGovBondYields10yAsc: async () => (await listAllGovBondYields10yAsc()).map((row) => ({ year: row.year, month: row.month, yieldRate: Number(row.yield_rate) })),
   getLatestGovBondYield10y: async () => {
     const row = await getLatestGovBondYield10yRow();

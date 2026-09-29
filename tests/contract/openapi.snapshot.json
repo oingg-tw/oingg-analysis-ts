@@ -4681,6 +4681,77 @@
         ]
       }
     },
+    "/macro/us-policy-rate": {
+      "get": {
+        "description": "事件型序列：一列就是一次調整的生效日，不是逐日快照，形狀跟 /macro/cbc-policy-rate 對稱，可以疊在大盤或個股走勢上當事件標記。資料來源是 gov-ts 的 export.us_policy_rate（Federal Reserve 經 FRED：1982–2008 單一目標值 DFEDTAR、2008-12-16 起目標區間 DFEDTARU／DFEDTARL），本服務只讀；2008-12-16 以前的單一目標值上下限同值，所以同一套欄位跨得過那條制度斷點。本服務唯一的加工是 changeBp（上限相對前一次的變動，基點）。這是政策利率，不是公債殖利率，不能直接當無風險利率。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。",
+        "parameters": [
+          {
+            "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1982-09-27 起，約兩百筆，不需要分頁）。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1982-09-27 起，約兩百筆，不需要分頁）。",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "依生效日由舊到新排序的調整事件；一列就是一次調整，不是逐日序列",
+                      "items": {
+                        "properties": {
+                          "changeBp": {
+                            "description": "目標區間上限相對前一次調整的變動，基點（25 = 升息一碼、-25 = 降息一碼）；整段歷史的第一筆是 null。2008-12-16 從單一目標值 1% 改成區間 0–0.25%，這一筆以上限計是 -75",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "effectiveDate": {
+                            "description": "\"YYYY-MM-DD\" 調整生效日",
+                            "type": "string"
+                          },
+                          "targetLower": {
+                            "description": "聯邦基金利率目標區間下限，百分比數字。2008-12-16 以前跟上限相同",
+                            "type": "number"
+                          },
+                          "targetUpper": {
+                            "description": "聯邦基金利率目標區間上限，百分比數字（4 代表 4%）。2008-12-16 以前是單一目標值，上下限同值",
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "effectiveDate",
+                          "targetUpper",
+                          "targetLower",
+                          "changeBp"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "依生效日由舊到新排序的調整事件，查無資料時 entries 是空陣列。"
+          }
+        },
+        "summary": "美國聯邦基金利率目標歷次調整事件（目標區間上下限）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/usd-twd-rate": {
       "get": {
         "description": "央行銀行買入／賣出／銀行間收盤三個匯率，1992-01 起。不是即時匯率：央行按月批次補、落後約一個月，前端請標明資料涵蓋到哪一天。limit/interval 慣例跟 /market/taiex-daily-price 相同。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",

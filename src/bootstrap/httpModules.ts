@@ -49,6 +49,8 @@ import { createGovBondYield10yRouter } from '@/http/modules/macro/govBondYield10
 import { registerGovBondYield10yOpenApi } from '@/http/modules/macro/govBondYield10y/openapi';
 import { createCbcPolicyRateRouter } from '@/http/modules/macro/cbcPolicyRate/route';
 import { registerCbcPolicyRateOpenApi } from '@/http/modules/macro/cbcPolicyRate/openapi';
+import { createUsPolicyRateRouter } from '@/http/modules/macro/usPolicyRate/route';
+import { registerUsPolicyRateOpenApi } from '@/http/modules/macro/usPolicyRate/openapi';
 import { createMacroSeriesRouter } from '@/http/modules/macro/series/route';
 import { registerMacroSeriesOpenApi } from '@/http/modules/macro/series/openapi';
 
@@ -89,5 +91,6 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },
   { name: 'govBondYield10y', auth: 'bff', mountPath: '/macro', router: createGovBondYield10yRouter(deps), registerOpenApi: registerGovBondYield10yOpenApi },
   { name: 'cbcPolicyRate', auth: 'bff', mountPath: '/macro', router: createCbcPolicyRateRouter(deps), registerOpenApi: registerCbcPolicyRateOpenApi },
+  { name: 'usPolicyRate', auth: 'bff', mountPath: '/macro', router: createUsPolicyRateRouter(deps), registerOpenApi: registerUsPolicyRateOpenApi },
   { name: 'macroSeries', auth: 'bff', mountPath: '/macro', router: createMacroSeriesRouter(deps), registerOpenApi: registerMacroSeriesOpenApi },
 ];

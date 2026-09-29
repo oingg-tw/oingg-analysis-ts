@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "changeBp": "<number>",
+        "effectiveDate": "<date>",
+        "targetLower": "<number>",
+        "targetUpper": "<number>"
+      }
+    ]
+  }
+}
