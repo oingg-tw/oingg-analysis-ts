@@ -1,10 +1,64 @@
 import { buildFieldStatuses, type MetricStatus } from '@/domain/metrics/metricStatus';
+import { capWeightedMeanPercent, geometricMeanPercent, supplySideErpPercent } from '@/domain/macro/supplySideEquityRiskPremium';
 import type { AppDeps } from '@/application/deps';
 import type { EquityRiskPremiumQuery, EquityRiskPremiumResult } from './types';
 
 // 2026-09-17 Phase 4：資料查詢跟結果快取寫入透過 MacroDataPort 注入、log 透過 LoggerPort 注入
 //（Decimal → number 的轉換搬進 repository）。
-export type EquityRiskPremiumDeps = Pick<AppDeps, 'macroData' | 'logger'>;
+// 2026-09-29 使用者要求加第二種算法（供給面模型）做對照：多讀 CPI／GDP（macroSeries）、上市公司清單（companyProfiles）、
+// 最新殖利率與市值（metricValueQueries）。
+export type EquityRiskPremiumDeps = Pick<AppDeps, 'macroData' | 'macroSeries' | 'companyProfiles' | 'metricValueQueries' | 'logger'>;
+
+type SupplySide = EquityRiskPremiumResult['supplySide'];
+
+interface SupplySideSources {
+  cpi: { key: string; yoy: number | null }[];
+  gdp: { key: string; growth: number | null }[];
+  dividendRows: { tradeDate: Date; symbol: string; dividendYield: number | null; marketCap: number | null }[];
+  listedSymbols: Set<string>;
+}
+
+// 供給面 ERP（見 domain/macro/supplySideEquityRiskPremium.ts）。通膨、GDP 用跟歷史法同一段窗口 [startKey, endKey] 平均，
+// 季資料以季末月份判斷是否落在窗口內；殖利率只有最新一天（沒有 1999 起的全市場殖利率歷史），無風險利率取窗口終點那個月。
+// 殖利率只算上市公司（TAIEX 的母體），跟歷史法的市場報酬同一個市場。
+// 市值加權的涵蓋率只能在「有市值的公司」之間算；大部分公司連市值都沒有時（例如逐日市值還沒回填），加權結果會退化成
+// 少數幾家的殖利率、涵蓋率卻照樣顯示 100%（測試庫實測：只剩台積電一家、0.92%）。所以先要求上市公司大多有市值。
+// 2026-09-29 DEV 實測 1,081 家有當天列、1,055 家有市值（97.6%）。
+const MIN_MARKET_CAP_AVAILABILITY = 0.9;
+
+const computeSupplySide = (sources: SupplySideSources, startKey: string, endKey: string, riskFree: number | null, warnings: string[]): SupplySide => {
+  const inWindow = (key: string) => key >= startKey && key <= endKey;
+  const inflationSamples = sources.cpi.filter((r) => inWindow(r.key) && r.yoy !== null).map((r) => r.yoy!);
+  const growthSamples = sources.gdp.filter((r) => inWindow(r.key) && r.growth !== null).map((r) => r.growth!);
+  const listedRows = sources.dividendRows.filter((r) => sources.listedSymbols.has(r.symbol));
+  const withMarketCap = listedRows.filter((r) => r.marketCap !== null && r.marketCap > 0).length;
+  const capAvailable = listedRows.length > 0 && withMarketCap / listedRows.length >= MIN_MARKET_CAP_AVAILABILITY;
+  if (!capAvailable) {
+    warnings.push(`上市公司只有 ${withMarketCap}/${listedRows.length} 家有最新市值，不足 ${MIN_MARKET_CAP_AVAILABILITY * 100}%，無法算市值加權殖利率，供給面 ERP 為 null。`);
+  }
+  const dividend = capAvailable ? capWeightedMeanPercent(listedRows.map((r) => ({ value: r.dividendYield, weight: r.marketCap }))) : null;
+
+  const expectedInflation = geometricMeanPercent(inflationSamples);
+  const realEarningsGrowth = geometricMeanPercent(growthSamples);
+  const erp =
+    expectedInflation !== null && realEarningsGrowth !== null && dividend !== null && riskFree !== null
+      ? round4(supplySideErpPercent(expectedInflation, realEarningsGrowth, dividend.mean, riskFree))
+      : null;
+
+  return {
+    erp,
+    expectedInflation: expectedInflation === null ? null : round4(expectedInflation),
+    realEarningsGrowth: realEarningsGrowth === null ? null : round4(realEarningsGrowth),
+    peGrowth: 0,
+    dividendYield: dividend === null ? null : round4(dividend.mean),
+    riskFreeRate: riskFree,
+    inflationMonths: inflationSamples.length,
+    gdpQuarters: growthSamples.length,
+    dividendYieldTradeDate: sources.dividendRows[0]?.tradeDate.toISOString().slice(0, 10) ?? null,
+    dividendYieldCompanyCount: dividend?.count ?? 0,
+    dividendYieldMarketCapCoverage: dividend === null ? null : round4(dividend.coveragePercent),
+  };
+};
 
 // 至少要有 2 個月才能算出 1 筆報酬率——低於這個數字連「算得出但不可靠」都談不上，直接回傳
 // calculation_error（跟 beta 的 MIN_OBSERVATIONS 門檻同一種「樣本太少不計算」的處理方式）。
@@ -43,7 +97,20 @@ const getRiskFreeRateByMonth = async (deps: EquityRiskPremiumDeps): Promise<Reco
 
 export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, deps: EquityRiskPremiumDeps): Promise<EquityRiskPremiumResult> => {
   const warnings: string[] = [];
-  const [taiex, riskFreeRate] = await Promise.all([getTaiexMonthEndCloses(deps), getRiskFreeRateByMonth(deps)]);
+  const [taiex, riskFreeRate, cpiRows, gdpRows, dividendRows, listedSymbols] = await Promise.all([
+    getTaiexMonthEndCloses(deps),
+    getRiskFreeRateByMonth(deps),
+    deps.macroSeries.listCpiAsc('total'),
+    deps.macroSeries.listGdpAsc('growth_rate'),
+    deps.metricValueQueries.listLatestDividendYieldWithMarketCap(),
+    deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
+  ]);
+  const supplySideSources: SupplySideSources = {
+    cpi: cpiRows.map((r) => ({ key: toKey(r.year, r.month), yoy: r.yoyChangePercent })),
+    gdp: gdpRows.map((r) => ({ key: toKey(r.year, r.quarter * 3), growth: r.contributionPoints })),
+    dividendRows,
+    listedSymbols,
+  };
 
   const taiexKeys = Object.keys(taiex).sort();
   const riskFreeKeys = Object.keys(riskFreeRate).sort();
@@ -73,6 +140,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
       requestedWindow,
       clippedToAvailableData: false,
       dataCoverage,
+      supplySide: null,
       fieldStatuses: buildFieldStatuses([
         ['marketReturnGeometric', noData],
         ['marketReturnArithmetic', noData],
@@ -117,6 +185,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
       requestedWindow,
       clippedToAvailableData,
       dataCoverage,
+      supplySide: null,
       fieldStatuses: buildFieldStatuses([
         ['marketReturnGeometric', calcError],
         ['marketReturnArithmetic', calcError],
@@ -154,6 +223,12 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
   const erpGeometric = round4(marketReturnGeometric - avgRiskFreeRate);
   const erpArithmetic = round4(marketReturnArithmetic - avgRiskFreeRate);
 
+  const windowEnd = overlapKeys[months - 1]!;
+  const supplySide = computeSupplySide(supplySideSources, overlapKeys[0]!, windowEnd, riskFreeRate[windowEnd] ?? null, warnings);
+  if (windowEnd !== availableEnd) {
+    warnings.push(`供給面模型的股利殖利率固定取最新交易日（${supplySide?.dividendYieldTradeDate ?? '無'}），不是窗口終點 ${windowEnd} 當時的殖利率；指定過去的窗口時兩者時間點不一致。`);
+  }
+
   // 存進 oingg-analysis DB 的 macro_equity_risk_premium，PK 用 windowStart+windowEnd——同一組窗口
   // 重算會覆蓋同一列，跟 beta 用 symbol+asOfDate 同一種「結果快取」模式。存檔失敗不應該讓已經
   // 算好的結果回傳失敗（跟 beta/service.ts 的 try/catch 同一種容錯方式）。
@@ -185,6 +260,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
     requestedWindow,
     clippedToAvailableData,
     dataCoverage,
+    supplySide,
     fieldStatuses: buildFieldStatuses([]),
     warnings,
   };

@@ -102,6 +102,9 @@ export interface MetricValueQueryPort {
     dataType: string,
     subsidiaryCompanyId: string
   ): Promise<{ tradeDate: Date; value: number | null } | null>;
+  // 全市場最新一個交易日，每家公司的現金殖利率（dividendYield，%）跟即時市值（liveMarketCap）——供給面 ERP 算市值加權殖利率用。
+  // 每家一列（有兩種財報口徑時取合併）；殖利率 0 是明確不配息，null 是沒資料。
+  listLatestDividendYieldWithMarketCap(): Promise<{ tradeDate: Date; symbol: string; dividendYield: number | null; marketCap: number | null }[]>;
   // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數。
   countMetricRowsWrittenSince(metricCode: string, symbols: string[], since: Date, isDailyCadence: boolean): Promise<number>;
   // 單一 metricCode 的全部歷史列（含重編疊加的多筆），依 fiscalYear/fiscalQuarter 降冪、同座標再依 knowledgeDate 降冪——

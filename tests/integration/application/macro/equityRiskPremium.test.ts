@@ -40,6 +40,27 @@ test('equityRiskPremium: 指定短窗口時會算出結果，但帶可信度警�
   );
 });
 
+// 2026-09-29 供給面模型（對照用）：通膨／GDP 用同一段窗口平均，殖利率取最新交易日上市公司市值加權。
+test('equityRiskPremium: 供給面模型跟歷史法同窗口，輸入跟結果落在合理範圍', async () => {
+  const result = await calculateEquityRiskPremium({}, appDeps);
+  const s = result.supplySide;
+
+  assert.ok(s !== null, '有重疊窗口時一定要有 supplySide');
+  assert.ok(s.inflationMonths > 240 && s.gdpQuarters > 80, `窗口 ${result.windowStart}~${result.windowEnd} 應該涵蓋 20 年以上的 CPI／GDP`);
+  assert.ok(s.expectedInflation !== null && s.expectedInflation > -2 && s.expectedInflation < 5, `台灣長期通膨 ${s.expectedInflation} 不在 -2%~5%`);
+  assert.ok(s.realEarningsGrowth !== null && s.realEarningsGrowth > 0 && s.realEarningsGrowth < 10, `台灣長期實質成長 ${s.realEarningsGrowth} 不在 0%~10%`);
+  assert.ok(s.riskFreeRate !== null && s.riskFreeRate > 0 && s.riskFreeRate < 10, `窗口終點 10 年期殖利率 ${s.riskFreeRate} 不在 0%~10%`);
+  assert.equal(s.peGrowth, 0);
+  // 測試 DB（SIT 分支，09-17 快照）的逐日市值只有少數公司——這正是防護要擋的情況：不能拿幾家公司的殖利率當大盤殖利率。
+  if (s.dividendYield === null) {
+    assert.equal(s.erp, null);
+    assert.ok(result.warnings.some((w) => w.includes('無法算市值加權殖利率')), '殖利率算不出來時要說原因');
+  } else {
+    assert.ok(s.dividendYieldCompanyCount > 100 && s.dividendYieldMarketCapCoverage! > 80, '市值加權殖利率應該涵蓋大部分上市公司市值');
+    assert.ok(s.erp !== null && s.erp > -5 && s.erp < 15, `供給面 ERP ${s.erp} 超出合理範圍`);
+  }
+});
+
 test('equityRiskPremium: 指定超出資料涵蓋範圍的窗口時，會裁切並標記 clippedToAvailableData', async () => {
   const result = await calculateEquityRiskPremium({ startYear: 1900, startMonth: 1 }, appDeps);
 

@@ -40,6 +40,21 @@ export const findLatestSnapshotValue = async (
   return { tradeDate: row.tradeDate, value: row.value !== null ? Number(row.value) : null };
 };
 
+// 全市場最新一個交易日的現金殖利率＋即時市值（每家一列，data_type '2' 優先），見 port 說明。
+export const listLatestDividendYieldWithMarketCap = async (): Promise<{ tradeDate: Date; symbol: string; dividendYield: number | null; marketCap: number | null }[]> => {
+  const rows = await analysisPrisma.$queryRaw<{ trade_date: Date; symbol: string; dividend_yield: number | null; market_cap: number | null }[]>`
+    SELECT DISTINCT ON (y.symbol) y.trade_date, y.symbol, y.value::float8 AS dividend_yield, m.value::float8 AS market_cap
+    FROM metric_daily_cadence_values y
+    LEFT JOIN metric_daily_cadence_values m
+      ON m.metric_code = 'liveMarketCap' AND m.snapshot_cadence = y.snapshot_cadence AND m.symbol = y.symbol
+     AND m.trade_date = y.trade_date AND m.data_type = y.data_type AND m.subsidiary_company_id = y.subsidiary_company_id
+    WHERE y.metric_code = 'dividendYield' AND y.snapshot_cadence = 'EOD' AND y.subsidiary_company_id = ''
+      AND y.trade_date = (SELECT MAX(trade_date) FROM metric_daily_cadence_values WHERE metric_code = 'dividendYield' AND snapshot_cadence = 'EOD')
+    ORDER BY y.symbol, y.data_type DESC
+  `;
+  return rows.map((r) => ({ tradeDate: r.trade_date, symbol: r.symbol, dividendYield: r.dividend_yield, marketCap: r.market_cap }));
+};
+
 // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數（computedAt >= since）。
 // 季報型查 metric_values、逐日型查 metric_daily_cadence_values。
 export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[], since: Date, isDailyCadence: boolean): Promise<number> =>
@@ -104,6 +119,7 @@ const companyRankFromCachedTable: MetricValueQueryPort['companyRank'] = async (s
 
 export const analysisMetricValueQueries: MetricValueQueryPort = {
   findLatestSnapshotValue,
+  listLatestDividendYieldWithMarketCap,
   countMetricRowsWrittenSince,
   listPeriodMetricHistoryRows,
   listDailyCadenceMetricHistoryRows,
