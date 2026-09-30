@@ -86,7 +86,7 @@ export const sectorDividendSummaryResultSchema = z.object({
       sectorCode: z.string().meta({ description: '證交所類股代碼，同 GET /industries/securities-sectors' }),
       sectorName: z.string(),
       companyCount: z.number().meta({ description: '這個類股的上市＋上櫃公司數（不含興櫃）' }),
-      dividendYield: axisSummarySchema('殖利率').meta({ description: '交易所每日公布殖利率（dividendYield.EOD），每家取最新一筆；只統計有配息（> 0）的公司' }),
+      dividendYield: axisSummarySchema('殖利率').meta({ description: '交易所每日公布殖利率（dividendYield.EOD），每家取最新一筆；0（沒配息）算進去' }),
       dividendGrowthRate3y: axisSummarySchema('股利 3 年成長率').meta({ description: '股利 3 年成長率（dividendGrowthRate3y.FY），每家取最新年度；基期沒配息或歷史不足的公司沒有值、不計入' }),
     })
   ),

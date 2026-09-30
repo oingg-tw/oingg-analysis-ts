@@ -57,10 +57,8 @@ export const getSecuritiesIndustrySectors = async (deps: Pick<AppDeps, 'industry
 // 殖利率，放進來只會讓 companyCount 虛胖）。每家取各自最新一筆（screener 同一套 CTE）。
 // 殖利率只收最新交易日往前 14 天內的值：停牌、下市前的舊殖利率不是現況（跟供給面 ERP 的
 // listLatestDividendYieldWithMarketCap 同一個判斷）。
-// 殖利率只統計有配息（> 0）的公司：2026-09-30 實查兩個交易所對「沒配息」的寫法不同——tpex-ts 寫 0，twse-ts
-// 的 daily_valuation 寫 null（最新交易日 1,083 家裡 235 家 null、0 家是 0），我們的 dividendYield 照抄成
-// missing_input。把 0 算進去的話，上櫃不配息的公司會拉低平均、上市的不會，同一張圖上兩個市場的口徑不一樣
-// （而且不會報錯）。null 是不是「沒配息」要等 twse-ts 確認；確認之前兩邊都只看配息公司，口徑一致。
+// 殖利率 0（沒配息）算進去——類股真實樣貌的一部分。2026-09-30 一度只算 > 0：證交所 8/28 起把沒配息改寫成空白、
+// 上櫃仍寫 0，兩市場口徑不一致；已在讀取端統一成 0（見 domain/market/twseDividendYield.ts），這裡不再排除。
 const YIELD_FRESHNESS_DAYS = 14;
 
 export const getSectorDividendSummary = async (deps: Pick<AppDeps, 'companyProfiles' | 'metricValueQueries'>): Promise<SectorDividendSummaryResult> => {
@@ -85,7 +83,7 @@ export const getSectorDividendSummary = async (deps: Pick<AppDeps, 'companyProfi
       return {
         sectorCode: c.sectorCode!,
         sectorName: c.sectorName!,
-        dividendYield: t !== null && cutoff !== null && t >= cutoff && (num(r?.v0) ?? 0) > 0 ? num(r?.v0) : null,
+        dividendYield: t !== null && cutoff !== null && t >= cutoff ? num(r?.v0) : null,
         dividendGrowthRate3y: num(r?.v1),
       };
     })

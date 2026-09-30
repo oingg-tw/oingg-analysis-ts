@@ -1,6 +1,7 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { DailyPriceAsOf, DailyValuationAsOf } from '@/application/ports/marketData';
+import { twseDividendYield } from '@/domain/market/twseDividendYield';
 
 // DailyValuationAsOf / DailyPriceAsOf 2026-09-17 Phase 3 搬到 application/ports/marketData.ts（port 的 DTO），這裡 re-export 給既有 import 路徑。
 export type { DailyPriceAsOf, DailyValuationAsOf };
@@ -13,6 +14,7 @@ interface RawTwseDailyValuationRow {
 }
 
 const toNullableNumber = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
+
 
 // 指定 asOfDate 時，找「該日期或之前」最新的一筆交易日資料（指定日期不一定是交易日，例如週末）；
 // 不指定就直接抓整張表最新一筆——用來回答「這家公司最新的 PER/PBR 是多少」。
@@ -40,7 +42,8 @@ const queryDailyValuation = (db: typeof twseExportPrisma | typeof tpexExportPris
 
 export const getDailyValuationAsOf = async (symbol: string, asOfDate?: Date): Promise<DailyValuationAsOf | null> => {
   const [twseRows, tpexRows] = await Promise.all([queryDailyValuation(twseExportPrisma, symbol, asOfDate), queryDailyValuation(tpexExportPrisma, symbol, asOfDate)]);
-  const record = newerOf(twseRows[0], tpexRows[0]);
+  const twse = twseRows[0] && { ...twseRows[0], dividend_yield: twseDividendYield(toNullableNumber(twseRows[0].dividend_yield), twseRows[0].trade_date) };
+  const record = newerOf(twse, tpexRows[0]);
   if (!record) return null;
   return {
     tradeDate: record.trade_date,

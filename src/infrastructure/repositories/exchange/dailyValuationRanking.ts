@@ -4,6 +4,7 @@ import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { Prisma } from '#generated/tpex-export-client';
 import { Prisma as TwsePrisma } from '#generated/twse-export-client';
 import type { Market } from './marketLists';
+import { TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM } from '@/domain/market/twseDividendYield';
 
 // 估值排行（GET /valuation/ranking）查 daily_valuation 的 raw SQL——2026-09-17 重構 Phase 2 從
 // http/modules/ranking/calculateRanking.ts 搬來（逐字），那邊只留 zod schema 跟合併/警語的編排。
@@ -53,7 +54,11 @@ export const queryTwseValuationRanking = async (
   excludeNonPositive: boolean,
   companySymbols: Set<string>
 ): Promise<ValuationRankingQueryResult> => {
-  const column = TwsePrisma.raw(`"${METRIC_COLUMNS[metric]}"`);
+  // 2026-08-28 起上市沒配息寫空白，當 0（見 domain/market/twseDividendYield.ts）。
+  const column =
+    metric === 'dividendYield' && tradeDate >= TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM
+      ? TwsePrisma.raw('COALESCE("dividend_yield", 0)')
+      : TwsePrisma.raw(`"${METRIC_COLUMNS[metric]}"`);
   const directionSql = order === 'asc' ? TwsePrisma.raw('ASC') : TwsePrisma.raw('DESC');
   const filterSql = excludeNonPositive ? TwsePrisma.sql`${column} > 0` : TwsePrisma.sql`${column} IS NOT NULL`;
   const symbolArray = [...companySymbols];

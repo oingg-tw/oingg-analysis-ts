@@ -4,8 +4,7 @@ import { round2 } from '@/domain/metrics/shared/numericHelpers';
 // 這裡是純彙總——每家公司各自最新一筆值（呼叫端查好）按類股分組，平均數與中位數兩個都給：
 // 使用者指定 Y 軸用「平均」，但成長率這種有極端值的分布（基期很小的公司 CAGR 可以上百 %）平均數會被
 // 一兩家拉走，中位數比較能代表類股，所以兩種都算，前端依軸挑，不用再來回改 API。
-// null 一律不計入 count（成長率 null = 基期沒配息或歷史不足）。殖利率 0 要不要算進去由呼叫端決定——
-// 見 application/industries/service.ts 為什麼現在先排除。
+// null 一律不計入 count（成長率 null = 基期沒配息或歷史不足）；殖利率 0（沒配息）是真實值，照算。
 export interface SectorCompanyValues {
   sectorCode: string;
   sectorName: string;
