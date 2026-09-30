@@ -233,13 +233,19 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
     securityType: 'ETF' as const,
     recordDate: toIso(r.record_date),
     distributionPerUnit: toNumberOrNull(r.distribution_per_unit),
-    composition: {
-      dividendIncomePct: toNumberOrNull(r.composition_dividend_income_pct),
-      interestIncomePct: toNumberOrNull(r.composition_interest_income_pct),
-      incomeEqualizationPct: toNumberOrNull(r.composition_income_equalization_pct),
-      realizedCapitalGainPct: toNumberOrNull(r.composition_realized_capital_gain_pct),
-      otherIncomePct: toNumberOrNull(r.composition_other_income_pct),
-    },
+    // 2026-09-30 金額還沒公布的列不給組成：FundClear 對預告列直接放**上一次**的組成（00939 2026-10-05 跟 09-01 逐字相同，
+    // sitca-ts 比對原始回應確認是來源原樣），不是對這次的預測。sitca 的建議是「amount_announced=false 的列組成不要顯示、不要拿去算」，
+    // 那個欄位的定義就是 distribution_per_unit 非 null，所以這裡直接用它判斷。從 payload 看不出這種錯，所以在這層擋，不交給下游叮嚀。
+    composition:
+      r.distribution_per_unit === null
+        ? null
+        : {
+            dividendIncomePct: toNumberOrNull(r.composition_dividend_income_pct),
+            interestIncomePct: toNumberOrNull(r.composition_interest_income_pct),
+            incomeEqualizationPct: toNumberOrNull(r.composition_income_equalization_pct),
+            realizedCapitalGainPct: toNumberOrNull(r.composition_realized_capital_gain_pct),
+            otherIncomePct: toNumberOrNull(r.composition_other_income_pct),
+          },
   }));
 
   // 同一個 (exDate, symbol) 可能同時出現在兩邊——**twse 預告表本來就含 ETF**（它們也是上市證券），

@@ -120,7 +120,10 @@ export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend(
         '0 = 有揭露且該項確實為零。實測近 24 個月 1,965 筆裡 1,783 筆為 0、166 筆 > 0、16 筆未揭露——' +
         '資料源本來就分得開，不要把 null 當成 0 顯示。' +
         '可信度跟 distributionPerUnit 不同：金額是實際公告值，**組成百分比是發行商公告時的預估，不是最終結算**' +
-        '（2026-09-30 sitca-ts 提醒），顯示時要標明是預估。',
+        '（2026-09-30 sitca-ts 提醒），顯示時要標明是預估。' +
+        '**distributionPerUnit 是 null（金額還沒公布）的列，composition 一律是 null**：FundClear 在預告列放的是上一次的組成，不是這次的。' +
+        '五項加總可能不到 100（被動型、主動型都有，成因在來源端未知）：缺的部分是「未揭露」，不要併進 otherIncomePct、不要反推，' +
+        '也不要拿「加總應為 100」驗證資料。',
     }),
 }) satisfies z.ZodType<ExDividendCalendarEntry>;
 

@@ -147,7 +147,23 @@ describe('getExDividendCalendar', () => {
       recordDate: '2026-09-25', // 只有 sitca 有
       companyName: '00939基金', // 預告列查不到 profile（ETF 不在 company_profile），用基金名稱補
     });
-    expect(entries[0]!.composition?.incomeEqualizationPct).toBe(74.48);
+    // 2026-09-30：金額還沒公布的列不給組成——FundClear 在預告列放的是上一次的組成（sitca-ts 比對原始回應確認），不是這次的。
+    expect(entries[0]!.composition).toBeNull();
+  });
+
+  test('金額已公布的 ETF 列照給組成；未公布的給 null（不是上一次的值）', async () => {
+    const d = createTestDeps({
+      market: { getExDividendCalendar: async () => [] } as unknown as MarketDataPort,
+      dividendEvents: { listRealizedExDividendRows: async () => [] } as unknown as DividendEventsPort,
+      companyProfiles: { getCompanyNamesForSymbols: async () => new Map() } as unknown as CompanyProfilePort,
+      etfData: {
+        listEtfDividendsForRange: async () => [etfRow('00939', '2026-09-01'), etfRow('00939', '2026-10-05', { distribution_per_unit: null })],
+      } as unknown as EtfDataPort,
+    });
+    const { entries } = await getExDividendCalendar(new Date('2026-09-01'), new Date('2026-10-31'), d);
+    const byDate = new Map(entries.map((e) => [e.exDate, e]));
+    expect(byDate.get('2026-09-01')!.composition?.incomeEqualizationPct).toBe(74.48);
+    expect(byDate.get('2026-10-05')!.composition).toBeNull();
   });
 
   test('個股列的 ETF 專屬欄位一律 null，securityType 是 COMMON', async () => {
