@@ -57,10 +57,13 @@ const processSource = async (source: UpstreamSource, fromExclusive: bigint, toIn
 
   const quarterly = await refreshFromQuarters(targets.quarterlyFrom, { logPrefix: prefix, memo });
 
-  const dailySymbols = targets.dailyLatestAll
-    ? (await backfillUniverse.listSymbolsWithIncomeStatement(latest.year, latest.quarter)).map((r) => r.symbol)
-    : [...targets.dailyLatest];
-  const daily = { symbols: dailySymbols.length, actions: {} as Record<string, number>, failed: [] as string[] };
+  // 逐日型只算我們的公司母體（最新一季有損益表的公司）。2026-09-30 tpex 第一次實打就踩到：上櫃 daily_price 每天約 1.1 萬列，
+  // 九成是權證與 ETF，不過濾的話會替 7,610 檔權證寫 liveMarketCap 的空值列。排除的檔數寫進摘要給人看，不默默丟。
+  const universe = new Set((await backfillUniverse.listSymbolsWithIncomeStatement(latest.year, latest.quarter)).map((r) => r.symbol));
+  const dailySymbols = targets.dailyLatestAll ? [...universe] : [...targets.dailyLatest].filter((s) => universe.has(s));
+  const excludedNonCompany = targets.dailyLatestAll ? 0 : targets.dailyLatest.size - dailySymbols.length;
+  if (excludedNonCompany > 0) console.log(`${prefix} 逐日型排除 ${excludedNonCompany} 檔不在公司母體的代號（權證、ETF 等）`);
+  const daily = { symbols: dailySymbols.length, excludedNonCompany, actions: {} as Record<string, number>, failed: [] as string[] };
   await runPool(dailySymbols, async (symbol) => {
     const query = { symbol, dataType: await reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' };
     const { failures, outcomes } = await runTasks(buildGeneralTasks(symbol).filter(([label]) => DAILY_LABELS.has(label)));
