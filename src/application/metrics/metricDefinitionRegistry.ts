@@ -126,6 +126,7 @@ import { totalLeverageDegreeDefinition } from '@/domain/metrics/resilience/total
 import { nonOperatingIncomeRatioDefinition } from '@/domain/metrics/profitability/nonOperatingIncomeRatio/nonOperatingIncomeRatioDefinition';
 import { equityRatioDefinition } from '@/domain/metrics/resilience/equityRatio/equityRatioDefinition';
 import { cashToAssetsRatioDefinition } from '@/domain/metrics/resilience/cashToAssetsRatio/cashToAssetsRatioDefinition';
+import { cashPerShareDefinition } from '@/domain/metrics/resilience/cashPerShare/cashPerShareDefinition';
 import { grahamNumberDefinition } from '@/domain/metrics/valuation/grahamNumber/grahamNumberDefinition';
 import { ncavDefinition } from '@/domain/metrics/valuation/ncav/ncavDefinition';
 import { ownerEarningsDefinition } from '@/domain/metrics/quality/ownerEarnings/ownerEarningsDefinition';
@@ -298,6 +299,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   nonOperatingIncomeRatio: nonOperatingIncomeRatioDefinition,
   equityRatio: equityRatioDefinition,
   cashToAssetsRatio: cashToAssetsRatioDefinition,
+  cashPerShare: cashPerShareDefinition,
   grahamNumber: grahamNumberDefinition,
   ncav: ncavDefinition,
   ownerEarnings: ownerEarningsDefinition,

@@ -31,6 +31,7 @@ import { getDeRatioProvenance } from '@/application/metrics/resilience/deRatio/g
 import { getLongTermDebtToNetCurrentAssetsProvenance } from '@/application/metrics/resilience/longTermDebtToNetCurrentAssets/getLongTermDebtToNetCurrentAssetsProvenance';
 import { getEquityRatioProvenance } from '@/application/metrics/resilience/equityRatio/getEquityRatioProvenance';
 import { getCashToAssetsRatioProvenance } from '@/application/metrics/resilience/cashToAssetsRatio/getCashToAssetsRatioProvenance';
+import { getCashPerShareProvenance } from '@/application/metrics/resilience/cashPerShare/getCashPerShareProvenance';
 import { getFinancialLeverageDegreeProvenance } from '@/application/metrics/resilience/financialLeverageDegree/getFinancialLeverageDegreeProvenance';
 import { getTotalLeverageDegreeProvenance } from '@/application/metrics/resilience/totalLeverageDegree/getTotalLeverageDegreeProvenance';
 import { getInterestCoverageProvenance } from '@/application/metrics/resilience/interestCoverage/getInterestCoverageProvenance';
@@ -158,6 +159,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   longTermDebtToNetCurrentAssets: (query) => getLongTermDebtToNetCurrentAssetsProvenance(query, deps),
   equityRatio: (query) => getEquityRatioProvenance(query, deps),
   cashToAssetsRatio: (query) => getCashToAssetsRatioProvenance(query, deps),
+  cashPerShare: (query) => getCashPerShareProvenance(query, deps),
   financialLeverageDegree: (query) => getFinancialLeverageDegreeProvenance(query, deps),
   totalLeverageDegree: (query) => getTotalLeverageDegreeProvenance(query, deps),
   interestCoverage: (query) => getInterestCoverageProvenance(query, deps),

@@ -67,6 +67,7 @@ import { computeAltmanZScore } from '@/application/metrics/resilience/altmanZSco
 import { computeBankAssetQualityFamily } from '@/application/metrics/resilience/bankAssetQuality/computeBankAssetQualityFamily';
 import { computeBankCapitalAdequacyFamily } from '@/application/metrics/resilience/bankCapitalAdequacy/computeBankCapitalAdequacyFamily';
 import { computeCashToAssetsRatio } from '@/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatio';
+import { computeCashPerShare } from '@/application/metrics/resilience/cashPerShare/computeCashPerShare';
 import { computeDebtRatio } from '@/application/metrics/resilience/debtRatio/computeDebtRatio';
 import { computeDeRatio } from '@/application/metrics/resilience/deRatio/computeDeRatio';
 import { computeEquityRatio } from '@/application/metrics/resilience/equityRatio/computeEquityRatio';
@@ -199,6 +200,7 @@ export const computeAndWriteAltmanZScorePit = runPit(computeAltmanZScore);
 export const computeAndWriteBankAssetQualityFamilyPit = runPit(computeBankAssetQualityFamily);
 export const computeAndWriteBankCapitalAdequacyFamilyPit = runPit(computeBankCapitalAdequacyFamily);
 export const computeAndWriteCashToAssetsRatioPit = runPit(computeCashToAssetsRatio);
+export const computeAndWriteCashPerSharePit = runPit(computeCashPerShare);
 export const computeAndWriteDebtRatioPit = runPit(computeDebtRatio);
 export const computeAndWriteDeRatioPit = runPit(computeDeRatio);
 export const computeAndWriteEquityRatioPit = runPit(computeEquityRatio);
