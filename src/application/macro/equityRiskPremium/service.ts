@@ -54,7 +54,8 @@ const computeSupplySide = (sources: SupplySideSources, startKey: string, endKey:
     riskFreeRate: riskFree,
     inflationMonths: inflationSamples.length,
     gdpQuarters: growthSamples.length,
-    dividendYieldTradeDate: sources.dividendRows[0]?.tradeDate.toISOString().slice(0, 10) ?? null,
+    // 每家各取自己最新一筆（兩個市場更新時間不同），這裡報最新的那天。
+    dividendYieldTradeDate: listedRows.reduce<string | null>((max, r) => { const d = r.tradeDate.toISOString().slice(0, 10); return max === null || d > max ? d : max; }, null),
     dividendYieldCompanyCount: dividend?.count ?? 0,
     dividendYieldMarketCapCoverage: dividend === null ? null : round4(dividend.coveragePercent),
   };

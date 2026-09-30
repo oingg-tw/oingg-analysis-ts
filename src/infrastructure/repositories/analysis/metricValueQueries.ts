@@ -40,7 +40,10 @@ export const findLatestSnapshotValue = async (
   return { tradeDate: row.tradeDate, value: row.value !== null ? Number(row.value) : null };
 };
 
-// 全市場最新一個交易日的現金殖利率＋即時市值（每家一列，data_type '2' 優先），見 port 說明。
+// 每家公司各自最新一筆現金殖利率＋同一天的即時市值（每家一列，data_type '2' 優先），見 port 說明。
+// 2026-09-30 修：原本取「全市場最新一個交易日」，tpex 的上游變動通知先把上櫃 9/30 寫進來、上市還沒到，最新那天只剩上櫃公司，
+// 供給面 ERP 的上市殖利率就整批不見（防護有擋下、回 null，沒算出錯值）。兩個市場更新時間不同，不能假設同一天到齊。
+// 只看近 14 天：更舊的代表那家已經不交易（停牌、下市），不該拿舊殖利率當現況。
 export const listLatestDividendYieldWithMarketCap = async (): Promise<{ tradeDate: Date; symbol: string; dividendYield: number | null; marketCap: number | null }[]> => {
   const rows = await analysisPrisma.$queryRaw<{ trade_date: Date; symbol: string; dividend_yield: number | null; market_cap: number | null }[]>`
     SELECT DISTINCT ON (y.symbol) y.trade_date, y.symbol, y.value::float8 AS dividend_yield, m.value::float8 AS market_cap
@@ -49,8 +52,8 @@ export const listLatestDividendYieldWithMarketCap = async (): Promise<{ tradeDat
       ON m.metric_code = 'liveMarketCap' AND m.snapshot_cadence = y.snapshot_cadence AND m.symbol = y.symbol
      AND m.trade_date = y.trade_date AND m.data_type = y.data_type AND m.subsidiary_company_id = y.subsidiary_company_id
     WHERE y.metric_code = 'dividendYield' AND y.snapshot_cadence = 'EOD' AND y.subsidiary_company_id = ''
-      AND y.trade_date = (SELECT MAX(trade_date) FROM metric_daily_cadence_values WHERE metric_code = 'dividendYield' AND snapshot_cadence = 'EOD')
-    ORDER BY y.symbol, y.data_type DESC
+      AND y.trade_date >= (SELECT MAX(trade_date) FROM metric_daily_cadence_values WHERE metric_code = 'dividendYield' AND snapshot_cadence = 'EOD') - 14
+    ORDER BY y.symbol, y.trade_date DESC, y.data_type DESC
   `;
   return rows.map((r) => ({ tradeDate: r.trade_date, symbol: r.symbol, dividendYield: r.dividend_yield, marketCap: r.market_cap }));
 };
