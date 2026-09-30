@@ -22,7 +22,7 @@
         "changePercent": "<number>",
         "close": "<number>",
         "companyName": "<string>",
-        "market": "TWSE",
+        "market": "TPEx",
         "previousClose": "<number>",
         "previousTradeDate": "<date>",
         "rank": "<number>",
