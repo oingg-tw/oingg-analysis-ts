@@ -1,3 +1,4 @@
+import type { SectorDividendSummary } from '@/domain/industry/sectorDividendSummary';
 import type { IndustryLevel, IndustryPathNode, IndustryTreeChildSummary, SecuritiesIndustrySector } from '@/application/ports/industryReference';
 
 // GET /industries/* 的回應形狀（application 真理來源）——http/modules/industries/types.ts 的 zod schema 用
@@ -34,4 +35,9 @@ export interface IndustryFlatResult {
 
 export interface SecuritiesIndustrySectorsResult {
   sectors: SecuritiesIndustrySector[];
+}
+
+export interface SectorDividendSummaryResult {
+  dividendYieldTradeDate: string | null; // 殖利率母體裡最新的交易日（YYYY-MM-DD）
+  sectors: SectorDividendSummary[];
 }

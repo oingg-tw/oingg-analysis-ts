@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { IndustryLevel } from '@/application/ports/industryReference';
-import type { IndustryFlatResult, IndustryTreeNodeResult, SecuritiesIndustrySectorsResult } from '@/application/industries/types';
+import type { IndustryFlatResult, IndustryTreeNodeResult, SectorDividendSummaryResult, SecuritiesIndustrySectorsResult } from '@/application/industries/types';
 
 // 2026-09-05 新增——「產業追蹤」樹狀階層瀏覽功能，見
 // infrastructure/repositories/gov/industryClassification.ts 的說明。
@@ -70,3 +70,25 @@ export const securitiesIndustrySectorsResultSchema = z.object({
   sectors: z.array(securitiesIndustrySectorSchema),
 }) satisfies z.ZodType<SecuritiesIndustrySectorsResult>;
 export type { SecuritiesIndustrySectorsResult };
+
+// 2026-09-30 產業分析圖表（每個類股一個點：Y 殖利率、X 股利 3 年成長率），見 application/industries/service.ts。
+const axisSummarySchema = (label: string) =>
+  z.object({
+    count: z.number().meta({ description: `這個類股${label}有值的公司數（可能小於 companyCount）` }),
+    mean: z.number().nullable().meta({ description: `平均數（%）；count 為 0 時 null` }),
+    median: z.number().nullable().meta({ description: `中位數（%）；count 為 0 時 null` }),
+  });
+
+export const sectorDividendSummaryResultSchema = z.object({
+  dividendYieldTradeDate: z.string().nullable().meta({ description: '殖利率母體裡最新的交易日（YYYY-MM-DD）；圖表標資料日期用' }),
+  sectors: z.array(
+    z.object({
+      sectorCode: z.string().meta({ description: '證交所類股代碼，同 GET /industries/securities-sectors' }),
+      sectorName: z.string(),
+      companyCount: z.number().meta({ description: '這個類股的上市＋上櫃公司數（不含興櫃）' }),
+      dividendYield: axisSummarySchema('殖利率').meta({ description: '交易所每日公布殖利率（dividendYield.EOD），每家取最新一筆；只統計有配息（> 0）的公司' }),
+      dividendGrowthRate3y: axisSummarySchema('股利 3 年成長率').meta({ description: '股利 3 年成長率（dividendGrowthRate3y.FY），每家取最新年度；基期沒配息或歷史不足的公司沒有值、不計入' }),
+    })
+  ),
+}) satisfies z.ZodType<SectorDividendSummaryResult>;
+export type { SectorDividendSummaryResult };

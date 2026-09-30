@@ -1,12 +1,14 @@
 import type { AppDeps } from '@/application/deps';
-import type { IndustryFlatResult, IndustryTreeNodeResult, SecuritiesIndustrySectorsResult } from './types';
+import { resolveFieldOrThrow } from '@/application/screener/fieldResolver';
+import { summarizeSectorDividends } from '@/domain/industry/sectorDividendSummary';
+import type { IndustryFlatResult, IndustryTreeNodeResult, SectorDividendSummaryResult, SecuritiesIndustrySectorsResult } from './types';
 
 // 2026-09-17 Phase 4：從 http/modules/industries/controller.ts 搬來，快取存取器改走 deps.industryReference、
 // 公司名稱改走 deps.companyProfiles，邏輯逐字不變。
 // 2026-09-20 使用者要求完全捨棄 playwright-py 供應鏈分類，原本這裡的 getIndustryChainClassification/
 // getIndustryChainClusters/getIndustryChainTree 三個 use case（對應已刪除的 GET /industries/
 // chain-{classification,clusters,tree} 三支端點）已移除。
-export type IndustriesDeps = Pick<AppDeps, 'industryReference' | 'companyProfiles'>;
+export type IndustriesDeps = Pick<AppDeps, 'industryReference' | 'companyProfiles' | 'metricValueQueries'>;
 
 // 給「產業追蹤」樹狀瀏覽頁面用——純瀏覽語意，不做動態層級回退，見 industryClassification.ts 的說明。
 export const getIndustryTree = async (code: string | null, deps: IndustriesDeps): Promise<IndustryTreeNodeResult> => {
@@ -48,4 +50,45 @@ export const getIndustryFlat = async (deps: IndustriesDeps): Promise<IndustryFla
 export const getSecuritiesIndustrySectors = async (deps: Pick<AppDeps, 'industryReference'>): Promise<SecuritiesIndustrySectorsResult> => {
   const sectors = await deps.industryReference.listSecuritiesIndustrySectors();
   return { sectors };
+};
+
+// 2026-09-30 使用者設計「產業分析圖表」（每個證交所類股一個點，Y 殖利率、X 股利 3 年成長率），彙總規則見
+// domain/industry/sectorDividendSummary.ts。母體 = 上市＋上櫃、有類股代碼的公司（排除興櫃：沒有交易所每日
+// 殖利率，放進來只會讓 companyCount 虛胖）。每家取各自最新一筆（screener 同一套 CTE）。
+// 殖利率只收最新交易日往前 14 天內的值：停牌、下市前的舊殖利率不是現況（跟供給面 ERP 的
+// listLatestDividendYieldWithMarketCap 同一個判斷）。
+// 殖利率只統計有配息（> 0）的公司：2026-09-30 實查兩個交易所對「沒配息」的寫法不同——tpex-ts 寫 0，twse-ts
+// 的 daily_valuation 寫 null（最新交易日 1,083 家裡 235 家 null、0 家是 0），我們的 dividendYield 照抄成
+// missing_input。把 0 算進去的話，上櫃不配息的公司會拉低平均、上市的不會，同一張圖上兩個市場的口徑不一樣
+// （而且不會報錯）。null 是不是「沒配息」要等 twse-ts 確認；確認之前兩邊都只看配息公司，口徑一致。
+const YIELD_FRESHNESS_DAYS = 14;
+
+export const getSectorDividendSummary = async (deps: Pick<AppDeps, 'companyProfiles' | 'metricValueQueries'>): Promise<SectorDividendSummaryResult> => {
+  const { entries } = await deps.companyProfiles.listAllCompanyNames(Number.MAX_SAFE_INTEGER, 0);
+  const companies = entries.filter((e) => !e.isEmerging && e.sectorCode !== null && e.sectorName !== null);
+  const rows = await deps.metricValueQueries.values(
+    companies.map((c) => c.symbol),
+    [resolveFieldOrThrow('dividendYield.EOD'), resolveFieldOrThrow('dividendGrowthRate3y.FY')]
+  );
+  const bySymbol = new Map(rows.map((r) => [r.symbol as string, r]));
+  const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+  const time = (v: unknown): number | null => (v ? new Date(v as string | Date).getTime() : null);
+
+  const yieldTimes = rows.map((r) => time(r.k0)).filter((t): t is number => t !== null);
+  const latest = yieldTimes.length > 0 ? Math.max(...yieldTimes) : null;
+  const cutoff = latest === null ? null : latest - YIELD_FRESHNESS_DAYS * 86_400_000;
+
+  const sectors = summarizeSectorDividends(
+    companies.map((c) => {
+      const r = bySymbol.get(c.symbol);
+      const t = time(r?.k0);
+      return {
+        sectorCode: c.sectorCode!,
+        sectorName: c.sectorName!,
+        dividendYield: t !== null && cutoff !== null && t >= cutoff && (num(r?.v0) ?? 0) > 0 ? num(r?.v0) : null,
+        dividendGrowthRate3y: num(r?.v1),
+      };
+    })
+  );
+  return { dividendYieldTradeDate: latest === null ? null : new Date(latest).toISOString().slice(0, 10), sectors };
 };

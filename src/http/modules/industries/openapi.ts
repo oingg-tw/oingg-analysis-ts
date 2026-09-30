@@ -1,6 +1,6 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { getIndustryTreeQuerySchema } from './schemas';
-import { industryTreeNodeResultSchema, industryFlatResultSchema, securitiesIndustrySectorsResultSchema } from './types';
+import { industryTreeNodeResultSchema, industryFlatResultSchema, sectorDividendSummaryResultSchema, securitiesIndustrySectorsResultSchema } from './types';
 
 export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
@@ -60,4 +60,22 @@ export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
     },
   });
 
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/sector-dividend-summary',
+    summary: '各證交所類股的殖利率與股利 3 年成長率彙總（產業分析散佈圖用）',
+    description:
+      '每個類股一列，給「Y 軸殖利率、X 軸股利成長率」的產業散佈圖用。類股代碼與名稱同 GET /industries/securities-sectors；' +
+      '母體是上市＋上櫃公司（不含興櫃），每家取各自最新一筆值再按類股彙總。\n\n' +
+      '每一軸都同時給平均數（mean）與中位數（median）：成長率有極端值（基期很小的公司 CAGR 可以上百 %），平均數會被少數公司拉走，' +
+      '中位數比較能代表類股；兩個都給，前端自行挑。count 是那一軸有值的公司數，樣本很少的類股（例如個位數）點的位置不穩定，' +
+      '建議在圖上標出 count 或淡化。\n\n' +
+      '殖利率：交易所每日公布值（dividendYield.EOD），只收最新交易日往前 14 天內的值（停牌、下市前的舊值不算現況）；' +
+      '只統計有配息（殖利率 > 0）的公司——上市與上櫃對「沒配息」的原始寫法不同（一邊是空值、一邊是 0），算進去會讓兩個市場口徑不一致。成長率：dividendGrowthRate3y.FY，基期沒配息或歷史不足的公司沒有值、不計入。' +
+      '個別類股內每家公司的數值請用 POST /screener 帶 sectorCodes 與這兩個 field 查。',
+    tags: ['Industries'],
+    responses: {
+      200: { description: '每個類股的兩軸彙總。', content: { 'application/json': { schema: sectorDividendSummaryResultSchema } } },
+    },
+  });
 };
