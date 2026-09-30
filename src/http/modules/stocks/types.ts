@@ -118,7 +118,9 @@ export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend(
         'incomeEqualizationPct 是**收益平準金**佔比，在台灣是「配息是不是配到本金」的核心爭議數字。' +
         '**原樣透傳、不做任何評價**。注意每一項的 null 與 0 是兩件事：null = 該次配息沒有揭露組成，' +
         '0 = 有揭露且該項確實為零。實測近 24 個月 1,965 筆裡 1,783 筆為 0、166 筆 > 0、16 筆未揭露——' +
-        '資料源本來就分得開，不要把 null 當成 0 顯示。',
+        '資料源本來就分得開，不要把 null 當成 0 顯示。' +
+        '可信度跟 distributionPerUnit 不同：金額是實際公告值，**組成百分比是發行商公告時的預估，不是最終結算**' +
+        '（2026-09-30 sitca-ts 提醒），顯示時要標明是預估。',
     }),
 }) satisfies z.ZodType<ExDividendCalendarEntry>;
 
