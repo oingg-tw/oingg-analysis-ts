@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "depositFacilityChangeBp": "<number>",
+        "depositFacilityRate": "<number>",
+        "effectiveDate": "<date>",
+        "mainRefinancingChangeBp": "<number>",
+        "mainRefinancingIsMinimumBid": "<boolean>",
+        "mainRefinancingRate": "<number>",
+        "marginalLendingChangeBp": "<number>",
+        "marginalLendingRate": "<number>"
+      }
+    ]
+  }
+}

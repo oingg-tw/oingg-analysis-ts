@@ -76,6 +76,7 @@ const cases: GoldenCase[] = [
   { slug: 'macro-usd-twd-rate', method: 'get', path: '/macro/usd-twd-rate?limit=5&interval=monthly' },
   { slug: 'macro-cpi', method: 'get', path: '/macro/cpi?from=2026-01' },
   { slug: 'macro-gdp', method: 'get', path: '/macro/gdp?from=2026-Q1' },
+  { slug: 'macro-ecb-policy-rate', method: 'get', path: '/macro/ecb-policy-rate?from=2022-01-01' },
 ];
 
 let harness: Awaited<ReturnType<typeof startApp>>;
