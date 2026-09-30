@@ -122,8 +122,10 @@ export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend(
         '可信度跟 distributionPerUnit 不同：金額是實際公告值，**組成百分比是發行商公告時的預估，不是最終結算**' +
         '（2026-09-30 sitca-ts 提醒），顯示時要標明是預估。' +
         '**distributionPerUnit 是 null（金額還沒公布）的列，composition 一律是 null**：FundClear 在預告列放的是上一次的組成，不是這次的。' +
-        '五項加總可能不到 100（被動型、主動型都有，成因在來源端未知）：缺的部分是「未揭露」，不要併進 otherIncomePct、不要反推，' +
-        '也不要拿「加總應為 100」驗證資料。',
+        '所以 ETF 列的 composition 有三種狀態：null（金額還沒公布）／物件存在但五項全 null（金額已公布、組成還沒公告——來源用五項全 0.00 表示，' +
+        '例如 00406A 2026-07-31、09-02）／有數值。第二種不要畫成空的圖。' +
+        '五項加總可能不等於 100：±0.01 是四捨五入，差很多的（例如 00404A 31.67）成因在來源端未知——缺的部分是「未揭露」，' +
+        '不要併進 otherIncomePct、不要反推，也不要拿「加總應為 100」驗證資料。',
     }),
 }) satisfies z.ZodType<ExDividendCalendarEntry>;
 
