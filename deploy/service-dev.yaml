@@ -76,3 +76,16 @@ spec:
                 secretKeyRef:
                   name: TWSE-EXPORT-DATABASE-URL
                   key: latest
+            # 2026-09-30 上游變動通知（POST /upstream/changes）：每個來源一把金鑰，Job 名稱讓入列後叫醒處理程式。
+            - name: UPSTREAM_KEY_MOPS
+              valueFrom:
+                secretKeyRef:
+                  name: UPSTREAM-KEY-MOPS
+                  key: latest
+            - name: UPSTREAM_KEY_TPEX
+              valueFrom:
+                secretKeyRef:
+                  name: UPSTREAM-KEY-TPEX
+                  key: latest
+            - name: UPSTREAM_PROCESSOR_JOB
+              value: projects/oingg-analysis/locations/asia-southeast1/jobs/oingg-analysis-ts-upstream-dev

@@ -1,0 +1,70 @@
+# Cloud Run「工作」開發環境：上游變動的處理程式（scripts/processUpstreamChangesPit.ts），寫 analysis DEV 分支。
+# 2026-09-30 使用者拍板：上游 POST /upstream/changes → dev 服務存成待辦 → 叫醒這個 Job 依序處理。不是排程，由服務叫醒；
+# 處理權租約保證同時只有一個在跑（被叫醒時別人正在跑就直接結束，跑的那個會處理到待辦清空）。
+# 執行帳號、密鑰跟 job-dev.yaml 同一套（analysis 讀寫 DEV、上游讀 PRD）；dev 服務的執行帳號要有這個 Job 的 run.invoker 才叫得醒。
+# 部署：gcloud run jobs replace deploy/job-upstream-dev.yaml --region=asia-southeast1 --project=oingg-analysis
+#
+# 以下設定的理由見 job-dev.yaml 的註解，這裡不重複。
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: oingg-analysis-ts-upstream-dev
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: oingg-analysis-run-dev@oingg-analysis.iam.gserviceaccount.com
+          maxRetries: 0
+          timeoutSeconds: 10800
+          containers:
+            - image: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts:latest
+              command: ['node']
+              args: ['dist/scripts/processUpstreamChangesPit.js']
+              resources:
+                limits:
+                  cpu: '2'
+                  memory: 1Gi
+              env:
+                - name: NODE_OPTIONS
+                  value: --max-old-space-size=768
+                - name: NODE_ENV
+                  value: production
+                - name: BFF_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: BFF-API-KEY-DEV
+                      key: latest
+                - name: ANALYSIS_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: ANALYSIS-DATABASE-URL-DEV
+                      key: latest
+                - name: MOPS_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: MOPS-EXPORT-DATABASE-URL
+                      key: latest
+                - name: GOV_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: GOV-EXPORT-DATABASE-URL
+                      key: latest
+                - name: TWSE_EXPORT_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: TWSE-EXPORT-DATABASE-URL
+                      key: latest
+                - name: TPEX_EXPORT_DATABASE_URL_PROD
+                  valueFrom:
+                    secretKeyRef:
+                      name: TPEX-EXPORT-DATABASE-URL-PROD
+                      key: latest
+                - name: SITCA_EXPORT_DATABASE_URL_PROD
+                  valueFrom:
+                    secretKeyRef:
+                      name: SITCA-EXPORT-DATABASE-URL-PROD
+                      key: latest
