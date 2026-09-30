@@ -9,18 +9,25 @@ import type { DailyCloseRow } from '@/application/ports/marketData';
 export type RawDailyCloseRow = DailyCloseRow;
 
 // 個股自 since 起（含）依日期升冪的收盤價；until 有給就只取到 until（含）。
-export const listDailyClosesSince = (symbol: string, since: Date, until?: Date): Promise<RawDailyCloseRow[]> =>
+// 2026-09-30 修：原本只查上市（twseExportPrisma），上櫃公司查回空陣列 → beta 整批沒算、也不報錯（115Q2 實測 beta 只有
+// 上市 1,082 家、上櫃 0 家）。改成上市＋上櫃都查再合併，跟下面 listClosesBothExchanges 同一個理由（轉板公司兩邊各一段）。
+const queryClosesSince = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until?: Date) =>
   until
-    ? twseExportPrisma.$queryRaw<RawDailyCloseRow[]>`
+    ? db.$queryRaw<RawDailyCloseRow[]>`
         SELECT trade_date, close FROM "export"."daily_price"
         WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until}
         ORDER BY trade_date ASC
       `
-    : twseExportPrisma.$queryRaw<RawDailyCloseRow[]>`
+    : db.$queryRaw<RawDailyCloseRow[]>`
         SELECT trade_date, close FROM "export"."daily_price"
         WHERE symbol = ${symbol} AND trade_date >= ${since}
         ORDER BY trade_date ASC
       `;
+
+export const listDailyClosesSince = async (symbol: string, since: Date, until?: Date): Promise<RawDailyCloseRow[]> => {
+  const [listed, otc] = await Promise.all([queryClosesSince(twseExportPrisma, symbol, since, until), queryClosesSince(tpexExportPrisma, symbol, since, until)]);
+  return [...listed, ...otc].sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime());
+};
 
 // 大盤加權指數自 since 起（含）依日期升冪的收盤點數；until 有給就只取到 until（含）。
 export const listTaiexClosesSince = (since: Date, until?: Date): Promise<RawDailyCloseRow[]> =>
@@ -36,10 +43,12 @@ export const listTaiexClosesSince = (since: Date, until?: Date): Promise<RawDail
         ORDER BY trade_date ASC
       `;
 
-// 這檔股票在 daily_price 最早的交易日（完全沒有股價資料回 null）。
+// 這檔股票在 daily_price 最早的交易日（上市＋上櫃取較早；完全沒有股價資料回 null）。2026-09-30 同上，原本只查上市。
 export const getEarliestTradeDate = async (symbol: string): Promise<Date | null> => {
-  const rows = await twseExportPrisma.$queryRaw<{ min_date: Date | null }[]>`SELECT MIN(trade_date) AS min_date FROM "export"."daily_price" WHERE symbol = ${symbol}`;
-  return rows[0]?.min_date ?? null;
+  const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
+    db.$queryRaw<{ min_date: Date | null }[]>`SELECT MIN(trade_date) AS min_date FROM "export"."daily_price" WHERE symbol = ${symbol}`;
+  const dates = (await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)])).map((r) => r[0]?.min_date ?? null).filter((d): d is Date => d !== null);
+  return dates.length === 0 ? null : new Date(Math.min(...dates.map((d) => d.getTime())));
 };
 
 // 2026-09-26 面額換發偵測用（原在 twse/marketCap.ts，2026-09-27 股本規則 B 也要用，搬來共用）：上市＋上櫃合併、只取有成交的日子。
