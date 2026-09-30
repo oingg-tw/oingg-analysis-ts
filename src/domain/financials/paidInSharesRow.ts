@@ -83,11 +83,19 @@ export const pickPaidInSharesRow = <R extends CapitalStockRow>(rowsNewestFirst: 
 // 觸發條件：**整列都跟資產負債表對不上**——「選出的股數 × 面額」與「同列實收資本」都差超過 20%。
 // 比金額不比股數：MOPS 自己的面額欄有寫錯的（7851 寫 0.5 實為 5、6564 寫 32 實為 10，mops-ts 原始頁確認），
 // 用股數比會誤判 10 倍；同列實收資本跟資產負債表一致就代表這列沒漏事件。
-// 20%：114Q4 實測差距 >20% 時資產負債表較接近年報 EPS 隱含股數 14:2，≤20% 約各半（增資登記時間差），留給股本歷史。
 // 只裁判「資產負債表季末之前生效」的列：季末之後的新異動資產負債表還沒反映，不能拿舊季末去蓋。
 // ponytail: 除數用面額欄，面額欄寫錯又同時漏記事件會算錯（mops 點名面額污染 10 列，目前都沒有漏記事件）。
 // ponytail: 逐日型指標用「季末 ≤ 查詢日」的資產負債表，季報公告前那一個多月有前視（只影響被這條改寫的列）。
-const BALANCE_SHEET_MAX_GAP = 0.2;
+//
+// 2026-09-30 門檻從 20% 收到 1%（使用者：「找到根因就修」）。根因是**股本歷史不是股數的權威來源**，季末的權威是資產負債表的
+// 法定股本（mops-ts 查證：t05st05 對 394 家本來就沒有 2024 年後的事件、0 家漏抓；4702 連 −68% 的減資都沒記）。
+// 原本的 20% 是拿「年報 EPS 隱含股數」當裁判定的，那是**期間加權平均**，季中有增資的公司本來就對不上季末股數，裁判本身有偏差。
+// 實測 115Q2：差 1~20% 的 118 家（85 家股本歷史超過一年沒異動＝漏記；33 家近一年有異動＝資產負債表領先登記——2314、2464、3033
+// 的季末資產負債表股數＝股本歷史 7~8 月才登記的那一筆，可轉債轉換／員工認股先發行後登記）；抽查的例外（3702、1795、3138、5706、8467）
+// 也都是資產負債表對。6115 股本歷史停在 2012/01 的 1.64 億股、資產負債表 1.88 億股，差 14.6%，20% 時 EPS 每季 +14%。
+// 1%：只留四捨五入。面額不是新台幣的外國企業（910861 面額 0.1、4157 0.003）資本 ÷ 面額沒有意義，維持原本 20% 的比對。
+const BALANCE_SHEET_MAX_GAP = 0.01;
+const FOREIGN_PAR_MAX_GAP = 0.2;
 
 export interface BalanceSheetCapital {
   quarterEndYm: number; // 季末 年*100+月
@@ -100,7 +108,8 @@ export const reconcileWithBalanceSheet = (
 ): bigint => {
   if (!bs || bs.quarterEndYm < picked.ym || !picked.parValue || picked.parValue <= 0 || bs.capitalThousands <= 0n) return picked.shares;
   const bsCapital = Number(bs.capitalThousands) * 1000;
-  const near = (capital: number) => Math.abs(capital / bsCapital - 1) <= BALANCE_SHEET_MAX_GAP;
+  const maxGap = picked.parValue < 1 ? FOREIGN_PAR_MAX_GAP : BALANCE_SHEET_MAX_GAP;
+  const near = (capital: number) => Math.abs(capital / bsCapital - 1) <= maxGap;
   if (near(Number(picked.shares) * picked.parValue) || (picked.paidInCapital !== null && near(Number(picked.paidInCapital)))) return picked.shares;
   return BigInt(Math.round(bsCapital / picked.parValue));
 };
