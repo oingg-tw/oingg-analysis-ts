@@ -36,5 +36,8 @@ export const createTestDeps = (overrides: Partial<AppDeps> = {}): AppDeps => ({
   // 口徑解析預設回 '2'（合併報表）而不是一碰就丟錯：幾乎每個讀取端 use case 都會經過它，測試不該每支都要 seed。
   reportAvailability: { resolveDataType: async () => '2', resolveDataTypeForPeriod: async () => '2' },
   equityChanges: { listAnnualEquityChanges: async () => [] },
+  upstreamQueue: unusedPort('upstreamQueue'),
+  upstreamRowChanges: unusedPort('upstreamRowChanges'),
+  upstreamProcessor: unusedPort('upstreamProcessor'),
   ...overrides,
 });

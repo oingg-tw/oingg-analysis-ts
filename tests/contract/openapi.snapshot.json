@@ -8841,6 +8841,116 @@
         ]
       }
     },
+    "/upstream/changes": {
+      "post": {
+        "description": "只給 mops-ts、tpex-ts、twse-ts 呼叫，不是給 bff-ts 的。通知只帶「處理到 export.row_changes 的第幾筆」，明細留在上游；analysis 存成待辦並叫醒處理程式，處理程式讀那一段明細、換算要重算的公司與期間、只重算那些。冪等：upToId 小於或等於這個來源已收過的值時回 200、不做事，所以重送、亂序、漏送一次都沒關係（下一次會涵蓋）。驗證：Cloud Run IAM（Google ID token）＋每個來源自己的 X-Upstream-Key。",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "source": {
+                    "description": "哪一個上游",
+                    "enum": [
+                      "mops",
+                      "tpex",
+                      "twse"
+                    ],
+                    "type": "string"
+                  },
+                  "tables": {
+                    "description": "選填，這次有變動的表名，只用來寫紀錄給人看，處理時不靠它判斷",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "upToId": {
+                    "description": "這次讓 analysis 處理到該上游 export.row_changes 的哪一個 id（含）；mops 填通過的放行批次的 mops_to_id",
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "source",
+                  "upToId"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "processorTriggered": {
+                      "description": "是否已叫醒處理程式；false 不代表遺失——待辦已存下，下一次通知會再叫",
+                      "type": "boolean"
+                    },
+                    "queueId": {
+                      "description": "新待辦的 id；queued=false 時是 null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "queued": {
+                      "description": "false = upToId 沒有比這個來源已收過的大（重送或亂序），什麼都沒做",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "queued",
+                    "queueId",
+                    "processorTriggered"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "重複或較舊的 upToId，沒做事（queued=false）"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "processorTriggered": {
+                      "description": "是否已叫醒處理程式；false 不代表遺失——待辦已存下，下一次通知會再叫",
+                      "type": "boolean"
+                    },
+                    "queueId": {
+                      "description": "新待辦的 id；queued=false 時是 null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "queued": {
+                      "description": "false = upToId 沒有比這個來源已收過的大（重送或亂序），什麼都沒做",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "queued",
+                    "queueId",
+                    "processorTriggered"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已入列（queued=true）"
+          },
+          "401": {
+            "description": "這個來源的 X-Upstream-Key 不對或沒帶"
+          }
+        },
+        "summary": "上游（mops／tpex／twse）通知 analysis 有新的資料變動",
+        "tags": [
+          "Upstream"
+        ]
+      }
+    },
     "/valuation/ranking": {
       "get": {
         "description": "直接查詢 oingg-twse（上市，daily_valuation，約 1080 檔）跟 oingg-tpex（上櫃，daily_valuation，約 890 檔）兩邊已經算好、每天更新的數字，合併排序後取前 N 名，本服務不重新計算，也不需要事先把每家公司都查過一次——跟本服務其他「查一家公司」的指標完全不同的查詢型態，這支是全市場（上市+上櫃）排行。計算口徑：metric=peRatio&order=asc 是低本益比排行，metric=pbRatio&order=asc 是低淨值比排行，metric=dividendYield&order=desc 是高殖利率排行，order 沒有預設值，必須自己指定，避免呼叫端誤會排序方向。peRatio/pbRatio 排除 <= 0 的公司（虧損或淨值為負），這種情況不是「便宜」，是財務體質出問題，混進「最低本益比」排行榜會誤導——回應的 excludedNonPositiveCount 記錄排除了幾家；dividendYield 沒有這個排除（沒配息是 0，不是負的）。date 選填，不給就抓 daily_valuation 目前最新一個交易日。已排除 ETF/衍生性商品，以及 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾）——只有這支排行有排除 KY 股，不是全服務性質的政策。",

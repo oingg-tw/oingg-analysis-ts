@@ -13,7 +13,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 // - bff：只給 bff-ts 呼叫，套 X-Api-Key。
 export interface HttpModule {
   name: string;
-  auth: 'public' | 'batch' | 'bff';
+  auth: 'public' | 'batch' | 'upstream' | 'bff';
   // 掛在某個路徑前綴底下（/valuation、/macro）；沒給就是掛在根。
   mountPath?: string;
   router: Router;

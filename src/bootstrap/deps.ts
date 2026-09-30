@@ -17,6 +17,10 @@ import { twseMaterialAnnouncements } from '@/infrastructure/repositories/twse/ma
 import { sitcaEtfData } from '@/infrastructure/repositories/sitca/etfQueries';
 import { mopsReportAvailability } from '@/infrastructure/repositories/mops/companyReportAvailability';
 import { mopsEquityChanges } from '@/infrastructure/repositories/mops/equityChangeXbrl';
+import { analysisUpstreamQueue } from '@/infrastructure/repositories/analysis/upstreamChangeQueue';
+import { upstreamRowChanges } from '@/infrastructure/repositories/upstream/rowChanges';
+import { createCloudRunJobTrigger } from '@/infrastructure/gcp/cloudRunJobTrigger';
+import { config } from '@/infrastructure/config';
 import { createPitDeps } from './pitDeps';
 
 // 整個服務的 composition root：指標核心的 pitDeps 加上 HTTP use case 用的 port。全 repo 只有這裡（跟測試的
@@ -41,6 +45,9 @@ export const createAppDeps = (): AppDeps => ({
   etfData: sitcaEtfData,
   reportAvailability: mopsReportAvailability,
   equityChanges: mopsEquityChanges,
+  upstreamQueue: analysisUpstreamQueue,
+  upstreamRowChanges,
+  upstreamProcessor: createCloudRunJobTrigger(config.upstreamProcessorJob),
 });
 
 export const appDeps: AppDeps = createAppDeps();

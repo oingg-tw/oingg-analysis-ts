@@ -33,6 +33,12 @@ const envSchema = z
     TPEX_EXPORT_DATABASE_URL_PROD: nonEmpty.optional(),
     SITCA_EXPORT_DATABASE_URL_DEV: nonEmpty.optional(),
     SITCA_EXPORT_DATABASE_URL_PROD: nonEmpty.optional(),
+    // 2026-09-30 上游變動通知（POST /upstream/changes）：每個來源一把金鑰（X-Upstream-Key），沒設的來源在正式環境一律拒絕；
+    // 處理程式的 Cloud Run Job 完整名稱（projects/…/locations/…/jobs/…），沒設就不自動叫醒（本機手動跑處理腳本）。
+    UPSTREAM_KEY_MOPS: nonEmpty.optional(),
+    UPSTREAM_KEY_TPEX: nonEmpty.optional(),
+    UPSTREAM_KEY_TWSE: nonEmpty.optional(),
+    UPSTREAM_PROCESSOR_JOB: nonEmpty.optional(),
   })
   .superRefine((env, ctx) => {
     const isProduction = env.NODE_ENV === 'production';
@@ -59,6 +65,8 @@ export const config = {
   port: env.PORT,
   bffApiKey: env.BFF_API_KEY ?? null,
   logLevel: env.LOG_LEVEL ?? null,
+  upstreamKeys: { mops: env.UPSTREAM_KEY_MOPS ?? null, tpex: env.UPSTREAM_KEY_TPEX ?? null, twse: env.UPSTREAM_KEY_TWSE ?? null },
+  upstreamProcessorJob: env.UPSTREAM_PROCESSOR_JOB ?? null,
   db: {
     analysis: env.ANALYSIS_DATABASE_URL,
     mopsExport: env.MOPS_EXPORT_DATABASE_URL,

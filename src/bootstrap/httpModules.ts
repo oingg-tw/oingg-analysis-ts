@@ -5,6 +5,9 @@ import { createSystemRouter } from '@/http/modules/system/root';
 import { registerSystemOpenApi } from '@/http/modules/system/openapi';
 import { createBatchRouter } from '@/http/batch/route';
 import { registerBatchOpenApi } from '@/http/batch/openapi';
+import { createUpstreamRouter } from '@/http/modules/upstream/route';
+import { registerUpstreamOpenApi } from '@/http/modules/upstream/openapi';
+import { config } from '@/infrastructure/config';
 import { createMetricsRouter } from '@/http/modules/metrics/route';
 import { registerFiltersOpenApi } from '@/http/modules/metrics/openapi';
 import { createCompaniesRouter } from '@/http/modules/companies/route';
@@ -70,6 +73,8 @@ import { registerMacroSeriesOpenApi } from '@/http/modules/macro/series/openapi'
 // deps 交給 http 層的地方。
 export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
+  // 2026-09-30 上游變動通知：自己驗 X-Upstream-Key，不套 bff 的共用密鑰（不同的信任邊界），所以跟 batch 一樣掛在 bffAuth 之前。
+  { name: 'upstream', auth: 'upstream', router: createUpstreamRouter(deps, { keys: config.upstreamKeys, isProduction: config.isProduction }), registerOpenApi: registerUpstreamOpenApi },
   { name: 'batch', auth: 'batch', router: createBatchRouter(deps), registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: createMetricsRouter(), registerOpenApi: registerFiltersOpenApi },
   { name: 'companies', auth: 'bff', router: createCompaniesRouter(deps), registerOpenApi: registerCompaniesOpenApi },

@@ -70,6 +70,8 @@ export const createApp = (options: AppOptions = defaultAppOptions()) => {
   // Batch 給 GCP Cloud Scheduler 用，不是 BFF——刻意不套 BFF 的共用密鑰（之後接 Cloud Run IAM invoker，
   // 是完全不同的信任邊界，不能共用同一把密鑰；2026-09-17 使用者拍板維持現狀）。
   for (const module of options.modules.filter((m) => m.auth === 'batch')) mount(module);
+  // 上游變動通知：路由自己驗每個來源的 X-Upstream-Key（見 http/modules/upstream/route.ts），也不能套 bff 的密鑰。
+  for (const module of options.modules.filter((m) => m.auth === 'upstream')) mount(module);
   // 以下都是只給 bff-ts 呼叫的模組，2026-09-05 起套用共用密鑰驗證。
   app.use(createBffAuth({ apiKey: options.bffApiKey }));
   for (const module of options.modules.filter((m) => m.auth === 'bff')) mount(module);

@@ -15,21 +15,15 @@
 //     同一件事的精簡寫法，給雲端 Job 用（容器裡沒有檔案，用 gcloud run jobs execute --update-env-vars 傳；
 //     環境變數單一值上限 32KB，大約夠 3,000 家——2026-09-29 那批 1,534 家約 8KB）
 //   DRY_RUN=1 ...  只印要跑幾家、幾個 (公司, 季)，不寫入
-// 公司併發 8（守「DB 工作併發不超過 8」）；同一家公司的各季在同一個 worker 內依序跑，三大表記憶化才吃得到相鄰季重疊的窗口。
+// 重算核心在 ./quarterlyRefresh.ts（跟上游變動處理程式共用）：公司併發 8，同一家公司的各季在同一個 worker 內依序跑。
 // 失敗的 (公司, 季) 寫成同格式的 tmp/refresh-changed-failures.tsv，可以直接當 CHANGES_FILE 餵回來重跑。
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildGeneralTasks, buildBankTasks, runTasks } from './backfillTaskDefinitions';
-import { backfillUniverse } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 import { memoizeStatementsForBackfill } from '../src/bootstrap/memoizedStatements';
-import { getPastNQuarters, type Season } from '../src/domain/calendar/rocQuarter';
-
-const CONCURRENCY = 8;
-const CLEAR_CACHE_EVERY = 100; // 每處理這麼多家公司清一次記憶化快取（見 memoizedStatements.ts 的無上限說明）
-
-const quarterIndex = (year: number, season: number): number => year * 4 + (season - 1);
+import { quarterIndex } from '../src/domain/upstream/recomputeTargets';
+import { refreshFromQuarters } from './quarterlyRefresh';
 
 const keepEarliest = (earliest: Map<string, number>, symbol: string, year: number, season: number, source: string): void => {
   if (!symbol || !Number.isInteger(year) || !(season >= 1 && season <= 4)) throw new Error(`變動清單有無法解析的項目：${source}`);
@@ -62,70 +56,14 @@ const readEarliestChangeBySymbol = (filePath: string): Map<string, number> => {
   return earliest;
 };
 
-const collectActions = (value: unknown, counts: Record<string, number>): void => {
-  if (!value || typeof value !== 'object') return;
-  const record = value as Record<string, unknown>;
-  if (typeof record.action === 'string') {
-    counts[record.action] = (counts[record.action] ?? 0) + 1;
-    return;
-  }
-  for (const inner of Object.values(record)) collectActions(inner, counts);
-};
-
 const main = async () => {
   const filePath = process.env.CHANGES_FILE;
   const changes = process.env.CHANGES;
   if (!filePath === !changes) throw new Error('CHANGES_FILE（TSV，表頭含 symbol / year / quarter）跟 CHANGES（精簡寫法）二選一，必填。');
   const earliest = filePath ? readEarliestChangeBySymbol(filePath) : parseChangesEnv(changes!);
-  const latest = await backfillUniverse.getLatestIncomeStatementQuarter();
-  if (!latest) throw new Error('查不到任何損益表季度，無法決定重算終點。');
-  const latestIndex = quarterIndex(Number(latest.year), Number(latest.quarter));
-  const bankSymbols = new Set((await backfillUniverse.listBankSymbols()).map((r) => r.symbol));
-
-  const plan = [...earliest].map(([symbol, fromIndex]) => ({
-    symbol,
-    quarters: getPastNQuarters({ rocYear: Number(latest.year), season: latest.quarter as Season }, Math.max(latestIndex - fromIndex + 1, 0)),
-  }));
-  const totalJobs = plan.reduce((sum, p) => sum + p.quarters.length, 0);
-  console.log(`[refresh-changed] ${plan.length} 家公司、${totalJobs} 個 (公司, 季)，重算到 ${latest.year}Q${latest.quarter}；其中銀行 ${plan.filter((p) => bankSymbols.has(p.symbol)).length} 家`);
-  if (process.env.DRY_RUN === '1') return;
 
   const memo = memoizeStatementsForBackfill();
-  const actions: Record<string, number> = {};
-  const failed: { symbol: string; year: string; season: string; label: string; message: string }[] = [];
-  const started = Date.now();
-  let symbolsDone = 0;
-  let jobsDone = 0;
-  let cursor = 0;
-
-  const worker = async (): Promise<void> => {
-    while (cursor < plan.length) {
-      const { symbol, quarters } = plan[cursor++]!;
-      for (const quarter of quarters) {
-        const tasks = [...buildGeneralTasks(symbol, quarter), ...(bankSymbols.has(symbol) ? buildBankTasks(symbol, quarter) : [])];
-        const { failures, outcomes } = await runTasks(tasks);
-        for (const { outcome } of outcomes) collectActions(outcome, actions);
-        for (const f of failures) {
-          const message = f.error instanceof Error ? f.error.message : String(f.error);
-          failed.push({ symbol, year: quarter.year, season: quarter.season, label: f.label, message });
-          console.error(`[refresh-changed] ${symbol} ${quarter.year}Q${quarter.season} ${f.label} 失敗：${message}`);
-        }
-        jobsDone += 1;
-      }
-      symbolsDone += 1;
-      if (symbolsDone % CLEAR_CACHE_EVERY === 0) memo.clear();
-      if (symbolsDone % 50 === 0 || symbolsDone === plan.length) {
-        const minutes = (Date.now() - started) / 60000;
-        console.log(
-          `[refresh-changed] ${symbolsDone}/${plan.length} 家、${jobsDone}/${totalJobs} 個 (公司, 季)，已耗時 ${minutes.toFixed(1)} 分，` +
-            `預估剩餘 ${((minutes / jobsDone) * (totalJobs - jobsDone)).toFixed(1)} 分，失敗 ${failed.length}`
-        );
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, plan.length) }, worker));
-
-  console.log(`[refresh-changed] 完成：${jobsDone} 個 (公司, 季)，${((Date.now() - started) / 60000).toFixed(1)} 分，action 統計 ${JSON.stringify(actions)}`);
+  const { failed } = await refreshFromQuarters(earliest, { logPrefix: '[refresh-changed]', memo, dryRun: process.env.DRY_RUN === '1' });
   if (failed.length > 0) {
     const dir = join(process.cwd(), 'tmp');
     mkdirSync(dir, { recursive: true });
