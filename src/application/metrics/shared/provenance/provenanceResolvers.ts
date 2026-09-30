@@ -52,7 +52,6 @@ import { getNonOperatingIncomeRatioProvenance } from '@/application/metrics/prof
 import { getCrociProvenance } from '@/application/metrics/profitability/croci/getCrociProvenance';
 import { getCroicProvenance } from '@/application/metrics/profitability/croic/getCroicProvenance';
 import { getRoicProvenance } from '@/application/metrics/profitability/roic/getRoicProvenance';
-import { getRoceProvenance } from '@/application/metrics/profitability/roce/getRoceProvenance';
 import { getGreenblattRocProvenance } from '@/application/metrics/profitability/greenblattRoc/getGreenblattRocProvenance';
 import { getNissimPenmanRnoaProvenance } from '@/application/metrics/profitability/nissimPenmanRnoa/getNissimPenmanRnoaProvenance';
 import { getFamaFrenchOperatingProfitabilityProvenance } from '@/application/metrics/profitability/famaFrenchOperatingProfitability/getFamaFrenchOperatingProfitabilityProvenance';
@@ -180,7 +179,6 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   croci: (query) => getCrociProvenance(query, deps),
   croic: (query) => getCroicProvenance(query, deps),
   roic: (query) => getRoicProvenance(query, deps),
-  roce: (query) => getRoceProvenance(query, deps),
   greenblattRoc: (query) => getGreenblattRocProvenance(query, deps),
   nissimPenmanRnoa: (query) => getNissimPenmanRnoaProvenance(query, deps),
   famaFrenchOperatingProfitability: (query) => getFamaFrenchOperatingProfitabilityProvenance(query, deps),

@@ -1,12 +1,12 @@
 // Point-in-time 架構第四批遷移（resilience/turnover/valuation 簡單型 11 支舊架構檔案，
 // 共 13 個 metric_code：debtRatio/currentRatio/quickRatio/cashRatio/deRatio/
-// interestCoverage/netDebtToEbitda/capexToRevenue/psr/pFcf/evEbitda/roic/roce）的手動
+// interestCoverage/netDebtToEbitda/capexToRevenue/psr/pFcf/evEbitda/roic）的手動
 // 觸發 backfill——不整合進 src/api/batch，純 CLI 腳本，殼子比照 scripts/backfillRoePit.ts
 // （跑完斷線）。
 //
 // 用法：pnpm tsx scripts/backfillDebtAndValuationPit.ts
 // 符號/季度範圍沿用共用的 scripts/pitBackfillFixtures.ts（跟前幾批 backfill 腳本同一組）。
-import { computeAndWriteCapexToRevenuePit, computeAndWriteDebtRatioPit, computeAndWriteDeRatioPit, computeAndWriteEvEbitdaPit, computeAndWriteInterestCoveragePit, computeAndWriteLiquidityRatioPit, computeAndWriteNetDebtToEbitdaPit, computeAndWritePFcfPit, computeAndWritePsrPit, computeAndWriteRocePit, computeAndWriteRoicPit } from '../src/bootstrap/pitMetrics';
+import { computeAndWriteCapexToRevenuePit, computeAndWriteDebtRatioPit, computeAndWriteDeRatioPit, computeAndWriteEvEbitdaPit, computeAndWriteInterestCoveragePit, computeAndWriteLiquidityRatioPit, computeAndWriteNetDebtToEbitdaPit, computeAndWritePFcfPit, computeAndWritePsrPit, computeAndWriteRoicPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { PIT_BACKFILL_SYMBOLS, PIT_BACKFILL_QUARTERS } from './pitBackfillFixtures';
 import { disconnectAllDbs } from '../src/bootstrap/db';
@@ -14,7 +14,7 @@ import { reportAvailability } from '../src/bootstrap/scripts';
 
 const main = async () => {
   await Promise.all(
-    ['debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic', 'roce'].map(
+    ['debtRatio', 'currentRatio', 'quickRatio', 'cashRatio', 'deRatio', 'interestCoverage', 'netDebtToEbitda', 'capexToRevenue', 'psr', 'pFcf', 'evEbitda', 'roic'].map(
       (code) => upsertMetricDefinition(metricDefinitionRegistry[code]!)
     )
   );
@@ -55,8 +55,6 @@ const main = async () => {
       const roicOutcome = await computeAndWriteRoicPit(query);
       console.log(`[roic-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roicOutcome.q)} ttm=${JSON.stringify(roicOutcome.ttm)}`);
 
-      const roceOutcome = await computeAndWriteRocePit(query);
-      console.log(`[roce-pit] ${symbol} ${year}Q${season}: q=${JSON.stringify(roceOutcome.q)} ttm=${JSON.stringify(roceOutcome.ttm)}`);
     }
   }
 };

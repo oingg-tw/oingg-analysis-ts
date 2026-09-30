@@ -49,7 +49,6 @@ import { computeOneDollarTest } from '@/application/metrics/profitability/oneDol
 import { computePretaxIncomePerShare } from '@/application/metrics/profitability/pretaxIncomePerShare/computePretaxIncomePerShare';
 import { computeRevenuePerShare } from '@/application/metrics/profitability/revenuePerShare/computeRevenuePerShare';
 import { computeRoa } from '@/application/metrics/profitability/roa/computeRoa';
-import { computeRoce } from '@/application/metrics/profitability/roce/computeRoce';
 import { computeRoe } from '@/application/metrics/profitability/roe/computeRoe';
 import { computeRoic } from '@/application/metrics/profitability/roic/computeRoic';
 import { computeAbnormalCapexRatio } from '@/application/metrics/quality/abnormalCapexRatio/computeAbnormalCapexRatio';
@@ -182,7 +181,6 @@ export const computeAndWriteOneDollarTestPit = runPit(computeOneDollarTest);
 export const computeAndWritePretaxIncomePerSharePit = runPit(computePretaxIncomePerShare);
 export const computeAndWriteRevenuePerSharePit = runPit(computeRevenuePerShare);
 export const computeAndWriteRoaPit = runPit(computeRoa);
-export const computeAndWriteRocePit = runPit(computeRoce);
 export const computeAndWriteRoePit = runPit(computeRoe);
 export const computeAndWriteRoicPit = runPit(computeRoic);
 export const computeAndWriteAbnormalCapexRatioPit = runPit(computeAbnormalCapexRatio);

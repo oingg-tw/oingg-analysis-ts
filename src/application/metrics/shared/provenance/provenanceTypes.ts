@@ -76,7 +76,6 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'croci',
   'croic',
   'roic',
-  'roce',
   'greenblattRoc',
   'nissimPenmanRnoa',
   'famaFrenchOperatingProfitability',

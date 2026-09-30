@@ -99,7 +99,6 @@ import { evToEbitDefinition } from '@/domain/metrics/valuation/evToEbit/evToEbit
 import { evToFcfDefinition } from '@/domain/metrics/valuation/evToFcf/evToFcfDefinition';
 import { priceToResearchRatioDefinition } from '@/domain/metrics/growth/priceToResearchRatio/priceToResearchRatioDefinition';
 import { roicDefinition } from '@/domain/metrics/profitability/roic/roicDefinition';
-import { roceDefinition } from '@/domain/metrics/profitability/roce/roceDefinition';
 import { grossMarginDefinition } from '@/domain/metrics/profitability/grossMargin/grossMarginDefinition';
 import { operatingMarginDefinition } from '@/domain/metrics/profitability/operatingMargin/operatingMarginDefinition';
 import { inventoryTurnoverDefinition } from '@/domain/metrics/efficiency/inventoryTurnover/inventoryTurnoverDefinition';
@@ -272,7 +271,6 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   evToFcf: evToFcfDefinition,
   priceToResearchRatio: priceToResearchRatioDefinition,
   roic: roicDefinition,
-  roce: roceDefinition,
   grossMargin: grossMarginDefinition,
   operatingMargin: operatingMarginDefinition,
   inventoryTurnover: inventoryTurnoverDefinition,
