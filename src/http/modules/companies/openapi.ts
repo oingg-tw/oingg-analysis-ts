@@ -68,7 +68,7 @@ const totalHasMoreFields = {
 const roeHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roe'),
-  periodType: z.enum(['Q', 'TTM']),
+  periodType: z.enum(['Q', 'TTM', 'FY']),
   ...totalHasMoreFields,
   entries: z.array(roeHistoryEntrySchema),
 });

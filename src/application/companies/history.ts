@@ -24,7 +24,7 @@ export const getCompanyCapitalStockHistory = async (symbol: string, deps: Pick<A
 
 export interface PeriodHistoryQuery {
   symbol: string;
-  periodType: 'Q' | 'TTM';
+  periodType: 'Q' | 'TTM' | 'FY'; // FY 目前只有 roe（2026-10-01）；roa/dupont 的 query schema 仍只收 Q/TTM
   limit: number;
 }
 

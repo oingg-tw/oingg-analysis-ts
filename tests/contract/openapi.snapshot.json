@@ -2601,16 +2601,17 @@
             }
           },
           {
-            "description": "單季(Q)/近四季(TTM)，預設 TTM",
+            "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
             "in": "query",
             "name": "periodType",
             "required": false,
             "schema": {
               "default": "TTM",
-              "description": "單季(Q)/近四季(TTM)，預設 TTM",
+              "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
               "enum": [
                 "Q",
-                "TTM"
+                "TTM",
+                "FY"
               ],
               "type": "string"
             }
@@ -2697,7 +2698,8 @@
                     "periodType": {
                       "enum": [
                         "Q",
-                        "TTM"
+                        "TTM",
+                        "FY"
                       ],
                       "type": "string"
                     },

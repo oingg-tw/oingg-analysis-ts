@@ -47,12 +47,13 @@ export const getCompanyDividendHistoryQuerySchema = z.object({
 // 對 ROE 沒有意義）——兩邊要保持同步。
 // 2026-09-08：這個 query 參數原本叫 basis，改名 periodType 是「metric_values.basis 拆成四個精準命名欄位」
 // 重構的一部分，是外部契約 breaking change。
-const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
+// 2026-10-01 roe 新增 FY（年度，對齊官方年度 ROE，見 computeRoe.ts）——目錄宣告了 FY、這裡沒跟上，bff-ts 實測 periodType=FY 回 400 才發現。
+const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM', 'FY'] as const;
 const MAX_ROE_HISTORY_LIMIT = 40; // 10 年份季度資料，畫圖情境不需要更多
 
 export const getCompanyRoeHistoryQuerySchema = z.object({
   symbol: symbolField,
-  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)，預設 TTM' }),
+  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM' }),
   limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
 });
 
