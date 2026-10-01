@@ -18,25 +18,18 @@
 // 用法：pnpm tsx scripts/backfillMagicFormulaRankPit.ts
 import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRocPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
-import { persistMetricValue } from '../src/bootstrap/pitMetrics';
-import { periodTypeGroup } from '../src/domain/metrics/coordinate';
-import { rankDescending } from '../src/domain/metrics/valuation/magicFormulaRank/calculateMagicFormulaRank';
-import { backfillUniverse, analysisQueries, type LatestTtmMetricRow, reportAvailability } from '../src/bootstrap/scripts';
+import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
+import { rankAndWriteMagicFormula } from './magicFormulaRank';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const SYMBOL_CONCURRENCY = 8;
 
-type LatestMetricRow = LatestTtmMetricRow;
 
 const getFullMarketSymbols = async (): Promise<string[]> => {
   const rows = await backfillUniverse.listSymbolsWithIncomeStatement('115', '2');
   return rows.map((r) => r.symbol);
 };
 
-const getLatestMetricValues = async (metricCode: string): Promise<Map<string, LatestMetricRow>> => {
-  const rows = await analysisQueries.listLatestTtmValuesAcrossMarket(metricCode);
-  return new Map(rows.map((r) => [r.symbol, r]));
-};
 
 const main = async () => {
   await upsertMetricDefinition(metricDefinitionRegistry.greenblattRoc!);
@@ -68,43 +61,9 @@ const main = async () => {
   await Promise.all(Array.from({ length: Math.min(SYMBOL_CONCURRENCY, symbols.length) }, () => worker()));
   console.log(`[magic-formula-rank-pit] 步驟1完成，錯誤 ${errors.length} 筆${errors.length > 0 ? '：' + errors.map((e) => e.symbol).join(',') : ''}`);
 
-  console.log('[magic-formula-rank-pit] 步驟2/3：查全市場最新 TTM 值，排除金融保險業與任一指標為 null 的公司');
-  const [rocValues, eyValues] = await Promise.all([getLatestMetricValues('greenblattRoc'), getLatestMetricValues('greenblattEarningsYield')]);
-
-  const eligibleSymbols = [...rocValues.keys()].filter((s) => eyValues.has(s));
-  const financialFlags = await Promise.all(eligibleSymbols.map((s) => backfillUniverse.isFinancialIndustryCompany(s)));
-  const rankableSymbols = eligibleSymbols.filter((_, i) => !financialFlags[i]);
-  console.log(`[magic-formula-rank-pit] 兩指標皆非null：${eligibleSymbols.length} 家，排除金融保險業後可排名：${rankableSymbols.length} 家`);
-
-  const rocRank = rankDescending(rankableSymbols.map((s) => [s, rocValues.get(s)!.value]));
-  const eyRank = rankDescending(rankableSymbols.map((s) => [s, eyValues.get(s)!.value]));
-
-  console.log('[magic-formula-rank-pit] 步驟3/3：寫入 magicFormulaRank');
-  let inserted = 0;
-  let skippedNoKnowledgeDate = 0;
-  for (const symbol of rankableSymbols) {
-    const combinedRank = rocRank.get(symbol)! + eyRank.get(symbol)!;
-    // 用 greenblattRoc 那一筆的座標當這一列的 fiscalYear/fiscalQuarter/knowledgeDate
-    // （兩支底層指標理論上會落在同一季，這裡固定取其中一支當錨點，避免兩支座標不一致
-    // 時無所適從——如果之後發現兩支經常落在不同季，要再檢討這個簡化）。
-    const roc = rocValues.get(symbol)!;
-    const outcome = await persistMetricValue({
-      symbol,
-      metricCode: 'magicFormulaRank',
-      ...periodTypeGroup('TTM'),
-      fiscalYear: roc.fiscal_year,
-      fiscalQuarter: roc.fiscal_quarter,
-      dataType: await reportAvailability.resolveDataType(symbol),
-      subsidiaryCompanyId: '',
-      value: combinedRank,
-      nullReason: null,
-      knowledgeDate: roc.knowledge_date,
-      knowledgeDateIsFallback: roc.knowledge_date_is_fallback,
-    });
-    if (outcome.action === 'rejected') skippedNoKnowledgeDate += 1;
-    else inserted += 1;
-  }
-  console.log(`[magic-formula-rank-pit] 完成，寫入 ${inserted} 家，${skippedNoKnowledgeDate} 家因故跳過`);
+  console.log('[magic-formula-rank-pit] 步驟2-3：查全市場最新 TTM 值、排名並寫入（共用 scripts/magicFormulaRank.ts）');
+  const ranked = await rankAndWriteMagicFormula('[magic-formula-rank-pit]');
+  console.log(`[magic-formula-rank-pit] 完成，寫入 ${ranked.written} 家，${ranked.rejected} 家因故跳過 ${JSON.stringify(ranked.actions)}`);
 };
 
 main()

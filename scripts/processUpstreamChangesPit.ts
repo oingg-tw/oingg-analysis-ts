@@ -23,6 +23,7 @@ import {
 import { quarterIndex, toRecomputeTargets, type UpstreamSource } from '../src/domain/upstream/recomputeTargets';
 import { buildGeneralTasks, runTasks } from './backfillTaskDefinitions';
 import { collectActions, getLatestQuarter, refreshFromQuarters } from './quarterlyRefresh';
+import { rankAndWriteMagicFormula } from './magicFormulaRank';
 
 const HOLDER = `${process.env.CLOUD_RUN_EXECUTION ?? 'local'}-${process.pid}`;
 const LEASE_MINUTES = 120; // 要比最長一批處理時間長；處理程式死掉的話，租約過期後下一次叫醒的人可以接手
@@ -56,6 +57,11 @@ const processSource = async (source: UpstreamSource, fromExclusive: bigint, toIn
   if (targets.unmapped.size > 0) console.warn(`${prefix} 認不得的表／鍵（沒有重算，要人看）：${JSON.stringify(Object.fromEntries(targets.unmapped))}`);
 
   const quarterly = await refreshFromQuarters(targets.quarterlyFrom, { logPrefix: prefix, memo });
+
+  // 2026-10-01 使用者要求神奇公式排名接進每日自動重算：它是全市場橫斷面排名，季報重算改到任何一家的 greenblattRoc／
+  // greenblattEarningsYield，所有人的名次都可能變。只在這一批真的跑了季報重算時重排（兩支底層都是季報型，股價取知識日當天，
+  // 逐日行情變動不影響），名次沒變的列 skipped_unchanged。
+  const magicFormula = quarterly.jobs > 0 ? await rankAndWriteMagicFormula(`${prefix} [magicFormulaRank]`) : null;
 
   // 逐日型只算我們的公司母體（最新一季有損益表的公司）。2026-09-30 tpex 第一次實打就踩到：上櫃 daily_price 每天約 1.1 萬列，
   // 九成是權證與 ETF，不過濾的話會替 7,610 檔權證寫 liveMarketCap 的空值列。排除的檔數寫進摘要給人看，不默默丟。
@@ -98,6 +104,7 @@ const processSource = async (source: UpstreamSource, fromExclusive: bigint, toIn
     changes: changes.length,
     quarterly: { symbols: quarterly.symbols, jobs: quarterly.jobs, actions: quarterly.actions, failedCount: quarterly.failed.length, failedSample: quarterly.failed.slice(0, 20) },
     daily: { ...daily, failedCount: daily.failed.length, failed: daily.failed.slice(0, 20) },
+    magicFormulaRank: magicFormula,
     monthly: { ...monthly, failedCount: monthly.failed.length, failed: monthly.failed.slice(0, 20) },
     ignored: Object.fromEntries(targets.ignored),
     unmapped: Object.fromEntries(targets.unmapped),

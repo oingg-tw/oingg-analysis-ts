@@ -11,7 +11,6 @@ import { mopsReportAvailability } from '@/infrastructure/repositories/mops/compa
 // 改成這裡綁定好的查詢 + ./db 的 disconnectAllDbs（scripts 直接從 ./db import）。指標計算本身走
 // ./pitMetrics，metric_definitions 走 ./metricDefinitions。這些都是「決定要跑哪些公司/哪些交易日」的母體
 // 查詢，不是指標邏輯。
-export type { LatestTtmMetricRow } from '@/infrastructure/repositories/analysis/backfillQueries';
 
 export const backfillUniverse = {
   listSymbolsWithIncomeStatement,
