@@ -42,7 +42,7 @@ const queryDailyValuation = (db: typeof twseExportPrisma | typeof tpexExportPris
 
 export const getDailyValuationAsOf = async (symbol: string, asOfDate?: Date): Promise<DailyValuationAsOf | null> => {
   const [twseRows, tpexRows] = await Promise.all([queryDailyValuation(twseExportPrisma, symbol, asOfDate), queryDailyValuation(tpexExportPrisma, symbol, asOfDate)]);
-  const twse = twseRows[0] && { ...twseRows[0], dividend_yield: twseDividendYield(toNullableNumber(twseRows[0].dividend_yield), twseRows[0].trade_date) };
+  const twse = twseRows[0] && { ...twseRows[0], dividend_yield: twseDividendYield(toNullableNumber(twseRows[0].dividend_yield)) };
   const record = newerOf(twse, tpexRows[0]);
   if (!record) return null;
   return {

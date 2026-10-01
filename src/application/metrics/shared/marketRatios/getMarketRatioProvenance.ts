@@ -1,7 +1,6 @@
 import { calculateExchangePeRatio } from '@/domain/metrics/valuation/exchangePeRatio/calculateExchangePeRatio';
 import { calculateExchangePbRatio } from '@/domain/metrics/valuation/exchangePbRatio/calculateExchangePbRatio';
 import { calculateDividendYield } from '@/domain/metrics/dividend/dividendYield/calculateDividendYield';
-import { TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM } from '@/domain/market/twseDividendYield';
 import type { DailyValuationAsOf } from '@/application/ports/marketData';
 import type { MetricProvenanceResult, ProvenanceEntry } from '../provenance/provenanceTypes';
 import type { MarketRatiosDeps } from './computeMarketRatios';
@@ -70,12 +69,5 @@ export const getMarketRatioProvenanceFor =
       },
     ];
 
-    // 2026-08-28 起證交所把沒配息的殖利率改成空白，上市這側空白當 0（domain/market/twseDividendYield.ts）；port 已經換算過，
-    // 這裡分不出 0 是交易所原值還是空白換來的，所以只在「日期在改版後且值為 0」時把規則講清楚。
-    const blankRule =
-      metricCode === 'dividendYield' && value === 0 && valuation.tradeDate >= TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM
-        ? `證交所自 ${toDateString(TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM)} 起把沒配息公司的殖利率從 0.00 改成空白；改版前 2005 年起整條序列沒配息一律是 0.00，所以上市公司這段期間的空白一律視為 0，跟上櫃（仍公告 0）口徑一致。`
-        : '';
-
-    return { symbol, metricCode, found: true, fiscalYear: null, fiscalQuarter: null, value, entries, methodologyNote: spec.note + blankRule };
+    return { symbol, metricCode, found: true, fiscalYear: null, fiscalQuarter: null, value, entries, methodologyNote: spec.note };
   };

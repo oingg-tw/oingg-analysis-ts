@@ -4,7 +4,8 @@
 // 不當 0 的後果（都不會報錯）：上市不配息公司從 dividendYield 變 missing_input、上櫃仍是 0，兩個市場口徑不一致；殖利率時間序列
 // 在 8/28 斷點；估值排行、產業平均、供給面 ERP 的母體悄悄少掉約 22% 的上市公司。只在上市這側、只在這個日期之後補——twse-ts
 // 刻意不在他們那邊補（替證交所發明資料），這是消費端的決定。
-export const TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM = new Date('2026-08-28T00:00:00Z');
-
-export const twseDividendYield = (value: number | null, tradeDate: Date): number | null =>
-  value === null ? (tradeDate >= TWSE_BLANK_DIVIDEND_YIELD_MEANS_ZERO_FROM ? 0 : null) : value;
+//
+// 2026-10-01 twse-ts 改成寫入端把空白補回 0（normalizeBwibbuAll），並用 migration 把既有 5,360 列 NULL 歸零（PROD 已套、本機讀的庫
+// 實查 0 個 NULL）。原本「8/28 起才當 0」的日期條件因此不再對應任何資料事實、只會讓人以為 8/28 之前的 NULL 有別的意義，拿掉；
+// 殖利率的空白一律當 0（沒有配息），留著當寫入端萬一回歸時的防線（twse-ts 建議）。本益比的 NULL 不適用（虧損公司 P/E 無定義）。
+export const twseDividendYield = (value: number | null): number => value ?? 0;
