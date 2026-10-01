@@ -20,6 +20,7 @@ import { computeAndWriteGreenblattEarningsYieldPit, computeAndWriteGreenblattRoc
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { persistMetricValue } from '../src/bootstrap/pitMetrics';
 import { periodTypeGroup } from '../src/domain/metrics/coordinate';
+import { rankDescending } from '../src/domain/metrics/valuation/magicFormulaRank/calculateMagicFormulaRank';
 import { backfillUniverse, analysisQueries, type LatestTtmMetricRow, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
@@ -35,16 +36,6 @@ const getFullMarketSymbols = async (): Promise<string[]> => {
 const getLatestMetricValues = async (metricCode: string): Promise<Map<string, LatestMetricRow>> => {
   const rows = await analysisQueries.listLatestTtmValuesAcrossMarket(metricCode);
   return new Map(rows.map((r) => [r.symbol, r]));
-};
-
-// 數值越高名次越前面（1 = 表現最好），跟 Greenblatt 原始方法一致；並列名次不特別處理，
-// 用穩定排序後的序位當名次（ties 直接用先出現的排序位置，不做業界常見的「同分同名次、
-// 下一名跳號」精細處理，這是業界常見的簡化）。
-const rankDescending = (entries: [string, number][]): Map<string, number> => {
-  const sorted = [...entries].sort((a, b) => b[1] - a[1]);
-  const rankMap = new Map<string, number>();
-  sorted.forEach(([symbol], index) => rankMap.set(symbol, index + 1));
-  return rankMap;
 };
 
 const main = async () => {
