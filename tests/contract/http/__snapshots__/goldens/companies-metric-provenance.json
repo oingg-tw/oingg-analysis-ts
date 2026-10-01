@@ -18,6 +18,7 @@
     "found": "<boolean>",
     "methodologyNote": "<string>",
     "metricCode": "roe",
+    "periodType": "TTM",
     "symbol": "<numeric-string>",
     "value": "<number>"
   }

@@ -254,7 +254,7 @@ export const piotroskiFScoreBreakdownResultSchema = z.object({
 // （resolveRoeQuarterData/getAnnualDividendPerShareProxy/resolveSueInputs 三個 resolver）
 // 都由 domainPitMetrics/shared/provenance/provenanceTypes.ts 共用，schema 定義留在
 // domain 層、這裡只 re-export，避免跟 domainPitMetrics 之間產生循環依賴。
-export { metricProvenanceResultSchema } from '@/application/metrics/shared/provenance/provenanceTypes';
+export { metricProvenanceResponseSchema } from '@/application/metrics/shared/provenance/provenanceTypes';
 
 // 2026-09-13：GET /companies/badges 的回應 schema——後端統一算好每支 badge 的 passed，
 // 前端不用再拿 GET /metrics 的 badge.threshold 自己跟 metric-history 的數值比較，見

@@ -36,7 +36,7 @@ import {
   companiesCountOnlyResultSchema,
   financialStatementResultSchema,
   piotroskiFScoreBreakdownResultSchema,
-  metricProvenanceResultSchema,
+  metricProvenanceResponseSchema,
   companyBadgesResultSchema,
   companyMetricCompletenessResultSchema,
 } from './types';
@@ -465,7 +465,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['System'],
     request: { params: z.object({ symbol: z.string().meta({ description: '公司代號', example: '2330' }) }), query: getCompanyMetricProvenanceQuerySchema },
     responses: {
-      200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResultSchema } } },
+      200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResponseSchema } } },
       400: { description: `缺少 symbol，metricCode 不是 ${PILOT_PROVENANCE_METRIC_CODES.join('/')} 之一，或 year/season 只給了其中一個。` },
     },
   });

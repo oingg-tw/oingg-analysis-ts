@@ -5,7 +5,12 @@ import { evaluateCompanyMetricCompleteness, type CompanyMetricCompletenessCatego
 import { getPiotroskiFScoreBreakdown, type PiotroskiFScoreBreakdown } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreBreakdown';
 import type { PiotroskiFScoreDeps } from '@/application/metrics/quality/piotroskiFScore/computePiotroskiFScore';
 import { createProvenanceResolvers, type ProvenanceResolvers } from '@/application/metrics/shared/provenance/provenanceResolvers';
-import type { MetricProvenanceResult } from '@/application/metrics/shared/provenance/provenanceTypes';
+import type { MetricProvenanceResponse } from '@/application/metrics/shared/provenance/provenanceTypes';
+import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
+import type { PeriodType as BasisPeriodType } from '@/domain/metrics/metricBasis';
+
+// 季報型的四種期別（metricBasis 的 PeriodType 還含逐日型座標用的 'N/A'，這裡用不到）。
+type PeriodType = Exclude<BasisPeriodType, 'N/A'>;
 import { restatePerShareProvenance } from '@/application/metrics/shared/restatePerShareHistory';
 import type { Season } from '@/domain/calendar/rocQuarter';
 
@@ -62,15 +67,32 @@ export interface GetCompanyMetricProvenanceQuery {
   year?: string | undefined;
   season?: Season | undefined;
   asOfDate?: string | undefined; // YYYY-MM-DD，逐日／月頻指標用
+  periodType?: PeriodType | undefined;
 }
+
+// 2026-10-01 溯源表描述的期別：實測（tmp/inferProvBasis.ts，56 支多期別季報型指標逐一拿溯源 value 對儲存的 Q／TTM／FY）全部是近四季，
+// 所以規則是「指標有 TTM 就是 TTM，否則是它唯一允許的期別」；逐日／月頻指標回 null。之後某支溯源要提供單季，
+// 這裡改成看呼叫端要求的期別，不再推斷。
+// ponytail: 用規則推斷而不是每支 resolver 自己宣告，新增「溯源提供多期別」的指標時要回來改這裡。
+const provenancePeriodType = (metricCode: string): PeriodType | null => {
+  const def = metricDefinitionRegistry[metricCode];
+  if (!def || def.group !== 'period') return null;
+  const allowed = def.allowedPeriodTypes ?? [];
+  const periodTypes = allowed.filter((p): p is PeriodType => p !== 'N/A');
+  return periodTypes.includes('TTM') ? 'TTM' : (periodTypes[0] ?? null);
+};
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
 // 財報欄位、各自的值，跳轉到會計模式（GET /companies/financial-statement）對應的那一列。
 // 現查現算，不持久化。試點範圍見 PILOT_PROVENANCE_METRIC_CODES——metricCode 在 http schema 用
 // z.enum 驗證，不支援的指標直接被擋成 400。resolver 對應表見 provenanceResolvers.ts。
 // 2026-10-01 每股類指標的 value 換算到今天的股數基準，跟 metric-history 顯示的一致（見 restatePerShareProvenance）。
-export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season, asOfDate }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResult> =>
-  restatePerShareProvenance(
+export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season, asOfDate, periodType }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResponse> => {
+  const provided = provenancePeriodType(metricCode);
+  if (periodType !== undefined && provided !== null && periodType !== provided) {
+    return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: `這支指標的溯源表目前只提供 ${provided}（要求的是 ${periodType}）。`, periodType: provided };
+  }
+  const result = await restatePerShareProvenance(
     await createProvenanceResolvers(deps)[metricCode]({
       symbol,
       year,
@@ -81,3 +103,5 @@ export const getCompanyMetricProvenance = async (symbol: string, { metricCode, y
     }),
     deps
   );
+  return { ...result, periodType: provided };
+};

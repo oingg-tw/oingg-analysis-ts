@@ -157,6 +157,8 @@ export const getCompanyMetricProvenanceQuerySchema = z
       .date()
       .optional()
       .meta({ description: '逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）', example: '2026-09-29' }),
+    // 2026-10-01 帶頁面目前的期別；溯源表描述的期別跟它不同時回 found=false（不靜默回另一個期別的數字）。不給 = 回溯源表本來的期別（見回應的 periodType）。
+    periodType: z.enum(['Q', 'YTD', 'TTM', 'FY']).optional().meta({ description: '要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）', example: 'TTM' }),
   })
   .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
 

@@ -2963,6 +2963,23 @@
               "format": "date",
               "type": "string"
             }
+          },
+          {
+            "description": "要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）",
+            "in": "query",
+            "name": "periodType",
+            "required": false,
+            "schema": {
+              "description": "要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）",
+              "enum": [
+                "Q",
+                "YTD",
+                "TTM",
+                "FY"
+              ],
+              "example": "TTM",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -3229,6 +3246,18 @@
                       ],
                       "type": "string"
                     },
+                    "periodType": {
+                      "description": "這張溯源表描述的期別；逐日／月頻指標（用 asOfDate 定位）為 null。要求的 periodType 跟這裡不同時 found=false，不會拿別的期別頂替",
+                      "enum": [
+                        "Q",
+                        "YTD",
+                        "TTM",
+                        "FY",
+                        null
+                      ],
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "symbol": {
                       "type": "string"
                     },
@@ -3255,7 +3284,8 @@
                     "fiscalQuarter",
                     "value",
                     "entries",
-                    "methodologyNote"
+                    "methodologyNote",
+                    "periodType"
                   ],
                   "type": "object"
                 }

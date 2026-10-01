@@ -229,6 +229,16 @@ export const metricProvenanceResultSchema = z.object({
 });
 export type MetricProvenanceResult = z.infer<typeof metricProvenanceResultSchema>;
 
+// 2026-10-01 端點回應多一個 periodType：這張溯源表描述的是哪個期別。web-nuxt 量到 capexToRevenue／rdIntensity 頁面顯示單季、
+// 溯源固定回近四季，兩個數字對不上卻分不出是「值錯」還是「期別不同」。resolver 本身不帶期別，由端點依指標定義補上（provenancePeriodType）。
+export const metricProvenanceResponseSchema = metricProvenanceResultSchema.extend({
+  periodType: z
+    .enum(['Q', 'YTD', 'TTM', 'FY'])
+    .nullable()
+    .meta({ description: '這張溯源表描述的期別；逐日／月頻指標（用 asOfDate 定位）為 null。要求的 periodType 跟這裡不同時 found=false，不會拿別的期別頂替' }),
+});
+export type MetricProvenanceResponse = z.infer<typeof metricProvenanceResponseSchema>;
+
 // 2026-09-13 抽出來共用——8 支 get<Metric>Provenance.ts 原本各自複製貼上一份幾乎一樣的
 // 「bigint 轉字串、null/undefined 一律轉 null」轉換（3 種簽章都有：純 bigint|null、
 // bigint|number|null、bigint|null|undefined），沒有一份跟 provenanceEntrySchema.value
