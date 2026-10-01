@@ -2904,6 +2904,18 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）",
+            "in": "query",
+            "name": "asOfDate",
+            "required": false,
+            "schema": {
+              "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）",
+              "example": "2026-09-29",
+              "format": "date",
+              "type": "string"
+            }
           }
         ],
         "responses": {

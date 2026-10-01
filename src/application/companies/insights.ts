@@ -60,11 +60,19 @@ export interface GetCompanyMetricProvenanceQuery {
   metricCode: ProvenanceMetricCode;
   year?: string | undefined;
   season?: Season | undefined;
+  asOfDate?: string | undefined; // YYYY-MM-DD，逐日／月頻指標用
 }
 
 // 2026-09-10 web-nuxt 要求：讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始
 // 財報欄位、各自的值，跳轉到會計模式（GET /companies/financial-statement）對應的那一列。
 // 現查現算，不持久化。試點範圍見 PILOT_PROVENANCE_METRIC_CODES——metricCode 在 http schema 用
 // z.enum 驗證，不支援的指標直接被擋成 400。resolver 對應表見 provenanceResolvers.ts。
-export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResult> =>
-  createProvenanceResolvers(deps)[metricCode]({ symbol, year, season, dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol), subsidiaryCompanyId: '' });
+export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season, asOfDate }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResult> =>
+  createProvenanceResolvers(deps)[metricCode]({
+    symbol,
+    year,
+    season,
+    asOfDate: asOfDate === undefined ? undefined : new Date(`${asOfDate}T00:00:00Z`),
+    dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol),
+    subsidiaryCompanyId: '',
+  });

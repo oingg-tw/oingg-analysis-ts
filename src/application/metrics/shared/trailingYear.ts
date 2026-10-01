@@ -101,3 +101,8 @@ export const resolveCashFlowReportDate = async (key: TrailingKey, deps: Statemen
   if ((await resolveReportingBasis(key, deps)) !== 'semiannual') return null;
   return (await deps.cumulativeStatements.getCumulativeCashFlowStatement(keyOf(key, key.rocYear, Number(key.season))))?.reportDate ?? null;
 };
+
+// 溯源表（metric-provenance）的期間標籤：上市櫃「114 年第 3 季」、興櫃半年頻「114 年上半年／下半年」。
+// 2026-10-01 使用者要求溯源表全部補齊，溯源 entry 的 role 一律用這個，不要再寫死「第 i/4 季」（興櫃只有兩段）。
+export const trailingPeriodLabel = (period: { year: string; season: Season }, basis: ReportingBasis): string =>
+  basis === 'semiannual' ? `${period.year} 年${period.season === '2' ? '上半年' : '下半年'}` : `${period.year} 年第 ${period.season} 季`;

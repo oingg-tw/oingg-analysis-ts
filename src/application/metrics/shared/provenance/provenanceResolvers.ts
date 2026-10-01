@@ -124,7 +124,9 @@ import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './pr
 // PILOT_PROVENANCE_METRIC_CODES（provenanceTypes.ts）加一個值、寫一個對應的
 // get<Metric>Provenance.ts、在這裡的 dispatch table 加一行，不需要碰其餘 controller/
 // route/openapi/types 邏輯。roe 目前固定用 TTM basis（見 getRoeProvenance.ts 的說明）。
-export type ProvenanceResolvers = Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number], (query: QuarterlyMetricQuery) => Promise<MetricProvenanceResult>>;
+// 2026-10-01 asOfDate：逐日／月頻指標（交易所三率、beta、live*、sus）用日期定位；季報型 resolver 忽略它（型別上照收 QuarterlyMetricQuery 即可）。
+export type ProvenanceQuery = QuarterlyMetricQuery & { asOfDate?: Date | undefined };
+export type ProvenanceResolvers = Record<(typeof PILOT_PROVENANCE_METRIC_CODES)[number], (query: ProvenanceQuery) => Promise<MetricProvenanceResult>>;
 
 // 2026-09-17 Phase 4：dispatch table 改成工廠——deps 由 bootstrap（或測試的 fakes）注入，遷移期間的 legacyBridge 已刪除。
 export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers => ({

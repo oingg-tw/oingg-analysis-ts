@@ -152,6 +152,11 @@ export const getCompanyMetricProvenanceQuerySchema = z
     metricCode: z.enum(PILOT_PROVENANCE_METRIC_CODES, { error: `metricCode is required, 目前僅支援 ${PILOT_PROVENANCE_METRIC_CODES.join('/')}。` }),
     year: yearField.meta({ description: '民國年，例如 "115"；跟 season 要成對提供，不給就自動抓最新一季', example: '115' }),
     season: seasonField,
+    // 2026-10-01 使用者要求「溯源表請務必都加上」：逐日（交易所三率、beta、live*）與月頻（sus）指標用日期定位，不是年季。
+    asOfDate: z.iso
+      .date()
+      .optional()
+      .meta({ description: '逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）', example: '2026-09-29' }),
   })
   .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
 
