@@ -7,7 +7,8 @@ import { DIVIDEND_GROWTH_RATE_YEARS } from '../../../../domain/metrics/dividend/
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '../../shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -79,8 +80,9 @@ export const computeDividendGrowthRateFamily = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }], deps.announcements);
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, number | null>();

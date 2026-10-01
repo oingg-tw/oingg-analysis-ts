@@ -91,3 +91,13 @@ export const resolveTrailingCashFlowStatements = async (key: TrailingKey, deps: 
   const records = await Promise.all(quarters.map((q) => deps.statements.getCashFlowStatement(keyOf(key, Number(q.year), Number(q.season)))));
   return { basis: 'quarters', periods: quarters.map((q, i) => ({ year: q.year, season: q.season, record: records[i] ?? null })) };
 };
+
+// 本季的期末日（knowledge date anchor、查股數／市值的時點）。只用現金流量表的指標原本讀「本季單季現金流」的 reportDate，
+// 興櫃沒有單季現金流 → null → 整筆 skipped_no_knowledge_date 或股數查不到（2026-10-01 遷移後實測：dividendGrowthRate 等
+// FY 1,780 筆、cashFlowPerShare TTM 298 筆）。半年報公司改讀同一季的累計現金流（期末日相同）；上市櫃缺單季列仍是 null，不被補上。
+export const resolveCashFlowReportDate = async (key: TrailingKey, deps: StatementDeps): Promise<Date | null> => {
+  const single = await deps.statements.getCashFlowStatement(keyOf(key, key.rocYear, Number(key.season)));
+  if (single) return single.reportDate;
+  if ((await resolveReportingBasis(key, deps)) !== 'semiannual') return null;
+  return (await deps.cumulativeStatements.getCumulativeCashFlowStatement(keyOf(key, key.rocYear, Number(key.season))))?.reportDate ?? null;
+};

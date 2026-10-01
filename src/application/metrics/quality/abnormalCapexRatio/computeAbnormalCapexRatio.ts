@@ -6,7 +6,8 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '@/application/metrics/shared/trailingYear';
 
 // Titman, Wei & Xie (2004) 異常資本投資比率——只有一個回溯窗口（前三年平均），跟
 // revenueCagr 家族「同一組年度快取、拆多個回溯窗口」是同一種年度快取模式，這裡只是
@@ -50,8 +51,9 @@ export const computeAbnormalCapexRatio = async (query: QuarterlyMetricQuery, dep
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlowStatement = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlowStatement?.reportDate ?? null }], deps.announcements);
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
   const cache = new Map<number, bigint | null>();

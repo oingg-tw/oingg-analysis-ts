@@ -5,7 +5,8 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '../../shared/trailingYear';
 
 // 使用者要求「先做邏輯，資料不全面沒關係」——資料源是現金流量表的 dividendsPaid（跟
 // dividendPayoutRatio 同一個欄位，XBRL 優先、舊表 fallback），沒有專門的股利分派公告資料源，
@@ -33,8 +34,9 @@ export const computeConsecutiveDividendYears = async (query: QuarterlyMetricQuer
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }], deps.announcements);
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   // 若最新一季不是 Q4，代表今年度還沒結束，起算年退回上一個完整年度——不把「今年至今」這種
   // 尚未結束的年度算進連續配息年數，避免今年還沒發放就被誤判成「中斷」。

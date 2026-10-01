@@ -9,7 +9,7 @@ import { calculateDepreciationAmortisationPerShare } from '@/domain/metrics/qual
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -57,7 +57,8 @@ export const computeCashFlowPerShare = async (
   const depreciation = cashFlowStatement?.depreciation ?? null;
   const amortization = cashFlowStatement?.amortization ?? null;
   const depreciationAndAmortization = depreciation !== null && amortization !== null ? depreciation + amortization : null;
-  const reportDate = cashFlowStatement?.reportDate ?? null;
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = cashFlowStatement?.reportDate ?? (await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps));
 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;

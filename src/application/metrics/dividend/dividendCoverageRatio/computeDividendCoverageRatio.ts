@@ -6,7 +6,7 @@ import { calculateFcf } from '@/application/metrics/quality/cashFlowPerShare/fcf
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '../../shared/trailingYear';
 
 export type DividendCoverageRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
@@ -31,9 +31,8 @@ export const computeDividendCoverageRatio = async (query: QuarterlyMetricQuery, 
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainCashFlow = await deps.statements.getCashFlowStatement(key);
-  const reportDate = mainCashFlow?.reportDate ?? null;
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。

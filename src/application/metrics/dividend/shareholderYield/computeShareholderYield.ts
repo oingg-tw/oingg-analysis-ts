@@ -5,6 +5,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveCashFlowReportDate } from '@/application/metrics/shared/trailingYear';
 import type { MarketCapAsOf } from '@/application/ports/marketData';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -40,7 +41,7 @@ const getTreasurySharesPurchased = async (key: {
 };
 
 
-export type ShareholderYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'xbrlAccounts'>;
+export type ShareholderYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'xbrlAccounts' | 'cumulativeStatements'>;
 
 export type ShareholderYieldComputationBatch = ComputationBatch<'ttm'>;
 
@@ -80,9 +81,8 @@ export const resolveShareholderYieldInputs = async (query: QuarterlyMetricQuery,
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const mainCashFlow = await deps.statements.getCashFlowStatement(key);
-  const reportDate = mainCashFlow?.reportDate ?? null;
+  // 2026-10-01 本季期末日改走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
 
   const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
   const quarters: ShareholderYieldQuarter[] = await Promise.all(

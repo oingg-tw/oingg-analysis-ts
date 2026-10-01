@@ -53,16 +53,22 @@ export const getXbrlCashFlowQuarterly = (key: XbrlThreeStatementsLongKey): Promi
 // 「列存在即算有資料」——跟 getLatestQuarterWithBalanceSheet 同一種判斷，這個 statement_type
 // 沒有觀察到 bankCapitalAdequacy 那種「列存在但值全 null」的陷阱（長表本身沒有 null 列的
 // 概念，一個 account_code 有值才會有一列）。
-export const getLatestQuarterWithXbrlCashFlowQuarterly = async (
-  symbol: string,
-  dataType: string,
-  subsidiaryCompanyId: string
-): Promise<{ year: number; quarter: number } | null> => {
+// 2026-10-01：公司完全沒有單季現金流列（興櫃：Q1／Q3 免申報，單季推不出來）→ 改看累計現金流（statement_type='cash_flow'）
+// 的最新一季，讓「抓最新一季」模式也算得到興櫃的半年頻近一年（見 application/metrics/shared/trailingYear.ts）。
+// 只要有任何單季列就照單季判斷，上市櫃不受影響。
+const latestCashFlowQuarter = async (symbol: string, dataType: string, subsidiaryCompanyId: string, statementType: 'cash_flow_quarterly' | 'cash_flow') => {
   const rows = await mopsExportPrisma.$queryRaw<{ year: number; quarter: number }[]>`
     SELECT year, quarter FROM "export"."xbrl_three_statements_long"
     WHERE symbol = ${symbol} AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
-      AND statement_type = 'cash_flow_quarterly'
+      AND statement_type = ${statementType}
     ORDER BY year DESC, quarter DESC LIMIT 1
   `;
   return rows[0] ?? null;
 };
+
+export const getLatestQuarterWithXbrlCashFlowQuarterly = async (
+  symbol: string,
+  dataType: string,
+  subsidiaryCompanyId: string
+): Promise<{ year: number; quarter: number } | null> =>
+  (await latestCashFlowQuarter(symbol, dataType, subsidiaryCompanyId, 'cash_flow_quarterly')) ?? (await latestCashFlowQuarter(symbol, dataType, subsidiaryCompanyId, 'cash_flow'));
