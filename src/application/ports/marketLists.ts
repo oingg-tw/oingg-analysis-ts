@@ -22,26 +22,6 @@ export interface RawTpexVolumeTop20Row {
   volume: bigint;
 }
 
-// ---- 漲跌停幅度（export.price_limit_range）
-export interface RawTwsePriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-  opening_ref_price: number | null;
-  previous_day_price: number | null;
-  allow_odd_lot_trade: string | null;
-}
-
-export interface RawTpexPriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-}
-
 // ---- 月營收（export.monthly_revenue，twse-ts/tpex-ts 欄位一致）
 export interface RawMonthlyRevenueRow {
   symbol: string;
@@ -89,9 +69,6 @@ export interface MarketListsPort {
   getLatestVolumeTop20TradeDate(market: Market): Promise<Date | null>;
   listVolumeTop20Twse(tradeDate: Date): Promise<RawTwseVolumeTop20Row[]>;
   listVolumeTop20Tpex(tradeDate: Date): Promise<RawTpexVolumeTop20Row[]>;
-  getLatestPriceLimitRangeTradeDate(market: Market): Promise<Date | null>;
-  listPriceLimitRangeTwse(tradeDate: Date): Promise<RawTwsePriceLimitRangeRow[]>;
-  listPriceLimitRangeTpex(tradeDate: Date): Promise<RawTpexPriceLimitRangeRow[]>;
   getLatestMonthlyRevenueYearMonth(market: Market): Promise<Date | null>;
   listMonthlyRevenueForMonth(market: Market, yearMonth: Date): Promise<RawMonthlyRevenueRow[]>;
   getLatestMarginBalanceTradeDate(market: Market): Promise<Date | null>;

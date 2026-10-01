@@ -58,7 +58,6 @@ const cases: GoldenCase[] = [
   { slug: 'market-volume-top20', method: 'get', path: '/market/volume-top20' },
   { slug: 'market-disposed-stocks', method: 'get', path: '/market/disposed-stocks?limit=5' },
   { slug: 'market-attention-stocks', method: 'get', path: '/market/attention-stocks?limit=5' },
-  { slug: 'market-price-limit-range', method: 'get', path: '/market/price-limit-range' },
   { slug: 'market-price-change-ranking', method: 'get', path: '/market/price-change-ranking?limit=5' },
   { slug: 'market-etf-ranking', method: 'get', path: '/market/etf-ranking?metric=aum&order=desc&limit=5' },
   { slug: 'market-taiex-daily-price', method: 'get', path: '/market/taiex-daily-price?limit=5' },

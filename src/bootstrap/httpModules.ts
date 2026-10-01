@@ -32,8 +32,6 @@ import { createDisposedStocksRouter } from '@/http/modules/market/disposedStocks
 import { registerDisposedStocksOpenApi } from '@/http/modules/market/disposedStocks/openapi';
 import { createAttentionStocksRouter } from '@/http/modules/market/attentionStocks/route';
 import { registerAttentionStocksOpenApi } from '@/http/modules/market/attentionStocks/openapi';
-import { createPriceLimitRangeRouter } from '@/http/modules/market/priceLimitRange/route';
-import { registerPriceLimitRangeOpenApi } from '@/http/modules/market/priceLimitRange/openapi';
 import { createMaterialAnnouncementsRouter } from '@/http/modules/market/materialAnnouncements/route';
 import { registerMaterialAnnouncementsOpenApi } from '@/http/modules/market/materialAnnouncements/openapi';
 import { createPriceChangeRankingRouter } from '@/http/modules/market/priceChangeRanking/route';
@@ -88,7 +86,6 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'volumeTop20', auth: 'bff', router: createVolumeTop20Router(deps), registerOpenApi: registerVolumeTop20OpenApi },
   { name: 'disposedStocks', auth: 'bff', router: createDisposedStocksRouter(deps), registerOpenApi: registerDisposedStocksOpenApi },
   { name: 'attentionStocks', auth: 'bff', router: createAttentionStocksRouter(deps), registerOpenApi: registerAttentionStocksOpenApi },
-  { name: 'priceLimitRange', auth: 'bff', router: createPriceLimitRangeRouter(deps), registerOpenApi: registerPriceLimitRangeOpenApi },
   { name: 'materialAnnouncements', auth: 'bff', router: createMaterialAnnouncementsRouter(deps), registerOpenApi: registerMaterialAnnouncementsOpenApi },
   { name: 'priceChangeRanking', auth: 'bff', router: createPriceChangeRankingRouter(deps), registerOpenApi: registerPriceChangeRankingOpenApi },
   { name: 'etfRanking', auth: 'bff', router: createEtfRankingRouter(deps), registerOpenApi: registerEtfRankingOpenApi },

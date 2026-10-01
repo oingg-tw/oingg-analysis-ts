@@ -56,45 +56,6 @@ export const listVolumeTop20Tpex = (tradeDate: Date): Promise<RawTpexVolumeTop20
     WHERE trade_date = ${tradeDate}
   `;
 
-// ---- 漲跌停幅度（export.price_limit_range）----
-export interface RawTwsePriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-  opening_ref_price: number | null;
-  previous_day_price: number | null;
-  allow_odd_lot_trade: string | null;
-}
-
-export interface RawTpexPriceLimitRangeRow {
-  symbol: string;
-  rank_group: string;
-  limit_up: number | null;
-  limit_down: number | null;
-  limit_range: number | null;
-}
-
-export const getLatestPriceLimitRangeTradeDate = async (market: Market): Promise<Date | null> => {
-  const rows = await dbFor(market).$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."price_limit_range"`;
-  return rows[0]?.trade_date ?? null;
-};
-
-export const listPriceLimitRangeTwse = (tradeDate: Date): Promise<RawTwsePriceLimitRangeRow[]> =>
-  twseExportPrisma.$queryRaw<RawTwsePriceLimitRangeRow[]>`
-    SELECT symbol, rank_group, limit_up, limit_down, limit_range, opening_ref_price, previous_day_price, allow_odd_lot_trade
-    FROM "export"."price_limit_range"
-    WHERE trade_date = ${tradeDate}
-  `;
-
-export const listPriceLimitRangeTpex = (tradeDate: Date): Promise<RawTpexPriceLimitRangeRow[]> =>
-  tpexExportPrisma.$queryRaw<RawTpexPriceLimitRangeRow[]>`
-    SELECT symbol, rank_group, limit_up, limit_down, limit_range
-    FROM "export"."price_limit_range"
-    WHERE trade_date = ${tradeDate}
-  `;
-
 // ---- 月營收（export.monthly_revenue，twse-ts/tpex-ts 欄位一致）----
 export interface RawMonthlyRevenueRow {
   symbol: string;
@@ -242,9 +203,6 @@ export const exchangeMarketLists: MarketListsPort = {
   getLatestVolumeTop20TradeDate,
   listVolumeTop20Twse,
   listVolumeTop20Tpex,
-  getLatestPriceLimitRangeTradeDate,
-  listPriceLimitRangeTwse,
-  listPriceLimitRangeTpex,
   getLatestMonthlyRevenueYearMonth,
   listMonthlyRevenueForMonth,
   getLatestMarginBalanceTradeDate,
