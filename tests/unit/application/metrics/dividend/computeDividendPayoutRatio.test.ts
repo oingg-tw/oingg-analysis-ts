@@ -47,6 +47,8 @@ test('FY：盈餘分配現金股利（逐次加總，不含公積發放）÷ 年
       annualReports: { getAnnualIncomeStatement: async () => annual },
       shares: { getOutstandingCommonShares: async () => null } as never,
       dividendEvents: { listDividendDistributionRows: async () => rows } as never,
+      // 只 seed 了 114Q4，Q3 缺 → 近四季下半年段改用累計數推（2026-10-01 放寬）；這支測的是 FY，累計數給空的就好。
+      cumulativeStatements: { getCumulativeIncomeStatement: async () => null, getCumulativeCashFlowStatement: async () => null },
     });
     const batch = await computeDividendPayoutRatio({ symbol: '2330', year: '114', season: '4', dataType: '2', subsidiaryCompanyId: '' }, deps);
     return batch.slots.fy as MetricComputation;

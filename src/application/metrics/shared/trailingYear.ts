@@ -33,9 +33,6 @@ type StatementDeps = Pick<PitDeps, 'statements' | 'cumulativeStatements'>;
 
 const keyOf = (key: TrailingKey, year: number, quarter: number): QuarterlyKey => ({ symbol: key.symbol, year, quarter, dataType: key.dataType, subsidiaryCompanyId: key.subsidiaryCompanyId });
 
-// 任何一個金額欄位有值就算「有單季數字」——興櫃的偶數季列是整列全空；只看營收／淨利幾個欄位會把只填了部分科目的上市櫃誤判成半年報。
-const hasIncomeFlow = (r: IncomeStatementFields | null): boolean => r !== null && Object.values(r).some((v) => typeof v === 'bigint');
-
 const fetchQuarterlyIncome = async (key: TrailingKey, deps: StatementDeps) => {
   const quarters = getPastNQuarters({ rocYear: key.rocYear, season: key.season }, 4);
   const records = await Promise.all(quarters.map((q) => deps.statements.getIncomeStatement(keyOf(key, Number(q.year), Number(q.season)))));
@@ -47,7 +44,10 @@ const fetchQuarterlyIncome = async (key: TrailingKey, deps: StatementDeps) => {
 // 原本要求整個窗口都是半年報才走半年頻，興櫃「準備上櫃、從今年起改報單季」的公司（2249、2938、3595、4537…，115 年 Q1 起有單季、
 // 114 年仍只有半年報）兩邊都不符合，78 家興櫃的近一年 ROE 因此寫成 insufficient_history。逐段判斷後這種混合窗口＝上年度下半年（推）＋
 // 本年度兩個單季。Q1／Q3 的窗口不是半年對齊，只走單季（上年度是半年報的話推不出單季 Q4，照樣不齊，結構性限制）。
-// 偶數季必須「列存在但全空」才算半年報段；整列不存在的是資料缺漏，不被累計數悄悄補上。
+// 偶數季的列必須存在才算半年報段；偶數季整列不存在的是資料缺漏，不被累計數悄悄補上。
+// 2026-10-01 使用者拍板放寬：原本還要求偶數季列「全空」，5262、6467、6604 這種 114 年半年報、115 年 Q2 單季列有值但 Q1 單季列不存在的
+// 興櫃因此走單季、缺 Q1 寫 insufficient_history。上半年＝Q2 累計數是恆等式，奇數季缺就用累計數推那半年，數字一定對；代價是上市櫃
+// 「單季表漏一列奇數季」的缺漏也會被累計數補過去、不再現形（乾跑量到的影響範圍記在 commit 訊息）。
 type SegmentPlan = { year: number; half: 1 | 2; mode: 'quarters' | 'semiannual'; quarterIdx: [number, number] };
 
 const planSegments = (key: TrailingKey, quarters: { year: string; season: Season }[], records: (IncomeStatementFields | null)[]): SegmentPlan[] | null => {
@@ -59,7 +59,7 @@ const planSegments = (key: TrailingKey, quarters: { year: string; season: Season
   return segments.map(([a, b]) => {
     const odd = records[a] ?? null;
     const even = records[b] ?? null;
-    const semi = odd === null && even !== null && !hasIncomeFlow(even);
+    const semi = odd === null && even !== null;
     return { year: Number(quarters[b]!.year), half: quarters[b]!.season === '2' ? 1 : 2, mode: semi ? 'semiannual' : 'quarters', quarterIdx: [a, b] };
   });
 };

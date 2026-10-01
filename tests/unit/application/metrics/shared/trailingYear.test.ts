@@ -37,8 +37,16 @@ describe('resolveTrailingIncomeStatements', () => {
     expect(r.periods.map((p) => [p.year, p.season, p.record?.netIncome])).toEqual([['114', '4', 600n], ['115', '2', 500n]]);
   });
 
-  test('只缺奇數季、偶數季有真實數字（資料缺漏）→ 仍走四季、照樣不齊，不被累計數悄悄補上', async () => {
+  // 2026-10-01 使用者拍板放寬（5262、6467、6604）：奇數季缺、偶數季單季列有數字，也用累計數推那半年（上半年＝Q2 累計是恆等式）。
+  test('只缺奇數季、偶數季單季列有數字 → 一樣用累計數推半年，不用偶數季的單季數字', async () => {
     const seed: StatementsSeed = { X: { '114Q4': { income: { netIncome: 2n } }, '115Q2': { income: { netIncome: 4n } } } };
+    const r = await resolveTrailingIncomeStatements(key, depsFor(seed));
+    expect(r.basis).toBe('semiannual');
+    expect(r.periods.map((p) => [p.year, p.season, p.half, p.record?.netIncome])).toEqual([['114', '4', true, 600n], ['115', '2', true, 500n]]);
+  });
+
+  test('偶數季整列不存在（資料缺漏）→ 走單季、照樣不齊，不被累計數悄悄補上', async () => {
+    const seed: StatementsSeed = { X: { '114Q3': { income: { netIncome: 1n } }, '115Q1': { income: { netIncome: 3n } } } };
     const r = await resolveTrailingIncomeStatements(key, depsFor(seed));
     expect(r.basis).toBe('quarters');
     expect(r.periods.filter((p) => p.record === null)).toHaveLength(2);
