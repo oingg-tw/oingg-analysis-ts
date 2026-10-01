@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-28T03:02:29.839Z",
+  "recordedAt": "2026-10-01T08:11:37.079Z",
   "entries": {
     "announcements.getPriceAnchorDate([\"2330\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {
@@ -31,6 +31,7 @@
       },
       "source": "report_date_fallback"
     },
+    "cumulativeStatements.getCumulativeIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":115}])": null,
     "industry.isFinancialIndustryCompany([\"2330\"])": false,
     "industry.isFinancialIndustryCompany([\"2851\"])": true,
     "quarters.latestQuarterWith([\"incomeStatement\",\"2851\",\"2\",\"\"])": {
@@ -312,7 +313,6 @@
       }
     },
     "statements.getIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":114}])": null,
-    "statements.getInsuranceIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":115}])": null,
     "statements.getInsuranceIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":115}])": {
       "insuranceRevenue": {
         "$bigint": "3393632"
@@ -326,8 +326,6 @@
       "reportDate": {
         "$date": "2026-06-30T00:00:00.000Z"
       }
-    },
-    "statements.getInsuranceIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":114}])": null,
-    "statements.getInsuranceIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2851\",\"year\":114}])": null
+    }
   }
 }

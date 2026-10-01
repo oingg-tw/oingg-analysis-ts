@@ -41,6 +41,8 @@ const depsFor = (seed: StatementsSeed, announcedDates: Record<string, Date> = an
     announcements: createFixedAnnouncements(announcedDates),
     annualReports: { getAnnualIncomeStatement: async () => (annual ? ({ reportDate: new Date('2025-12-31T00:00:00.000Z'), basicEps: null, ...annual } as AnnualIncomeStatement) : null) },
     shares: { getOutstandingCommonShares: async () => null } as never,
+    // 2026-10-01 半年段逐段判斷：「Q1 整列缺、Q2 列在但全空」會去讀累計表；這裡沒有累計資料（回 null）。
+    cumulativeStatements: { getCumulativeIncomeStatement: async () => null, getCumulativeCashFlowStatement: async () => null },
   });
 };
 

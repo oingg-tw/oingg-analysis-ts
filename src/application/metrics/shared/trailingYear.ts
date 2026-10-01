@@ -19,6 +19,7 @@ export type ReportingBasis = 'quarters' | 'semiannual';
 export interface TrailingPeriod<T> {
   year: string; // 民國年
   season: Season; // 這段期間結束的那一季（上半年 = '2'、下半年 = '4'）
+  half?: boolean; // true = 這一段是從累計數推出來的半年期間（不是單季）
   record: T | null;
 }
 
@@ -41,55 +42,75 @@ const fetchQuarterlyIncome = async (key: TrailingKey, deps: StatementDeps) => {
   return { quarters, records };
 };
 
-const isSemiannualWindow = (key: TrailingKey, quarters: { season: Season }[], records: (IncomeStatementFields | null)[]): boolean => {
-  if (key.season !== '2' && key.season !== '4') return false;
-  // 偶數季必須「列存在但全空」（興櫃的實際長相），整列不存在的是資料缺漏、不算半年報。
-  return quarters.every((q, i) => (q.season === '1' || q.season === '3' ? records[i] === null : records[i] != null && !hasIncomeFlow(records[i] ?? null)));
+// 2026-10-01 改成「逐半年判斷」：近一年窗口在 Q2／Q4 剛好是兩個半年段（Q2：上年度下半年＋本年度上半年；Q4：本年度上下半年），
+// 每一段各自看長相——兩季都有單季列 → 用單季；奇數季整列缺、偶數季列在但全空（興櫃的長相）→ 用累計數推那半年。
+// 原本要求整個窗口都是半年報才走半年頻，興櫃「準備上櫃、從今年起改報單季」的公司（2249、2938、3595、4537…，115 年 Q1 起有單季、
+// 114 年仍只有半年報）兩邊都不符合，78 家興櫃的近一年 ROE 因此寫成 insufficient_history。逐段判斷後這種混合窗口＝上年度下半年（推）＋
+// 本年度兩個單季。Q1／Q3 的窗口不是半年對齊，只走單季（上年度是半年報的話推不出單季 Q4，照樣不齊，結構性限制）。
+// 偶數季必須「列存在但全空」才算半年報段；整列不存在的是資料缺漏，不被累計數悄悄補上。
+type SegmentPlan = { year: number; half: 1 | 2; mode: 'quarters' | 'semiannual'; quarterIdx: [number, number] };
+
+const planSegments = (key: TrailingKey, quarters: { year: string; season: Season }[], records: (IncomeStatementFields | null)[]): SegmentPlan[] | null => {
+  if (key.season !== '2' && key.season !== '4') return null;
+  const segments: [number, number][] = [
+    [0, 1],
+    [2, 3],
+  ];
+  return segments.map(([a, b]) => {
+    const odd = records[a] ?? null;
+    const even = records[b] ?? null;
+    const semi = odd === null && even !== null && !hasIncomeFlow(even);
+    return { year: Number(quarters[b]!.year), half: quarters[b]!.season === '2' ? 1 : 2, mode: semi ? 'semiannual' : 'quarters', quarterIdx: [a, b] };
+  });
 };
 
-// 半年期間：本季是 Q2 → [上年度下半年, 本年度上半年]；本季是 Q4 → [本年度上半年, 本年度下半年]。
-const semiannualPeriods = async <T extends { reportDate: Date }>(
+const basisOf = (plan: SegmentPlan[] | null): ReportingBasis => (plan?.some((seg) => seg.mode === 'semiannual') ? 'semiannual' : 'quarters');
+
+// 依段落組 periods：單季段兩筆、半年段一筆（上半年 = Q2 累計；下半年 = 年報累計 − Q2 累計）。
+const buildPeriods = async <T extends { reportDate: Date }>(
   key: TrailingKey,
+  quarters: { year: string; season: Season }[],
+  plan: SegmentPlan[] | null,
+  singles: (T | null)[],
   getCumulative: (k: QuarterlyKey) => Promise<T | null>,
   zeroWhenNull: readonly (keyof T)[]
 ): Promise<TrailingPeriod<T>[]> => {
-  const secondHalf = async (year: number): Promise<T | null> => {
-    const [full, h1] = await Promise.all([getCumulative(keyOf(key, year, 4)), getCumulative(keyOf(key, year, 2))]);
-    return full && h1 ? subtractCumulative(full, h1, zeroWhenNull) : null;
-  };
-  const y = key.rocYear;
-  return key.season === '2'
-    ? [
-        { year: String(y - 1), season: '4', record: await secondHalf(y - 1) },
-        { year: String(y), season: '2', record: await getCumulative(keyOf(key, y, 2)) },
-      ]
-    : [
-        { year: String(y), season: '2', record: await getCumulative(keyOf(key, y, 2)) },
-        { year: String(y), season: '4', record: await secondHalf(y) },
-      ];
+  if (!plan) return quarters.map((q, i) => ({ year: q.year, season: q.season, record: singles[i] ?? null }));
+  const out: TrailingPeriod<T>[] = [];
+  for (const seg of plan) {
+    if (seg.mode === 'quarters') {
+      for (const i of seg.quarterIdx) out.push({ year: quarters[i]!.year, season: quarters[i]!.season, record: singles[i] ?? null });
+      continue;
+    }
+    if (seg.half === 1) {
+      out.push({ year: String(seg.year), season: '2', half: true, record: await getCumulative(keyOf(key, seg.year, 2)) });
+    } else {
+      const [full, h1] = await Promise.all([getCumulative(keyOf(key, seg.year, 4)), getCumulative(keyOf(key, seg.year, 2))]);
+      out.push({ year: String(seg.year), season: '4', half: true, record: full && h1 ? subtractCumulative(full, h1, zeroWhenNull) : null });
+    }
+  }
+  return out;
 };
 
 export const resolveReportingBasis = async (key: TrailingKey, deps: StatementDeps): Promise<ReportingBasis> => {
   const { quarters, records } = await fetchQuarterlyIncome(key, deps);
-  return isSemiannualWindow(key, quarters, records) ? 'semiannual' : 'quarters';
+  return basisOf(planSegments(key, quarters, records));
 };
 
 export const resolveTrailingIncomeStatements = async (key: TrailingKey, deps: StatementDeps): Promise<TrailingYear<IncomeStatementFields>> => {
   const { quarters, records } = await fetchQuarterlyIncome(key, deps);
-  if (isSemiannualWindow(key, quarters, records)) {
-    return { basis: 'semiannual', periods: await semiannualPeriods(key, (k) => deps.cumulativeStatements.getCumulativeIncomeStatement(k), []) };
-  }
-  return { basis: 'quarters', periods: quarters.map((q, i) => ({ year: q.year, season: q.season, record: records[i] ?? null })) };
+  const plan = planSegments(key, quarters, records);
+  const periods = await buildPeriods(key, quarters, plan, records, (k) => deps.cumulativeStatements.getCumulativeIncomeStatement(k), []);
+  return { basis: basisOf(plan), periods };
 };
 
-// 現金流量表：興櫃連單季列都沒有，所以「是不是半年報」一律看同一個窗口的損益表長相（resolveReportingBasis）。
+// 現金流量表：興櫃連單季列都沒有，所以每一段是不是半年報一律看同一個窗口的損益表長相。
 export const resolveTrailingCashFlowStatements = async (key: TrailingKey, deps: StatementDeps): Promise<TrailingYear<CashFlowFields>> => {
-  if ((await resolveReportingBasis(key, deps)) === 'semiannual') {
-    return { basis: 'semiannual', periods: await semiannualPeriods(key, (k) => deps.cumulativeStatements.getCumulativeCashFlowStatement(k), ['dividendsPaid']) };
-  }
-  const quarters = getPastNQuarters({ rocYear: key.rocYear, season: key.season }, 4);
-  const records = await Promise.all(quarters.map((q) => deps.statements.getCashFlowStatement(keyOf(key, Number(q.year), Number(q.season)))));
-  return { basis: 'quarters', periods: quarters.map((q, i) => ({ year: q.year, season: q.season, record: records[i] ?? null })) };
+  const { quarters, records } = await fetchQuarterlyIncome(key, deps);
+  const plan = planSegments(key, quarters, records);
+  const singles = await Promise.all(quarters.map((q) => deps.statements.getCashFlowStatement(keyOf(key, Number(q.year), Number(q.season)))));
+  const periods = await buildPeriods(key, quarters, plan, singles, (k) => deps.cumulativeStatements.getCumulativeCashFlowStatement(k), ['dividendsPaid']);
+  return { basis: basisOf(plan), periods };
 };
 
 // 本季的期末日（knowledge date anchor、查股數／市值的時點）。只用現金流量表的指標原本讀「本季單季現金流」的 reportDate，
@@ -104,5 +125,6 @@ export const resolveCashFlowReportDate = async (key: TrailingKey, deps: Statemen
 
 // 溯源表（metric-provenance）的期間標籤：上市櫃「114 年第 3 季」、興櫃半年頻「114 年上半年／下半年」。
 // 2026-10-01 使用者要求溯源表全部補齊，溯源 entry 的 role 一律用這個，不要再寫死「第 i/4 季」（興櫃只有兩段）。
-export const trailingPeriodLabel = (period: { year: string; season: Season }, basis: ReportingBasis): string =>
-  basis === 'semiannual' ? `${period.year} 年${period.season === '2' ? '上半年' : '下半年'}` : `${period.year} 年第 ${period.season} 季`;
+// 2026-10-01 逐半年判斷後，同一個窗口可能半年段與單季段混在一起（興櫃轉季報），所以優先看 period.half；舊呼叫端沒帶 half 時退回看 basis。
+export const trailingPeriodLabel = (period: { year: string; season: Season; half?: boolean }, basis: ReportingBasis): string =>
+  (period.half ?? basis === 'semiannual') ? `${period.year} 年${period.season === '2' ? '上半年' : '下半年'}` : `${period.year} 年第 ${period.season} 季`;

@@ -45,9 +45,15 @@ export const averageOf = (balances: AverageBalances, pick: (bs: BalanceSheetFiel
   return averageBalance(window === 'q' ? values.slice(-2) : balances.ttmPointIndexes.map((i) => values[i] ?? null));
 };
 
-const SEMIANNUAL_POINTS = [0, 2, 4];
-const isSemiannualBalanceWindow = (season: Season, balanceSheets: (BalanceSheetFields | null)[]): boolean =>
-  (season === '2' || season === '4') && balanceSheets[1] === null && balanceSheets[3] === null && SEMIANNUAL_POINTS.every((i) => balanceSheets[i] !== null);
+// 2026-10-01 放寬成「只缺奇數季末（idx 1／3，任一或兩個）、其餘都在」：興櫃轉季報的公司窗口內上年度是半年報（缺 Q3 季末）、
+// 本年度已有 Q1 季末，用現有的 4 點；純半年報仍是 3 點（t−4、t−2、t）。偶數季末缺的是真的資料缺漏，照樣 null。
+const ODD_POINTS = [1, 3];
+const semiannualPointIndexes = (season: Season, balanceSheets: (BalanceSheetFields | null)[]): number[] | null => {
+  if (season !== '2' && season !== '4') return null;
+  const missing = balanceSheets.map((bs, i) => (bs === null ? i : -1)).filter((i) => i >= 0);
+  if (missing.length === 0 || !missing.every((i) => ODD_POINTS.includes(i))) return null;
+  return balanceSheets.map((_, i) => i).filter((i) => !missing.includes(i));
+};
 
 export const resolveAverageBalances = async (
   key: { symbol: string; rocYear: number; season: Season; dataType: StatementDataType; subsidiaryCompanyId: string },
@@ -61,7 +67,7 @@ export const resolveAverageBalances = async (
   const totalAssets = balanceSheets.map((bs) => bs?.totalAssets ?? null);
   const equityValues = equities.map((e) => e.value);
   const last2 = <T>(xs: T[]): T[] => xs.slice(-2);
-  const ttmPointIndexes = isSemiannualBalanceWindow(key.season, balanceSheets) ? SEMIANNUAL_POINTS : [0, 1, 2, 3, 4];
+  const ttmPointIndexes = semiannualPointIndexes(key.season, balanceSheets) ?? [0, 1, 2, 3, 4];
   const ttmPoints = <T>(xs: T[]): T[] => ttmPointIndexes.map((i) => xs[i]!);
   return {
     quarters: quarterKeys.map((tq) => ({ year: tq.year, season: tq.season, fiscalYear: rocYearToGregorian(Number(tq.year)), fiscalQuarter: Number(tq.season) })),
