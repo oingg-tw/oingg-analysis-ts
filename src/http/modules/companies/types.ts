@@ -17,6 +17,9 @@ import type { BookValueBreakdownEntry } from '@/application/companies/bookValueB
 export const companyProfileDetailSchema = z.object({
   symbol: z.string().meta({ description: '公司代號' }),
   market: z.enum(['TWSE', 'TPEx']).meta({ description: '上市（TWSE）或上櫃（TPEx）' }),
+  // 2026-10-01 應 web-nuxt／bff-ts 要求：個股頁拿不到 GET /companies 清單上的 isEmerging，per-symbol 分不出上櫃與興櫃。
+  // 刻意加旗標而不是把 market 擴成 'EMERGING'——把 market 當二元值的下游會把未知值默默標錯（bff-ts 實測會落到 TWSE）。
+  isEmerging: z.boolean().meta({ description: '興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同' }),
   reportDate: z.string().nullable(),
   name: z.string().nullable(),
   shortName: z.string().nullable(),

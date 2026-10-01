@@ -9,6 +9,7 @@
 export interface CompanyProfileDetail {
   symbol: string;
   market: 'TWSE' | 'TPEx';
+  isEmerging: boolean; // 2026-10-01 興櫃（market 仍是 TPEx），判斷跟 GET /companies 清單同一個（tpex company_profile.source）
   reportDate: string | null;
   name: string | null;
   shortName: string | null;

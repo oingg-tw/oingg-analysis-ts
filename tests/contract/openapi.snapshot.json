@@ -2269,6 +2269,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "isEmerging": {
+                      "description": "興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同",
+                      "type": "boolean"
+                    },
                     "issuedShares": {
                       "nullable": true,
                       "type": "string"
@@ -2363,6 +2367,7 @@
                   "required": [
                     "symbol",
                     "market",
+                    "isEmerging",
                     "reportDate",
                     "name",
                     "shortName",

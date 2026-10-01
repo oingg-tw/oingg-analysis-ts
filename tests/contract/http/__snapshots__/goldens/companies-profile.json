@@ -18,6 +18,7 @@
     "generalManager": "<string>",
     "industry": "<numeric-string>",
     "industryName": "<string>",
+    "isEmerging": "<boolean>",
     "issuedShares": "<numeric-string>",
     "listedDate": "<date>",
     "market": "TWSE",

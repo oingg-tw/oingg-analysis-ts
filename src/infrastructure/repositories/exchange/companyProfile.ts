@@ -200,6 +200,7 @@ interface RawTpexCompanyProfileDetailRow {
   email: string | null;
   website: string | null;
   issued_shares: bigint | null;
+  source: string | null;
 }
 
 interface RawTwseCompanyProfileDetailRow {
@@ -286,6 +287,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
     return {
       symbol: twseRow.symbol,
       market: 'TWSE',
+      isEmerging: false,
       reportDate: twseRow.report_date.toISOString().slice(0, 10),
       name: twseRow.name,
       shortName: twseRow.short_name,
@@ -329,7 +331,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
       established_date, listed_date, par_value, paid_in_capital, private_placement_shares,
       preferred_stock_shares, financial_report_type, stock_transfer_agency, transfer_agency_phone,
       transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
-      email, website, issued_shares
+      email, website, issued_shares, source
     FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
   `;
   const tpexRow = tpexRows[0];
@@ -338,6 +340,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   return {
     symbol: tpexRow.symbol,
     market: 'TPEx',
+    isEmerging: tpexRow.source === 'COMPANY_PROFILE_EMERGING',
     reportDate: tpexRow.report_date?.toISOString().slice(0, 10) ?? null,
     name: tpexRow.name,
     shortName: tpexRow.short_name,
