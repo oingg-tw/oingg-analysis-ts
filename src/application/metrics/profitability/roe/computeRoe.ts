@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityWithFieldKey as pickEquity, pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import type { MetricNullReason } from '@/domain/metrics/metricBasis';
 import { isComputationSkip, noQuarterBatch, periodSlot, type ComputationBatch } from '@/domain/metrics/computation';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { PitDeps } from '../../deps';
 import { resolveAverageBalances, type AverageBalances } from '../../shared/averageBalances';
+import { resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { annualReportSlot, resolveAnnualReportContext, type AnnualReportContext } from '../../shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 
@@ -27,7 +28,7 @@ import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 // 傳染、null_reason 都能用 tests/fakes/pit 的記憶體 port 做單元測試（見
 // tests/unit/application/metrics/profitability/roe/computeRoe.test.ts），不用連資料庫。
 
-export type RoeDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type RoeDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 // 2026-09-22 formulaVersion 2：分母從本季期末權益改成期間平均權益（Q = 本季與上季期末平均、TTM = 5 個季末平均），
 // 理由與定義見 shared/averageBalances.ts。分子不變。缺前期資產負債表 → insufficient_history。
@@ -86,10 +87,11 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
   // TTM：近四季（含本季）淨利加總 / 近四季窗口 5 個季末權益平均。四季損益表與 5 個季末資產負債表需全部存在，
   // 否則視為不齊——不齊時寫一列 value=null/null_reason=insufficient_history，knowledge_date
   // 沿用本季（Q）自己的 knowledge_date（本季資訊本身已知，只是 TTM 湊不齊）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源：上市櫃＝近四季（不變）、興櫃＝上年度下半年＋本年度上半年（見 shared/trailingYear.ts）；
+  // 分母的 TTM 平均在興櫃自動改 3 點（averageBalances.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const ttmNetIncomes = ttmRecords.map((record) => pickNetIncome(record));
   let ttmSum = 0n;

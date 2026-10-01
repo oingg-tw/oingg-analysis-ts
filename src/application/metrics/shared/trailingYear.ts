@@ -32,7 +32,8 @@ type StatementDeps = Pick<PitDeps, 'statements' | 'cumulativeStatements'>;
 
 const keyOf = (key: TrailingKey, year: number, quarter: number): QuarterlyKey => ({ symbol: key.symbol, year, quarter, dataType: key.dataType, subsidiaryCompanyId: key.subsidiaryCompanyId });
 
-const hasIncomeFlow = (r: IncomeStatementFields | null): boolean => r !== null && (r.operatingRevenue !== null || r.netIncome !== null || r.profitBeforeTax !== null);
+// 任何一個金額欄位有值就算「有單季數字」——興櫃的偶數季列是整列全空；只看營收／淨利幾個欄位會把只填了部分科目的上市櫃誤判成半年報。
+const hasIncomeFlow = (r: IncomeStatementFields | null): boolean => r !== null && Object.values(r).some((v) => typeof v === 'bigint');
 
 const fetchQuarterlyIncome = async (key: TrailingKey, deps: StatementDeps) => {
   const quarters = getPastNQuarters({ rocYear: key.rocYear, season: key.season }, 4);
@@ -42,7 +43,8 @@ const fetchQuarterlyIncome = async (key: TrailingKey, deps: StatementDeps) => {
 
 const isSemiannualWindow = (key: TrailingKey, quarters: { season: Season }[], records: (IncomeStatementFields | null)[]): boolean => {
   if (key.season !== '2' && key.season !== '4') return false;
-  return quarters.every((q, i) => (q.season === '1' || q.season === '3' ? records[i] === null : !hasIncomeFlow(records[i] ?? null)));
+  // 偶數季必須「列存在但全空」（興櫃的實際長相），整列不存在的是資料缺漏、不算半年報。
+  return quarters.every((q, i) => (q.season === '1' || q.season === '3' ? records[i] === null : records[i] != null && !hasIncomeFlow(records[i] ?? null)));
 };
 
 // 半年期間：本季是 Q2 → [上年度下半年, 本年度上半年]；本季是 Q4 → [本年度上半年, 本年度下半年]。

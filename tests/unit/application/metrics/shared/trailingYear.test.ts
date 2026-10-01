@@ -6,7 +6,7 @@ import { createInMemoryStatements, quarterEndDate, type StatementsSeed } from '.
 import { createTestPitDeps } from '../../../../fakes/pit/createTestPitDeps';
 
 // 2026-10-01 興櫃半年頻：上市櫃走四季（值不變）、興櫃走「上年度下半年＋本年度上半年」，缺漏不會被誤判成半年報。
-const key = { symbol: 'X', rocYear: 115, season: '2' as const, dataType: '2', subsidiaryCompanyId: '' };
+const key = { symbol: 'X', rocYear: 115, season: '2' as const, dataType: '2' as const, subsidiaryCompanyId: '' };
 
 // 累計數：114 年上半年 400、全年 1000；115 年上半年 500。股利：114 上半年沒配（null）、全年 −60。
 const cumulative: CumulativeStatementsPort = {
