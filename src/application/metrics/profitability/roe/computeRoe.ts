@@ -8,6 +8,8 @@ import { isComputationSkip, noQuarterBatch, periodSlot, type ComputationBatch } 
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { PitDeps } from '../../deps';
 import { resolveAverageBalances, type AverageBalances } from '../../shared/averageBalances';
+import { annualReportSlot, resolveAnnualReportContext, type AnnualReportContext } from '../../shared/annualReportSlot';
+import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 
 // 這份檔案是 src/domainMetrics/roe.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
 // 私有函式，也不呼叫 calculateRoe() 本身——保持這條新管線對舊系統完全唯讀，不會觸發
@@ -133,13 +135,42 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
   };
 };
 
-export type RoeComputationBatch = ComputationBatch<'q' | 'ttm'>;
+// 2026-10-01 新增 FY：跟官方年度 ROE 同一個算法——全年淨利 ÷（去年底權益 ＋ 今年底權益）÷ 2。
+// 使用者拍板「每種期別各用合適的算法」：TTM 維持 5 點平均（消除 Q2 股東會配息造成的期末權益低點，呈現內在價值），
+// FY 對齊官方，讓讀者對得上證交所與公司年報。依據：證交所開放資料 t187ap29_A_L 的「股東權益報酬率(%)」（公司自行申報的
+// 財務分析資料）反推：分母 (期初＋期末)/2 吻合遠多於 5 點平均或只用期末（281 家樣本：137 vs 12 vs 31）；口徑再用 114 年度 906 家
+// 逐家試算（差 ≤0.05 個百分點算吻合）：**全部稅後淨利 ÷ 全部權益（含少數股權）798 家（88%）**、歸屬母公司÷歸屬母公司 465 家、
+// 混合口徑 449～469 家，四種任一吻合 869 家（96%），剩下是各公司自行申報的差異。所以 FY 用合併總額口徑——跟 Q／TTM
+// 「優先歸屬母公司」不同，這是刻意的：FY 的目的是對齊官方數字。總額欄位缺漏才退回母公司欄位。
+// 年報與哪一年、座標、公告日的規則沿用 annualReportSlot（一年一列、座標 (該年, 4)）。
+// 興櫃一年只有 Q2／Q4 兩份報表，但年報與兩個年底資產負債表都有，所以 FY 對興櫃也算得出來。
+export type RoeComputeDeps = RoeDeps & Pick<PitDeps, 'annualReports' | 'shares'>;
 
-export const computeRoe = async (query: QuarterlyMetricQuery, deps: RoeDeps): Promise<RoeComputationBatch> => {
+export const calculateAnnualRoe = (netIncome: bigint | null, openingEquity: bigint | null, closingEquity: bigint | null): CalcResult => {
+  if (netIncome === null || closingEquity === null) return { value: null, nullReason: 'missing_input' };
+  if (openingEquity === null) return { value: null, nullReason: 'insufficient_history' };
+  const average = (openingEquity + closingEquity) / 2n;
+  const value = toPercent(netIncome, average);
+  return { value, nullReason: value === null ? determineNullReason(netIncome, average) : null };
+};
+
+const resolveAnnualRoe = async (annual: AnnualReportContext | null, key: { symbol: string; dataType: string; subsidiaryCompanyId: string }, deps: RoeComputeDeps): Promise<CalcResult> => {
+  if (!annual) return { value: null, nullReason: 'missing_input' };
+  const rocYear = annual.fiscalYear - 1911;
+  const [opening, closing] = await Promise.all(
+    [rocYear - 1, rocYear].map((year) => deps.statements.getBalanceSheet({ symbol: key.symbol, year, quarter: 4, dataType: key.dataType, subsidiaryCompanyId: key.subsidiaryCompanyId }))
+  );
+  const totalEquity = (bs: typeof opening) => bs?.totalEquity ?? bs?.equityAttributableToParent ?? null;
+  return calculateAnnualRoe(annual.annual.netIncome ?? annual.annual.netIncomeAttributableToParent, totalEquity(opening), totalEquity(closing));
+};
+
+export type RoeComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
+
+export const computeRoe = async (query: QuarterlyMetricQuery, deps: RoeComputeDeps): Promise<RoeComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolution = await resolveRoeQuarterData(query, deps);
-  if (!resolution) return noQuarterBatch(symbol, ['q', 'ttm']);
+  if (!resolution) return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
 
   const { rocYear, season, fiscalYear, fiscalQuarter, roeQuarterlyPct, quarterlyNullReason, mainAnchor, ttmComplete, roeTtmPct, ttmNullReason, ttmAnchor } = resolution;
 
@@ -151,5 +182,8 @@ export const computeRoe = async (query: QuarterlyMetricQuery, deps: RoeDeps): Pr
   // knowledge_date 沿用本季的 anchor（本季 anchor 也沒有就 skip）。
   const ttm = versioned(ttmComplete ? periodSlot(ttmAnchor, coordinateBase, 'TTM', roeTtmPct, ttmNullReason) : periodSlot(mainAnchor, coordinateBase, 'TTM', null, 'insufficient_history'));
 
-  return { symbol, rocYear, season, slots: { q, ttm } };
+  const annual = await resolveAnnualReportContext({ symbol, rocYear: Number(rocYear), season: fiscalQuarter, dataType, subsidiaryCompanyId }, deps);
+  const fy = versioned(annualReportSlot(annual, { symbol, metricCode: 'roe', dataType, subsidiaryCompanyId }, await resolveAnnualRoe(annual, { symbol, dataType, subsidiaryCompanyId }, deps)));
+
+  return { symbol, rocYear, season, slots: { q, ttm, fy } };
 };

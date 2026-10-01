@@ -91,7 +91,7 @@ describe('validateCoordinate：spec v0.2 §5.5 的強制檢查', () => {
 
   test('季報型：periodType 要在 allowedPeriodTypes 內、其他三個欄位必須 N/A、fiscalYear/fiscalQuarter 必填', () => {
     expect(validateCoordinate(roeQ(), roeDefinition)).toBeNull();
-    expect(validateCoordinate(roeQ({ periodType: 'FY' }), roeDefinition)?.reason).toContain('allowedPeriodTypes');
+    expect(validateCoordinate(roeQ({ periodType: 'YTD' }), roeDefinition)?.reason).toContain('allowedPeriodTypes');
     expect(validateCoordinate(roeQ({ lookbackRange: '1Y' }), roeDefinition)?.reason).toContain("必須都是 'N/A'");
     expect(validateCoordinate(roeQ({ fiscalQuarter: undefined }), roeDefinition)?.reason).toContain('fiscalYear/fiscalQuarter 必填');
   });
@@ -130,7 +130,7 @@ describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
 
   test('座標驗證失敗時什麼都不寫', async () => {
     const metricValues = createInMemoryMetricValues();
-    const outcome = await persistOne(roeQ({ periodType: 'FY' }), { metricValues, definitions, industry });
+    const outcome = await persistOne(roeQ({ periodType: 'YTD' }), { metricValues, definitions, industry });
     expect(outcome.action).toBe('rejected');
     expect(metricValues.rows()).toHaveLength(0);
   });

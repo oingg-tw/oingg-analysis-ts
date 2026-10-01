@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { computeRoe, resolveRoeQuarterData } from '@/application/metrics/profitability/roe/computeRoe';
+import { calculateAnnualRoe, computeRoe, resolveRoeQuarterData } from '@/application/metrics/profitability/roe/computeRoe';
+import type { AnnualIncomeStatement } from '@/application/ports/annualReport';
 import { isComputationSkip, type MetricComputation } from '@/domain/metrics/computation';
 import { createInMemoryStatements, quarterEndDate, type StatementsSeed } from '../../../../../fakes/pit/inMemoryStatements';
 import { createFixedAnnouncements } from '../../../../../fakes/pit/fixedAnnouncements';
@@ -31,9 +32,16 @@ const announced = {
   '2330-115Q2': new Date('2026-08-12T00:00:00.000Z'),
 };
 
-const depsFor = (seed: StatementsSeed, announcedDates: Record<string, Date> = announced) => {
+// 2026-10-01 加 FY：年報預設查無（fy 槽 skipped_no_quarter），要測 FY 的案例再傳 annual。
+const depsFor = (seed: StatementsSeed, announcedDates: Record<string, Date> = announced, annual: Partial<AnnualIncomeStatement> | null = null) => {
   const statements = createInMemoryStatements(seed);
-  return createTestPitDeps({ statements, quarters: statements, announcements: createFixedAnnouncements(announcedDates) });
+  return createTestPitDeps({
+    statements,
+    quarters: statements,
+    announcements: createFixedAnnouncements(announcedDates),
+    annualReports: { getAnnualIncomeStatement: async () => (annual ? ({ reportDate: new Date('2025-12-31T00:00:00.000Z'), basicEps: null, ...annual } as AnnualIncomeStatement) : null) },
+    shares: { getOutstandingCommonShares: async () => null } as never,
+  });
 };
 
 const asComputation = (slot: MetricComputation | { action: string }): MetricComputation => {
@@ -46,7 +54,8 @@ describe('computeRoe', () => {
     const batch = await computeRoe(query, depsFor(fourQuarters));
 
     expect(batch).toMatchObject({ symbol: '2330', rocYear: '115', season: '2' });
-    expect(Object.keys(batch.slots)).toEqual(['q', 'ttm']);
+    expect(Object.keys(batch.slots)).toEqual(['q', 'ttm', 'fy']);
+    expect(batch.slots.fy).toEqual({ action: 'skipped_no_quarter' }); // 沒有年報就不寫 FY 列
 
     const q = asComputation(batch.slots.q);
     expect(q).toMatchObject({ metricCode: 'roe', periodType: 'Q', lookbackRange: 'N/A', samplingInterval: 'N/A', snapshotCadence: 'N/A', fiscalYear: 2026, fiscalQuarter: 2, dataType: '2', subsidiaryCompanyId: '' });
@@ -130,6 +139,7 @@ describe('computeRoe', () => {
       statements,
       quarters: statements,
       announcements: { getPriceAnchorDate: async () => null },
+      annualReports: { getAnnualIncomeStatement: async () => null },
     });
     const batch = await computeRoe(query, noAnchor);
 
@@ -148,12 +158,12 @@ describe('computeRoe', () => {
   test('查無任何一季 → 整批 skipped_no_quarter，不碰財報/公告日 port', async () => {
     const batch = await computeRoe({ symbol: '9999', dataType: '2', subsidiaryCompanyId: '' }, depsFor(fourQuarters));
 
-    expect(batch).toEqual({ symbol: '9999', rocYear: null, season: null, slots: { q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } } });
+    expect(batch).toEqual({ symbol: '9999', rocYear: null, season: null, slots: { q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' }, fy: { action: 'skipped_no_quarter' } } });
   });
 
   test('指定 year/season 時完全不呼叫 quarters port（沒提供也不會爆）', async () => {
     const statements = createInMemoryStatements(fourQuarters);
-    const deps = createTestPitDeps({ statements, announcements: createFixedAnnouncements(announced) });
+    const deps = createTestPitDeps({ statements, announcements: createFixedAnnouncements(announced), annualReports: { getAnnualIncomeStatement: async () => null } });
 
     const batch = await computeRoe(query, deps);
     expect(asComputation(batch.slots.q).value).toBe(8);
@@ -161,5 +171,25 @@ describe('computeRoe', () => {
 
   test('fake 的 reportDate 預設是該季期末日（fallback 路徑用得到）', () => {
     expect(quarterEndDate(115, 2)).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+  });
+
+  // 2026-10-01：FY 跟官方年度 ROE 同一個算法——全年稅後淨利（合併總額）÷（去年底＋今年底總權益）÷ 2。
+  test('FY = 年報全年淨利 / (去年底 + 今年底總權益) / 2，用合併總額不是歸屬母公司；座標 (2025, 4)', async () => {
+    const seed: StatementsSeed = {
+      '2330': {
+        ...fourQuarters['2330'],
+        '113Q4': { balance: { equityAttributableToParent: 3500n, totalEquity: 4000n } },
+        '114Q4': { income: { netIncomeAttributableToParent: 200n }, balance: { equityAttributableToParent: 5000n, totalEquity: 6000n } },
+      },
+    };
+    const batch = await computeRoe(query, depsFor(seed, { ...announced, '2330-114Q4': new Date('2026-03-10T00:00:00.000Z') }, { netIncome: 1000n, netIncomeAttributableToParent: 900n }));
+    // 1000 / ((4000 + 6000) / 2) = 20%；若誤用母公司口徑會是 900 / 4250 ≈ 21.18%
+    expect(asComputation(batch.slots.fy)).toMatchObject({ periodType: 'FY', fiscalYear: 2025, fiscalQuarter: 4, value: 20, nullReason: null });
+  });
+
+  test('FY：去年底資產負債表缺 → insufficient_history；權益平均 ≤ 0 → zero_or_negative_denominator', () => {
+    expect(calculateAnnualRoe(100n, null, 500n)).toEqual({ value: null, nullReason: 'insufficient_history' });
+    expect(calculateAnnualRoe(null, 500n, 500n)).toEqual({ value: null, nullReason: 'missing_input' });
+    expect(calculateAnnualRoe(100n, -500n, 500n).nullReason).toBe('zero_or_negative_denominator');
   });
 });

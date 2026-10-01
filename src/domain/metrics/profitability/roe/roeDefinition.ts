@@ -11,6 +11,9 @@ export const roeDefinition: MetricDefinitionSpec = {
     'Q(單季) = 本季淨利/平均權益*100，平均權益 = (本季期末 + 上季期末)/2，淨利/權益優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
     'TTM = 近四季（含本季）淨利加總/平均權益*100，平均權益 = 近四季窗口 5 個季末（t−4 … t）權益的平均。' +
     '四季損益表或任一季末資產負債表不齊為 null（null_reason=insufficient_history）。' +
+    'FY（年度）= 年報全年稅後淨利/平均權益*100，平均權益 = (去年底權益 + 今年底權益)/2，淨利與權益都用合併總額（含非控制權益），' +
+    '跟公開資訊觀測站財務分析的年度 ROE 同一個算法（114 年度約 88% 的上市公司差距在 0.05 個百分點以內）；' +
+    '去年底資產負債表缺漏為 null（insufficient_history）。TTM 用 5 個季末平均是為了攤平 6 月股東會配息造成的 Q2 權益低點，FY 則跟官方一致。' +
     '（formulaVersion 1（2026-09-22 前）分母是本季單一期末權益。）',
   // \% 在 LaTeX 是註解字元的跳脫寫法，compute-engine 的 LaTeX 剖析器不認得，會把
   // 「\times 100\%」整段悄悄吃掉（2026-09-10 實測驗證過，output 完全沒有 ×100，不是
@@ -21,7 +24,7 @@ export const roeDefinition: MetricDefinitionSpec = {
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'equity_attributable_to_owners_of_parent', 'equity'],
   currentFormulaVersion: 2,
 };
