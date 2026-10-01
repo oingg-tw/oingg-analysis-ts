@@ -226,7 +226,9 @@ export const buildScreenerSql = (
         })();
   const orderDirection = sort?.order === 'desc' ? Prisma.raw('DESC') : Prisma.raw('ASC');
   // symbol 當第二排序鍵，排序目標本身有重複值時分頁才不會因為 Postgres 排序不保證穩定而錯位。
-  const orderBySql = sort && sort.field !== 'symbol' ? Prisma.sql`${orderByColumn} ${orderDirection}, symbol ASC` : Prisma.sql`${orderByColumn} ${orderDirection}`;
+  // 2026-10-01 web-nuxt 抓到：Postgres 的 DESC 預設 NULLS FIRST，「由大到小」的榜首變成一批沒有值的公司（3036、6911 的 epsGrowthRate.Q
+  // 是 null 卻排第一）。沒有值一律排最後，兩個方向都一樣。
+  const orderBySql = sort && sort.field !== 'symbol' ? Prisma.sql`${orderByColumn} ${orderDirection} NULLS LAST, symbol ASC` : Prisma.sql`${orderByColumn} ${orderDirection}`;
 
   return Prisma.sql`
     WITH ${Prisma.join(allCtes, ', ')}
