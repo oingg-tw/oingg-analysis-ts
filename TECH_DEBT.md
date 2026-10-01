@@ -5,6 +5,39 @@
 訊息說明，新發現的項目隨時補進來。放在 repo 根目錄是同一個理由：跨服務協調時常常需要
 引用，需要比 `docs/` 隨手筆記更高的持久性保證。
 
+## 需要使用者做／決定的（2026-10-01 整理）
+
+只有這一節是卡在人身上的；其餘各節是排程中、等上游或已知限制。
+
+- **PRD 上線時機**：DEV 已累積一大批還沒上 PRD 的變更——roce 刪除（PRD 要一併刪 DB 列）、股數修正、FY109、cashPerShare、
+  migration、8/28 起證交所殖利率空白當 0 的重算、興櫃半年頻、溯源表全覆蓋＋periodType、ROE 年度版（FY）、神奇公式接進每日重算、
+  漲跌停幅度排行下架。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
+- **bff-ts 的合併卡住**：卡著溯源端點的 `asOfDate`／`periodType` 轉發，以及漲跌停幅度排行路由的刪除。bff 沒轉發前，web-nuxt
+  帶的這兩個參數會被吃掉（溯源退回「最新一筆／溯源表本來的期別」）。
+- **tpex 興櫃股價**：興櫃頁面要「盡可能比照既有」，缺的是 tpex 端收興櫃股價（他們先查發布時間），要使用者在 tpex 那邊放行。
+- **mops 109Q1–Q2 地板**：mops 會來問要不要往前補；109Q3 以前全市場 XBRL 幾乎沒有（見下方資料覆蓋率）。
+- **16 家股本／股數欄位對調**（MOPS 原始頁面就印反，parser 是照抄）：每股分母有規則 A 擋住，但還原因子錯（6140 自 2023-12-31
+  是 1.1825，正確 1.075）。等 mops 修好給清單後重算這 16 家；要不要在那之前先在 DEV 標記，待使用者決定。
+- **法規**：MOPS XBRL 商用合法性（開放資料稽核第 ② 桶）、證交所《交易資訊使用管理辦法》對「用開放資料的人」適不適用、sitca-ts
+  來源性質，三件法律結論都還沒出（見 [[project_open_data_legal_audit_2026_09]]）。
+- **跟 web-nuxt 對的設計**：「近四季／近一年／年度」三種期別在頁面上的標示；溯源表要不要支援單季（Q）——先問 web-nuxt 哪些頁面
+  預設看單季，再決定要不要做。
+- **現金增資認購折價**（見下方即時指標）：要不要請 mops-ts 補認購價。
+
+## 排程中（我這邊會做，不需要使用者動作）
+
+- **興櫃轉季報的公司**（約 78 家，114 年半年報、115 年起單季）：近一年改成逐半年判斷，dry-run parity 跑完 → commit → 只回填這批 →
+  部署 DEV → 通知下游。
+- **其他比率的年度版（FY）**：roa／roic／margins 等，逐支先查交易所有沒有官方算法（ROA 官方分子可能含利息調整），有就照官方。
+- **56 支指標文案**：web-nuxt 給的優先清單 13 支先做（dividendGrowthRate3y 第一）。
+- **DEV 過期列重算**：chowderNumber 約 28 家、1216 consecutiveDividendYears／dividendGrowthRate5y、4960 ohlson、8476 beta。
+
+## 已知限制（刻意不修或修不了，前端要知道）
+
+- **興櫃不支援半年頻的三支**：priceToResearchRatio、buybackYield、rdIntensity 讀的是單季 xbrlAccounts，興櫃沒有單季列。
+- **computeLeverageDegreeFamily**：用四捨五入過的 EPS、沒扣特別股股利。
+- **神奇公式排名**：名次寫在 greenblattRoc 那一筆的座標上，「同座標＝同一批」是簡化，兩支底層知識日不同時名次掛在 roc 的座標。
+
 ## 資料覆蓋率（最大宗，貫穿整個 pitMetrics 架構）
 
 - **2026-09-11 更新：絕大多數季報型指標已經全市場回填**（`GENERAL_METRIC_CODES`/
@@ -35,10 +68,9 @@
 
 ## 即時指標（2026-09-27 上線 livePeRatio／livePbRatio 時記下的限制）
 
-- **每日排程是空的，即時指標不會自己更新**：`application/batch/daily/indicatorRegistry.ts` 從 2026-09-08 起是空陣列，
-  `liveGrahamNumber`／`livePegRatio`／`liveMarketCap`／`livePeRatio`／`livePbRatio` 跟交易所比率（`exchangePeRatio` 等）
-  都只有手動跑 `scripts/backfillLiveValuationMetricsFullMarketPit.ts` 才會更新（全市場約 16 分鐘）。
-  個股頁的本益比／股價淨值比現在優先讀即時版，沒排程就會停在最後一次手動跑的那天。上 Cloud Run 時要排成每個交易日收盤後跑。
+- **即時指標的更新來源**：`application/batch/daily/indicatorRegistry.ts` 仍是空陣列，即時指標（live*）與交易所比率改由上游變動處理程式
+  （`scripts/processUpstreamChangesPit.ts`，POST /upstream/changes 入列後叫醒 Cloud Run Job）在上游行情變動時重算；上游沒通知就不會動，
+  要手動補跑用 `scripts/backfillLiveValuationMetricsFullMarketPit.ts`（全市場約 16 分鐘）。
 - **現金增資的認購折價沒有反映**：mops-ts `dividend_distribution` 的 `capital_increase_subscription_price` 全是空值
   （2026-09-27 抽 1727、2890、6129、2614 都是 null），只能在股本登記生效月加上新股數、假設照每股淨值發行
   （`infrastructure/repositories/mops/capitalStock.ts` getShareBasisEvents 的「其他發行」）。除權日股價已經扣掉認購權價值，
@@ -53,6 +85,11 @@
   會是上萬次請求，中斷重跑目前補不了缺口。mops-ts 決定先補機制再執行，沒有排期。
   是「股利連續調升年數」「DPS CAGR」這類指標的前提，見
   [[reference_mops_dividend_distribution_dataset]]。
+- **mops 股本欄位對調 16 家＋位數錯誤列**（2026-10-01 前已回報）：對調修好給清單後重算那 16 家；另有 10^k 位數錯位的列
+  （09-25 量到 123 列、69 家，Q/TTM 每股分母受影響、FY 不受影響）。
+- **tpex `issued_shares` 回補**：之後拿來當股數的第二來源做交叉驗證。
+- **twse `daily_valuation` 2014–2020**：確認那段沒有 null（殖利率空白當 0 只從 2026-08-28 起適用，舊資料空白的語意要先查證）。
+- **twse 月營收上市公司回填**：prod 原本收到的是未上市那 296 家（打錯端點），改 _L 回填中，SUS 等它。
 - **chip（籌碼）分類完全空白**：抓取架構已成熟（twse-ts `margin_balance` 每 30 分鐘
   輪詢，20 個 Cloud Scheduler job），但目前只有 10 個交易日歷史（2026-08-31 起才開始
   收），深度不夠做趨勢型指標（融資使用率、券資比、融資餘額變化率）。純粹等時間累積，
