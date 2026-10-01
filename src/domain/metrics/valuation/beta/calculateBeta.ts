@@ -95,11 +95,15 @@ export interface BetaWindowComputation {
   nullReason: MetricNullReason | null;
 }
 
-export const calculateBetaWindow = (points: OverlapPoint[], windowEnd: Date, config: BetaWindowConfig): BetaWindowComputation => {
+// 基準日往前 N 年的重疊交易日、降頻後的取樣點——calculateBetaWindow 跟溯源表（getBetaProvenance）共用，溯源表要列出窗口起訖與取樣點。
+export const selectBetaWindow = (points: OverlapPoint[], windowEnd: Date, config: BetaWindowConfig): OverlapPoint[] => {
   const windowStartStr = toDateString(subtractYears(windowEnd, config.years));
   const windowEndStr = toDateString(windowEnd);
-  const windowedDaily = points.filter((p) => p.tradeDate >= windowStartStr && p.tradeDate <= windowEndStr);
-  const windowed = resample(windowedDaily, config.frequency);
+  return resample(points.filter((p) => p.tradeDate >= windowStartStr && p.tradeDate <= windowEndStr), config.frequency);
+};
+
+export const calculateBetaWindow = (points: OverlapPoint[], windowEnd: Date, config: BetaWindowConfig): BetaWindowComputation => {
+  const windowed = selectBetaWindow(points, windowEnd, config);
 
   if (windowed.length < BETA_MIN_OBSERVATIONS) {
     return { value: null, observations: windowed.length, nullReason: 'insufficient_history' };

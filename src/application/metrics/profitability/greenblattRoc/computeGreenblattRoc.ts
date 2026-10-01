@@ -6,7 +6,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingIncomeStatements, type ReportingBasis } from '@/application/metrics/shared/trailingYear';
 
 // Greenblatt 資本報酬率 = EBIT(TTM) / (淨營運資金 + 淨固定資產) * 100。分母固定用本季期末
 // 資產負債表（不平均不加總，跟 altmanZScore/netDebtToEbitda 的分母處理方式一致）。只有
@@ -35,6 +35,7 @@ export interface GreenblattRocResolution {
   currentAssets: bigint | null;
   currentLiabilities: bigint | null;
   propertyPlantEquipment: bigint | null;
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
   ttmQuarterDetails: GreenblattRocTtmQuarterDetail[];
   ttmComplete: boolean;
   rocTtm: number | null;
@@ -110,6 +111,7 @@ export const resolveGreenblattRocInputs = async (
     currentAssets,
     currentLiabilities,
     propertyPlantEquipment,
+    basis: trailing.basis,
     ttmQuarterDetails,
     ttmComplete,
     rocTtm,

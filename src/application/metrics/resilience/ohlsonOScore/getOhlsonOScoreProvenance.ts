@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -24,7 +25,7 @@ const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; 
 
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
-export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
@@ -38,21 +39,22 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const thisYearTtmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const priorYearAnchor = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorYearTtmQuarters = getPastNQuarters({ rocYear: Number(priorYearAnchor.year), season: priorYearAnchor.season }, 4);
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；去年同季的 TTM 窗口＝同一季、前一年度。
+  // 今年／去年兩個窗口各自判斷半年頻（興櫃轉上櫃的公司兩個窗口可能不同口徑），標籤各用各的 basis。
+  const thisYearKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const priorYearKey = { ...thisYearKey, rocYear: rocYear - 1 };
 
-  const fetchIncomeStatement = (tq: { year: string; season: Season }) =>
-    deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
-  const fetchCashFlow = (tq: { year: string; season: Season }) =>
-    deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
-
-  const [balanceSheet, thisYearIncomeRecords, priorYearIncomeRecords, thisYearCashFlowRecords] = await Promise.all([
+  const [balanceSheet, thisYearIncome, priorYearIncome, thisYearCashFlow] = await Promise.all([
     deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
-    Promise.all(thisYearTtmQuarters.map(fetchIncomeStatement)),
-    Promise.all(priorYearTtmQuarters.map(fetchIncomeStatement)),
-    Promise.all(thisYearTtmQuarters.map(fetchCashFlow)),
+    resolveTrailingIncomeStatements(thisYearKey, deps),
+    resolveTrailingIncomeStatements(priorYearKey, deps),
+    resolveTrailingCashFlowStatements(thisYearKey, deps),
   ]);
+  const thisYearTtmQuarters = thisYearIncome.periods;
+  const priorYearTtmQuarters = priorYearIncome.periods;
+  const thisYearIncomeRecords = thisYearIncome.periods.map((p) => p.record);
+  const priorYearIncomeRecords = priorYearIncome.periods.map((p) => p.record);
+  const thisYearCashFlowRecords = thisYearCashFlow.periods.map((p) => p.record);
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;
@@ -108,7 +110,7 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
     },
     ...thisYearTtmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `今年 近四季 淨利（第 ${i + 1}/4 季）`,
+        role: `今年 近一年 淨利（${trailingPeriodLabel(tq, thisYearIncome.basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -120,7 +122,7 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
     ),
     ...priorYearTtmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `去年同期 近四季 淨利（第 ${i + 1}/4 季，用於 INTWO/CHIN）`,
+        role: `去年同期 近一年 淨利（${trailingPeriodLabel(tq, priorYearIncome.basis)}，用於 INTWO/CHIN）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -130,9 +132,9 @@ export const getOhlsonOScoreProvenance = async (query: QuarterlyMetricQuery, dep
         value: toProvenanceEntryValue(pickNetIncome(priorYearIncomeRecords[i]!)),
       })
     ),
-    ...thisYearTtmQuarters.map(
+    ...thisYearCashFlow.periods.map(
       (tq, i): ProvenanceEntry => ({
-        role: `今年 近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FUTL）`,
+        role: `今年 近一年 營業活動現金流（${trailingPeriodLabel(tq, thisYearCashFlow.basis)}，用於 FUTL）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

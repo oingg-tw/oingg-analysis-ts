@@ -6,7 +6,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import type { Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate } from '../../shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveCashFlowReportDate, type ReportingBasis } from '../../shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -39,6 +39,7 @@ const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 // 不變，只是多讀一個欄位（.dps）。
 export interface AnnualDividendPerShareProxyResult {
   dps: number | null;
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
   quarters: { rocYear: number; season: number; dividendsPaid: bigint | null; dividendsPaidFieldKey: string | null }[];
   shares: { reportDate: Date; outstandingCommonShares: bigint } | null;
 }
@@ -66,17 +67,17 @@ export const getAnnualDividendPerShareProxy = async (
   // 2026-09-22 mops-ts 確認單季現金流量表的語意：該季有整份表但 dividends_paid_financing 為 null = 「本年度到這季為止還沒付過股利」
   // （台股多在 Q3 付款，Q1/Q2 的累計表根本沒這行），不是缺資料——所以只有整季報表缺席才算不齊，科目 null 視為 0。
   if (quarterRecords.some((q) => q === null)) {
-    return { dps: null, quarters, shares: null };
+    return { dps: null, basis: trailing.basis, quarters, shares: null };
   }
 
   const yearSum = quarterRecords.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
   const q4ReportDate = quarterRecords.at(-1)!.reportDate;
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
-  if (!shares) return { dps: null, quarters, shares: null };
+  if (!shares) return { dps: null, basis: trailing.basis, quarters, shares: null };
 
   const splitFactor = await deps.shares.getShareSplitFactor(symbol, q4ReportDate, splitRestateBasis());
-  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares) / splitFactor, quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
+  return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares) / splitFactor, basis: trailing.basis, quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
 };
 
 export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>;

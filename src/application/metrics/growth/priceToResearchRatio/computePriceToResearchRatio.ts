@@ -23,17 +23,13 @@ export type PriceToResearchRatioDeps = Pick<PitDeps, 'statements' | 'quarters' |
 
 export type PriceToResearchRatioComputationBatch = ComputationBatch<'ttm'>;
 
-export const computePriceToResearchRatio = async (
-  query: QuarterlyMetricQuery,
-  deps: PriceToResearchRatioDeps
-): Promise<PriceToResearchRatioComputationBatch> => {
+// 2026-10-01 抽出來給溯源表（getPriceToResearchRatioProvenance.ts）共用，值由同一份輸入算出，兩邊不會各算各的。
+export const resolvePriceToResearchRatioInputs = async (query: QuarterlyMetricQuery, deps: PriceToResearchRatioDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -63,9 +59,20 @@ export const computePriceToResearchRatio = async (
   const ttmValue = ttmComplete && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, rdTtmSum) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? (marketCap === null ? 'missing_input' : 'zero_or_negative_denominator') : 'insufficient_history';
 
-  const coordinateBase = { symbol, metricCode: 'priceToResearchRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+  return { year, season, fiscalYear, fiscalQuarter: seasonNum, mainAnchor, marketCap, ttmQuarters, rdRecords, ttmValue, ttmNullReason };
+};
 
-  const ttm = periodSlot(mainAnchor, coordinateBase, 'TTM', ttmValue, ttmNullReason);
+export const computePriceToResearchRatio = async (
+  query: QuarterlyMetricQuery,
+  deps: PriceToResearchRatioDeps
+): Promise<PriceToResearchRatioComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+  const r = await resolvePriceToResearchRatioInputs(query, deps);
+  if (!r) return noQuarterBatch(symbol, ['ttm']);
 
-  return { symbol, rocYear: year, season, slots: withFormulaVersion({ ttm }, PRICE_TO_RESEARCH_RATIO_FORMULA_VERSION) };
+  const coordinateBase = { symbol, metricCode: 'priceToResearchRatio', fiscalYear: r.fiscalYear, fiscalQuarter: r.fiscalQuarter, dataType, subsidiaryCompanyId };
+
+  const ttm = periodSlot(r.mainAnchor, coordinateBase, 'TTM', r.ttmValue, r.ttmNullReason);
+
+  return { symbol, rocYear: r.year, season: r.season, slots: withFormulaVersion({ ttm }, PRICE_TO_RESEARCH_RATIO_FORMULA_VERSION) };
 };

@@ -2,6 +2,7 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toRatio } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
 
@@ -16,14 +17,14 @@ export const getNetWorkingCapitalTurnoverProvenance = async (query: QuarterlyMet
     return { symbol: query.symbol, metricCode: 'netWorkingCapitalTurnover', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, currentAssets, currentLiabilities, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, currentAssets, currentLiabilities, basis, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
   const netWorkingCapital = currentAssets !== null && currentLiabilities !== null ? currentAssets - currentLiabilities : null;
   const value = ttmComplete && netWorkingCapital !== null ? toRatio(revenueTtmSum, netWorkingCapital) : null;
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營收（第 ${i + 1}/4 季）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

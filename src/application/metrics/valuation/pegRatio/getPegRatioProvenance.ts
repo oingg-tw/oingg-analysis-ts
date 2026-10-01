@@ -1,7 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingIncomeStatements, trailingPeriodLabel } from '../../shared/trailingYear';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -17,6 +18,7 @@ const PEG_GROWTH_YEARS = 5;
 interface AnnualEpsQuarterDetail {
   fiscalYear: number;
   fiscalQuarter: number;
+  periodLabel: string;
   netIncome: PickedField;
 }
 
@@ -31,15 +33,20 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>
+  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>
 ): Promise<AnnualEpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 全年改走共用近一年來源，跟 compute 同一份資料（截至 Q4 的近一年＝全年；興櫃半年頻＝上半年＋下半年，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const records = trailing.periods.map((p) => p.record);
   const netIncomes = records.map(pickNetIncome);
-  const quarters: AnnualEpsQuarterDetail[] = netIncomes.map((netIncome, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, netIncome }));
+  const quarters: AnnualEpsQuarterDetail[] = trailing.periods.map((p, i) => ({
+    fiscalYear: rocYearToGregorian(Number(p.year)),
+    fiscalQuarter: Number(p.season),
+    periodLabel: trailingPeriodLabel(p, trailing.basis),
+    netIncome: netIncomes[i]!,
+  }));
 
   if (records.some((r) => r === null) || netIncomes.some((n) => n.value === null)) {
     const result: AnnualEpsResult = { eps: null, quarters, shares: null };
@@ -48,7 +55,7 @@ const getAnnualEps = async (
   }
 
   const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
-  const q4ReportDate = records[3]!.reportDate;
+  const q4ReportDate = records.at(-1)!.reportDate;
   const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
 
   const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
@@ -57,7 +64,7 @@ const getAnnualEps = async (
   return result;
 };
 
-export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>): Promise<MetricProvenanceResult> => {
+export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
@@ -77,10 +84,10 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const netIncomes = ttmRecords.map(pickNetIncome);
 
   let ttmSum = 0n;
@@ -108,7 +115,7 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
   const buildYearEntries = (label: string, annual: AnnualEpsResult): ProvenanceEntry[] => [
     ...annual.quarters.map(
       (q): ProvenanceEntry => ({
-        role: `${label}第 ${q.fiscalQuarter} 季淨利`,
+        role: `${label}${q.periodLabel}淨利`,
         fiscalYear: q.fiscalYear,
         fiscalQuarter: q.fiscalQuarter,
         type: 'statementField',
@@ -120,7 +127,7 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
     ),
     {
       role: `${label}Q4 報告日流通股數`,
-      fiscalYear: annual.quarters[3]!.fiscalYear,
+      fiscalYear: annual.quarters.at(-1)!.fiscalYear,
       fiscalQuarter: 4,
       type: 'other',
       statementType: null,
@@ -144,7 +151,7 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
     { role: '本季流通股數（PER 用 EPS 分母）', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(shares) },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 淨利（第 ${i + 1}/4 季，PER 用 EPS 分子）`,
+        role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}，PER 用 EPS 分子）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

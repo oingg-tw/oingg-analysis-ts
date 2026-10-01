@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -9,7 +10,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 費用)加總 / 近四季營收加總。跟 computeDupontFamilyPit.ts 一致，EBIT 定義跟
 // dupontInterestBurden/interestCoverage 同一個公式，但這裡分母換成營收。固定回傳 TTM。
 
-export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
@@ -23,10 +24,10 @@ export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery,
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const preTaxes = ttmRecords.map((record) => record?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map((record) => record?.financeCosts ?? null);
   const revenues = ttmRecords.map((record) => record?.operatingRevenue ?? null);
@@ -50,7 +51,7 @@ export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery,
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於 EBIT）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -60,7 +61,7 @@ export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery,
         value: toProvenanceEntryValue(preTaxes[i]),
       },
       {
-        role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 EBIT）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -70,7 +71,7 @@ export const getDupontEbitMarginProvenance = async (query: QuarterlyMetricQuery,
         value: toProvenanceEntryValue(financeCosts[i]),
       },
       {
-        role: `近四季 營收（第 ${i + 1}/4 季）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, trailingPeriodLabel, type ReportingBasis } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { DIVIDEND_GROWTH_RATE_YEARS } from '../../../../domain/metrics/dividend/dividendGrowthRate/dividendGrowthRateDefinition';
@@ -14,6 +15,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 一個 years 值呼叫。
 
 interface AnnualDpsQuarterDetail {
+  year: string; // 民國年（trailingPeriodLabel 用）
+  season: Season;
   fiscalYear: number;
   fiscalQuarter: number;
   dividendsPaid: bigint | null;
@@ -22,6 +25,7 @@ interface AnnualDpsQuarterDetail {
 
 interface AnnualDpsResult {
   dps: number | null;
+  basis: ReportingBasis;
   quarters: AnnualDpsQuarterDetail[];
   shares: bigint | null;
 }
@@ -31,33 +35,44 @@ const getAnnualDividendPerShareProxy = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>
+  subsidiaryCompanyId: string, deps: DividendGrowthRateProvenanceDeps
 ): Promise<AnnualDpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
-  const quarters: AnnualDpsQuarterDetail[] = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, dividendsPaid: r?.dividendsPaid ?? null, dividendsPaidFieldKey: r?.dividendsPaidFieldKey ?? null }));
+  // 2026-10-01 跟 computeDividendGrowthRateFamily 同一套年度加總：共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）、
+  // 只有整季報表缺席才算不齊（科目 null = 還沒付過股利、視為 0）、每股數字做面額還原。原本這裡自己抓 4 季、科目 null 就整年 null、
+  // 也沒做面額還原，跟寫入值對不上。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const records = trailing.periods.map((p) => p.record);
+  const quarters: AnnualDpsQuarterDetail[] = trailing.periods.map((p) => ({
+    year: p.year,
+    season: p.season,
+    fiscalYear: rocYearToGregorian(Number(p.year)),
+    fiscalQuarter: Number(p.season),
+    dividendsPaid: p.record?.dividendsPaid ?? null,
+    dividendsPaidFieldKey: p.record?.dividendsPaidFieldKey ?? null,
+  }));
 
-  if (records.some((r) => r === null || r.dividendsPaid === null)) {
-    const result: AnnualDpsResult = { dps: null, quarters, shares: null };
+  if (records.some((r) => r === null)) {
+    const result: AnnualDpsResult = { dps: null, basis: trailing.basis, quarters, shares: null };
     cache.set(rocYear, result);
     return result;
   }
 
-  const yearSum = records.reduce((sum, r) => sum + r!.dividendsPaid!, 0n);
+  const yearSum = records.reduce((sum, r) => sum + (r!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
-  const q4ReportDate = records[3]!.reportDate;
+  const q4ReportDate = records.at(-1)!.reportDate;
   const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
 
-  const dps = shares !== null && shares !== 0n ? (Number(dividendsPaidAbs) * 1000) / Number(shares) : null;
-  const result: AnnualDpsResult = { dps, quarters, shares };
+  const dps = shares !== null && shares !== 0n ? (Number(dividendsPaidAbs) * 1000) / Number(shares) / (await deps.shares.getShareSplitFactor(symbol, q4ReportDate, new Date(Date.UTC(9999, 0, 1)))) : null;
+  const result: AnnualDpsResult = { dps, basis: trailing.basis, quarters, shares };
   cache.set(rocYear, result);
   return result;
 };
 
-export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_GROWTH_RATE_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>) => {
+type DividendGrowthRateProvenanceDeps = Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'cumulativeStatements'>;
+
+export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_GROWTH_RATE_YEARS)[number], deps: DividendGrowthRateProvenanceDeps) => {
   const metricCode = `dividendGrowthRate${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
@@ -87,7 +102,7 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
     const buildYearEntries = (label: string, annual: AnnualDpsResult): ProvenanceEntry[] => [
       ...annual.quarters.map(
         (q): ProvenanceEntry => ({
-          role: `${label}第 ${q.fiscalQuarter} 季發放股利（原始資料是現金流出負值）`,
+          role: `${label}${trailingPeriodLabel(q, annual.basis)}發放股利（原始資料是現金流出負值）`,
           fiscalYear: q.fiscalYear,
           fiscalQuarter: q.fiscalQuarter,
           type: 'statementField',
@@ -99,7 +114,7 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
       ),
       {
         role: `${label}Q4 報告日流通股數`,
-        fiscalYear: annual.quarters[3]!.fiscalYear,
+        fiscalYear: annual.quarters.at(-1)!.fiscalYear,
         fiscalQuarter: 4,
         type: 'other',
         statementType: null,

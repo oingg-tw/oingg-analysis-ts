@@ -45,21 +45,18 @@ export type BankIncomeWaterfallDeps = Pick<PitDeps, 'statements' | 'quarters' | 
 
 export type BankIncomeWaterfallComputationBatch = ComputationBatch<'bankNetInterestIncomePerShareQ' | 'bankNetInterestIncomePerShareTtm' | 'bankNetNonInterestIncomePerShareQ' | 'bankNetNonInterestIncomePerShareTtm' | 'bankBadDebtProvisionPerShareQ' | 'bankBadDebtProvisionPerShareTtm' | 'bankOtherOperatingExpensePerShareQ' | 'bankOtherOperatingExpensePerShareTtm'>;
 
-export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, deps: BankIncomeWaterfallDeps): Promise<BankIncomeWaterfallComputationBatch> => {
+// 2026-10-01 抽出來給溯源表（getBankIncomeWaterfallProvenance.ts）共用：季度解析、股數、近四季加總與殘差法都走同一條路，
+// 溯源表顯示的值才保證跟這裡寫進 metric_values 的一致。q／ttm 以 metricCode 為 key。
+export const resolveBankIncomeWaterfallData = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'industry'>) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) {
-    return { symbol, rocYear: null, season: null, slots: skippedAll('skipped_no_quarter') };
-  }
+  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) return null;
 
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: Number(query.year), quarter: Number(query.season) }
       : await deps.quarters.latestQuarterWith('bankIncomeStatement', symbol, dataType, subsidiaryCompanyId);
-
-  if (!resolvedQuarter) {
-    return { symbol, rocYear: null, season: null, slots: skippedAll('skipped_no_quarter') };
-  }
+  if (!resolvedQuarter) return null;
 
   const { year: rocYear, quarter: seasonNum } = resolvedQuarter;
   const fiscalYear = rocYearToGregorian(rocYear);
@@ -78,32 +75,6 @@ export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, de
 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
-
-  const netInterestQ = calculateBankNetInterestIncomePerShare(netInterestIncome, sharesValue);
-  const netNonInterestQ = calculateBankNetNonInterestIncomePerShare(netNonInterestIncome, sharesValue);
-  const badDebtQ = calculateBankBadDebtProvisionPerShare(badDebtProvision, sharesValue);
-  const otherOpexQ = calculateBankOtherOperatingExpensePerShare(otherOperatingExpense, sharesValue);
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
-
-  let bankNetInterestIncomePerShareQ: ComputationSlot;
-  let bankNetNonInterestIncomePerShareQ: ComputationSlot;
-  let bankBadDebtProvisionPerShareQ: ComputationSlot;
-  let bankOtherOperatingExpensePerShareQ: ComputationSlot;
-
-  if (!mainAnchor) {
-    bankNetInterestIncomePerShareQ = { action: 'skipped_no_knowledge_date' };
-    bankNetNonInterestIncomePerShareQ = { action: 'skipped_no_knowledge_date' };
-    bankBadDebtProvisionPerShareQ = { action: 'skipped_no_knowledge_date' };
-    bankOtherOperatingExpensePerShareQ = { action: 'skipped_no_knowledge_date' };
-  } else {
-    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    bankNetInterestIncomePerShareQ = computation({ ...coordinateFor('bankNetInterestIncomePerShare'), ...periodTypeGroup('Q'), value: netInterestQ.value, nullReason: netInterestQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    bankNetNonInterestIncomePerShareQ = computation({ ...coordinateFor('bankNetNonInterestIncomePerShare'), ...periodTypeGroup('Q'), value: netNonInterestQ.value, nullReason: netNonInterestQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    bankBadDebtProvisionPerShareQ = computation({ ...coordinateFor('bankBadDebtProvisionPerShare'), ...periodTypeGroup('Q'), value: badDebtQ.value, nullReason: badDebtQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    bankOtherOperatingExpensePerShareQ = computation({ ...coordinateFor('bankOtherOperatingExpensePerShare'), ...periodTypeGroup('Q'), value: otherOpexQ.value, nullReason: otherOpexQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
-  }
 
   // TTM：近四季（含本季）加總。一季只要任一原始欄位為 null 就視為該季不齊——四個
   // metric_code 共用同一組「資料齊不齊」判斷（跟 cashFlowPerShare 的 OCF/FCF 一致）。
@@ -133,6 +104,67 @@ export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, de
   const netNonInterestTtmCalc = ttmComplete ? calculateBankNetNonInterestIncomePerShare(netNonInterestTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
   const badDebtTtmCalc = ttmComplete ? calculateBankBadDebtProvisionPerShare(badDebtTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
   const otherOpexTtmCalc = ttmComplete ? calculateBankOtherOperatingExpensePerShare(otherOpexTtmSum, sharesValue) : { value: null, nullReason: 'insufficient_history' as const };
+
+  return {
+    rocYear,
+    seasonNum,
+    fiscalYear,
+    reportDate,
+    sharesValue,
+    ttmQuarters,
+    ttmRecords,
+    ttmComplete,
+    q: {
+      bankNetInterestIncomePerShare: calculateBankNetInterestIncomePerShare(netInterestIncome, sharesValue),
+      bankNetNonInterestIncomePerShare: calculateBankNetNonInterestIncomePerShare(netNonInterestIncome, sharesValue),
+      bankBadDebtProvisionPerShare: calculateBankBadDebtProvisionPerShare(badDebtProvision, sharesValue),
+      bankOtherOperatingExpensePerShare: calculateBankOtherOperatingExpensePerShare(otherOperatingExpense, sharesValue),
+    },
+    ttm: {
+      bankNetInterestIncomePerShare: netInterestTtmCalc,
+      bankNetNonInterestIncomePerShare: netNonInterestTtmCalc,
+      bankBadDebtProvisionPerShare: badDebtTtmCalc,
+      bankOtherOperatingExpensePerShare: otherOpexTtmCalc,
+    },
+  };
+};
+
+export const computeBankIncomeWaterfall = async (query: QuarterlyMetricQuery, deps: BankIncomeWaterfallDeps): Promise<BankIncomeWaterfallComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolved = await resolveBankIncomeWaterfallData(query, deps);
+  if (!resolved) {
+    return { symbol, rocYear: null, season: null, slots: skippedAll('skipped_no_quarter') };
+  }
+  const { rocYear, seasonNum, fiscalYear, reportDate, ttmQuarters, ttmRecords, ttmComplete, q, ttm } = resolved;
+  const { bankNetInterestIncomePerShare: netInterestQ, bankNetNonInterestIncomePerShare: netNonInterestQ, bankBadDebtProvisionPerShare: badDebtQ, bankOtherOperatingExpensePerShare: otherOpexQ } = q;
+  const {
+    bankNetInterestIncomePerShare: netInterestTtmCalc,
+    bankNetNonInterestIncomePerShare: netNonInterestTtmCalc,
+    bankBadDebtProvisionPerShare: badDebtTtmCalc,
+    bankOtherOperatingExpensePerShare: otherOpexTtmCalc,
+  } = ttm;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
+
+  let bankNetInterestIncomePerShareQ: ComputationSlot;
+  let bankNetNonInterestIncomePerShareQ: ComputationSlot;
+  let bankBadDebtProvisionPerShareQ: ComputationSlot;
+  let bankOtherOperatingExpensePerShareQ: ComputationSlot;
+
+  if (!mainAnchor) {
+    bankNetInterestIncomePerShareQ = { action: 'skipped_no_knowledge_date' };
+    bankNetNonInterestIncomePerShareQ = { action: 'skipped_no_knowledge_date' };
+    bankBadDebtProvisionPerShareQ = { action: 'skipped_no_knowledge_date' };
+    bankOtherOperatingExpensePerShareQ = { action: 'skipped_no_knowledge_date' };
+  } else {
+    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
+    bankNetInterestIncomePerShareQ = computation({ ...coordinateFor('bankNetInterestIncomePerShare'), ...periodTypeGroup('Q'), value: netInterestQ.value, nullReason: netInterestQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    bankNetNonInterestIncomePerShareQ = computation({ ...coordinateFor('bankNetNonInterestIncomePerShare'), ...periodTypeGroup('Q'), value: netNonInterestQ.value, nullReason: netNonInterestQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    bankBadDebtProvisionPerShareQ = computation({ ...coordinateFor('bankBadDebtProvisionPerShare'), ...periodTypeGroup('Q'), value: badDebtQ.value, nullReason: badDebtQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    bankOtherOperatingExpensePerShareQ = computation({ ...coordinateFor('bankOtherOperatingExpensePerShare'), ...periodTypeGroup('Q'), value: otherOpexQ.value, nullReason: otherOpexQ.nullReason, knowledgeDate, knowledgeDateIsFallback });
+  }
 
   let bankNetInterestIncomePerShareTtm: ComputationSlot;
   let bankNetNonInterestIncomePerShareTtm: ComputationSlot;

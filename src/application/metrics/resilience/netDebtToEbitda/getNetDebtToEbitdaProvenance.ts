@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
@@ -11,7 +12,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 稅前淨利+財務費用+折舊+攤銷。跟 computeNetDebtToEbitdaPit.ts 的 TTM 版本一致，固定
 // 回傳 TTM。
 
-export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
@@ -33,15 +34,11 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
   const totalDebt = balanceSheet ? sAndPAdjustedDebt(balanceSheet) : null;
   const netDebt = totalDebt !== null && cashAndEquivalents !== null ? totalDebt - cashAndEquivalents : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；損益表與現金流量表的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods;
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   const preTaxes = ttmRecords.map(([income]) => income?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map(([income]) => income?.financeCosts ?? null);
@@ -98,7 +95,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField',
@@ -108,7 +105,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField',
@@ -118,7 +115,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `近四季 折舊（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近一年 折舊（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField',
@@ -128,7 +125,7 @@ export const getNetDebtToEbitdaProvenance = async (query: QuarterlyMetricQuery, 
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `近四季 攤銷（第 ${i + 1}/4 季，用於 EBITDA）`,
+          role: `近一年 攤銷（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 EBITDA）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField',

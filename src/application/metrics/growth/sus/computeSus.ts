@@ -3,6 +3,7 @@ import { monthlyGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationSlot, type MonthlyComputationBatch } from '@/domain/metrics/computation';
 import type { StatementDataType } from '@/domain/financials/quarterlyMetric';
 import type { PitDeps } from '@/application/metrics/deps';
+import type { MonthlyRevenueEntry } from '@/application/ports/monthlyRevenue';
 
 // SUS（標準化未預期營收）的查詢與編排——純計算在 domain/metrics/growth/sus/calculateSus.ts。
 //
@@ -25,7 +26,7 @@ export interface MonthlyMetricQuery {
 
 // 月營收金額欄位是 bigint 序列化的字串（單位千元），這裡轉 number——SUS 是比值，單位會被約掉，
 // 而 60 個月的千元級數字遠在 Number.MAX_SAFE_INTEGER 內，不需要 bigint 運算。
-const toRevenue = (raw: string | null): number | null => (raw === null ? null : Number(raw));
+export const toRevenue = (raw: string | null): number | null => (raw === null ? null : Number(raw));
 
 // "YYYY-MM" → 次月 10 日（UTC）。12 月會正確進位到隔年 1 月。
 const statutoryDeadline = (yearMonth: string): Date => {
@@ -33,20 +34,12 @@ const statutoryDeadline = (yearMonth: string): Date => {
   return month === 12 ? new Date(Date.UTC(year + 1, 0, 10)) : new Date(Date.UTC(year, month, 10));
 };
 
-export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Promise<MonthlyComputationBatch<'sus'>> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  // 一次拿完整歷史（目前上限 60 個月），自己在記憶體裡切窗口——比起讓 port 支援「某月往前 N 期」的
-  // 查詢介面，這樣不用為單一指標擴充 port，而且回填時同一家公司的多個月份可以共用這一次查詢結果。
-  const { entries } = await deps.monthlyRevenue.getMonthlyRevenueHistory(symbol, 600);
-
-  const targetIndex = query.yearMonth ? entries.findIndex((e) => e.yearMonth === query.yearMonth) : entries.length - 1;
-  if (targetIndex < 0 || entries.length === 0) {
-    return { symbol, yearMonth: query.yearMonth ?? null, slots: { sus: { action: 'skipped_no_quarter' } } };
-  }
-
+// 目標月（不給就是最新一個有營收的月份）與它往前連續 21 個月的窗口。computeSus 跟溯源表（getSusProvenance）共用，
+// 溯源表列的 21 個月就是算出寫入值的那 21 個月。查無目標月回 null。
+export const resolveSusWindow = (entries: MonthlyRevenueEntry[], yearMonth: string | undefined) => {
+  const targetIndex = yearMonth ? entries.findIndex((e) => e.yearMonth === yearMonth) : entries.length - 1;
+  if (targetIndex < 0 || entries.length === 0) return null;
   const target = entries[targetIndex]!;
-  const [yearStr, monthStr] = target.yearMonth.split('-') as [string, string];
 
   // 窗口是「連續 21 個月」——用 entries 的位置切，但必須驗證中間沒有缺月（來源理論上逐月連續，
   // 不過新上市公司或上游補漏都可能造成跳月，靜默接受會算出錯的季節差分）。
@@ -60,6 +53,22 @@ export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Prom
       const [cy, cm] = entry.yearMonth.split('-').map(Number) as [number, number];
       return cy * 12 + cm === py * 12 + pm + 1;
     });
+  return { target, window, isContiguous };
+};
+
+export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Promise<MonthlyComputationBatch<'sus'>> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  // 一次拿完整歷史（目前上限 60 個月），自己在記憶體裡切窗口——比起讓 port 支援「某月往前 N 期」的
+  // 查詢介面，這樣不用為單一指標擴充 port，而且回填時同一家公司的多個月份可以共用這一次查詢結果。
+  const { entries } = await deps.monthlyRevenue.getMonthlyRevenueHistory(symbol, 600);
+
+  const resolved = resolveSusWindow(entries, query.yearMonth);
+  if (!resolved) {
+    return { symbol, yearMonth: query.yearMonth ?? null, slots: { sus: { action: 'skipped_no_quarter' } } };
+  }
+  const { target, window, isContiguous } = resolved;
+  const [yearStr, monthStr] = target.yearMonth.split('-') as [string, string];
 
   const result = isContiguous
     ? calculateSus(window.map((e) => toRevenue(e.currentMonthRevenue)))

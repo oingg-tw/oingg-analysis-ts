@@ -11,7 +11,7 @@ import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatc
 import { resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import { cashDividendFromEarningsPerShare, earningsPayoutRatio } from '@/domain/financials/earningsPayoutRatio';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, type ReportingBasis } from '../../shared/trailingYear';
 
 // 2026-09-27 formulaVersion 2：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
 const DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION = 2;
@@ -38,6 +38,7 @@ export interface DividendPayoutRatioResolution {
   season: string;
   fiscalYear: number;
   fiscalQuarter: number;
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
   ttmQuarterDetails: DividendPayoutRatioTtmQuarterDetail[];
   ttmComplete: boolean;
   payoutRatioTtm: number | null;
@@ -108,7 +109,7 @@ export const resolveDividendPayoutRatioInputs = async (
       )
     : null;
 
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, ttmQuarterDetails, ttmComplete, payoutRatioTtm, ttmNullReason, mainAnchor, ttmAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, basis: trailingIncome.basis, ttmQuarterDetails, ttmComplete, payoutRatioTtm, ttmNullReason, mainAnchor, ttmAnchor };
 };
 
 

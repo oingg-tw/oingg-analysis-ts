@@ -25,6 +25,14 @@ export const LIVE_GRAHAM_NUMBER_FORMULA_VERSION = 5;
 // marketRatios（exchangePeRatio 等）同一套逐日型慣例，不是季報型的
 // resolveKnowledgeDate。
 
+// PER（TTM）× PBR，中繼值不四捨五入、最後一次取 2 位。computeLiveGrahamNumber 跟溯源表（getLiveGrahamNumberProvenance）共用。
+export const calculateLiveGrahamNumber = (close: number, epsTtm: number | null, bvps: number | null) => {
+  const pbRatio = bvps !== null && bvps !== 0 ? close / bvps : null;
+  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
+  const value = peRatioTtm !== null && pbRatio !== null ? Math.round(peRatioTtm * pbRatio * 100) / 100 : null;
+  return { peRatioTtm, pbRatio, value };
+};
+
 export interface LiveGrahamNumberPitQuery {
   symbol: string;
   dataType: '1' | '2';
@@ -43,10 +51,7 @@ export const computeLiveGrahamNumber = async (query: LiveGrahamNumberPitQuery, d
   if (live.status === 'no_quarter') return { symbol, tradeDate: live.tradeDate.toISOString().slice(0, 10), slots: { eod: { action: 'skipped_no_quarter' } } };
   const { tradeDate, close, epsTtm, bvps, ttmComplete } = live;
 
-  const pbRatio = bvps !== null && bvps !== 0 ? close / bvps : null;
-  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
-
-  const liveGrahamNumber = peRatioTtm !== null && pbRatio !== null ? Math.round(peRatioTtm * pbRatio * 100) / 100 : null;
+  const { value: liveGrahamNumber } = calculateLiveGrahamNumber(close, epsTtm, bvps);
 
   let nullReason: MetricNullReason | null = null;
   if (liveGrahamNumber === null) {

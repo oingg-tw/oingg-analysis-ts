@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -13,7 +14,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 
 const MAX_LOOKBACK_YEARS = 30;
 
-export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
@@ -35,10 +36,9 @@ export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetr
   const entries: ProvenanceEntry[] = [];
 
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
-    const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
-    const records = await Promise.all(
-      yearQuarters.map((q) => deps.statements.getCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
-    );
+    // 2026-10-01 每個年度改走共用近一年來源，跟 compute 同一份資料（興櫃半年頻：上下半年，見 shared/trailingYear.ts）。
+    const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear: cursorRocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+    const records = trailing.periods.map((p) => p.record);
 
     if (records.some((r) => r === null)) break;
     firstYearDataAvailable = true;

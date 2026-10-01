@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingIncomeStatements, trailingPeriodLabel, type ReportingBasis } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { EPS_CAGR_YEARS } from '../../../../domain/metrics/growth/epsCagr/epsCagrDefinition';
@@ -13,6 +14,8 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 值呼叫。fiscalQuarter 固定回傳查詢當下的季別（FY basis，年度資料無季別概念）。
 
 interface AnnualEpsQuarterDetail {
+  year: string; // 民國年（trailingPeriodLabel 用）
+  season: Season;
   fiscalYear: number;
   fiscalQuarter: number;
   netIncome: PickedField;
@@ -20,6 +23,7 @@ interface AnnualEpsQuarterDetail {
 
 interface AnnualEpsResult {
   eps: number | null;
+  basis: ReportingBasis;
   quarters: AnnualEpsQuarterDetail[];
   shares: bigint | null;
 }
@@ -29,33 +33,40 @@ const getAnnualEps = async (
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>
+  subsidiaryCompanyId: string, deps: EpsCagrProvenanceDeps
 ): Promise<AnnualEpsResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 跟 computeEpsCagrFamily 同一套年度 EPS：共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）、
+  // 分子扣全年特別股股利、面額還原。原本這裡自己抓 4 季、沒扣特別股股利也沒做面額還原，跟寫入值對不上。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const records = trailing.periods.map((p) => p.record);
   const netIncomes = records.map(pickNetIncome);
-  const quarters: AnnualEpsQuarterDetail[] = netIncomes.map((netIncome, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, netIncome }));
+  const quarters: AnnualEpsQuarterDetail[] = trailing.periods.map((p, i) => ({ year: p.year, season: p.season, fiscalYear: rocYearToGregorian(Number(p.year)), fiscalQuarter: Number(p.season), netIncome: netIncomes[i]! }));
 
   if (records.some((r) => r === null) || netIncomes.some((n) => n.value === null)) {
-    const result: AnnualEpsResult = { eps: null, quarters, shares: null };
+    const result: AnnualEpsResult = { eps: null, basis: trailing.basis, quarters, shares: null };
     cache.set(rocYear, result);
     return result;
   }
 
   const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
-  const q4ReportDate = records[3]!.reportDate;
-  const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
+  const q4ReportDate = records.at(-1)!.reportDate;
+  const shareInfo = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
+  const shares = shareInfo?.outstandingCommonShares ?? null;
 
-  const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
-  const result: AnnualEpsResult = { eps, quarters, shares };
+  const eps =
+    shareInfo && shares !== null && shares !== 0n
+      ? (Number(netIncomeSum - shareInfo.preferredDividendsTtmThousands) * 1000) / Number(shares) / (await deps.shares.getShareSplitFactor(symbol, q4ReportDate, new Date(Date.UTC(9999, 0, 1))))
+      : null;
+  const result: AnnualEpsResult = { eps, basis: trailing.basis, quarters, shares };
   cache.set(rocYear, result);
   return result;
 };
 
-export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>) => {
+type EpsCagrProvenanceDeps = Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'cumulativeStatements'>;
+
+export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[number], deps: EpsCagrProvenanceDeps) => {
   const metricCode = `epsCagr${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
@@ -85,7 +96,7 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
     const buildYearEntries = (label: string, annual: AnnualEpsResult): ProvenanceEntry[] => [
       ...annual.quarters.map(
         (q): ProvenanceEntry => ({
-          role: `${label}第 ${q.fiscalQuarter} 季淨利`,
+          role: `${label}${trailingPeriodLabel(q, annual.basis)}淨利`,
           fiscalYear: q.fiscalYear,
           fiscalQuarter: q.fiscalQuarter,
           type: 'statementField',
@@ -97,7 +108,7 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
       ),
       {
         role: `${label}Q4 報告日流通股數`,
-        fiscalYear: annual.quarters[3]!.fiscalYear,
+        fiscalYear: annual.quarters.at(-1)!.fiscalYear,
         fiscalQuarter: 4,
         type: 'other',
         statementType: null,

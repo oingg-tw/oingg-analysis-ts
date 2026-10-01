@@ -108,13 +108,13 @@ interface PerShareField {
   calc: (amount: bigint | null, shares: bigint | null) => CalcResult;
 }
 
-// pick 的結果一律過這一層：序列化過的資料（cassette 回放、JSON 往返）可能把「沒有這個欄位」
+// pick 的結果一律過這一層（溯源表 getIncomeStatementPerShareProvenance.ts 也走這裡，值才跟寫入的一致）：序列化過的資料（cassette 回放、JSON 往返）可能把「沒有這個欄位」
 // 變成 undefined 而不是 null，而 `undefined !== null` 會通過完整度判斷、然後在 bigint 加總時
 // 炸成 "Cannot mix BigInt and other types"。正規化成 null 讓兩者走同一條缺漏路徑。
-const amountOf = (field: PerShareField, row: IncomeStatementFields | null): bigint | null =>
+export const amountOf = (field: PerShareField, row: IncomeStatementFields | null): bigint | null =>
   (row ? field.pick(row) : null) ?? null;
 
-const FIELDS = [
+export const FIELDS = [
   // ---- 既有（2026-09-15）：毛利、營業利益 ----
   { slot: 'grossProfitPerShareQ', metricCode: 'grossProfitPerShare', periodTypes: ['Q'], pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
   { slot: 'grossProfitPerShareTtm', metricCode: 'grossProfitPerShare', periodTypes: ['TTM'], pick: (r) => r.grossProfit, calc: calculateGrossProfitPerShare },
@@ -162,7 +162,7 @@ const FIELDS = [
   { slot: 'nonControllingInterestsPerShareTtm', metricCode: 'nonControllingInterestsPerShare', periodTypes: ['TTM'], pick: minorityInterestOf, calc: calculateNonControllingInterestsPerShare },
 ] as const satisfies readonly PerShareField[];
 
-type FieldMetricCode = (typeof FIELDS)[number]['metricCode'];
+export type FieldMetricCode = (typeof FIELDS)[number]['metricCode'];
 // 每支指標一格 FY（FIELDS 裡每支有 Q、TTM 兩列，FY 不分）。
 const FY_FIELDS = FIELDS.filter((field, i) => FIELDS.findIndex((f) => f.metricCode === field.metricCode) === i);
 const fySlotOf = (metricCode: FieldMetricCode) => `${metricCode}Fy` as const;

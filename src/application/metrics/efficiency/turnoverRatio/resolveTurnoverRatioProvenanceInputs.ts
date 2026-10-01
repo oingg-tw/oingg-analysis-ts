@@ -1,7 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements, type ReportingBasis } from '../../shared/trailingYear';
 
 // 2026-09-13 使用者要求擴大稽核鏈涵蓋範圍——inventoryTurnover/receivablesTurnover/
 // fixedAssetTurnover/payablesTurnover 這 4 支周轉率共用完全同一組輸入（本季期末資產負債表
@@ -21,7 +22,8 @@ export interface TurnoverRatioProvenanceInputs {
   // 本身也各自是完整的原始欄位，稽核鏈要分開列出兩筆，不是只列相減後的淨營運資金。
   currentAssets: bigint | null;
   currentLiabilities: bigint | null;
-  ttmQuarters: { year: string; season: string }[];
+  basis: ReportingBasis; // 溯源 entry 的期間標籤用（trailingPeriodLabel）
+  ttmQuarters: { year: string; season: Season }[];
   ttmOperatingCosts: (bigint | null)[];
   ttmOperatingRevenues: (bigint | null)[];
   ttmComplete: boolean;
@@ -29,7 +31,7 @@ export interface TurnoverRatioProvenanceInputs {
   revenueTtmSum: bigint;
 }
 
-export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<TurnoverRatioProvenanceInputs | null> => {
+export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<TurnoverRatioProvenanceInputs | null> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
@@ -44,10 +46,10 @@ export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetri
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
   const balanceSheet = await deps.statements.getBalanceSheet(key);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 computeTurnoverRatioFamily 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const ttmOperatingCosts = ttmRecords.map((record) => record?.operatingCost ?? null);
   const ttmOperatingRevenues = ttmRecords.map((record) => record?.operatingRevenue ?? null);
@@ -74,6 +76,7 @@ export const resolveTurnoverRatioProvenanceInputs = async (query: QuarterlyMetri
     accountsPayable: balanceSheet?.accountsPayable ?? null,
     currentAssets: balanceSheet?.currentAssets ?? null,
     currentLiabilities: balanceSheet?.currentLiabilities ?? null,
+    basis: trailing.basis,
     ttmQuarters,
     ttmOperatingCosts,
     ttmOperatingRevenues,

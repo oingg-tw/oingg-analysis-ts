@@ -21,12 +21,13 @@ export const LIVE_PEG_RATIO_FORMULA_VERSION = 6;
 // 來源不同。跟 pegRatio 是刻意並存、互不影響的兩支獨立 metricCode，比照 exchangePeRatio
 // vs peRatio 的既有先例。逐日型（snapshotCadence='EOD'），knowledgeDate = 交易日本身。
 
-const PEG_GROWTH_YEARS = 5;
+export const PEG_GROWTH_YEARS = 5;
 
 // 面額還原：每一年的每股數字都換算到「所有已知面額變更之後」的股數基準，CAGR 比的是兩年比值，基準日選哪天都會抵銷。
 // 每次呼叫才建立（模組載入時建的 Date 常數在錄製器凍結 Date 之後會被當成非 Date 編碼，cassette 對不上）。
 const splitRestateBasis = (): Date => new Date(Date.UTC(9999, 0, 1));
-const getAnnualEps = async (
+// 溯源表（getLivePegRatioProvenance）也呼叫這支，列出的年度 EPS 就是算 CAGR 用的那兩個。
+export const getAnnualEps = async (
   cache: Map<number, number | null>,
   symbol: string,
   rocYear: number,
@@ -58,6 +59,19 @@ const getAnnualEps = async (
   return restated;
 };
 
+export const latestCompleteFiscalYearOf = (rocYear: number, season: number): number => (season === 4 ? rocYear : rocYear - 1);
+
+// PER（TTM）÷ EPS 5 年 CAGR（%），中繼值不四捨五入、最後一次取 2 位。computeLivePegRatio 跟溯源表共用。
+export const calculateLivePeg = (close: number, epsTtm: number | null, currentAnnualEps: number | null, priorAnnualEps: number | null) => {
+  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
+  const epsCagr5yPct =
+    currentAnnualEps !== null && priorAnnualEps !== null && currentAnnualEps > 0 && priorAnnualEps > 0
+      ? (Math.pow(currentAnnualEps / priorAnnualEps, 1 / PEG_GROWTH_YEARS) - 1) * 100
+      : null;
+  const value = peRatioTtm !== null && epsCagr5yPct !== null && epsCagr5yPct > 0 ? Math.round((peRatioTtm / epsCagr5yPct) * 100) / 100 : null;
+  return { peRatioTtm, epsCagr5yPct, value };
+};
+
 export interface LivePegRatioPitQuery {
   symbol: string;
   dataType: '1' | '2';
@@ -78,19 +92,12 @@ export const computeLivePegRatio = async (query: LivePegRatioPitQuery, deps: Liv
   const { tradeDate, close, epsTtm, ttmComplete } = live;
   const rocYear = live.rocYear;
   const seasonNum = live.season;
-  const peRatioTtm = epsTtm !== null && epsTtm !== 0 ? close / epsTtm : null;
-
-  const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
+  const latestCompleteFiscalYear = latestCompleteFiscalYearOf(rocYear, seasonNum);
   const epsCache = new Map<number, number | null>();
   const currentAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
   const priorAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, deps);
 
-  const epsCagr5yPct =
-    currentAnnualEps !== null && priorAnnualEps !== null && currentAnnualEps > 0 && priorAnnualEps > 0
-      ? (Math.pow(currentAnnualEps / priorAnnualEps, 1 / PEG_GROWTH_YEARS) - 1) * 100
-      : null;
-
-  const livePegRatio = peRatioTtm !== null && epsCagr5yPct !== null && epsCagr5yPct > 0 ? Math.round((peRatioTtm / epsCagr5yPct) * 100) / 100 : null;
+  const { value: livePegRatio } = calculateLivePeg(close, epsTtm, currentAnnualEps, priorAnnualEps);
 
   let nullReason: MetricNullReason | null = null;
   if (livePegRatio === null) {

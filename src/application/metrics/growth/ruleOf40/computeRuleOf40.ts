@@ -25,21 +25,17 @@ export type RuleOf40Deps = Pick<PitDeps, 'statements' | 'quarters' | 'announceme
 
 export type RuleOf40ComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeRuleOf40 = async (
-  query: QuarterlyMetricQuery,
-  deps: RuleOf40Deps
-): Promise<RuleOf40ComputationBatch> => {
+// 2026-10-01 溯源表（getRuleOf40Provenance.ts）要跟寫入路徑算出同一個數字，前半段（產業 gating、兩個近一年窗口、
+// 加總與百分比）抽成 resolver 共用，computeRuleOf40 只負責 knowledge date 與組 slot；計算本身逐字未改。
+// 非軟體雲端業與查無季度都回 null（compute 照舊 skipped_no_quarter，溯源表回 found: false——這些公司本來就沒有列）。
+export const resolveRuleOf40Inputs = async (query: QuarterlyMetricQuery, deps: RuleOf40Deps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  if (!(await deps.industry.isSoftwareOrCloudIndustryCompany(symbol))) {
-    return noQuarterBatch(symbol, ['ttm']);
-  }
+  if (!(await deps.industry.isSoftwareOrCloudIndustryCompany(symbol))) return null;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -92,6 +88,27 @@ export const computeRuleOf40 = async (
   const fcfMarginTtmPct = ttmComplete ? toPercent(currentFcfTtmSum, currentRevenueTtmSum) : null;
   const ttmValue = revenueGrowthTtmPct !== null && fcfMarginTtmPct !== null ? Math.round((revenueGrowthTtmPct + fcfMarginTtmPct) * 100) / 100 : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? determineNullReason(currentRevenueTtmSum, priorRevenueTtmSum) : 'insufficient_history';
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear,
+    currentIncome, currentCashFlow, priorIncome, currentTtmQuarters, currentRecords,
+    priorRevenueTtmSum, currentRevenueTtmSum, currentFcfTtmSum, ttmComplete,
+    revenueGrowthTtmPct, fcfMarginTtmPct, ttmValue, ttmNullReason,
+  };
+};
+
+export const computeRuleOf40 = async (
+  query: QuarterlyMetricQuery,
+  deps: RuleOf40Deps
+): Promise<RuleOf40ComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveRuleOf40Inputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, currentTtmQuarters, currentRecords, ttmComplete, ttmValue, ttmNullReason } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'ruleOf40', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

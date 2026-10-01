@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -11,7 +12,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // computeFamaFrenchOperatingProfitabilityPit.ts 一致，只做 Fama-French RMW 因子背後的
 // 單一公司比率本身，不做完整五因子模型的橫斷面排序建構+迴歸。固定回傳 TTM。
 
-export const getFamaFrenchOperatingProfitabilityProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getFamaFrenchOperatingProfitabilityProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
@@ -28,10 +29,10 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const bookEquity = pickEquity(balanceSheet);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const grossProfits = ttmRecords.map((record) => record?.grossProfit ?? null);
   const sellingExpenses = ttmRecords.map((record) => record?.sellingExpenses ?? null);
   const adminExpenses = ttmRecords.map((record) => record?.adminExpenses ?? null);
@@ -56,7 +57,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 毛利（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近一年 毛利（${trailingPeriodLabel(tq, trailing.basis)}，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -66,7 +67,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(grossProfits[i]),
         },
         {
-          role: `近四季 推銷費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近一年 推銷費用（${trailingPeriodLabel(tq, trailing.basis)}，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -76,7 +77,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(sellingExpenses[i]),
         },
         {
-          role: `近四季 管理費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近一年 管理費用（${trailingPeriodLabel(tq, trailing.basis)}，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -86,7 +87,7 @@ export const getFamaFrenchOperatingProfitabilityProvenance = async (query: Quart
           value: toProvenanceEntryValue(adminExpenses[i]),
         },
         {
-          role: `近四季 財務費用（第 ${i + 1}/4 季，用於營業獲利）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於營業獲利）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

@@ -38,11 +38,9 @@ export type BetaDeps = Pick<PitDeps, 'market'>;
 
 export type BetaComputationBatch = DailyComputationBatch<'beta1YDaily' | 'beta2YWeekly' | 'beta3YWeekly' | 'beta5YMonthly'>;
 
-export const computeBeta = async (query: BetaPitQuery, deps: BetaDeps): Promise<BetaComputationBatch> => {
-  const { symbol, date, dataType, subsidiaryCompanyId } = query;
-
-  const skippedNoTradeDate: BetaComputationBatch = { symbol, tradeDate: null, slots: { beta1YDaily: { action: 'skipped_no_trade_date' }, beta2YWeekly: { action: 'skipped_no_trade_date' }, beta3YWeekly: { action: 'skipped_no_trade_date' }, beta5YMonthly: { action: 'skipped_no_trade_date' } } };
-
+// 查價格序列 → 對齊個股與大盤都有收盤價的重疊交易日（由舊到新）。完全沒有股價資料回 null（skipped_no_trade_date）。
+// computeBeta 跟溯源表（getBetaProvenance）共用，溯源表的取樣點才會跟寫入的值是同一批。
+export const loadBetaOverlap = async (symbol: string, date: Date | undefined, deps: BetaDeps): Promise<OverlapPoint[] | null> => {
   const fiveYearsBack = subtractYears(date ?? new Date(), 5);
 
   // 價格序列的 raw SQL 在 infrastructure/repositories/twse/dailyPriceSeries.ts（有指定 date 才加 <= 條件）。
@@ -52,7 +50,7 @@ export const computeBeta = async (query: BetaPitQuery, deps: BetaDeps): Promise<
     deps.market.getEarliestTradeDate(symbol),
   ]);
 
-  if (earliestTradeDate === null) return skippedNoTradeDate;
+  if (earliestTradeDate === null) return null;
 
   const indexByDate = new Map<string, number>();
   for (const row of indexRows) {
@@ -67,8 +65,16 @@ export const computeBeta = async (query: BetaPitQuery, deps: BetaDeps): Promise<
       overlap.push({ tradeDate: dateStr, stockClose: Number(row.close), indexClose });
     }
   }
+  return overlap;
+};
 
-  if (overlap.length === 0) return skippedNoTradeDate;
+export const computeBeta = async (query: BetaPitQuery, deps: BetaDeps): Promise<BetaComputationBatch> => {
+  const { symbol, date, dataType, subsidiaryCompanyId } = query;
+
+  const skippedNoTradeDate: BetaComputationBatch = { symbol, tradeDate: null, slots: { beta1YDaily: { action: 'skipped_no_trade_date' }, beta2YWeekly: { action: 'skipped_no_trade_date' }, beta3YWeekly: { action: 'skipped_no_trade_date' }, beta5YMonthly: { action: 'skipped_no_trade_date' } } };
+
+  const overlap = await loadBetaOverlap(symbol, date, deps);
+  if (overlap === null || overlap.length === 0) return skippedNoTradeDate;
 
   const effectiveAsOf = overlap[overlap.length - 1]!.tradeDate;
   const effectiveAsOfDate = new Date(`${effectiveAsOf}T00:00:00.000Z`);

@@ -48,6 +48,17 @@ export const createInMemoryMetricValues = (): InMemoryMetricValues => {
 
   return {
     findLatestPeriodRow: (where) => findLatest(where as unknown as Record<string, unknown>),
+    // 記憶體版沒有 computed_at，用 knowledgeDate 頂替（測試只拿它組說明文字）。
+    listPeriodRowsAcrossMarket: async (metricCode, periodType, coordinate) => {
+      const latestBySymbol = new Map<string, StoredMetricRow<PeriodCoordinateWhere>>();
+      const candidates = (rows as StoredMetricRow<PeriodCoordinateWhere>[])
+        .filter((row) => matches(row, { metricCode, periodType, subsidiaryCompanyId: '', ...coordinate }))
+        .sort((a, b) => b.where.fiscalYear - a.where.fiscalYear || b.where.fiscalQuarter - a.where.fiscalQuarter || b.values.knowledgeDate.getTime() - a.values.knowledgeDate.getTime());
+      for (const row of candidates) if (!latestBySymbol.has(row.where.symbol)) latestBySymbol.set(row.where.symbol, row);
+      return [...latestBySymbol.values()]
+        .sort((a, b) => (a.where.symbol < b.where.symbol ? -1 : 1))
+        .map((row) => ({ symbol: row.where.symbol, fiscalYear: row.where.fiscalYear, fiscalQuarter: row.where.fiscalQuarter, value: row.values.value, computedAt: row.values.knowledgeDate }));
+    },
     upsertPeriodRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
     findLatestDailyCadenceRow: (where) => findLatest(where as unknown as Record<string, unknown>),
     upsertDailyCadenceRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),

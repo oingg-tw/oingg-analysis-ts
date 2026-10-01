@@ -1,5 +1,7 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveAltmanZScoreInputs, type AltmanZScoreDeps } from './computeAltmanZScore';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
@@ -16,7 +18,7 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery, dep
     return { symbol: query.symbol, metricCode: 'altmanZScore', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, totalAssets, totalLiabilities, currentAssets, currentLiabilities, retainedEarnings, marketCap, ttmQuarterDetails, zScore } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, totalAssets, totalLiabilities, currentAssets, currentLiabilities, retainedEarnings, marketCap, basis, ttmQuarterDetails, zScore } = resolution;
 
   const entries: ProvenanceEntry[] = [
     {
@@ -79,8 +81,9 @@ export const getAltmanZScoreProvenance = async (query: QuarterlyMetricQuery, dep
       sourceDescription: marketCap ? `市值快照，股價交易日 ${marketCap.tradeDate}` : null,
       value: marketCap ? marketCap.marketCap : null,
     },
-    ...ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => {
-      const label = `近四季 第 ${i + 1}/4 季（X3/X5 分子加總項）`;
+    // 2026-10-01 期間標籤跟 compute 的近一年來源一致（興櫃半年頻，見 shared/trailingYear.ts）。
+    ...ttmQuarterDetails.flatMap((detail): ProvenanceEntry[] => {
+      const label = `近一年 ${trailingPeriodLabel({ year: String(detail.rocYear), season: String(detail.season) as Season }, basis)}（X3/X5 分子加總項）`;
       return [
         {
           role: `${label}：稅前淨利`,

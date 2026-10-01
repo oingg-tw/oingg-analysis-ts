@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -9,7 +10,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 結構跟 getEpsProvenance.ts 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome
 // 那種欄位選擇邏輯）。固定回傳 TTM。
 
-export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares'>): Promise<MetricProvenanceResult> => {
+export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
@@ -29,10 +30,10 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const revenues = ttmRecords.map((record) => record?.operatingRevenue ?? null);
 
   let revenueTtmSum = 0n;
@@ -47,7 +48,7 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營收（第 ${i + 1}/4 季）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

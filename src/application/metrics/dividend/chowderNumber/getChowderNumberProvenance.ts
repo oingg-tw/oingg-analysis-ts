@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveCashFlowReportDate, trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { getAnnualDividendPerShareProxy, type AnnualDividendPerShareProxyResult, type ChowderNumberDeps } from './computeChowderNumber';
@@ -14,9 +15,10 @@ import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEnt
 
 const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 
-const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult, label: string): ProvenanceEntry[] =>
+// 2026-10-01 期間標籤跟年度加總的來源一致（興櫃半年頻：上下半年，見 shared/trailingYear.ts）；年份改用 trailingPeriodLabel 的民國年。
+const buildDividendsPaidEntries = (proxy: AnnualDividendPerShareProxyResult): ProvenanceEntry[] =>
   proxy.quarters.map((q) => ({
-    role: `${label} 第 ${q.season} 季發放現金股利`,
+    role: `${trailingPeriodLabel({ year: String(q.rocYear), season: String(q.season) as Season }, proxy.basis)}發放現金股利`,
     fiscalYear: rocYearToGregorian(q.rocYear),
     fiscalQuarter: q.season,
     type: 'statementField',
@@ -41,8 +43,9 @@ export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery, de
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const mainCashFlow = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainCashFlow?.reportDate ?? null }], deps.announcements);
+  // 2026-10-01 本季期末日跟 compute 一樣走 resolveCashFlowReportDate（興櫃沒有單季現金流，見 shared/trailingYear.ts）。
+  const reportDate = await resolveCashFlowReportDate({ symbol, rocYear, season: String(seasonNum) as Season, dataType, subsidiaryCompanyId }, deps);
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const dailyValuation = mainAnchor ? await deps.market.getDailyValuation(symbol, mainAnchor.knowledgeDate) : null;
   const dividendYieldPct = dailyValuation?.dividendYield ?? null;
@@ -72,8 +75,8 @@ export const getChowderNumberProvenance = async (query: QuarterlyMetricQuery, de
       sourceDescription: '證交所／櫃買中心每日評價指標（本益比／股價淨值比／殖利率）',
       value: dividendYieldPct,
     },
-    ...buildDividendsPaidEntries(currentProxy, `${rocYearToGregorian(latestCompleteFiscalYear)} 年`),
-    ...buildDividendsPaidEntries(priorProxy, `${rocYearToGregorian(latestCompleteFiscalYear - DIVIDEND_GROWTH_LOOKBACK_YEARS)} 年`),
+    ...buildDividendsPaidEntries(currentProxy),
+    ...buildDividendsPaidEntries(priorProxy),
     {
       role: `${rocYearToGregorian(latestCompleteFiscalYear)} 年底流通股數`,
       fiscalYear: rocYearToGregorian(latestCompleteFiscalYear),

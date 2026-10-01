@@ -1,5 +1,7 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveDividendPayoutRatioInputs, type DividendPayoutRatioDeps } from './computeDividendPayoutRatio';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-11 web-nuxt 要求（第二批試點）：GET /companies/:symbol/metric-provenance 的
@@ -17,10 +19,11 @@ export const getDividendPayoutRatioProvenance = async (query: QuarterlyMetricQue
     return { symbol: query.symbol, metricCode: 'dividendPayoutRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, ttmQuarterDetails, payoutRatioTtm } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, basis, ttmQuarterDetails, payoutRatioTtm } = resolution;
 
-  const entries: ProvenanceEntry[] = ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => {
-    const label = `近四季 第 ${i + 1}/4 季`;
+  // 2026-10-01 期間標籤跟 compute 的近一年來源一致（興櫃半年頻，見 shared/trailingYear.ts）。
+  const entries: ProvenanceEntry[] = ttmQuarterDetails.flatMap((detail): ProvenanceEntry[] => {
+    const label = `近一年 ${trailingPeriodLabel({ year: String(detail.rocYear), season: String(detail.season) as Season }, basis)}`;
     const netIncomeEntry: ProvenanceEntry = {
       role: `${label}淨利（歸屬母公司）`,
       fiscalYear: detail.fiscalYear,

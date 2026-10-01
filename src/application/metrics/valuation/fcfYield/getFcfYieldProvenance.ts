@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -10,7 +11,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // (千元換元)/流通股數) / 股價(本季知識時點) * 100。跟 computeFcfYieldPit.ts 一致。固定
 // 回傳 TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
 
-export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>): Promise<MetricProvenanceResult> => {
+export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
@@ -24,16 +25,16 @@ export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: P
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const cashFlowStatement = await deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const reportDate = cashFlowStatement?.reportDate ?? null;
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。本季 reportDate 跟 compute 一樣
+  // 取近一年最後一段：上市櫃＝本季單季那筆，興櫃沒有單季現金流量表、取累計推出的那段（同一個期末日）。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const reportDate = trailing.periods.at(-1)?.record?.reportDate ?? null;
   const shares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const ocfs = ttmRecords.map((r) => r?.netCashFromOperatingActivities ?? null);
   const capexes = ttmRecords.map((r) => r?.capitalExpenditures ?? null);
 
@@ -64,7 +65,7 @@ export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: P
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
+          role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +75,7 @@ export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: P
           value: toProvenanceEntryValue(ocfs[i]),
         },
         {
-          role: `近四季 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
+          role: `近一年 資本支出（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF，原始資料是負值）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

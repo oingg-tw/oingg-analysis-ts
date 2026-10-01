@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -9,7 +10,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // / 近四季營業活動現金流加總。跟 computeCashFlowValuationFamilyPit.ts 一致——這支用市值
 // 不是 EV（跟 evToOcf 不同），這裡只重新查這支自己真正的依賴。只有 TTM 一種 basis。
 
-export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>): Promise<MetricProvenanceResult> => {
+export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'cashFlowStatement'], deps.quarters);
@@ -32,10 +33,11 @@ export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery, deps:
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const marketCap = mainAnchor ? await deps.market.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  // compute 是損益表／現金流兩份 trailing 逐段配對，兩者的期間由同一個「看損益表長相」的判斷決定，所以只取現金流這份期間也相同。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const ocfs = ttmRecords.map((r) => r?.netCashFromOperatingActivities ?? null);
 
   let ocfTtmSum = 0n;
@@ -60,7 +62,7 @@ export const getPriceToOcfProvenance = async (query: QuarterlyMetricQuery, deps:
     },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營業活動現金流（第 ${i + 1}/4 季）`,
+        role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

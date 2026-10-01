@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -10,7 +11,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 加總 / 本季期末經濟資本（總資產-流動負債，單一期末值）。跟 computeCrociPit.ts 一致，是
 // 簡化版 CROCI（不做通膨/資本化調整）。固定回傳 TTM。
 
-export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
@@ -29,15 +30,11 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
   const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
   const economicCapital = totalAssets !== null && currentLiabilities !== null ? totalAssets - currentLiabilities : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；兩張表的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailing, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   const netIncomes = ttmRecords.map(([incomeRecord]) => pickNetIncome(incomeRecord));
   const financeCosts = ttmRecords.map(([incomeRecord]) => incomeRecord?.financeCosts ?? null);
@@ -64,7 +61,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 淨利（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +71,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `近四季 財務費用（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -84,7 +81,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `近四季 折舊（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近一年 折舊（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -94,7 +91,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `近四季 攤銷（第 ${i + 1}/4 季，用於毛現金流）`,
+          role: `近一年 攤銷（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

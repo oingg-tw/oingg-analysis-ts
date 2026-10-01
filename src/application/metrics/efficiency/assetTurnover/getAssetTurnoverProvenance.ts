@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateAssetTurnover } from '@/domain/metrics/efficiency/assetTurnover/calculateAssetTurnover';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -10,7 +11,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // equityMultiplier.Q = roe.TTM 用的那個 basis）：近四季營收加總 / 本季期末總資產，跟
 // computeDupontFamily.ts 的 assetTurnoverTtm 同一支 calculateAssetTurnover 純函式，分母刻意不平均、
 // 不加總四季總資產（見該檔說明）。
-export const getAssetTurnoverProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getAssetTurnoverProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
@@ -23,11 +24,13 @@ export const getAssetTurnoverProvenance = async (query: QuarterlyMetricQuery, de
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const [balanceSheet, ...incomeStatements] = await Promise.all([
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const [balanceSheet, trailing] = await Promise.all([
     deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId }),
-    ...ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId })),
+    resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps),
   ]);
+  const ttmQuarters = trailing.periods;
+  const incomeStatements = trailing.periods.map((p) => p.record);
   const revenues = incomeStatements.map((r) => r?.operatingRevenue ?? null);
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const ttmComplete = revenues.every((v) => v !== null);
@@ -36,7 +39,7 @@ export const getAssetTurnoverProvenance = async (query: QuarterlyMetricQuery, de
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營業收入（第 ${i + 1}/4 季）`,
+        role: `近一年 營業收入（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

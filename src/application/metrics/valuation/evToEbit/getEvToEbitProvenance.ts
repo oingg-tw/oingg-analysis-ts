@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingIncomeStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -12,7 +13,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 同一套邏輯，差別只在 EBIT 不加回折舊攤銷）。跟 computeEvToEbitPit.ts 一致。固定回傳
 // TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
 
-export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>): Promise<MetricProvenanceResult> => {
+export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
@@ -42,10 +43,10 @@ export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: P
   const marketCap = mainAnchor ? await deps.market.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap.marketCap + Number(netDebt) * 1000 : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const preTaxes = ttmRecords.map((r) => r?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map((r) => r?.financeCosts ?? null);
 
@@ -79,7 +80,7 @@ export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: P
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
+          role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於 EBIT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -89,7 +90,7 @@ export const getEvToEbitProvenance = async (query: QuarterlyMetricQuery, deps: P
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 EBIT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

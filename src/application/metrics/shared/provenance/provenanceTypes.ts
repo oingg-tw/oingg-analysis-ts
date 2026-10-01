@@ -23,6 +23,10 @@ import { z } from 'zod';
 // 計算依據」用途，不重複做)。7 大分類至此全部完成，剩下的都是結構性不合或已有專屬
 // 端點的例外。目前有稽核鏈的 metricCode 清單就是下面這個陣列本身，count 是
 // `.length`，不用另外手動維護數字說明。
+//
+// 2026-10-01 更新：上面「結構性不合／已有專屬端點」的例外已全部補上（使用者要求「溯源表請務必都加上」）——端點加了
+// asOfDate 參數支援逐日／月頻指標，piotroskiFScore 跟 breakdown 端點共用同一份 resolver。目錄裡每一支都有溯源表；
+// 新增指標時溯源 resolver 是必備交付。
 export const PILOT_PROVENANCE_METRIC_CODES = [
   'sue',
   'chowderNumber',
@@ -121,8 +125,6 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'evToSales',
   'priceToOcf',
   'grahamNumber',
-  // greenblattEarningsYield 先不曝露稽核鏈（2026-09-14 使用者要求，跟 metricDefinitionRegistry
-  // 移除是同一則決定，等神奇公式上線再一起合併回來）。
   'earningsYield',
   'tobinsQ',
   'pegRatio',
@@ -145,6 +147,55 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'shareholderYield',
   'assetTurnover',
   'equityMultiplier',
+  // 2026-10-01 使用者要求「溯源表請務必都加上」——補齊目錄裡剩下的 47 支（之前標為結構性不合的逐日／月頻指標，
+  // 端點加了 asOfDate 參數後一起支援；piotroskiFScore 跟專屬 breakdown 端點共用同一份 resolver）。
+  'grossProfitPerShare',
+  'operatingIncomePerShare',
+  'operatingCostsPerShare',
+  'operatingExpensePerShare',
+  'incomeTaxExpensePerShare',
+  'sellingExpensePerShare',
+  'administrativeExpensePerShare',
+  'researchAndDevelopmentExpensePerShare',
+  'impairmentLossGainIfrs9PerShare',
+  'netOtherIncomeExpensesPerShare',
+  'nonOperatingIncomeExpensesPerShare',
+  'interestRevenuePerShare',
+  'otherRevenuePerShare',
+  'otherGainsLossesPerShare',
+  'shareOfProfitLossOfAssociatesPerShare',
+  'financeCostPerShare',
+  'nonControllingInterestsPerShare',
+  'bankCarRatio',
+  'bankCet1Ratio',
+  'bankTier1Ratio',
+  'bankNplRatio',
+  'bankNplCoverageRatio',
+  'bankNetInterestIncomePerShare',
+  'bankNetNonInterestIncomePerShare',
+  'bankBadDebtProvisionPerShare',
+  'bankOtherOperatingExpensePerShare',
+  'bankEmployeeBenefitsExpensePerShare',
+  'bankDepreciationAmortisationExpensePerShare',
+  'bankGeneralAdministrativeExpensePerShare',
+  'exchangePeRatio',
+  'exchangePbRatio',
+  'dividendYield',
+  'greenblattEarningsYield',
+  'priceToResearchRatio',
+  'beta',
+  'liveMarketCap',
+  'livePbRatio',
+  'livePeRatio',
+  'liveGrahamNumber',
+  'livePegRatio',
+  'sus',
+  'dividendDistributionCount',
+  'dividendPerShare',
+  'piotroskiFScore',
+  'magicFormulaRank',
+  'oneDollarTest',
+  'ruleOf40',
 ] as const;
 export type ProvenanceMetricCode = (typeof PILOT_PROVENANCE_METRIC_CODES)[number];
 

@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity, pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { toPercent, round2 } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -10,7 +11,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // roe/dividendPayoutRatio 這兩個 metric_code 已寫入的值，獨立重新查資產負債表/損益表/
 // 現金流量表重算，跟 computeSgrPit.ts 一致（同一份原則見該檔案的說明）。固定回傳 TTM。
 
-export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
@@ -27,15 +28,11 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
   const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
   const equity = pickEquity(balanceSheet);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；兩張表的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailing, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   const netIncomes = ttmRecords.map(([incomeRecord]) => pickNetIncome(incomeRecord));
   const dividendsPaid = ttmRecords.map(([, cashFlowRecord]) => cashFlowRecord?.dividendsPaid ?? null);
@@ -64,7 +61,7 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 淨利（第 ${i + 1}/4 季，用於 ROE 與配息率）`,
+          role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於 ROE 與配息率）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -74,7 +71,7 @@ export const getSgrProvenance = async (query: QuarterlyMetricQuery, deps: Pick<P
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `近四季 發放股利（第 ${i + 1}/4 季，用於配息率，原始資料是現金流出負值）`,
+          role: `近一年 發放股利（${trailingPeriodLabel(tq, trailing.basis)}，用於配息率，原始資料是現金流出負值）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

@@ -3,6 +3,7 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculatePayablesTurnover } from '../../../../domain/metrics/efficiency/payablesTurnover/calculatePayablesTurnover';
 import { calculatePayablesDays } from '../../../../domain/metrics/efficiency/payablesDays/calculatePayablesDays';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
 
@@ -15,14 +16,14 @@ export const getPayablesDaysProvenance = async (query: QuarterlyMetricQuery, dep
     return { symbol: query.symbol, metricCode: 'payablesDays', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, accountsPayable, ttmQuarters, ttmOperatingCosts, ttmComplete, costTtmSum } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, accountsPayable, basis, ttmQuarters, ttmOperatingCosts, ttmComplete, costTtmSum } = resolution;
   const turnover = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
   const result = calculatePayablesDays(turnover.value, turnover.nullReason);
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營業成本（第 ${i + 1}/4 季）`,
+        role: `近一年 營業成本（${trailingPeriodLabel(tq, basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

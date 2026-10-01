@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingIncomeStatements, trailingPeriodLabel, type ReportingBasis } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { REVENUE_CAGR_YEARS } from '../../../../domain/metrics/growth/revenueCagr/revenueCagrDefinition';
@@ -11,26 +12,34 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 這支檔案接受 years 參數，PROVENANCE_RESOLVERS 各自綁一個 years 值呼叫。fiscalQuarter
 // 固定回傳 4（FY basis，年度資料無季別概念）。
 
+interface AnnualRevenueResult {
+  value: bigint | null;
+  basis: ReportingBasis;
+  quarters: { year: string; season: Season; fiscalYear: number; fiscalQuarter: number; value: bigint | null }[];
+}
+
 const getAnnualRevenue = async (
-  cache: Map<number, { value: bigint | null; quarters: { fiscalYear: number; fiscalQuarter: number; value: bigint | null }[] }>,
+  cache: Map<number, AnnualRevenueResult>,
   symbol: string,
   rocYear: number,
   dataType: string,
-  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters'>
-) => {
+  subsidiaryCompanyId: string, deps: RevenueCagrProvenanceDeps
+): Promise<AnnualRevenueResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const records = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
-  const quarters = records.map((r, i) => ({ fiscalYear: rocYearToGregorian(rocYear), fiscalQuarter: i + 1, value: r?.operatingRevenue ?? null }));
+  // 2026-10-01 年度加總跟 computeRevenueCagrFamily 同一個共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const records = trailing.periods.map((p) => p.record);
+  const quarters = trailing.periods.map((p) => ({ year: p.year, season: p.season, fiscalYear: rocYearToGregorian(Number(p.year)), fiscalQuarter: Number(p.season), value: p.record?.operatingRevenue ?? null }));
   const value = records.some((r) => r === null || r.operatingRevenue === null) ? null : records.reduce((sum, r) => sum + r!.operatingRevenue!, 0n);
-  const result = { value, quarters };
+  const result: AnnualRevenueResult = { value, basis: trailing.basis, quarters };
   cache.set(rocYear, result);
   return result;
 };
 
-export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEARS)[number], deps: Pick<PitDeps, 'statements' | 'quarters'>) => {
+type RevenueCagrProvenanceDeps = Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>;
+
+export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEARS)[number], deps: RevenueCagrProvenanceDeps) => {
   const metricCode = `revenueCagr${years}y` as ProvenanceMetricCode;
 
   return async (query: QuarterlyMetricQuery): Promise<MetricProvenanceResult> => {
@@ -48,7 +57,7 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
     const fiscalYear = rocYearToGregorian(rocYear);
 
     const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
-    const cache = new Map<number, { value: bigint | null; quarters: { fiscalYear: number; fiscalQuarter: number; value: bigint | null }[] }>();
+    const cache = new Map<number, AnnualRevenueResult>();
     const current = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
     const prior = await getAnnualRevenue(cache, symbol, latestCompleteFiscalYear - years, dataType, subsidiaryCompanyId, deps);
 
@@ -57,9 +66,9 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
         ? Math.round((Math.pow(Number(current.value) / Number(prior.value), 1 / years) - 1) * 100 * 100) / 100
         : null;
 
-    const buildQuarterEntries = (label: string, quarters: { fiscalYear: number; fiscalQuarter: number; value: bigint | null }[]): ProvenanceEntry[] =>
-      quarters.map((q) => ({
-        role: `${label}第 ${q.fiscalQuarter} 季營收`,
+    const buildQuarterEntries = (label: string, annual: AnnualRevenueResult): ProvenanceEntry[] =>
+      annual.quarters.map((q) => ({
+        role: `${label}${trailingPeriodLabel(q, annual.basis)}營收`,
         fiscalYear: q.fiscalYear,
         fiscalQuarter: q.fiscalQuarter,
         type: 'statementField',
@@ -70,8 +79,8 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
       }));
 
     const entries: ProvenanceEntry[] = [
-      ...buildQuarterEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）`, current.quarters),
-      ...buildQuarterEntries(`${years} 年前完整會計年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior.quarters),
+      ...buildQuarterEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）`, current),
+      ...buildQuarterEntries(`${years} 年前完整會計年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
     ];
 
     return {

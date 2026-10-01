@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { calculateDupontTaxBurden } from '../../../../domain/metrics/profitability/dupontTaxBurden/calculateDupontTaxBurden';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -13,7 +14,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 完全一致（都呼叫同一支 calculateDupontTaxBurden 純函式）。固定回傳 TTM（跟 roe 同一個
 // 試點慣例，Q 版的欄位組成比較簡單，之後真的需要再開放 periodType 查詢參數）。
 
-export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
@@ -27,10 +28,10 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, 
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const netIncomes = ttmRecords.map(pickNetIncome);
   const preTaxes = ttmRecords.map((record) => record?.profitBeforeTax ?? null);
@@ -54,7 +55,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, 
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `近四季 淨利（第 ${i + 1}/4 季）`,
+        role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,
@@ -64,7 +65,7 @@ export const getDupontTaxBurdenProvenance = async (query: QuarterlyMetricQuery, 
         value: toProvenanceEntryValue(netIncomes[i]!.value),
       },
       {
-        role: `近四季 稅前淨利（第 ${i + 1}/4 季）`,
+        role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField' as const,

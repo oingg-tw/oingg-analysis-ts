@@ -6,6 +6,7 @@ import { calculateDividendPerShare } from '../../../../domain/metrics/dividend/d
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import type { DividendDistributionRow } from '@/application/ports/dividendEvents';
 
 // 2026-09-15 應 web-nuxt「營收到股利去了哪裡」瀑布圖卡片需求新增。只有 TTM 一種 basis——股利通常一年發放 1~2 次，
 // 單季數字大多是 0。
@@ -26,6 +27,28 @@ export type DividendPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'an
 
 export type DividendPerShareComputationBatch = ComputationBatch<'ttm'>;
 
+// 窗口終點＝該季季末（UTC），跟舊版「近四季」同一段期間。溯源表（getDividendPerShareProvenance）共用。
+export const dividendPerShareWindowEnd = (fiscalYear: number, season: number): Date => new Date(Date.UTC(fiscalYear, season * 3, 0));
+
+// 全部分派列，窗口內跨過面額變更（股票分割）的除息，每股金額換算到窗口結束時的股數基準（splitFactor＝除以的倍數，沒換算為 1）。
+// computeDividendPerShare 跟溯源表共用，溯源表列的每筆金額就是加總進寫入值的那個數字。
+export const listRestatedDividendRows = async (symbol: string, windowEnd: Date, deps: Pick<PitDeps, 'dividendEvents' | 'shares'>): Promise<(DividendDistributionRow & { splitFactor: number })[]> => {
+  const events = await deps.dividendEvents.listDividendDistributionRows(symbol);
+  return Promise.all(
+    events.map(async (e) => {
+      if (!e.exDividendDate || e.exDividendDate > windowEnd) return { ...e, splitFactor: 1 };
+      const f = await deps.shares.getShareSplitFactor(symbol, e.exDividendDate, windowEnd);
+      if (f === 1) return { ...e, splitFactor: 1 };
+      return {
+        ...e,
+        splitFactor: f,
+        cashDividendFromEarnings: e.cashDividendFromEarnings === null ? null : e.cashDividendFromEarnings / f,
+        cashDividendFromLegalReserveAndCapitalSurplus: e.cashDividendFromLegalReserveAndCapitalSurplus === null ? null : e.cashDividendFromLegalReserveAndCapitalSurplus / f,
+      };
+    })
+  );
+};
+
 export const computeDividendPerShare = async (query: QuarterlyMetricQuery, deps: DividendPerShareDeps): Promise<DividendPerShareComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
@@ -42,22 +65,8 @@ export const computeDividendPerShare = async (query: QuarterlyMetricQuery, deps:
   const anchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   if (!anchor) return { symbol, rocYear: year, season, slots: { ttm: { action: 'skipped_no_knowledge_date' } } };
 
-  // 窗口終點＝該季季末（UTC），跟舊版「近四季」同一段期間。
-  const windowEnd = new Date(Date.UTC(fiscalYear, seasonNum * 3, 0));
-  const events = await deps.dividendEvents.listDividendDistributionRows(symbol);
-  // 窗口內跨過面額變更（股票分割）的除息，每股金額換算到窗口結束時的股數基準再加總。
-  const restated = await Promise.all(
-    events.map(async (e) => {
-      if (!e.exDividendDate || e.exDividendDate > windowEnd) return e;
-      const f = await deps.shares.getShareSplitFactor(symbol, e.exDividendDate, windowEnd);
-      if (f === 1) return e;
-      return {
-        ...e,
-        cashDividendFromEarnings: e.cashDividendFromEarnings === null ? null : e.cashDividendFromEarnings / f,
-        cashDividendFromLegalReserveAndCapitalSurplus: e.cashDividendFromLegalReserveAndCapitalSurplus === null ? null : e.cashDividendFromLegalReserveAndCapitalSurplus / f,
-      };
-    })
-  );
+  const windowEnd = dividendPerShareWindowEnd(fiscalYear, seasonNum);
+  const restated = await listRestatedDividendRows(symbol, windowEnd, deps);
   const calc = calculateDividendPerShare(restated, windowEnd);
 
   const ttm = computation({

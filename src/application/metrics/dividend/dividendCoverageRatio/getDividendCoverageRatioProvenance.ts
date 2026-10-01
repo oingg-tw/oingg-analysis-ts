@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
 import { calculateFcf } from '@/application/metrics/quality/cashFlowPerShare/fcf';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -9,7 +10,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 資本支出) / TTM 股利發放現金加總（取絕對值）。跟 computeDividendCoverageRatioPit.ts
 // 一致，衡量配息是不是真的用自由現金流撐得住。固定回傳 TTM。
 
-export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
@@ -23,10 +24,10 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const ocfs = ttmRecords.map((r) => r?.netCashFromOperatingActivities ?? null);
   const capexes = ttmRecords.map((r) => r?.capitalExpenditures ?? null);
@@ -55,7 +56,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
+        role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -65,7 +66,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(ocfs[i]),
       },
       {
-        role: `近四季 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
+        role: `近一年 資本支出（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF，原始資料是負值）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -75,7 +76,7 @@ export const getDividendCoverageRatioProvenance = async (query: QuarterlyMetricQ
         value: toProvenanceEntryValue(capexes[i]),
       },
       {
-        role: `近四季 發放股利（第 ${i + 1}/4 季，原始資料是現金流出負值，缺漏視為 0）`,
+        role: `近一年 發放股利（${trailingPeriodLabel(tq, trailing.basis)}，原始資料是現金流出負值，缺漏視為 0）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -9,7 +10,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 支出)加總 / 近四季營收加總。跟 computeFcfMarginPit.ts 一致，跟 ocfPerShare/
 // fcfPerShare 同一套 FCF 定義，獨立重新計算。只有 TTM 一種 basis。
 
-export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement', 'cashFlowStatement'], deps.quarters);
@@ -23,15 +24,11 @@ export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: 
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；兩張表的 periods 順序相同、逐段配對。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods;
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
   const revenues = ttmRecords.map(([r]) => r?.operatingRevenue ?? null);
   const ocfs = ttmRecords.map(([, r]) => r?.netCashFromOperatingActivities ?? null);
   const capexes = ttmRecords.map(([, r]) => r?.capitalExpenditures ?? null);
@@ -55,7 +52,7 @@ export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: 
     const entryFiscalQuarter = Number(tq.season);
     return [
       {
-        role: `近四季 營收（第 ${i + 1}/4 季）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, trailingIncome.basis)}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -65,7 +62,7 @@ export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: 
         value: toProvenanceEntryValue(revenues[i]),
       },
       {
-        role: `近四季 營業活動現金流（第 ${i + 1}/4 季，用於 FCF）`,
+        role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 FCF）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -75,7 +72,7 @@ export const getFcfMarginProvenance = async (query: QuarterlyMetricQuery, deps: 
         value: toProvenanceEntryValue(ocfs[i]),
       },
       {
-        role: `近四季 資本支出（第 ${i + 1}/4 季，用於 FCF，原始資料是負值）`,
+        role: `近一年 資本支出（${trailingPeriodLabel(tq, trailingIncome.basis)}，用於 FCF，原始資料是負值）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

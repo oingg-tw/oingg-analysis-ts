@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { pickNetIncomeWithFieldKey } from '@/domain/metrics/shared/pickers';
 import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -29,12 +29,13 @@ const ratio = (numerator: bigint | null, denominator: bigint | null): number | n
   return Number(numerator) / Number(denominator);
 };
 
-interface QuarterData {
+export interface QuarterData {
   totalAssets: bigint | null;
   longTermBorrowings: bigint | null;
   currentAssets: bigint | null;
   currentLiabilities: bigint | null;
   netIncome: bigint | null;
+  netIncomeFieldKey: string | null; // 溯源表用：歸屬母公司優先、缺漏退回整體口徑，實際命中哪個科目
   grossProfit: bigint | null;
   operatingRevenue: bigint | null;
   operatingCashFlow: bigint | null;
@@ -59,13 +60,15 @@ const fetchQuarterData = async (
   ]);
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? cashFlowStatement?.reportDate ?? null;
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
+  const netIncome = pickNetIncomeWithFieldKey(incomeStatement);
 
   return {
     totalAssets: balanceSheet?.totalAssets ?? null,
     longTermBorrowings: balanceSheet?.longTermBorrowings ?? null,
     currentAssets: balanceSheet?.currentAssets ?? null,
     currentLiabilities: balanceSheet?.currentLiabilities ?? null,
-    netIncome: pickNetIncome(incomeStatement).value,
+    netIncome: netIncome.value,
+    netIncomeFieldKey: netIncome.fieldKey,
     grossProfit: incomeStatement?.grossProfit ?? null,
     operatingRevenue: incomeStatement?.operatingRevenue ?? null,
     operatingCashFlow: cashFlowStatement?.netCashFromOperatingActivities ?? null,
@@ -101,6 +104,12 @@ export interface PiotroskiFScoreResolution {
   nullReason: MetricNullReason | null;
   knowledgeDate: Date | null;
   knowledgeDateIsFallback: boolean | null;
+  // 2026-10-01 溯源表（getPiotroskiFScoreProvenance.ts）逐項列原始欄位用：本季、去年同季（股數已換算到本期面額基準）與換算倍數。
+  curr: QuarterData;
+  prev: QuarterData;
+  priorRocYear: number;
+  priorSeason: number;
+  splitFactor: number;
 }
 
 // 共用計算邏輯——寫入路徑（computeAndWritePiotroskiFScorePit）跟 on-demand 讀取路徑
@@ -181,6 +190,11 @@ export const resolvePiotroskiFScoreSignals = async (
     nullReason,
     knowledgeDate: mainAnchor?.knowledgeDate ?? null,
     knowledgeDateIsFallback: mainAnchor?.isFallback ?? null,
+    curr,
+    prev,
+    priorRocYear,
+    priorSeason: priorSeasonNum,
+    splitFactor,
   };
 };
 

@@ -1,5 +1,7 @@
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveGreenblattRocInputs, type GreenblattRocDeps } from './computeGreenblattRoc';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
+import type { Season } from '@/domain/calendar/rocQuarter';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-13 使用者要求擴大稽核鏈——greenblattRoc(TTM) = 近四季 EBIT(=稅前淨利+財務費用)
@@ -14,15 +16,18 @@ export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, de
     return { symbol: query.symbol, metricCode: 'greenblattRoc', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, currentAssets, currentLiabilities, propertyPlantEquipment, ttmQuarterDetails, rocTtm } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, currentAssets, currentLiabilities, propertyPlantEquipment, basis, ttmQuarterDetails, rocTtm } = resolution;
 
   const entries: ProvenanceEntry[] = [
     { role: '本季期末流動資產', fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'current_assets', sourceDescription: null, value: toProvenanceEntryValue(currentAssets) },
     { role: '本季期末流動負債', fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'current_liabilities', sourceDescription: null, value: toProvenanceEntryValue(currentLiabilities) },
     { role: '本季期末不動產、廠房及設備', fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'property_plant_and_equipment', sourceDescription: null, value: toProvenanceEntryValue(propertyPlantEquipment) },
-    ...ttmQuarterDetails.flatMap((detail, i): ProvenanceEntry[] => [
+    // 2026-10-01 期間標籤跟 compute 的近一年來源一致（興櫃半年頻，見 shared/trailingYear.ts）。
+    ...ttmQuarterDetails.flatMap((detail): ProvenanceEntry[] => {
+      const period = trailingPeriodLabel({ year: String(detail.rocYear), season: String(detail.season) as Season }, basis);
+      return [
       {
-        role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近一年 稅前淨利（${period}，用於 EBIT）`,
         fiscalYear: detail.fiscalYear,
         fiscalQuarter: detail.season,
         type: 'statementField',
@@ -32,7 +37,7 @@ export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, de
         value: toProvenanceEntryValue(detail.profitBeforeTax),
       },
       {
-        role: `近四季 財務費用（第 ${i + 1}/4 季，用於 EBIT）`,
+        role: `近一年 財務費用（${period}，用於 EBIT）`,
         fiscalYear: detail.fiscalYear,
         fiscalQuarter: detail.season,
         type: 'statementField',
@@ -41,7 +46,8 @@ export const getGreenblattRocProvenance = async (query: QuarterlyMetricQuery, de
         sourceDescription: null,
         value: toProvenanceEntryValue(detail.financeCosts),
       },
-    ]),
+    ];
+    }),
   ];
 
   return {

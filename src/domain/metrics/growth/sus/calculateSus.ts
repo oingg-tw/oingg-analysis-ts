@@ -28,6 +28,8 @@ export const SUS_WINDOW_MONTHS = SUS_SEASONAL_LAG + SUS_DIFF_COUNT + 1; // 21：
 export interface SusResult {
   value: number | null;
   nullReason: MetricNullReason | null;
+  // 2026-10-01 溯源表用：算得出值時一併帶出中繼值（預期營收、漂移項、標準差，單位同輸入），不用另外重算一次。
+  components?: { expected: number; drift: number; sigma: number };
 }
 
 // revenues：由舊到新、連續無缺月的營收序列，長度必須正好 SUS_WINDOW_MONTHS，最後一筆是目標月 t。
@@ -54,5 +56,5 @@ export const calculateSus = (revenues: (number | null)[]): SusResult => {
   if (sigma === 0) return { value: null, nullReason: 'zero_or_negative_denominator' };
 
   const expected = r[t - SUS_SEASONAL_LAG]! + drift;
-  return { value: (r[t]! - expected) / sigma, nullReason: null };
+  return { value: (r[t]! - expected) / sigma, nullReason: null, components: { expected, drift, sigma } };
 };

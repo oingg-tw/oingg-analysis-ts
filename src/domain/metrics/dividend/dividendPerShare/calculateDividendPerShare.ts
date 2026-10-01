@@ -18,14 +18,23 @@ export interface CommonCashDividendEvent {
   cashDividendFromLegalReserveAndCapitalSurplus: number | null;
 }
 
-export const calculateDividendPerShare = (events: CommonCashDividendEvent[], windowEnd: Date): CalcResult => {
+// 窗口起點（不含）＝終點往前一年。溯源表要列「窗口內的除息」，跟計算共用同一個起點。
+export const dividendWindowStart = (windowEnd: Date): Date => {
   const windowStart = new Date(windowEnd);
   windowStart.setUTCFullYear(windowStart.getUTCFullYear() - 1);
+  return windowStart;
+};
+
+export const isInDividendWindow = (exDividendDate: Date | null, windowEnd: Date): exDividendDate is Date =>
+  exDividendDate !== null && exDividendDate > dividendWindowStart(windowEnd) && exDividendDate <= windowEnd;
+
+export const calculateDividendPerShare = (events: CommonCashDividendEvent[], windowEnd: Date): CalcResult => {
+  const windowStart = dividendWindowStart(windowEnd);
   if (windowStart < DIVIDEND_EVENTS_WINDOW_START_FLOOR) return { value: null, nullReason: 'insufficient_history' };
   // 這家公司在股利公告資料裡一筆都沒有：分不出「從來沒配過」還是「上游沒收到」，不當成 0。
   if (events.length === 0) return { value: null, nullReason: 'missing_input' };
   const total = events
-    .filter((e) => e.exDividendDate !== null && e.exDividendDate > windowStart && e.exDividendDate <= windowEnd)
+    .filter((e) => isInDividendWindow(e.exDividendDate, windowEnd))
     .reduce((sum, e) => sum + (e.cashDividendFromEarnings ?? 0) + (e.cashDividendFromLegalReserveAndCapitalSurplus ?? 0), 0);
   return { value: Math.round(total * 100) / 100, nullReason: null };
 };

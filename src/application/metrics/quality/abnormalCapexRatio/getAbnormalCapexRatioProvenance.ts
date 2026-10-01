@@ -4,6 +4,7 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
 
 // 2026-09-13 使用者要求擴大稽核鏈——abnormalCapexRatio（Titman, Wei & Xie 2004）=
 // 最近完整會計年度資本支出(取絕對值) / 前三年資本支出(取絕對值)平均 - 1，再乘 100。
@@ -21,13 +22,13 @@ const getAnnualCapex = async (
   rocYear: number,
   dataType: string,
   subsidiaryCompanyId: string,
-  deps: Pick<PitDeps, 'statements'>
+  deps: Pick<PitDeps, 'statements' | 'cumulativeStatements'>
 ): Promise<AnnualCapexResult> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 全年跟 computeAbnormalCapexRatio 同一個共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const quarters = trailing.periods.map((p) => p.record);
   const hasAll = quarters.every((q) => q !== null && q.capitalExpenditures !== null);
   const quarterlySum = hasAll ? quarters.reduce((sum, q) => sum! + q!.capitalExpenditures!, 0n) : null;
   const result: AnnualCapexResult = { capex: quarterlySum !== null ? absBigint(quarterlySum) : null, quarterlySum };
@@ -35,7 +36,7 @@ const getAnnualCapex = async (
   return result;
 };
 
-export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);

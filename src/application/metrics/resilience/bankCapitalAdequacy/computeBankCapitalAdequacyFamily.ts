@@ -20,7 +20,9 @@ export type BankCapitalAdequacyFamilyDeps = Pick<PitDeps, 'statements' | 'quarte
 
 export type BankCapitalAdequacyFamilyComputationBatch = ComputationBatch<'bankCarRatio' | 'bankCet1Ratio' | 'bankTier1Ratio'>;
 
-export const computeBankCapitalAdequacyFamily = async (query: QuarterlyMetricQuery, deps: BankCapitalAdequacyFamilyDeps): Promise<BankCapitalAdequacyFamilyComputationBatch> => {
+// 2026-10-01 抽出來給溯源表（getBankCapitalAdequacyProvenance.ts）共用：產業擋門、季度解析、讀監理揭露列都走同一條路，
+// 溯源表顯示的值才保證跟這裡寫進 metric_values 的一致。
+export const resolveBankCapitalAdequacyQuarter = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'industry'>) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   // 2026-09-14 使用者要求：`bank_capital_adequacy_detail_xbrl` 的來源資料曾經對非銀行公司
@@ -31,23 +33,27 @@ export const computeBankCapitalAdequacyFamily = async (query: QuarterlyMetricQue
   // 保險業（industry='17'）的公司都不會走到下面任何一次查詢——不寫入任何 metric_value
   // 列（不是 not_applicable_industry，因為銀行資本適足率這三個 metricCode 本來就不該對
   // 非銀行公司存在任何一列，寫 not_applicable_industry 反而製造沒必要的噪音列）。
-  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) {
-    return noQuarterBatch(symbol, ['bankCarRatio', 'bankCet1Ratio', 'bankTier1Ratio']);
-  }
+  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) return null;
 
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: Number(query.year), quarter: Number(query.season) }
       : await deps.quarters.latestQuarterWith('bankCapitalAdequacy', symbol, dataType, subsidiaryCompanyId);
-
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['bankCarRatio', 'bankCet1Ratio', 'bankTier1Ratio']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year: rocYear, quarter: seasonNum } = resolvedQuarter;
-  const fiscalYear = rocYearToGregorian(rocYear);
-
   const row = await deps.statements.getBankCapitalAdequacy({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  return { rocYear, seasonNum, fiscalYear: rocYearToGregorian(rocYear), row };
+};
+
+export const computeBankCapitalAdequacyFamily = async (query: QuarterlyMetricQuery, deps: BankCapitalAdequacyFamilyDeps): Promise<BankCapitalAdequacyFamilyComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolved = await resolveBankCapitalAdequacyQuarter(query, deps);
+  if (!resolved) {
+    return noQuarterBatch(symbol, ['bankCarRatio', 'bankCet1Ratio', 'bankTier1Ratio']);
+  }
+  const { rocYear, seasonNum, fiscalYear, row } = resolved;
 
   const carRatioCalc = calculateBankCarRatio(row?.eligibleCapital, row?.riskWeightedAssets);
   const cet1Calc = calculateBankCet1Ratio(row?.ratioOrdinaryShareEquityToRwa);

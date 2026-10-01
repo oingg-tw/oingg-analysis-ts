@@ -1,6 +1,7 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { getMarginInputs, type MarginsFamilyDeps } from '../margins/computeMarginsFamily';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { resolveTrailingMarginInputs, type MarginsFamilyDeps } from '../margins/computeMarginsFamily';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -30,10 +31,10 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, deps))
-  );
+  // 2026-10-01 近一年跟 compute 共用 resolveTrailingMarginInputs（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingMarginInputs({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let revenueTtmSum = 0n;
   let grossProfitTtmSum = 0n;
@@ -58,7 +59,7 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
     const isInsurance = record?.isInsuranceFallback ?? false;
     return [
       {
-        role: `近四季 營收（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目' : ''}）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}${isInsurance ? '，保險業替代科目' : ''}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',
@@ -68,7 +69,7 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
         value: toProvenanceEntryValue(record?.revenue ?? null),
       },
       {
-        role: `近四季 毛利（第 ${i + 1}/4 季${isInsurance ? '，保險業替代科目：保險服務結果' : ''}）`,
+        role: `近一年 毛利（${trailingPeriodLabel(tq, trailing.basis)}${isInsurance ? '，保險業替代科目：保險服務結果' : ''}）`,
         fiscalYear: entryFiscalYear,
         fiscalQuarter: entryFiscalQuarter,
         type: 'statementField',

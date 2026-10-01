@@ -37,20 +37,29 @@ export type LiveMarketCapDeps = Pick<PitDeps, 'shares' | 'market'>;
 
 export type LiveMarketCapComputationBatch = DailyComputationBatch<'eod'>;
 
-export const computeLiveMarketCap = async (query: LiveMarketCapPitQuery, deps: LiveMarketCapDeps): Promise<LiveMarketCapComputationBatch> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
+// 收盤價 × 交易日當天的流通股數 × 股數基準倍數（已除權未登記等，見 getShareBasisEvents）。computeLiveMarketCap 跟溯源表
+// （getLiveMarketCapProvenance）共用，溯源表列出的三個輸入就是算出寫入值的那三個。查無股價回 null。
+export const resolveLiveMarketCap = async (symbol: string, deps: LiveMarketCapDeps) => {
   const latestPrice = await deps.market.getLatestDailyPrice(symbol);
-  if (!latestPrice || latestPrice.close === null) {
-    return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
-  }
+  if (!latestPrice || latestPrice.close === null) return null;
   const { tradeDate, close } = latestPrice;
 
   const shares = await deps.shares.getOutstandingCommonShares(symbol, tradeDate);
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   const basisMultiplier = sharesValue !== null ? (await deps.shares.getShareBasisEvents(symbol, tradeDate, tradeDate)).basisMultiplier : 1;
-  const liveMarketCap = sharesValue !== null ? roundToSignificantFigures(close * Number(sharesValue) * basisMultiplier, 4) : null;
+  const value = sharesValue !== null ? roundToSignificantFigures(close * Number(sharesValue) * basisMultiplier, 4) : null;
+  return { tradeDate, close, shares, basisMultiplier, value };
+};
+
+export const computeLiveMarketCap = async (query: LiveMarketCapPitQuery, deps: LiveMarketCapDeps): Promise<LiveMarketCapComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const live = await resolveLiveMarketCap(symbol, deps);
+  if (!live) {
+    return { symbol, tradeDate: null, slots: { eod: { action: 'skipped_no_trade_date' } } };
+  }
+  const { tradeDate, value: liveMarketCap } = live;
   const nullReason: MetricNullReason | null = liveMarketCap === null ? determineNullReason() : null;
 
   const { knowledgeDate } = resolveDailyCadenceKnowledgeDate(tradeDate);

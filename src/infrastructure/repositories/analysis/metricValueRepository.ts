@@ -3,6 +3,7 @@ import type { LookbackRange, PeriodType, SamplingInterval, SnapshotCadence } fro
 import type {
   DailyCadenceCoordinateWhere,
   ExistingMetricRow,
+  MarketPeriodRow,
   MetricRowValues,
   MetricValueRepository,
   MonthlyCoordinateWhere,
@@ -61,9 +62,19 @@ export const upsertDailyCadenceMetricRow = async (where: DailyCadenceCoordinateW
   });
 };
 
+// 2026-10-01 magicFormulaRank 溯源表：全市場每家一列（座標內取 knowledgeDate 最新；沒給座標就是每家最新座標）。
+export const listPeriodMetricRowsAcrossMarket = async (metricCode: string, periodType: PeriodType, coordinate?: { fiscalYear: number; fiscalQuarter: number }): Promise<MarketPeriodRow[]> =>
+  analysisPrisma.metricValue.findMany({
+    where: { metricCode, periodType, subsidiaryCompanyId: '', ...coordinate },
+    orderBy: [{ symbol: 'asc' }, { fiscalYear: 'desc' }, { fiscalQuarter: 'desc' }, { knowledgeDate: 'desc' }],
+    distinct: ['symbol'],
+    select: { symbol: true, fiscalYear: true, fiscalQuarter: true, value: true, computedAt: true },
+  });
+
 // application/ports/metricValues.ts 的 MetricValueRepository 實作——src/bootstrap/pitDeps.ts 綁進 PitDeps。
 export const prismaMetricValueRepository: MetricValueRepository = {
   findLatestPeriodRow: findLatestPeriodMetricRow,
+  listPeriodRowsAcrossMarket: listPeriodMetricRowsAcrossMarket,
   upsertPeriodRow: upsertPeriodMetricRow,
   findLatestDailyCadenceRow: findLatestDailyCadenceMetricRow,
   upsertDailyCadenceRow: upsertDailyCadenceMetricRow,

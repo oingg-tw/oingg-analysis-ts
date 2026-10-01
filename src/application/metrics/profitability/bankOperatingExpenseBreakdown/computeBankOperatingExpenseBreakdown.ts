@@ -41,18 +41,19 @@ const skippedAll = (symbol: string): BankOperatingExpenseBreakdownComputationBat
 const complete = (r: BankOperatingExpenseFields | null): r is BankOperatingExpenseFields =>
   r !== null && r.employeeBenefits !== null && r.depreciationAmortisation !== null && r.otherGeneralAdministrative !== null;
 
-export const computeBankOperatingExpenseBreakdown = async (
-  query: QuarterlyMetricQuery,
-  deps: BankOperatingExpenseBreakdownDeps
-): Promise<BankOperatingExpenseBreakdownComputationBatch> => {
+type ComponentCode = (typeof COMPONENTS)[number]['code'];
+
+// 2026-10-01 抽出來給溯源表（getBankOperatingExpenseBreakdownProvenance.ts）共用：季度解析、「這季有沒有這組科目」的擋門、
+// 股數、近四季完整度與加總都走同一條路，溯源表顯示的值才保證跟這裡寫進 metric_values 的一致。null = 整批不寫。
+export const resolveBankOperatingExpenseBreakdownData = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'shares' | 'industry'>) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
-  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) return skippedAll(symbol);
+  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) return null;
 
   const resolved =
     query.year !== undefined && query.season !== undefined
       ? { year: query.year, season: query.season }
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, ['incomeStatement'], deps.quarters);
-  if (!resolved) return skippedAll(symbol);
+  if (!resolved) return null;
 
   const rocYear = Number(resolved.year);
   const seasonNum = Number(resolved.season);
@@ -60,11 +61,9 @@ export const computeBankOperatingExpenseBreakdown = async (
   // 這一季沒有這組科目就整批不寫。判斷看「其他業務及管理費用」而不是三項任一：券商（2855、5864、6005…10 家）也申報員工福利與
   // 折舊攤銷（通用 IFRS 科目），但它們的母項是「支出及費用合計」、沒有其他業管這一項——2026-09-28 第一次回填用「三項全空才跳過」，
   // 這 10 家被寫進了員工福利／折舊攤銷，已刪除重跑。其他業管只有銀行與金控格式有。
-  if (!statement || statement.otherGeneralAdministrative === null) return skippedAll(symbol);
+  if (!statement || statement.otherGeneralAdministrative === null) return null;
 
-  const fiscalYear = rocYearToGregorian(rocYear);
   const shares = (await deps.shares.getOutstandingCommonShares(symbol, statement.reportDate))?.outstandingCommonShares ?? null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: statement.reportDate }], deps.announcements);
 
   // TTM：近四季三個成分都齊才加總（三支共用同一個完整度判斷——它們是同一個恆等式的三塊，只給其中兩塊的近四季沒有意義）。
   const ttmQuarters = getPastNQuarters({ rocYear, season: String(seasonNum) as Season }, 4);
@@ -72,6 +71,30 @@ export const computeBankOperatingExpenseBreakdown = async (
     ttmQuarters.map((tq) => deps.statements.getBankOperatingExpense({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
   );
   const ttmComplete = ttmRecords.every(complete);
+
+  const values = Object.fromEntries(
+    COMPONENTS.map((c) => [
+      c.code,
+      {
+        q: c.calc(c.pick(statement), shares),
+        ttm: ttmComplete ? c.calc(ttmRecords.reduce((sum, r) => sum + c.pick(r as BankOperatingExpenseFields)!, 0n), shares) : ({ value: null, nullReason: 'insufficient_history' } as CalcResult),
+      },
+    ])
+  ) as Record<ComponentCode, { q: CalcResult; ttm: CalcResult }>;
+
+  return { rocYear, seasonNum, fiscalYear: rocYearToGregorian(rocYear), statement, shares, ttmQuarters, ttmRecords, ttmComplete, values };
+};
+
+export const computeBankOperatingExpenseBreakdown = async (
+  query: QuarterlyMetricQuery,
+  deps: BankOperatingExpenseBreakdownDeps
+): Promise<BankOperatingExpenseBreakdownComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+  const resolved = await resolveBankOperatingExpenseBreakdownData(query, deps);
+  if (!resolved) return skippedAll(symbol);
+  const { rocYear, seasonNum, fiscalYear, statement, ttmQuarters, ttmRecords, ttmComplete, values } = resolved;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: statement.reportDate }], deps.announcements);
   const ttmAnchor = ttmComplete
     ? await resolveKnowledgeDate(symbol, ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]!.reportDate })), deps.announcements)
     : null;
@@ -84,10 +107,8 @@ export const computeBankOperatingExpenseBreakdown = async (
 
   const slots = {} as Record<SlotName, ComputationSlot>;
   for (const c of COMPONENTS) {
-    slots[`${c.code}Q`] = slot(c.code, 'Q', c.calc(c.pick(statement), shares), mainAnchor);
-    slots[`${c.code}Ttm`] = ttmComplete
-      ? slot(c.code, 'TTM', c.calc(ttmRecords.reduce((sum, r) => sum + c.pick(r as BankOperatingExpenseFields)!, 0n), shares), ttmAnchor)
-      : slot(c.code, 'TTM', { value: null, nullReason: 'insufficient_history' }, mainAnchor);
+    slots[`${c.code}Q`] = slot(c.code, 'Q', values[c.code].q, mainAnchor);
+    slots[`${c.code}Ttm`] = slot(c.code, 'TTM', values[c.code].ttm, ttmComplete ? ttmAnchor : mainAnchor);
   }
 
   return { symbol, rocYear: String(rocYear), season: String(seasonNum), slots: withFormulaVersion(slots, BANK_OPERATING_EXPENSE_BREAKDOWN_FORMULA_VERSION) };

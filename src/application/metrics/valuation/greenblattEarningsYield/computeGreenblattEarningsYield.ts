@@ -7,7 +7,9 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingIncomeStatements, type ReportingBasis } from '@/application/metrics/shared/trailingYear';
+import type { BalanceSheetFields } from '@/application/ports/financialStatements';
+import type { MarketCapAsOf } from '@/application/ports/marketData';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -40,6 +42,10 @@ export interface GreenblattEarningsYieldResolution {
   fiscalYear: number;
   fiscalQuarter: number;
   marketCap: number | null;
+  // 溯源表（getGreenblattEarningsYieldProvenance.ts）要逐項列 EV 的組成與近一年期間標籤，計算本身不讀這三個。
+  marketCapAsOf: MarketCapAsOf | null;
+  balanceSheet: BalanceSheetFields | null;
+  basis: ReportingBasis;
   totalDebt: bigint | null;
   cashAndEquivalents: bigint | null;
   ttmQuarterDetails: GreenblattEarningsYieldTtmQuarterDetail[];
@@ -107,7 +113,7 @@ export const resolveGreenblattEarningsYieldInputs = async (
     ttmNullReason = !ttmComplete ? 'insufficient_history' : ev === null ? 'missing_input' : 'zero_or_negative_denominator';
   }
 
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, marketCap, totalDebt, cashAndEquivalents, ttmQuarterDetails, ttmComplete, earningsYieldTtm, ttmNullReason, mainAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, marketCap, marketCapAsOf, balanceSheet, basis: trailing.basis, totalDebt, cashAndEquivalents, ttmQuarterDetails, ttmComplete, earningsYieldTtm, ttmNullReason, mainAnchor };
 };
 
 

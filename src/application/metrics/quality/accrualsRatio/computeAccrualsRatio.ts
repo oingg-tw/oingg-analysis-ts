@@ -10,7 +10,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { resolveAverageBalances } from '../../shared/averageBalances';
-import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, type ReportingBasis } from '../../shared/trailingYear';
 
 // 2026-09-22 formulaVersion 2：分母總資產從本季期末改成期間平均（Q 兩點、TTM 5 個季末）——Sloan (1996) 原文就是
 // average total assets，見 shared/averageBalances.ts。
@@ -44,6 +44,7 @@ export interface AccrualsRatioResolution {
   totalAssetsAvgQ: bigint | null;
   totalAssetsAvgTtm: bigint | null;
   currentQuarter: AccrualsRatioTtmQuarterDetail;
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
   ttmQuarterDetails: AccrualsRatioTtmQuarterDetail[];
   ttmComplete: boolean;
   ttmValue: number | null;
@@ -126,7 +127,7 @@ export const resolveAccrualsRatioInputs = async (
   // Q 只看本季單季表——興櫃的近一年 periods 最後一筆是半年期間，不是本季；上市櫃兩者是同一筆紀錄，值不變。
   const currentQuarter: AccrualsRatioTtmQuarterDetail = { rocYear, season: seasonNum, fiscalYear, netIncome: pickNetIncome(incomeStatement), cashFlow: cashFlowStatement };
 
-  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, totalAssetsAvgQ, totalAssetsAvgTtm, currentQuarter, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
+  return { symbol, rocYear: year, season, fiscalYear, fiscalQuarter: seasonNum, totalAssets, totalAssetsAvgQ, totalAssetsAvgTtm, currentQuarter, basis: trailingIncome.basis, ttmQuarterDetails, ttmComplete, ttmValue, ttmNullReason, mainAnchor, ttmAnchor };
 };
 
 

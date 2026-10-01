@@ -8,6 +8,7 @@ import { calculateReceivablesDays } from '../../../../domain/metrics/efficiency/
 import { calculatePayablesDays } from '../../../../domain/metrics/efficiency/payablesDays/calculatePayablesDays';
 import { calculateCashConversionCycle } from '../../../../domain/metrics/efficiency/cashConversionCycle/calculateCashConversionCycle';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
 
@@ -23,7 +24,7 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
     return { symbol: query.symbol, metricCode: 'cashConversionCycle', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, inventory, accountsReceivable, accountsPayable, ttmQuarters, ttmOperatingCosts, ttmOperatingRevenues, ttmComplete, costTtmSum, revenueTtmSum } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, inventory, accountsReceivable, accountsPayable, basis, ttmQuarters, ttmOperatingCosts, ttmOperatingRevenues, ttmComplete, costTtmSum, revenueTtmSum } = resolution;
 
   const inventoryTurnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
   const receivablesTurnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
@@ -38,7 +39,7 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營業成本（第 ${i + 1}/4 季，用於 DIO/DPO）`,
+        role: `近一年 營業成本（${trailingPeriodLabel(tq, basis)}，用於 DIO/DPO）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
@@ -50,7 +51,7 @@ export const getCashConversionCycleProvenance = async (query: QuarterlyMetricQue
     ),
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營收（第 ${i + 1}/4 季，用於 DSO）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, basis)}，用於 DSO）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',

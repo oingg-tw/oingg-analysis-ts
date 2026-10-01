@@ -8,7 +8,7 @@ import { calculateOperatingMargin } from '@/domain/metrics/profitability/operati
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingIncomeStatements, type TrailingYear } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts
@@ -42,6 +42,23 @@ type MarginKey = { symbol: string; year: number; quarter: number; dataType: stri
 
 export const getMarginInputs = async (key: MarginKey, deps: Pick<MarginsFamilyDeps, 'statements'>): Promise<MarginInputs | null> =>
   marginInputsFrom(await deps.statements.getIncomeStatement(key), key, deps);
+
+// 2026-10-01 近一年的 MarginInputs（compute 的 TTM 與 grossMargin／operatingMargin 溯源表共用，值與 entries 出自同一份資料）。
+// 保險替代表只有單季，只在四季窗口退回；興櫃半年期間不退回。
+export const resolveTrailingMarginInputs = async (
+  key: { symbol: string; rocYear: number; season: Season; dataType: string; subsidiaryCompanyId: string },
+  deps: Pick<MarginsFamilyDeps, 'statements' | 'cumulativeStatements'>
+): Promise<TrailingYear<MarginInputs>> => {
+  const trailing = await resolveTrailingIncomeStatements(key, deps);
+  const periods = await Promise.all(
+    trailing.periods.map(async (p) => ({
+      year: p.year,
+      season: p.season,
+      record: await marginInputsFrom(p.record, trailing.basis === 'quarters' ? { symbol: key.symbol, year: Number(p.year), quarter: Number(p.season), dataType: key.dataType, subsidiaryCompanyId: key.subsidiaryCompanyId } : null, deps),
+    }))
+  );
+  return { basis: trailing.basis, periods };
+};
 
 // 2026-10-01 拆出「一般損益表已經查好」的版本：TTM 的一般損益表改來自共用近一年來源（見 shared/trailingYear.ts）。
 // insuranceKey 為 null 時不退回保險替代表——興櫃半年期間沒有對應的單季保險表可拿。
@@ -137,13 +154,9 @@ export const computeMarginsFamily = async (
   // 查無資料時自動退回保險替代），不是整批只判斷一次資料源——理論上一家公司不會中途切換
   // 產業別，但這樣寫不用假設「本季用的來源，前三季一定也用同一個」。
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；保險替代表只有單季，只在四季窗口退回。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const trailing = await resolveTrailingMarginInputs({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
-  const ttmRecords = await Promise.all(
-    trailing.periods.map((p) =>
-      marginInputsFrom(p.record, trailing.basis === 'quarters' ? { symbol, year: Number(p.year), quarter: Number(p.season), dataType, subsidiaryCompanyId } : null, deps)
-    )
-  );
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let revenueTtmSum = 0n;
   let grossProfitTtmSum = 0n;

@@ -1,6 +1,7 @@
 import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveRoeQuarterData, type RoeDeps } from './computeRoe';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 
 // 2026-09-10 web-nuxt 要求：GET /companies/:symbol/metric-provenance 的 roe 試點，
@@ -20,7 +21,7 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
     return { symbol: query.symbol, metricCode: 'roe', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, balances, roeTtmPct, ttmQuarters, ttmNetIncomes } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, balances, roeTtmPct, basis, ttmQuarters, ttmNetIncomes } = resolution;
 
   const buildStatementFieldEntry = (
     role: string,
@@ -40,11 +41,15 @@ export const getRoeProvenance = async (query: QuarterlyMetricQuery, deps: RoeDep
   });
 
   const entries: ProvenanceEntry[] = [
+    // 2026-10-01 近一年期間與平均點數跟 compute 一致（興櫃半年頻：兩個半年、3 點平均，見 shared/trailingYear.ts、averageBalances.ts）。
     ...ttmQuarters.map((tq, i) =>
-      buildStatementFieldEntry(`近四季 淨利（第 ${i + 1}/4 季）`, ttmNetIncomes[i]!, 'incomeStatement', rocYearToGregorian(Number(tq.year)), Number(tq.season))
+      buildStatementFieldEntry(`近一年 淨利（${trailingPeriodLabel(tq, basis)}）`, ttmNetIncomes[i]!, 'incomeStatement', rocYearToGregorian(Number(tq.year)), Number(tq.season))
     ),
     // 2026-09-22 起分母是 5 個季末權益的平均（見 shared/averageBalances.ts），逐季列出讓讀者能自己算平均。
-    ...balances.quarters.map((bq, i) => buildStatementFieldEntry(`季末權益（平均分母第 ${i + 1}/5 點）`, balances.equities[i]!, 'balanceSheet', bq.fiscalYear, bq.fiscalQuarter)),
+    ...balances.ttmPointIndexes.map((idx, k) => {
+      const bq = balances.quarters[idx]!;
+      return buildStatementFieldEntry(`季末權益（平均分母第 ${k + 1}/${balances.ttmPointIndexes.length} 點）`, balances.equities[idx]!, 'balanceSheet', bq.fiscalYear, bq.fiscalQuarter);
+    }),
   ];
 
   return {

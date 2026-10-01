@@ -112,6 +112,27 @@ import { getShareholderYieldProvenance } from '@/application/metrics/dividend/sh
 import { getAssetTurnoverProvenance } from '@/application/metrics/efficiency/assetTurnover/getAssetTurnoverProvenance';
 import { getEquityMultiplierProvenance } from '@/application/metrics/resilience/equityMultiplier/getEquityMultiplierProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
+import { getIncomeStatementPerShareProvenance } from '@/application/metrics/profitability/incomeStatementPerShare/getIncomeStatementPerShareProvenance';
+import { getGreenblattEarningsYieldProvenance } from '@/application/metrics/valuation/greenblattEarningsYield/getGreenblattEarningsYieldProvenance';
+import { getPriceToResearchRatioProvenance } from '@/application/metrics/growth/priceToResearchRatio/getPriceToResearchRatioProvenance';
+import { getBankCapitalAdequacyProvenance } from '@/application/metrics/resilience/bankCapitalAdequacy/getBankCapitalAdequacyProvenance';
+import { getBankAssetQualityProvenance } from '@/application/metrics/resilience/bankAssetQuality/getBankAssetQualityProvenance';
+import { getBankIncomeWaterfallProvenance } from '@/application/metrics/profitability/bankIncomeWaterfall/getBankIncomeWaterfallProvenance';
+import { getBankOperatingExpenseBreakdownProvenance } from '@/application/metrics/profitability/bankOperatingExpenseBreakdown/getBankOperatingExpenseBreakdownProvenance';
+import { getMarketRatioProvenanceFor } from '@/application/metrics/shared/marketRatios/getMarketRatioProvenance';
+import { getBetaProvenance } from '@/application/metrics/valuation/beta/getBetaProvenance';
+import { getLiveMarketCapProvenance } from '@/application/metrics/valuation/liveMarketCap/getLiveMarketCapProvenance';
+import { getLivePbRatioProvenance } from '@/application/metrics/valuation/livePbRatio/getLivePbRatioProvenance';
+import { getLivePeRatioProvenance } from '@/application/metrics/valuation/livePeRatio/getLivePeRatioProvenance';
+import { getLiveGrahamNumberProvenance } from '@/application/metrics/valuation/liveGrahamNumber/getLiveGrahamNumberProvenance';
+import { getLivePegRatioProvenance } from '@/application/metrics/valuation/livePegRatio/getLivePegRatioProvenance';
+import { getSusProvenance } from '@/application/metrics/growth/sus/getSusProvenance';
+import { getDividendDistributionCountProvenance } from '@/application/metrics/dividend/dividendDistributionCount/getDividendDistributionCountProvenance';
+import { getDividendPerShareProvenance } from '@/application/metrics/dividend/dividendPerShare/getDividendPerShareProvenance';
+import { getPiotroskiFScoreProvenance } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreProvenance';
+import { getMagicFormulaRankProvenance } from '@/application/metrics/valuation/magicFormulaRank/getMagicFormulaRankProvenance';
+import { getOneDollarTestProvenance } from '@/application/metrics/profitability/oneDollarTest/getOneDollarTestProvenance';
+import { getRuleOf40Provenance } from '@/application/metrics/growth/ruleOf40/getRuleOf40Provenance';
 
 // 2026-09-13 從 companies/controller.ts 抽出來——這個 dispatch table 原本跟 controller.ts
 // 其餘 15 支 handler 混在一起，每次擴大稽核鏈試點範圍（今天已經做了 13 批）都會讓
@@ -247,4 +268,51 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   shareholderYield: (query) => getShareholderYieldProvenance(query, deps),
   assetTurnover: (query) => getAssetTurnoverProvenance(query, deps),
   equityMultiplier: (query) => getEquityMultiplierProvenance(query, deps),
+  grossProfitPerShare: (query) => getIncomeStatementPerShareProvenance('grossProfitPerShare', query, deps),
+  operatingIncomePerShare: (query) => getIncomeStatementPerShareProvenance('operatingIncomePerShare', query, deps),
+  operatingCostsPerShare: (query) => getIncomeStatementPerShareProvenance('operatingCostsPerShare', query, deps),
+  operatingExpensePerShare: (query) => getIncomeStatementPerShareProvenance('operatingExpensePerShare', query, deps),
+  incomeTaxExpensePerShare: (query) => getIncomeStatementPerShareProvenance('incomeTaxExpensePerShare', query, deps),
+  sellingExpensePerShare: (query) => getIncomeStatementPerShareProvenance('sellingExpensePerShare', query, deps),
+  administrativeExpensePerShare: (query) => getIncomeStatementPerShareProvenance('administrativeExpensePerShare', query, deps),
+  researchAndDevelopmentExpensePerShare: (query) => getIncomeStatementPerShareProvenance('researchAndDevelopmentExpensePerShare', query, deps),
+  impairmentLossGainIfrs9PerShare: (query) => getIncomeStatementPerShareProvenance('impairmentLossGainIfrs9PerShare', query, deps),
+  netOtherIncomeExpensesPerShare: (query) => getIncomeStatementPerShareProvenance('netOtherIncomeExpensesPerShare', query, deps),
+  nonOperatingIncomeExpensesPerShare: (query) => getIncomeStatementPerShareProvenance('nonOperatingIncomeExpensesPerShare', query, deps),
+  interestRevenuePerShare: (query) => getIncomeStatementPerShareProvenance('interestRevenuePerShare', query, deps),
+  otherRevenuePerShare: (query) => getIncomeStatementPerShareProvenance('otherRevenuePerShare', query, deps),
+  otherGainsLossesPerShare: (query) => getIncomeStatementPerShareProvenance('otherGainsLossesPerShare', query, deps),
+  shareOfProfitLossOfAssociatesPerShare: (query) => getIncomeStatementPerShareProvenance('shareOfProfitLossOfAssociatesPerShare', query, deps),
+  financeCostPerShare: (query) => getIncomeStatementPerShareProvenance('financeCostPerShare', query, deps),
+  nonControllingInterestsPerShare: (query) => getIncomeStatementPerShareProvenance('nonControllingInterestsPerShare', query, deps),
+  bankCarRatio: getBankCapitalAdequacyProvenance('bankCarRatio', deps),
+  bankCet1Ratio: getBankCapitalAdequacyProvenance('bankCet1Ratio', deps),
+  bankTier1Ratio: getBankCapitalAdequacyProvenance('bankTier1Ratio', deps),
+  bankNplRatio: getBankAssetQualityProvenance('bankNplRatio', deps),
+  bankNplCoverageRatio: getBankAssetQualityProvenance('bankNplCoverageRatio', deps),
+  bankNetInterestIncomePerShare: getBankIncomeWaterfallProvenance('bankNetInterestIncomePerShare', deps),
+  bankNetNonInterestIncomePerShare: getBankIncomeWaterfallProvenance('bankNetNonInterestIncomePerShare', deps),
+  bankBadDebtProvisionPerShare: getBankIncomeWaterfallProvenance('bankBadDebtProvisionPerShare', deps),
+  bankOtherOperatingExpensePerShare: getBankIncomeWaterfallProvenance('bankOtherOperatingExpensePerShare', deps),
+  bankEmployeeBenefitsExpensePerShare: getBankOperatingExpenseBreakdownProvenance('bankEmployeeBenefitsExpensePerShare', deps),
+  bankDepreciationAmortisationExpensePerShare: getBankOperatingExpenseBreakdownProvenance('bankDepreciationAmortisationExpensePerShare', deps),
+  bankGeneralAdministrativeExpensePerShare: getBankOperatingExpenseBreakdownProvenance('bankGeneralAdministrativeExpensePerShare', deps),
+  exchangePeRatio: getMarketRatioProvenanceFor('exchangePeRatio', deps),
+  exchangePbRatio: getMarketRatioProvenanceFor('exchangePbRatio', deps),
+  dividendYield: getMarketRatioProvenanceFor('dividendYield', deps),
+  greenblattEarningsYield: (query) => getGreenblattEarningsYieldProvenance(query, deps),
+  priceToResearchRatio: (query) => getPriceToResearchRatioProvenance(query, deps),
+  beta: (query) => getBetaProvenance(query, deps),
+  liveMarketCap: (query) => getLiveMarketCapProvenance(query, deps),
+  livePbRatio: (query) => getLivePbRatioProvenance(query, deps),
+  livePeRatio: (query) => getLivePeRatioProvenance(query, deps),
+  liveGrahamNumber: (query) => getLiveGrahamNumberProvenance(query, deps),
+  livePegRatio: (query) => getLivePegRatioProvenance(query, deps),
+  sus: (query) => getSusProvenance(query, deps),
+  dividendDistributionCount: (query) => getDividendDistributionCountProvenance(query, deps),
+  dividendPerShare: (query) => getDividendPerShareProvenance(query, deps),
+  piotroskiFScore: (query) => getPiotroskiFScoreProvenance(query, deps),
+  magicFormulaRank: (query) => getMagicFormulaRankProvenance(query, deps),
+  oneDollarTest: (query) => getOneDollarTestProvenance(query, deps),
+  ruleOf40: (query) => getRuleOf40Provenance(query, deps),
 });

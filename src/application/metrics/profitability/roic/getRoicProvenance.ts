@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
@@ -14,7 +15,7 @@ import { computeNopat } from './computeRoic';
 // 固定回傳 TTM。NOPAT 是計算出的中繼值不是原始欄位，用 methodologyNote 逐季說明換算，
 // 三個組成欄位（稅前淨利/財務費用/所得稅費用）都列成 entries。
 
-export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters'>): Promise<MetricProvenanceResult> => {
+export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
@@ -36,10 +37,10 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
   const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
   const investedCapital = totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
   const preTaxes = ttmRecords.map((record) => record?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map((record) => record?.financeCosts ?? null);
   const incomeTaxExpenses = ttmRecords.map((record) => record?.incomeTaxExpense ?? null);
@@ -66,7 +67,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近四季 稅前淨利（第 ${i + 1}/4 季，用於 NOPAT）`,
+          role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -76,7 +77,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `近四季 財務費用（第 ${i + 1}/4 季，用於 NOPAT）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -86,7 +87,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `近四季 所得稅費用（第 ${i + 1}/4 季，用於 NOPAT 有效稅率）`,
+          role: `近一年 所得稅費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT 有效稅率）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,

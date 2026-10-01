@@ -56,9 +56,21 @@ export interface MetricRowValues {
   formulaVersion: number;
 }
 
+// 2026-10-01 magicFormulaRank 溯源表：橫斷面排名要看「同一座標全市場」的列（排名母體、各家底層指標值）。
+export interface MarketPeriodRow {
+  symbol: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  value: unknown;
+  computedAt: Date; // 這一列實際寫入的時間——批次型指標（magicFormulaRank）的「排名是哪天算的」
+}
+
 export interface MetricValueRepository {
   // 用「座標」（不含 knowledgeDate）查最新一列（knowledgeDate 降冪）——「目前市場最後所知」的那一列。
   findLatestPeriodRow(where: PeriodCoordinateWhere): Promise<ExistingMetricRow | null>;
+  // 全市場每家一列（subsidiaryCompanyId = ''、同座標取 knowledgeDate 最新、不分 dataType——跟
+  // scripts/backfillMagicFormulaRankPit.ts 排名時讀的母體同一個口徑）。coordinate 省略 = 每家各自最新的座標。
+  listPeriodRowsAcrossMarket(metricCode: string, periodType: PeriodType, coordinate?: { fiscalYear: number; fiscalQuarter: number }): Promise<MarketPeriodRow[]>;
   // 一次原子的 upsert，鍵是完整的 identity 唯一鍵（座標 + knowledgeDate）。
   upsertPeriodRow(where: PeriodCoordinateWhere, values: MetricRowValues): Promise<void>;
   findLatestDailyCadenceRow(where: DailyCadenceCoordinateWhere): Promise<ExistingMetricRow | null>;

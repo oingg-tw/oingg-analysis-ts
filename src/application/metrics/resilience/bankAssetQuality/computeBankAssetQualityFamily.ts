@@ -26,26 +26,31 @@ export type BankAssetQualityFamilyDeps = Pick<PitDeps, 'statements' | 'quarters'
 
 export type BankAssetQualityFamilyComputationBatch = ComputationBatch<'bankNplRatio' | 'bankNplCoverageRatio'>;
 
-export const computeBankAssetQualityFamily = async (query: QuarterlyMetricQuery, deps: BankAssetQualityFamilyDeps): Promise<BankAssetQualityFamilyComputationBatch> => {
+// 2026-10-01 抽出來給溯源表（getBankAssetQualityProvenance.ts）共用，理由同 resolveBankCapitalAdequacyQuarter。
+export const resolveBankAssetQualityQuarter = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'industry'>) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) {
-    return noQuarterBatch(symbol, ['bankNplRatio', 'bankNplCoverageRatio']);
-  }
+  if (!(await deps.industry.isFinancialIndustryCompany(symbol))) return null;
 
   const resolvedQuarter =
     query.year !== undefined && query.season !== undefined
       ? { year: Number(query.year), quarter: Number(query.season) }
       : await deps.quarters.latestQuarterWith('bankAssetQuality', symbol, dataType, subsidiaryCompanyId);
-
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['bankNplRatio', 'bankNplCoverageRatio']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year: rocYear, quarter: seasonNum } = resolvedQuarter;
-  const fiscalYear = rocYearToGregorian(rocYear);
-
   const row = await deps.statements.getBankAssetQuality({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
+  return { rocYear, seasonNum, fiscalYear: rocYearToGregorian(rocYear), row };
+};
+
+export const computeBankAssetQualityFamily = async (query: QuarterlyMetricQuery, deps: BankAssetQualityFamilyDeps): Promise<BankAssetQualityFamilyComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolved = await resolveBankAssetQualityQuarter(query, deps);
+  if (!resolved) {
+    return noQuarterBatch(symbol, ['bankNplRatio', 'bankNplCoverageRatio']);
+  }
+  const { rocYear, seasonNum, fiscalYear, row } = resolved;
 
   const nplRatioCalc = calculateBankNplRatio(row?.nonPerformingLoansRatio);
   const coverageRatioCalc = calculateBankNplCoverageRatio(row?.coverageRatio);

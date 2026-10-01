@@ -8,7 +8,7 @@ import { isComputationSkip, noQuarterBatch, periodSlot, type ComputationBatch } 
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { PitDeps } from '../../deps';
 import { resolveAverageBalances, type AverageBalances } from '../../shared/averageBalances';
-import { resolveTrailingIncomeStatements } from '../../shared/trailingYear';
+import { resolveTrailingIncomeStatements, type ReportingBasis } from '../../shared/trailingYear';
 import { annualReportSlot, resolveAnnualReportContext, type AnnualReportContext } from '../../shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 
@@ -48,7 +48,8 @@ export interface RoeQuarterResolution {
   roeQuarterlyPct: number | null;
   quarterlyNullReason: MetricNullReason | null;
   mainAnchor: KnowledgeDateResolution | null;
-  ttmQuarters: { year: string; season: string }[];
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
+  ttmQuarters: { year: string; season: Season }[];
   ttmNetIncomes: PickedField[];
   ttmComplete: boolean;
   ttmSum: bigint;
@@ -127,6 +128,7 @@ export const resolveRoeQuarterData = async (query: QuarterlyMetricQuery, deps: R
     roeQuarterlyPct,
     quarterlyNullReason,
     mainAnchor,
+    basis: trailing.basis,
     ttmQuarters,
     ttmNetIncomes,
     ttmComplete,

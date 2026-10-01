@@ -6,7 +6,8 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements, type TrailingYear } from '@/application/metrics/shared/trailingYear';
+import type { CashFlowFields, IncomeStatementFields } from '@/application/ports/financialStatements';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -24,6 +25,9 @@ const YEARS_WINDOW = 5;
 interface AnnualFigures {
   netIncome: bigint | null;
   dividendsPaid: bigint | null;
+  // 2026-10-01 溯源表逐期列出原始欄位用（加總規則不變）：該年度的近一年來源（上市櫃四季／興櫃上下半年）。
+  income: TrailingYear<IncomeStatementFields>;
+  cashFlow: TrailingYear<CashFlowFields>;
 }
 
 const getAnnualFigures = async (
@@ -54,7 +58,9 @@ const getAnnualFigures = async (
     }
   }
 
-  const result: AnnualFigures = complete ? { netIncome: netIncomeSum, dividendsPaid: dividendsSum } : { netIncome: null, dividendsPaid: null };
+  const result: AnnualFigures = complete
+    ? { netIncome: netIncomeSum, dividendsPaid: dividendsSum, income: trailingIncome, cashFlow: trailingCashFlow }
+    : { netIncome: null, dividendsPaid: null, income: trailingIncome, cashFlow: trailingCashFlow };
   cache.set(rocYear, result);
   return result;
 };
@@ -64,17 +70,14 @@ export type OneDollarTestDeps = Pick<PitDeps, 'statements' | 'quarters' | 'annou
 
 export type OneDollarTestComputationBatch = ComputationBatch<'fy'>;
 
-export const computeOneDollarTest = async (
-  query: QuarterlyMetricQuery,
-  deps: OneDollarTestDeps
-): Promise<OneDollarTestComputationBatch> => {
+// 2026-10-01 溯源表（getOneDollarTestProvenance.ts）要跟寫入路徑算出同一個數字：整段計算抽成 resolver 共用，
+// computeOneDollarTest 只負責組 slot；計算本身逐字未改。查無季度回 null。
+export const resolveOneDollarTestInputs = async (query: QuarterlyMetricQuery, deps: OneDollarTestDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['fy']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -133,6 +136,26 @@ export const computeOneDollarTest = async (
     // 修正過的量綱換算同一套做法）。
     value = Math.round((marketValueCreated / (Number(cumulativeRetainedEarnings) * 1000)) * 100) / 100;
   }
+
+  return {
+    symbol, year, season, seasonNum, fiscalYear, mainAnchor,
+    latestCompleteFiscalYear, baseFiscalYear, yearsToSum, annualFigures,
+    cumulativeNetIncome, dividendsAbs, cumulativeRetainedEarnings, currentMarketCap, baseMarketCap, value, nullReason,
+  };
+};
+
+export const computeOneDollarTest = async (
+  query: QuarterlyMetricQuery,
+  deps: OneDollarTestDeps
+): Promise<OneDollarTestComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveOneDollarTestInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['fy']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, value, nullReason } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'oneDollarTest', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
   const fy = periodSlot(mainAnchor, coordinateBase, 'FY', value, nullReason);

@@ -8,7 +8,7 @@ import type { MarketCapAsOf } from '@/application/ports/marketData';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingIncomeStatements, type ReportingBasis } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -53,6 +53,7 @@ export interface AltmanZScoreResolution {
   x2: number | null;
   marketCap: MarketCapAsOf | null;
   x4: number | null;
+  basis: ReportingBasis; // 溯源表期間標籤用（trailingPeriodLabel）
   ttmQuarterDetails: AltmanZScoreTtmQuarterDetail[];
   ttmComplete: boolean;
   x3: number | null;
@@ -151,6 +152,7 @@ export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery, dep
     x2,
     marketCap,
     x4,
+    basis: trailing.basis,
     ttmQuarterDetails,
     ttmComplete,
     x3,

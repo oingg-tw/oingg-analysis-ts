@@ -2,6 +2,7 @@ import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
 
@@ -14,7 +15,7 @@ export const getReceivablesToRevenueRatioProvenance = async (query: QuarterlyMet
     return { symbol: query.symbol, metricCode: 'receivablesToRevenueRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, accountsReceivable, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
+  const { symbol, fiscalYear, fiscalQuarter, accountsReceivable, basis, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
   const value = ttmComplete && accountsReceivable !== null ? toPercent(accountsReceivable, revenueTtmSum) : null;
 
   const entries: ProvenanceEntry[] = [
@@ -30,7 +31,7 @@ export const getReceivablesToRevenueRatioProvenance = async (query: QuarterlyMet
     },
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近四季 營收（第 ${i + 1}/4 季）`,
+        role: `近一年 營收（${trailingPeriodLabel(tq, basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
