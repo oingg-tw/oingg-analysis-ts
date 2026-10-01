@@ -29,6 +29,10 @@ export interface AverageBalances {
   equityAvgTtm: bigint | null;
   assetsAvgQ: bigint | null;
   assetsAvgTtm: bigint | null;
+  // 2026-10-01 興櫃半年頻：一年內只有 Q2、Q4 兩個季末，近四季窗口的 5 點裡奇數季（t−3、t−1）不存在 → TTM 改用 3 點
+  // （t−4、t−2、t）。使用者拍板用 3 點而不是兩點或期末：三點裡兩點是 Q2 配息低點，季節性只消掉一部分，定義檔說明會寫。
+  // Q 平均（t−1、t）對興櫃永遠缺 t−1 → 維持 null。判斷只看資產負債表本身：本季是 Q2／Q4、兩個奇數季末整列缺、其餘三點都在。
+  ttmPointIndexes: number[];
 }
 
 const TTM_POINTS = 5; // t−4 … t
@@ -38,8 +42,12 @@ const TTM_POINTS = 5; // t−4 … t
 // 的指標用，pick 回 null 的季末視為缺漏 → 平均為 null。
 export const averageOf = (balances: AverageBalances, pick: (bs: BalanceSheetFields) => bigint | null, window: 'q' | 'ttm'): bigint | null => {
   const values = balances.balanceSheets.map((bs) => (bs ? pick(bs) : null));
-  return averageBalance(window === 'q' ? values.slice(-2) : values);
+  return averageBalance(window === 'q' ? values.slice(-2) : balances.ttmPointIndexes.map((i) => values[i] ?? null));
 };
+
+const SEMIANNUAL_POINTS = [0, 2, 4];
+const isSemiannualBalanceWindow = (season: Season, balanceSheets: (BalanceSheetFields | null)[]): boolean =>
+  (season === '2' || season === '4') && balanceSheets[1] === null && balanceSheets[3] === null && SEMIANNUAL_POINTS.every((i) => balanceSheets[i] !== null);
 
 export const resolveAverageBalances = async (
   key: { symbol: string; rocYear: number; season: Season; dataType: StatementDataType; subsidiaryCompanyId: string },
@@ -53,6 +61,8 @@ export const resolveAverageBalances = async (
   const totalAssets = balanceSheets.map((bs) => bs?.totalAssets ?? null);
   const equityValues = equities.map((e) => e.value);
   const last2 = <T>(xs: T[]): T[] => xs.slice(-2);
+  const ttmPointIndexes = isSemiannualBalanceWindow(key.season, balanceSheets) ? SEMIANNUAL_POINTS : [0, 1, 2, 3, 4];
+  const ttmPoints = <T>(xs: T[]): T[] => ttmPointIndexes.map((i) => xs[i]!);
   return {
     quarters: quarterKeys.map((tq) => ({ year: tq.year, season: tq.season, fiscalYear: rocYearToGregorian(Number(tq.year)), fiscalQuarter: Number(tq.season) })),
     balanceSheets,
@@ -61,8 +71,9 @@ export const resolveAverageBalances = async (
     currentBalanceSheet: balanceSheets.at(-1) ?? null,
     currentEquity: equities.at(-1)!,
     equityAvgQ: averageBalance(last2(equityValues)),
-    equityAvgTtm: averageBalance(equityValues),
+    equityAvgTtm: averageBalance(ttmPoints(equityValues)),
     assetsAvgQ: averageBalance(last2(totalAssets)),
-    assetsAvgTtm: averageBalance(totalAssets),
+    assetsAvgTtm: averageBalance(ttmPoints(totalAssets)),
+    ttmPointIndexes,
   };
 };

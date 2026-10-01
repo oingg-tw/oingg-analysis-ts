@@ -10,6 +10,7 @@ import { exchangeIndustry } from '@/infrastructure/repositories/exchange/industr
 import { prismaMetricValueRepository } from '@/infrastructure/repositories/analysis/metricValueRepository';
 import { govPriceLevel } from '@/infrastructure/repositories/gov/priceLevel';
 import { mopsAnnualReports } from '@/infrastructure/repositories/mops/annualReport';
+import { mopsCumulativeStatements } from '@/infrastructure/repositories/mops/cumulativeStatements';
 
 // 指標核心的 composition root：把 infrastructure 的實作綁到 application 宣告的 port 上，組成
 // 一份 PitDeps。全 repo 只有這裡（跟測試的 fakes）知道「哪個 port 由哪個資料庫的哪個查詢實作」。
@@ -17,6 +18,7 @@ import { mopsAnnualReports } from '@/infrastructure/repositories/mops/annualRepo
 export const createPitDeps = (): PitDeps => ({
   statements: xbrlFinancialStatements,
   annualReports: mopsAnnualReports,
+  cumulativeStatements: mopsCumulativeStatements,
   quarters: xbrlQuarterResolver,
   announcements: mopsAnnouncementDates,
   shares: mopsOutstandingCommonShares,

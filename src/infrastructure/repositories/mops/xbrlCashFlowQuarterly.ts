@@ -31,12 +31,13 @@ interface RawLongRow {
   value: string;
 }
 
-export const getXbrlCashFlowQuarterly = async (key: XbrlThreeStatementsLongKey): Promise<XbrlCashFlowQuarterlyRow | null> => {
+// 2026-10-01 statement_type 參數化：'cash_flow_quarterly'（單季）或 'cash_flow'（累計，興櫃半年頻用，見 cumulativeStatements.ts）。
+export const getXbrlCashFlow = async (key: XbrlThreeStatementsLongKey, statementType: 'cash_flow_quarterly' | 'cash_flow'): Promise<XbrlCashFlowQuarterlyRow | null> => {
   const rows = await mopsExportPrisma.$queryRaw<RawLongRow[]>`
     SELECT fiscal_period_end_date, account_code, value FROM "export"."xbrl_three_statements_long"
     WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
       AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}
-      AND statement_type = 'cash_flow_quarterly'
+      AND statement_type = ${statementType}
   `;
   if (rows.length === 0) return null;
 
@@ -46,6 +47,8 @@ export const getXbrlCashFlowQuarterly = async (key: XbrlThreeStatementsLongKey):
   }
   return { reportDate: rows[0]!.fiscal_period_end_date, accounts };
 };
+
+export const getXbrlCashFlowQuarterly = (key: XbrlThreeStatementsLongKey): Promise<XbrlCashFlowQuarterlyRow | null> => getXbrlCashFlow(key, 'cash_flow_quarterly');
 
 // 「列存在即算有資料」——跟 getLatestQuarterWithBalanceSheet 同一種判斷，這個 statement_type
 // 沒有觀察到 bankCapitalAdequacy 那種「列存在但值全 null」的陷阱（長表本身沒有 null 列的

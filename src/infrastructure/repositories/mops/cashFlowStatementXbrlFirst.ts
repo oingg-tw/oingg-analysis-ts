@@ -18,7 +18,7 @@
 // 欄位 + reportDate。
 
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
-import { getXbrlCashFlowQuarterly } from './xbrlCashFlowQuarterly';
+import { getXbrlCashFlowQuarterly, type XbrlCashFlowQuarterlyRow } from './xbrlCashFlowQuarterly';
 import { resolveNetCashFromInvestingActivities } from '@/domain/financials/cashFlowIdentity';
 import type { CashFlowFields } from '@/application/ports/financialStatements';
 
@@ -27,8 +27,11 @@ export type { CashFlowFields };
 
 export const getCashFlowStatementXbrlFirst = async (key: QuarterlyKey): Promise<CashFlowFields | null> => {
   const xbrl = await getXbrlCashFlowQuarterly(key);
-  if (!xbrl) return null;
+  return xbrl ? toCashFlowFields(xbrl) : null;
+};
 
+// 長表科目 → CashFlowFields。單季與累計（cumulativeStatements.ts）共用同一份對應，兩邊不會漂。
+export const toCashFlowFields = (xbrl: XbrlCashFlowQuarterlyRow): CashFlowFields => {
   return {
     reportDate: xbrl.reportDate,
     netCashFromOperatingActivities: xbrl.accounts.cash_flows_from_used_in_operating_activities ?? null,

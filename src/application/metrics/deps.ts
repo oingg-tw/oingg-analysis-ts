@@ -11,6 +11,7 @@ import type { MetricValueRepository } from '@/application/ports/metricValues';
 import type { MetricDefinitionLookup } from '@/application/ports/metricDefinitions';
 import type { PriceLevelPort } from '@/application/ports/priceLevel';
 import type { AnnualReportPort } from '@/application/ports/annualReport';
+import type { CumulativeStatementsPort } from '@/application/ports/cumulativeStatements';
 
 // 2026-09-17 clean architecture 重構 Phase 3：指標核心的依賴集合。每支 computeXxx 的最後一個參數
 // 是 `deps: Pick<PitDeps, ...>`——只挑自己真的用到的 port（跟 2026-09-13 起用交集型別挑
@@ -22,6 +23,7 @@ import type { AnnualReportPort } from '@/application/ports/annualReport';
 export interface PitDeps {
   statements: FinancialStatementsPort; // 三大表 + 保險業損益表 + 銀行三張監理表（按季，QuarterlyKey）
   annualReports: AnnualReportPort; // 年報（全年數字、官方 EPS）——跟第四季單季是不同概念，不帶季別
+  cumulativeStatements: CumulativeStatementsPort; // 年初至該季的累計損益／現金流（興櫃半年頻用）
   quarters: QuarterResolverPort; // 各張表「最新到哪一季」
   announcements: AnnouncementDatePort; // 財報公告日（knowledge_date 傳染）
   shares: OutstandingCommonSharesPort; // 流通股數（股本異動）
