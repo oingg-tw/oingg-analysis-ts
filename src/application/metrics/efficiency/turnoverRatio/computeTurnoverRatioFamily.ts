@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateInventoryTurnover } from '@/domain/metrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
@@ -17,6 +17,7 @@ import { computation, isComputationSkip, type ComputationBatch, type Computation
 import type { PitDeps } from '@/application/metrics/deps';
 import type { MetricNullReason } from '@/domain/metrics/metricBasis';
 import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
+import { resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
 // 這份檔案獨立重新實作 src/domainMetrics/turnoverRatio.ts 裡「還沒遷移」的欄位——
 // assetTurnover 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts 寫入，這裡不重複
@@ -43,7 +44,7 @@ const toRatio = (numeratorInThousands: bigint, denominatorInThousands: bigint): 
   return Math.round((Number(numeratorInThousands) / Number(denominatorInThousands)) * 100) / 100;
 };
 
-export type TurnoverRatioFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type TurnoverRatioFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type TurnoverRatioFamilyComputationBatch = ComputationBatch<'inventoryTurnoverQ' | 'inventoryTurnoverTtm' | 'receivablesTurnoverQ' | 'receivablesTurnoverTtm' | 'fixedAssetTurnoverQ' | 'fixedAssetTurnoverTtm' | 'payablesTurnoverQ' | 'payablesTurnoverTtm' | 'inventoryDaysTtm' | 'receivablesDaysTtm' | 'payablesDaysTtm' | 'cashConversionCycleTtm' | 'operatingCycleTtm' | 'netWorkingCapitalTurnoverTtm' | 'inventoryToRevenueRatioTtm' | 'receivablesToRevenueRatioTtm'>;
 
@@ -153,10 +154,10 @@ export const computeTurnoverRatioFamily = async (
 
   // TTM：近四季（含本季）營業成本/營收各自加總，四個周轉率共用同一個 ttmComplete 旗標，
   // 分母是近四季窗口 5 個季末餘額的平均（2026-09-22 起）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季，分母在興櫃自動改 3 點平均。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let costTtmSum = 0n;
   let revenueTtmSum = 0n;

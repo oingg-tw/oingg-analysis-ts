@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案是 src/domainMetrics/ohlsonOScore.ts 的獨立重新實作。Logit 財務危機預警模型：
 // O = -1.32 - 0.407*SIZE + 6.03*TLTA - 1.43*WCTA + 0.0757*CLCA - 1.72*OENEG - 2.37*NITA
@@ -29,7 +30,7 @@ const sumNetIncome = (records: ({ netIncomeAttributableToParent: bigint | null; 
 const round4 = (x: number): number => Math.round(x * 10000) / 10000;
 
 
-export type OhlsonOScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'priceLevel'>;
+export type OhlsonOScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'priceLevel' | 'cumulativeStatements'>;
 
 // 2026-09-22 formulaVersion 2（公式稽核第 ③ 項，使用者拍板照原文換算）：SIZE = log(總資產 ÷ GNP 物價指數)，Ohlson (1980)
 // 原文「Total assets are as reported in dollars」、「The index assumes a base value of 100 for 1968」。單位判讀用 Ohlson 自己的
@@ -59,22 +60,22 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const thisYearTtmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const priorYearAnchor = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorYearTtmQuarters = getPastNQuarters({ rocYear: Number(priorYearAnchor.year), season: priorYearAnchor.season }, 4);
-
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；去年同季的 TTM 窗口＝同一季、前一年度。
   const balanceSheetKey = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const fetchIncomeStatement = (tq: { year: string; season: Season }) =>
-    deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
-  const fetchCashFlow = (tq: { year: string; season: Season }) =>
-    deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
+  const thisYearKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const priorYearKey = { ...thisYearKey, rocYear: rocYear - 1 };
 
-  const [balanceSheet, thisYearIncomeRecords, priorYearIncomeRecords, thisYearCashFlowRecords] = await Promise.all([
+  const [balanceSheet, thisYearIncome, priorYearIncome, thisYearCashFlow] = await Promise.all([
     deps.statements.getBalanceSheet(balanceSheetKey),
-    Promise.all(thisYearTtmQuarters.map(fetchIncomeStatement)),
-    Promise.all(priorYearTtmQuarters.map(fetchIncomeStatement)),
-    Promise.all(thisYearTtmQuarters.map(fetchCashFlow)),
+    resolveTrailingIncomeStatements(thisYearKey, deps),
+    resolveTrailingIncomeStatements(priorYearKey, deps),
+    resolveTrailingCashFlowStatements(thisYearKey, deps),
   ]);
+  const thisYearTtmQuarters = thisYearIncome.periods;
+  const priorYearTtmQuarters = priorYearIncome.periods;
+  const thisYearIncomeRecords = thisYearIncome.periods.map((p) => p.record);
+  const priorYearIncomeRecords = priorYearIncome.periods.map((p) => p.record);
+  const thisYearCashFlowRecords = thisYearCashFlow.periods.map((p) => p.record);
 
   const totalAssets = balanceSheet?.totalAssets ?? null;
   const totalLiabilities = balanceSheet?.totalLiabilities ?? null;

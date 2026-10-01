@@ -1,18 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 量化選股盤點使用者要求新增（Novy-Marx GP/A）。分母固定用本季期末總資產，跟
 // accrualsRatio/ROE/ROA 同一種「TTM 分子加總、分母用單一期末值」簡化。
 
 
-export type NovyMarxGpToAssetsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type NovyMarxGpToAssetsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type NovyMarxGpToAssetsComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -45,10 +46,10 @@ export const computeNovyMarxGpToAssets = async (query: QuarterlyMetricQuery, dep
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterlyValue, quarterlyNullReason);
 
   // TTM：近四季（含本季）毛利加總，分母固定用本季期末總資產。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let grossProfitTtmSum = 0n;
   let ttmComplete = true;

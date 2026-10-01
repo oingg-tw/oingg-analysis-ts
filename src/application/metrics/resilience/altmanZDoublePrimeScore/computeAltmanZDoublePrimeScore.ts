@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toRatio4 } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // Altman Z″-Score（1983/1995，非製造業/新興市場版）——四變數，刻意拿掉 X5（資產週轉率），
 // 理由是原始論文認為週轉率在非製造業/新興市場產業間差異太大，會扭曲跨產業比較，跟
@@ -28,7 +29,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 原本寫 not_applicable_industry 的行為不變，兩者排除比例差異很大，不是同一種情況。
 
 
-export type AltmanZDoublePrimeScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
+export type AltmanZDoublePrimeScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
 
 export type AltmanZDoublePrimeScoreComputationBatch = ComputationBatch<'ttm'>;
 
@@ -69,10 +70,10 @@ export const computeAltmanZDoublePrimeScore = async (query: QuarterlyMetricQuery
 
   // X3：近四季（含本季）EBIT 加總，分母固定用本季期末總資產——跟 Z/Z′ 一樣需要 TTM，
   // 但 Z″ 沒有 X5，不用查營收。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ebitTtmSum = 0n;
   let ttmComplete = true;

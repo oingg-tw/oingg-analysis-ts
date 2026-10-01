@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toMultipleFromThousands } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -8,6 +8,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
 import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——一次查詢
 // 資產負債表+損益表+現金流量表，算出 OCF(TTM)/FCF(TTM)/EnterpriseValue/InvestedCapital
@@ -56,7 +57,7 @@ const toRatioFromThousands = (numeratorInThousands: bigint, denominatorInThousan
 };
 
 
-export type CashFlowValuationFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>;
+export type CashFlowValuationFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>;
 
 export type CashFlowValuationFamilyComputationBatch = ComputationBatch<'evToOcf' | 'evToSales' | 'priceToOcf' | 'debtToFcf' | 'capexToOcfRatio' | 'croic' | 'ocfMargin' | 'fcfConversionRate'>;
 
@@ -113,15 +114,11 @@ export const computeCashFlowValuationFamily = async (
 
   // TTM：近四季（含本季）OCF/Capex/Revenue/NetIncome 各自加總；EV/InvestedCapital
   // 沿用上面同一筆，不另外重查（跟 evEbitda 的做法一致）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；兩張表的 periods 順序相同、逐段配對。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods;
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let ocfTtmSum = 0n;
   let capexTtmSum = 0n;

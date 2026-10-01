@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -17,7 +18,7 @@ export const REVENUE_PER_SHARE_FORMULA_VERSION = 2;
 // 幾乎一模一樣，差別只在分子換成營收（不需要 pickNetIncome 那種欄位選擇邏輯）。
 
 
-export type RevenuePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
+export type RevenuePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'cumulativeStatements'>;
 
 export type RevenuePerShareComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
@@ -52,10 +53,10 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ttmSum = 0n;
   let ttmComplete = true;

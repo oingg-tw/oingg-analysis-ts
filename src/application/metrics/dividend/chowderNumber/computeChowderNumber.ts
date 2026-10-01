@@ -5,6 +5,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -51,12 +52,12 @@ export const getAnnualDividendPerShareProxy = async (
   subsidiaryCompanyId: string,
   deps: ChowderNumberDeps
 ): Promise<AnnualDividendPerShareProxyResult> => {
-  const quarterRecords = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
-  const quarters = quarterRecords.map((record, i) => ({
-    rocYear,
-    season: i + 1,
+  // 2026-10-01 年度加總改走共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）；上市櫃仍是該年度四季。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const quarterRecords = trailing.periods.map((p) => p.record);
+  const quarters = trailing.periods.map(({ year, season, record }) => ({
+    rocYear: Number(year),
+    season: Number(season),
     dividendsPaid: record?.dividendsPaid ?? null,
     dividendsPaidFieldKey: record?.dividendsPaidFieldKey ?? null,
   }));
@@ -69,7 +70,7 @@ export const getAnnualDividendPerShareProxy = async (
 
   const yearSum = quarterRecords.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
-  const q4ReportDate = quarterRecords[3]!.reportDate;
+  const q4ReportDate = quarterRecords.at(-1)!.reportDate;
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) return { dps: null, quarters, shares: null };
 
@@ -77,7 +78,7 @@ export const getAnnualDividendPerShareProxy = async (
   return { dps: (Number(dividendsPaidAbs) * 1000) / Number(shares.outstandingCommonShares) / splitFactor, quarters, shares: { reportDate: q4ReportDate, outstandingCommonShares: shares.outstandingCommonShares } };
 };
 
-export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>;
+export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>;
 
 export type ChowderNumberComputationBatch = ComputationBatch<'fy'>;
 

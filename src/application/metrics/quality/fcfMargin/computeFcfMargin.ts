@@ -1,19 +1,20 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 量化選股盤點使用者要求新增。自由現金流 = 營業活動現金流 + 投資性資本支出
 // （capitalExpenditures 現金流量表原始科目已是負數），跟 ocfPerShare/fcfPerShare 同一套
 // FCF 定義，獨立重新計算不依賴其已寫入的值。只有 TTM 一種 basis。
 
 
-export type FcfMarginDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type FcfMarginDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type FcfMarginComputationBatch = ComputationBatch<'ttm'>;
 
@@ -31,15 +32,11 @@ export const computeFcfMargin = async (query: QuarterlyMetricQuery, deps: FcfMar
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；損益表與現金流量表的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods;
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let revenueTtmSum = 0n;
   let fcfTtmSum = 0n;

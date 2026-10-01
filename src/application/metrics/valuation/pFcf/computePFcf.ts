@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toMultipleFromThousands } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -17,7 +18,7 @@ export const P_FCF_FORMULA_VERSION = 2;
 // 自由現金流。市值查詢邏輯跟 psr/computePsrPit.ts 完全一致。沒有單季非年化版本。
 
 
-export type PFcfDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>;
+export type PFcfDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>;
 
 export type PFcfComputationBatch = ComputationBatch<'ttm'>;
 
@@ -38,9 +39,10 @@ export const computePFcf = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const cashFlowStatement = await deps.statements.getCashFlowStatement(key);
-  const reportDate = cashFlowStatement?.reportDate ?? null;
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。本季 reportDate 取近一年最後一段：上市櫃＝本季單季
+  // 那筆（跟改版前同一筆），興櫃沒有單季現金流量表、取累計推出的那段（同一個期末日），不然興櫃的股數／市值錨點會全部落空。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const reportDate = trailing.periods.at(-1)?.record?.reportDate ?? null;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const marketCap = mainAnchor ? await deps.market.getMarketCap(symbol, mainAnchor.knowledgeDate) : null;
@@ -48,10 +50,8 @@ export const computePFcf = async (
   const coordinateBase = { symbol, metricCode: 'pFcf', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // TTM：近四季（含本季）自由現金流加總；市值沿用上面同一筆，不另外重查。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let fcfTtmSum = 0n;
   let ttmComplete = true;

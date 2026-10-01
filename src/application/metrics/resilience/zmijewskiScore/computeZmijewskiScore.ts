@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncomeValue as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案是 src/domainMetrics/zmijewskiScore.ts 的獨立重新實作。Probit 財務危機預警模型：
 // X = -4.3 - 4.5*(NI_TTM/總資產) + 5.7*(總負債/總資產) - 0.004*(流動資產/流動負債)。
@@ -15,7 +16,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // 不獨立遷移。
 
 
-export type ZmijewskiScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
+export type ZmijewskiScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
 
 export type ZmijewskiScoreComputationBatch = ComputationBatch<'ttm'>;
 
@@ -42,10 +43,10 @@ export const computeZmijewskiScore = async (query: QuarterlyMetricQuery, deps: Z
   const reportDate = balanceSheet?.reportDate ?? null;
 
   // NI(TTM)：近四季（含本季）淨利加總。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let netIncomeTtmSum = 0n;
   let ttmComplete = true;

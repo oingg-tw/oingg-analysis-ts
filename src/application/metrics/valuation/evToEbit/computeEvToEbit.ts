@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toMultipleFromThousands } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -8,6 +8,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -18,7 +19,7 @@ export const EV_TO_EBIT_FORMULA_VERSION = 3;
 // EBIT 不加回折舊攤銷（不需要查現金流量表），公式獨立重新計算，不依賴 evEbitda 已寫入的值。
 
 
-export type EvToEbitDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>;
+export type EvToEbitDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>;
 
 export type EvToEbitComputationBatch = ComputationBatch<'ttm'>;
 
@@ -57,10 +58,10 @@ export const computeEvToEbit = async (
   const coordinateBase = { symbol, metricCode: 'evToEbit', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // TTM：近四季（含本季）EBIT 加總；企業價值沿用上面同一筆，不另外重查。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ebitTtmSum = 0n;
   let ttmComplete = true;

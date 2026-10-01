@@ -6,6 +6,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
 
 // Titman, Wei & Xie (2004) 異常資本投資比率——只有一個回溯窗口（前三年平均），跟
 // revenueCagr 家族「同一組年度快取、拆多個回溯窗口」是同一種年度快取模式，這裡只是
@@ -23,15 +24,15 @@ const getAnnualCapex = async (
 ): Promise<bigint | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 全年改走共用「近一年」來源（興櫃半年頻，見 shared/trailingYear.ts）：上市櫃＝該年四季、興櫃＝該年上下半年。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const quarters = trailing.periods.map((p) => p.record);
   const value = quarters.some((q) => q === null || q.capitalExpenditures === null) ? null : absBigint(quarters.reduce((sum, q) => sum + q!.capitalExpenditures!, 0n));
   cache.set(rocYear, value);
   return value;
 };
 
-export type AbnormalCapexRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type AbnormalCapexRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type AbnormalCapexRatioComputationBatch = ComputationBatch<'fy'>;
 

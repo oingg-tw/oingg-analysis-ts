@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
 // Rule of 40（Brad Feld 提出，SaaS/軟體業界廣泛使用的複合指標）= 營收成長率(TTM) + FCF
 // 利潤率(TTM)，兩者相加。這裡刻意重新獨立計算，不依賴 revenueGrowthRate（那支是單季年增率，
@@ -20,7 +21,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 // skipped_no_quarter，不寫入任何列——避免對絕大多數不適用的公司做無意義的查詢跟計算。
 
 
-export type RuleOf40Deps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
+export type RuleOf40Deps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
 
 export type RuleOf40ComputationBatch = ComputationBatch<'ttm'>;
 
@@ -45,21 +46,17 @@ export const computeRuleOf40 = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  // 8 季：前 4 季是「去年同期 TTM」，後 4 季是「本期 TTM」，getPastNQuarters 回傳由舊到新。
-  const eightQuarters = getPastNQuarters({ rocYear, season: season as Season }, 8);
-  const priorTtmQuarters = eightQuarters.slice(0, 4);
-  const currentTtmQuarters = eightQuarters.slice(4, 8);
-
-  const fetchQuarter = (tq: { year: string; season: Season }) =>
-    Promise.all([
-      deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-    ]);
-
-  const [priorRecords, currentRecords] = await Promise.all([
-    Promise.all(priorTtmQuarters.map(fetchQuarter)),
-    Promise.all(currentTtmQuarters.map(fetchQuarter)),
+  // 「本期 TTM」與「去年同期 TTM」（rocYear − 1 同一季）兩個近一年窗口，各自由舊到新。
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。去年同期只用到損益表。
+  const currentKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [priorIncome, currentIncome, currentCashFlow] = await Promise.all([
+    resolveTrailingIncomeStatements({ ...currentKey, rocYear: rocYear - 1 }, deps),
+    resolveTrailingIncomeStatements(currentKey, deps),
+    resolveTrailingCashFlowStatements(currentKey, deps),
   ]);
+  const currentTtmQuarters = currentIncome.periods.map((p) => ({ year: p.year, season: p.season }));
+  const priorRecords = priorIncome.periods.map((p) => [p.record] as const);
+  const currentRecords = currentIncome.periods.map((p, i) => [p.record, currentCashFlow.periods[i]?.record ?? null] as const);
 
   let priorRevenueTtmSum = 0n;
   let priorComplete = true;
@@ -118,8 +115,8 @@ export const computeRuleOf40 = async (
     }
   } else {
     const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-    const currentIncome = await deps.statements.getIncomeStatement(key);
-    const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: currentIncome?.reportDate ?? null }], deps.announcements);
+    const mainIncome = await deps.statements.getIncomeStatement(key);
+    const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate: mainIncome?.reportDate ?? null }], deps.announcements);
     if (!mainAnchor) {
       ttm = { action: 'skipped_no_knowledge_date' };
     } else {

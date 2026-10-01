@@ -6,6 +6,7 @@ import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -35,14 +36,10 @@ const getAnnualFigures = async (
 ): Promise<AnnualFigures> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 全年改走共用「近一年」來源（興櫃半年頻，見 shared/trailingYear.ts）：上市櫃＝該年四季、興櫃＝該年上下半年。
+  const trailingKey = { symbol, rocYear, season: '4' as const, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const quarters = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let netIncomeSum = 0n;
   let dividendsSum = 0n;
@@ -63,7 +60,7 @@ const getAnnualFigures = async (
 };
 
 
-export type OneDollarTestDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market'>;
+export type OneDollarTestDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>;
 
 export type OneDollarTestComputationBatch = ComputationBatch<'fy'>;
 

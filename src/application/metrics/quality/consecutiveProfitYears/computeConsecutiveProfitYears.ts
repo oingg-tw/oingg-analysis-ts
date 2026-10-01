@@ -1,11 +1,12 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 跟 consecutiveDividendYears 同一套「逐年往回數」設計，換成看「這年淨利是不是正的」
 // 而不是「這年有沒有配息」，見 consecutiveDividendYears/computeConsecutiveDividendYearsPit.ts
@@ -14,7 +15,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 const MAX_LOOKBACK_YEARS = 30;
 
 
-export type ConsecutiveProfitYearsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type ConsecutiveProfitYearsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type ConsecutiveProfitYearsComputationBatch = ComputationBatch<'fy'>;
 
@@ -42,10 +43,9 @@ export const computeConsecutiveProfitYears = async (query: QuarterlyMetricQuery,
   let firstYearDataAvailable = false;
 
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
-    const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
-    const records = await Promise.all(
-      yearQuarters.map((q) => deps.statements.getIncomeStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
-    );
+    // 2026-10-01 全年改走共用「近一年」來源（興櫃半年頻，見 shared/trailingYear.ts）：上市櫃＝該年四季、興櫃＝該年上下半年。
+    const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear: cursorRocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+    const records = trailing.periods.map((p) => p.record);
 
     if (records.some((r) => r === null || pickNetIncome(r).value === null)) break;
     firstYearDataAvailable = true;

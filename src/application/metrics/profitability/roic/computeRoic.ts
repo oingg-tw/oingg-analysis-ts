@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 import { averageOf, resolveAverageBalances } from '../../shared/averageBalances';
 
 // 2026-09-22 formulaVersion 2：投入資本從本季期末改成期間平均（Q 兩點、TTM 5 個季末），見 shared/averageBalances.ts。
@@ -33,7 +34,7 @@ export const computeNopat = (record: { profitBeforeTax: bigint | null; financeCo
 };
 
 
-export type RoicDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type RoicDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type RoicComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -84,10 +85,10 @@ export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', roicQuarterlyPct, quarterlyNullReason);
 
   // TTM：近四季（含本季）NOPAT 加總，投入資本用近四季窗口 5 個季末的平均（2026-09-22 起）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let nopatTtmSum = 0n;
   let ttmComplete = true;

@@ -1,5 +1,6 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateGrossMargin } from '@/domain/metrics/profitability/grossMargin/calculateGrossMargin';
@@ -7,6 +8,7 @@ import { calculateOperatingMargin } from '@/domain/metrics/profitability/operati
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts
@@ -36,22 +38,19 @@ export interface MarginInputs {
 // 的查詢邏輯（見下方保險業 fallback 說明），改成 export——純查詢函式，沒有副作用，跟
 // getGreenblattRocInputs 抽出來給 provenance 重用是同一個模式。多回傳一個
 // isInsuranceFallback 旗標，讓 provenance 知道這筆該標哪個 statementType/fieldKey。
-export const getMarginInputs = async (
-  key: {
-    symbol: string;
-    year: number;
-    quarter: number;
-    dataType: string;
-    subsidiaryCompanyId: string;
-  },
-  deps: MarginsFamilyDeps
-): Promise<MarginInputs | null> => {
-  const incomeStatement = await deps.statements.getIncomeStatement(key);
+type MarginKey = { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string };
+
+export const getMarginInputs = async (key: MarginKey, deps: Pick<MarginsFamilyDeps, 'statements'>): Promise<MarginInputs | null> =>
+  marginInputsFrom(await deps.statements.getIncomeStatement(key), key, deps);
+
+// 2026-10-01 拆出「一般損益表已經查好」的版本：TTM 的一般損益表改來自共用近一年來源（見 shared/trailingYear.ts）。
+// insuranceKey 為 null 時不退回保險替代表——興櫃半年期間沒有對應的單季保險表可拿。
+const marginInputsFrom = async (incomeStatement: IncomeStatementFields | null, insuranceKey: MarginKey | null, deps: Pick<MarginsFamilyDeps, 'statements'>): Promise<MarginInputs | null> => {
   if (incomeStatement?.operatingRevenue != null) {
     return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome, isInsuranceFallback: false };
   }
 
-  const insurance = await deps.statements.getInsuranceIncomeStatement(key);
+  const insurance = insuranceKey ? await deps.statements.getInsuranceIncomeStatement(insuranceKey) : null;
   if (insurance) {
     return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss, isInsuranceFallback: true };
   }
@@ -71,7 +70,7 @@ export const getMarginInputs = async (
 // knowledge_date、呼叫 writeMetricValue。
 
 
-export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry'>;
+export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
 
 export type MarginsFamilyComputationBatch = ComputationBatch<'grossMarginQ' | 'grossMarginTtm' | 'operatingMarginQ' | 'operatingMarginTtm'>;
 
@@ -137,9 +136,13 @@ export const computeMarginsFamily = async (
   // 該季不齊——刻意不看淨利（見檔頭說明的行為差異）。每一季各自呼叫 getMarginInputs（一般
   // 查無資料時自動退回保險替代），不是整批只判斷一次資料源——理論上一家公司不會中途切換
   // 產業別，但這樣寫不用假設「本季用的來源，前三季一定也用同一個」。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；保險替代表只有單季，只在四季窗口退回。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => getMarginInputs({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, deps))
+    trailing.periods.map((p) =>
+      marginInputsFrom(p.record, trailing.basis === 'quarters' ? { symbol, year: Number(p.year), quarter: Number(p.season), dataType, subsidiaryCompanyId } : null, deps)
+    )
   );
 
   let revenueTtmSum = 0n;

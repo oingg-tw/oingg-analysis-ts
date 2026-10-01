@@ -1,20 +1,21 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquityValue as pickEquity } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // Fama-French (2015) RMW 因子背後的單一公司營業獲利力比率——只做分子容易單獨計算的比率
 // 本身，不做完整五因子模型的橫斷面排序建構+個股迴歸（那需要全市場批次回填+迴歸引擎，
 // 見 famaFrenchOperatingProfitabilityDefinition.ts 的 formulaNote）。帳面權益優先採
 // 歸屬於母公司口徑，缺漏退回整體口徑，跟既有 altmanZDoublePrimeScore 同一個 pickEquity 慣例。
 
-export type FamaFrenchOperatingProfitabilityDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type FamaFrenchOperatingProfitabilityDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type FamaFrenchOperatingProfitabilityComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -57,10 +58,10 @@ export const computeFamaFrenchOperatingProfitability = async (query: QuarterlyMe
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', ratioQuarterly, quarterlyNullReason);
 
   // TTM：近四季（含本季）分子(毛利-推銷費用-管理費用-利息費用)各自加總，分母固定用本季期末帳面權益。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let operatingProfitTtmSum = 0n;
   let ttmComplete = true;

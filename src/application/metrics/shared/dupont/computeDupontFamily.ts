@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { pickNetIncome, pickEquity } from '../../../../domain/metrics/shared/pickers';
@@ -15,6 +15,7 @@ import { calculateDupontExtendedRoe } from '@/domain/metrics/profitability/dupon
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 import type { MetricNullReason } from '@/domain/metrics/metricBasis';
 import { resolveAverageBalances } from '../averageBalances';
 
@@ -47,7 +48,7 @@ import { resolveAverageBalances } from '../averageBalances';
 export const DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION = 2;
 const AVERAGE_DENOMINATOR_CODES = new Set(['assetTurnover', 'equityMultiplier', 'dupontDecomposedRoe', 'dupontExtendedRoe']);
 
-export type DupontFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type DupontFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type DupontFamilyComputationBatch = ComputationBatch<'netProfitMarginQ' | 'netProfitMarginTtm' | 'assetTurnoverQ' | 'assetTurnoverTtm' | 'equityMultiplier' | 'equityMultiplierTtm' | 'dupontDecomposedRoeQ' | 'dupontDecomposedRoeTtm' | 'dupontTaxBurdenQ' | 'dupontTaxBurdenTtm' | 'dupontInterestBurdenQ' | 'dupontInterestBurdenTtm' | 'dupontEbitMarginQ' | 'dupontEbitMarginTtm' | 'dupontExtendedRoeQ' | 'dupontExtendedRoeTtm'>;
 
@@ -196,10 +197,10 @@ export const computeDupontFamily = async (
 
   // TTM：近四季（含本季）營收/淨利加總；assetTurnover 分母是 5 個季末總資產的平均（2026-09-22 起，見 ../averageBalances.ts）。一季只要營收或淨利任一為 null 就視為該季不齊，
   // netProfitMargin/assetTurnover 的 TTM 共用同一組「資料齊不齊」判斷（比照 margins.ts）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let revenueTtmSum = 0n;
   let netIncomeTtmSum = 0n;

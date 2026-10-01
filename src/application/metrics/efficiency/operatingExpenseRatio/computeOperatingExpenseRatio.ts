@@ -1,14 +1,15 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
-export type OperatingExpenseRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type OperatingExpenseRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type OperatingExpenseRatioComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -51,10 +52,10 @@ export const computeOperatingExpenseRatio = async (query: QuarterlyMetricQuery, 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', ratioQuarterly, quarterlyNullReason);
 
   // TTM：近四季（含本季）營業費用/營收各自加總。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let expenseTtmSum = 0n;
   let revenueTtmSum = 0n;

@@ -7,6 +7,7 @@ import { DIVIDEND_GROWTH_RATE_YEARS } from '../../../../domain/metrics/dividend/
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -30,9 +31,9 @@ const getAnnualDividendPerShareProxy = async (
 ): Promise<number | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getCashFlowStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 年度加總改走共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）；上市櫃仍是該年度四季。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const quarters = trailing.periods.map((p) => p.record);
   // 2026-09-22 mops-ts 確認單季現金流量表的語意：該季有整份表但 dividends_paid_financing 為 null = 「本年度到這季為止還沒付過股利」
   // （台股多在 Q3 付款，Q1/Q2 的累計表根本沒這行），不是缺資料——所以只有整季報表缺席才算不齊，科目 null 視為 0。
   if (quarters.some((q) => q === null)) {
@@ -42,7 +43,7 @@ const getAnnualDividendPerShareProxy = async (
 
   const yearSum = quarters.reduce((sum, q) => sum + (q!.dividendsPaid ?? 0n), 0n);
   const dividendsPaidAbs = yearSum < 0n ? -yearSum : yearSum;
-  const q4ReportDate = quarters[3]!.reportDate;
+  const q4ReportDate = quarters.at(-1)!.reportDate;
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
@@ -56,7 +57,7 @@ const getAnnualDividendPerShareProxy = async (
   return restated;
 };
 
-export type DividendGrowthRateFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+export type DividendGrowthRateFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'cumulativeStatements'>;
 
 // slot key 是 `dividendGrowthRate${N}y`（3/5/8），舊 outcome 把它們巢狀在 results 底下（shim 用 runLegacyPitNested 包回去）。
 export type DividendGrowthRateFamilyComputationBatch = ComputationBatch<string>;

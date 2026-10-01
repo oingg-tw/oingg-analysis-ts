@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-22 formulaVersion 2：中繼每股 FCF 改用不四捨五入的 toPerShareExact（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -26,7 +27,7 @@ const toPctFromNumbers = (numerator: number, denominator: number): number | null
 };
 
 
-export type FcfYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>;
+export type FcfYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>;
 
 export type FcfYieldComputationBatch = ComputationBatch<'ttm'>;
 
@@ -47,9 +48,10 @@ export const computeFcfYield = async (
   const seasonNum = Number(season);
   const fiscalYear = rocYearToGregorian(rocYear);
 
-  const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const cashFlowStatement = await deps.statements.getCashFlowStatement(key);
-  const reportDate = cashFlowStatement?.reportDate ?? null;
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。本季 reportDate 取近一年最後一段：上市櫃＝本季單季
+  // 那筆（跟改版前同一筆），興櫃沒有單季現金流量表、取累計推出的那段（同一個期末日），不然興櫃的股數／市值錨點會全部落空。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const reportDate = trailing.periods.at(-1)?.record?.reportDate ?? null;
 
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
   const sharesValue = shares?.outstandingCommonShares ?? null;
@@ -61,10 +63,8 @@ export const computeFcfYield = async (
 
   // TTM：近四季（含本季）FCF 加總 / 流通股數；股價沿用上面同一筆（本季 knowledge_date 查到的），
   // 不是另外用 TTM anchor 重查一次，跟 fcfYield.ts 的既有行為一致。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let fcfTtmSum = 0n;
   let ttmComplete = true;

@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -8,6 +8,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import { interestBearingDebt } from '@/domain/metrics/shared/pickers';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案是 src/domainMetrics/netDebtToEbitda.ts 的獨立重新實作。2026-09-14 應使用者
 // 要求移除單季年化（Q_ANN）節省運算後，只剩 TTM 一種 basis（store/flow 比率本來就沒有
@@ -34,7 +35,7 @@ export const sAndPAdjustedDebt = (bs: NonNullable<Awaited<ReturnType<NetDebtToEb
   BigInt(Math.round(Number(bs.netDefinedBenefitLiability ?? 0n) * (1 - PENSION_TAX_RATE)));
 
 
-export type NetDebtToEbitdaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type NetDebtToEbitdaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type NetDebtToEbitdaComputationBatch = ComputationBatch<'ttm'>;
 
@@ -69,15 +70,11 @@ export const computeNetDebtToEbitda = async (query: QuarterlyMetricQuery, deps: 
   const coordinateBase = { symbol, metricCode: 'netDebtToEbitda', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // TTM：近四季（含本季）EBITDA 加總，淨負債固定用本季期末值（不平均不加總）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；損益表與現金流量表的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods;
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let ebitdaTtmSum = 0n;
   let ttmComplete = true;

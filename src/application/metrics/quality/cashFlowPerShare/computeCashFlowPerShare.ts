@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateFcf } from './fcf';
@@ -9,6 +9,7 @@ import { calculateDepreciationAmortisationPerShare } from '@/domain/metrics/qual
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -28,7 +29,7 @@ export const CASH_FLOW_PER_SHARE_FORMULA_VERSION = 2;
 // 不需要額外查詢，順手一起拆成第三個 metric_code。
 
 
-export type CashFlowPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares'>;
+export type CashFlowPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'cumulativeStatements'>;
 
 export type CashFlowPerShareComputationBatch = ComputationBatch<'ocfPerShareQ' | 'ocfPerShareTtm' | 'fcfPerShareQ' | 'fcfPerShareTtm' | 'depreciationAmortisationPerShareQ' | 'depreciationAmortisationPerShareTtm'>;
 
@@ -87,10 +88,10 @@ export const computeCashFlowPerShare = async (
 
   // TTM：近四季（含本季）OCF 加總；FCF TTM = OCF 加總 + 資本支出加總。一季只要 OCF 或資本支出
   // 任一為 null 就視為該季不齊，OCF/FCF 的 TTM 共用同一組「資料齊不齊」判斷（比照 cashFlowPerShare.ts）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ocfTtmSum = 0n;
   let capexTtmSum = 0n;

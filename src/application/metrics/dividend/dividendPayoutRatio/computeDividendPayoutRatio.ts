@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -11,6 +11,7 @@ import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatc
 import { resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import { cashDividendFromEarningsPerShare, earningsPayoutRatio } from '@/domain/financials/earningsPayoutRatio';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
 // 2026-09-27 formulaVersion 2：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
 const DIVIDEND_PAYOUT_RATIO_FORMULA_VERSION = 2;
@@ -67,15 +68,11 @@ export const resolveDividendPayoutRatioInputs = async (
 
   // TTM：近四季（含本季）淨利加總、股利發放加總——股利發放缺漏視為 0（大多數季度本來就沒發放，
   // 不是資料缺漏），只有淨利缺漏才讓這一季不齊，見 dividendPayoutRatio.ts 的既有邏輯。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。兩個 resolver 的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   const ttmQuarterDetails: DividendPayoutRatioTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
     rocYear: Number(tq.year),
@@ -115,7 +112,7 @@ export const resolveDividendPayoutRatioInputs = async (
 };
 
 
-export type DividendPayoutRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type DividendPayoutRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 export type DividendPayoutRatioComputeDeps = DividendPayoutRatioDeps & Pick<PitDeps, 'annualReports' | 'shares' | 'dividendEvents'>;
 
 export type DividendPayoutRatioComputationBatch = ComputationBatch<'ttm' | 'fy'>;

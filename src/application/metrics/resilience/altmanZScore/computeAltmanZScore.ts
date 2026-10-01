@@ -1,14 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toRatio4 } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate, type KnowledgeDateResolution } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import type { MarketCapAsOf } from '@/application/ports/marketData';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -91,10 +91,10 @@ export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery, dep
   const x4 = marketCap !== null && totalLiabilities !== null ? Math.round((marketCap.marketCap / (Number(totalLiabilities) * 1000)) * 10000) / 10000 : null;
 
   // X3/X5：近四季（含本季）EBIT/營收各自加總，分母固定用本季期末總資產。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords: (IncomeStatementFields | null)[] = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const ttmQuarterDetails: AltmanZScoreTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
     rocYear: Number(tq.year),
@@ -162,7 +162,7 @@ export const resolveAltmanZScoreInputs = async (query: QuarterlyMetricQuery, dep
 };
 
 
-export type AltmanZScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'industry'>;
+export type AltmanZScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'industry' | 'cumulativeStatements'>;
 
 export type AltmanZScoreComputationBatch = ComputationBatch<'ttm'>;
 

@@ -1,18 +1,19 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { absBigint, determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
 // 這份檔案是 src/domainMetrics/capexToRevenue.ts 的獨立重新實作。資本支出來源資料是負值
 // （現金流出），取絕對值後再算比率。沒有 Q_ANN——flow/flow 比率年化沒有意義。
 
 
-export type CapexToRevenueDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type CapexToRevenueDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type CapexToRevenueComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -47,15 +48,11 @@ export const computeCapexToRevenue = async (
 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。兩個 resolver 的 periods 順序相同。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let revenueTtmSum = 0n;
   let capexTtmSum = 0n;

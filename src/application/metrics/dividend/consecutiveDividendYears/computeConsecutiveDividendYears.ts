@@ -1,10 +1,11 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
 
 // 使用者要求「先做邏輯，資料不全面沒關係」——資料源是現金流量表的 dividendsPaid（跟
 // dividendPayoutRatio 同一個欄位，XBRL 優先、舊表 fallback），沒有專門的股利分派公告資料源，
@@ -14,7 +15,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 const MAX_LOOKBACK_YEARS = 30;
 
 
-export type ConsecutiveDividendYearsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type ConsecutiveDividendYearsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type ConsecutiveDividendYearsComputationBatch = ComputationBatch<'fy'>;
 
@@ -44,10 +45,9 @@ export const computeConsecutiveDividendYears = async (query: QuarterlyMetricQuer
   let firstYearDataAvailable = false;
 
   for (let i = 0; i < MAX_LOOKBACK_YEARS; i++) {
-    const yearQuarters = getPastNQuarters({ rocYear: cursorRocYear, season: '4' }, 4);
-    const records = await Promise.all(
-      yearQuarters.map((q) => deps.statements.getCashFlowStatement({ symbol, year: Number(q.year), quarter: Number(q.season), dataType, subsidiaryCompanyId }))
-    );
+    // 2026-10-01 每個年度改走共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）；上市櫃仍是該年度四季。
+    const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear: cursorRocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+    const records = trailing.periods.map((p) => p.record);
 
     // 四季只要有一季查無資料，代表這個年度資料不完整，沒辦法判斷這年到底有沒有配息——保守
     // 停在這裡（寧可低估連續年數，不要因為資料缺口就誤判成「中斷」）。

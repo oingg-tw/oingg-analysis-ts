@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateFcf } from '@/application/metrics/quality/cashFlowPerShare/fcf';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingCashFlowStatements } from '../../shared/trailingYear';
 
-export type DividendCoverageRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type DividendCoverageRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type DividendCoverageRatioComputationBatch = ComputationBatch<'ttm'>;
 
@@ -35,10 +36,9 @@ export const computeDividendCoverageRatio = async (query: QuarterlyMetricQuery, 
   const reportDate = mainCashFlow?.reportDate ?? null;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季。
+  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ocfSum = 0n;
   let capexSum = 0n;

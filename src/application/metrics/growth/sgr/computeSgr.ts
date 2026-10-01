@@ -1,7 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { round2, toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -9,6 +9,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { resolveAverageBalances } from '../../shared/averageBalances';
+import { resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
 
 // 這份檔案獨立重新實作 src/domainMetrics/sgr.ts——舊架構呼叫 calculateRoe()+
 // calculateDividendPayoutRatio()，這裡不依賴 roe/dividendPayoutRatio 這兩個 metric_code
@@ -17,7 +18,7 @@ import { resolveAverageBalances } from '../../shared/averageBalances';
 // 完全同一個判斷）。sgrTtm = ROE(TTM) x (1 - 配息率(TTM)/100)，只有 TTM 一種 basis。
 
 
-export type SgrDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type SgrDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 // 2026-09-22 formulaVersion 2：內部的 ROE(TTM) 分母跟 roe 指標同步改成 5 個季末權益平均（見 shared/averageBalances.ts）。
 // 2026-09-27 formulaVersion 3：近四季任一季整份現金流量表缺席 → 算不出來（insufficient_history），不再當成那季沒發股利（2412 被算成 0）。
@@ -49,15 +50,11 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   // 近四季（含本季）淨利、股利發放各自加總——淨利同一份加總同時餵給 ROE TTM 跟配息率 TTM，
   // 股利發放缺漏視為 0（大多數季度本來就沒發放，只有淨利缺漏才讓該季不齊，跟
   // dividendPayoutRatio.ts 一致）。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) =>
-      Promise.all([
-        deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-        deps.statements.getCashFlowStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }),
-      ])
-    )
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）；上市櫃仍是近四季，權益平均在興櫃自動改 3 點。
+  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
+  const [trailingIncome, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
+  const ttmQuarters = trailingIncome.periods.map((p) => ({ year: p.year, season: p.season }));
+  const ttmRecords = trailingIncome.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
 
   let netIncomeTtmSum = 0n;
   let dividendsPaidTtmSum = 0n;

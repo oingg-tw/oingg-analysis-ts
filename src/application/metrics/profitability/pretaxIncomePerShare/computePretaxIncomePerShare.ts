@@ -1,6 +1,7 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -8,6 +9,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -28,15 +30,16 @@ export const PRETAX_INCOME_PER_SHARE_FORMULA_VERSION = 2;
 // 這張表本來就沒有資料，fallback 對他們是 no-op——用 isFinancialIndustryCompany 先擋掉，
 // 避免全市場 2000+ 家非銀行公司每季都多打一次注定查無資料的查詢。
 
-export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'industry'>;
+export type PretaxIncomePerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'industry' | 'cumulativeStatements'>;
 
 // 一般損益表優先，缺資料時（且是銀行/金控）才查銀行監理專用表——見上方 2026-09-18 說明。
+// 2026-10-01 一般損益表改由呼叫端傳入（TTM 那邊來自共用近一年來源，見 shared/trailingYear.ts）。
 const resolveProfitBeforeTax = async (
   key: { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string },
+  incomeStatement: IncomeStatementFields | null,
   isBank: boolean,
   deps: Pick<PretaxIncomePerShareDeps, 'statements'>
 ): Promise<{ profitBeforeTax: bigint | null; reportDate: Date | null }> => {
-  const incomeStatement = await deps.statements.getIncomeStatement(key);
   if (incomeStatement?.profitBeforeTax != null) {
     return { profitBeforeTax: incomeStatement.profitBeforeTax, reportDate: incomeStatement.reportDate };
   }
@@ -72,7 +75,7 @@ export const computePretaxIncomePerShare = async (
   const isBank = await deps.industry.isFinancialIndustryCompany(symbol);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const { profitBeforeTax, reportDate } = await resolveProfitBeforeTax(key, isBank, deps);
+  const { profitBeforeTax, reportDate } = await resolveProfitBeforeTax(key, await deps.statements.getIncomeStatement(key), isBank, deps);
 
   // 流通股數固定用「本季報告日」當下有效的股本，Q/TTM 共用同一個股數（跟 eps 一致）。
   const shares = reportDate ? await deps.shares.getOutstandingCommonShares(symbol, reportDate) : null;
@@ -89,9 +92,13 @@ export const computePretaxIncomePerShare = async (
 
   // TTM：近四季（含本季）稅前淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
   // knowledge_date 沿用本季（Q）自己的，跟 computeEpsPit.ts 的 TTM 處理一致。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。銀行專用表只有單季，半年期間不做 fallback。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
   const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => resolveProfitBeforeTax({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }, isBank, deps))
+    trailing.periods.map((p) =>
+      resolveProfitBeforeTax({ symbol, year: Number(p.year), quarter: Number(p.season), dataType, subsidiaryCompanyId }, p.record, isBank && trailing.basis === 'quarters', deps)
+    )
   );
 
   let ttmSum = 0n;

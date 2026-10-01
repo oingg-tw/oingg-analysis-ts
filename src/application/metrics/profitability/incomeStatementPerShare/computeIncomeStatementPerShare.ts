@@ -1,5 +1,5 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -7,6 +7,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 import { fillAbsentOperatingExpenseComponents } from '@/domain/financials/operatingExpenseComponents';
 import { calculateAdministrativeExpensePerShare } from '@/domain/metrics/profitability/administrativeExpensePerShare/calculateAdministrativeExpensePerShare';
@@ -82,7 +83,7 @@ const OPEX_COMPONENT_CODES = new Set(['sellingExpensePerShare', 'administrativeE
 // 最後一格等於年報公告的 EPS，每一段又除以同一個股數，瀑布圖照樣閉合。|EPS| < 0.1 時不反推（捨入誤差 > 5%），
 // 整批 FY 都是 null / missing_input——**不要退回用期末股本頂替**，那會在同一張圖裡混兩種分母。
 // 座標跟 eps.FY 一樣：(該年度, 第四季) 一年一列；第四季寫當年、第一~三季寫前一年（重寫會 skipped_unchanged）。
-export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
+export type IncomeStatementPerShareDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'cumulativeStatements'>;
 
 // 相減型欄位：兩個運算元都是千元 bigint 原始金額，相減後才除以股數，只捨入一次。
 const nonOperatingIncomeOf = (r: IncomeStatementFields): bigint | null =>
@@ -193,13 +194,10 @@ export const computeIncomeStatementPerShare = async (
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   // TTM：近四季（含本季）加總。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map(async (tq) => {
-      const record = await deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId });
-      return record && fillAbsentOperatingExpenseComponents(record);
-    })
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record && fillAbsentOperatingExpenseComponents(p.record));
 
   // 每支指標各自判斷近四季齊不齊：四季都要有紀錄，而且**這支指標自己的科目**每一季都非 null。
   // 不跟其他指標共用判斷——見檔頭「為什麼沒有完整度分組」。

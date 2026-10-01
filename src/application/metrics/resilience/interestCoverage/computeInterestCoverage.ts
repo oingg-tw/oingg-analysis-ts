@@ -1,12 +1,13 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason } from '@/domain/metrics/shared/numericHelpers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 這份檔案是 src/domainMetrics/interestCoverage.ts 的獨立重新實作。EBIT = 稅前淨利+利息費用
 // ——這個公式在 interestCoverage/netDebtToEbitda/roic/roce 四個舊架構檔案各自重複定義，
@@ -18,7 +19,7 @@ const toRatio = (numerator: bigint, denominator: bigint): number | null => {
 };
 
 
-export type InterestCoverageDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type InterestCoverageDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type InterestCoverageComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
@@ -51,10 +52,10 @@ export const computeInterestCoverage = async (query: QuarterlyMetricQuery, deps:
 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ebitTtmSum = 0n;
   let interestExpenseTtmSum = 0n;

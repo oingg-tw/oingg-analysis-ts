@@ -2,7 +2,7 @@ import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toCommonEarnings } from '@/domain/financials/outstandingCommonShares';
 import { determineNullReason, toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
@@ -10,6 +10,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -20,7 +21,7 @@ export const EPS_FORMULA_VERSION = 2;
 
 // 三張季度財報表金額單位是「千元」，流通股數是實際股數，分子要先 x1000 換算成元。
 
-export type EpsDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares'>;
+export type EpsDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' | 'announcements' | 'shares' | 'cumulativeStatements'>;
 
 export type EpsComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
@@ -60,10 +61,10 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
 
   // TTM：近四季（含本季）淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
   // knowledge_date 沿用本季（Q）自己的，跟 computeRoePit.ts 的 TTM 處理一致。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ttmSum = 0n;
   let ttmComplete = true;

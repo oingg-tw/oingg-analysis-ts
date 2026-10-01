@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 import { resolveAverageBalances } from '../../shared/averageBalances';
 
 // 這份檔案是 src/domainMetrics/roa.ts 的獨立重新實作，刻意不 import 它的（未 export 的）
@@ -18,7 +19,7 @@ import { resolveAverageBalances } from '../../shared/averageBalances';
 // 分子/分母任一為 null 視為缺輸入；兩者皆非 null 但分母為 0 才是「分母為零」——總資產為負
 // 仍然算得出一個（可能扭曲的）實際數字，不算 null（跟 roa.ts 現有對外行為一致）。
 
-export type RoaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type RoaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 // 2026-09-22 formulaVersion 2：分母改期間平均總資產（Q 兩點、TTM 5 點），跟 roe 同一次改版，見 shared/averageBalances.ts。
 export const ROA_FORMULA_VERSION = 2;
@@ -68,10 +69,10 @@ export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaDeps): Pr
   // TTM：近四季（含本季）淨利加總 / 近四季窗口 5 個季末總資產平均。邏輯跟 computeRoePit.ts 的 TTM 處理一致，
   // 見那份檔案的說明——四季不齊時仍寫一列 value=null/insufficient_history，knowledge_date
   // 沿用本季（Q）自己的。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ttmSum = 0n;
   let ttmComplete = true;

@@ -1,12 +1,12 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
-import type { IncomeStatementFields } from '@/application/ports/financialStatements';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // Greenblatt 資本報酬率 = EBIT(TTM) / (淨營運資金 + 淨固定資產) * 100。分母固定用本季期末
 // 資產負債表（不平均不加總，跟 altmanZScore/netDebtToEbitda 的分母處理方式一致）。只有
@@ -66,10 +66,10 @@ export const resolveGreenblattRocInputs = async (
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords: (IncomeStatementFields | null)[] = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   const ttmQuarterDetails: GreenblattRocTtmQuarterDetail[] = ttmQuarters.map((tq, i) => ({
     rocYear: Number(tq.year),
@@ -119,7 +119,7 @@ export const resolveGreenblattRocInputs = async (
 };
 
 
-export type GreenblattRocDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'>;
+export type GreenblattRocDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
 export type GreenblattRocComputationBatch = ComputationBatch<'ttm'>;
 

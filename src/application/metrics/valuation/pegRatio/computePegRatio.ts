@@ -1,13 +1,14 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShareExact } from '@/domain/metrics/shared/numericHelpers';
 import { pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { getPastNQuarters, rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
+import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
+import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
 
 // 2026-09-22 formulaVersion 2：中繼 EPS/PER/五年 CAGR 都不再各自四捨五入，只在最後的 PEG 四捨五入一次（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -41,16 +42,17 @@ const getAnnualEps = async (
 ): Promise<number | null> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
-  const quarters = await Promise.all(
-    [1, 2, 3, 4].map((quarter) => deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter, dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 全年改走共用近一年來源（截至 Q4 的近一年＝全年；興櫃半年頻＝上半年＋下半年，見 shared/trailingYear.ts）。
+  // 最後一段的 reportDate 上市櫃＝Q4 單季那筆（跟原本相同）、興櫃＝年報累計那筆，同樣是年底。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  const quarters = trailing.periods.map((p) => p.record);
   if (quarters.some((q) => q === null || pickNetIncome(q).value === null)) {
     cache.set(rocYear, null);
     return null;
   }
 
   const netIncomeSum = quarters.reduce((sum, q) => sum + pickNetIncome(q).value!, 0n);
-  const q4ReportDate = quarters[3]!.reportDate;
+  const q4ReportDate = quarters.at(-1)!.reportDate;
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) {
     cache.set(rocYear, null);
@@ -65,7 +67,7 @@ const getAnnualEps = async (
 };
 
 
-export type PegRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market'>;
+export type PegRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>;
 
 export type PegRatioComputationBatch = ComputationBatch<'ttm'>;
 
@@ -97,10 +99,9 @@ export const computePegRatio = async (
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
 
   // PER(TTM)：近四季（含本季）淨利加總 / 流通股數，跟 peRatio 的 TTM 算法完全相同。
-  const ttmQuarters = getPastNQuarters({ rocYear, season: season as Season }, 4);
-  const ttmRecords = await Promise.all(
-    ttmQuarters.map((tq) => deps.statements.getIncomeStatement({ symbol, year: Number(tq.year), quarter: Number(tq.season), dataType, subsidiaryCompanyId }))
-  );
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmRecords = trailing.periods.map((p) => p.record);
 
   let ttmSum = 0n;
   let ttmComplete = true;
