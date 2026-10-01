@@ -22,6 +22,7 @@ import { computeAssetGrowth } from '@/application/metrics/growth/assetGrowth/com
 import { computeBvpsGrowthRate } from '@/application/metrics/growth/bvpsGrowthRate/computeBvpsGrowthRate';
 import { computeEpsCagrFamily } from '@/application/metrics/growth/epsCagr/computeEpsCagrFamily';
 import { computeEpsGrowthRate } from '@/application/metrics/growth/epsGrowthRate/computeEpsGrowthRate';
+import { computeEpsPriorYear } from '@/application/metrics/growth/epsPriorYear/computeEpsPriorYear';
 import { computeEquityGrowthRate } from '@/application/metrics/growth/equityGrowthRate/computeEquityGrowthRate';
 import { computeNetIncomeGrowthRate } from '@/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRate';
 import { computeOperatingIncomeGrowthRate } from '@/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRate';
@@ -155,6 +156,7 @@ export const computeAndWriteAssetGrowthPit = runPit(computeAssetGrowth);
 export const computeAndWriteBvpsGrowthRatePit = runPit(computeBvpsGrowthRate);
 export const computeAndWriteEpsCagrFamilyPit = runPitNested(computeEpsCagrFamily, 'results');
 export const computeAndWriteEpsGrowthRatePit = runPit(computeEpsGrowthRate);
+export const computeAndWriteEpsPriorYearPit = runPit(computeEpsPriorYear);
 export const computeAndWriteEquityGrowthRatePit = runPit(computeEquityGrowthRate);
 export const computeAndWriteNetIncomeGrowthRatePit = runPit(computeNetIncomeGrowthRate);
 export const computeAndWriteOperatingIncomeGrowthRatePit = runPit(computeOperatingIncomeGrowthRate);

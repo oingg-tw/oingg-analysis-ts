@@ -66,6 +66,7 @@ import { getOperatingIncomeGrowthRateProvenance } from '@/application/metrics/gr
 import { getEquityGrowthRateProvenance } from '@/application/metrics/growth/equityGrowthRate/getEquityGrowthRateProvenance';
 import { getBvpsGrowthRateProvenance } from '@/application/metrics/growth/bvpsGrowthRate/getBvpsGrowthRateProvenance';
 import { getEpsGrowthRateProvenance } from '@/application/metrics/growth/epsGrowthRate/getEpsGrowthRateProvenance';
+import { getEpsPriorYearProvenance } from '@/application/metrics/growth/epsPriorYear/getEpsPriorYearProvenance';
 import { getRdIntensityProvenance } from '@/application/metrics/growth/rdIntensity/getRdIntensityProvenance';
 import { getSgrProvenance } from '@/application/metrics/growth/sgr/getSgrProvenance';
 import { getEpsCagrProvenanceForYears } from '@/application/metrics/growth/epsCagr/getEpsCagrProvenance';
@@ -217,6 +218,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   equityGrowthRate: (query) => getEquityGrowthRateProvenance(query, deps),
   bvpsGrowthRate: (query) => getBvpsGrowthRateProvenance(query, deps),
   epsGrowthRate: (query) => getEpsGrowthRateProvenance(query, deps),
+  epsPriorYear: (query) => getEpsPriorYearProvenance(query, deps),
   rdIntensity: (query) => getRdIntensityProvenance(query, deps),
   sgr: (query) => getSgrProvenance(query, deps),
   epsCagr3y: getEpsCagrProvenanceForYears(3, deps),

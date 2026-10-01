@@ -94,6 +94,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'equityGrowthRate',
   'bvpsGrowthRate',
   'epsGrowthRate',
+  'epsPriorYear',
   'rdIntensity',
   'sgr',
   'epsCagr3y',
