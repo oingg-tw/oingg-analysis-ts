@@ -1,6 +1,8 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+import { Prisma } from '#generated/twse-export-client';
 import { getIndustryCodes } from './industryCodes';
+import { LISTED_ONLY } from './companyProfile';
 
 // 證交所類股分類（跟 industryClassification.ts 的財政部稅籍五層階層是完全不同的分類系統，
 // 刻意不合併）——twse-ts 的 export.industry_code（40 筆兩碼代碼→中文名稱，見
@@ -54,35 +56,37 @@ export interface SecuritiesIndustrySector {
   companyCount: number;
 }
 
-interface IndustryCountRow {
-  industry: string | null;
-  count: bigint;
-}
+// 2026-10-01 母體改成跟 GET /companies 同一份（bff-ts 逐類股比對抓到：型錄 2,594 vs /companies 2,349，差 255；
+// 20 其他業 230 vs 113、13 電子工業舊分類 33 vs 0）：原本 twse 側沒過濾 source，把公開發行未上市（COMPANY_PROFILE_PUBLIC，
+// 約 305 家，含六碼證券商）也算進來，13 的 33 家全是這種。現在 twse 只取上市（LISTED_ONLY）、tpex 上櫃＋興櫃都算（目錄刻意含興櫃），
+// 兩邊同一檔（轉板）只算一次——companyCount 的定義就是「screener 用這個代碼篩得到幾家」，listCompaniesBySectorCodes 也走同一份。
+const listSectorMembers = async (codes: string[] | null): Promise<{ symbol: string; industry: string }[]> => {
+  const [twseRows, tpexRows] = await Promise.all([
+    codes
+      ? twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry = ANY(${codes}) AND ${Prisma.raw(LISTED_ONLY)}`
+      : twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry IS NOT NULL AND ${Prisma.raw(LISTED_ONLY)}`,
+    codes
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry = ANY(${codes})`
+      : tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry IS NOT NULL`,
+  ]);
+  const bySymbol = new Map<string, string>();
+  for (const r of [...twseRows, ...tpexRows]) if (!bySymbol.has(r.symbol)) bySymbol.set(r.symbol, r.industry); // twse 優先，同 /companies
+  return [...bySymbol].map(([symbol, industry]) => ({ symbol, industry }));
+};
 
-// 給「證券類股瀏覽」用——40 個 twse-ts industry_code 為主體，companyCount 是 TWSE/TPEx 兩邊
-// company_profile.industry 分組計數後加總。
+// 給「證券類股瀏覽」用——40 個 twse-ts industry_code 為主體。0 家的代碼（13 舊分類、19 綜合）不列出：篩不出任何東西，
+// 列在瀏覽清單只會讓人點進空頁；isValidSecuritiesSectorCode 照舊接受它們（不讓存過的篩選條件變 400）。
 export const listSecuritiesIndustrySectors = async (): Promise<SecuritiesIndustrySector[]> => {
   const codes = getIndustryCodes();
   if (!codes) return [];
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<IndustryCountRow[]>`
-      SELECT industry, COUNT(*) as count FROM "export"."company_profile" WHERE industry IS NOT NULL GROUP BY industry
-    `,
-    tpexExportPrisma.$queryRaw<IndustryCountRow[]>`
-      SELECT industry, COUNT(*) as count FROM "export"."company_profile" WHERE industry IS NOT NULL GROUP BY industry
-    `,
-  ]);
-
   const counts = new Map<string, number>();
-  for (const row of [...twseRows, ...tpexRows]) {
-    if (row.industry === null) continue;
-    counts.set(row.industry, (counts.get(row.industry) ?? 0) + Number(row.count));
-  }
+  for (const m of await listSectorMembers(null)) counts.set(m.industry, (counts.get(m.industry) ?? 0) + 1);
 
   return Object.entries(codes)
     .filter(([code]) => !NON_INDUSTRY_CODES.has(code))
     .map(([code, name]) => ({ code, name, companyCount: counts.get(code) ?? 0 }))
+    .filter((s) => s.companyCount > 0)
     .sort((a, b) => a.code.localeCompare(b.code));
 };
 
@@ -92,10 +96,5 @@ export const listSecuritiesIndustrySectors = async (): Promise<SecuritiesIndustr
 export const listCompaniesBySectorCodes = async (codes: string[]): Promise<Set<string>> => {
   if (codes.length === 0) return new Set();
 
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE industry = ANY(${codes})`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE industry = ANY(${codes})`,
-  ]);
-
-  return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]);
+  return new Set((await listSectorMembers(codes)).map((m) => m.symbol));
 };

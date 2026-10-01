@@ -448,7 +448,7 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
 // 四碼的公開發行公司）。公司目錄／計數只要上市的，用 view 本來就有的 source 欄位過濾（twse-ts 說篩選權在消費端，view 是
 // 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
 // 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
-const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
+export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
 // tpex-ts 的 company_profile 也用 source 分兩種，但語意跟 twse 不同：COMPANY_PROFILE 是上櫃（891 家）、
 // COMPANY_PROFILE_EMERGING 是興櫃（364 家），兩者都是正牌公司，差別是市場別不是雜訊。
 const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';

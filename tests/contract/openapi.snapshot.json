@@ -3648,7 +3648,7 @@
     },
     "/industries/securities-sectors": {
       "get": {
-        "description": "資料源是 twse-ts/tpex-ts 的 company_profile.industry 欄位（證交所公告的類股分類，兩碼代碼），跟 GET /industries/tree（財政部稅籍五層分類）是完全不同的分類體系，刻意不合併——這支才是「半導體業」「電子零組件業」這類投資人熟悉的類股名稱。只有單一層級，扁平回傳全部合法代碼（目前 40 個，排除證券商/期貨商/第一上市外國公司身份別/舊產業代碼殘留這幾個非真正產業分類的代碼），companyCount 是TWSE+TPEx 兩個市場加總。screener 的 POST /screener、GET /screener/ranking 的 industryCodes 參數用的就是這支端點回傳的代碼。",
+        "description": "資料源是 twse-ts/tpex-ts 的 company_profile.industry 欄位（證交所公告的類股分類，兩碼代碼），跟 GET /industries/tree（財政部稅籍五層分類）是完全不同的分類體系，刻意不合併——這支才是「半導體業」「電子零組件業」這類投資人熟悉的類股名稱。只有單一層級，扁平回傳有公司的代碼（排除證券商/期貨商/第一上市外國公司身份別/舊產業代碼殘留這幾個非真正產業分類的代碼，以及目前 0 家的代碼）。companyCount = 用這個代碼在 screener 篩得到幾家：母體跟 GET /companies 相同（上市＋上櫃＋興櫃，不含公開發行未上市），轉板公司只算一次，所以各類股加總等於 GET /companies 裡有類股的公司數。screener 的 POST /screener、GET /screener/ranking 的 sectorCodes 參數用的就是這支端點回傳的代碼；不在清單上但仍屬合法代碼的（例如 0 家的舊分類）照樣接受、篩出 0 家。",
         "responses": {
           "200": {
             "content": {
