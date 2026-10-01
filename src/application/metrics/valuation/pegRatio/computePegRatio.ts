@@ -8,7 +8,9 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { isComputationSkip, computation, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingIncomeStatements, type TrailingYear } from '@/application/metrics/shared/trailingYear';
+import type { IncomeStatementFields } from '@/application/ports/financialStatements';
+import type { OutstandingCommonSharesAsOf } from '@/application/ports/capitalStock';
 
 // 2026-09-22 formulaVersion 2：中繼 EPS/PER/五年 CAGR 都不再各自四捨五入，只在最後的 PEG 四捨五入一次（見 numericHelpers.ts toPerShareExact 的說明）。
 // 2026-09-26 formulaVersion 3：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -25,7 +27,17 @@ export const PEG_RATIO_FORMULA_VERSION = 5;
 // 既有原則。成長率 ≤ 0（獲利衰退或虧損）時 PEG 沒有意義，回傳 null——跟 epsCagr 本身的
 // zero_or_negative_denominator 判斷一致。只有 TTM 一種 basis（沿用 peRatio 的基準）。
 
-const PEG_GROWTH_YEARS = 5;
+export const PEG_GROWTH_YEARS = 5;
+
+// 2026-10-01 回傳明細（近一年各期淨利、股數、面額還原倍數）讓溯源表（getPegRatioProvenance.ts）直接列出計算真正用的數字；
+// eps 的算法逐字未改。
+export interface AnnualEps {
+  eps: number | null;
+  trailing: TrailingYear<IncomeStatementFields>;
+  q4ReportDate: Date | null;
+  shares: OutstandingCommonSharesAsOf | null;
+  splitFactor: number | null;
+}
 
 // 年度 EPS = 4 季淨利加總（歸屬母公司優先，缺漏退回整體口徑）/ 當年 Q4 報告日流通股數，
 // 跟 epsCagr 家族同一套邏輯。
@@ -33,13 +45,13 @@ const PEG_GROWTH_YEARS = 5;
 // 每次呼叫才建立（模組載入時建的 Date 常數在錄製器凍結 Date 之後會被當成非 Date 編碼，cassette 對不上）。
 const splitRestateBasis = (): Date => new Date(Date.UTC(9999, 0, 1));
 const getAnnualEps = async (
-  cache: Map<number, number | null>,
+  cache: Map<number, AnnualEps>,
   symbol: string,
   rocYear: number,
   dataType: string,
   subsidiaryCompanyId: string,
   deps: PegRatioDeps
-): Promise<number | null> => {
+): Promise<AnnualEps> => {
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   // 2026-10-01 全年改走共用近一年來源（截至 Q4 的近一年＝全年；興櫃半年頻＝上半年＋下半年，見 shared/trailingYear.ts）。
@@ -47,23 +59,27 @@ const getAnnualEps = async (
   const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
   const quarters = trailing.periods.map((p) => p.record);
   if (quarters.some((q) => q === null || pickNetIncome(q).value === null)) {
-    cache.set(rocYear, null);
-    return null;
+    const result: AnnualEps = { eps: null, trailing, q4ReportDate: null, shares: null, splitFactor: null };
+    cache.set(rocYear, result);
+    return result;
   }
 
   const netIncomeSum = quarters.reduce((sum, q) => sum + pickNetIncome(q).value!, 0n);
   const q4ReportDate = quarters.at(-1)!.reportDate;
   const shares = await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate);
   if (!shares) {
-    cache.set(rocYear, null);
-    return null;
+    const result: AnnualEps = { eps: null, trailing, q4ReportDate, shares: null, splitFactor: null };
+    cache.set(rocYear, result);
+    return result;
   }
 
   // 2026-09-25 分子只算普通股：全年淨利扣全年特別股股利（第四季報告日的近四季＝全年），見 domain/financials/outstandingCommonShares.ts。
   const value = (Number(netIncomeSum - shares.preferredDividendsTtmThousands) * 1000) / Number(shares.outstandingCommonShares);
-  const restated = value / (await deps.shares.getShareSplitFactor(symbol, q4ReportDate, splitRestateBasis()));
-  cache.set(rocYear, restated);
-  return restated;
+  const splitFactor = await deps.shares.getShareSplitFactor(symbol, q4ReportDate, splitRestateBasis());
+  const restated = value / splitFactor;
+  const result: AnnualEps = { eps: restated, trailing, q4ReportDate, shares, splitFactor };
+  cache.set(rocYear, result);
+  return result;
 };
 
 
@@ -71,16 +87,16 @@ export type PegRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announceme
 
 export type PegRatioComputationBatch = ComputationBatch<'ttm'>;
 
-export const computePegRatio = async (
-  query: QuarterlyMetricQuery,
-  deps: PegRatioDeps
-): Promise<PegRatioComputationBatch> => {
+// 2026-10-01 溯源表（getPegRatioProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼 EPS/PER/CAGR 各自四捨五入
+// （v2 已改成只在最後四捨五入一次）、沒扣特別股股利（v3）、年度 EPS 也沒做面額／配股還原（v4/v5）。查詢與值抽成這支 resolver
+// 共用，computePegRatio 只負責組 slot；計算本身逐字未改。
+export const resolvePegRatioInputs = async (query: QuarterlyMetricQuery, deps: PegRatioDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -120,9 +136,12 @@ export const computePegRatio = async (
   // EPS 5 年複合成長率——固定 5 年，取「最近一個資料完整的完整會計年度」跟「5 年前的那個
   // 完整會計年度」。
   const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
-  const epsCache = new Map<number, number | null>();
-  const currentAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
-  const priorAnnualEps = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, deps);
+  const epsCache = new Map<number, AnnualEps>();
+  const currentAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
+  const priorAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, deps);
+
+  const currentAnnualEps = currentAnnual.eps;
+  const priorAnnualEps = priorAnnual.eps;
 
   const epsCagr5yPct =
     currentAnnualEps !== null && priorAnnualEps !== null && currentAnnualEps > 0 && priorAnnualEps > 0
@@ -137,6 +156,25 @@ export const computePegRatio = async (
     else if (epsTtm === null || stockPrice === null || currentAnnualEps === null || priorAnnualEps === null) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, shares, sharesValue, mainAnchor, stockPrice, trailing, ttmComplete, ttmSum, epsTtm, peRatioTtm,
+    latestCompleteFiscalYear, currentAnnual, priorAnnual, epsCagr5yPct, pegRatio, nullReason,
+  };
+};
+
+export const computePegRatio = async (
+  query: QuarterlyMetricQuery,
+  deps: PegRatioDeps
+): Promise<PegRatioComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolvePegRatioInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, pegRatio, nullReason } = resolution;
 
   let ttm: ComputationSlot;
   if (!mainAnchor) {

@@ -46,13 +46,16 @@ const quarterEndDate = (rocYear: number, quarter: number): Date => new Date(Date
 
 export type OhlsonOScoreComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: OhlsonOScoreDeps): Promise<OhlsonOScoreComputationBatch> => {
+// 2026-10-01 溯源表（getOhlsonOScoreProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，SIZE 還是 v1 的 ln(新台幣千元)，
+// 沒跟上 v2 的「美元 ÷ GNP 物價指數」換算，全市場固定差約 −1.28。查詢、9 個變數與原始分數抽成這支 resolver 共用，
+// computeOhlsonOScore 只負責金融業排除、knowledge date 與組 slot；計算本身逐字未改。oScore／nullReason 是套用金融業排除「之前」的值。
+export const resolveOhlsonOScoreInputs = async (query: QuarterlyMetricQuery, deps: OhlsonOScoreDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -71,8 +74,6 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
     resolveTrailingIncomeStatements(priorYearKey, deps),
     resolveTrailingCashFlowStatements(thisYearKey, deps),
   ]);
-  const thisYearTtmQuarters = thisYearIncome.periods;
-  const priorYearTtmQuarters = priorYearIncome.periods;
   const thisYearIncomeRecords = thisYearIncome.periods.map((p) => p.record);
   const priorYearIncomeRecords = priorYearIncome.periods.map((p) => p.record);
   const thisYearCashFlowRecords = thisYearCashFlow.periods.map((p) => p.record);
@@ -120,7 +121,7 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
       : null;
 
   const variables = [size, tlta, wcta, clca, oeneg, nita, futl, intwo, chin];
-  let oScore = variables.every((v) => v !== null)
+  const oScore = variables.every((v) => v !== null)
     ? round4(-1.32 - 0.407 * size! + 6.03 * tlta! - 1.43 * wcta! + 0.0757 * clca! - 1.72 * oeneg! - 2.37 * nita! - 1.83 * futl! + 0.285 * intwo! - 0.521 * chin!)
     : null;
 
@@ -132,6 +133,30 @@ export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: Ohl
     else if (totalAssets === null || totalLiabilities === null || currentAssets === null || currentLiabilities === null || !priceLevelAvailable) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balanceSheet,
+    thisYearIncome, priorYearIncome, thisYearCashFlow, thisYearIncomeRecords, priorYearIncomeRecords,
+    totalAssets, totalLiabilities, currentAssets, currentLiabilities, netIncomeTtm, netIncomeTtmPriorYear, operatingCashFlowTtm,
+    usdTwd, deflator, deflatorBase, priceLevelDate: quarterEndDate(rocYear, seasonNum),
+    variables: { size, tlta, wcta, clca, oeneg, nita, futl, intwo, chin },
+    oScore, ttmComplete, nullReason,
+  };
+};
+
+export const computeOhlsonOScore = async (query: QuarterlyMetricQuery, deps: OhlsonOScoreDeps): Promise<OhlsonOScoreComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveOhlsonOScoreInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, thisYearIncome, priorYearIncome, thisYearIncomeRecords, priorYearIncomeRecords, ttmComplete } = resolution;
+  const thisYearTtmQuarters = thisYearIncome.periods;
+  const priorYearTtmQuarters = priorYearIncome.periods;
+  let oScore = resolution.oScore;
+  let nullReason: MetricNullReason | null = resolution.nullReason;
 
   // 2026-09-13：模型本身不適用金融保險業（見 isFinancialIndustryCompany 的說明），
   // 蓋過原本算出來的結果，不是資料缺漏。

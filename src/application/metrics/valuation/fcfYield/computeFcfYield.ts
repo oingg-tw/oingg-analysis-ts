@@ -31,16 +31,16 @@ export type FcfYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announceme
 
 export type FcfYieldComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeFcfYield = async (
-  query: QuarterlyMetricQuery,
-  deps: FcfYieldDeps
-): Promise<FcfYieldComputationBatch> => {
+// 2026-10-01 溯源表（getFcfYieldProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼每股 FCF 還是四捨五入的
+// toPerShare（v2 已改 toPerShareExact），小數第二位對不上。查詢與值抽成這支 resolver 共用，computeFcfYield 只負責 TTM knowledge
+// date 與組 slot；計算本身逐字未改。
+export const resolveFcfYieldInputs = async (query: QuarterlyMetricQuery, deps: FcfYieldDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -58,8 +58,6 @@ export const computeFcfYield = async (
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
-
-  const coordinateBase = { symbol, metricCode: 'fcfYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   // TTM：近四季（含本季）FCF 加總 / 流通股數；股價沿用上面同一筆（本季 knowledge_date 查到的），
   // 不是另外用 TTM anchor 重查一次，跟 fcfYield.ts 的既有行為一致。
@@ -79,6 +77,24 @@ export const computeFcfYield = async (
   const fcfPerShareTtm = ttmComplete && sharesValue !== null ? toPerShareExact(fcfTtmSum, sharesValue) : null;
   const fcfYieldTtmPct = fcfPerShareTtm !== null && stockPrice !== null ? toPctFromNumbers(fcfPerShareTtm, stockPrice.closePrice) : null;
   const ttmNullReason: MetricNullReason | null = fcfYieldTtmPct !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, trailing, shares, sharesValue, mainAnchor, stockPrice, ttmQuarters, ttmRecords, ttmComplete, fcfTtmSum, fcfPerShareTtm, fcfYieldTtmPct, ttmNullReason };
+};
+
+export const computeFcfYield = async (
+  query: QuarterlyMetricQuery,
+  deps: FcfYieldDeps
+): Promise<FcfYieldComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveFcfYieldInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, ttmQuarters, ttmRecords, ttmComplete, fcfYieldTtmPct, ttmNullReason } = resolution;
+
+  const coordinateBase = { symbol, metricCode: 'fcfYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

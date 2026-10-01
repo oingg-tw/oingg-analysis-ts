@@ -1,81 +1,34 @@
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { calculateInventoryTurnover } from '../../../../domain/metrics/efficiency/inventoryTurnover/calculateInventoryTurnover';
-import { calculateReceivablesTurnover } from '../../../../domain/metrics/efficiency/receivablesTurnover/calculateReceivablesTurnover';
-import { calculateInventoryDays } from '../../../../domain/metrics/efficiency/inventoryDays/calculateInventoryDays';
-import { calculateReceivablesDays } from '../../../../domain/metrics/efficiency/receivablesDays/calculateReceivablesDays';
-import { calculateOperatingCycle } from '../../../../domain/metrics/efficiency/operatingCycle/calculateOperatingCycle';
-import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
-import { trailingPeriodLabel } from '../../shared/trailingYear';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricProvenanceResult } from '../../shared/provenance/provenanceTypes';
+import { averageBalanceEntries, averagedDenominatorEntry } from '../../shared/provenance/averageBalanceEntries';
+import { resolveTurnoverRatioFamilyData, type TurnoverRatioFamilyDeps } from '../turnoverRatio/computeTurnoverRatioFamily';
+import { TURNOVER_BALANCES, ttmFlowEntries } from '../turnoverRatio/turnoverRatioProvenanceEntries';
 
-// 2026-09-13 使用者要求擴大稽核鏈——operatingCycle = DIO + DSO（不扣 DPO，跟
-// cashConversionCycle 差異是不考慮付款緩衝期），見 getCashConversionCycleProvenance.ts
-// 同一個模式的說明，只是少了應付帳款那組欄位。
+// 2026-09-13 使用者要求擴大稽核鏈——operatingCycle = DIO + DSO（不扣 DPO，跟 cashConversionCycle 差異是不考慮付款緩衝期），
+// 見 getCashConversionCycleProvenance.ts 同一個模式的說明，只是少了應付帳款那組欄位。
+// 2026-10-01 改用 computeTurnoverRatioFamily 的 resolveTurnoverRatioFamilyData()（同一份資料與計算，見 turnoverRatioProvenanceEntries.ts）：
+// 兩個周轉率的分母 2026-09-22 起都是平均值，原本這裡用本季期末值，溯源值跟儲存值對不上。
 
-export const getOperatingCycleProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
-  if (!resolution) {
+export const getOperatingCycleProvenance = async (query: QuarterlyMetricQuery, deps: TurnoverRatioFamilyDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveTurnoverRatioFamilyData(query, deps);
+  if (!r) {
     return { symbol: query.symbol, metricCode: 'operatingCycle', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, inventory, accountsReceivable, basis, ttmQuarters, ttmOperatingCosts, ttmOperatingRevenues, ttmComplete, costTtmSum, revenueTtmSum } = resolution;
-
-  const inventoryTurnover = ttmComplete ? calculateInventoryTurnover(costTtmSum, inventory) : { value: null, nullReason: 'insufficient_history' as const };
-  const receivablesTurnover = ttmComplete ? calculateReceivablesTurnover(revenueTtmSum, accountsReceivable) : { value: null, nullReason: 'insufficient_history' as const };
-
-  const inventoryDays = calculateInventoryDays(inventoryTurnover.value, inventoryTurnover.nullReason);
-  const receivablesDays = calculateReceivablesDays(receivablesTurnover.value, receivablesTurnover.nullReason);
-
-  const result = calculateOperatingCycle(inventoryDays.value, receivablesDays.value);
-
-  const entries: ProvenanceEntry[] = [
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
-        role: `近一年 營業成本（${trailingPeriodLabel(tq, basis)}，用於 DIO）`,
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        fiscalQuarter: Number(tq.season),
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: 'operating_costs',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(ttmOperatingCosts[i]),
-      })
-    ),
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
-        role: `近一年 營收（${trailingPeriodLabel(tq, basis)}，用於 DSO）`,
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        fiscalQuarter: Number(tq.season),
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: 'revenue',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(ttmOperatingRevenues[i]),
-      })
-    ),
-    { role: '本季期末存貨', fiscalYear, fiscalQuarter, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'inventories', sourceDescription: null, value: toProvenanceEntryValue(inventory) },
-    {
-      role: '本季期末應收帳款',
-      fiscalYear,
-      fiscalQuarter,
-      type: 'statementField',
-      statementType: 'balanceSheet',
-      fieldKey: 'accounts_receivable_net',
-      sourceDescription: null,
-      value: toProvenanceEntryValue(accountsReceivable),
-    },
-  ];
-
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'operatingCycle',
     found: true,
-    fiscalYear,
-    fiscalQuarter,
-    value: result.value,
-    entries,
-    methodologyNote: `營運週期 = DIO + DSO。DIO(TTM)＝${inventoryDays.value ?? 'null'}，DSO(TTM)＝${receivablesDays.value ?? 'null'}——兩者各自是對應周轉率(TTM)的 365/x 轉換，周轉率則來自上方原始欄位，不是查回兩組獨立資料。`,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.ttm.operatingCycle.value,
+    entries: [
+      ...ttmFlowEntries(r, 'operatingCost', '，用於 DIO'),
+      ...ttmFlowEntries(r, 'operatingRevenue', '，用於 DSO'),
+      ...averageBalanceEntries(r.balances, [TURNOVER_BALANCES.inventory, TURNOVER_BALANCES.receivable]),
+      averagedDenominatorEntry('平均存貨', r.balances, r.avg.inventoryTtm),
+      averagedDenominatorEntry('平均應收帳款', r.balances, r.avg.receivableTtm),
+    ],
+    methodologyNote: `營運週期 = DIO + DSO。DIO(TTM)＝${r.ttm.inventoryDays.value ?? 'null'}，DSO(TTM)＝${r.ttm.receivablesDays.value ?? 'null'}——兩者各自是對應周轉率(TTM)的 365/x 轉換，周轉率的分母是平均存貨／應收（近四季窗口 5 個季末平均，興櫃半年頻 3 點，見上方逐點列出），不是查回兩組獨立資料。`,
   };
 };

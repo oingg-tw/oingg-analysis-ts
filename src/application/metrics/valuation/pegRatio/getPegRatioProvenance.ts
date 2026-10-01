@@ -1,178 +1,89 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { pickNetIncomeWithFieldKey as pickNetIncome, type PickedField } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingIncomeStatements, trailingPeriodLabel } from '../../shared/trailingYear';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import { commonShareEntries } from '../../shared/provenance/shareEntries';
+import { PEG_GROWTH_YEARS, resolvePegRatioInputs, type AnnualEps, type PegRatioDeps } from './computePegRatio';
 
-// 2026-09-13 使用者要求擴大稽核鏈——pegRatio(TTM) = PER(TTM) / EPS 5年複合成長率(%)。
-// PER 算法複製自 peRatio，EPS CAGR 固定只取 5 年（不像 epsCagr 有 3/8 年版本，PEG 原始
-// 概念本身沒有其他年期）。跟 computePegRatioPit.ts 一致，獨立重算不依賴
-// peRatio/epsCagr5y 已寫入的值。成長率非正時 PEG 無意義回傳 null。固定回傳 TTM。
+// 2026-09-13 使用者要求擴大稽核鏈——pegRatio(TTM) = PER(TTM) / EPS 5年複合成長率(%)。EPS CAGR 固定只取 5 年（PEG 原始
+// 概念本身沒有其他年期）。成長率非正時 PEG 無意義回傳 null。固定回傳 TTM。
+//
+// 2026-10-01 改成跟 computePegRatio 共用 resolvePegRatioInputs：原本這裡自己重算，中繼 EPS/PER/CAGR 各自四捨五入、沒扣特別股
+// 股利、年度 EPS 也沒做面額／配股還原（v2~v5 都沒跟上）。值直接取 resolution.pegRatio；年度 EPS 列出股數組成、特別股股利與
+// 還原倍數。
 
-const PEG_GROWTH_YEARS = 5;
+const netIncomeEntries = (label: string, trailing: AnnualEps['trailing']): ProvenanceEntry[] =>
+  trailing.periods.map((p): ProvenanceEntry => {
+    const netIncome = pickNetIncome(p.record);
+    return {
+      role: `${label}${trailingPeriodLabel(p, trailing.basis)}淨利`,
+      fiscalYear: rocYearToGregorian(Number(p.year)),
+      fiscalQuarter: Number(p.season),
+      type: 'statementField',
+      statementType: 'incomeStatement',
+      fieldKey: netIncome.fieldKey,
+      sourceDescription: null,
+      value: toProvenanceEntryValue(netIncome.value),
+    };
+  });
 
-interface AnnualEpsQuarterDetail {
-  fiscalYear: number;
-  fiscalQuarter: number;
-  periodLabel: string;
-  netIncome: PickedField;
-}
-
-interface AnnualEpsResult {
-  eps: number | null;
-  quarters: AnnualEpsQuarterDetail[];
-  shares: bigint | null;
-}
-
-const getAnnualEps = async (
-  cache: Map<number, AnnualEpsResult>,
-  symbol: string,
-  rocYear: number,
-  dataType: string,
-  subsidiaryCompanyId: string, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>
-): Promise<AnnualEpsResult> => {
-  if (cache.has(rocYear)) return cache.get(rocYear)!;
-
-  // 2026-10-01 全年改走共用近一年來源，跟 compute 同一份資料（截至 Q4 的近一年＝全年；興櫃半年頻＝上半年＋下半年，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
-  const records = trailing.periods.map((p) => p.record);
-  const netIncomes = records.map(pickNetIncome);
-  const quarters: AnnualEpsQuarterDetail[] = trailing.periods.map((p, i) => ({
-    fiscalYear: rocYearToGregorian(Number(p.year)),
-    fiscalQuarter: Number(p.season),
-    periodLabel: trailingPeriodLabel(p, trailing.basis),
-    netIncome: netIncomes[i]!,
-  }));
-
-  if (records.some((r) => r === null) || netIncomes.some((n) => n.value === null)) {
-    const result: AnnualEpsResult = { eps: null, quarters, shares: null };
-    cache.set(rocYear, result);
-    return result;
-  }
-
-  const netIncomeSum = netIncomes.reduce((sum, n) => sum + n.value!, 0n);
-  const q4ReportDate = records.at(-1)!.reportDate;
-  const shares = (await deps.shares.getOutstandingCommonShares(symbol, q4ReportDate))?.outstandingCommonShares ?? null;
-
-  const eps = shares !== null && shares !== 0n ? (Number(netIncomeSum) * 1000) / Number(shares) : null;
-  const result: AnnualEpsResult = { eps, quarters, shares };
-  cache.set(rocYear, result);
-  return result;
-};
-
-export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'pegRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
-  }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
+const annualEntries = (label: string, rocYear: number, annual: AnnualEps): ProvenanceEntry[] => {
   const fiscalYear = rocYearToGregorian(rocYear);
-
-  const mainIncomeStatement = await deps.statements.getIncomeStatement({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const reportDate = mainIncomeStatement?.reportDate ?? null;
-  const shares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-  const netIncomes = ttmRecords.map(pickNetIncome);
-
-  let ttmSum = 0n;
-  let ttmComplete = true;
-  for (const picked of netIncomes) {
-    if (picked.value === null) ttmComplete = false;
-    else ttmSum += picked.value;
-  }
-
-  const epsTtm = ttmComplete && shares !== null ? toPerShare(ttmSum, shares) : null;
-  const peRatioTtm = epsTtm !== null && stockPrice !== null && epsTtm !== 0 ? Math.round((stockPrice.closePrice / epsTtm) * 100) / 100 : null;
-
-  const latestCompleteFiscalYear = seasonNum === 4 ? rocYear : rocYear - 1;
-  const epsCache = new Map<number, AnnualEpsResult>();
-  const currentAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear, dataType, subsidiaryCompanyId, deps);
-  const priorAnnual = await getAnnualEps(epsCache, symbol, latestCompleteFiscalYear - PEG_GROWTH_YEARS, dataType, subsidiaryCompanyId, deps);
-
-  const epsCagr5yPct =
-    currentAnnual.eps !== null && priorAnnual.eps !== null && currentAnnual.eps > 0 && priorAnnual.eps > 0
-      ? Math.round((Math.pow(currentAnnual.eps / priorAnnual.eps, 1 / PEG_GROWTH_YEARS) - 1) * 100 * 100) / 100
-      : null;
-
-  const value = peRatioTtm !== null && epsCagr5yPct !== null && epsCagr5yPct > 0 ? Math.round((peRatioTtm / epsCagr5yPct) * 100) / 100 : null;
-
-  const buildYearEntries = (label: string, annual: AnnualEpsResult): ProvenanceEntry[] => [
-    ...annual.quarters.map(
-      (q): ProvenanceEntry => ({
-        role: `${label}${q.periodLabel}淨利`,
-        fiscalYear: q.fiscalYear,
-        fiscalQuarter: q.fiscalQuarter,
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: q.netIncome.fieldKey,
-        sourceDescription: null,
-        value: toProvenanceEntryValue(q.netIncome.value),
-      })
-    ),
+  return [
+    ...netIncomeEntries(label, annual.trailing),
+    ...commonShareEntries(annual.shares, fiscalYear, 4, { label: `${label}Q4 報告日`, preferredDividends: 'TTM' }),
     {
-      role: `${label}Q4 報告日流通股數`,
-      fiscalYear: annual.quarters.at(-1)!.fiscalYear,
+      role: `${label}面額／配股／減資還原倍數（年度 EPS ÷ 這個倍數，換算到最新股數基準）`,
+      fiscalYear,
       fiscalQuarter: 4,
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: '公開發行公司股本變動申報',
-      value: toProvenanceEntryValue(annual.shares),
+      sourceDescription: '公開發行公司股本變動申報（面額變更、股票股利、減資）',
+      value: toProvenanceEntryValue(annual.splitFactor),
     },
   ];
+};
+
+export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: PegRatioDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolvePegRatioInputs(query, deps);
+
+  if (!r) {
+    return { symbol: query.symbol, metricCode: 'pegRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  }
+
+  const currentLabel = `最近完整會計年度（民國 ${r.latestCompleteFiscalYear} 年，用於 5 年 EPS CAGR）`;
+  const priorLabel = `5 年前完整會計年度（民國 ${r.latestCompleteFiscalYear - PEG_GROWTH_YEARS} 年，用於 5 年 EPS CAGR）`;
 
   const entries: ProvenanceEntry[] = [
     {
       role: '股價（本季知識時點，用於 PER）',
-      fiscalYear,
-      fiscalQuarter: seasonNum,
+      fiscalYear: r.fiscalYear,
+      fiscalQuarter: r.seasonNum,
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: stockPrice ? `證交所／櫃買中心每日收盤價（實際交易日 ${stockPrice.tradeDate}）` : null,
-      value: toProvenanceEntryValue(stockPrice?.closePrice ?? null),
+      sourceDescription: r.stockPrice ? `證交所／櫃買中心每日收盤價（實際交易日 ${r.stockPrice.tradeDate}）` : null,
+      value: toProvenanceEntryValue(r.stockPrice?.closePrice ?? null),
     },
-    { role: '本季流通股數（PER 用 EPS 分母）', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(shares) },
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
-        role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}，PER 用 EPS 分子）`,
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        fiscalQuarter: Number(tq.season),
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: netIncomes[i]!.fieldKey,
-        sourceDescription: null,
-        value: toProvenanceEntryValue(netIncomes[i]!.value),
-      })
-    ),
-    ...buildYearEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年，用於 5 年 EPS CAGR）`, currentAnnual),
-    ...buildYearEntries(`5 年前完整會計年度（民國 ${latestCompleteFiscalYear - PEG_GROWTH_YEARS} 年，用於 5 年 EPS CAGR）`, priorAnnual),
+    ...commonShareEntries(r.shares, r.fiscalYear, r.seasonNum, { label: '本季報告日（PER 用）', preferredDividends: 'TTM' }),
+    ...netIncomeEntries('近一年（PER 用 EPS 分子）', r.trailing),
+    ...annualEntries(currentLabel, r.latestCompleteFiscalYear, r.currentAnnual),
+    ...annualEntries(priorLabel, r.latestCompleteFiscalYear - PEG_GROWTH_YEARS, r.priorAnnual),
   ];
 
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'pegRatio',
     found: true,
-    fiscalYear,
-    fiscalQuarter: seasonNum,
-    value,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.pegRatio,
     entries,
-    methodologyNote: `PER(TTM)＝${peRatioTtm ?? 'null'}（EPS(TTM)＝${epsTtm ?? 'null'}），EPS 5年複合成長率＝${epsCagr5yPct ?? 'null'}%（最近完整會計年度 EPS＝${currentAnnual.eps ?? 'null'}，5 年前＝${priorAnnual.eps ?? 'null'}）。皆為計算出的中繼值，非財報原始欄位。`,
+    methodologyNote:
+      `PER(TTM)＝${r.peRatioTtm ?? 'null'}（EPS(TTM)＝${r.epsTtm ?? 'null'}），EPS 5年複合成長率＝${r.epsCagr5yPct ?? 'null'}%` +
+      `（最近完整會計年度 EPS＝${r.currentAnnual.eps ?? 'null'}，5 年前＝${r.priorAnnual.eps ?? 'null'}，皆已扣特別股股利並還原到最新股數基準）。` +
+      '皆為計算出的中繼值、不四捨五入，只在 PEG 四捨五入一次。',
   };
 };

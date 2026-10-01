@@ -6,6 +6,7 @@ import { getPiotroskiFScoreBreakdown, type PiotroskiFScoreBreakdown } from '@/ap
 import type { PiotroskiFScoreDeps } from '@/application/metrics/quality/piotroskiFScore/computePiotroskiFScore';
 import { createProvenanceResolvers, type ProvenanceResolvers } from '@/application/metrics/shared/provenance/provenanceResolvers';
 import type { MetricProvenanceResult } from '@/application/metrics/shared/provenance/provenanceTypes';
+import { restatePerShareProvenance } from '@/application/metrics/shared/restatePerShareHistory';
 import type { Season } from '@/domain/calendar/rocQuarter';
 
 // 2026-09-17 Phase 4：GET /companies/{badges,metric-completeness,piotroski-breakdown,:symbol/metric-provenance}
@@ -67,12 +68,16 @@ export interface GetCompanyMetricProvenanceQuery {
 // 財報欄位、各自的值，跳轉到會計模式（GET /companies/financial-statement）對應的那一列。
 // 現查現算，不持久化。試點範圍見 PILOT_PROVENANCE_METRIC_CODES——metricCode 在 http schema 用
 // z.enum 驗證，不支援的指標直接被擋成 400。resolver 對應表見 provenanceResolvers.ts。
+// 2026-10-01 每股類指標的 value 換算到今天的股數基準，跟 metric-history 顯示的一致（見 restatePerShareProvenance）。
 export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season, asOfDate }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResult> =>
-  createProvenanceResolvers(deps)[metricCode]({
-    symbol,
-    year,
-    season,
-    asOfDate: asOfDate === undefined ? undefined : new Date(`${asOfDate}T00:00:00Z`),
-    dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol),
-    subsidiaryCompanyId: '',
-  });
+  restatePerShareProvenance(
+    await createProvenanceResolvers(deps)[metricCode]({
+      symbol,
+      year,
+      season,
+      asOfDate: asOfDate === undefined ? undefined : new Date(`${asOfDate}T00:00:00Z`),
+      dataType: year !== undefined && season !== undefined ? await deps.reportAvailability.resolveDataTypeForPeriod(symbol, Number(year), Number(season)) : await deps.reportAvailability.resolveDataType(symbol),
+      subsidiaryCompanyId: '',
+    }),
+    deps
+  );

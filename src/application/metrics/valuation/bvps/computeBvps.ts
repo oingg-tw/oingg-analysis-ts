@@ -24,13 +24,15 @@ export type BvpsDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'
 
 export type BvpsComputationBatch = ComputationBatch<'q'>;
 
-export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): Promise<BvpsComputationBatch> => {
+// 2026-10-01 溯源表（getBvpsProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，沒扣特別股清償金額（v2/v3），
+// 2881 溯源 90.5 vs 寫入 83.65。查詢與值抽成這支 resolver 共用，computeBvps 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveBvpsInputs = async (query: QuarterlyMetricQuery, deps: BvpsDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -50,6 +52,19 @@ export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): 
   const commonEquity = toCommonEquity(equity.value, shares?.preferredClaimThousands ?? 0n);
   const bvps = commonEquity !== null && sharesValue !== null ? toPerShare(commonEquity, sharesValue) : null;
   const nullReason: MetricNullReason | null = bvps === null ? determineNullReason(equity.value, sharesValue) : null;
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balanceSheet, equity, shares, sharesValue, commonEquity, bvps, nullReason };
+};
+
+export const computeBvps = async (query: QuarterlyMetricQuery, deps: BvpsDeps): Promise<BvpsComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveBvpsInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, bvps, nullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 

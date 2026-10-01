@@ -36,16 +36,16 @@ export type GrahamNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announ
 
 export type GrahamNumberComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeGrahamNumber = async (
-  query: QuarterlyMetricQuery,
-  deps: GrahamNumberDeps
-): Promise<GrahamNumberComputationBatch> => {
+// 2026-10-01 溯源表（getGrahamNumberProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼 EPS/BVPS/PER/PBR
+// 都各自四捨五入（v2 已改成只在最後四捨五入一次）、也沒扣特別股（v3/v4），上市櫃 20 家全部差幾分。查詢與值抽成這支
+// resolver 共用，computeGrahamNumber 只負責組 slot；計算本身逐字未改。
+export const resolveGrahamNumberInputs = async (query: QuarterlyMetricQuery, deps: GrahamNumberDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -100,6 +100,22 @@ export const computeGrahamNumber = async (
     else if (epsTtm === null || bvps === null || stockPrice === null) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, balanceSheet, equity, shares, sharesValue, commonEquity, bvps, mainAnchor, stockPrice, pbRatio, trailing, ttmComplete, netIncomeTtmSum, epsTtm, peRatioTtm, grahamNumber, nullReason };
+};
+
+export const computeGrahamNumber = async (
+  query: QuarterlyMetricQuery,
+  deps: GrahamNumberDeps
+): Promise<GrahamNumberComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveGrahamNumberInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, grahamNumber, nullReason } = resolution;
 
   let ttm: ComputationSlot;
   if (!mainAnchor) {

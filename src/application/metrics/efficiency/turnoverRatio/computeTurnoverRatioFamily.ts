@@ -56,39 +56,16 @@ export type TurnoverRatioFamilyComputationBatch = ComputationBatch<'inventoryTur
 export const TURNOVER_AVERAGE_DENOMINATOR_FORMULA_VERSION = 2;
 const AVERAGE_DENOMINATOR_CODES = new Set(['inventoryTurnover', 'receivablesTurnover', 'fixedAssetTurnover', 'payablesTurnover', 'inventoryDays', 'receivablesDays', 'payablesDays', 'cashConversionCycle', 'operatingCycle', 'netWorkingCapitalTurnover']);
 
-export const computeTurnoverRatioFamily = async (
-  query: QuarterlyMetricQuery,
-  deps: TurnoverRatioFamilyDeps
-): Promise<TurnoverRatioFamilyComputationBatch> => {
+// 2026-10-01 抽出 resolveTurnoverRatioFamilyData()：12 支週轉率家族的溯源表（get<Metric>Provenance.ts）跟 compute 走同一份
+// 資料與計算。之前溯源表另外用 resolveTurnoverRatioProvenanceInputs.ts 自己查、自己算「本季期末餘額」當分母，2026-09-22
+// 這裡改平均分母（v2）時那份沒跟上，溯源值跟儲存值對不上（上市 20 家只對 6 家）——那份檔案已刪除，溯源表改讀這裡的結果。
+// TTM 的 12 個計算結果在這裡算好（ttmComplete=false 時一律 insufficient_history，跟 compute 寫入的值一致）。
+export const resolveTurnoverRatioFamilyData = async (query: QuarterlyMetricQuery, deps: TurnoverRatioFamilyDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const skipped = (action: 'skipped_no_quarter'): TurnoverRatioFamilyComputationBatch => ({
-    symbol,
-    rocYear: null,
-    season: null,
-    slots: {
-      inventoryTurnoverQ: { action },
-      inventoryTurnoverTtm: { action },
-      receivablesTurnoverQ: { action },
-      receivablesTurnoverTtm: { action },
-      fixedAssetTurnoverQ: { action },
-      fixedAssetTurnoverTtm: { action },
-      payablesTurnoverQ: { action },
-      payablesTurnoverTtm: { action },
-      inventoryDaysTtm: { action },
-      receivablesDaysTtm: { action },
-      payablesDaysTtm: { action },
-      cashConversionCycleTtm: { action },
-      operatingCycleTtm: { action },
-      netWorkingCapitalTurnoverTtm: { action },
-      inventoryToRevenueRatioTtm: { action },
-      receivablesToRevenueRatioTtm: { action },
-    },
-  });
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) return skipped('skipped_no_quarter');
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -126,31 +103,12 @@ export const computeTurnoverRatioFamily = async (
     calc.value === null && average === null && current !== null ? { value: null, nullReason: 'insufficient_history' as const } : calc;
 
   // Q：分母是本季與上季期末的平均。
-  const inventoryTurnoverQuarterly = withAverageDenominator(calculateInventoryTurnover(operatingCost, avg.inventoryQ), avg.inventoryQ, inventory);
-  const receivablesTurnoverQuarterly = withAverageDenominator(calculateReceivablesTurnover(operatingRevenue, avg.receivableQ), avg.receivableQ, accountsReceivable);
-  const fixedAssetTurnoverQuarterly = withAverageDenominator(calculateFixedAssetTurnover(operatingRevenue, avg.ppeQ), avg.ppeQ, propertyPlantEquipment);
-  const payablesTurnoverQuarterly = withAverageDenominator(calculatePayablesTurnover(operatingCost, avg.payableQ), avg.payableQ, accountsPayable);
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
-
-  let inventoryTurnoverQ: ComputationSlot;
-  let receivablesTurnoverQ: ComputationSlot;
-  let fixedAssetTurnoverQ: ComputationSlot;
-  let payablesTurnoverQ: ComputationSlot;
-
-  if (!mainAnchor) {
-    inventoryTurnoverQ = { action: 'skipped_no_knowledge_date' };
-    receivablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
-    fixedAssetTurnoverQ = { action: 'skipped_no_knowledge_date' };
-    payablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
-  } else {
-    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    inventoryTurnoverQ = computation({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q'), value: inventoryTurnoverQuarterly.value, nullReason: inventoryTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    receivablesTurnoverQ = computation({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q'), value: receivablesTurnoverQuarterly.value, nullReason: receivablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fixedAssetTurnoverQ = computation({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q'), value: fixedAssetTurnoverQuarterly.value, nullReason: fixedAssetTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    payablesTurnoverQ = computation({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q'), value: payablesTurnoverQuarterly.value, nullReason: payablesTurnoverQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-  }
+  const quarterly = {
+    inventoryTurnover: withAverageDenominator(calculateInventoryTurnover(operatingCost, avg.inventoryQ), avg.inventoryQ, inventory),
+    receivablesTurnover: withAverageDenominator(calculateReceivablesTurnover(operatingRevenue, avg.receivableQ), avg.receivableQ, accountsReceivable),
+    fixedAssetTurnover: withAverageDenominator(calculateFixedAssetTurnover(operatingRevenue, avg.ppeQ), avg.ppeQ, propertyPlantEquipment),
+    payablesTurnover: withAverageDenominator(calculatePayablesTurnover(operatingCost, avg.payableQ), avg.payableQ, accountsPayable),
+  };
 
   // TTM：近四季（含本季）營業成本/營收各自加總，四個周轉率共用同一個 ttmComplete 旗標，
   // 分母是近四季窗口 5 個季末餘額的平均（2026-09-22 起）。
@@ -172,10 +130,106 @@ export const computeTurnoverRatioFamily = async (
   }
 
   const insufficient = { value: null, nullReason: 'insufficient_history' as const };
-  const inventoryTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateInventoryTurnover(costTtmSum, avg.inventoryTtm), avg.inventoryTtm, inventory) : insufficient;
-  const receivablesTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateReceivablesTurnover(revenueTtmSum, avg.receivableTtm), avg.receivableTtm, accountsReceivable) : insufficient;
-  const fixedAssetTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculateFixedAssetTurnover(revenueTtmSum, avg.ppeTtm), avg.ppeTtm, propertyPlantEquipment) : insufficient;
-  const payablesTurnoverTtmCalc = ttmComplete ? withAverageDenominator(calculatePayablesTurnover(costTtmSum, avg.payableTtm), avg.payableTtm, accountsPayable) : insufficient;
+  const inventoryTurnover = ttmComplete ? withAverageDenominator(calculateInventoryTurnover(costTtmSum, avg.inventoryTtm), avg.inventoryTtm, inventory) : insufficient;
+  const receivablesTurnover = ttmComplete ? withAverageDenominator(calculateReceivablesTurnover(revenueTtmSum, avg.receivableTtm), avg.receivableTtm, accountsReceivable) : insufficient;
+  const fixedAssetTurnover = ttmComplete ? withAverageDenominator(calculateFixedAssetTurnover(revenueTtmSum, avg.ppeTtm), avg.ppeTtm, propertyPlantEquipment) : insufficient;
+  const payablesTurnover = ttmComplete ? withAverageDenominator(calculatePayablesTurnover(costTtmSum, avg.payableTtm), avg.payableTtm, accountsPayable) : insufficient;
+
+  const inventoryDays = calculateInventoryDays(inventoryTurnover.value, inventoryTurnover.nullReason);
+  const receivablesDays = calculateReceivablesDays(receivablesTurnover.value, receivablesTurnover.nullReason);
+  const payablesDays = calculatePayablesDays(payablesTurnover.value, payablesTurnover.nullReason);
+
+  // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——
+  // netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio，
+  // 只有 TTM 一種 basis，分母缺漏或本季餘額查無資料時 missing_input，分母為 0 時
+  // zero_or_negative_denominator。
+  // 分母改 5 個季末淨營運資金的平均（v2）——期末 NWC 在 Q2 會被股東會決議後的應付股利壓低。
+  const netWorkingCapitalTurnoverValue = avg.netWorkingCapitalTtm !== null ? toRatio(revenueTtmSum, avg.netWorkingCapitalTtm) : null;
+  const inventoryToRevenueRatioValue = inventory !== null ? toPercent(inventory, revenueTtmSum) : null;
+  const receivablesToRevenueRatioValue = accountsReceivable !== null ? toPercent(accountsReceivable, revenueTtmSum) : null;
+
+  const ttm = {
+    inventoryTurnover,
+    receivablesTurnover,
+    fixedAssetTurnover,
+    payablesTurnover,
+    inventoryDays,
+    receivablesDays,
+    payablesDays,
+    cashConversionCycle: calculateCashConversionCycle(inventoryDays.value, receivablesDays.value, payablesDays.value),
+    operatingCycle: calculateOperatingCycle(inventoryDays.value, receivablesDays.value),
+    netWorkingCapitalTurnover: !ttmComplete
+      ? insufficient
+      : {
+          value: netWorkingCapitalTurnoverValue,
+          nullReason: netWorkingCapitalTurnoverValue !== null ? null : netWorkingCapital === null ? ('missing_input' as const) : avg.netWorkingCapitalTtm === null ? ('insufficient_history' as const) : ('zero_or_negative_denominator' as const),
+        },
+    inventoryToRevenueRatio: !ttmComplete
+      ? insufficient
+      : { value: inventoryToRevenueRatioValue, nullReason: inventoryToRevenueRatioValue !== null ? null : inventory === null ? ('missing_input' as const) : ('zero_or_negative_denominator' as const) },
+    receivablesToRevenueRatio: !ttmComplete
+      ? insufficient
+      : { value: receivablesToRevenueRatioValue, nullReason: receivablesToRevenueRatioValue !== null ? null : accountsReceivable === null ? ('missing_input' as const) : ('zero_or_negative_denominator' as const) },
+  };
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances, avg, inventory, accountsReceivable, quarterly, basis: trailing.basis, ttmQuarters, ttmRecords, ttmComplete, ttm };
+};
+
+export const computeTurnoverRatioFamily = async (
+  query: QuarterlyMetricQuery,
+  deps: TurnoverRatioFamilyDeps
+): Promise<TurnoverRatioFamilyComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const skipped = (action: 'skipped_no_quarter'): TurnoverRatioFamilyComputationBatch => ({
+    symbol,
+    rocYear: null,
+    season: null,
+    slots: {
+      inventoryTurnoverQ: { action },
+      inventoryTurnoverTtm: { action },
+      receivablesTurnoverQ: { action },
+      receivablesTurnoverTtm: { action },
+      fixedAssetTurnoverQ: { action },
+      fixedAssetTurnoverTtm: { action },
+      payablesTurnoverQ: { action },
+      payablesTurnoverTtm: { action },
+      inventoryDaysTtm: { action },
+      receivablesDaysTtm: { action },
+      payablesDaysTtm: { action },
+      cashConversionCycleTtm: { action },
+      operatingCycleTtm: { action },
+      netWorkingCapitalTurnoverTtm: { action },
+      inventoryToRevenueRatioTtm: { action },
+      receivablesToRevenueRatioTtm: { action },
+    },
+  });
+
+  const resolution = await resolveTurnoverRatioFamilyData(query, deps);
+  if (!resolution) return skipped('skipped_no_quarter');
+
+  const { year, season, rocYear, seasonNum, fiscalYear, reportDate, quarterly, ttmQuarters, ttmRecords, ttmComplete, ttm: calc } = resolution;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
+
+  let inventoryTurnoverQ: ComputationSlot;
+  let receivablesTurnoverQ: ComputationSlot;
+  let fixedAssetTurnoverQ: ComputationSlot;
+  let payablesTurnoverQ: ComputationSlot;
+
+  if (!mainAnchor) {
+    inventoryTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    receivablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    fixedAssetTurnoverQ = { action: 'skipped_no_knowledge_date' };
+    payablesTurnoverQ = { action: 'skipped_no_knowledge_date' };
+  } else {
+    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
+    inventoryTurnoverQ = computation({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('Q'), value: quarterly.inventoryTurnover.value, nullReason: quarterly.inventoryTurnover.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    receivablesTurnoverQ = computation({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('Q'), value: quarterly.receivablesTurnover.value, nullReason: quarterly.receivablesTurnover.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fixedAssetTurnoverQ = computation({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('Q'), value: quarterly.fixedAssetTurnover.value, nullReason: quarterly.fixedAssetTurnover.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    payablesTurnoverQ = computation({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('Q'), value: quarterly.payablesTurnover.value, nullReason: quarterly.payablesTurnover.nullReason, knowledgeDate, knowledgeDateIsFallback });
+  }
 
   let inventoryTurnoverTtm: ComputationSlot, receivablesTurnoverTtm: ComputationSlot, fixedAssetTurnoverTtm: ComputationSlot, payablesTurnoverTtm: ComputationSlot;
   let inventoryDaysTtm: ComputationSlot, receivablesDaysTtm: ComputationSlot, payablesDaysTtm: ComputationSlot, cashConversionCycleTtm: ComputationSlot, operatingCycleTtm: ComputationSlot;
@@ -192,59 +246,19 @@ export const computeTurnoverRatioFamily = async (
       netWorkingCapitalTurnoverTtm = inventoryToRevenueRatioTtm = receivablesToRevenueRatioTtm = { action: 'skipped_no_knowledge_date' };
     } else {
       const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
-      inventoryTurnoverTtm = computation({ ...coordinateFor('inventoryTurnover'), ...periodTypeGroup('TTM'), value: inventoryTurnoverTtmCalc.value, nullReason: inventoryTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesTurnoverTtm = computation({ ...coordinateFor('receivablesTurnover'), ...periodTypeGroup('TTM'), value: receivablesTurnoverTtmCalc.value, nullReason: receivablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      fixedAssetTurnoverTtm = computation({ ...coordinateFor('fixedAssetTurnover'), ...periodTypeGroup('TTM'), value: fixedAssetTurnoverTtmCalc.value, nullReason: fixedAssetTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesTurnoverTtm = computation({ ...coordinateFor('payablesTurnover'), ...periodTypeGroup('TTM'), value: payablesTurnoverTtmCalc.value, nullReason: payablesTurnoverTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-      const inventoryDaysTtmCalc = calculateInventoryDays(inventoryTurnoverTtmCalc.value, inventoryTurnoverTtmCalc.nullReason);
-      const receivablesDaysTtmCalc = calculateReceivablesDays(receivablesTurnoverTtmCalc.value, receivablesTurnoverTtmCalc.nullReason);
-      const payablesDaysTtmCalc = calculatePayablesDays(payablesTurnoverTtmCalc.value, payablesTurnoverTtmCalc.nullReason);
-
-      inventoryDaysTtm = computation({ ...coordinateFor('inventoryDays'), ...periodTypeGroup('TTM'), value: inventoryDaysTtmCalc.value, nullReason: inventoryDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      receivablesDaysTtm = computation({ ...coordinateFor('receivablesDays'), ...periodTypeGroup('TTM'), value: receivablesDaysTtmCalc.value, nullReason: receivablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-      payablesDaysTtm = computation({ ...coordinateFor('payablesDays'), ...periodTypeGroup('TTM'), value: payablesDaysTtmCalc.value, nullReason: payablesDaysTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-      const cccTtmCalc = calculateCashConversionCycle(inventoryDaysTtmCalc.value, receivablesDaysTtmCalc.value, payablesDaysTtmCalc.value);
-      cashConversionCycleTtm = computation({ ...coordinateFor('cashConversionCycle'), ...periodTypeGroup('TTM'), value: cccTtmCalc.value, nullReason: cccTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-      const operatingCycleTtmCalc = calculateOperatingCycle(inventoryDaysTtmCalc.value, receivablesDaysTtmCalc.value);
-      operatingCycleTtm = computation({ ...coordinateFor('operatingCycle'), ...periodTypeGroup('TTM'), value: operatingCycleTtmCalc.value, nullReason: operatingCycleTtmCalc.nullReason, knowledgeDate, knowledgeDateIsFallback });
-
-      // 2026-09-11 應使用者要求新增（「全市場六季財報深度解鎖的指標」批次）——
-      // netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio，
-      // 只有 TTM 一種 basis，分母缺漏或本季餘額查無資料時 missing_input，分母為 0 時
-      // zero_or_negative_denominator。
-      // 分母改 5 個季末淨營運資金的平均（v2）——期末 NWC 在 Q2 會被股東會決議後的應付股利壓低。
-      const netWorkingCapitalTurnoverValue = avg.netWorkingCapitalTtm !== null ? toRatio(revenueTtmSum, avg.netWorkingCapitalTtm) : null;
-      netWorkingCapitalTurnoverTtm = computation({
-        ...coordinateFor('netWorkingCapitalTurnover'),
-        ...periodTypeGroup('TTM'),
-        value: netWorkingCapitalTurnoverValue,
-        nullReason: netWorkingCapitalTurnoverValue !== null ? null : netWorkingCapital === null ? 'missing_input' : avg.netWorkingCapitalTtm === null ? 'insufficient_history' : 'zero_or_negative_denominator',
-        knowledgeDate,
-        knowledgeDateIsFallback,
-      });
-
-      const inventoryToRevenueRatioValue = inventory !== null ? toPercent(inventory, revenueTtmSum) : null;
-      inventoryToRevenueRatioTtm = computation({
-        ...coordinateFor('inventoryToRevenueRatio'),
-        ...periodTypeGroup('TTM'),
-        value: inventoryToRevenueRatioValue,
-        nullReason: inventoryToRevenueRatioValue !== null ? null : inventory === null ? 'missing_input' : 'zero_or_negative_denominator',
-        knowledgeDate,
-        knowledgeDateIsFallback,
-      });
-
-      const receivablesToRevenueRatioValue = accountsReceivable !== null ? toPercent(accountsReceivable, revenueTtmSum) : null;
-      receivablesToRevenueRatioTtm = computation({
-        ...coordinateFor('receivablesToRevenueRatio'),
-        ...periodTypeGroup('TTM'),
-        value: receivablesToRevenueRatioValue,
-        nullReason: receivablesToRevenueRatioValue !== null ? null : accountsReceivable === null ? 'missing_input' : 'zero_or_negative_denominator',
-        knowledgeDate,
-        knowledgeDateIsFallback,
-      });
+      const ttmSlot = (metricCode: keyof typeof calc) => computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value: calc[metricCode].value, nullReason: calc[metricCode].nullReason, knowledgeDate, knowledgeDateIsFallback });
+      inventoryTurnoverTtm = ttmSlot('inventoryTurnover');
+      receivablesTurnoverTtm = ttmSlot('receivablesTurnover');
+      fixedAssetTurnoverTtm = ttmSlot('fixedAssetTurnover');
+      payablesTurnoverTtm = ttmSlot('payablesTurnover');
+      inventoryDaysTtm = ttmSlot('inventoryDays');
+      receivablesDaysTtm = ttmSlot('receivablesDays');
+      payablesDaysTtm = ttmSlot('payablesDays');
+      cashConversionCycleTtm = ttmSlot('cashConversionCycle');
+      operatingCycleTtm = ttmSlot('operatingCycle');
+      netWorkingCapitalTurnoverTtm = ttmSlot('netWorkingCapitalTurnover');
+      inventoryToRevenueRatioTtm = ttmSlot('inventoryToRevenueRatio');
+      receivablesToRevenueRatioTtm = ttmSlot('receivablesToRevenueRatio');
     }
   } else if (mainAnchor) {
     const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;

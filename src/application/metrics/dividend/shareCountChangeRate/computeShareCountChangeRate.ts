@@ -16,18 +16,16 @@ export type ShareCountChangeRateDeps = Pick<PitDeps, 'statements' | 'quarters' |
 
 export type ShareCountChangeRateComputationBatch = ComputationBatch<'q'>;
 
-// 股本變化率（YoY）= (本季流通股數 - 去年同季流通股數) / 去年同季流通股數 * 100。正值代表
-// 股數增加（現金增資/可轉債轉換等稀釋股東權益），負值代表股數減少（庫藏股註銷減資）。去年
-// 同季用 getPastNQuarters({rocYear,season},5)[0] 取得（5 季前，取最舊那一筆），跟
-// piotroskiFScore 的既有慣例一致，不是專門的新機制。只有 Q 一種 basis——流通股數是資產
-// 負債表時點快照，沒有 TTM/年化概念（跟 bvps/stockPrice 同一種性質）。
-export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, deps: ShareCountChangeRateDeps): Promise<ShareCountChangeRateComputationBatch> => {
+// 2026-10-01 溯源表（getShareCountChangeRateProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，去年同季股數沒做
+// 面額／配股還原（2881 溯源 2.5% vs 寫入 0%——配股不是增資稀釋）。查詢與值抽成這支 resolver 共用，computeShareCountChangeRate
+// 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveShareCountChangeRateInputs = async (query: QuarterlyMetricQuery, deps: ShareCountChangeRateDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -61,6 +59,24 @@ export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, d
       ? Math.round((Number(currentValue - priorValue) / Number(priorValue)) * 100 * 100) / 100
       : null;
   const nullReason: MetricNullReason | null = changeRate !== null ? null : currentValue === null || priorValue === null ? 'missing_input' : 'zero_or_negative_denominator';
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, currentShares, prior, priorShares, splitFactor, priorValue, changeRate, nullReason };
+};
+
+// 股本變化率（YoY）= (本季流通股數 - 去年同季流通股數) / 去年同季流通股數 * 100。正值代表
+// 股數增加（現金增資/可轉債轉換等稀釋股東權益），負值代表股數減少（庫藏股註銷減資）。去年
+// 同季用 getPastNQuarters({rocYear,season},5)[0] 取得（5 季前，取最舊那一筆），跟
+// piotroskiFScore 的既有慣例一致，不是專門的新機制。只有 Q 一種 basis——流通股數是資產
+// 負債表時點快照，沒有 TTM/年化概念（跟 bvps/stockPrice 同一種性質）。
+export const computeShareCountChangeRate = async (query: QuarterlyMetricQuery, deps: ShareCountChangeRateDeps): Promise<ShareCountChangeRateComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveShareCountChangeRateInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, changeRate, nullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'shareCountChangeRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

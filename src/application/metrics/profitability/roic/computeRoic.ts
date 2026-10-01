@@ -38,14 +38,14 @@ export type RoicDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'
 
 export type RoicComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
-export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): Promise<RoicComputationBatch> => {
+// 2026-10-01 抽出 resolveRoicData()：溯源表（getRoicProvenance.ts）跟 compute 走同一份資料與計算——溯源表原本自己算
+// 本季期末投入資本，2026-09-22 分母改平均後就跟儲存值對不上。
+export const resolveRoicData = async (query: QuarterlyMetricQuery, deps: RoicDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -79,21 +79,16 @@ export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): 
   const roicQuarterlyPct = nopat !== null && investedCapitalAvgQ !== null ? toPercent(nopat, investedCapitalAvgQ) : null;
   const quarterlyNullReason: MetricNullReason | null = roicQuarterlyPct === null ? denominatorNullReason(nopat, investedCapitalAvgQ, investedCapital) : null;
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const coordinateBase = { symbol, metricCode: 'roic', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', roicQuarterlyPct, quarterlyNullReason);
-
   // TTM：近四季（含本季）NOPAT 加總，投入資本用近四季窗口 5 個季末的平均（2026-09-22 起）。
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
   const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
   const ttmRecords = trailing.periods.map((p) => p.record);
 
+  const ttmNopats = ttmRecords.map(computeNopat);
   let nopatTtmSum = 0n;
   let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const quarterNopat = computeNopat(record);
+  for (const quarterNopat of ttmNopats) {
     if (quarterNopat === null) {
       ttmComplete = false;
     } else {
@@ -103,6 +98,21 @@ export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): 
 
   const ttmValue = ttmComplete && investedCapitalAvgTtm !== null ? toPercent(nopatTtmSum, investedCapitalAvgTtm) : null;
   const ttmNullReason: MetricNullReason | null = ttmValue !== null ? null : ttmComplete ? denominatorNullReason(nopatTtmSum, investedCapitalAvgTtm, investedCapital) : 'insufficient_history';
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances, investedCapitalAvgTtm, roicQuarterlyPct, quarterlyNullReason, basis: trailing.basis, ttmQuarters, ttmRecords, ttmNopats, ttmComplete, ttmValue, ttmNullReason };
+};
+
+export const computeRoic = async (query: QuarterlyMetricQuery, deps: RoicDeps): Promise<RoicComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveRoicData(query, deps);
+  if (!resolution) return noQuarterBatch(symbol, ['q', 'ttm']);
+
+  const { year, season, rocYear, seasonNum, fiscalYear, reportDate, roicQuarterlyPct, quarterlyNullReason, ttmQuarters, ttmRecords, ttmComplete, ttmValue, ttmNullReason } = resolution;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'roic', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', roicQuarterlyPct, quarterlyNullReason);
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

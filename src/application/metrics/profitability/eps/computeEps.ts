@@ -25,14 +25,15 @@ export type EpsDeps = Pick<PitDeps, 'statements' | 'annualReports' | 'quarters' 
 
 export type EpsComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
-export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Promise<EpsComputationBatch> => {
+// 2026-10-01 溯源表（getEpsProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算、沒跟上 2026-09-25 的「扣特別股
+// 股利」（2881 溯源 11.92 vs 寫入 11.64）。查詢與 Q／TTM 的值抽成這支 resolver 共用，computeEps 只負責 knowledge date、
+// 年報 FY 與組 slot；計算本身逐字未改。
+export const resolveEpsInputs = async (query: QuarterlyMetricQuery, deps: Pick<EpsDeps, 'statements' | 'quarters' | 'shares' | 'cumulativeStatements'>) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -52,12 +53,6 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
   const commonEarningsQ = toCommonEarnings(netIncome.value, shares?.preferredDividendsTtmThousands ?? 0n, 'Q');
   const epsQuarterly = commonEarningsQ !== null && sharesValue !== null ? toPerShare(commonEarningsQ, sharesValue) : null;
   const quarterlyNullReason: MetricNullReason | null = epsQuarterly === null ? determineNullReason(netIncome.value, sharesValue) : null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-
-  const coordinateBase = { symbol, metricCode: 'eps', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', epsQuarterly, quarterlyNullReason);
 
   // TTM：近四季（含本季）淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
   // knowledge_date 沿用本季（Q）自己的，跟 computeRoePit.ts 的 TTM 處理一致。
@@ -79,6 +74,30 @@ export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Pr
 
   const epsTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum - (shares?.preferredDividendsTtmThousands ?? 0n), sharesValue) : null;
   const ttmNullReason: MetricNullReason | null = epsTtm !== null ? null : ttmComplete ? determineNullReason(ttmSum, sharesValue) : 'insufficient_history';
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate,
+    netIncome, shares, sharesValue, epsQuarterly, quarterlyNullReason,
+    trailing, ttmQuarters, ttmRecords, ttmSum, ttmComplete, epsTtm, ttmNullReason,
+  };
+};
+
+export const computeEps = async (query: QuarterlyMetricQuery, deps: EpsDeps): Promise<EpsComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveEpsInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q', 'ttm', 'fy']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, epsQuarterly, quarterlyNullReason, ttmQuarters, ttmRecords, ttmComplete, epsTtm, ttmNullReason } = resolution;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+
+  const coordinateBase = { symbol, metricCode: 'eps', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', epsQuarterly, quarterlyNullReason);
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

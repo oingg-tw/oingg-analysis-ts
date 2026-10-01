@@ -39,32 +39,32 @@ const resolveProfitBeforeTax = async (
   incomeStatement: IncomeStatementFields | null,
   isBank: boolean,
   deps: Pick<PretaxIncomePerShareDeps, 'statements'>
-): Promise<{ profitBeforeTax: bigint | null; reportDate: Date | null }> => {
+): Promise<{ profitBeforeTax: bigint | null; reportDate: Date | null; fromBankStatement: boolean }> => {
   if (incomeStatement?.profitBeforeTax != null) {
-    return { profitBeforeTax: incomeStatement.profitBeforeTax, reportDate: incomeStatement.reportDate };
+    return { profitBeforeTax: incomeStatement.profitBeforeTax, reportDate: incomeStatement.reportDate, fromBankStatement: false };
   }
   if (!isBank) {
-    return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null };
+    return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null, fromBankStatement: false };
   }
   const bankIncomeStatement = await deps.statements.getBankIncomeStatement(key);
   if (bankIncomeStatement?.profitBeforeTax != null) {
-    return { profitBeforeTax: bankIncomeStatement.profitBeforeTax, reportDate: incomeStatement?.reportDate ?? bankIncomeStatement.reportDate };
+    return { profitBeforeTax: bankIncomeStatement.profitBeforeTax, reportDate: incomeStatement?.reportDate ?? bankIncomeStatement.reportDate, fromBankStatement: true };
   }
-  return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null };
+  return { profitBeforeTax: null, reportDate: incomeStatement?.reportDate ?? null, fromBankStatement: false };
 };
 
 export type PretaxIncomePerShareComputationBatch = ComputationBatch<'q' | 'ttm' | 'fy'>;
 
-export const computePretaxIncomePerShare = async (
-  query: QuarterlyMetricQuery,
-  deps: PretaxIncomePerShareDeps
-): Promise<PretaxIncomePerShareComputationBatch> => {
+// 2026-10-01 溯源表（getPretaxIncomePerShareProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，沒有上面的銀行監理
+// 專用表 fallback（一般表缺稅前淨利的銀行／金控季度，寫入有值、溯源是 null），股數日期也沒跟著 fallback。查詢與 Q／TTM 的值
+// 抽成這支 resolver 共用，computePretaxIncomePerShare 只負責 knowledge date、年報 FY 與組 slot；計算本身逐字未改。
+export const resolvePretaxIncomePerShareInputs = async (query: QuarterlyMetricQuery, deps: PretaxIncomePerShareDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm', 'fy']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -83,12 +83,6 @@ export const computePretaxIncomePerShare = async (
 
   const pretaxIncomePerShareQuarterly = profitBeforeTax !== null && sharesValue !== null ? toPerShare(profitBeforeTax, sharesValue) : null;
   const quarterlyNullReason: MetricNullReason | null = pretaxIncomePerShareQuarterly === null ? determineNullReason(profitBeforeTax, sharesValue) : null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-
-  const coordinateBase = { symbol, metricCode: 'pretaxIncomePerShare', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', pretaxIncomePerShareQuarterly, quarterlyNullReason);
 
   // TTM：近四季（含本季）稅前淨利加總 / 流通股數。四季不齊時仍寫一列 value=null/insufficient_history，
   // knowledge_date 沿用本季（Q）自己的，跟 computeEpsPit.ts 的 TTM 處理一致。
@@ -113,6 +107,32 @@ export const computePretaxIncomePerShare = async (
 
   const pretaxIncomePerShareTtm = ttmComplete && sharesValue !== null ? toPerShare(ttmSum, sharesValue) : null;
   const ttmNullReason: MetricNullReason | null = pretaxIncomePerShareTtm !== null ? null : ttmComplete ? determineNullReason(ttmSum, sharesValue) : 'insufficient_history';
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, shares, sharesValue,
+    pretaxIncomePerShareQuarterly, quarterlyNullReason,
+    trailing, ttmQuarters, ttmRecords, ttmSum, ttmComplete, pretaxIncomePerShareTtm, ttmNullReason,
+  };
+};
+
+export const computePretaxIncomePerShare = async (
+  query: QuarterlyMetricQuery,
+  deps: PretaxIncomePerShareDeps
+): Promise<PretaxIncomePerShareComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolvePretaxIncomePerShareInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q', 'ttm', 'fy']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, pretaxIncomePerShareQuarterly, quarterlyNullReason, ttmQuarters, ttmRecords, ttmComplete, pretaxIncomePerShareTtm, ttmNullReason } = resolution;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+
+  const coordinateBase = { symbol, metricCode: 'pretaxIncomePerShare', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', pretaxIncomePerShareQuarterly, quarterlyNullReason);
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

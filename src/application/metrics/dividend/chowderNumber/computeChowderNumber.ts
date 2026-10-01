@@ -30,7 +30,7 @@ export const CHOWDER_NUMBER_FORMULA_VERSION = 4;
 // Chowder Number 看起來算得出來——那會低估真實情況（漏掉的那一半可能是負值也可能是正值，
 // 不該假設是 0）。
 
-const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
+export const DIVIDEND_GROWTH_LOOKBACK_YEARS = 5;
 
 
 // 2026-09-10：dps 之外額外回傳逐季明細（原本算完就丟掉），給
@@ -84,16 +84,15 @@ export type ChowderNumberDeps = Pick<PitDeps, 'statements' | 'quarters' | 'annou
 
 export type ChowderNumberComputationBatch = ComputationBatch<'fy'>;
 
-export const computeChowderNumber = async (
-  query: QuarterlyMetricQuery,
-  deps: ChowderNumberDeps
-): Promise<ChowderNumberComputationBatch> => {
+// 2026-10-01 溯源表（getChowderNumberProvenance.ts）原本複製一份同樣的公式自己算，抽成這支 resolver 共用，數字不可能再跟寫入路徑
+// 分岔（溯源表全面對帳時的收斂，這支當時沒有漂移）；computeChowderNumber 只負責組 slot，計算本身逐字未改。
+export const resolveChowderNumberInputs = async (query: QuarterlyMetricQuery, deps: ChowderNumberDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['fy']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -127,6 +126,22 @@ export const computeChowderNumber = async (
   if (chowderNumber === null) {
     nullReason = dividendYieldPct === null || currentDps === null || priorDps === null ? 'insufficient_history' : 'missing_input';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, mainAnchor, dividendYieldPct, latestCompleteFiscalYear, currentProxy, priorProxy, dividendGrowthRatePct, chowderNumber, nullReason };
+};
+
+export const computeChowderNumber = async (
+  query: QuarterlyMetricQuery,
+  deps: ChowderNumberDeps
+): Promise<ChowderNumberComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveChowderNumberInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['fy']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, chowderNumber, nullReason } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'chowderNumber', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

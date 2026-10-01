@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { round2, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickEquity, pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { pickEquity, pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -26,14 +26,14 @@ export const SGR_FORMULA_VERSION = 3;
 
 export type SgrComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Promise<SgrComputationBatch> => {
+// 2026-10-01 抽出 resolveSgrData()：溯源表（getSgrProvenance.ts）跟 compute 走同一份資料與計算——溯源表原本內部 ROE
+// 用本季期末權益、也沒跟上 v3 的「整份現金流量表缺席 → 不齊」，溯源值跟儲存值對不上。
+export const resolveSgrData = async (query: QuarterlyMetricQuery, deps: SgrDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -44,8 +44,6 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   const balanceSheet = await deps.statements.getBalanceSheet(key);
   const equity = pickEquity(balanceSheet);
   const reportDate = balanceSheet?.reportDate ?? null;
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   // 近四季（含本季）淨利、股利發放各自加總——淨利同一份加總同時餵給 ROE TTM 跟配息率 TTM，
   // 股利發放缺漏視為 0（大多數季度本來就沒發放，只有淨利缺漏才讓該季不齊，跟
@@ -62,8 +60,9 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   // 2026-09-27 整份現金流量表缺席不能當成「沒發股利」：2412 114Q3 現金流量表缺（mops 114Q1~Q2 還沒補，單季推不出來），
   // 中華電的股利剛好在第三季付，近四季發放率被算成 0、nullReason 還是 null（web-nuxt 抓到）。科目 null 才視為 0（mops-ts 確認的語意），
   // 跟 chowderNumber／dividendGrowthRate／consecutiveDividendYears／dividendCoverageRatio 一致。
-  for (const [incomeRecord, cashFlowRecord] of ttmRecords) {
-    const picked = pickNetIncome(incomeRecord);
+  const ttmNetIncomes = ttmRecords.map(([incomeRecord]) => pickNetIncome(incomeRecord));
+  for (const [i, [, cashFlowRecord]] of ttmRecords.entries()) {
+    const picked = ttmNetIncomes[i]!;
     if (picked.value === null || cashFlowRecord === null) {
       ttmComplete = false;
     } else {
@@ -82,6 +81,18 @@ export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Pr
   // （例如權益缺漏、或配息率分母≤0）時回報 missing_input——不細分是哪個子計算的哪種缺漏，
   // 那些細節記在各自獨立算過一次的過程裡，這裡的 sgr 是組裝值，只回報一種原因。
   const sgrNullReason: MetricNullReason | null = sgrTtm !== null ? null : ttmComplete && (balances.equityAvgTtm !== null || equity.value === null) ? 'missing_input' : 'insufficient_history';
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances, basis: trailingIncome.basis, ttmQuarters, ttmRecords, ttmNetIncomes, ttmComplete, roeTtm, payoutRatioTtm, sgrTtm, sgrNullReason };
+};
+
+export const computeSgr = async (query: QuarterlyMetricQuery, deps: SgrDeps): Promise<SgrComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveSgrData(query, deps);
+  if (!resolution) return noQuarterBatch(symbol, ['ttm']);
+
+  const { year, season, rocYear, seasonNum, fiscalYear, reportDate, ttmQuarters, ttmRecords, ttmComplete, sgrTtm, sgrNullReason } = resolution;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const coordinateBase = { symbol, metricCode: 'sgr', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

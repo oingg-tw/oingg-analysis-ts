@@ -30,13 +30,16 @@ export type LeverageDegreeFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' |
 
 export type LeverageDegreeFamilyComputationBatch = ComputationBatch<'financialLeverageDegree' | 'totalLeverageDegree'>;
 
-export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, deps: LeverageDegreeFamilyDeps): Promise<LeverageDegreeFamilyComputationBatch> => {
+// 2026-10-01 溯源表（getFinancialLeverageDegreeProvenance／getTotalLeverageDegreeProvenance）要跟寫入路徑算出同一個數字：原本兩支
+// 共用另一份 resolveLeverageDegreeProvenanceInputs 自己重算，去年同季 EPS 沒做面額／配股還原（v3/v4），1235 這類有配股的公司
+// 對不上。那份已刪除，查詢與兩個值改由這支 resolver 提供，computeLeverageDegreeFamily 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveLeverageDegreeInputs = async (query: QuarterlyMetricQuery, deps: LeverageDegreeFamilyDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['financialLeverageDegree', 'totalLeverageDegree']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -83,6 +86,23 @@ export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, d
   const dtl = epsGrowth !== null && revenueGrowth !== null && revenueGrowth !== 0 ? Math.round((epsGrowth / revenueGrowth) * 100) / 100 : null;
   const dtlNullReason: MetricNullReason | null =
     dtl !== null ? null : epsGrowth === null || revenueGrowth === null ? 'missing_input' : 'zero_or_negative_denominator';
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate,
+    prior, currentIncomeStatement, priorIncomeStatement, currentShares, priorShares, currentEps, priorEpsRaw, splitFactor, priorEps,
+    epsGrowth, ebitGrowth, revenueGrowth, dfl, dflNullReason, dtl, dtlNullReason,
+  };
+};
+
+export const computeLeverageDegreeFamily = async (query: QuarterlyMetricQuery, deps: LeverageDegreeFamilyDeps): Promise<LeverageDegreeFamilyComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveLeverageDegreeInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['financialLeverageDegree', 'totalLeverageDegree']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, dfl, dflNullReason, dtl, dtlNullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });

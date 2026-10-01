@@ -1,62 +1,47 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
-import { toPercent } from '@/domain/metrics/shared/numericHelpers';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import { averageBalanceEntries, averagedDenominatorEntry } from '../../shared/provenance/averageBalanceEntries';
+import { resolveRoaData, type RoaDeps } from './computeRoa';
 
-// 2026-09-13 使用者要求擴大稽核鏈——ROA(TTM) = 近四季淨利加總 / 本季期末總資產（分母
-// 不平均不加總，跟 ROE 的權益同一種慣例）。固定回傳 TTM。
+// 2026-09-13 使用者要求擴大稽核鏈——ROA(TTM) = 近四季淨利加總 / 總資產。固定回傳 TTM。
+// 2026-10-01 改用 computeRoa 的 resolveRoaData()（同一份資料與計算）：2026-09-22 分母改成近四季窗口 5 個季末總資產平均
+// （興櫃半年頻 3 點）後，這裡原本自己算的「本季期末總資產」讓溯源值跟儲存值對不上，逐點列出平均分母。
 
-export const getRoaProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'roa', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+export const getRoaProvenance = async (query: QuarterlyMetricQuery, deps: RoaDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveRoaData(query, deps);
+  if (!resolution) {
+    return { symbol: query.symbol, metricCode: 'roa', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const totalAssets = balanceSheet?.totalAssets ?? null;
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-  const netIncomes = ttmRecords.map(pickNetIncome);
-
-  let netIncomeTtmSum = 0n;
-  let complete = true;
-  for (const picked of netIncomes) {
-    if (picked.value === null) complete = false;
-    else netIncomeTtmSum += picked.value;
-  }
-
-  const value = complete && totalAssets !== null ? toPercent(netIncomeTtmSum, totalAssets) : null;
+  const { symbol, fiscalYear, seasonNum, balances, basis, ttmQuarters, ttmNetIncomes, roaTtmPct } = resolution;
 
   const entries: ProvenanceEntry[] = [
     ...ttmQuarters.map(
       (tq, i): ProvenanceEntry => ({
-        role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}）`,
+        role: `近一年 淨利（${trailingPeriodLabel(tq, basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
         type: 'statementField',
         statementType: 'incomeStatement',
-        fieldKey: netIncomes[i]!.fieldKey,
+        fieldKey: ttmNetIncomes[i]!.fieldKey,
         sourceDescription: null,
-        value: toProvenanceEntryValue(netIncomes[i]!.value),
+        value: toProvenanceEntryValue(ttmNetIncomes[i]!.value),
       })
     ),
-    { role: '本季期末總資產', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'assets', sourceDescription: null, value: toProvenanceEntryValue(totalAssets) },
+    ...averageBalanceEntries(balances, [{ label: '總資產', fieldKey: 'assets', pick: (bs) => bs.totalAssets }]),
+    averagedDenominatorEntry('平均總資產', balances, balances.assetsAvgTtm),
   ];
 
-  return { symbol, metricCode: 'roa', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote: null };
+  return {
+    symbol,
+    metricCode: 'roa',
+    found: true,
+    fiscalYear,
+    fiscalQuarter: seasonNum,
+    value: roaTtmPct,
+    entries,
+    methodologyNote: 'ROA（TTM）= 近一年淨利加總 ÷ 近四季窗口 5 個季末總資產的平均（t−4 … t；興櫃半年頻為 t−4、t−2、t 三點）。2026-09-22 前分母是本季單一期末值。',
+  };
 };

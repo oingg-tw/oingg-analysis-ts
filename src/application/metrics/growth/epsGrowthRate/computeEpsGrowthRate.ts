@@ -26,17 +26,16 @@ export type EpsGrowthRateDeps = Pick<PitDeps, 'statements' | 'quarters' | 'annou
 
 export type EpsGrowthRateComputationBatch = ComputationBatch<'q'>;
 
-// EPS 成長率（單季年增率）= (本季 EPS - 去年同季 EPS) / |去年同季 EPS| * 100——獨立重新計算
-// 本季/去年同季各自的 EPS（不依賴 eps 這個 metric_code 已寫入的值，跟 sgr 對 roe/
-// dividendPayoutRatio 的既有做法一致），流通股數各自用當下報告日對應的股本（不是固定用
-// 本季股本回推去年，避免股本異動時失真）。只有 Q 一種 basis。
-export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: EpsGrowthRateDeps): Promise<EpsGrowthRateComputationBatch> => {
+// 2026-10-01 溯源表（getEpsGrowthRateProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，EPS 還四捨五入到分、沒扣
+// 特別股股利、去年同季也沒做面額／配股還原（v2~v5 都沒跟上，1101 466.67% vs 644.55%）。查詢與值抽成這支 resolver 共用，
+// computeEpsGrowthRate 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveEpsGrowthRateInputs = async (query: QuarterlyMetricQuery, deps: EpsGrowthRateDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -66,6 +65,26 @@ export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: Ep
   // 去年同季的 EPS 換算到本季的股數基準（中間若有面額變更／股票分割，前期 EPS ÷ 股數倍數）。
   const splitFactor = priorReportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorReportDate, reportDate) : 1;
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentEps, priorEps === null ? null : priorEps / splitFactor);
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, incomeStatement, currentSharesInfo, currentEps,
+    prior, priorIncomeStatement, priorSharesInfo, priorEps, splitFactor, growthRate, nullReason,
+  };
+};
+
+// EPS 成長率（單季年增率）= (本季 EPS - 去年同季 EPS) / |去年同季 EPS| * 100——獨立重新計算
+// 本季/去年同季各自的 EPS（不依賴 eps 這個 metric_code 已寫入的值，跟 sgr 對 roe/
+// dividendPayoutRatio 的既有做法一致），流通股數各自用當下報告日對應的股本（不是固定用
+// 本季股本回推去年，避免股本異動時失真）。只有 Q 一種 basis。
+export const computeEpsGrowthRate = async (query: QuarterlyMetricQuery, deps: EpsGrowthRateDeps): Promise<EpsGrowthRateComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveEpsGrowthRateInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, growthRate, nullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'epsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

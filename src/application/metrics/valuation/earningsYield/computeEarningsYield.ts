@@ -27,16 +27,16 @@ export type EarningsYieldDeps = Pick<PitDeps, 'statements' | 'quarters' | 'annou
 
 export type EarningsYieldComputationBatch = ComputationBatch<'ttm'>;
 
-export const computeEarningsYield = async (
-  query: QuarterlyMetricQuery,
-  deps: EarningsYieldDeps
-): Promise<EarningsYieldComputationBatch> => {
+// 2026-10-01 溯源表（getEarningsYieldProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼 EPS 還是四捨五入的
+// toPerShare、也沒扣特別股股利。查詢與值抽成這支 resolver 共用，computeEarningsYield 只負責 TTM knowledge date 與組 slot；
+// 計算本身逐字未改。
+export const resolveEarningsYieldInputs = async (query: QuarterlyMetricQuery, deps: EarningsYieldDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -81,6 +81,22 @@ export const computeEarningsYield = async (
     else if (epsTtm === null || stockPrice === null) ttmNullReason = 'missing_input';
     else ttmNullReason = 'zero_or_negative_denominator';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, shares, sharesValue, mainAnchor, stockPrice, trailing, ttmQuarters, ttmRecords, ttmSum, ttmComplete, epsTtm, earningsYieldTtm, ttmNullReason };
+};
+
+export const computeEarningsYield = async (
+  query: QuarterlyMetricQuery,
+  deps: EarningsYieldDeps
+): Promise<EarningsYieldComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveEarningsYieldInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, ttmQuarters, ttmRecords, ttmComplete, earningsYieldTtm, ttmNullReason } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'earningsYield', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

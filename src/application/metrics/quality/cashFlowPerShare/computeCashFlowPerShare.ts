@@ -33,17 +33,16 @@ export type CashFlowPerShareDeps = Pick<PitDeps, 'statements' | 'quarters' | 'an
 
 export type CashFlowPerShareComputationBatch = ComputationBatch<'ocfPerShareQ' | 'ocfPerShareTtm' | 'fcfPerShareQ' | 'fcfPerShareTtm' | 'depreciationAmortisationPerShareQ' | 'depreciationAmortisationPerShareTtm'>;
 
-export const computeCashFlowPerShare = async (
-  query: QuarterlyMetricQuery,
-  deps: CashFlowPerShareDeps
-): Promise<CashFlowPerShareComputationBatch> => {
+// 2026-10-01 溯源表（getOcfPerShareProvenance／getFcfPerShareProvenance／getDepreciationAmortisationPerShareProvenance）要跟寫入
+// 路徑算出同一個數字：原本各自「只查自己的欄位」重算，漏了家族共用的 ttmComplete（OCF／資本支出／折舊／攤銷任一期缺就三支一起
+// insufficient_history）——興櫃 1480、1594、2255 寫入 insufficient_history、溯源卻有值。查詢與 Q／TTM 的值抽成這支 resolver
+// 共用，computeCashFlowPerShare 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveCashFlowPerShareInputs = async (query: QuarterlyMetricQuery, deps: CashFlowPerShareDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const skippedNoQuarter: CashFlowPerShareComputationBatch = noQuarterBatch(symbol, ['ocfPerShareQ', 'ocfPerShareTtm', 'fcfPerShareQ', 'fcfPerShareTtm', 'depreciationAmortisationPerShareQ', 'depreciationAmortisationPerShareTtm']);
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
 
-  if (!resolvedQuarter) return skippedNoQuarter;
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -68,24 +67,6 @@ export const computeCashFlowPerShare = async (
   const ocfPerShareQuarterly = calculateOcfPerShare(operatingCashFlow, sharesValue);
   const fcfPerShareQuarterly = calculateFcfPerShare(currentFcf, sharesValue);
   const depreciationAmortizationPerShareQuarterly = calculateDepreciationAmortisationPerShare(depreciationAndAmortization, sharesValue);
-
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
-
-  let ocfPerShareQ: ComputationSlot;
-  let fcfPerShareQ: ComputationSlot;
-  let depreciationAmortisationPerShareQ: ComputationSlot;
-
-  if (!mainAnchor) {
-    ocfPerShareQ = { action: 'skipped_no_knowledge_date' };
-    fcfPerShareQ = { action: 'skipped_no_knowledge_date' };
-    depreciationAmortisationPerShareQ = { action: 'skipped_no_knowledge_date' };
-  } else {
-    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
-    ocfPerShareQ = computation({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('Q'), value: ocfPerShareQuarterly.value, nullReason: ocfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    fcfPerShareQ = computation({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('Q'), value: fcfPerShareQuarterly.value, nullReason: fcfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-    depreciationAmortisationPerShareQ = computation({ ...coordinateFor('depreciationAmortisationPerShare'), ...periodTypeGroup('Q'), value: depreciationAmortizationPerShareQuarterly.value, nullReason: depreciationAmortizationPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
-  }
 
   // TTM：近四季（含本季）OCF 加總；FCF TTM = OCF 加總 + 資本支出加總。一季只要 OCF 或資本支出
   // 任一為 null 就視為該季不齊，OCF/FCF 的 TTM 共用同一組「資料齊不齊」判斷（比照 cashFlowPerShare.ts）。
@@ -120,6 +101,50 @@ export const computeCashFlowPerShare = async (
   const depreciationAmortizationPerShareTtmCalc = ttmComplete
     ? calculateDepreciationAmortisationPerShare(daTtmSum, sharesValue)
     : { value: null, nullReason: 'insufficient_history' as const };
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, shares, sharesValue,
+    ocfPerShareQuarterly, fcfPerShareQuarterly, depreciationAmortizationPerShareQuarterly,
+    trailing, ttmQuarters, ttmRecords, ttmComplete, ocfTtmSum, fcfTtmSum, daTtmSum,
+    ocfPerShareTtmCalc, fcfPerShareTtmCalc, depreciationAmortizationPerShareTtmCalc,
+  };
+};
+
+export const computeCashFlowPerShare = async (
+  query: QuarterlyMetricQuery,
+  deps: CashFlowPerShareDeps
+): Promise<CashFlowPerShareComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+
+  const skippedNoQuarter: CashFlowPerShareComputationBatch = noQuarterBatch(query.symbol, ['ocfPerShareQ', 'ocfPerShareTtm', 'fcfPerShareQ', 'fcfPerShareTtm', 'depreciationAmortisationPerShareQ', 'depreciationAmortisationPerShareTtm']);
+
+  const resolution = await resolveCashFlowPerShareInputs(query, deps);
+
+  if (!resolution) return skippedNoQuarter;
+
+  const {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate,
+    ocfPerShareQuarterly, fcfPerShareQuarterly, depreciationAmortizationPerShareQuarterly,
+    ttmQuarters, ttmRecords, ttmComplete, ocfPerShareTtmCalc, fcfPerShareTtmCalc, depreciationAmortizationPerShareTtmCalc,
+  } = resolution;
+
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
+
+  let ocfPerShareQ: ComputationSlot;
+  let fcfPerShareQ: ComputationSlot;
+  let depreciationAmortisationPerShareQ: ComputationSlot;
+
+  if (!mainAnchor) {
+    ocfPerShareQ = { action: 'skipped_no_knowledge_date' };
+    fcfPerShareQ = { action: 'skipped_no_knowledge_date' };
+    depreciationAmortisationPerShareQ = { action: 'skipped_no_knowledge_date' };
+  } else {
+    const { knowledgeDate, isFallback: knowledgeDateIsFallback } = mainAnchor;
+    ocfPerShareQ = computation({ ...coordinateFor('ocfPerShare'), ...periodTypeGroup('Q'), value: ocfPerShareQuarterly.value, nullReason: ocfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    fcfPerShareQ = computation({ ...coordinateFor('fcfPerShare'), ...periodTypeGroup('Q'), value: fcfPerShareQuarterly.value, nullReason: fcfPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+    depreciationAmortisationPerShareQ = computation({ ...coordinateFor('depreciationAmortisationPerShare'), ...periodTypeGroup('Q'), value: depreciationAmortizationPerShareQuarterly.value, nullReason: depreciationAmortizationPerShareQuarterly.nullReason, knowledgeDate, knowledgeDateIsFallback });
+  }
 
   let ocfPerShareTtm: ComputationSlot;
   let fcfPerShareTtm: ComputationSlot;

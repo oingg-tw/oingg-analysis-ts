@@ -1,67 +1,38 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { trailingPeriodLabel, resolveTrailingCashFlowStatements, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
-import { toPercent } from '@/domain/metrics/shared/numericHelpers';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import { averageBalanceEntries, averagedDenominatorEntry } from '../../shared/provenance/averageBalanceEntries';
+import { resolveCrociData, type CrociDeps } from './computeCroci';
 
 // 2026-09-13 使用者要求擴大稽核鏈——croci(TTM) = 近四季毛現金流（淨利+財務費用+折舊+攤銷）
-// 加總 / 本季期末經濟資本（總資產-流動負債，單一期末值）。跟 computeCrociPit.ts 一致，是
-// 簡化版 CROCI（不做通膨/資本化調整）。固定回傳 TTM。
+// 加總 / 經濟資本（總資產-流動負債）。是簡化版 CROCI（不做通膨/資本化調整）。固定回傳 TTM。
+// 2026-10-01 改用 computeCroci 的 resolveCrociData()（同一份資料與計算）：分母 2026-09-22 起是 5 個季末經濟資本的平均
+// （興櫃半年頻 3 點），這裡原本自己算本季期末值，溯源值跟儲存值對不上。
 
-export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'croci', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: CrociDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveCrociData(query, deps);
+  if (!resolution) {
+    return { symbol: query.symbol, metricCode: 'croci', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const totalAssets = balanceSheet?.totalAssets ?? null;
-  const currentLiabilities = balanceSheet?.currentLiabilities ?? null;
-  const economicCapital = totalAssets !== null && currentLiabilities !== null ? totalAssets - currentLiabilities : null;
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）；兩張表的 periods 順序相同。
-  const trailingKey = { symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId };
-  const [trailing, trailingCashFlow] = await Promise.all([resolveTrailingIncomeStatements(trailingKey, deps), resolveTrailingCashFlowStatements(trailingKey, deps)]);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p, i) => [p.record, trailingCashFlow.periods[i]?.record ?? null] as const);
-
-  const netIncomes = ttmRecords.map(([incomeRecord]) => pickNetIncome(incomeRecord));
+  const { symbol, fiscalYear, seasonNum, balances, economicCapitalAvgTtm, basis, ttmQuarters, ttmRecords, ttmNetIncomes: netIncomes, ttmValue } = resolution;
   const financeCosts = ttmRecords.map(([incomeRecord]) => incomeRecord?.financeCosts ?? null);
   const depreciations = ttmRecords.map(([, cashFlowRecord]) => cashFlowRecord?.depreciation ?? null);
   const amortizations = ttmRecords.map(([, cashFlowRecord]) => cashFlowRecord?.amortization ?? null);
 
-  let grossCashFlowTtmSum = 0n;
-  let complete = true;
-  for (let i = 0; i < ttmRecords.length; i++) {
-    if (netIncomes[i]!.value === null || financeCosts[i] === null || depreciations[i] === null || amortizations[i] === null) {
-      complete = false;
-    } else {
-      grossCashFlowTtmSum += netIncomes[i]!.value! + financeCosts[i]! + depreciations[i]! + amortizations[i]!;
-    }
-  }
-
-  const value = complete && economicCapital !== null ? toPercent(grossCashFlowTtmSum, economicCapital) : null;
-
   const entries: ProvenanceEntry[] = [
-    { role: '本季期末總資產', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'assets', sourceDescription: null, value: toProvenanceEntryValue(totalAssets) },
-    { role: '本季期末流動負債', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'current_liabilities', sourceDescription: null, value: toProvenanceEntryValue(currentLiabilities) },
+    ...averageBalanceEntries(balances, [
+      { label: '總資產', fieldKey: 'assets', pick: (bs) => bs.totalAssets },
+      { label: '流動負債', fieldKey: 'current_liabilities', pick: (bs) => bs.currentLiabilities },
+    ]),
+    averagedDenominatorEntry('平均經濟資本（總資產-流動負債）', balances, economicCapitalAvgTtm),
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
       const entryFiscalYear = rocYearToGregorian(Number(tq.year));
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近一年 淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
+          role: `近一年 淨利（${trailingPeriodLabel(tq, basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -71,7 +42,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(netIncomes[i]!.value),
         },
         {
-          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -81,7 +52,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `近一年 折舊（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
+          role: `近一年 折舊（${trailingPeriodLabel(tq, basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -91,7 +62,7 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
           value: toProvenanceEntryValue(depreciations[i]),
         },
         {
-          role: `近一年 攤銷（${trailingPeriodLabel(tq, trailing.basis)}，用於毛現金流）`,
+          role: `近一年 攤銷（${trailingPeriodLabel(tq, basis)}，用於毛現金流）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -110,9 +81,9 @@ export const getCrociProvenance = async (query: QuarterlyMetricQuery, deps: Pick
     found: true,
     fiscalYear,
     fiscalQuarter: seasonNum,
-    value,
+    value: ttmValue,
     entries,
     methodologyNote:
-      '分子毛現金流 = 淨利+財務費用+折舊+攤銷（TTM 加總，見上方原始欄位）。分母經濟資本 = 總資產-流動負債（本季期末快照，不平均不加總）。這是簡化版 CROCI，不做原始方法論的通膨/資本化調整。',
+      '分子毛現金流 = 淨利+財務費用+折舊+攤銷（TTM 加總，見上方原始欄位）。分母經濟資本 = 總資產-流動負債，取近四季窗口 5 個季末的平均（興櫃半年頻 3 點，見上方逐點列出）。這是簡化版 CROCI，不做原始方法論的通膨/資本化調整。',
   };
 };

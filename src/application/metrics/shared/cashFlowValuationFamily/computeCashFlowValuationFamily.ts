@@ -61,31 +61,17 @@ export type CashFlowValuationFamilyDeps = Pick<PitDeps, 'statements' | 'quarters
 
 export type CashFlowValuationFamilyComputationBatch = ComputationBatch<'evToOcf' | 'evToSales' | 'priceToOcf' | 'debtToFcf' | 'capexToOcfRatio' | 'croic' | 'ocfMargin' | 'fcfConversionRate'>;
 
-export const computeCashFlowValuationFamily = async (
-  query: QuarterlyMetricQuery,
-  deps: CashFlowValuationFamilyDeps
-): Promise<CashFlowValuationFamilyComputationBatch> => {
+// 2026-10-01 溯源表（croic／capexToOcfRatio／debtToFcf／fcfConversionRate／evToOcf／evToSales／priceToOcf／ocfMargin 八支
+// get<Metric>Provenance.ts）要跟寫入路徑算出同一個數字：以前各自「只查自己真正的依賴」重算，結果漏了 croic ×100（v2）、
+// 分母 ≤ 0 守門、家族共用的 ttmComplete 旗標（金控沒有營業收入 → 寫入 insufficient_history，溯源卻有值），全部漂掉。
+// 現在查詢、加總、八個值抽成這支 resolver 共用，computeCashFlowValuationFamily 只負責 knowledge date 與組 slot；計算本身逐字未改。
+// values 只在 ttmComplete 時有值（不齊時寫入路徑寫 insufficient_history），溯源表直接取用就跟寫入的列一致。
+export const resolveCashFlowValuationInputs = async (query: QuarterlyMetricQuery, deps: CashFlowValuationFamilyDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const skipped = (action: 'skipped_no_quarter'): CashFlowValuationFamilyComputationBatch => ({
-    symbol,
-    rocYear: null,
-    season: null,
-    slots: {
-      evToOcf: { action },
-      evToSales: { action },
-      priceToOcf: { action },
-      debtToFcf: { action },
-      capexToOcfRatio: { action },
-      croic: { action },
-      ocfMargin: { action },
-      fcfConversionRate: { action },
-    },
-  });
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement', 'cashFlowStatement'], deps.quarters);
 
-  if (!resolvedQuarter) return skipped('skipped_no_quarter');
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -144,6 +130,69 @@ export const computeCashFlowValuationFamily = async (
   }
   const fcfTtmSum = ocfTtmSum + capexTtmSum; // capex 是負數，加總即為扣除。
 
+  const evToOcfValue = ttmComplete && enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, ocfTtmSum) : null;
+  const evToSalesValue = ttmComplete && enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, revenueTtmSum) : null;
+  const priceToOcfValue = ttmComplete && marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, ocfTtmSum) : null;
+  // 2026-09-22 公式稽核：debtToFcf（幾年還完）、capexToOcfRatio（OCF 有幾成拿去投資）、fcfConversionRate（獲利幾成變現金）
+  // 在分母 ≤ 0 時符號翻轉、數值爆掉（全市場 p95 曾到 486%、max 96961%），一律 zero_or_negative_denominator（v1 只擋 = 0）。
+  // 估值倍數（evToOcf/priceToOcf/evToSales）維持跟 peRatio 一樣的慣例：為負仍照算不隱藏。
+  const debtToFcfValue = ttmComplete && totalDebt !== null && fcfTtmSum > 0n ? toRatioFromThousands(totalDebt, fcfTtmSum) : null;
+  const capexToOcfRatioValue = ttmComplete && ocfTtmSum > 0n ? toPctFromThousands(capexTtmSum < 0n ? -capexTtmSum : capexTtmSum, ocfTtmSum) : null;
+  // 2026-09-22 公式稽核抓到：croic 的 unit 是 %，但原本用 toRatioFromThousands（沒乘 100），全市場中位數 0.11 = 實際 11%。
+  // 改 toPctFromThousands，formulaVersion 2，全市場重算。
+  const croicValue = ttmComplete && investedCapital !== null ? toPctFromThousands(fcfTtmSum, investedCapital) : null;
+  const ocfMarginValue = ttmComplete ? toPctFromThousands(ocfTtmSum, revenueTtmSum) : null;
+  const fcfConversionRateValue = ttmComplete && netIncomeTtmSum > 0n ? toPctFromThousands(fcfTtmSum, netIncomeTtmSum) : null;
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear,
+    balanceSheet, totalDebt, cashAndEquivalents, netDebt, equity, investedCapital,
+    mainAnchor, marketCap, enterpriseValue,
+    trailingIncome, trailingCashFlow, ttmQuarters, ttmRecords, ttmComplete,
+    ocfTtmSum, capexTtmSum, revenueTtmSum, netIncomeTtmSum, fcfTtmSum,
+    values: {
+      evToOcf: evToOcfValue,
+      evToSales: evToSalesValue,
+      priceToOcf: priceToOcfValue,
+      debtToFcf: debtToFcfValue,
+      capexToOcfRatio: capexToOcfRatioValue,
+      croic: croicValue,
+      ocfMargin: ocfMarginValue,
+      fcfConversionRate: fcfConversionRateValue,
+    },
+  };
+};
+
+export type CashFlowValuationResolution = NonNullable<Awaited<ReturnType<typeof resolveCashFlowValuationInputs>>>;
+
+export const computeCashFlowValuationFamily = async (
+  query: QuarterlyMetricQuery,
+  deps: CashFlowValuationFamilyDeps
+): Promise<CashFlowValuationFamilyComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const skipped = (action: 'skipped_no_quarter'): CashFlowValuationFamilyComputationBatch => ({
+    symbol,
+    rocYear: null,
+    season: null,
+    slots: {
+      evToOcf: { action },
+      evToSales: { action },
+      priceToOcf: { action },
+      debtToFcf: { action },
+      capexToOcfRatio: { action },
+      croic: { action },
+      ocfMargin: { action },
+      fcfConversionRate: { action },
+    },
+  });
+
+  const resolution = await resolveCashFlowValuationInputs(query, deps);
+
+  if (!resolution) return skipped('skipped_no_quarter');
+
+  const { year, season, seasonNum, fiscalYear, totalDebt, investedCapital, mainAnchor, marketCap, enterpriseValue, ttmQuarters, ttmRecords, ttmComplete, values } = resolution;
+
   const coordinateBase = { symbol, metricCode: '', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
   const coordinateFor = (metricCode: string) => ({ ...coordinateBase, metricCode });
 
@@ -179,20 +228,6 @@ export const computeCashFlowValuationFamily = async (
   if (!ttmAnchor) return skipped('skipped_no_quarter');
   const { knowledgeDate, isFallback: knowledgeDateIsFallback } = ttmAnchor;
 
-  const evToOcfValue = enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, ocfTtmSum) : null;
-  const evToSalesValue = enterpriseValue !== null ? toMultipleFromThousands(enterpriseValue, revenueTtmSum) : null;
-  const priceToOcfValue = marketCap !== null ? toMultipleFromThousands(marketCap.marketCap, ocfTtmSum) : null;
-  // 2026-09-22 公式稽核：debtToFcf（幾年還完）、capexToOcfRatio（OCF 有幾成拿去投資）、fcfConversionRate（獲利幾成變現金）
-  // 在分母 ≤ 0 時符號翻轉、數值爆掉（全市場 p95 曾到 486%、max 96961%），一律 zero_or_negative_denominator（v1 只擋 = 0）。
-  // 估值倍數（evToOcf/priceToOcf/evToSales）維持跟 peRatio 一樣的慣例：為負仍照算不隱藏。
-  const debtToFcfValue = totalDebt !== null && fcfTtmSum > 0n ? toRatioFromThousands(totalDebt, fcfTtmSum) : null;
-  const capexToOcfRatioValue = ocfTtmSum > 0n ? toPctFromThousands(capexTtmSum < 0n ? -capexTtmSum : capexTtmSum, ocfTtmSum) : null;
-  // 2026-09-22 公式稽核抓到：croic 的 unit 是 %，但原本用 toRatioFromThousands（沒乘 100），全市場中位數 0.11 = 實際 11%。
-  // 改 toPctFromThousands，formulaVersion 2，全市場重算。
-  const croicValue = investedCapital !== null ? toPctFromThousands(fcfTtmSum, investedCapital) : null;
-  const ocfMarginValue = toPctFromThousands(ocfTtmSum, revenueTtmSum);
-  const fcfConversionRateValue = netIncomeTtmSum > 0n ? toPctFromThousands(fcfTtmSum, netIncomeTtmSum) : null;
-
   const nullReasonFor = (value: number | null, ...inputsAvailable: boolean[]): MetricNullReason | null => {
     if (value !== null) return null;
     return inputsAvailable.every(Boolean) ? 'zero_or_negative_denominator' : 'missing_input';
@@ -201,14 +236,14 @@ export const computeCashFlowValuationFamily = async (
   const write = (metricCode: string, value: number | null, nullReason: MetricNullReason | null): ComputationSlot =>
     computation({ ...coordinateFor(metricCode), ...periodTypeGroup('TTM'), value, nullReason, knowledgeDate, knowledgeDateIsFallback, formulaVersion: FORMULA_VERSION_BY_CODE[metricCode] });
 
-  const evToOcf = write('evToOcf', evToOcfValue, nullReasonFor(evToOcfValue, enterpriseValue !== null));
-  const evToSales = write('evToSales', evToSalesValue, nullReasonFor(evToSalesValue, enterpriseValue !== null));
-  const priceToOcf = write('priceToOcf', priceToOcfValue, nullReasonFor(priceToOcfValue, marketCap !== null));
-  const debtToFcf = write('debtToFcf', debtToFcfValue, nullReasonFor(debtToFcfValue, totalDebt !== null));
-  const capexToOcfRatio = write('capexToOcfRatio', capexToOcfRatioValue, nullReasonFor(capexToOcfRatioValue, true));
-  const croic = write('croic', croicValue, nullReasonFor(croicValue, investedCapital !== null));
-  const ocfMargin = write('ocfMargin', ocfMarginValue, nullReasonFor(ocfMarginValue, true));
-  const fcfConversionRate = write('fcfConversionRate', fcfConversionRateValue, nullReasonFor(fcfConversionRateValue, true));
+  const evToOcf = write('evToOcf', values.evToOcf, nullReasonFor(values.evToOcf, enterpriseValue !== null));
+  const evToSales = write('evToSales', values.evToSales, nullReasonFor(values.evToSales, enterpriseValue !== null));
+  const priceToOcf = write('priceToOcf', values.priceToOcf, nullReasonFor(values.priceToOcf, marketCap !== null));
+  const debtToFcf = write('debtToFcf', values.debtToFcf, nullReasonFor(values.debtToFcf, totalDebt !== null));
+  const capexToOcfRatio = write('capexToOcfRatio', values.capexToOcfRatio, nullReasonFor(values.capexToOcfRatio, true));
+  const croic = write('croic', values.croic, nullReasonFor(values.croic, investedCapital !== null));
+  const ocfMargin = write('ocfMargin', values.ocfMargin, nullReasonFor(values.ocfMargin, true));
+  const fcfConversionRate = write('fcfConversionRate', values.fcfConversionRate, nullReasonFor(values.fcfConversionRate, true));
 
   return { symbol, rocYear: year, season, slots: { evToOcf, evToSales, priceToOcf, capexToOcfRatio, debtToFcf, croic, ocfMargin, fcfConversionRate } };
 };

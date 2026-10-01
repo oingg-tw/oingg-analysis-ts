@@ -1,6 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { determineNullReason, toPercent } from '@/domain/metrics/shared/numericHelpers';
-import { pickNetIncome } from '@/domain/metrics/shared/pickers';
+import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
@@ -26,14 +26,14 @@ export const ROA_FORMULA_VERSION = 2;
 
 export type RoaComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
-export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaDeps): Promise<RoaComputationBatch> => {
+// 2026-10-01 抽出 resolveRoaData()：溯源表（getRoaProvenance.ts）跟 compute 走同一份資料與計算，分母（平均總資產）不會再
+// 各算各的——溯源表原本自己算本季期末總資產，2026-09-22 分母改平均後就跟儲存值對不上（roa 上市 20 家只對 1 家）。
+export const resolveRoaData = async (query: QuarterlyMetricQuery, deps: RoaDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -52,6 +52,39 @@ export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaDeps): Pr
     roaQuarterlyPct !== null ? null : netIncome.value !== null && totalAssets !== null && balances.assetsAvgQ === null ? 'insufficient_history' : determineNullReason(netIncome.value, balances.assetsAvgQ ?? totalAssets);
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
+
+  // TTM：近四季（含本季）淨利加總 / 近四季窗口 5 個季末總資產平均。邏輯跟 computeRoePit.ts 的 TTM 處理一致，
+  // 見那份檔案的說明——四季不齊時仍寫一列 value=null/insufficient_history，knowledge_date
+  // 沿用本季（Q）自己的。
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
+  const ttmNetIncomes = ttmRecords.map(pickNetIncome);
+
+  let ttmSum = 0n;
+  let ttmComplete = true;
+  for (const picked of ttmNetIncomes) {
+    if (picked.value === null) {
+      ttmComplete = false;
+    } else {
+      ttmSum += picked.value;
+    }
+  }
+
+  const roaTtmPct = ttmComplete && balances.assetsAvgTtm !== null ? toPercent(ttmSum, balances.assetsAvgTtm) : null;
+  const ttmNullReason: MetricNullReason | null = roaTtmPct !== null ? null : ttmComplete && balances.assetsAvgTtm !== null ? determineNullReason(ttmSum, balances.assetsAvgTtm) : 'insufficient_history';
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, balances, roaQuarterlyPct, quarterlyNullReason, reportDate, basis: trailing.basis, ttmQuarters, ttmRecords, ttmNetIncomes, ttmComplete, roaTtmPct, ttmNullReason };
+};
+
+export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaDeps): Promise<RoaComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveRoaData(query, deps);
+  if (!resolution) return noQuarterBatch(symbol, ['q', 'ttm']);
+
+  const { year, season, rocYear, seasonNum, fiscalYear, roaQuarterlyPct, quarterlyNullReason, reportDate, ttmQuarters, ttmRecords, ttmComplete, roaTtmPct, ttmNullReason } = resolution;
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const coordinateBase = {
@@ -65,28 +98,6 @@ export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaDeps): Pr
 
   const versioned = (slot: ComputationSlot): ComputationSlot => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: ROA_FORMULA_VERSION });
   const q = versioned(periodSlot(mainAnchor, coordinateBase, 'Q', roaQuarterlyPct, quarterlyNullReason));
-
-  // TTM：近四季（含本季）淨利加總 / 近四季窗口 5 個季末總資產平均。邏輯跟 computeRoePit.ts 的 TTM 處理一致，
-  // 見那份檔案的說明——四季不齊時仍寫一列 value=null/insufficient_history，knowledge_date
-  // 沿用本季（Q）自己的。
-  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-
-  let ttmSum = 0n;
-  let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = pickNetIncome(record);
-    if (picked.value === null) {
-      ttmComplete = false;
-    } else {
-      ttmSum += picked.value;
-    }
-  }
-
-  const roaTtmPct = ttmComplete && balances.assetsAvgTtm !== null ? toPercent(ttmSum, balances.assetsAvgTtm) : null;
-  const ttmNullReason: MetricNullReason | null = roaTtmPct !== null ? null : ttmComplete && balances.assetsAvgTtm !== null ? determineNullReason(ttmSum, balances.assetsAvgTtm) : 'insufficient_history';
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

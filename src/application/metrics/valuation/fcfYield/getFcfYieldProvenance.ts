@@ -1,101 +1,53 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
-import { resolveKnowledgeDate } from '../../knowledgeDate';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import { commonShareEntries } from '../../shared/provenance/shareEntries';
+import { resolveFcfYieldInputs, type FcfYieldDeps } from './computeFcfYield';
 
-// 2026-09-13 使用者要求擴大稽核鏈——fcfYield(TTM) = 每股 FCF(TTM，近四季 FCF 加總×1000
-// (千元換元)/流通股數) / 股價(本季知識時點) * 100。跟 computeFcfYieldPit.ts 一致。固定
-// 回傳 TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
+// 2026-09-13 使用者要求擴大稽核鏈——fcfYield(TTM) = 每股 FCF(TTM，近四季 FCF 加總×1000(千元換元)/流通在外普通股) / 股價
+// (本季知識時點) × 100。固定回傳 TTM（該指標同時有 Q_ANN，這裡跟其餘試點慣例一致優先選 TTM）。
+//
+// 2026-10-01 改成跟 computeFcfYield 共用 resolveFcfYieldInputs：原本這裡自己重算，中繼每股 FCF 還是四捨五入的 toPerShare
+// （v2 已改 toPerShareExact），1101 1.64 vs 1.62 這類小數第二位對不上。值直接取 resolution.fcfYieldTtmPct。
 
-export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'shares' | 'market' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
+export const getFcfYieldProvenance = async (query: QuarterlyMetricQuery, deps: FcfYieldDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveFcfYieldInputs(query, deps);
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'fcfYield', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  if (!r) {
+    return { symbol: query.symbol, metricCode: 'fcfYield', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。本季 reportDate 跟 compute 一樣
-  // 取近一年最後一段：上市櫃＝本季單季那筆，興櫃沒有單季現金流量表、取累計推出的那段（同一個期末日）。
-  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const reportDate = trailing.periods.at(-1)?.record?.reportDate ?? null;
-  const shares = reportDate ? (await deps.shares.getOutstandingCommonShares(symbol, reportDate))?.outstandingCommonShares ?? null : null;
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const stockPrice = mainAnchor ? await deps.market.getStockPrice(symbol, mainAnchor.knowledgeDate, reportDate ?? undefined) : null;
-
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-  const ocfs = ttmRecords.map((r) => r?.netCashFromOperatingActivities ?? null);
-  const capexes = ttmRecords.map((r) => r?.capitalExpenditures ?? null);
-
-  let fcfTtmSum = 0n;
-  let complete = true;
-  for (let i = 0; i < ttmRecords.length; i++) {
-    if (ocfs[i] === null || capexes[i] === null) complete = false;
-    else fcfTtmSum += ocfs[i]! + capexes[i]!;
-  }
-
-  const fcfPerShareTtm = complete && shares !== null ? toPerShare(fcfTtmSum, shares) : null;
-  const value = fcfPerShareTtm !== null && stockPrice !== null && stockPrice.closePrice !== 0 ? Math.round((fcfPerShareTtm / stockPrice.closePrice) * 100 * 100) / 100 : null;
 
   const entries: ProvenanceEntry[] = [
     {
       role: '股價（本季知識時點）',
-      fiscalYear,
-      fiscalQuarter: seasonNum,
+      fiscalYear: r.fiscalYear,
+      fiscalQuarter: r.seasonNum,
       type: 'other',
       statementType: null,
       fieldKey: null,
-      sourceDescription: stockPrice ? `證交所／櫃買中心每日收盤價（實際交易日 ${stockPrice.tradeDate}）` : null,
-      value: toProvenanceEntryValue(stockPrice?.closePrice ?? null),
+      sourceDescription: r.stockPrice ? `證交所／櫃買中心每日收盤價（實際交易日 ${r.stockPrice.tradeDate}）` : null,
+      value: toProvenanceEntryValue(r.stockPrice?.closePrice ?? null),
     },
-    { role: '本季流通股數（每股 FCF 分母）', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(shares) },
-    ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
-      const entryFiscalYear = rocYearToGregorian(Number(tq.year));
-      const entryFiscalQuarter = Number(tq.season);
+    ...commonShareEntries(r.shares, r.fiscalYear, r.seasonNum),
+    ...r.ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
+      const record = r.ttmRecords[i] ?? null;
+      const at = { fiscalYear: rocYearToGregorian(Number(tq.year)), fiscalQuarter: Number(tq.season), sourceDescription: null };
       return [
-        {
-          role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF）`,
-          fiscalYear: entryFiscalYear,
-          fiscalQuarter: entryFiscalQuarter,
-          type: 'statementField' as const,
-          statementType: 'cashFlowStatement' as const,
-          fieldKey: 'cash_flows_from_used_in_operating_activities',
-          sourceDescription: null,
-          value: toProvenanceEntryValue(ocfs[i]),
-        },
-        {
-          role: `近一年 資本支出（${trailingPeriodLabel(tq, trailing.basis)}，用於 FCF，原始資料是負值）`,
-          fiscalYear: entryFiscalYear,
-          fiscalQuarter: entryFiscalQuarter,
-          type: 'statementField' as const,
-          statementType: 'cashFlowStatement' as const,
-          fieldKey: 'purchase_of_ppe_investing',
-          sourceDescription: null,
-          value: toProvenanceEntryValue(capexes[i]),
-        },
+        { role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, r.trailing.basis)}，用於 FCF）`, ...at, type: 'statementField', statementType: 'cashFlowStatement', fieldKey: 'cash_flows_from_used_in_operating_activities', value: toProvenanceEntryValue(record?.netCashFromOperatingActivities) },
+        { role: `近一年 資本支出（${trailingPeriodLabel(tq, r.trailing.basis)}，用於 FCF，原始資料是負值）`, ...at, type: 'statementField', statementType: 'cashFlowStatement', fieldKey: 'purchase_of_ppe_investing', value: toProvenanceEntryValue(record?.capitalExpenditures) },
       ];
     }),
   ];
 
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'fcfYield',
     found: true,
-    fiscalYear,
-    fiscalQuarter: seasonNum,
-    value,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.fcfYieldTtmPct,
     entries,
-    methodologyNote: `每股 FCF(TTM) 不是財報原始欄位，是近四季 FCF(=OCF+資本支出)加總×1000(千元換元)/流通股數算出的中繼值。每股 FCF(TTM)＝${fcfPerShareTtm ?? 'null'}。`,
+    methodologyNote: `每股 FCF(TTM) 不是財報原始欄位，是近一年 FCF(=OCF+資本支出)加總×1000(千元換元)÷流通在外普通股算出的中繼值（不四捨五入）。每股 FCF(TTM)＝${r.fcfPerShareTtm ?? 'null'}。`,
   };
 };

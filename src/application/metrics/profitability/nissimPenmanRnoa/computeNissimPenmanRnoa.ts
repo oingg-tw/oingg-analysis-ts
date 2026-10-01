@@ -48,14 +48,14 @@ export type NissimPenmanRnoaDeps = Pick<PitDeps, 'statements' | 'quarters' | 'an
 
 export type NissimPenmanRnoaComputationBatch = ComputationBatch<'q' | 'ttm'>;
 
-export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps: NissimPenmanRnoaDeps): Promise<NissimPenmanRnoaComputationBatch> => {
+// 2026-10-01 抽出 resolveNissimPenmanRnoaData()：溯源表（getNissimPenmanRnoaProvenance.ts）跟 compute 走同一份資料與計算——
+// 溯源表原本自己算本季期末 NOA，2026-09-22 分母改平均後就跟儲存值對不上。
+export const resolveNissimPenmanRnoaData = async (query: QuarterlyMetricQuery, deps: NissimPenmanRnoaDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q', 'ttm']);
-  }
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -90,21 +90,16 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
     qNullReason = nopat === null || noa === null ? 'missing_input' : noaAvgQ === null ? 'insufficient_history' : 'zero_or_negative_denominator';
   }
 
-  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
-  const coordinateBase = { symbol, metricCode: 'nissimPenmanRnoa', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
-
-  const q = periodSlot(mainAnchor, coordinateBase, 'Q', rnoaQuarterlyPct, qNullReason);
-
-  // TTM：近四季（含本季）NOPAT 加總 / 本季期末 NOA（分母固定用期末值，跟 roic 的 TTM 邏輯一致）。
+  // TTM：近四季（含本季）NOPAT 加總 / 近四季窗口 5 個季末 NOA 的平均（2026-09-22 起，跟 roic 的 TTM 邏輯一致）。
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
   const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
   const ttmRecords = trailing.periods.map((p) => p.record);
 
+  const ttmNopats = ttmRecords.map(calculateNopat);
   let nopatTtmSum = 0n;
   let ttmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = calculateNopat(record);
+  for (const picked of ttmNopats) {
     if (picked === null) {
       ttmComplete = false;
     } else {
@@ -117,6 +112,21 @@ export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps:
   if (rnoaTtmPct === null) {
     ttmNullReason = !ttmComplete ? 'insufficient_history' : noa === null ? 'missing_input' : noaAvgTtm === null ? 'insufficient_history' : 'zero_or_negative_denominator';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances, noaAvgTtm, rnoaQuarterlyPct, qNullReason, basis: trailing.basis, ttmQuarters, ttmRecords, ttmNopats, ttmComplete, rnoaTtmPct, ttmNullReason };
+};
+
+export const computeNissimPenmanRnoa = async (query: QuarterlyMetricQuery, deps: NissimPenmanRnoaDeps): Promise<NissimPenmanRnoaComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const resolution = await resolveNissimPenmanRnoaData(query, deps);
+  if (!resolution) return noQuarterBatch(symbol, ['q', 'ttm']);
+
+  const { year, season, rocYear, seasonNum, fiscalYear, reportDate, rnoaQuarterlyPct, qNullReason, ttmQuarters, ttmRecords, ttmComplete, rnoaTtmPct, ttmNullReason } = resolution;
+  const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
+  const coordinateBase = { symbol, metricCode: 'nissimPenmanRnoa', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
+
+  const q = periodSlot(mainAnchor, coordinateBase, 'Q', rnoaQuarterlyPct, qNullReason);
 
   let ttm: ComputationSlot;
   if (ttmComplete) {

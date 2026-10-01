@@ -1,47 +1,30 @@
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
-import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
-import { trailingPeriodLabel } from '../../shared/trailingYear';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import { toProvenanceEntryValue, type MetricProvenanceResult } from '../../shared/provenance/provenanceTypes';
+import { resolveTurnoverRatioFamilyData, type TurnoverRatioFamilyDeps } from '../turnoverRatio/computeTurnoverRatioFamily';
+import { ttmFlowEntries } from '../turnoverRatio/turnoverRatioProvenanceEntries';
 
-// 2026-09-13 使用者要求擴大稽核鏈——inventoryToRevenueRatio = 本季期末存貨 / 營收(TTM) × 100，
-// 跟 computeTurnoverRatioFamilyPit.ts 用同一支 toPercent（見 numericHelpers.ts）。
+// 2026-09-13 使用者要求擴大稽核鏈——inventoryToRevenueRatio = 本季期末存貨 / 營收(TTM) × 100。
+// 這支語意本來就是「現在的水位相對年營收」，compute 刻意維持期末值（v1，見 computeTurnoverRatioFamily.ts），不跟週轉率一起改平均。
+// 2026-10-01 改用 computeTurnoverRatioFamily 的 resolveTurnoverRatioFamilyData()（同一份資料與計算，見 turnoverRatioProvenanceEntries.ts）：
+// 這支數字本來就對得上，改讀 compute 的結果只是讓 12 支共用同一份來源，之後不會再各自漂移。
 
-export const getInventoryToRevenueRatioProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
-  if (!resolution) {
+export const getInventoryToRevenueRatioProvenance = async (query: QuarterlyMetricQuery, deps: TurnoverRatioFamilyDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveTurnoverRatioFamilyData(query, deps);
+  if (!r) {
     return { symbol: query.symbol, metricCode: 'inventoryToRevenueRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, inventory, basis, ttmQuarters, ttmOperatingRevenues, ttmComplete, revenueTtmSum } = resolution;
-  const value = ttmComplete && inventory !== null ? toPercent(inventory, revenueTtmSum) : null;
-
-  const entries: ProvenanceEntry[] = [
-    {
-      role: '本季期末存貨',
-      fiscalYear,
-      fiscalQuarter,
-      type: 'statementField',
-      statementType: 'balanceSheet',
-      fieldKey: 'inventories',
-      sourceDescription: null,
-      value: toProvenanceEntryValue(inventory),
-    },
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
-        role: `近一年 營收（${trailingPeriodLabel(tq, basis)}）`,
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        fiscalQuarter: Number(tq.season),
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: 'revenue',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(ttmOperatingRevenues[i]),
-      })
-    ),
-  ];
-
-  return { symbol, metricCode: 'inventoryToRevenueRatio', found: true, fiscalYear, fiscalQuarter, value, entries, methodologyNote: null };
+  return {
+    symbol: r.symbol,
+    metricCode: 'inventoryToRevenueRatio',
+    found: true,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.ttm.inventoryToRevenueRatio.value,
+    entries: [
+      { role: '本季期末存貨', fiscalYear: r.fiscalYear, fiscalQuarter: r.seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'inventories', sourceDescription: null, value: toProvenanceEntryValue(r.inventory) },
+      ...ttmFlowEntries(r, 'operatingRevenue'),
+    ],
+    methodologyNote: null,
+  };
 };

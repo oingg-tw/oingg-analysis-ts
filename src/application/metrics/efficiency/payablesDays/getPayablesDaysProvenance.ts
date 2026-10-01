@@ -1,58 +1,32 @@
-import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { calculatePayablesTurnover } from '../../../../domain/metrics/efficiency/payablesTurnover/calculatePayablesTurnover';
-import { calculatePayablesDays } from '../../../../domain/metrics/efficiency/payablesDays/calculatePayablesDays';
-import { resolveTurnoverRatioProvenanceInputs } from '../turnoverRatio/resolveTurnoverRatioProvenanceInputs';
-import { trailingPeriodLabel } from '../../shared/trailingYear';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricProvenanceResult } from '../../shared/provenance/provenanceTypes';
+import { averageBalanceEntries, averagedDenominatorEntry } from '../../shared/provenance/averageBalanceEntries';
+import { resolveTurnoverRatioFamilyData, type TurnoverRatioFamilyDeps } from '../turnoverRatio/computeTurnoverRatioFamily';
+import { TURNOVER_BALANCES, ttmFlowEntries } from '../turnoverRatio/turnoverRatioProvenanceEntries';
 
 // 2026-09-13 使用者要求擴大稽核鏈——payablesDays(DPO) = 365 / 應付帳款周轉率(TTM)，
 // 是 payablesTurnover 的衍生轉換，見 getInventoryDaysProvenance.ts 同一個模式的說明。
+// 2026-10-01 改用 computeTurnoverRatioFamily 的 resolveTurnoverRatioFamilyData()（同一份資料與計算，見 turnoverRatioProvenanceEntries.ts）：
+// 周轉率的分母 2026-09-22 起是平均應付帳款，原本這裡用本季期末值，溯源值跟儲存值對不上。
 
-export const getPayablesDaysProvenance = async (query: QuarterlyMetricQuery, deps: PitDeps): Promise<MetricProvenanceResult> => {
-  const resolution = await resolveTurnoverRatioProvenanceInputs(query, deps);
-  if (!resolution) {
+export const getPayablesDaysProvenance = async (query: QuarterlyMetricQuery, deps: TurnoverRatioFamilyDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveTurnoverRatioFamilyData(query, deps);
+  if (!r) {
     return { symbol: query.symbol, metricCode: 'payablesDays', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { symbol, fiscalYear, fiscalQuarter, accountsPayable, basis, ttmQuarters, ttmOperatingCosts, ttmComplete, costTtmSum } = resolution;
-  const turnover = ttmComplete ? calculatePayablesTurnover(costTtmSum, accountsPayable) : { value: null, nullReason: 'insufficient_history' as const };
-  const result = calculatePayablesDays(turnover.value, turnover.nullReason);
-
-  const entries: ProvenanceEntry[] = [
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
-        role: `近一年 營業成本（${trailingPeriodLabel(tq, basis)}）`,
-        fiscalYear: rocYearToGregorian(Number(tq.year)),
-        fiscalQuarter: Number(tq.season),
-        type: 'statementField',
-        statementType: 'incomeStatement',
-        fieldKey: 'operating_costs',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(ttmOperatingCosts[i]),
-      })
-    ),
-    {
-      role: '本季期末應付帳款',
-      fiscalYear,
-      fiscalQuarter,
-      type: 'statementField',
-      statementType: 'balanceSheet',
-      fieldKey: 'trade_payables_to_trade_suppliers',
-      sourceDescription: null,
-      value: toProvenanceEntryValue(accountsPayable),
-    },
-  ];
-
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'payablesDays',
     found: true,
-    fiscalYear,
-    fiscalQuarter,
-    value: result.value,
-    entries,
-    methodologyNote: `DPO = 365 ÷ 應付帳款周轉率(TTM)，周轉率本身 = TTM 營業成本 ÷ 本季期末應付帳款（見上方原始欄位），這裡不是查回一組獨立的原始欄位。周轉率(TTM)＝${turnover.value ?? 'null'}。`,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.ttm.payablesDays.value,
+    entries: [
+      ...ttmFlowEntries(r, 'operatingCost'),
+      ...averageBalanceEntries(r.balances, [TURNOVER_BALANCES.payable]),
+      averagedDenominatorEntry('平均應付帳款', r.balances, r.avg.payableTtm),
+    ],
+    methodologyNote: `DPO = 365 ÷ 應付帳款周轉率(TTM)，周轉率本身 = 近一年營業成本 ÷ 平均應付帳款（近四季窗口 5 個季末平均，興櫃半年頻 3 點，見上方逐點列出），這裡不是查回一組獨立的原始欄位。周轉率(TTM)＝${r.ttm.payablesTurnover.value ?? 'null'}。`,
   };
 };

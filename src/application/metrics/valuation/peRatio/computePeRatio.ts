@@ -32,16 +32,16 @@ export type PeRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcemen
 
 export type PeRatioComputationBatch = ComputationBatch<'ttm'>;
 
-export const computePeRatio = async (
-  query: QuarterlyMetricQuery,
-  deps: PeRatioDeps
-): Promise<PeRatioComputationBatch> => {
+// 2026-10-01 溯源表（getPeRatioProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼 EPS 還是四捨五入的
+// toPerShare、也沒扣特別股股利（v2/v3 都沒跟上）。查詢與值抽成這支 resolver 共用，computePeRatio 只負責 TTM knowledge date
+// 與組 slot；計算本身逐字未改。
+export const resolvePeRatioInputs = async (query: QuarterlyMetricQuery, deps: PeRatioDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['incomeStatement'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['ttm']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -86,6 +86,22 @@ export const computePeRatio = async (
     else if (epsTtm === null || stockPrice === null) ttmNullReason = 'missing_input';
     else ttmNullReason = 'zero_or_negative_denominator';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, shares, sharesValue, mainAnchor, stockPrice, trailing, ttmQuarters, ttmRecords, ttmSum, ttmComplete, epsTtm, peRatioTtm, ttmNullReason };
+};
+
+export const computePeRatio = async (
+  query: QuarterlyMetricQuery,
+  deps: PeRatioDeps
+): Promise<PeRatioComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolvePeRatioInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['ttm']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, ttmQuarters, ttmRecords, ttmComplete, peRatioTtm, ttmNullReason } = resolution;
 
   const coordinateBase = { symbol, metricCode: 'peRatio', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
 

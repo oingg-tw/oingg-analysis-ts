@@ -1,73 +1,37 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
-import { toPercent } from '@/domain/metrics/shared/numericHelpers';
+import { rocYearToGregorian } from '@/domain/calendar/rocQuarter';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
-import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
-import { computeNopat } from './computeRoic';
+import { averageBalanceEntries, averagedDenominatorEntry, investedCapitalComponents } from '../../shared/provenance/averageBalanceEntries';
+import { resolveRoicData, type RoicDeps } from './computeRoic';
 
-// 2026-09-13 使用者要求擴大稽核鏈——roic(TTM) = 近四季 NOPAT 加總 / 投入資本（本季期末
-// 快照，有息負債+權益-現金）。NOPAT = (稅前淨利+財務費用) × (1-有效稅率)，有效稅率 =
-// 所得稅費用/稅前淨利（夾在 0~1），稅前淨利 ≤ 0 時稅率當 0（2026-09-28 起，computeNopat 跟 computeRoic.ts 共用）。
-// 固定回傳 TTM。NOPAT 是計算出的中繼值不是原始欄位，用 methodologyNote 逐季說明換算，
+// 2026-09-13 使用者要求擴大稽核鏈——roic(TTM) = 近四季 NOPAT 加總 / 投入資本（有息負債+權益-現金）。
+// NOPAT = (稅前淨利+財務費用) × (1-有效稅率)，有效稅率 = 所得稅費用/稅前淨利（夾在 0~1），稅前淨利 ≤ 0 時稅率當 0
+// （2026-09-28 起）。固定回傳 TTM。NOPAT 是計算出的中繼值不是原始欄位，用 methodologyNote 說明換算，
 // 三個組成欄位（稅前淨利/財務費用/所得稅費用）都列成 entries。
+// 2026-10-01 改用 computeRoic 的 resolveRoicData()（同一份資料與計算）：投入資本 2026-09-22 起是 5 個季末的平均
+// （興櫃半年頻 3 點），這裡原本自己算本季期末值，溯源值跟儲存值對不上；逐點列出每一季末的組成欄位。
 
-export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'roic', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: RoicDeps): Promise<MetricProvenanceResult> => {
+  const resolution = await resolveRoicData(query, deps);
+  if (!resolution) {
+    return { symbol: query.symbol, metricCode: 'roic', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const equity = pickEquity(balanceSheet);
-  const totalDebt = balanceSheet
-    ? interestBearingDebt(balanceSheet)
-    : null;
-  const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
-  const investedCapital = totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
+  const { symbol, fiscalYear, seasonNum, balances, investedCapitalAvgTtm, basis, ttmQuarters, ttmRecords, ttmValue } = resolution;
   const preTaxes = ttmRecords.map((record) => record?.profitBeforeTax ?? null);
   const financeCosts = ttmRecords.map((record) => record?.financeCosts ?? null);
   const incomeTaxExpenses = ttmRecords.map((record) => record?.incomeTaxExpense ?? null);
-  const nopats = ttmRecords.map(computeNopat);
-
-  let nopatTtmSum = 0n;
-  let complete = true;
-  for (const nopat of nopats) {
-    if (nopat === null) complete = false;
-    else nopatTtmSum += nopat;
-  }
-
-  const value = complete && investedCapital !== null ? toPercent(nopatTtmSum, investedCapital) : null;
 
   const entries: ProvenanceEntry[] = [
-    { role: '本季期末有息負債—短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.shortTermBorrowings ?? null) },
-    { role: '本季期末有息負債—應付公司債（非流動部分）', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'noncurrent_portion_of_bonds_issued', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.bondsPayable ?? null) },
-    { role: '本季期末有息負債—長期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'longterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(balanceSheet?.longTermBorrowings ?? null) },
-    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
-    { role: '本季期末權益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
-    { role: '本季期末現金及約當現金', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'cash_and_cash_equivalents', sourceDescription: null, value: toProvenanceEntryValue(cashAndEquivalents) },
+    ...averageBalanceEntries(balances, investedCapitalComponents),
+    averagedDenominatorEntry('平均投入資本（有息負債+權益-現金）', balances, investedCapitalAvgTtm),
     ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
       const entryFiscalYear = rocYearToGregorian(Number(tq.year));
       const entryFiscalQuarter = Number(tq.season);
       return [
         {
-          role: `近一年 稅前淨利（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT）`,
+          role: `近一年 稅前淨利（${trailingPeriodLabel(tq, basis)}，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -77,7 +41,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(preTaxes[i]),
         },
         {
-          role: `近一年 財務費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT）`,
+          role: `近一年 財務費用（${trailingPeriodLabel(tq, basis)}，用於 NOPAT）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -87,7 +51,7 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
           value: toProvenanceEntryValue(financeCosts[i]),
         },
         {
-          role: `近一年 所得稅費用（${trailingPeriodLabel(tq, trailing.basis)}，用於 NOPAT 有效稅率）`,
+          role: `近一年 所得稅費用（${trailingPeriodLabel(tq, basis)}，用於 NOPAT 有效稅率）`,
           fiscalYear: entryFiscalYear,
           fiscalQuarter: entryFiscalQuarter,
           type: 'statementField' as const,
@@ -106,9 +70,9 @@ export const getRoicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<
     found: true,
     fiscalYear,
     fiscalQuarter: seasonNum,
-    value,
+    value: ttmValue,
     entries,
     methodologyNote:
-      'NOPAT（各季）= (稅前淨利+財務費用) × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利（夾在 0~1）；稅前淨利非正（虧損）時該季稅率當 0、NOPAT=EBIT。投入資本 = 有息負債+權益-現金及約當現金（本季期末快照，不平均不加總）。',
+      'NOPAT（各季）= (稅前淨利+財務費用) × (1-有效稅率)，有效稅率=所得稅費用/稅前淨利（夾在 0~1）；稅前淨利非正（虧損）時該季稅率當 0、NOPAT=EBIT。投入資本 = 有息負債+權益-現金及約當現金，取近四季窗口 5 個季末的平均（興櫃半年頻 3 點，見上方逐點列出）。',
   };
 };

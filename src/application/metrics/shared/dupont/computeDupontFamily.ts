@@ -52,17 +52,15 @@ export type DupontFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announ
 
 export type DupontFamilyComputationBatch = ComputationBatch<'netProfitMarginQ' | 'netProfitMarginTtm' | 'assetTurnoverQ' | 'assetTurnoverTtm' | 'equityMultiplier' | 'equityMultiplierTtm' | 'dupontDecomposedRoeQ' | 'dupontDecomposedRoeTtm' | 'dupontTaxBurdenQ' | 'dupontTaxBurdenTtm' | 'dupontInterestBurdenQ' | 'dupontInterestBurdenTtm' | 'dupontEbitMarginQ' | 'dupontEbitMarginTtm' | 'dupontExtendedRoeQ' | 'dupontExtendedRoeTtm'>;
 
-export const computeDupontFamily = async (
-  query: QuarterlyMetricQuery,
-  deps: DupontFamilyDeps
-): Promise<DupontFamilyComputationBatch> => {
+// 2026-10-01 抽出 resolveDupontFamilyData()：assetTurnover 的溯源表（getAssetTurnoverProvenance.ts）跟 compute 走同一份資料與
+// 計算——溯源表原本自己算「本季期末總資產」，2026-09-22 分母改平均後就跟儲存值對不上（上市 20 家只對 6 家）；近一年齊不齊的判斷
+// 也只看營收、沒看淨利，跟這裡的 ttmComplete 不同。
+export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps: DupontFamilyDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
-
-  const skippedNoQuarter: DupontFamilyComputationBatch = noQuarterBatch(symbol, ['netProfitMarginQ', 'netProfitMarginTtm', 'assetTurnoverQ', 'assetTurnoverTtm', 'equityMultiplier', 'equityMultiplierTtm', 'dupontDecomposedRoeQ', 'dupontDecomposedRoeTtm', 'dupontTaxBurdenQ', 'dupontTaxBurdenTtm', 'dupontInterestBurdenQ', 'dupontInterestBurdenTtm', 'dupontEbitMarginQ', 'dupontEbitMarginTtm', 'dupontExtendedRoeQ', 'dupontExtendedRoeTtm']);
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'incomeStatement'], deps.quarters);
 
-  if (!resolvedQuarter) return skippedNoQuarter;
+  if (!resolvedQuarter) return null;
 
   const { year, season } = resolvedQuarter;
   const rocYear = Number(year);
@@ -105,6 +103,92 @@ export const computeDupontFamily = async (
   );
 
   const reportDate = balanceSheet?.reportDate ?? incomeStatement?.reportDate ?? null;
+
+  // TTM：近四季（含本季）營收/淨利加總；assetTurnover 分母是 5 個季末總資產的平均（2026-09-22 起，見 ../averageBalances.ts）。一季只要營收或淨利任一為 null 就視為該季不齊，
+  // netProfitMargin/assetTurnover 的 TTM 共用同一組「資料齊不齊」判斷（比照 margins.ts）。
+  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
+  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const ttmQuarters = trailing.periods;
+  const ttmRecords = trailing.periods.map((p) => p.record);
+
+  let revenueTtmSum = 0n;
+  let netIncomeTtmSum = 0n;
+  let ttmComplete = true;
+  // 五因子的 TTM 需要額外的稅前淨利/財務費用，比原本三因子多一層完整度要求——用獨立的
+  // extendedTtmComplete 旗標，不動既有 ttmComplete（避免五因子的新輸入缺漏反過來讓既有
+  // netProfitMargin/assetTurnover/dupontDecomposedRoe 的 TTM 從「算得出來」退步成
+  // insufficient_history）。extendedTtmComplete 蘊含 ttmComplete（後者不齊時前者一定
+  // 也不齊），但反過來不成立。
+  let preTaxTtmSum = 0n;
+  let ebitTtmSum = 0n;
+  let extendedTtmComplete = true;
+  for (const record of ttmRecords) {
+    const picked = pickNetIncome(record);
+    if (record === null || record.operatingRevenue === null || picked.value === null) {
+      ttmComplete = false;
+      extendedTtmComplete = false;
+    } else {
+      revenueTtmSum += record.operatingRevenue;
+      netIncomeTtmSum += picked.value;
+      if (record.profitBeforeTax === null || record.financeCosts === null) {
+        extendedTtmComplete = false;
+      } else {
+        preTaxTtmSum += record.profitBeforeTax;
+        ebitTtmSum += record.profitBeforeTax + record.financeCosts;
+      }
+    }
+  }
+
+  const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const assetTurnoverTtmCalc = ttmComplete && balances.assetsAvgTtm !== null ? calculateAssetTurnover(revenueTtmSum, balances.assetsAvgTtm) : { value: null, nullReason: 'insufficient_history' as const };
+
+  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
+  const decomposedRoeTtmNullReason: MetricNullReason | null = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
+
+  const dupontTaxBurdenTtmCalc = extendedTtmComplete ? calculateDupontTaxBurden(netIncomeTtmSum, preTaxTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const ebitTtm = extendedTtmComplete ? ebitTtmSum : null;
+  const dupontInterestBurdenTtmCalc = extendedTtmComplete ? calculateDupontInterestBurden(preTaxTtmSum, ebitTtm) : { value: null, nullReason: 'insufficient_history' as const };
+  const dupontEbitMarginTtmCalc = extendedTtmComplete ? calculateDupontEbitMargin(ebitTtm, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+
+  const extendedRoeTtmCalc = calculateDupontExtendedRoe(
+    dupontTaxBurdenTtmCalc.value,
+    dupontInterestBurdenTtmCalc.value,
+    dupontEbitMarginTtmCalc.value,
+    assetTurnoverTtmCalc.value,
+    equityMultiplierTtmResult.value,
+  );
+  const extendedRoeTtmNullReason: MetricNullReason | null = extendedRoeTtmCalc.value !== null ? null : extendedTtmComplete ? 'missing_input' : 'insufficient_history';
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances,
+    netProfitMarginQuarterly, assetTurnoverQuarterly, equityMultiplierResult, equityMultiplierTtmResult, decomposedRoeQuarterly,
+    dupontTaxBurdenQuarterly, dupontInterestBurdenQuarterly, dupontEbitMarginQuarterly, extendedRoeQuarterly,
+    basis: trailing.basis, ttmQuarters, ttmRecords, ttmComplete, revenueTtmSum,
+    netProfitMarginTtmCalc, assetTurnoverTtmCalc, decomposedRoeTtmCalc, decomposedRoeTtmNullReason,
+    dupontTaxBurdenTtmCalc, dupontInterestBurdenTtmCalc, dupontEbitMarginTtmCalc, extendedRoeTtmCalc, extendedRoeTtmNullReason,
+  };
+};
+
+export const computeDupontFamily = async (
+  query: QuarterlyMetricQuery,
+  deps: DupontFamilyDeps
+): Promise<DupontFamilyComputationBatch> => {
+  const { symbol, dataType, subsidiaryCompanyId } = query;
+
+  const skippedNoQuarter: DupontFamilyComputationBatch = noQuarterBatch(symbol, ['netProfitMarginQ', 'netProfitMarginTtm', 'assetTurnoverQ', 'assetTurnoverTtm', 'equityMultiplier', 'equityMultiplierTtm', 'dupontDecomposedRoeQ', 'dupontDecomposedRoeTtm', 'dupontTaxBurdenQ', 'dupontTaxBurdenTtm', 'dupontInterestBurdenQ', 'dupontInterestBurdenTtm', 'dupontEbitMarginQ', 'dupontEbitMarginTtm', 'dupontExtendedRoeQ', 'dupontExtendedRoeTtm']);
+
+  const resolution = await resolveDupontFamilyData(query, deps);
+  if (!resolution) return skippedNoQuarter;
+
+  const {
+    year, season, rocYear, seasonNum, fiscalYear, reportDate,
+    netProfitMarginQuarterly, assetTurnoverQuarterly, equityMultiplierResult, equityMultiplierTtmResult, decomposedRoeQuarterly,
+    dupontTaxBurdenQuarterly, dupontInterestBurdenQuarterly, dupontEbitMarginQuarterly, extendedRoeQuarterly,
+    ttmQuarters, ttmRecords, ttmComplete,
+    netProfitMarginTtmCalc, assetTurnoverTtmCalc, decomposedRoeTtmCalc, decomposedRoeTtmNullReason,
+    dupontTaxBurdenTtmCalc, dupontInterestBurdenTtmCalc, dupontEbitMarginTtmCalc, extendedRoeTtmCalc, extendedRoeTtmNullReason,
+  } = resolution;
+
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 
   const coordinateFor = (metricCode: string) => ({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId });
@@ -194,61 +278,6 @@ export const computeDupontFamily = async (
       knowledgeDateIsFallback,
     });
   }
-
-  // TTM：近四季（含本季）營收/淨利加總；assetTurnover 分母是 5 個季末總資產的平均（2026-09-22 起，見 ../averageBalances.ts）。一季只要營收或淨利任一為 null 就視為該季不齊，
-  // netProfitMargin/assetTurnover 的 TTM 共用同一組「資料齊不齊」判斷（比照 margins.ts）。
-  // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-
-  let revenueTtmSum = 0n;
-  let netIncomeTtmSum = 0n;
-  let ttmComplete = true;
-  // 五因子的 TTM 需要額外的稅前淨利/財務費用，比原本三因子多一層完整度要求——用獨立的
-  // extendedTtmComplete 旗標，不動既有 ttmComplete（避免五因子的新輸入缺漏反過來讓既有
-  // netProfitMargin/assetTurnover/dupontDecomposedRoe 的 TTM 從「算得出來」退步成
-  // insufficient_history）。extendedTtmComplete 蘊含 ttmComplete（後者不齊時前者一定
-  // 也不齊），但反過來不成立。
-  let preTaxTtmSum = 0n;
-  let ebitTtmSum = 0n;
-  let extendedTtmComplete = true;
-  for (const record of ttmRecords) {
-    const picked = pickNetIncome(record);
-    if (record === null || record.operatingRevenue === null || picked.value === null) {
-      ttmComplete = false;
-      extendedTtmComplete = false;
-    } else {
-      revenueTtmSum += record.operatingRevenue;
-      netIncomeTtmSum += picked.value;
-      if (record.profitBeforeTax === null || record.financeCosts === null) {
-        extendedTtmComplete = false;
-      } else {
-        preTaxTtmSum += record.profitBeforeTax;
-        ebitTtmSum += record.profitBeforeTax + record.financeCosts;
-      }
-    }
-  }
-
-  const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
-  const assetTurnoverTtmCalc = ttmComplete && balances.assetsAvgTtm !== null ? calculateAssetTurnover(revenueTtmSum, balances.assetsAvgTtm) : { value: null, nullReason: 'insufficient_history' as const };
-
-  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
-  const decomposedRoeTtmNullReason = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : ('insufficient_history' as const);
-
-  const dupontTaxBurdenTtmCalc = extendedTtmComplete ? calculateDupontTaxBurden(netIncomeTtmSum, preTaxTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
-  const ebitTtm = extendedTtmComplete ? ebitTtmSum : null;
-  const dupontInterestBurdenTtmCalc = extendedTtmComplete ? calculateDupontInterestBurden(preTaxTtmSum, ebitTtm) : { value: null, nullReason: 'insufficient_history' as const };
-  const dupontEbitMarginTtmCalc = extendedTtmComplete ? calculateDupontEbitMargin(ebitTtm, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
-
-  const extendedRoeTtmCalc = calculateDupontExtendedRoe(
-    dupontTaxBurdenTtmCalc.value,
-    dupontInterestBurdenTtmCalc.value,
-    dupontEbitMarginTtmCalc.value,
-    assetTurnoverTtmCalc.value,
-    equityMultiplierTtmResult.value,
-  );
-  const extendedRoeTtmNullReason = extendedRoeTtmCalc.value !== null ? null : extendedTtmComplete ? 'missing_input' : ('insufficient_history' as const);
 
   let netProfitMarginTtm: ComputationSlot;
   let assetTurnoverTtm: ComputationSlot;

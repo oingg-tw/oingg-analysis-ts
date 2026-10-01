@@ -34,16 +34,15 @@ export type PbRatioDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcemen
 
 export type PbRatioComputationBatch = ComputationBatch<'q'>;
 
-export const computePbRatio = async (
-  query: QuarterlyMetricQuery,
-  deps: PbRatioDeps
-): Promise<PbRatioComputationBatch> => {
+// 2026-10-01 溯源表（getPbRatioProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，中繼 BVPS 四捨五入、也沒扣特別股
+// 清償金額（2881 溯源 1.41 vs 寫入 1.53）。查詢與值抽成這支 resolver 共用，computePbRatio 只負責組 slot；計算本身逐字未改。
+export const resolvePbRatioInputs = async (query: QuarterlyMetricQuery, deps: PbRatioDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -73,6 +72,19 @@ export const computePbRatio = async (
     if (bvps === null || stockPrice === null) nullReason = 'missing_input';
     else nullReason = 'zero_or_negative_denominator';
   }
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, balanceSheet, equity, shares, sharesValue, commonEquity, bvps, mainAnchor, stockPrice, pbRatio, nullReason };
+};
+
+export const computePbRatio = async (query: QuarterlyMetricQuery, deps: PbRatioDeps): Promise<PbRatioComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolvePbRatioInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, seasonNum, fiscalYear, mainAnchor, pbRatio, nullReason } = resolution;
 
   let q: ComputationSlot;
   if (!mainAnchor) {

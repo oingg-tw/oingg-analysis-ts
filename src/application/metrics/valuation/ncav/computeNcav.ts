@@ -24,13 +24,16 @@ export type NcavDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements'
 
 export type NcavComputationBatch = ComputationBatch<'q'>;
 
-export const computeNcav = async (query: QuarterlyMetricQuery, deps: NcavDeps): Promise<NcavComputationBatch> => {
+// 2026-10-01 溯源表（getNcavProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，特別股還是扣資產負債表的面額
+// （2026-09-27 起寫入路徑扣發行價），1101 差 80 億。查詢與值抽成這支 resolver 共用，computeNcav 只負責 knowledge date 與組 slot；
+// 計算本身逐字未改。
+export const resolveNcavInputs = async (query: QuarterlyMetricQuery, deps: NcavDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -51,6 +54,19 @@ export const computeNcav = async (query: QuarterlyMetricQuery, deps: NcavDeps): 
   const netCurrentAssetValueInThousands = currentAssets !== null && totalLiabilities !== null ? currentAssets - totalLiabilities - preferredStockCapital : null;
   const ncav = netCurrentAssetValueInThousands !== null ? toTotalValue(netCurrentAssetValueInThousands) : null;
   const nullReason: MetricNullReason | null = ncav === null ? 'missing_input' : null;
+
+  return { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balanceSheet, currentAssets, totalLiabilities, preferredClaim, preferredStockCapital, ncav, nullReason };
+};
+
+export const computeNcav = async (query: QuarterlyMetricQuery, deps: NcavDeps): Promise<NcavComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveNcavInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, ncav, nullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
 

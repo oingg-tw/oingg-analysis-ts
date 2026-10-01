@@ -1,113 +1,33 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickEquityWithFieldKey as pickEquity, interestBearingDebt } from '@/domain/metrics/shared/pickers';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
-import { toRatio } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import { additionalDebtEntries } from '@/application/metrics/shared/provenance/debtEntries';
-import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricProvenanceResult } from '../../shared/provenance/provenanceTypes';
+import { resolveCashFlowValuationInputs, type CashFlowValuationFamilyDeps } from '@/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamily';
+import { cashFlowValuationEntries, cashFlowValuationGateNote } from '@/application/metrics/shared/cashFlowValuationFamily/cashFlowValuationProvenanceEntries';
 
 // 2026-09-13 使用者要求擴大稽核鏈——croic(TTM) = FCF(TTM，OCF+資本支出加總) / 投入資本
-// （本季期末快照，有息負債+權益-現金）。跟 computeCashFlowValuationFamilyPit.ts 的
-// croic 一致，這裡只重新查這支自己真正的依賴，不是那個 family 共用的 ttmComplete 旗標
-// （那個旗標額外要求 revenue/netIncome 齊全，是給同家族其他指標用的）。固定回傳 TTM。
+// （本季期末快照，有息負債+權益-現金）× 100。固定回傳 TTM。
+//
+// 2026-10-01 改成跟 computeCashFlowValuationFamily 共用 resolveCashFlowValuationInputs：原本這裡「只查自己真正的依賴」
+// 獨立重算，結果沒跟上 v2 的 ×100（溯源 0.26、寫入 26.41），也沒有家族共用的 ttmComplete 旗標（金控沒有營業收入 →
+// 寫入 insufficient_history、溯源卻有值）。值直接取 resolution.values.croic，不可能再跟寫入路徑分岔。
 
-export const getCroicProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
+export const getCroicProvenance = async (query: QuarterlyMetricQuery, deps: CashFlowValuationFamilyDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveCashFlowValuationInputs(query, deps);
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet', 'cashFlowStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'croic', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  if (!r) {
+    return { symbol: query.symbol, metricCode: 'croic', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  const balanceSheet = await deps.statements.getBalanceSheet({ symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId });
-  const shortTermBorrowings = balanceSheet?.shortTermBorrowings ?? null;
-  const bondsPayable = balanceSheet?.bondsPayable ?? null;
-  const longTermBorrowings = balanceSheet?.longTermBorrowings ?? null;
-  const totalDebt = balanceSheet ? interestBearingDebt(balanceSheet) : null;
-  const cashAndEquivalents = balanceSheet?.cashAndEquivalents ?? null;
-  const equity = pickEquity(balanceSheet);
-  const investedCapital = totalDebt !== null && equity.value !== null && cashAndEquivalents !== null ? totalDebt + equity.value - cashAndEquivalents : null;
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-
-  const ocfs = ttmRecords.map((record) => record?.netCashFromOperatingActivities ?? null);
-  const capexes = ttmRecords.map((record) => record?.capitalExpenditures ?? null);
-
-  let fcfTtmSum = 0n;
-  let complete = true;
-  for (let i = 0; i < ttmRecords.length; i++) {
-    if (ocfs[i] === null || capexes[i] === null) {
-      complete = false;
-    } else {
-      fcfTtmSum += ocfs[i]! + capexes[i]!; // capex 是負數，加總即為扣除。
-    }
-  }
-
-  const value = complete && investedCapital !== null ? toRatio(fcfTtmSum, investedCapital) : null;
-
-  const entries: ProvenanceEntry[] = [
-    { role: '本季期末短期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'shortterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(shortTermBorrowings) },
-    {
-      role: '本季期末應付公司債（非流動部分）',
-      fiscalYear,
-      fiscalQuarter: seasonNum,
-      type: 'statementField',
-      statementType: 'balanceSheet',
-      fieldKey: 'noncurrent_portion_of_bonds_issued',
-      sourceDescription: null,
-      value: toProvenanceEntryValue(bondsPayable),
-    },
-    { role: '本季期末長期借款', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'longterm_borrowings', sourceDescription: null, value: toProvenanceEntryValue(longTermBorrowings) },
-    ...additionalDebtEntries(balanceSheet, fiscalYear, seasonNum),
-    { role: '本季期末權益', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: equity.fieldKey, sourceDescription: null, value: toProvenanceEntryValue(equity.value) },
-    { role: '本季期末現金及約當現金', fiscalYear, fiscalQuarter: seasonNum, type: 'statementField', statementType: 'balanceSheet', fieldKey: 'cash_and_cash_equivalents', sourceDescription: null, value: toProvenanceEntryValue(cashAndEquivalents) },
-    ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
-      const entryFiscalYear = rocYearToGregorian(Number(tq.year));
-      const entryFiscalQuarter = Number(tq.season);
-      return [
-        {
-          role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}）`,
-          fiscalYear: entryFiscalYear,
-          fiscalQuarter: entryFiscalQuarter,
-          type: 'statementField' as const,
-          statementType: 'cashFlowStatement' as const,
-          fieldKey: 'cash_flows_from_used_in_operating_activities',
-          sourceDescription: null,
-          value: toProvenanceEntryValue(ocfs[i]),
-        },
-        {
-          role: `近一年 資本支出（${trailingPeriodLabel(tq, trailing.basis)}，投資活動現金流出，原始資料是負值）`,
-          fiscalYear: entryFiscalYear,
-          fiscalQuarter: entryFiscalQuarter,
-          type: 'statementField' as const,
-          statementType: 'cashFlowStatement' as const,
-          fieldKey: 'purchase_of_ppe_investing',
-          sourceDescription: null,
-          value: toProvenanceEntryValue(capexes[i]),
-        },
-      ];
-    }),
-  ];
 
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'croic',
     found: true,
-    fiscalYear,
-    fiscalQuarter: seasonNum,
-    value,
-    entries,
-    methodologyNote: `分母投入資本 = 有息負債(短期借款+應付公司債+長期借款)+權益-現金及約當現金（本季期末快照），投入資本＝${investedCapital ?? 'null'}。分子 FCF(TTM) = OCF + 資本支出（資本支出帶負號，相加即為扣除），FCF(TTM)＝${complete ? fcfTtmSum.toString() : 'null'}。`,
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.values.croic,
+    entries: cashFlowValuationEntries(r, ['debt', 'equity', 'cash', 'ocf', 'capex']),
+    methodologyNote:
+      `croic = FCF(TTM) ÷ 投入資本 × 100。分母投入資本 = 有息負債（上方各筆借款／公司債／票券相加）+ 權益 − 現金及約當現金（本季期末快照），投入資本＝${r.investedCapital ?? 'null'}。` +
+      `分子 FCF(TTM) = OCF + 資本支出（資本支出帶負號，相加即為扣除），FCF(TTM)＝${r.ttmComplete ? r.fcfTtmSum.toString() : 'null'}。` +
+      cashFlowValuationGateNote(r),
   };
 };

@@ -27,22 +27,16 @@ export type BvpsGrowthRateDeps = Pick<PitDeps, 'statements' | 'quarters' | 'anno
 
 export type BvpsGrowthRateComputationBatch = ComputationBatch<'q'>;
 
-// BVPS 成長率（單季年增率）= (本季 BVPS - 去年同季 BVPS) / |去年同季 BVPS| * 100——獨立
-// 重新計算本季/去年同季各自的 BVPS（不依賴 bvps 這個 metric_code 已寫入的值，跟
-// epsGrowthRate 對 eps 的既有做法一致），流通股數各自用當下報告日對應的股本。跟
-// equityGrowthRate（淨值總額成長率）搭配使用：淨值成長率 ≈ BVPS成長率 + 股本變化率——
-// 兩者相等代表股本沒變動；BVPS成長率明顯低於淨值成長率，代表現金增資稀釋了每股淨值；
-// 反之代表減資/買回墊高了每股淨值。跟 dividend 分類的 shareCountChangeRate 三支一起
-// 組成第二張「淨值成長分解卡」，跟 growth 分類既有的 netIncomeGrowthRate/epsGrowthRate
-// 那組（損益表視角）並列成資產負債表視角的版本。只有 Q 一種 basis——資產負債表時點快照，
-// 沒有 TTM 概念（跟 bvps 自己一樣）。
-export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: BvpsGrowthRateDeps): Promise<BvpsGrowthRateComputationBatch> => {
+// 2026-10-01 溯源表（getBvpsGrowthRateProvenance.ts）要跟寫入路徑算出同一個數字：原本溯源表自己重算，BVPS 四捨五入到分、沒扣
+// 特別股清償金額、去年同季也沒做面額／配股還原（2887 55.74% vs 90.73%）。查詢與值抽成這支 resolver 共用，computeBvpsGrowthRate
+// 只負責 knowledge date 與組 slot；計算本身逐字未改。
+export const resolveBvpsGrowthRateInputs = async (query: QuarterlyMetricQuery, deps: BvpsGrowthRateDeps) => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
   const resolvedQuarter = await resolveQuarterOrLatest(query, ['balanceSheet'], deps.quarters);
 
   if (!resolvedQuarter) {
-    return noQuarterBatch(symbol, ['q']);
+    return null;
   }
 
   const { year, season } = resolvedQuarter;
@@ -71,6 +65,31 @@ export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: B
 
   const splitFactor = priorReportDate && reportDate ? await deps.shares.getShareSplitFactor(symbol, priorReportDate, reportDate) : 1;
   const { value: growthRate, nullReason } = calculateYoyGrowthRate(currentBvps, priorBvps === null ? null : priorBvps / splitFactor);
+
+  return {
+    symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balanceSheet, currentSharesInfo, currentBvps,
+    prior, priorBalanceSheet, priorSharesInfo, priorBvps, splitFactor, growthRate, nullReason,
+  };
+};
+
+// BVPS 成長率（單季年增率）= (本季 BVPS - 去年同季 BVPS) / |去年同季 BVPS| * 100——獨立
+// 重新計算本季/去年同季各自的 BVPS（不依賴 bvps 這個 metric_code 已寫入的值，跟
+// epsGrowthRate 對 eps 的既有做法一致），流通股數各自用當下報告日對應的股本。跟
+// equityGrowthRate（淨值總額成長率）搭配使用：淨值成長率 ≈ BVPS成長率 + 股本變化率——
+// 兩者相等代表股本沒變動；BVPS成長率明顯低於淨值成長率，代表現金增資稀釋了每股淨值；
+// 反之代表減資/買回墊高了每股淨值。跟 dividend 分類的 shareCountChangeRate 三支一起
+// 組成第二張「淨值成長分解卡」，跟 growth 分類既有的 netIncomeGrowthRate/epsGrowthRate
+// 那組（損益表視角）並列成資產負債表視角的版本。只有 Q 一種 basis——資產負債表時點快照，
+// 沒有 TTM 概念（跟 bvps 自己一樣）。
+export const computeBvpsGrowthRate = async (query: QuarterlyMetricQuery, deps: BvpsGrowthRateDeps): Promise<BvpsGrowthRateComputationBatch> => {
+  const { dataType, subsidiaryCompanyId } = query;
+  const resolution = await resolveBvpsGrowthRateInputs(query, deps);
+
+  if (!resolution) {
+    return noQuarterBatch(query.symbol, ['q']);
+  }
+
+  const { symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, growthRate, nullReason } = resolution;
 
   const mainAnchor = await resolveKnowledgeDate(symbol, [{ rocYear, season: seasonNum, reportDate }], deps.announcements);
   const coordinateBase = { symbol, metricCode: 'bvpsGrowthRate', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };

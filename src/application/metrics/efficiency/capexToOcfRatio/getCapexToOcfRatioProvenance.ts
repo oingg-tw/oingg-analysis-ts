@@ -1,91 +1,32 @@
-import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingCashFlowStatements, trailingPeriodLabel } from '@/application/metrics/shared/trailingYear';
-import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
-import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
-import type { PitDeps } from '@/application/metrics/deps';
+import type { MetricProvenanceResult } from '../../shared/provenance/provenanceTypes';
+import { resolveCashFlowValuationInputs, type CashFlowValuationFamilyDeps } from '@/application/metrics/shared/cashFlowValuationFamily/computeCashFlowValuationFamily';
+import { cashFlowValuationEntries, cashFlowValuationGateNote } from '@/application/metrics/shared/cashFlowValuationFamily/cashFlowValuationProvenanceEntries';
 
-// 2026-09-13 使用者要求擴大稽核鏈——capexToOcfRatio = |近四季資本支出加總| / 近四季營業活動
-// 現金流加總 × 100。這支指標實際在 computeCashFlowValuationFamilyPit.ts 裡跟 evToOcf/
-// evToSales/priceToOcf/debtToFcf/croic/ocfMargin/fcfConversionRate 共用一次查詢/一個
-// ttmComplete 旗標，但那個旗標額外要求 revenue/netIncome 齊全（其他指標要用），這裡只依
-// capexToOcfRatio 自己真正的依賴（見 capexToOcfRatioDefinition.ts 的 dependsOn：只有
-// OCF/資本支出兩個欄位）重新查一次，不引入不相關的完整度限制。現查現算不持久化，
-// 刻意不動家族編排檔案。固定回傳 TTM。
+// 2026-09-13 使用者要求擴大稽核鏈——capexToOcfRatio = |近四季資本支出加總| / 近四季營業活動現金流加總 × 100。固定回傳 TTM。
+//
+// 2026-10-01 改成跟 computeCashFlowValuationFamily 共用 resolveCashFlowValuationInputs。原本這裡刻意「只依自己的依賴
+// （OCF／資本支出）重查、不引入家族 ttmComplete 旗標」，結果溯源表跟寫入的值對不上：寫入路徑 2026-09-22 起 OCF ≤ 0 就
+// 不算（zero_or_negative_denominator），金控等營收缺漏的公司整批 insufficient_history，溯源卻照樣算出數字。
+// 使用者要的是「溯源表的值＝寫入的值」，所以值直接取 resolution.values.capexToOcfRatio。
 
-export const getCapexToOcfRatioProvenance = async (query: QuarterlyMetricQuery, deps: Pick<PitDeps, 'statements' | 'quarters' | 'cumulativeStatements'>): Promise<MetricProvenanceResult> => {
-  const { symbol, dataType, subsidiaryCompanyId } = query;
+export const getCapexToOcfRatioProvenance = async (query: QuarterlyMetricQuery, deps: CashFlowValuationFamilyDeps): Promise<MetricProvenanceResult> => {
+  const r = await resolveCashFlowValuationInputs(query, deps);
 
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
-
-  if (!resolvedQuarter) {
-    return { symbol, metricCode: 'capexToOcfRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+  if (!r) {
+    return { symbol: query.symbol, metricCode: 'capexToOcfRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
-
-  const { year, season } = resolvedQuarter;
-  const rocYear = Number(year);
-  const seasonNum = Number(season);
-  const fiscalYear = rocYearToGregorian(rocYear);
-
-  // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingCashFlowStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
-  const ttmQuarters = trailing.periods;
-  const ttmRecords = trailing.periods.map((p) => p.record);
-
-  const ocfs = ttmRecords.map((record) => record?.netCashFromOperatingActivities ?? null);
-  const capexes = ttmRecords.map((record) => record?.capitalExpenditures ?? null);
-
-  let ocfTtmSum = 0n;
-  let capexTtmSum = 0n;
-  let complete = true;
-  for (let i = 0; i < ttmRecords.length; i++) {
-    if (ocfs[i] === null || capexes[i] === null) {
-      complete = false;
-    } else {
-      ocfTtmSum += ocfs[i]!;
-      capexTtmSum += capexes[i]!;
-    }
-  }
-
-  const absCapexTtmSum = capexTtmSum < 0n ? -capexTtmSum : capexTtmSum;
-  const value = complete ? toPercent(absCapexTtmSum, ocfTtmSum) : null;
-
-  const entries: ProvenanceEntry[] = ttmQuarters.flatMap((tq, i) => {
-    const entryFiscalYear = rocYearToGregorian(Number(tq.year));
-    const entryFiscalQuarter = Number(tq.season);
-    return [
-      {
-        role: `近一年 營業活動現金流（${trailingPeriodLabel(tq, trailing.basis)}）`,
-        fiscalYear: entryFiscalYear,
-        fiscalQuarter: entryFiscalQuarter,
-        type: 'statementField' as const,
-        statementType: 'cashFlowStatement' as const,
-        fieldKey: 'cash_flows_from_used_in_operating_activities',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(ocfs[i]),
-      },
-      {
-        role: `近一年 資本支出（${trailingPeriodLabel(tq, trailing.basis)}，投資活動現金流出，原始資料是負值）`,
-        fiscalYear: entryFiscalYear,
-        fiscalQuarter: entryFiscalQuarter,
-        type: 'statementField' as const,
-        statementType: 'cashFlowStatement' as const,
-        fieldKey: 'purchase_of_ppe_investing',
-        sourceDescription: null,
-        value: toProvenanceEntryValue(capexes[i]),
-      },
-    ];
-  });
 
   return {
-    symbol,
+    symbol: r.symbol,
     metricCode: 'capexToOcfRatio',
     found: true,
-    fiscalYear,
-    fiscalQuarter: seasonNum,
-    value,
-    entries,
-    methodologyNote: '分子取資本支出加總後的絕對值（原始資料是投資活動現金流出，帶負號）再除以營業活動現金流，比率本身恆為正數。',
+    fiscalYear: r.fiscalYear,
+    fiscalQuarter: r.seasonNum,
+    value: r.values.capexToOcfRatio,
+    entries: cashFlowValuationEntries(r, ['ocf', 'capex']),
+    methodologyNote:
+      '分子取資本支出加總後的絕對值（原始資料是投資活動現金流出，帶負號）再除以營業活動現金流，比率本身恆為正數；近一年營業活動現金流 ≤ 0 時比率沒有意義，不計算。' +
+      cashFlowValuationGateNote(r),
   };
 };
