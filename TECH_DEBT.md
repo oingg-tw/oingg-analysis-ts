@@ -11,7 +11,7 @@
 
 - **PRD 上線時機**：DEV 已累積一大批還沒上 PRD 的變更——roce 刪除（PRD 要一併刪 DB 列）、股數修正、FY109、cashPerShare、
   migration、8/28 起證交所殖利率空白當 0 的重算、興櫃半年頻、溯源表全覆蓋＋periodType、ROE 年度版（FY）、神奇公式接進每日重算、
-  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
+  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、Altman Z″ 查不到稅籍分類不算（3fe2eb59，PRD 要一併刪 1,326 家的舊列）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
 - **bff-ts 的合併卡住**：卡著溯源端點的 `asOfDate`／`periodType` 轉發，以及漲跌停幅度排行路由的刪除。bff 沒轉發前，web-nuxt
   帶的這兩個參數會被吃掉（溯源退回「最新一筆／溯源表本來的期別」）。
 - **tpex 興櫃股價**：興櫃頁面要「盡可能比照既有」，缺的是 tpex 端收興櫃股價（他們先查發布時間），要使用者在 tpex 那邊放行。
@@ -22,7 +22,6 @@
   來源性質，三件法律結論都還沒出（見 [[project_open_data_legal_audit_2026_09]]）。
 - **跟 web-nuxt 對的設計**：「近四季／近一年／年度」三種期別在頁面上的標示；溯源表要不要支援單季（Q）——先問 web-nuxt 哪些頁面
   預設看單季，再決定要不要做。
-- **Altman Z″ 製造業判斷只涵蓋上市**：gov 稅籍分類只有 999 家上市，上櫃 862、興櫃 284、上市 82 家查不到分類被當成非製造業照算 Z″（製造業也在內，安靜錯）。已問 gov 為何只有上市，待使用者決定：查不到就不算／整支退役／改用類股近似。
 - **現金增資認購折價**（見下方即時指標）：要不要請 mops-ts 補認購價。
 
 ## 排程中（我這邊會做，不需要使用者動作）
@@ -88,6 +87,7 @@
   [[reference_mops_dividend_distribution_dataset]]。
 - **mops 股本欄位對調 16 家＋位數錯誤列**（2026-10-01 前已回報）：對調修好給清單後重算那 16 家；另有 10^k 位數錯位的列
   （09-25 量到 123 列、69 家，Q/TTM 每股分母受影響、FY 不受影響）。
+- **上櫃／興櫃稅籍行業分類**（2026-10-02 使用者同意補）：tpex-ts 寫推送腳本把統編推給 gov（境外註冊照 twse 過濾）、gov 拆每週刷新（補到約 2,250 家會超過排程 30 分鐘上限）。完成後重算 altmanZDoublePrimeScore，上櫃興櫃恢復；上市 97 家境外註冊結構上永遠沒有。
 - **tpex `issued_shares` 回補**：之後拿來當股數的第二來源做交叉驗證。
 - **twse 月營收上市公司回填**：prod 原本收到的是未上市那 296 家（打錯端點），改 _L 回填中，SUS 等它。
 - **chip（籌碼）分類完全空白**：抓取架構已成熟（twse-ts `margin_balance` 每 30 分鐘
