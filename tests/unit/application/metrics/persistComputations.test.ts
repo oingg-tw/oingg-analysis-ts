@@ -19,7 +19,7 @@ const definitions: MetricDefinitionLookup = {
 const industry = {
   isFinancialIndustryCompany: async (symbol: string) => symbol === '2881',
   isSoftwareOrCloudIndustryCompany: async () => false,
-  getCompanySectionCode: async () => null,
+  getSecuritiesSectorCode: async () => null,
 };
 
 const roeQ = (overrides: Partial<MetricComputation> = {}): MetricComputation => ({

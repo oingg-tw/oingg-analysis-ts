@@ -39,7 +39,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       announcements: createFixedAnnouncements(announced),
       shares: sharesPort,
       annualReports: noAnnualReport,
-      industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
+      industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getSecuritiesSectorCode: async () => null },
     });
 
     const batch = await computePretaxIncomePerShare(query, deps);
@@ -62,7 +62,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       announcements: createFixedAnnouncements({ '2330-115Q2': new Date('2026-08-14T00:00:00.000Z') }),
       shares: sharesPort,
       annualReports: noAnnualReport,
-      industry: { isFinancialIndustryCompany: async () => false, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
+      industry: { isFinancialIndustryCompany: async () => false, isSoftwareOrCloudIndustryCompany: async () => false, getSecuritiesSectorCode: async () => null },
     });
 
     const batch = await computePretaxIncomePerShare({ ...query, symbol: '2330' }, deps);
@@ -81,7 +81,7 @@ describe('computePretaxIncomePerShare 的銀行業 fallback', () => {
       announcements: createFixedAnnouncements(announced),
       shares: sharesPort,
       annualReports: noAnnualReport,
-      industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getCompanySectionCode: async () => null },
+      industry: { isFinancialIndustryCompany: async () => true, isSoftwareOrCloudIndustryCompany: async () => false, getSecuritiesSectorCode: async () => null },
     });
 
     const batch = await computePretaxIncomePerShare(query, deps);

@@ -16,7 +16,7 @@ import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/tr
 // 發表、獨立登錄的模型。X4 跟 Z′ 一樣用帳面權益（沒有市值可用時的版本，Z″ 論文延續 Z′
 // 的這個設計，不是又換一次）。獨立重新計算，不依賴另外兩支已寫入的值。
 // 2026-09-13：這個版本是「非製造業」設計的，製造業公司（財政部稅籍分類 section='C'，
-// 見 industryClassification.ts）套用這個版本本身就不符合設計前提；金融保險業
+// 2026-10-02 起改用交易所類股判斷，見下方 NON_MANUFACTURING_SECTOR_CODES）套用這個版本本身就不符合設計前提；金融保險業
 // （twse-ts industry='17'）雖然也是非製造業，但銀行的資產負債表結構（存款/放款）本來
 // 就不適用一般會計比率型危機模型，理由跟 altmanZScore/beneishMScore/ohlsonOScore/
 // zmijewskiScore 排除金融業一致，兩個條件任一成立就排除。
@@ -29,6 +29,29 @@ import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/tr
 // 原本寫 not_applicable_industry 的行為不變，兩者排除比例差異很大，不是同一種情況。
 
 
+// 2026-10-02 使用者拍板：製造業判斷從 gov-ts 財政部稅籍分類（只涵蓋上市 999 家，上櫃興櫃全缺；原本查不到就當非製造業照算，
+// 上櫃興櫃的製造業也拿到 Z″）改成兩市統一用交易所類股，避免上市、上櫃兩套「非製造業」定義。哪些類股算非製造業：用上市公司兩套分類
+// 的重疊量（tmp/sectorMfg.ts，每個類股的上市公司在稅籍分類屬製造業 C 的比例）——以下 9 個 0%～27%，名稱也明確是非製造業。
+// 模糊的類股（生技醫療 50%、其他電子 49%、其他 42%、綠能環保 28%、運動休閒 67%、居家生活 63%、造紙 29%（多為控股公司）、
+// 農業科技（無上市資料））使用者拍板一律不算（fail-closed，少算不錯算）；金融保險（17）排除理由見檔頭；類股查不到也不算。
+// ponytail: 類股清單是寫死的，交易所新增類股時要回來判斷（新類股預設不算）。
+const NON_MANUFACTURING_SECTOR_CODES = new Set([
+  '14', // 建材營造業
+  '15', // 航運業
+  '16', // 觀光事業
+  '18', // 貿易百貨
+  '23', // 油電燃氣業
+  '29', // 電子通路業
+  '30', // 資訊服務業
+  '32', // 文化創意業
+  '36', // 數位雲端
+]);
+
+const isZDoublePrimeSector = async (deps: Pick<PitDeps, 'industry'>, symbol: string): Promise<boolean> => {
+  const sector = await deps.industry.getSecuritiesSectorCode(symbol);
+  return sector !== null && NON_MANUFACTURING_SECTOR_CODES.has(sector);
+};
+
 export type AltmanZDoublePrimeScoreDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
 
 export type AltmanZDoublePrimeScoreComputationBatch = ComputationBatch<'ttm'>;
@@ -36,11 +59,7 @@ export type AltmanZDoublePrimeScoreComputationBatch = ComputationBatch<'ttm'>;
 export const computeAltmanZDoublePrimeScore = async (query: QuarterlyMetricQuery, deps: AltmanZDoublePrimeScoreDeps): Promise<AltmanZDoublePrimeScoreComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  // 2026-10-02 查不到稅籍分類（section null）也不算：gov-ts 的公司清單只有上市（twse-ts 手動推送，tpex-ts 沒有對應腳本），
-  // 上櫃 891、興櫃 363 全部查不到，上市另有 97 家是 KY 等境外註冊、結構上永遠沒有台灣稅籍。原本 null 被當成「非製造業」照算，
-  // 上櫃興櫃的製造業也拿到 Z″（安靜錯，DEV 2026Q2 有 1,228 家）。使用者拍板：分不出是不是製造業就不算；tpex＋gov 補上分類後自動恢復。
-  const [section, isFinancial] = await Promise.all([deps.industry.getCompanySectionCode(symbol), deps.industry.isFinancialIndustryCompany(symbol)]);
-  if (section === null || section === 'C' || isFinancial) {
+  if (!(await isZDoublePrimeSector(deps, symbol))) {
     return noQuarterBatch(symbol, ['ttm']);
   }
 

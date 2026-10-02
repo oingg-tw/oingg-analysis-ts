@@ -27,14 +27,17 @@ export const isValidSecuritiesSectorCode = (code: string): boolean => {
 // （存款/放款/證券投資，高槓桿是產業常態不是危機訊號）完全不成立，不是「資料缺漏」而是
 // 「模型本身不適用」，見 metricBasis.ts 的 not_applicable_industry。只查 twse-ts/tpex-ts
 // company_profile.industry，不含 07/91/98/XX 這些非產業代碼（本來就不會等於 '17'）。
-export const isFinancialIndustryCompany = async (symbol: string): Promise<boolean> => {
+// 證交所／櫃買類股代碼（company_profile.industry，兩碼），上市優先、查無回 null。2026-10-02 抽出：原本金融業、軟體雲端業
+// 各自複製一份同樣的兩庫查詢，Altman Z″ 改用類股判斷後是第三個用途。
+export const getSecuritiesSectorCode = async (symbol: string): Promise<string | null> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
     tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
   ]);
-  const industry = twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
-  return industry === '17';
+  return twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
 };
+
+export const isFinancialIndustryCompany = async (symbol: string): Promise<boolean> => (await getSecuritiesSectorCode(symbol)) === '17';
 
 // 2026-09-14 新增：ruleOf40（Brad Feld 提出的「營收成長率+FCF利潤率≥40%」複合指標）原始
 // 設計是給軟體/SaaS 這類輕資產、高毛利、經常性收入商業模式評估的，對傳產股（營收成長慢但
@@ -42,11 +45,7 @@ export const isFinancialIndustryCompany = async (symbol: string): Promise<boolea
 // 「模型本身不適用不是資料缺漏」判斷，改用允許清單（不是排除清單）：'30'=資訊服務業、
 // '36'=數位雲端，是證交所類股裡跟「軟體/SaaS」概念最接近的兩個分類。
 export const isSoftwareOrCloudIndustryCompany = async (symbol: string): Promise<boolean> => {
-  const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
-    tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
-  ]);
-  const industry = twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
+  const industry = await getSecuritiesSectorCode(symbol);
   return industry === '30' || industry === '36';
 };
 

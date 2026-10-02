@@ -107,7 +107,7 @@ const DIRECT_FUNCTION_TO_DEPS: Record<string, { key: DepsKey; method: string }> 
   getResearchAndDevelopmentExpense: { key: 'xbrlAccounts', method: 'getResearchAndDevelopmentExpense' },
   isFinancialIndustryCompany: { key: 'industry', method: 'isFinancialIndustryCompany' },
   isSoftwareOrCloudIndustryCompany: { key: 'industry', method: 'isSoftwareOrCloudIndustryCompany' },
-  getCompanySectionCode: { key: 'industry', method: 'getCompanySectionCode' },
+  getSecuritiesSectorCode: { key: 'industry', method: 'getSecuritiesSectorCode' },
   getDividendDistributionEvents: { key: 'dividendEvents', method: 'getDividendDistributionEvents' },
 };
 
