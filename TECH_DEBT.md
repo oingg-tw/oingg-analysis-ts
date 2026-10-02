@@ -11,7 +11,7 @@
 
 - **PRD 上線時機**：DEV 已累積一大批還沒上 PRD 的變更——roce 刪除（PRD 要一併刪 DB 列）、股數修正、FY109、cashPerShare、
   migration、8/28 起證交所殖利率空白當 0 的重算、興櫃半年頻、溯源表全覆蓋＋periodType、ROE 年度版（FY）、神奇公式接進每日重算、
-  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
+  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、DR 移出 GET /companies（5870b44c）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
 - **bff-ts 的合併卡住**：卡著溯源端點的 `asOfDate`／`periodType` 轉發，以及漲跌停幅度排行路由的刪除。bff 沒轉發前，web-nuxt
   帶的這兩個參數會被吃掉（溯源退回「最新一筆／溯源表本來的期別」）。
 - **tpex 興櫃股價**：興櫃頁面要「盡可能比照既有」，缺的是 tpex 端收興櫃股價（他們先查發布時間），要使用者在 tpex 那邊放行。
@@ -88,7 +88,7 @@
   [[reference_mops_dividend_distribution_dataset]]。
 - **mops 股本欄位對調 16 家＋位數錯誤列**（2026-10-01 前已回報）：對調修好給清單後重算那 16 家；另有 10^k 位數錯位的列
   （09-25 量到 123 列、69 家，Q/TTM 每股分母受影響、FY 不受影響）。
-- **mops 缺 8084 巨虹 115Q2 財報**（2026-10-02 請 mops 補）：mops 回覆是「還沒排到」（批次第 1,629 位，約 10-10 抓到，跑過會通知）；櫃買 OpenAPI 出表日 10-01，像晚申報。補上後重算這家 115Q2。同一輪 mops 掃出上市櫃 13 家沒有 115Q2 資產負債表：10 家 DR（全部一季都沒有，DR 該不該在母體待使用者判斷）、1589（MOPS 回無資料）、3718（09-03 才成立）、8084。
+- **mops 缺 8084 巨虹 115Q2 財報**（2026-10-02 請 mops 補）：mops 回覆是「還沒排到」（批次第 1,629 位，約 10-10 抓到，跑過會通知）；櫃買 OpenAPI 出表日 10-01，像晚申報。補上後重算這家 115Q2。同一輪 mops 掃出上市櫃 13 家沒有 115Q2 資產負債表：10 家 DR（全部一季都沒有；使用者拍板移出公司目錄，5870b44c）、1589（MOPS 回無資料）、3718（09-03 才成立）、8084。
 - **tpex `issued_shares` 回補**：之後拿來當股數的第二來源做交叉驗證。
 - **twse 月營收上市公司回填**：prod 原本收到的是未上市那 296 家（打錯端點），改 _L 回填中，SUS 等它。
 - **chip（籌碼）分類完全空白**：抓取架構已成熟（twse-ts `margin_balance` 每 30 分鐘
