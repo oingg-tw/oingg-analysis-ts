@@ -36,8 +36,11 @@ export type AltmanZDoublePrimeScoreComputationBatch = ComputationBatch<'ttm'>;
 export const computeAltmanZDoublePrimeScore = async (query: QuarterlyMetricQuery, deps: AltmanZDoublePrimeScoreDeps): Promise<AltmanZDoublePrimeScoreComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const [isManufacturing, isFinancial] = await Promise.all([deps.industry.getCompanySectionCode(symbol).then((section) => section === 'C'), deps.industry.isFinancialIndustryCompany(symbol)]);
-  if (isManufacturing || isFinancial) {
+  // 2026-10-02 查不到稅籍分類（section null）也不算：gov-ts 的公司清單只有上市（twse-ts 手動推送，tpex-ts 沒有對應腳本），
+  // 上櫃 891、興櫃 363 全部查不到，上市另有 97 家是 KY 等境外註冊、結構上永遠沒有台灣稅籍。原本 null 被當成「非製造業」照算，
+  // 上櫃興櫃的製造業也拿到 Z″（安靜錯，DEV 2026Q2 有 1,228 家）。使用者拍板：分不出是不是製造業就不算；tpex＋gov 補上分類後自動恢復。
+  const [section, isFinancial] = await Promise.all([deps.industry.getCompanySectionCode(symbol), deps.industry.isFinancialIndustryCompany(symbol)]);
+  if (section === null || section === 'C' || isFinancial) {
     return noQuarterBatch(symbol, ['ttm']);
   }
 
