@@ -452,6 +452,10 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
 // 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
 // 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
 export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
+// 2026-10-02 使用者拍板：存託憑證移出公司目錄。上市類股代碼 91（第一上市外國公司，身份別不是產業）剛好就是 10 檔 DR
+// （9103、910322、9105、910861、9110、911608、911622、911868、912000、9136），mops 回報它們一季財報都沒有、以後也不會有，
+// 留在目錄只會讓「拿目錄當母體」的覆蓋率永遠掛著 10 家。只從目錄／計數拿掉；個股 profile、行情、GET /securities 不受影響。
+const COMPANY_DIRECTORY_TWSE = `${LISTED_ONLY} AND industry IS DISTINCT FROM '91'`;
 // tpex-ts 的 company_profile 也用 source 分兩種，但語意跟 twse 不同：COMPANY_PROFILE 是上櫃（891 家）、
 // COMPANY_PROFILE_EMERGING 是興櫃（364 家），兩者都是正牌公司，差別是市場別不是雜訊。
 const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
@@ -468,7 +472,7 @@ const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
 // 所以拿這個目錄當母體算指標覆蓋率時要先扣掉 isEmerging，否則分母會多 364 家永遠算不出來的公司。
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(LISTED_ONLY)}`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
     tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."company_profile"`,
   ]);
   const all = dedupeBySymbol([
@@ -480,7 +484,7 @@ export const listAllCompanyNames = async (limit: number, offset: number): Promis
 
 export const countAllCompanyNames = async (): Promise<number> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(LISTED_ONLY)}`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
