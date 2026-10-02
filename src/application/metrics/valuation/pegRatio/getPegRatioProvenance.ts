@@ -53,8 +53,8 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
     return { symbol: query.symbol, metricCode: 'pegRatio', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
   }
 
-  const currentLabel = `最近完整會計年度（民國 ${r.latestCompleteFiscalYear} 年，用於 5 年 EPS CAGR）`;
-  const priorLabel = `5 年前完整會計年度（民國 ${r.latestCompleteFiscalYear - PEG_GROWTH_YEARS} 年，用於 5 年 EPS CAGR）`;
+  const currentLabel = `最近完整年度（民國 ${r.latestCompleteFiscalYear} 年，用於 5 年 EPS CAGR）`;
+  const priorLabel = `5 年前完整年度（民國 ${r.latestCompleteFiscalYear - PEG_GROWTH_YEARS} 年，用於 5 年 EPS CAGR）`;
 
   const entries: ProvenanceEntry[] = [
     {
@@ -83,7 +83,7 @@ export const getPegRatioProvenance = async (query: QuarterlyMetricQuery, deps: P
     entries,
     methodologyNote:
       `PER(TTM)＝${r.peRatioTtm ?? 'null'}（EPS(TTM)＝${r.epsTtm ?? 'null'}），EPS 5年複合成長率＝${r.epsCagr5yPct ?? 'null'}%` +
-      `（最近完整會計年度 EPS＝${r.currentAnnual.eps ?? 'null'}，5 年前＝${r.priorAnnual.eps ?? 'null'}，皆已扣特別股股利並還原到最新股數基準）。` +
+      `（最近完整年度 EPS＝${r.currentAnnual.eps ?? 'null'}，5 年前＝${r.priorAnnual.eps ?? 'null'}，皆已扣特別股股利並還原到最新股數基準）。` +
       '皆為計算出的中繼值、不四捨五入，只在 PEG 四捨五入一次。',
   };
 };

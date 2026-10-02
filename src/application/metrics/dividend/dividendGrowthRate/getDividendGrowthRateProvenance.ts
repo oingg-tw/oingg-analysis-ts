@@ -125,8 +125,8 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
     ];
 
     const entries: ProvenanceEntry[] = [
-      ...buildYearEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）`, current),
-      ...buildYearEntries(`${years} 年前完整會計年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
+      ...buildYearEntries(`最近完整年度（民國 ${latestCompleteFiscalYear} 年）`, current),
+      ...buildYearEntries(`${years} 年前完整年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
     ];
 
     return {
@@ -137,7 +137,7 @@ export const getDividendGrowthRateProvenanceForYears = (years: (typeof DIVIDEND_
       fiscalQuarter: seasonNum,
       value,
       entries,
-      methodologyNote: `這是現金流量近似版每股股利成長率，不是官方公告的每股股利數字：年度近似每股股利 = 該年度 4 季發放股利加總取絕對值×1000(千元換元)/Q4 報告日流通股數。最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）近似每股股利＝${current.dps ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）＝${prior.dps ?? 'null'}。`,
+      methodologyNote: `這是現金流量近似版每股股利成長率，不是官方公告的每股股利數字：年度近似每股股利 = 該年度 4 季發放股利加總取絕對值×1000(千元換元)/Q4 報告日流通股數。最近完整年度（民國 ${latestCompleteFiscalYear} 年）近似每股股利＝${current.dps ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）＝${prior.dps ?? 'null'}。`,
     };
   };
 };

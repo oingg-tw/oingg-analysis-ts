@@ -72,6 +72,6 @@ export const getConsecutiveDividendYearsProvenance = async (query: QuarterlyMetr
     fiscalQuarter: seasonNum,
     value,
     entries,
-    methodologyNote: `從最近一個完整會計年度（民國 ${latestCompleteFiscalYear} 年）往回逐年檢查該年 4 季現金流量表發放股利加總是否非零，遇到 0 或任一季資料缺漏即停止計數，最多回溯 ${MAX_LOOKBACK_YEARS} 年。上方最後一筆 entry 若加總為 0，代表該年度是判定連續中斷的年度，不計入 value。`,
+    methodologyNote: `從最近一個完整年度（民國 ${latestCompleteFiscalYear} 年）往回逐年檢查該年 4 季現金流量表發放股利加總是否非零，遇到 0 或任一季資料缺漏即停止計數，最多回溯 ${MAX_LOOKBACK_YEARS} 年。上方最後一筆 entry 若加總為 0，代表該年度是判定連續中斷的年度，不計入 value。`,
   };
 };

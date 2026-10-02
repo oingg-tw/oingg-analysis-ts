@@ -119,8 +119,8 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
     ];
 
     const entries: ProvenanceEntry[] = [
-      ...buildYearEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）`, current),
-      ...buildYearEntries(`${years} 年前完整會計年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
+      ...buildYearEntries(`最近完整年度（民國 ${latestCompleteFiscalYear} 年）`, current),
+      ...buildYearEntries(`${years} 年前完整年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
     ];
 
     return {
@@ -131,7 +131,7 @@ export const getEpsCagrProvenanceForYears = (years: (typeof EPS_CAGR_YEARS)[numb
       fiscalQuarter: seasonNum,
       value,
       entries,
-      methodologyNote: `年度 EPS = 該年度 4 季淨利加總×1000(千元換元)/Q4 報告日流通股數，不是財報原始欄位。最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）EPS＝${current.eps ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）EPS＝${prior.eps ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。`,
+      methodologyNote: `年度 EPS = 該年度 4 季淨利加總×1000(千元換元)/Q4 報告日流通股數，不是財報原始欄位。最近完整年度（民國 ${latestCompleteFiscalYear} 年）EPS＝${current.eps ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）EPS＝${prior.eps ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。`,
     };
   };
 };

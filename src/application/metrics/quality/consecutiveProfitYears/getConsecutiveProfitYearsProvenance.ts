@@ -72,6 +72,6 @@ export const getConsecutiveProfitYearsProvenance = async (query: QuarterlyMetric
     fiscalQuarter: seasonNum,
     value,
     entries,
-    methodologyNote: `從最近一個完整會計年度（民國 ${latestCompleteFiscalYear} 年）往回逐年檢查該年 4 季淨利（歸屬母公司，缺漏退回整體口徑）加總是否為正，遇到非正值或任一季資料缺漏即停止計數，最多回溯 ${MAX_LOOKBACK_YEARS} 年。上方每筆 entry 是該年度 4 季淨利加總後的結果，不逐季展開。`,
+    methodologyNote: `從最近一個完整年度（民國 ${latestCompleteFiscalYear} 年）往回逐年檢查該年 4 季淨利（歸屬母公司，缺漏退回整體口徑）加總是否為正，遇到非正值或任一季資料缺漏即停止計數，最多回溯 ${MAX_LOOKBACK_YEARS} 年。上方每筆 entry 是該年度 4 季淨利加總後的結果，不逐季展開。`,
   };
 };

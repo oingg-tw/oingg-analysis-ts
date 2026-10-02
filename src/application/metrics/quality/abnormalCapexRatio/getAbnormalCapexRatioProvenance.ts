@@ -66,7 +66,7 @@ export const getAbnormalCapexRatioProvenance = async (query: QuarterlyMetricQuer
   }
 
   const entries: ProvenanceEntry[] = [
-    { role: `最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）資本支出加總（取絕對值，原始資料是負值）`, fiscalYear: rocYearToGregorian(latestCompleteFiscalYear), fiscalQuarter: 4, type: 'statementField', statementType: 'cashFlowStatement', fieldKey: null, sourceDescription: null, value: toProvenanceEntryValue(current.capex) },
+    { role: `最近完整年度（民國 ${latestCompleteFiscalYear} 年）資本支出加總（取絕對值，原始資料是負值）`, fiscalYear: rocYearToGregorian(latestCompleteFiscalYear), fiscalQuarter: 4, type: 'statementField', statementType: 'cashFlowStatement', fieldKey: null, sourceDescription: null, value: toProvenanceEntryValue(current.capex) },
     ...priors.map(
       (p, i): ProvenanceEntry => ({
         role: `${i + 1} 年前（民國 ${priorYears[i]} 年）資本支出加總（取絕對值，原始資料是負值）`,

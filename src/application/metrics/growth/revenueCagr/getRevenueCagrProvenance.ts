@@ -79,8 +79,8 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
       }));
 
     const entries: ProvenanceEntry[] = [
-      ...buildQuarterEntries(`最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）`, current),
-      ...buildQuarterEntries(`${years} 年前完整會計年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
+      ...buildQuarterEntries(`最近完整年度（民國 ${latestCompleteFiscalYear} 年）`, current),
+      ...buildQuarterEntries(`${years} 年前完整年度（民國 ${latestCompleteFiscalYear - years} 年）`, prior),
     ];
 
     return {
@@ -91,7 +91,7 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
       fiscalQuarter: seasonNum,
       value,
       entries,
-      methodologyNote: `年營收 = 該年度 4 季營收加總，不是財報原始欄位。最近完整會計年度（民國 ${latestCompleteFiscalYear} 年）營收＝${current.value ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）營收＝${prior.value ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。`,
+      methodologyNote: `年營收 = 該年度 4 季營收加總，不是財報原始欄位。最近完整年度（民國 ${latestCompleteFiscalYear} 年）營收＝${current.value ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）營收＝${prior.value ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。`,
     };
   };
 };
