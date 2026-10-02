@@ -48,8 +48,6 @@ const cases: GoldenCase[] = [
   { slug: 'companies-metric-provenance', method: 'get', path: '/companies/2330/metric-provenance?metricCode=roe' },
   { slug: 'preferred-stocks-field-catalog', method: 'get', path: '/preferred-stocks/field-catalog' },
   { slug: 'preferred-stocks', method: 'get', path: '/preferred-stocks?limit=5' },
-  { slug: 'industries-tree', method: 'get', path: '/industries/tree' },
-  { slug: 'industries-flat', method: 'get', path: '/industries/flat' },
   { slug: 'industries-securities-sectors', method: 'get', path: '/industries/securities-sectors' },
   { slug: 'securities', method: 'get', path: '/securities?limit=5&offset=0' },
   { slug: 'market-margin-short-ratio-ranking', method: 'get', path: '/market/margin-short-ratio-ranking?limit=5' },

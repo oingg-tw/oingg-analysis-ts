@@ -1,5 +1,4 @@
 import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
-import { loadIndustryClassification } from '@/infrastructure/repositories/gov/industryClassification';
 
 // 啟動時要載進記憶體的兩個輔助性快取，集中在一處——每一個 loadXxx 都自己吞掉失敗只記 log
 // （失敗只影響對應的那幾支端點，不擋伺服器啟動），所以這裡用 allSettled 不會有 reject。
@@ -11,6 +10,5 @@ export const warmCaches = (): Promise<PromiseSettledResult<void>[]> =>
   Promise.allSettled([
     // 產業代碼對照表（models/industryCodes.ts）。
     loadIndustryCodes(),
-    // gov-ts 產業分類（產業樹狀瀏覽 GET /industries/tree、/industries/flat）。
-    loadIndustryClassification(),
+    // 2026-10-02 gov-ts 產業分類快取（GET /industries/tree、/flat 用）隨端點下架移除。
   ]);
