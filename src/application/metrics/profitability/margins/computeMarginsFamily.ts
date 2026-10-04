@@ -5,6 +5,8 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateGrossMargin } from '@/domain/metrics/profitability/grossMargin/calculateGrossMargin';
 import { calculateOperatingMargin } from '@/domain/metrics/profitability/operatingMargin/calculateOperatingMargin';
+import { calculateNetProfitMargin } from '@/domain/metrics/profitability/netProfitMargin/calculateNetProfitMargin';
+import { annualReportSlot, resolveAnnualReportContext } from '../../shared/annualReportSlot';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -87,9 +89,9 @@ const marginInputsFrom = async (incomeStatement: IncomeStatementFields | null, i
 // knowledge_date、呼叫 writeMetricValue。
 
 
-export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements'>;
+export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements' | 'annualReports' | 'shares'>;
 
-export type MarginsFamilyComputationBatch = ComputationBatch<'grossMarginQ' | 'grossMarginTtm' | 'operatingMarginQ' | 'operatingMarginTtm'>;
+export type MarginsFamilyComputationBatch = ComputationBatch<'grossMarginQ' | 'grossMarginTtm' | 'grossMarginFy' | 'operatingMarginQ' | 'operatingMarginTtm' | 'operatingMarginFy' | 'netProfitMarginFy'>;
 
 export const computeMarginsFamily = async (
   query: QuarterlyMetricQuery,
@@ -97,7 +99,7 @@ export const computeMarginsFamily = async (
 ): Promise<MarginsFamilyComputationBatch> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
 
-  const skippedNoQuarter: MarginsFamilyComputationBatch = noQuarterBatch(symbol, ['grossMarginQ', 'grossMarginTtm', 'operatingMarginQ', 'operatingMarginTtm']);
+  const skippedNoQuarter: MarginsFamilyComputationBatch = noQuarterBatch(symbol, ['grossMarginQ', 'grossMarginTtm', 'grossMarginFy', 'operatingMarginQ', 'operatingMarginTtm', 'operatingMarginFy', 'netProfitMarginFy']);
 
   // 一般 incomeStatement 查無資料（例如 2851 中再保在舊架構 legacy 表完全沒有列）時，
   // 改用保險替代來源解析「最新一季」——兩個資料源獨立各自解析一次最新季度，取交集下界
@@ -214,6 +216,18 @@ export const computeMarginsFamily = async (
     operatingMarginTtm = { action: 'skipped_no_knowledge_date' };
   }
 
+  // 2026-10-04 年度版（FY）：使用者要求先做證交所有公布的利潤率，口徑對齊證交所營益分析（t187ap17_L）——tmp/marginVerify.ts 拿 115Q2
+  // 累計損益表逐家對：毛利率、營業利益率 1,048/1,049 吻合；稅後純益率用「本期淨利（總額）」1,048/1,049，歸屬母公司只有 448/984，
+  // 所以 FY 的稅後淨利率是總額口徑（跟 ROE 年度版同一個「對齊官方」原則；Q／TTM 維持歸屬母公司優先，不動）。
+  // netProfitMargin 的 Q／TTM 在杜邦家族算，FY 跟另外兩支共用同一份年報放在這裡。年報與座標、公告日規則沿用 annualReportSlot。
+  // ponytail: 保險業年報沒有毛利／營業利益科目，FY 是 null（Q／TTM 有保險替代科目），要補再把 marginInputsFrom 的保險替代接到年報。
+  const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
+  const a = annual?.annual ?? null;
+  const fyBase = (metricCode: string) => ({ symbol, metricCode, dataType, subsidiaryCompanyId });
+  const grossMarginFy = annualReportSlot(annual, fyBase('grossMargin'), calculateGrossMargin(a?.grossProfit ?? null, a?.operatingRevenue ?? null));
+  const operatingMarginFy = annualReportSlot(annual, fyBase('operatingMargin'), calculateOperatingMargin(a?.operatingIncome ?? null, a?.operatingRevenue ?? null));
+  const netProfitMarginFy = annualReportSlot(annual, fyBase('netProfitMargin'), calculateNetProfitMargin(a ? (a.netIncome ?? a.netIncomeAttributableToParent) : null, a?.operatingRevenue ?? null));
+
   // 2026-09-28 金融業不適用改在這裡判斷，不走通用的 notApplicableToFinancialIndustry 標記：保險業有保險損益表替代科目，
   // 毛利率／營業利益率對它們適用。IFRS 17 保險收入 115Q1 才開始有資料，近四季要到 115Q4 才湊滿——那段期間 TTM 是
   // insufficient_history（真的歷史不足），不是不適用（bff-ts／web-nuxt 抓到：產險 5 家 Q 有值、TTM 卻被標不適用，
@@ -226,6 +240,14 @@ export const computeMarginsFamily = async (
     symbol,
     rocYear: year,
     season,
-    slots: { grossMarginQ: relabel(grossMarginQ), grossMarginTtm: relabel(grossMarginTtm), operatingMarginQ: relabel(operatingMarginQ), operatingMarginTtm: relabel(operatingMarginTtm) },
+    slots: {
+      grossMarginQ: relabel(grossMarginQ),
+      grossMarginTtm: relabel(grossMarginTtm),
+      grossMarginFy: relabel(grossMarginFy),
+      operatingMarginQ: relabel(operatingMarginQ),
+      operatingMarginTtm: relabel(operatingMarginTtm),
+      operatingMarginFy: relabel(operatingMarginFy),
+      netProfitMarginFy: relabel(netProfitMarginFy),
+    },
   };
 };

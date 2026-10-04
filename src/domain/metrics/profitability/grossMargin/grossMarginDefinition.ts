@@ -15,13 +15,14 @@ export const grossMarginDefinition: MetricDefinitionSpec = {
   // 金融業不適用改在 computeMarginsFamily 判斷（保險業有替代科目，對它們適用），不用 notApplicableToFinancialIndustry。
   formulaNote:
     'Q(單季) = 本季毛利/本季營收*100；TTM = 近四季（含本季）毛利加總/近四季營收加總*100。' +
-    '沒有 Q_ANN——flow/flow 比率年化沒有意義。',
+    '沒有 Q_ANN——flow/flow 比率年化沒有意義。' +
+    '（2026-10-04 新增）FY(年度) = 年報全年營業毛利/全年營業收入*100，跟證交所營益分析的毛利率同一個算法；座標是該年度第四季。',
   formulaLatex: '\\mathrm{GrossMargin} = \\frac{\\mathrm{GrossProfit}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%9B%E5%88%A9%E7%8E%87',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '保險業損益明細表（XBRL，保險業適用）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['gross_profit', 'revenue'],
   currentFormulaVersion: 1,
 };

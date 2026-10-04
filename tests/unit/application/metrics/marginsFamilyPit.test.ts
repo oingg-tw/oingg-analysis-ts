@@ -19,6 +19,12 @@ test('marginsFamilyPit: 2330 115Q2 合併報表，跟既有基準數字交叉驗
   assert.equal(Number(grossQ!.value), 67.72);
   assert.equal(Number(operatingQ!.value), 60.34);
   assert.equal(grossQ!.nullReason, null);
+
+  // 2026-10-04 年度版：114 年報、座標 (2025, 4)；稅後淨利率用本期淨利總額（對齊證交所營益分析）。
+  const fy = async (metricCode: string) => Number((await replay.findLatest({ symbol: '2330', metricCode, periodType: 'FY', fiscalYear: 2025, fiscalQuarter: 4, dataType: '2', subsidiaryCompanyId: '' }))?.value);
+  assert.equal(await fy('grossMargin'), 59.89);
+  assert.equal(await fy('operatingMargin'), 50.83);
+  assert.equal(await fy('netProfitMargin'), 45.03);
 });
 
 // 2026-09-08 新增：保險業（IFRS17）替代科目 fallback。2851（中再保）在舊架構
