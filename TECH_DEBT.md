@@ -11,7 +11,7 @@
 
 - **PRD 上線時機**：DEV 已累積一大批還沒上 PRD 的變更——roce 刪除（PRD 要一併刪 DB 列）、股數修正、FY109、cashPerShare、
   migration、8/28 起證交所殖利率空白當 0 的重算、興櫃半年頻、溯源表全覆蓋＋periodType、ROE 年度版（FY）、神奇公式接進每日重算、
-  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、毛利率／營業利益率／稅後淨利率年度版（5bd3e21e，PRD 要回填 109～114 年各年 Q4）、DR 移出 GET /companies（5870b44c）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
+  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、毛利率／營業利益率／稅後淨利率年度版（5bd3e21e，PRD 要回填 109～114 年各年 Q4）、DR 移出 GET /companies（5870b44c）、ROA 年度版與上述期別補齊（eafd9558～d7a84dd5，PRD 要回填歷史）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
 - **bff-ts 的合併卡住**：卡著溯源端點的 `asOfDate`／`periodType` 轉發，以及漲跌停幅度排行路由的刪除。bff 沒轉發前，web-nuxt
   帶的這兩個參數會被吃掉（溯源退回「最新一筆／溯源表本來的期別」）。
 - **tpex 興櫃股價**：興櫃頁面要「盡可能比照既有」，缺的是 tpex 端收興櫃股價（他們先查發布時間），要使用者在 tpex 那邊放行。
@@ -26,7 +26,7 @@
 
 ## 排程中（我這邊會做，不需要使用者動作）
 
-- **ROA 年度版（FY）**：使用者決定照財報編製準則公式〔稅後損益＋利息費用×(1−稅率)〕÷平均資產，先用 MOPS 財務分析（t51sb02）33 家樣本校準（利息費用≠財務成本，43% 公司不相等；稅率口徑待驗）。t51sb02 只在 mopsov，10-04 起下線，恢復後 mops 先跑樣本再重啟批次。其餘 76 支比率的年度版等 web-nuxt 有頁面要用再做（2026-10-04 使用者拍板）。
+- **期別補齊（web-nuxt 2026-10-05 分群需求）**：已做 roa FY（MOPS 財務分析校準）、營收／淨利成長率與業外損益比 TTM+FY、營業現金流利潤率與自由現金流轉換率 Q、五支週轉天數 Q、淨值成長率 FY；歷史回填排隊中（tmp/periodsBackfill.cmd）。未做：股利保障倍數（不補 Q，單季失真；FY 等年度現金流量表的年報文件來源確認）、web-nuxt B 群 7 支與 D 群分數型（沒頁面，等要用再做）。
 - **56 支指標文案**：web-nuxt 給的優先清單 13 支先做（dividendGrowthRate3y 第一）。
 - **10 家金融股（2820、2838、2851、2880、2884、2889、2897、5876、6020、6026）的 turnoverRatio 每次重跑都 updated**：
   2026-10-01 剛回填完、乾跑仍顯示 316 筆會變（新舊程式碼都一樣，非逐半年判斷造成）——寫入不冪等，待查是計算本身不穩定還是寫入比對的問題。
