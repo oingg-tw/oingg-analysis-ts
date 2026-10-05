@@ -136,10 +136,22 @@ const listEtfDividendsForRange = (startDate: Date, endDate: Date): Promise<RawEt
     ORDER BY ex_dividend_date ASC, symbol ASC
   `;
 
+// 2026-10-05 逐檔版（GET /market/etf-distributions）：同一張表、同一組欄位，只是以代號篩選。
+const listEtfDividendsForSymbol = (symbol: string): Promise<RawEtfDividendRow[]> =>
+  sitcaExportPrisma.$queryRaw<RawEtfDividendRow[]>`
+    SELECT symbol, etf_name, ex_dividend_date, record_date, payment_date, distribution_per_unit,
+           composition_dividend_income_pct, composition_interest_income_pct, composition_income_equalization_pct,
+           composition_realized_capital_gain_pct, composition_other_income_pct
+    FROM "export"."fundclear_etf_dividend"
+    WHERE symbol = ${symbol}
+    ORDER BY ex_dividend_date ASC
+  `;
+
 // application/ports/etfData.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。screenEtfs = ./etfScreenerQuery.ts 組 SQL + 這裡執行，
 // Prisma.Sql 不出 infrastructure。
 export const sitcaEtfData: EtfDataPort = {
   listEtfDividendsForRange,
+  listEtfDividendsForSymbol,
   getLatestEtfYearMonth,
   listEtfBasicInfo,
   listEtfMonthlyStatement,

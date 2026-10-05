@@ -93,6 +93,8 @@ export interface RawEtfDividendRow {
 
 export interface EtfDataPort {
   listEtfDividendsForRange(startDate: Date, endDate: Date): Promise<RawEtfDividendRow[]>;
+  // 2026-10-05 單一 ETF 的全部收益分配，依除息日由舊到新（GET /market/etf-distributions）。
+  listEtfDividendsForSymbol(symbol: string): Promise<RawEtfDividendRow[]>;
   getLatestEtfYearMonth(): Promise<string | null>;
   listEtfBasicInfo(yearMonth: string): Promise<RawEtfBasicInfoRow[]>;
   listEtfMonthlyStatement(yearMonth: string): Promise<RawEtfStatementRow[]>;

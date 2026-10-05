@@ -40,6 +40,8 @@ import { createEtfRankingRouter } from '@/http/modules/market/etfRanking/route';
 import { registerEtfRankingOpenApi } from '@/http/modules/market/etfRanking/openapi';
 import { createEtfScreenerRouter } from '@/http/modules/market/etfScreener/route';
 import { registerEtfScreenerOpenApi } from '@/http/modules/market/etfScreener/openapi';
+import { createEtfDistributionsRouter } from '@/http/modules/market/etfDistributions/route';
+import { registerEtfDistributionsOpenApi } from '@/http/modules/market/etfDistributions/openapi';
 import { createTaiexDailyPriceRouter } from '@/http/modules/market/taiexDailyPrice/route';
 import { registerTaiexDailyPriceOpenApi } from '@/http/modules/market/taiexDailyPrice/openapi';
 import { createRankingRouter } from '@/http/modules/ranking/route';
@@ -90,6 +92,7 @@ export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'priceChangeRanking', auth: 'bff', router: createPriceChangeRankingRouter(deps), registerOpenApi: registerPriceChangeRankingOpenApi },
   { name: 'etfRanking', auth: 'bff', router: createEtfRankingRouter(deps), registerOpenApi: registerEtfRankingOpenApi },
   { name: 'etfScreener', auth: 'bff', router: createEtfScreenerRouter(deps), registerOpenApi: registerEtfScreenerOpenApi },
+  { name: 'etfDistributions', auth: 'bff', router: createEtfDistributionsRouter(deps), registerOpenApi: registerEtfDistributionsOpenApi },
   { name: 'taiexDailyPrice', auth: 'bff', router: createTaiexDailyPriceRouter(deps), registerOpenApi: registerTaiexDailyPriceOpenApi },
   { name: 'valuationRanking', auth: 'bff', mountPath: '/valuation', router: createRankingRouter(deps), registerOpenApi: registerValuationRankingOpenApi },
   { name: 'equityRiskPremium', auth: 'bff', mountPath: '/macro', router: createEquityRiskPremiumRouter(deps), registerOpenApi: registerEquityRiskPremiumOpenApi },

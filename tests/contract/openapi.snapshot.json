@@ -5331,6 +5331,124 @@
         ]
       }
     },
+    "/market/etf-distributions": {
+      "get": {
+        "description": "來源是 sitca-ts 的 FundClear ETF 收益分配（fundclear_etf_dividend），跟 GET /stocks/ex-dividend-calendar 的 ETF 列同一份資料、同一個已實現判斷（除息日早於今天）。events 是全部紀錄（含預告），trailing12MonthDistributionPerUnit 只加總近 12 個月已實現的。個股與特別股的股利請用 GET /companies/dividend-history（ETF 在那裡是空的：ETF 沒有股利所屬年度）。",
+        "parameters": [
+          {
+            "description": "ETF 代號",
+            "in": "query",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "description": "ETF 代號",
+              "example": "0056",
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "events": {
+                      "description": "全部收益分配紀錄，依除息日由舊到新（含預告列）",
+                      "items": {
+                        "properties": {
+                          "distributionPerUnit": {
+                            "description": "每受益權單位分配金額（元）；預告列金額尚未公布時為 null",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "exDividendDate": {
+                            "description": "除息日（YYYY-MM-DD）",
+                            "type": "string"
+                          },
+                          "paymentDate": {
+                            "description": "收益分配發放日",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "recordDate": {
+                            "description": "收益分配基準日",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "status": {
+                            "description": "realized＝除息日早於今天（已實現）；announced＝今天或之後（預告）。跟 GET /stocks/ex-dividend-calendar 同一個判斷",
+                            "enum": [
+                              "announced",
+                              "realized"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "exDividendDate",
+                          "recordDate",
+                          "paymentDate",
+                          "distributionPerUnit",
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "found": {
+                      "description": "false＝來源裡這個代號一筆收益分配紀錄都沒有（不是 ETF、或從未配息、或未收錄，分不出來）",
+                      "type": "boolean"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "trailing12MonthDistributionPerUnit": {
+                      "description": "近 12 個月（除息日落在 今天往前一年（不含）～ 昨天）已實現的每單位配息加總（元）。沒有任何紀錄（found=false）為 null；有紀錄但近 12 個月沒有配息為 0。不含預告列。",
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "trailing12MonthWindow": {
+                      "description": "近 12 個月窗口的起訖日（含），方便標示「截至 {end}」",
+                      "properties": {
+                        "end": {
+                          "type": "string"
+                        },
+                        "start": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "found",
+                    "trailing12MonthDistributionPerUnit",
+                    "trailing12MonthWindow",
+                    "events"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "逐次收益分配與近 12 個月加總；查無紀錄時 found=false、events 空陣列。"
+          },
+          "400": {
+            "description": "缺 symbol。"
+          }
+        },
+        "summary": "單一 ETF 的逐次收益分配與近 12 個月配息",
+        "tags": [
+          "Market"
+        ]
+      }
+    },
     "/market/etf-ranking": {
       "get": {
         "description": "取最新一個月份的 ETF 快照資料排行（來源：sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance）。metric 決定依哪個數字排序：aum（規模，新台幣）、holders（受益人數）、netFlow（淨申購，申購金額 - 贖回金額，本服務計算，不是來源現成欄位）、dcaAmount（定期定額申購金額）、return3m/return6m/return1y/return2y/return3y/return5y/returnYtd/return10y（各天期累積報酬率，百分比，不是年化報酬率）、expenseRatio（總費用率——只用「最新一個完整年度」，該年度不滿一整年的 ETF（當年新掛牌、或當年中途清算/分割，來源：sitca-ts 的 fund_expense_ratio_annual_full_year，已排除 is_partial_year 的列）會被排除，不套用其他年度或做時間比例換算，確保每一檔都是同一個基準年比較）。目前 sitca-ts 只有單一個月的快照資料，還沒有累積多月，暫時無法做月增/年增這類趨勢型指標。asOf 標示這筆資料實際採用的月份（YYYY-MM）或年度（expenseRatio 是 YYYY）。category（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成兩個獨立欄位：market（TWSE/TPEx）、assetClass（國內成分證券/國外成分證券/債券成分/槓桿型/反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）。isActive（是否為主動式 ETF，不追蹤特定指數、經理人自訂策略操作）是 sitca-ts 提供的權威欄位，不是從 category 猜的。belowStatutoryThreshold：規模是否低於法定下市門檻（下市風險近似警示，sitca-ts 提供）。distributionFrequency 是從 distribution_class_info 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/不分配），純客觀顯示欄位，不是投資建議。",
