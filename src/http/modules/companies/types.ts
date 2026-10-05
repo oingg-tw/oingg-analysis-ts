@@ -138,8 +138,8 @@ export const dividendHistoryEventSchema = z.object({
 }) satisfies z.ZodType<DividendHistoryEvent>;
 
 export const dividendHistoryEntrySchema = z.object({
-  fiscalYear: z.number().int().meta({ description: '西元，股利所屬年度（不是除息年度）' }),
-  rocFiscalYear: z.number().int(),
+  fiscalYear: z.number().int().nullable().meta({ description: '西元，股利所屬年度（不是除息年度）。null＝公告沒填所屬年度的配發，集中成最後一列（2026-10-05 起）' }),
+  rocFiscalYear: z.number().int().nullable(),
   cashDividend: z.number().meta({ description: '該年度全部分派案的現金股利加總，元／股' }),
   cashDividendFromEarnings: z.number().meta({ description: '該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01' }),
   cashDividendFromLegalReserveAndCapitalSurplus: z.number().meta({ description: '該年度各次「法定盈餘公積、資本公積發放之現金」加總，元／股' }),

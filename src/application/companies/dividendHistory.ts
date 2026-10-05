@@ -61,8 +61,8 @@ export interface DividendHistoryEvent {
 }
 
 export interface DividendHistoryEntry {
-  fiscalYear: number; // 西元，股利所屬年度
-  rocFiscalYear: number;
+  fiscalYear: number | null; // 西元，股利所屬年度；null＝mops 公告沒填所屬年度的配發（集中成最後一列，見 getCompanyDividendHistory）
+  rocFiscalYear: number | null;
   cashDividend: number;
   cashDividendFromEarnings: number; // 該年度各次加總，元／股
   cashDividendFromLegalReserveAndCapitalSurplus: number; // 該年度各次加總，元／股
@@ -117,12 +117,17 @@ const buildEvent = async (symbol: string, row: DividendDistributionRow, deps: Di
 const latestDate = (dates: (string | null)[]): string | null => dates.filter((d): d is string => d !== null).sort().at(-1) ?? null;
 
 export const getCompanyDividendHistory = async (symbol: string, deps: DividendHistoryDeps): Promise<DividendHistoryResult> => {
-  const rows = await deps.dividendEvents.listDividendDistributionRows(symbol);
+  // 2026-10-05 沒填所屬年度、也沒有任何金額的列（純除權事件，例如減資換發；全市場 716 列）不是股利，不列——原本被當成
+  // 「民國 0 年＝1911」顯示成一個空年度。沒填年度但有金額的（15 列，例如 2496 2026-08-19 現金 1.5 元）是真的配發，持股的
+  // 含息報酬要用，集中成最後一列、年度為 null，不猜年度。
+  const hasAmount = (r: DividendDistributionRow) =>
+    [r.cashDividendFromEarnings, r.cashDividendFromLegalReserveAndCapitalSurplus, r.stockDividendFromEarnings, r.stockDividendFromLegalReserveAndCapitalSurplus].some((v) => v !== null && v !== 0);
+  const rows = (await deps.dividendEvents.listDividendDistributionRows(symbol)).filter((r) => r.rocFiscalYear !== null || hasAmount(r));
   if (rows.length === 0) return { symbol, entries: [] };
 
   const [annualEps, events] = await Promise.all([buildAnnualEps(symbol, deps), Promise.all(rows.map((row) => buildEvent(symbol, row, deps)))]);
 
-  const byYear = new Map<number, { row: DividendDistributionRow; event: DividendHistoryEvent }[]>();
+  const byYear = new Map<number | null, { row: DividendDistributionRow; event: DividendHistoryEvent }[]>();
   rows.forEach((row, i) => {
     const list = byYear.get(row.rocFiscalYear) ?? [];
     list.push({ row, event: events[i]! });
@@ -130,15 +135,15 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
   });
 
   const entries: DividendHistoryEntry[] = [...byYear.entries()]
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a - b))
     .map(([rocFiscalYear, items]) => {
-      const fiscalYear = rocYearToGregorian(rocFiscalYear);
+      const fiscalYear = rocFiscalYear === null ? null : rocYearToGregorian(rocFiscalYear);
       const yearEvents = items.map((i) => i.event);
       const cashDividend = round2(yearEvents.reduce((s, e) => s + e.cashDividend, 0));
       const cashDividendFromEarnings = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromEarnings, 0));
       const cashDividendFromLegalReserveAndCapitalSurplus = round2(yearEvents.reduce((s, e) => s + e.cashDividendFromLegalReserveAndCapitalSurplus, 0));
       const stockDividend = round2(yearEvents.reduce((s, e) => s + e.stockDividend, 0));
-      const eps = annualEps.get(fiscalYear) ?? null;
+      const eps = fiscalYear === null ? null : (annualEps.get(fiscalYear) ?? null);
       const cashEvents = yearEvents.filter((e) => e.cashDividend > 0);
       const yieldComplete = cashEvents.length > 0 && cashEvents.every((e) => e.yieldAtExDate !== null);
       return {

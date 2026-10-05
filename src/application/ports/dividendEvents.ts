@@ -11,7 +11,7 @@ export interface DividendDistributionEvent {
 // 2026-09-19 給 GET /companies/dividend-history（歷年股利表）用的完整分派列——一列＝一次董事會/股東會
 // 決議通過的分派案（年配公司一年一列、季配公司一年四列，fiscal_quarter 只有季配才有值），金額單位
 // 是「元／股」（mops-ts 的 t108sb27 就是每股數字，不是總金額）。cash/stock 各自拆成盈餘與資本公積
-// 兩個來源，呼叫端自己加總；特別股股利（preferred_stock_cash_dividend）不在這裡——這張表是普通股。
+// 兩個來源，呼叫端自己加總；特別股代號（1312A 等）的特別股股利（preferred_stock_cash_dividend）由 repository 併進 cashDividendFromEarnings（2026-10-05）。
 // rocFiscalYear 是「股利所屬年度」（民國），不是除息年度。
 // 欄位名對應 MOPS t108sb27 原始表頭（mops-ts 2026-09-25 從快取原始 HTML 逐字確認）：
 //   cashDividendFromEarnings               ← 盈餘分配之股東現金股利(元/股)
@@ -23,7 +23,9 @@ export interface DividendDistributionEvent {
 // tifrs-es:CashDividendsFromCapitalSurplus），法定盈餘公積＝LegalReserve。CapitalReserve 是 ifrs-full 的另一個概念，
 // 不是台灣的資本公積——同日第二次改名，mops-ts 的 DB 欄位也改成同一組詞。
 export interface DividendDistributionRow {
-  rocFiscalYear: number;
+  // 2026-10-05 改 nullable：mops 有 731 列沒填所屬年度（716 列是沒有金額的純除權事件、15 列是真的配發），原本型別寫 number，
+  // 歷年股利表把它們當成「民國 0 年＝西元 1911」顯示。
+  rocFiscalYear: number | null;
   fiscalQuarter: number | null;
   cashDividendFromEarnings: number | null;
   cashDividendFromLegalReserveAndCapitalSurplus: number | null;

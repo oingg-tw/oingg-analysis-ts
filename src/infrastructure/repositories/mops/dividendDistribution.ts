@@ -54,7 +54,7 @@ export const getSymbolsWithDividendDistribution = async (): Promise<string[]> =>
 // 跟上面 getDividendDistributionEvents 刻意分開兩支：那支是指標核心（dividendDistributionCount）在用、
 // 已被 cassette 錄下，不要為了多讀幾個欄位動它的回傳形狀。
 interface RawDividendDistributionFullRow {
-  fiscal_year: number;
+  fiscal_year: number | null;
   fiscal_quarter: number | null;
   cash_dividend_from_earnings: unknown;
   cash_dividend_from_legal_reserve_and_capital_surplus: unknown;
@@ -68,9 +68,16 @@ interface RawDividendDistributionFullRow {
 
 const toNumberOrNull = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
 
+// 2026-10-05 特別股的股利：mops 公告表把特別股代號（1312A 等）的現金股利放在 preferred_stock_cash_dividend，
+// cash_dividend_from_earnings 是空的——原本只讀後者，33 檔特別股 172 筆歷年股利全部讀成 0（web-nuxt 抓到 1312A 每年
+// 有除息日、發放日，股利卻是 0）。特別股代號的列把它併進現金股利（實測沒有兩欄同時有值的列）；普通股代號上偶爾也有
+// 這欄（4 筆，是發給特別股股東的），不能算進普通股，維持不讀。
+
 export const listDividendDistributionRows = async (symbol: string): Promise<DividendDistributionRow[]> => {
   const rows = await mopsExportPrisma.$queryRawUnsafe<RawDividendDistributionFullRow[]>(
-    `SELECT fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
+    `SELECT fiscal_year, fiscal_quarter, CASE WHEN symbol ~ '^[0-9]{4}[A-Z]$' AND preferred_stock_cash_dividend IS NOT NULL
+                 THEN COALESCE(cash_dividend_from_earnings, 0) + preferred_stock_cash_dividend
+                 ELSE cash_dividend_from_earnings END AS cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
             stock_dividend_from_earnings, stock_dividend_from_legal_reserve_and_capital_surplus,
             ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date
      FROM "export"."dividend_distribution"
@@ -96,7 +103,9 @@ export const listDividendDistributionRows = async (symbol: string): Promise<Divi
 // 兩個都 NULL 的列（只有股東會決議、還沒訂日期）自然不會被選到。
 export const listRealizedExDividendRows = async (startDate: Date, endDate: Date): Promise<RealizedExDividendRow[]> => {
   const rows = await mopsExportPrisma.$queryRaw<(RawDividendDistributionFullRow & { symbol: string; company_name: string | null; ex_date: Date; par_value: unknown })[]>`
-    SELECT symbol, company_name, fiscal_year, fiscal_quarter, cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
+    SELECT symbol, company_name, fiscal_year, fiscal_quarter, CASE WHEN symbol ~ '^[0-9]{4}[A-Z]$' AND preferred_stock_cash_dividend IS NOT NULL
+                 THEN COALESCE(cash_dividend_from_earnings, 0) + preferred_stock_cash_dividend
+                 ELSE cash_dividend_from_earnings END AS cash_dividend_from_earnings, cash_dividend_from_legal_reserve_and_capital_surplus,
            stock_dividend_from_earnings, stock_dividend_from_legal_reserve_and_capital_surplus,
            ex_dividend_date, ex_rights_date, cash_dividend_payment_date, announcement_date, par_value,
            LEAST(ex_dividend_date, ex_rights_date) AS ex_date

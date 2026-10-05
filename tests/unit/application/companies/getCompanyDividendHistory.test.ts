@@ -10,7 +10,7 @@ import { createTestDeps } from '../../../fakes/createTestDeps';
 
 const day = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
 
-const row = (partial: Partial<DividendDistributionRow> & { rocFiscalYear: number }): DividendDistributionRow => ({
+const row = (partial: Partial<DividendDistributionRow> & { rocFiscalYear: number | null }): DividendDistributionRow => ({
   fiscalQuarter: null,
   cashDividendFromEarnings: null,
   cashDividendFromLegalReserveAndCapitalSurplus: null,
@@ -53,6 +53,17 @@ const depsFor = (rows: DividendDistributionRow[], eps: Record<string, number | n
   });
 
 describe('getCompanyDividendHistory', () => {
+  // 2026-10-05 mops 有些列沒填所屬年度：沒金額的（純除權事件）不列；有金額的集中成最後一列、年度 null，不再顯示成 1911。
+  test('沒填所屬年度：無金額的列丟掉，有金額的集中成最後一列（年度 null）', async () => {
+    const rows = [
+      row({ rocFiscalYear: 113, cashDividendFromEarnings: 3, exDividendDate: day('2025-07-01') }),
+      row({ rocFiscalYear: null, exRightsDate: day('2025-11-28') }),
+      row({ rocFiscalYear: null, cashDividendFromEarnings: 1.5, exDividendDate: day('2026-08-19') }),
+    ];
+    const { entries } = await getCompanyDividendHistory('2496', depsFor(rows, {}, {}));
+    expect(entries.map((e) => [e.fiscalYear, e.rocFiscalYear, e.cashDividend])).toEqual([[2024, 113, 3], [null, null, 1.5]]);
+  });
+
   test('查無分派紀錄 → entries 空陣列，不碰 EPS/股價', async () => {
     const deps = createTestDeps({ dividendEvents: dividendEvents([]) as DividendEventsPort });
     expect(await getCompanyDividendHistory('9999', deps)).toEqual({ symbol: '9999', entries: [] });

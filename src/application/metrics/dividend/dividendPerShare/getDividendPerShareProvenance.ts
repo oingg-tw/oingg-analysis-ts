@@ -25,11 +25,11 @@ export const getDividendPerShareProvenance = async (query: QuarterlyMetricQuery,
   const entries: ProvenanceEntry[] = rows
     .filter((r) => isInDividendWindow(r.exDividendDate, windowEnd))
     .map((r): ProvenanceEntry => {
-      const period = r.fiscalQuarter === null ? `民國 ${r.rocFiscalYear} 年度` : `民國 ${r.rocFiscalYear} 年第 ${r.fiscalQuarter} 季`;
+      const period = r.rocFiscalYear === null ? '所屬年度未填的' : r.fiscalQuarter === null ? `民國 ${r.rocFiscalYear} 年度` : `民國 ${r.rocFiscalYear} 年第 ${r.fiscalQuarter} 季`;
       const split = r.splitFactor === 1 ? '' : `，已除以面額變更倍數 ${r.splitFactor} 換算到 ${day(windowEnd)} 股數基準`;
       return {
         role: `除息 ${day(r.exDividendDate!)}（${period}盈餘分派）每股現金股利：盈餘配發 ${r.cashDividendFromEarnings ?? 0} 元＋法定盈餘公積與資本公積發放 ${r.cashDividendFromLegalReserveAndCapitalSurplus ?? 0} 元${split}`,
-        fiscalYear: rocYearToGregorian(r.rocFiscalYear),
+        fiscalYear: r.rocFiscalYear === null ? null : rocYearToGregorian(r.rocFiscalYear),
         fiscalQuarter: r.fiscalQuarter,
         type: 'other',
         statementType: null,

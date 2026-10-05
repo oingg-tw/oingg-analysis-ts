@@ -889,7 +889,8 @@
                             "type": "string"
                           },
                           "fiscalYear": {
-                            "description": "西元，股利所屬年度（不是除息年度）",
+                            "description": "西元，股利所屬年度（不是除息年度）。null＝公告沒填所屬年度的配發，集中成最後一列（2026-10-05 起）",
+                            "nullable": true,
                             "type": "integer"
                           },
                           "knowledgeDate": {
@@ -908,6 +909,7 @@
                             "type": "number"
                           },
                           "rocFiscalYear": {
+                            "nullable": true,
                             "type": "integer"
                           },
                           "stockDividend": {
