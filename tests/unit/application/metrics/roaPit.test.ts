@@ -28,6 +28,12 @@ test('roaPit: 2330 115Q2 合併報表，跟 roa.test.ts 的既有基準數字交
   assert.equal(ttm!.nullReason, null);
   // 2330 的 financial_report_announcement 已驗證覆蓋到 115Q2，不應該落到 fallback。
   assert.equal(q!.knowledgeDateIsFallback, false);
+
+  // 2026-10-05 年度版（MOPS 財務分析 23.60；我們 23.59，屬於約 10% 解釋不了的那群，見 computeRoa.ts）。
+  // 第一版漏套 formulaVersion，寫入層 rejected、回填卻報 0 失敗——這條斷言就是為了讓那種「沒寫進去」在測試裡現形。
+  const fy = await replay.findLatest({ symbol: '2330', metricCode: 'roa', periodType: 'FY', fiscalYear: 2025, fiscalQuarter: 4, dataType: '2', subsidiaryCompanyId: '' });
+  assert.ok(fy, 'periodType=FY 應該有寫入（年報 114 年、座標 2025Q4）');
+  assert.equal(Number(fy!.value), 23.59);
 });
 
 test('roaPit: 重跑同一組座標，去重邏輯應該讓第二次全部 skipped_unchanged，且列數維持 1', async () => {

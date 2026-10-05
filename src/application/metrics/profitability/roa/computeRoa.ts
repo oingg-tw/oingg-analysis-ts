@@ -162,7 +162,7 @@ export const computeRoa = async (query: QuarterlyMetricQuery, deps: RoaComputeDe
   }
 
   const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
-  const fy = annualReportSlot(annual, { symbol, metricCode: 'roa', dataType, subsidiaryCompanyId }, await resolveAnnualRoa(annual, { symbol, dataType, subsidiaryCompanyId }, deps));
+  const fy = versioned(annualReportSlot(annual, { symbol, metricCode: 'roa', dataType, subsidiaryCompanyId }, await resolveAnnualRoa(annual, { symbol, dataType, subsidiaryCompanyId }, deps)));
 
   return { symbol, rocYear: year, season, slots: { q, ttm: versioned(ttm), fy } };
 };
