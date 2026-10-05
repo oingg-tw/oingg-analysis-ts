@@ -186,6 +186,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'priceToResearchRatio',
   'beta',
   'liveMarketCap',
+  'liveDividendPerShare',
   'livePbRatio',
   'livePeRatio',
   'liveGrahamNumber',

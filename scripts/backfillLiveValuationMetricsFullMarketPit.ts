@@ -6,13 +6,14 @@
 // 之後要更新只要重跑這支腳本，不需要額外參數）。
 //
 // 用法：pnpm tsx scripts/backfillLiveValuationMetricsFullMarketPit.ts
-import { computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePbRatioPit, computeAndWriteLivePegRatioPit, computeAndWriteLivePeRatioPit } from '../src/bootstrap/pitMetrics';
+import { computeAndWriteLiveDividendPerSharePit, computeAndWriteLiveGrahamNumberPit, computeAndWriteLiveMarketCapPit, computeAndWriteLivePbRatioPit, computeAndWriteLivePegRatioPit, computeAndWriteLivePeRatioPit } from '../src/bootstrap/pitMetrics';
 import { metricDefinitionRegistry, upsertMetricDefinition } from '../src/bootstrap/metricDefinitions';
 import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 // 2026-09-27 加 livePeRatio／livePbRatio（即時本益比、股價淨值比，取代個股頁原本用的交易所數字）。
-const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap', 'livePeRatio', 'livePbRatio'];
+// 2026-10-05 加 liveDividendPerShare（近 12 個月每股股利，持股頁預估年度股利）。
+const METRIC_CODES = ['liveGrahamNumber', 'livePegRatio', 'liveMarketCap', 'livePeRatio', 'livePbRatio', 'liveDividendPerShare'];
 const PROGRESS_EVERY = 50;
 const SYMBOL_CONCURRENCY = 8; // 同一套固定併發池，避免打爆 Neon DB 連線數，見 backfillAllMetricsLatestFullMarketPit.ts 的說明。
 
@@ -29,6 +30,7 @@ const computeSymbol = async (symbol: string): Promise<void> => {
     computeAndWriteLiveMarketCapPit(query),
     computeAndWriteLivePeRatioPit(query),
     computeAndWriteLivePbRatioPit(query),
+    computeAndWriteLiveDividendPerSharePit(query),
   ]);
 };
 

@@ -95,6 +95,7 @@ import { computeGrahamNumber } from '@/application/metrics/valuation/grahamNumbe
 import { computeGreenblattEarningsYield } from '@/application/metrics/valuation/greenblattEarningsYield/computeGreenblattEarningsYield';
 import { computeLiveGrahamNumber } from '@/application/metrics/valuation/liveGrahamNumber/computeLiveGrahamNumber';
 import { computeLiveMarketCap } from '@/application/metrics/valuation/liveMarketCap/computeLiveMarketCap';
+import { computeLiveDividendPerShare } from '@/application/metrics/dividend/liveDividendPerShare/computeLiveDividendPerShare';
 import { computeLivePegRatio } from '@/application/metrics/valuation/livePegRatio/computeLivePegRatio';
 import { computeLivePeRatio } from '@/application/metrics/valuation/livePeRatio/computeLivePeRatio';
 import { computeLivePbRatio } from '@/application/metrics/valuation/livePbRatio/computeLivePbRatio';
@@ -229,6 +230,7 @@ export const computeAndWriteGrahamNumberPit = runPit(computeGrahamNumber);
 export const computeAndWriteGreenblattEarningsYieldPit = runPit(computeGreenblattEarningsYield);
 export const computeAndWriteLiveGrahamNumberPit = runPit(computeLiveGrahamNumber);
 export const computeAndWriteLiveMarketCapPit = runPit(computeLiveMarketCap);
+export const computeAndWriteLiveDividendPerSharePit = runPit(computeLiveDividendPerShare);
 export const computeAndWriteLivePegRatioPit = runPit(computeLivePegRatio);
 export const computeAndWriteLivePeRatioPit = runPit(computeLivePeRatio);
 export const computeAndWriteLivePbRatioPit = runPit(computeLivePbRatio);

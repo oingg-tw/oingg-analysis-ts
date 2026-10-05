@@ -159,6 +159,7 @@ import { dividendYieldDefinition } from '@/domain/metrics/dividend/dividendYield
 import { liveGrahamNumberDefinition } from '@/domain/metrics/valuation/liveGrahamNumber/liveGrahamNumberDefinition';
 import { livePegRatioDefinition } from '@/domain/metrics/valuation/livePegRatio/livePegRatioDefinition';
 import { liveMarketCapDefinition } from '@/domain/metrics/valuation/liveMarketCap/liveMarketCapDefinition';
+import { liveDividendPerShareDefinition } from '@/domain/metrics/dividend/liveDividendPerShare/liveDividendPerShareDefinition';
 import { livePeRatioDefinition } from '@/domain/metrics/valuation/livePeRatio/livePeRatioDefinition';
 import { livePbRatioDefinition } from '@/domain/metrics/valuation/livePbRatio/livePbRatioDefinition';
 import { betaDefinition } from '@/domain/metrics/valuation/beta/betaDefinition';
@@ -333,6 +334,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   liveGrahamNumber: liveGrahamNumberDefinition,
   livePegRatio: livePegRatioDefinition,
   liveMarketCap: liveMarketCapDefinition,
+  liveDividendPerShare: liveDividendPerShareDefinition,
   livePeRatio: livePeRatioDefinition,
   livePbRatio: livePbRatioDefinition,
   beta: betaDefinition,

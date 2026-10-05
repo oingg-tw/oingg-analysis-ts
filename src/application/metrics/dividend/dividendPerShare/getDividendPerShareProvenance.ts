@@ -11,17 +11,10 @@ import { dividendPerShareWindowEnd, listRestatedDividendRows, type DividendPerSh
 const SOURCE = '公開資訊觀測站股利分派情形（普通股，元／股）';
 const day = (d: Date): string => d.toISOString().slice(0, 10);
 
-export const getDividendPerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<DividendPerShareDeps, 'quarters' | 'dividendEvents' | 'shares'>): Promise<MetricProvenanceResult> => {
-  const { symbol } = query;
-  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
-  if (!resolvedQuarter) return { symbol, metricCode: 'dividendPerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
-
-  const seasonNum = Number(resolvedQuarter.season);
-  const fiscalYear = rocYearToGregorian(Number(resolvedQuarter.year));
-  const windowEnd = dividendPerShareWindowEnd(fiscalYear, seasonNum);
+// 2026-10-05 抽出：窗口內除息的條目與說明，季表版（窗口終點＝季末）與即時版 liveDividendPerShare（窗口終點＝最新交易日）共用。
+export const buildDividendWindowProvenance = async (symbol: string, windowEnd: Date, deps: Pick<DividendPerShareDeps, 'dividendEvents' | 'shares'>) => {
   const rows = await listRestatedDividendRows(symbol, windowEnd, deps);
   const calc = calculateDividendPerShare(rows, windowEnd);
-
   const entries: ProvenanceEntry[] = rows
     .filter((r) => isInDividendWindow(r.exDividendDate, windowEnd))
     .map((r): ProvenanceEntry => {
@@ -38,8 +31,22 @@ export const getDividendPerShareProvenance = async (query: QuarterlyMetricQuery,
         value: (r.cashDividendFromEarnings ?? 0) + (r.cashDividendFromLegalReserveAndCapitalSurplus ?? 0),
       };
     });
-
   const nullNote = calc.nullReason === 'insufficient_history' ? '窗口起點早於股利公告資料的全市場起點（2019-09-30），不拿殘缺資料加總。' : calc.nullReason === 'missing_input' ? '這家公司在股利公告資料裡一筆都沒有，分不出沒配過還是上游沒收到，不當成 0。' : '';
+  const methodologyNote =
+    `近一年每股現金股利＝除息日落在 ${day(dividendWindowStart(windowEnd))}（不含）到 ${day(windowEnd)}（含）的普通股每股現金股利公告值加總，四捨五入到小數 2 位；` +
+    `窗口內沒有除息為 0。跨過股票分割、配股或股數合併式減資的除息，每股金額換算到窗口結束時的股數基準。${nullNote}`;
+  return { calc, entries, methodologyNote };
+};
+
+export const getDividendPerShareProvenance = async (query: QuarterlyMetricQuery, deps: Pick<DividendPerShareDeps, 'quarters' | 'dividendEvents' | 'shares'>): Promise<MetricProvenanceResult> => {
+  const { symbol } = query;
+  const resolvedQuarter = await resolveQuarterOrLatest(query, ['cashFlowStatement'], deps.quarters);
+  if (!resolvedQuarter) return { symbol, metricCode: 'dividendPerShare', found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: null };
+
+  const seasonNum = Number(resolvedQuarter.season);
+  const fiscalYear = rocYearToGregorian(Number(resolvedQuarter.year));
+  const windowEnd = dividendPerShareWindowEnd(fiscalYear, seasonNum);
+  const { calc, entries, methodologyNote } = await buildDividendWindowProvenance(symbol, windowEnd, deps);
   return {
     symbol,
     metricCode: 'dividendPerShare',
@@ -48,8 +55,6 @@ export const getDividendPerShareProvenance = async (query: QuarterlyMetricQuery,
     fiscalQuarter: seasonNum,
     value: calc.value,
     entries,
-    methodologyNote:
-      `近一年每股現金股利＝除息日落在 ${day(dividendWindowStart(windowEnd))}（不含）到 ${day(windowEnd)}（含）的普通股每股現金股利公告值加總，四捨五入到小數 2 位；` +
-      `窗口內沒有除息為 0。跨過股票分割、配股或股數合併式減資的除息，每股金額換算到窗口結束時的股數基準。${nullNote}`,
+    methodologyNote,
   };
 };

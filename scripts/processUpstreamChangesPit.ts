@@ -15,6 +15,7 @@ import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import {
   computeAndWriteLiveGrahamNumberPit,
   computeAndWriteLiveMarketCapPit,
+  computeAndWriteLiveDividendPerSharePit,
   computeAndWriteLivePbRatioPit,
   computeAndWriteLivePegRatioPit,
   computeAndWriteLivePeRatioPit,
@@ -81,6 +82,8 @@ const processSource = async (source: UpstreamSource, fromExclusive: bigint, toIn
       computeAndWriteLiveMarketCapPit(query),
       computeAndWriteLivePeRatioPit(query),
       computeAndWriteLivePbRatioPit(query),
+      // 2026-10-05 近 12 個月每股股利（截至最新交易日）：窗口每天往前滾，跟其他 live* 一起每個交易日重算。
+      computeAndWriteLiveDividendPerSharePit(query),
     ]);
     for (const r of live) {
       if (r.status === 'fulfilled') collectActions(r.value, daily.actions);

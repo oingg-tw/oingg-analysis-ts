@@ -123,6 +123,7 @@ import { getBankOperatingExpenseBreakdownProvenance } from '@/application/metric
 import { getMarketRatioProvenanceFor } from '@/application/metrics/shared/marketRatios/getMarketRatioProvenance';
 import { getBetaProvenance } from '@/application/metrics/valuation/beta/getBetaProvenance';
 import { getLiveMarketCapProvenance } from '@/application/metrics/valuation/liveMarketCap/getLiveMarketCapProvenance';
+import { getLiveDividendPerShareProvenance } from '@/application/metrics/dividend/liveDividendPerShare/getLiveDividendPerShareProvenance';
 import { getLivePbRatioProvenance } from '@/application/metrics/valuation/livePbRatio/getLivePbRatioProvenance';
 import { getLivePeRatioProvenance } from '@/application/metrics/valuation/livePeRatio/getLivePeRatioProvenance';
 import { getLiveGrahamNumberProvenance } from '@/application/metrics/valuation/liveGrahamNumber/getLiveGrahamNumberProvenance';
@@ -306,6 +307,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   priceToResearchRatio: (query) => getPriceToResearchRatioProvenance(query, deps),
   beta: (query) => getBetaProvenance(query, deps),
   liveMarketCap: (query) => getLiveMarketCapProvenance(query, deps),
+  liveDividendPerShare: (query) => getLiveDividendPerShareProvenance(query, deps),
   livePbRatio: (query) => getLivePbRatioProvenance(query, deps),
   livePeRatio: (query) => getLivePeRatioProvenance(query, deps),
   liveGrahamNumber: (query) => getLiveGrahamNumberProvenance(query, deps),
