@@ -7,13 +7,14 @@ export const operatingCycleDefinition: MetricDefinitionSpec = {
   name: '營運週期',
   unit: '天',
   notApplicableToFinancialIndustry: true,
-  formulaNote: '= 存貨週轉天數(DIO) + 應收帳款收現天數(DSO)，不扣應付帳款付現天數（DPO）——跟既有 cashConversionCycle（CCC=DIO+DSO-DPO）的差異是這支不考慮付款緩衝期。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）',
+  formulaNote: '= 存貨週轉天數(DIO) + 應收帳款收現天數(DSO)，不扣應付帳款付現天數（DPO）——跟既有 cashConversionCycle（CCC=DIO+DSO-DPO）的差異是這支不考慮付款緩衝期。（2026-09-22 formulaVersion 2：上游週轉率的分母改成期間平均，這支跟著換版；公式本身不變。）' +
+    '（2026-10-05 新增）Q(單季)：一季以 365/4 天計，用單季週轉率換算（= 365 ÷（單季週轉率×4）），跟 TTM 同一把尺；溯源表是近四季。',
   formulaLatex: '\\mathrm{OperatingCycle} = \\mathrm{DIO} + \\mathrm{DSO}',
   referenceUrl: 'https://www.investopedia.com/terms/o/operatingcycle.asp',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['inventories', 'accounts_receivable_net', 'operating_costs', 'revenue'],
   currentFormulaVersion: 2,
 };
