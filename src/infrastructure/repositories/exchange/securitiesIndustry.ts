@@ -65,8 +65,8 @@ const listSectorMembers = async (codes: string[] | null): Promise<{ symbol: stri
       ? twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry = ANY(${codes}) AND ${Prisma.raw(LISTED_ONLY)}`
       : twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry IS NOT NULL AND ${Prisma.raw(LISTED_ONLY)}`,
     codes
-      ? tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry = ANY(${codes})`
-      : tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry IS NOT NULL`,
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry = ANY(${codes}) AND in_latest_list`
+      : tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."company_profile" WHERE industry IS NOT NULL AND in_latest_list`,
   ]);
   const bySymbol = new Map<string, string>();
   for (const r of [...twseRows, ...tpexRows]) if (!bySymbol.has(r.symbol)) bySymbol.set(r.symbol, r.industry); // twse 優先，同 /companies

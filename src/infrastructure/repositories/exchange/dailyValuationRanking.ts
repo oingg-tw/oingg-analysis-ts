@@ -83,7 +83,8 @@ export const queryTwseValuationRanking = async (
 // company_profile 同一個資料庫（export schema），直接用子查詢過濾。short_name IS NULL 那個分支
 // 是防呆：SQL 的 NOT LIKE 對 NULL 值一律回傳 NULL（不是 TRUE），沒有這個分支會誤刪 short_name
 // 剛好是 NULL 的公司。
-const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."company_profile" WHERE short_name IS NULL OR short_name NOT LIKE '%-KY%')`;
+// 2026-10-05 只取還在 TPEx 名單上的公司（in_latest_list，見 companyProfile.ts LISTED_ONLY 下方說明）。
+const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."company_profile" WHERE in_latest_list AND (short_name IS NULL OR short_name NOT LIKE '%-KY%'))`;
 
 export const queryTpexValuationRanking = async (
   tradeDate: Date,

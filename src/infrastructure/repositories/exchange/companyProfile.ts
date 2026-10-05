@@ -116,7 +116,7 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
       : Promise.resolve([]),
     needsTpex
       ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; source: string | null }[]>`
-          SELECT symbol, short_name, source FROM "export"."company_profile"
+          SELECT symbol, short_name, source FROM "export"."company_profile" WHERE in_latest_list
         `
       : Promise.resolve([]),
     needsPreferred
@@ -452,6 +452,10 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
 // 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
 // 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
 export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
+// 2026-10-05 tpex-ts 加了 in_latest_list：company_profile 是只增不刪的快照，離開 TPEx 名單（下市、轉上市、上櫃↔興櫃互轉）的公司那一列
+// 永遠留著、跟現役公司長得一樣（當天 6 家：4150、5371、3659、7812、6618、8183）。清單、計數、排行一律只取 in_latest_list；
+// 單一代號的查詢（companyExists、名稱、profile、類股）不篩，保留查得到已離開名單的公司（tpex-ts 刻意保留的用意）。
+// 單獨一天的 false 可能是 TPEx 回傳被截斷，隔天自己恢復（tpex-ts 說明）。
 // 2026-10-02 使用者拍板：存託憑證移出公司目錄。上市類股代碼 91（第一上市外國公司，身份別不是產業）剛好就是 10 檔 DR
 // （9103、910322、9105、910861、9110、911608、911622、911868、912000、9136），mops 回報它們一季財報都沒有、以後也不會有，
 // 留在目錄只會讓「拿目錄當母體」的覆蓋率永遠掛著 10 家。只從目錄／計數拿掉；個股 profile、行情、GET /securities 不受影響。
@@ -473,7 +477,7 @@ const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
-    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."company_profile"`,
+    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."company_profile" WHERE in_latest_list`,
   ]);
   const all = dedupeBySymbol([
     ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry, isEmerging: false })),
@@ -485,7 +489,7 @@ export const listAllCompanyNames = async (limit: number, offset: number): Promis
 export const countAllCompanyNames = async (): Promise<number> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile"`,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE in_latest_list`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
 };
