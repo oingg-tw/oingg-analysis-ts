@@ -198,6 +198,12 @@ export const listDisposedStocksTpex = (limit: number): Promise<RawTpexDisposedSt
     LIMIT ${limit}
   `;
 
+// 2026-10-05 證券商名單（GET /brokers）：is_active＝出現在 brokerList 最新一次抓取；is_brokerage＝業務種類含「經」（排除只做自營的期貨商，
+// 它們不會出現在投資人的成交明細上）。兩個旗標都是 twse-ts 在 view 裡定義的，這裡只篩選。
+const listActiveBrokers = () =>
+  twseExportPrisma.$queryRaw<{ broker_code: string; short_name: string; last_seen: Date }[]>`
+    SELECT broker_code, short_name, last_seen FROM "export"."broker" WHERE is_active AND is_brokerage ORDER BY broker_code`;
+
 // application/ports/marketLists.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
 export const exchangeMarketLists: MarketListsPort = {
   getLatestVolumeTop20TradeDate,
@@ -213,4 +219,5 @@ export const exchangeMarketLists: MarketListsPort = {
   listAttentionNotesTpex,
   listDisposedStocksTwse,
   listDisposedStocksTpex,
+  listActiveBrokers,
 };

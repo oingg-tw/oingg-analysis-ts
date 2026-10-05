@@ -83,4 +83,6 @@ export interface MarketListsPort {
   listAttentionNotesTpex(limit: number): Promise<RawAttentionHistoryNoteRow[]>;
   listDisposedStocksTwse(eligibleSymbols: string[], limit: number): Promise<RawTwseDisposedStockRow[]>;
   listDisposedStocksTpex(limit: number): Promise<RawTpexDisposedStockRow[]>;
+  // 2026-10-05 證券商總公司名單（twse-ts export.broker，每日鏡像證交所 brokerList＋t187ap18）：只回營業中、可受託買賣的。
+  listActiveBrokers(): Promise<{ broker_code: string; short_name: string; last_seen: Date }[]>;
 }

@@ -110,6 +110,65 @@
         ]
       }
     },
+    "/brokers": {
+      "get": {
+        "description": "來源是證交所 OpenAPI 的證券商總公司基本資料（/brokerService/brokerList）與證券商基本資料（t187ap18），由 twse-ts 每日鏡像（export.broker）。只列營業中（出現在最新一次抓取）且業務種類含經紀的總公司，依代號排序；只做自營的期貨商（元大期貨等 4 家）不列。只用於顯示與選擇，不參與任何計算。",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "asOfDate": {
+                      "description": "名單最後一次更新（出現在證交所抓取結果）的日期",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "brokers": {
+                      "description": "營業中、可受託買賣（業務種類含經紀）的總公司，依代號排序；只做自營的期貨商不列",
+                      "items": {
+                        "properties": {
+                          "brokerCode": {
+                            "description": "證券商代號（總公司），唯一鍵，例如元大證券 9800",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "全名；來源（證交所 brokerList／t187ap18）只有簡稱，目前一律 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "shortName": {
+                            "description": "簡稱，例如「元大」，下拉選單顯示這個",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "brokerCode",
+                          "name",
+                          "shortName"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "asOfDate",
+                    "brokers"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "證券商名單。"
+          }
+        },
+        "summary": "證券商總公司名單（券商下拉選單用）",
+        "tags": [
+          "Securities"
+        ]
+      }
+    },
     "/companies": {
       "get": {
         "description": "給 bff-ts 自己快取用——多公司陣列結果（screener、valuation/ranking、market/*-ranking 這類）已經直接在回應裡帶 companyName/name，單一公司的一般指標 API 也會明確補上 companyName（見 registerCompanyRoute.ts）。這支端點還留著，是給還沒被涵蓋到的情境、或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 companyName 會是 null。這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。2026-09-19 每筆新增 market（TWSE/TPEx）、sectorCode/sectorName（證交所類股，跟 GET /industries/securities-sectors 同一套 36 個代碼；掛在非產業代碼的公司為 null）——給 hub 頁一次拿到全市場分類用，不用逐檔打 profile。limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責上限（1000，避免一次回應過大）；也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。",
