@@ -97,6 +97,17 @@ export const resolveReportingBasis = async (key: TrailingKey, deps: StatementDep
   return basisOf(planSegments(key, quarters, records));
 };
 
+// 2026-10-05 近一年某個科目的加總：任一段缺列或缺值 → null（不完整就不算，呼叫端標 insufficient_history）。興櫃半年段已由 buildPeriods 推好，照樣加。
+export const sumTrailingPeriods = <T>(periods: TrailingPeriod<T>[], pick: (record: T) => bigint | null): bigint | null => {
+  let sum = 0n;
+  for (const p of periods) {
+    const v = p.record ? pick(p.record) : null;
+    if (v === null) return null;
+    sum += v;
+  }
+  return periods.length > 0 ? sum : null;
+};
+
 export const resolveTrailingIncomeStatements = async (key: TrailingKey, deps: StatementDeps): Promise<TrailingYear<IncomeStatementFields>> => {
   const { quarters, records } = await fetchQuarterlyIncome(key, deps);
   const plan = planSegments(key, quarters, records);

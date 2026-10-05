@@ -6,12 +6,14 @@ export const nonOperatingIncomeRatioDefinition: MetricDefinitionSpec = {
   metricCode: 'nonOperatingIncomeRatio',
   name: '業外損益占稅前淨利比',
   unit: '%',
-  formulaNote: '= (稅前淨利 - 營業利益) ÷ 稅前淨利，數值越高代表獲利越依賴業外（非本業）活動。稅前淨利 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；虧損時比率符號翻轉無意義）。',
+  formulaNote: '= (稅前淨利 - 營業利益) ÷ 稅前淨利，數值越高代表獲利越依賴業外（非本業）活動。稅前淨利 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；虧損時比率符號翻轉無意義）。' +
+    '（2026-10-05 新增）TTM = 近四季稅前淨利、營業利益各自加總後再算；FY = 年報全年（座標該年度第四季）。溯源表是單季。',
   formulaLatex: '\\mathrm{NonOpIncomeRatio} = \\dfrac{\\mathrm{PretaxIncome} - \\mathrm{OperatingIncome}}{\\mathrm{PretaxIncome}} \\times 100',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q'],
+  allowedPeriodTypes: ['Q', 'TTM', 'FY'],
+  provenancePeriodType: 'Q',
   dependsOn: ['profit_loss_before_tax', 'profit_loss_from_operating_activities'],
   currentFormulaVersion: 1,
 };

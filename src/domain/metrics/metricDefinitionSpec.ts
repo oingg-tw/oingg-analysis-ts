@@ -177,6 +177,10 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // persistComputations.ts）金融業公司這支指標若結果為 null（缺少輸入／歷史不足），原因改成 not_applicable_industry；
   // 算得出值的（保險業毛利率走保險損益表 fallback、少數一般格式的公司）照樣保留數值。
   notApplicableToFinancialIndustry?: true;
+  // 2026-10-05 溯源表描述的期別（GET /companies/:symbol/metric-provenance 回應的 periodType）。不填＝預設規則「有 TTM 就是 TTM，
+  // 否則是唯一允許的期別」（application/companies/insights.ts provenancePeriodType）。只有溯源表刻意維持別的期別時才填——
+  // 例如年增率類補了 TTM／FY，溯源仍是單季年增率（頁面預設顯示單季）。
+  provenancePeriodType?: 'Q' | 'TTM' | 'FY';
   formulaNote: string;
   // 2026-09-10 新增：前後端統一算式顯示——使用者要求公式本身（不是 formulaNote 這種
   // 自然語言說明）由這裡儲存，前端忠實顯示，不要各自維護一份、算式跟後端實際公式對不上。

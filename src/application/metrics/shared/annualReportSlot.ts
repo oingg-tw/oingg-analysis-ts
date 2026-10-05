@@ -49,6 +49,14 @@ export const resolveAnnualReportContext = async (
   };
 };
 
+// 2026-10-05 年度年增率用：本年度年報 context 的上一個年度年報（查無回 null，呼叫端標 insufficient_history）。
+export const getPriorAnnualIncomeStatement = (
+  context: AnnualReportContext | null,
+  key: { symbol: string; dataType: string; subsidiaryCompanyId: string },
+  deps: Pick<PitDeps, 'annualReports'>
+): Promise<AnnualIncomeStatement | null> =>
+  context ? deps.annualReports.getAnnualIncomeStatement({ ...key, rocYear: context.fiscalYear - 1911 - 1 }) : Promise.resolve(null);
+
 // 沒有年報 → skipped_no_quarter（不寫列）；有年報但查不到公告日 → skipped_no_knowledge_date。
 export const annualReportSlot = (
   context: AnnualReportContext | null,

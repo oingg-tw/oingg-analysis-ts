@@ -74,3 +74,13 @@ describe('resolveAverageBalances 半年頻', () => {
     expect((await resolveAverageBalances(key, depsFor(seed))).equityAvgTtm).toBe(300n);
   });
 });
+
+describe('sumTrailingPeriods', () => {
+  test('全部有值才加總；任一段缺列或缺值回 null', async () => {
+    const { sumTrailingPeriods } = await import('@/application/metrics/shared/trailingYear');
+    const p = (v: bigint | null) => ({ year: '115', season: '2' as const, record: v === null ? null : { x: v } });
+    expect(sumTrailingPeriods([p(1n), p(2n), p(3n)], (r) => r.x)).toBe(6n);
+    expect(sumTrailingPeriods([p(1n), p(null)], (r) => r.x)).toBeNull();
+    expect(sumTrailingPeriods([], (r: { x: bigint }) => r.x)).toBeNull();
+  });
+});

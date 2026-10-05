@@ -77,6 +77,7 @@ export interface GetCompanyMetricProvenanceQuery {
 const provenancePeriodType = (metricCode: string): PeriodType | null => {
   const def = metricDefinitionRegistry[metricCode];
   if (!def || def.group !== 'period') return null;
+  if (def.provenancePeriodType) return def.provenancePeriodType;
   const allowed = def.allowedPeriodTypes ?? [];
   const periodTypes = allowed.filter((p): p is PeriodType => p !== 'N/A');
   return periodTypes.includes('TTM') ? 'TTM' : (periodTypes[0] ?? null);
