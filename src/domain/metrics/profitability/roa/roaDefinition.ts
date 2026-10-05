@@ -16,13 +16,15 @@ export const roaDefinition: MetricDefinitionSpec = {
   formulaNote:
     'Q(單季) = 本季淨利/平均總資產*100，平均總資產 = (本季期末 + 上季期末)/2，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
     'TTM = 近四季（含本季）淨利加總/平均總資產*100，平均總資產 = 近四季窗口 5 個季末（t−4 … t）的平均。四季損益表或任一季末資產負債表不齊為 null。' +
-    '（formulaVersion 1 分母是本季單一期末總資產。）',
+    '（formulaVersion 1 分母是本季單一期末總資產。）' +
+    '（2026-10-05 新增）FY(年度) = 〔本期淨利（總額）＋財務成本×(1−20%)〕/((年初總資產+年底總資產)/2)*100，照財報編製準則的財務分析公式，' +
+    '口徑用 MOPS 財務分析校準（114 年度 1,865 家 81.5% 完全一致）；座標是該年度第四季。Q／TTM 不加回利息，跟 FY 不能互相對帳。',
   formulaLatex: '\\mathrm{ROA} = \\frac{\\mathrm{NetIncome}}{\\overline{\\mathrm{TotalAssets}}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E8%B3%87%E7%94%A2%E5%A0%B1%E9%85%AC%E7%8E%87',
   tier: 'derived',
   sources: ['公開發行公司資產負債表（XBRL）', '公開發行公司損益表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['Q', 'TTM'],
+  allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['profit_loss_attributable_to_owners_of_parent', 'profit_loss', 'assets'],
   currentFormulaVersion: 2,
 };
