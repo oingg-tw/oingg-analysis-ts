@@ -9,12 +9,13 @@ export const ocfMarginDefinition: MetricDefinitionSpec = {
   name: '營業現金流利潤率',
   nameEn: 'OCF Margin',
   unit: '%',
-  formulaNote: '= 近四季營業活動現金流量加總 ÷ 近四季營收加總，衡量每一元營收能轉換成多少營業現金流入，跟損益表口徑的獲利率互為對照。',
+  formulaNote: '= 近四季營業活動現金流量加總 ÷ 近四季營收加總，衡量每一元營收能轉換成多少營業現金流入，跟損益表口徑的獲利率互為對照。' +
+    '（2026-10-05 新增）Q(單季) = 本季營業活動現金流/本季營收*100；溯源表是近四季。',
   formulaLatex: '\\mathrm{OCF\\ Margin} = \\dfrac{\\mathrm{OCF}_{\\mathrm{TTM}}}{\\mathrm{Revenue}_{\\mathrm{TTM}}} \\times 100',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['revenue', 'cash_flows_from_used_in_operating_activities'],
   currentFormulaVersion: 1,
 };

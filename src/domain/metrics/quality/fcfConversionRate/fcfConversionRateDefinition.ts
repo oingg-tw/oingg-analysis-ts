@@ -10,12 +10,13 @@ export const fcfConversionRateDefinition: MetricDefinitionSpec = {
   unit: '%',
   formulaNote:
     '= 近四季自由現金流（OCF-資本支出）加總 ÷ 近四季淨利加總，衡量帳面獲利有多少比例真的轉換成自由現金流。' +
-    '「FCF 轉換率」業界有多種定義（FCF/OCF、FCF/EBITDA、FCF/NetIncome），這裡採用 FCF/NetIncome 版本。近四季淨利 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；虧損時「轉換率」符號翻轉無意義）。',
+    '「FCF 轉換率」業界有多種定義（FCF/OCF、FCF/EBITDA、FCF/NetIncome），這裡採用 FCF/NetIncome 版本。近四季淨利 ≤ 0 時不計算（zero_or_negative_denominator，2026-09-22 起；虧損時「轉換率」符號翻轉無意義）。' +
+    '（2026-10-05 新增）Q(單季) = 本季自由現金流/本季淨利*100，本季淨利 ≤ 0 不計算；溯源表是近四季。',
   formulaLatex: '\\mathrm{FCF\\ Conversion} = \\dfrac{\\mathrm{FCF}_{\\mathrm{TTM}}}{\\mathrm{NetIncome}_{\\mathrm{TTM}}} \\times 100',
   tier: 'derived',
   sources: ['公開發行公司損益表（XBRL）', '公開發行公司現金流量表（XBRL）'],
   group: 'period',
-  allowedPeriodTypes: ['TTM'],
+  allowedPeriodTypes: ['Q', 'TTM'],
   dependsOn: ['profit_loss', 'cash_flows_from_used_in_operating_activities', 'purchase_of_ppe_investing'],
   currentFormulaVersion: 1,
 };

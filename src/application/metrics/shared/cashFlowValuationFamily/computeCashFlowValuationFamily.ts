@@ -59,7 +59,7 @@ const toRatioFromThousands = (numeratorInThousands: bigint, denominatorInThousan
 
 export type CashFlowValuationFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'market' | 'cumulativeStatements'>;
 
-export type CashFlowValuationFamilyComputationBatch = ComputationBatch<'evToOcf' | 'evToSales' | 'priceToOcf' | 'debtToFcf' | 'capexToOcfRatio' | 'croic' | 'ocfMargin' | 'fcfConversionRate'>;
+export type CashFlowValuationFamilyComputationBatch = ComputationBatch<'evToOcf' | 'evToSales' | 'priceToOcf' | 'debtToFcf' | 'capexToOcfRatio' | 'croic' | 'ocfMargin' | 'fcfConversionRate' | 'ocfMarginQ' | 'fcfConversionRateQ'>;
 
 // 2026-10-01 溯源表（croic／capexToOcfRatio／debtToFcf／fcfConversionRate／evToOcf／evToSales／priceToOcf／ocfMargin 八支
 // get<Metric>Provenance.ts）要跟寫入路徑算出同一個數字：以前各自「只查自己真正的依賴」重算，結果漏了 croic ×100（v2）、
@@ -144,12 +144,25 @@ export const resolveCashFlowValuationInputs = async (query: QuarterlyMetricQuery
   const ocfMarginValue = ttmComplete ? toPctFromThousands(ocfTtmSum, revenueTtmSum) : null;
   const fcfConversionRateValue = ttmComplete && netIncomeTtmSum > 0n ? toPctFromThousands(fcfTtmSum, netIncomeTtmSum) : null;
 
+  // 2026-10-05 單季（Q）：web-nuxt 指標頁要期別切換器（使用者：有頁面要用再做）。本季單季現金流量表／損益表，公式同 TTM；
+  // fcfConversionRate 淨利 ≤ 0 同樣不算。興櫃沒有單季列 → missing_input（結構性，跟其他單季指標一樣）。溯源表維持近四季。
+  const ocfQ = cashFlowStatement?.netCashFromOperatingActivities ?? null;
+  const capexQ = cashFlowStatement?.capitalExpenditures ?? null;
+  const revenueQ = incomeStatement?.operatingRevenue ?? null;
+  const netIncomeQ = incomeStatement?.netIncome ?? null;
+  const quarterInputs = { ocfMargin: ocfQ !== null && revenueQ !== null, fcfConversionRate: ocfQ !== null && capexQ !== null && netIncomeQ !== null };
+  const quarterValues = {
+    ocfMargin: quarterInputs.ocfMargin && revenueQ! !== 0n ? toPctFromThousands(ocfQ!, revenueQ!) : null,
+    fcfConversionRate: quarterInputs.fcfConversionRate && netIncomeQ! > 0n ? toPctFromThousands(ocfQ! + capexQ!, netIncomeQ!) : null,
+  };
+
   return {
     symbol, year, season, rocYear, seasonNum, fiscalYear,
     balanceSheet, totalDebt, cashAndEquivalents, netDebt, equity, investedCapital,
     mainAnchor, marketCap, enterpriseValue,
     trailingIncome, trailingCashFlow, ttmQuarters, ttmRecords, ttmComplete,
     ocfTtmSum, capexTtmSum, revenueTtmSum, netIncomeTtmSum, fcfTtmSum,
+    quarterInputs, quarterValues,
     values: {
       evToOcf: evToOcfValue,
       evToSales: evToSalesValue,
@@ -184,6 +197,8 @@ export const computeCashFlowValuationFamily = async (
       croic: { action },
       ocfMargin: { action },
       fcfConversionRate: { action },
+      ocfMarginQ: { action },
+      fcfConversionRateQ: { action },
     },
   });
 
@@ -191,7 +206,17 @@ export const computeCashFlowValuationFamily = async (
 
   if (!resolution) return skipped('skipped_no_quarter');
 
-  const { year, season, seasonNum, fiscalYear, totalDebt, investedCapital, mainAnchor, marketCap, enterpriseValue, ttmQuarters, ttmRecords, ttmComplete, values } = resolution;
+  const { year, season, seasonNum, fiscalYear, totalDebt, investedCapital, mainAnchor, marketCap, enterpriseValue, ttmQuarters, ttmRecords, ttmComplete, values, quarterInputs, quarterValues } = resolution;
+
+  // 單季兩支跟 TTM 是否齊全無關，錨在本季公告日。
+  const quarterSlot = (metricCode: 'ocfMargin' | 'fcfConversionRate'): ComputationSlot => {
+    if (!mainAnchor) return { action: 'skipped_no_knowledge_date' };
+    const value = quarterValues[metricCode];
+    const nullReason: MetricNullReason | null = value !== null ? null : quarterInputs[metricCode] ? 'zero_or_negative_denominator' : 'missing_input';
+    return computation({ symbol, metricCode, fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId, ...periodTypeGroup('Q'), value, nullReason, knowledgeDate: mainAnchor.knowledgeDate, knowledgeDateIsFallback: mainAnchor.isFallback, formulaVersion: FORMULA_VERSION_BY_CODE[metricCode] });
+  };
+  const ocfMarginQ = quarterSlot('ocfMargin');
+  const fcfConversionRateQ = quarterSlot('fcfConversionRate');
 
   const coordinateBase = { symbol, metricCode: '', fiscalYear, fiscalQuarter: seasonNum, dataType, subsidiaryCompanyId };
   const coordinateFor = (metricCode: string) => ({ ...coordinateBase, metricCode });
@@ -215,6 +240,8 @@ export const computeCashFlowValuationFamily = async (
         croic: insufficientHistory('croic'),
         ocfMargin: insufficientHistory('ocfMargin'),
         fcfConversionRate: insufficientHistory('fcfConversionRate'),
+        ocfMarginQ,
+        fcfConversionRateQ,
       },
     };
   }
@@ -245,5 +272,5 @@ export const computeCashFlowValuationFamily = async (
   const ocfMargin = write('ocfMargin', values.ocfMargin, nullReasonFor(values.ocfMargin, true));
   const fcfConversionRate = write('fcfConversionRate', values.fcfConversionRate, nullReasonFor(values.fcfConversionRate, true));
 
-  return { symbol, rocYear: year, season, slots: { evToOcf, evToSales, priceToOcf, capexToOcfRatio, debtToFcf, croic, ocfMargin, fcfConversionRate } };
+  return { symbol, rocYear: year, season, slots: { evToOcf, evToSales, priceToOcf, capexToOcfRatio, debtToFcf, croic, ocfMargin, fcfConversionRate, ocfMarginQ, fcfConversionRateQ } };
 };
