@@ -38,7 +38,11 @@
 
 - **期別補齊（web-nuxt 2026-10-05 分群需求）**：已做 roa FY（MOPS 財務分析校準）、營收／淨利成長率與業外損益比 TTM+FY、營業現金流利潤率與自由現金流轉換率 Q、五支週轉天數 Q、淨值成長率 FY；歷史回填 2026-10-06 完成（109Q3～115Q2、0 失敗、0 rejected）。未做：股利保障倍數（不補 Q，單季失真；FY 等年度現金流量表的年報文件來源確認）、web-nuxt B 群 7 支與 D 群分數型（沒頁面，等要用再做）。
 - **56 支指標文案**：web-nuxt 給的優先清單 13 支先做（dividendGrowthRate3y 第一）。
-- **DEV 過期列重算**：chowderNumber 約 28 家、1216 consecutiveDividendYears／dividendGrowthRate5y、4960 ohlson、8476 beta。
+- **DEV 全市場全歷史重算（2026-10-06 起跑，使用者拍板）**：16 家對調重算時發現約 3.9% 歷史列是舊值（09-13～09-23 算的、之後的公式升版／上游補資料
+  沒回頭重算，例：accrualsRatio v2→v3、早年單季 stockPrice 補到、mops 股利回補後的連續配息年數）。`tmp/fullRecompute.cmd` 兩段：
+  109Q3～115Q2 全部 label（2,335 家 × 24 季，log `tmp/full-history-recompute.log`）→ 最新一季含逐日型（`tmp/full-latest-recompute.log`），
+  依 16 家的速度線性推估約 29 小時；中斷用 SYMBOL_OFFSET 續跑。跑完用 metric_upsert_shadow（captured_at ≥ `tmp/full-recompute.start`）量實際改了多少。
+  涵蓋原本清單的 chowderNumber 約 28 家、1216、4960、8476。
 
 ## 已知限制（刻意不修或修不了，前端要知道）
 
