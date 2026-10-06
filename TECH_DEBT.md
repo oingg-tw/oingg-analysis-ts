@@ -29,10 +29,6 @@
 - **跟 web-nuxt 對的設計**：「近四季／近一年／年度」三種期別在頁面上的標示；溯源表要不要支援單季（Q）——先問 web-nuxt 哪些頁面
   預設看單季，再決定要不要做。
 - **現金增資認購折價**（見下方即時指標）：要不要請 mops-ts 補認購價。
-- **上櫃特別股名單**（2026-10-06 tpex-ts 查明）：上櫃目前只有 1 檔 8349A 恒耀甲特，不在 `/securities`、`/preferred-stocks`（官方名單 `isin_securities` 只收上市）。
-  TPEx 自己的每日收盤行情就有名稱（`CompanyName`）和「是否仍掛牌」（零成交也會列出，不在當天行情表＝已下市），只是 tpex-ts 沒存名稱。
-  上櫃代號格式 `^[1-9][0-9]{3}[A-Z]$` 在 15 年歷史股價只套中 4129A／8349A／8916A，全是特別股；加上「出現在最新交易日」就只剩 8349A。
-  要補的話：tpex-ts 存下 `CompanyName`（他們會問自己的使用者），我們用「格式＋最新交易日」補上櫃這一段。待使用者拍板要不要做。
 
 ## 排程中（我這邊會做，不需要使用者動作）
 
@@ -92,6 +88,10 @@
 
 ## 卡在其他微服務，等對方排期
 
+- **/preferred-stocks 缺上櫃特別股 8349A**（2026-10-06 使用者拍板）：`/securities` 已用 tpex-ts 的 `export.tpex_preferred_stock` 補上（2c7fefcd），
+  `/preferred-stocks` 卡在官方 ISIN——請 twse-ts 把 `isin_securities` 擴到證交所 ISIN 頁的上櫃部分（strMode=4）。照規則推算 ISIN 不可靠
+  （台灣代碼 1,291 筆有 3 筆、上市特別股 28 檔有 1 檔對不上），不推。**twse 補上後注意**：`companyProfile.ts` getAllSecurityRows 把
+  isin_securities 的特別股一律標 TWSE，8349A 會同時從兩個來源進來（靠 symbol 去重不會重複，但 market 會標錯），要一起改。
 - **股利分派公告表**（mops-ts `DividendDistribution` domain，資料源 MOPS t108sb27）：
   資料源本身沒有硬限制（沒有已知歷史年份上限），但 mops-ts 自己的 backfill CLI 缺
   公司層級跳過/續傳機制——這個 domain 設計是「一次查一整年」，2349 家公司全市場回補
