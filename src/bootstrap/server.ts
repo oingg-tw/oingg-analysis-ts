@@ -13,12 +13,23 @@ import { warmCaches } from './warmCaches';
 // 不會再打到冷快取（peer-group/chain-tree/industries 那幾支端點以前在啟動後前幾秒會拿到空結果）。
 // 每個 loader 都自己吞掉失敗只記 log（見 warmCaches.ts），所以 await 不會因為某個 export DB 連線問題
 // 擋住伺服器啟動。
+// 2026-10-06 冷啟動拆解：Cloud Run DEV 閒置後第一個請求約 13 秒（使用者要拆細、找能優化的段）。process.uptime() 從 node 行程啟動算起，
+// 不受 ESM import 提升影響；每段各記一行 [startup]，冷啟動時從 Cloud Run log 就能直接讀出模組載入、各 DB、快取、listen 各花多久。
+const mark = (label: string, since?: number): number => {
+  const now = process.uptime();
+  logger.info(`[startup] ${label} at ${now.toFixed(3)}s${since === undefined ? '' : ` (+${((now - since) * 1000).toFixed(0)}ms)`}`);
+  return now;
+};
+
 export const startServer = async ({ startedAt }: { startedAt: [number, number] }): Promise<void> => {
   try {
+    const t0 = mark('modules loaded');
     // 環境變數（含「正式環境一定要有 BFF_API_KEY」）在 import config 的當下就驗證完了，
     // 缺什麼會直接列出來讓 process 起不來，見 src/infrastructure/config.ts。
     await connectAllDbs();
+    const t1 = mark('dbs connected', t0);
     await warmCaches();
+    const t2 = mark('caches warmed', t1);
 
     const app = createApp();
     // 2026-09-02 bff-ts 回報：'localhost' 這個字串讓 Node 只 bind IPv6 loopback（[::1]），
@@ -31,6 +42,7 @@ export const startServer = async ({ startedAt }: { startedAt: [number, number] }
       const startupTimeInMs = (endTime[0] * 1e9 + endTime[1]) / 1e6;
       setStartupTime(startupTimeInMs);
 
+      mark('listening', t2);
       logger.info(`Server is running at http://${host}:${port}`);
       if (!config.isProduction) {
         logger.info(`Server started in ${startupTimeInMs.toFixed(2)}ms`);
