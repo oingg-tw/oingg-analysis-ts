@@ -1,3 +1,4 @@
+import { PREFERRED_STOCK_SYMBOL_PATTERN } from '@/domain/preferredStock/preferredStockSymbol';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 2026-09-25 流通在外普通股要從已發行股數扣掉的兩項（見 domain/financials/outstandingCommonShares.ts）：
@@ -64,7 +65,7 @@ export const isKnownPreferredIssuer = async (symbol: string): Promise<boolean> =
   preferredIssuers ??= mopsExportPrisma
     .$queryRaw<{ base: string }[]>`
       SELECT DISTINCT substring(symbol from 1 for 4) AS base FROM "export"."dividend_distribution"
-      WHERE symbol ~ '^[0-9]{4}[A-Z]' AND preferred_stock_cash_dividend > 0`
+      WHERE symbol ~ ${PREFERRED_STOCK_SYMBOL_PATTERN} AND preferred_stock_cash_dividend > 0`
     .then((rows) => new Set(rows.map((r) => r.base)))
     .catch((error: unknown) => {
       preferredIssuers = null;
