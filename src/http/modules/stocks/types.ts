@@ -104,14 +104,18 @@ export const exDividendCalendarEntrySchema = exDividendNoticeEntrySchema.extend(
   status: z.enum(['announced', 'realized']).meta({ description: 'announced = 除息日在今天（含）以後的預告，內容可能再變動；realized = 除息日已過、來自股利分派公告的事實' }),
   paymentDate: z.string().nullable().meta({ description: '現金股利發放日 "YYYY-MM-DD"，只有 realized 列有值' }),
   fiscalYear: z.number().int().nullable().meta({ description: '股利所屬年度（西元），只有 realized 列有值' }),
-  // 2026-09-23 併入 ETF 收益分配。ETF 不在個股那兩個來源裡（twse 預告表只收個股、mops 股利分派公告是上市櫃
+  // 2026-09-23 併入 ETF 收益分配。ETF 不在 mops 那個來源裡（mops 股利分派公告是上市櫃
   // **公司**的決議），所以在此之前月曆「往前看有 ETF、往回翻沒有」。
   securityType: z.enum(['COMMON', 'ETF']).meta({
-    description: '2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。',
+    description:
+      '2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。' +
+      '2026-10-06 起依證券本身判斷（跟 GET /securities 的 type=ETF 同一份名單），不再跟著資料來源走——之前 sitca 還沒收到的 ETF 預告列會被標成 COMMON。',
   }),
   recordDate: z.string().nullable().meta({ description: '2026-09-23 新增：收益分配基準日 "YYYY-MM-DD"，只有 ETF 列有值' }),
   distributionPerUnit: z.number().nullable().meta({
-    description: '2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用',
+    description:
+      '2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用。' +
+      '2026-10-06 起 ETF 的金額一律看這個欄位：sitca 還沒公布金額時用證交所預告表的金額補上（兩邊都有值時實測相同）；ETF 列的 cashDividend 可能也有值（預告表原值），以這裡為準。',
   }),
   composition: z
     .object({

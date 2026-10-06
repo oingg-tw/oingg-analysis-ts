@@ -65,13 +65,16 @@ const realized = (symbol: string, exDate: string, over: Partial<RealizedExDivide
   ...over,
 });
 
+// GET /securities 標成 ETF 的名單（sitca etf_basic_info）；2026-10-06 起 securityType 依這份判斷。
+const ETF_SYMBOLS = new Set(['00939', '00940', '0056']);
+
 let calls: { announced?: [Date, Date]; realized?: [Date, Date]; etf?: [Date, Date] } = {};
 const deps = createTestDeps({
   market: { getExDividendCalendar: async (s: Date, e: Date) => ((calls.announced = [s, e]), [notice('2330', '2026-09-25'), notice('1101', '2026-09-22')]) } as unknown as MarketDataPort,
   dividendEvents: {
     listRealizedExDividendRows: async (s: Date, e: Date) => ((calls.realized = [s, e]), [realized('2614', '2026-09-06', { stockDividendFromEarnings: 0.8, exRightsDate: new Date('2026-09-06') }), realized('2890', '2026-09-10', { exDividendDate: null, exRightsDate: new Date('2026-09-10'), cashDividendFromEarnings: null, cashDividendFromLegalReserveAndCapitalSurplus: null })]),
   } as unknown as DividendEventsPort,
-  companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])) } as unknown as CompanyProfilePort,
+  companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])), listEtfSymbols: async () => ETF_SYMBOLS } as unknown as CompanyProfilePort,
   etfData: {
     listEtfDividendsForRange: async (s: Date, e: Date) => ((calls.etf = [s, e]), [etfRow('00939', '2026-09-15'), etfRow('00940', '2026-09-28')]),
   } as unknown as EtfDataPort,
@@ -133,7 +136,7 @@ describe('getExDividendCalendar', () => {
     const dupDeps = createTestDeps({
       market: { getExDividendCalendar: async () => [{ ...notice('00939', '2026-09-25'), cashDividend: 0.07 }] } as unknown as MarketDataPort,
       dividendEvents: { listRealizedExDividendRows: async () => [] } as unknown as DividendEventsPort,
-      companyProfiles: { getCompanyNamesForSymbols: async () => new Map() } as unknown as CompanyProfilePort,
+      companyProfiles: { getCompanyNamesForSymbols: async () => new Map(), listEtfSymbols: async () => ETF_SYMBOLS } as unknown as CompanyProfilePort,
       etfData: { listEtfDividendsForRange: async () => [etfRow('00939', '2026-09-25', { distribution_per_unit: null })] } as unknown as EtfDataPort,
     });
     const { entries } = await getExDividendCalendar(new Date('2026-09-01'), new Date('2026-09-30'), dupDeps);
@@ -143,7 +146,7 @@ describe('getExDividendCalendar', () => {
       symbol: '00939',
       securityType: 'ETF', // 被 ETF 那側標記
       cashDividend: 0.07, // 預告表已宣告的金額保留下來
-      distributionPerUnit: null, // sitca 未來月份還沒有金額，不拿 null 蓋掉上面那個
+      distributionPerUnit: 0.07, // 2026-10-06 起：sitca 還沒有金額時用預告表的金額，不拿 null 蓋掉
       recordDate: '2026-09-25', // 只有 sitca 有
       companyName: '00939基金', // 預告列查不到 profile（ETF 不在 company_profile），用基金名稱補
     });
@@ -155,7 +158,7 @@ describe('getExDividendCalendar', () => {
     const d = createTestDeps({
       market: { getExDividendCalendar: async () => [] } as unknown as MarketDataPort,
       dividendEvents: { listRealizedExDividendRows: async () => [] } as unknown as DividendEventsPort,
-      companyProfiles: { getCompanyNamesForSymbols: async () => new Map() } as unknown as CompanyProfilePort,
+      companyProfiles: { getCompanyNamesForSymbols: async () => new Map(), listEtfSymbols: async () => ETF_SYMBOLS } as unknown as CompanyProfilePort,
       etfData: {
         listEtfDividendsForRange: async () => [etfRow('00939', '2026-09-01'), etfRow('00939', '2026-10-05', { distribution_per_unit: null })],
       } as unknown as EtfDataPort,
@@ -164,6 +167,19 @@ describe('getExDividendCalendar', () => {
     const byDate = new Map(entries.map((e) => [e.exDate, e]));
     expect(byDate.get('2026-09-01')!.composition?.incomeEqualizationPct).toBe(74.48);
     expect(byDate.get('2026-10-05')!.composition).toBeNull();
+  });
+
+  // 2026-10-06 bff-ts 回報：sitca 還沒收到的 ETF 預告列原本被標成 COMMON，下游照 securityType 挑金額欄位就挑錯。
+  test('只有預告表的 ETF 列：依 ETF 名單標成 ETF，金額放進 distributionPerUnit', async () => {
+    const d = createTestDeps({
+      market: { getExDividendCalendar: async () => [{ ...notice('0056', '2026-10-22'), cashDividend: 0.866 }, notice('2330', '2026-10-22')] } as unknown as MarketDataPort,
+      dividendEvents: { listRealizedExDividendRows: async () => [] } as unknown as DividendEventsPort,
+      companyProfiles: { getCompanyNamesForSymbols: async () => new Map(), listEtfSymbols: async () => ETF_SYMBOLS } as unknown as CompanyProfilePort,
+      etfData: { listEtfDividendsForRange: async () => [] } as unknown as EtfDataPort,
+    });
+    const { entries } = await getExDividendCalendar(new Date('2026-10-01'), new Date('2026-10-31'), d);
+    expect(entries.find((e) => e.symbol === '0056')).toMatchObject({ securityType: 'ETF', distributionPerUnit: 0.866, cashDividend: 0.866, composition: null });
+    expect(entries.find((e) => e.symbol === '2330')).toMatchObject({ securityType: 'COMMON', distributionPerUnit: null });
   });
 
   test('個股列的 ETF 專屬欄位一律 null，securityType 是 COMMON', async () => {
@@ -218,7 +234,7 @@ describe('getExDividendNotices', () => {
         ]
       ),
     } as unknown as DividendEventsPort,
-    companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])) } as unknown as CompanyProfilePort,
+    companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])), listEtfSymbols: async () => ETF_SYMBOLS } as unknown as CompanyProfilePort,
     etfData: { listEtfDividendsForRange: async () => [etfRow('00939', '2026-09-15'), etfRow('00940', '2026-10-15', { distribution_per_unit: null })] } as unknown as EtfDataPort,
   });
 

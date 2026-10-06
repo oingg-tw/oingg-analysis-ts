@@ -50,7 +50,7 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
     status: 'announced' as const,
     paymentDate: null,
     fiscalYear: null,
-    // twse 預告表只收個股，ETF 的收益分配走 sitca 那條（見 application/stocks/service.ts 的合併邏輯）。
+    // 預告表也含 ETF，ETF 標記與金額欄位由 application/stocks/service.ts 依 ETF 名單改寫（2026-10-06），這裡先一律給 COMMON。
     securityType: 'COMMON' as const,
     recordDate: null,
     distributionPerUnit: null,

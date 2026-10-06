@@ -206,13 +206,21 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
     announcedStart <= endDate ? deps.market.getExDividendCalendar(announcedStart, endDate) : Promise.resolve([]),
     realizedEnd >= startDate ? deps.dividendEvents.listRealizedExDividendRows(startDate, realizedEnd) : Promise.resolve([]),
     // 2026-09-23：ETF 的收益分配整段都從 sitca 來（不分 announced/realized）——FundClear 的資料同時含已發生與
-    // 已公告未發生的分配，所以查整個區間、不用今天切。ETF 不會出現在上面兩個來源裡（twse 預告表只收個股、
+    // 已公告未發生的分配，所以查整個區間、不用今天切。ETF 不會出現在 mops 那個來源裡（
     // mops dividend_distribution 是上市櫃公司的股利分派決議，實測 00 開頭零筆）。
     deps.etfData.listEtfDividendsForRange(startDate, endDate),
   ]);
 
-  const nameMap = await deps.companyProfiles.getCompanyNamesForSymbols(announced.map((r) => r.symbol));
-  const announcedEntries = announced.map((r) => ({ ...r, companyName: nameMap.get(r.symbol) ?? null }));
+  const [nameMap, etfSymbols] = await Promise.all([deps.companyProfiles.getCompanyNamesForSymbols(announced.map((r) => r.symbol)), deps.companyProfiles.listEtfSymbols()]);
+  // 2026-10-06 bff-ts 回報：securityType 原本跟著來源列走——twse 預告表的列一律標 COMMON，sitca 還沒收到同一筆時 ETF 被標成個股，
+  // 下游依 securityType 挑金額欄位（個股 cashDividend、ETF distributionPerUnit）就會挑錯。改依證券本身判斷，跟 GET /securities 的
+  // type=ETF 同一個依據（sitca etf_basic_info；web-nuxt 當初就明講不要靠代號格式猜）。預告表的 cash_dividend 對 ETF 就是每受益權單位
+  // 分配金額（跟 sitca distribution_per_unit 兩邊都有值的 5 筆逐筆相同），同時放進 distributionPerUnit，下游照 securityType 挑欄位才拿得到。
+  const announcedEntries = announced.map((r) =>
+    etfSymbols.has(r.symbol)
+      ? { ...r, securityType: 'ETF' as const, distributionPerUnit: r.cashDividend, companyName: nameMap.get(r.symbol) ?? null }
+      : { ...r, companyName: nameMap.get(r.symbol) ?? null }
+  );
 
   const realizedEntries = realized.map((r) => {
     const cashDividend = sumNonNull(r.cashDividendFromEarnings, r.cashDividendFromLegalReserveAndCapitalSurplus);
@@ -300,7 +308,7 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date, deps
       securityType: 'ETF' as const,
       recordDate: e.recordDate,
       composition: e.composition,
-      distributionPerUnit: e.distributionPerUnit,
+      distributionPerUnit: e.distributionPerUnit ?? existing.distributionPerUnit, // sitca 還沒公布金額時保留預告表的
       // 預告表的 companyName 要查 profile 而 ETF 不在 company_profile 裡，通常是 null；用基金名稱補。
       companyName: existing.companyName ?? e.companyName,
     });

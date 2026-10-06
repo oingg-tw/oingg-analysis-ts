@@ -53,4 +53,6 @@ export interface CompanyProfilePort {
   countAllCompanyNames(): Promise<number>;
   listAllSecurityNames(limit: number, offset: number): Promise<{ count: number; entries: SecurityEntry[] }>;
   countAllSecurityNames(): Promise<number>;
+  // GET /securities 標成 ETF 的那批代號（sitca etf_basic_info），給除權息日曆判斷 securityType。
+  listEtfSymbols(): Promise<Set<string>>;
 }

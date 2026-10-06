@@ -8072,7 +8072,7 @@
                             "type": "object"
                           },
                           "distributionPerUnit": {
-                            "description": "2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用",
+                            "description": "2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用。2026-10-06 起 ETF 的金額一律看這個欄位：sitca 還沒公布金額時用證交所預告表的金額補上（兩邊都有值時實測相同）；ETF 列的 cashDividend 可能也有值（預告表原值），以這裡為準。",
                             "nullable": true,
                             "type": "number"
                           },
@@ -8105,7 +8105,7 @@
                             "type": "string"
                           },
                           "securityType": {
-                            "description": "2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。",
+                            "description": "2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。2026-10-06 起依證券本身判斷（跟 GET /securities 的 type=ETF 同一份名單），不再跟著資料來源走——之前 sitca 還沒收到的 ETF 預告列會被標成 COMMON。",
                             "enum": [
                               "COMMON",
                               "ETF"
@@ -8271,7 +8271,7 @@
                               "type": "object"
                             },
                             "distributionPerUnit": {
-                              "description": "2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用",
+                              "description": "2026-09-23 新增：每受益權單位分配金額（元），只有 ETF 列有值。個股的每股現金股利仍在 cashDividend，兩者不要混用。2026-10-06 起 ETF 的金額一律看這個欄位：sitca 還沒公布金額時用證交所預告表的金額補上（兩邊都有值時實測相同）；ETF 列的 cashDividend 可能也有值（預告表原值），以這裡為準。",
                               "nullable": true,
                               "type": "number"
                             },
@@ -8304,7 +8304,7 @@
                               "type": "string"
                             },
                             "securityType": {
-                              "description": "2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。",
+                              "description": "2026-09-23 新增：COMMON = 個股（含特別股），ETF = 指數股票型基金的收益分配。下面三個欄位只有 ETF 列有值。2026-10-06 起依證券本身判斷（跟 GET /securities 的 type=ETF 同一份名單），不再跟著資料來源走——之前 sitca 還沒收到的 ETF 預告列會被標成 COMMON。",
                               "enum": [
                                 "COMMON",
                                 "ETF"

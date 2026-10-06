@@ -542,6 +542,13 @@ export const countAllSecurityNames = async (): Promise<number> => {
   return new Set([...securityRows.map((r) => r.symbol), ...etfRows.map((r) => r.symbol)]).size;
 };
 
+// 2026-10-06 除權息日曆／觀察清單的 securityType 改依證券本身判斷，跟 GET /securities 的 type=ETF 同一個依據（sitca etf_basic_info），
+// 不靠代號格式猜（見上方 type 欄位的說明）。
+const listEtfSymbols = async (): Promise<Set<string>> => {
+  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."etf_basic_info"`;
+  return new Set(rows.map((r) => r.symbol));
+};
+
 // application/ports/companyProfiles.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
 export const exchangeCompanyProfiles: CompanyProfilePort = {
   getCompanyNamesForSymbols,
@@ -552,4 +559,5 @@ export const exchangeCompanyProfiles: CompanyProfilePort = {
   countAllCompanyNames,
   listAllSecurityNames,
   countAllSecurityNames,
+  listEtfSymbols,
 };
