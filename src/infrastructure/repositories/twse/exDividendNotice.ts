@@ -11,7 +11,7 @@ import type { ExDividendCalendarEntry, ExDividendNoticeEntry } from '@/applicati
 // 呼叫端要自己拿 exDate 對 daily_price 算除權息參考價/調整報酬率。
 // entry 型別 2026-09-17 Phase 4 搬到 application/ports/marketData.ts（對外回應的 zod schema 在
 // http/modules/stocks/types.ts），這裡 re-export 給既有 import 路徑。
-export type { ExDividendNoticeEntry, ExDividendCalendarEntry };
+export type { ExDividendCalendarEntry };
 
 // Postgres 的 numeric 欄位透過 $queryRaw 回來是字串（node-postgres 預設不轉成 JS number，
 // 避免大數字精度問題），不是 number——之前 evEbitda/marketRatios 這些既有指標都是這樣處理，
@@ -30,44 +30,9 @@ interface RawExDividendNoticeRow {
   stock_holding_ratio: string | null;
 }
 
-// 給個股頁面「下次除權息」提示、跟觀察清單「近期除權息」卡片用。只回傳「今天（含）以後」
-// 的預告事件——這張表本身可能還留著剛過去幾天的紀錄，不是自動只存未來的，呼叫端要的是
-// 「接下來要發生的事」不是「歷史紀錄」，所以這裡篩掉過去日期，不是原封不動照搬整張表。
-// 查不到的 symbol 直接不會出現在回傳的 map 裡（跟 getStockPrices 同一種慣例），不是空陣列。
-export const getUpcomingExDividendNotices = async (symbols: string[]): Promise<Record<string, ExDividendNoticeEntry[]>> => {
-  const rows = await twseExportPrisma.$queryRaw<RawExDividendNoticeRow[]>`
-    SELECT symbol, ex_date, ex_type, stock_dividend_ratio, subscription_ratio, subscription_price_per_share,
-      cash_dividend, shares_offered, shares_emp_owner, sharesholder_owner, stock_holding_ratio
-    FROM "export"."ex_dividend_notice"
-    WHERE symbol = ANY(${symbols}) AND ex_date >= CURRENT_DATE
-    ORDER BY ex_date ASC
-  `;
-
-  const toNumber = (value: string | null): number | null => (value === null ? null : Number(value));
-
-  const result: Record<string, ExDividendNoticeEntry[]> = {};
-  for (const row of rows) {
-    const entry: ExDividendNoticeEntry = {
-      exDate: row.ex_date.toISOString().slice(0, 10),
-      exType: row.ex_type as ExDividendNoticeEntry['exType'],
-      stockDividendRatio: toNumber(row.stock_dividend_ratio),
-      subscriptionRatio: toNumber(row.subscription_ratio),
-      subscriptionPricePerShare: toNumber(row.subscription_price_per_share),
-      cashDividend: toNumber(row.cash_dividend),
-      sharesOffered: toNumber(row.shares_offered),
-      sharesEmpOwner: toNumber(row.shares_emp_owner),
-      sharesholderOwner: toNumber(row.sharesholder_owner),
-      stockHoldingRatio: toNumber(row.stock_holding_ratio),
-    };
-    (result[row.symbol] ??= []).push(entry);
-  }
-  return result;
-};
-
 // 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現，不是針對某個
-// 使用者的觀察清單），既有的 getUpcomingExDividendNotices 要求先給 symbols 清單，
-// 無法回答「這個月全市場會發生什麼事」——這支不帶 symbol 篩選，直接查整個時間區間。
-// 不篩「只看未來」（跟 getUpcomingExDividendNotices 不同）——月曆情境本身就是呼叫端
+// 使用者的觀察清單）——這支不帶 symbol 篩選，直接查整個時間區間。2026-10-06 起觀察清單（GET /stocks/ex-dividend-notices）
+// 也走這支再依 symbol 篩，原本只查未來、依 symbol 的那支已刪。不篩「只看未來」——月曆情境本身就是呼叫端
 // 自己決定要看哪個月，可能是本月已經過去一半的事件，也是合理的查詢。
 export const getExDividendCalendar = async (startDate: Date, endDate: Date): Promise<ExDividendCalendarEntry[]> => {
   const rows = await twseExportPrisma.$queryRaw<RawExDividendNoticeRow[]>`

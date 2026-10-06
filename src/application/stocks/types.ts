@@ -1,4 +1,4 @@
-import type { DailyPriceHistoryEntry, ExDividendCalendarEntry, ExDividendNoticeEntry, ForeignShareholdingEntry, StockPledgeRatioEntry } from '@/application/ports/marketData';
+import type { DailyPriceHistoryEntry, ExDividendCalendarEntry, ForeignShareholdingEntry, StockPledgeRatioEntry } from '@/application/ports/marketData';
 
 // GET /stocks/* 回應的形狀（application 真理來源）——http/modules/stocks/types.ts 的 zod schema 用
 // `satisfies z.ZodType<...>` 釘住，兩邊不會漂。
@@ -50,7 +50,7 @@ export interface StockPricesResult {
 }
 
 export interface ExDividendNoticesResult {
-  notices: Record<string, ExDividendNoticeEntry[]>;
+  notices: Record<string, ExDividendCalendarResult['entries']>; // 2026-10-06 起跟月曆同一種列（見 service.ts getExDividendNotices）
 }
 
 export interface ExDividendCalendarResult {

@@ -147,16 +147,38 @@ export const getStockPrices = async (symbols: string[], deps: StocksDeps): Promi
 
 // 給個股頁面「下次除權息」提示、觀察清單「近期除權息」卡片用——2026-09-04 應 web-nuxt
 // 要求新增，同一個 symbol 參數同時支援單一公司（個股頁面）跟多公司批次查詢（觀察清單），
-// 跟 getStockPrices 同一種慣例。只有 TWSE 有這份資料（見
-// infrastructure/repositories/twse/exDividendNotice.ts 的說明），沒有除權息預告的 symbol 直接不會
-// 出現在回傳的 notices 裡，不是空陣列。
+// 跟 getStockPrices 同一種慣例。沒有事件的 symbol 直接不會出現在回傳的 notices 裡，不是空陣列。
+//
+// 2026-10-06 使用者拍板（web-nuxt 提議）：改用下面月曆那套合併資料（twse 預告表＋mops 股利分派公告＋sitca ETF 收益分配），
+// 依 symbol 篩出「還沒除息」或「已除息但發放日還沒到」的事件。原因兩個（2026-10-06 實測）：(1) 只讀 twse 預告表時
+// 觀察清單裡的 ETF 大多查不到——預告表只收 8 組左右的 ETF，sitca 那邊尚未除息的 ETF 事件有 100 筆；(2) 預告列一律沒有
+// 發放日、ETF 金額要到除息前幾天才公布，真正需要發放日的是「已除息、還沒發錢」那 3～5 週（當天 157 筆、全部有發放日）。
+// status 分辨兩者：announced = 還沒除息、realized = 已除息待發放；個股頁「下次除權息」要自己篩 announced。
+// 已除息但沒有發放日（純除權、或公告沒填）的列不給——沒辦法說它「還沒發」。
+// ponytail: 查全市場月曆再篩 symbol（往回 60 天＋往後 365 天）；觀察清單一次幾十檔、一天幾百列，慢了再把 symbol 篩選推進三個查詢。
+const UNPAID_LOOKBACK_DAYS = 60; // 2026-10-06 實測除息→發放最久 37 天（個股 p95 35、ETF p95 29）
+const NOTICE_LOOKAHEAD_DAYS = 365;
 export const getExDividendNotices = async (symbols: string[], deps: StocksDeps): Promise<ExDividendNoticesResult> => {
-  const notices = await deps.market.getUpcomingExDividendNotices(symbols);
+  if (symbols.length === 0) return { notices: {} };
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const todayIso = toIso(today)!;
+  const { entries } = await getExDividendCalendar(
+    new Date(today.getTime() - UNPAID_LOOKBACK_DAYS * 86_400_000),
+    new Date(today.getTime() + NOTICE_LOOKAHEAD_DAYS * 86_400_000),
+    deps
+  );
+  const wanted = new Set(symbols);
+  const notices: ExDividendNoticesResult['notices'] = {};
+  for (const entry of entries) {
+    if (!wanted.has(entry.symbol)) continue;
+    if (entry.exDate < todayIso && !(entry.paymentDate !== null && entry.paymentDate >= todayIso)) continue;
+    (notices[entry.symbol] ??= []).push(entry);
+  }
   return { notices };
 };
 
 // 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現），不是針對已知的
-// symbol 清單查——跟上面 getExDividendNotices 用同一份 export.ex_dividend_notice 資料源，
+// symbol 清單查——2026-10-06 起上面 getExDividendNotices 反過來重用這支（依 symbol 篩），
 // 差別是不帶 symbol 篩選、改用日期區間，並附上 companyName（月曆情境需要顯示公司名稱，
 // 不只是代號）。
 // 2026-09-22 web-nuxt：月曆要能往回翻。twse 預告表（ex_dividend_notice）只有「已公告、尚未發生」的事件，

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { getExDividendCalendar } from '@/application/stocks/service';
+import { getExDividendCalendar, getExDividendNotices } from '@/application/stocks/service';
 import type { CompanyProfilePort } from '@/application/ports/companyProfiles';
 import type { DividendEventsPort, RealizedExDividendRow } from '@/application/ports/dividendEvents';
 import type { ExDividendCalendarEntry, MarketDataPort } from '@/application/ports/marketData';
@@ -194,5 +194,50 @@ describe('getExDividendCalendar', () => {
     expect(calls.realized).toBeUndefined();
     expect(calls.announced!.map((d) => d.toISOString().slice(0, 10))).toEqual(['2026-11-01', '2026-11-30']);
     expect(calls.etf!.map((d) => d.toISOString().slice(0, 10))).toEqual(['2026-11-01', '2026-11-30']);
+  });
+});
+
+// 2026-10-06 使用者拍板：觀察清單改用月曆那套合併資料，只留「還沒除息」與「已除息、發放日還沒到」。
+describe('getExDividendNotices', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T03:00:00Z'));
+    calls = {};
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const noticeDeps = createTestDeps({
+    market: { getExDividendCalendar: async () => [notice('2330', '2026-09-25')] } as unknown as MarketDataPort,
+    dividendEvents: {
+      listRealizedExDividendRows: async (s: Date, e: Date) => (
+        (calls.realized = [s, e]),
+        [
+          realized('2614', '2026-09-06'), // 已除息、10-22 才發 → 留
+          realized('2890', '2026-08-20', { cashDividendPaymentDate: new Date('2026-09-15') }), // 已發放 → 不留
+          realized('2891', '2026-09-10', { cashDividendPaymentDate: null }), // 沒有發放日 → 不留
+        ]
+      ),
+    } as unknown as DividendEventsPort,
+    companyProfiles: { getCompanyNamesForSymbols: async (symbols: string[]) => new Map(symbols.map((s) => [s, `${s}簡稱`])) } as unknown as CompanyProfilePort,
+    etfData: { listEtfDividendsForRange: async () => [etfRow('00939', '2026-09-15'), etfRow('00940', '2026-10-15', { distribution_per_unit: null })] } as unknown as EtfDataPort,
+  });
+
+  test('只留請求的 symbol；還沒除息的、已除息待發放的留下，已發放或沒有發放日的不給', async () => {
+    const { notices } = await getExDividendNotices(['2330', '2614', '2890', '2891', '00939', '00940', '9999'], noticeDeps);
+    expect(Object.keys(notices).sort()).toEqual(['00939', '00940', '2330', '2614']);
+    expect(notices['2330']).toMatchObject([{ status: 'announced', exDate: '2026-09-25', paymentDate: null }]);
+    expect(notices['2614']).toMatchObject([{ status: 'realized', paymentDate: '2026-10-22' }]);
+    expect(notices['00939']).toMatchObject([{ status: 'realized', securityType: 'ETF', distributionPerUnit: 0.12, paymentDate: '2026-10-15' }]);
+    expect(notices['00940']).toMatchObject([{ status: 'announced', distributionPerUnit: null }]);
+  });
+
+  test('往回看 60 天（除息→發放實測最久 37 天）', async () => {
+    await getExDividendNotices(['2614'], noticeDeps);
+    expect(calls.realized![0].toISOString().slice(0, 10)).toBe('2026-07-24');
+  });
+
+  test('空清單不查', async () => {
+    expect(await getExDividendNotices([], noticeDeps)).toEqual({ notices: {} });
+    expect(calls.realized).toBeUndefined();
   });
 });

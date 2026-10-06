@@ -1,6 +1,30 @@
 {
   "status": 200,
   "body": {
-    "notices": {}
+    "notices": {
+      "2330": [
+        {
+          "cashDividend": "<number>",
+          "companyName": "<string>",
+          "composition": "<null>",
+          "distributionPerUnit": "<null>",
+          "exDate": "<date>",
+          "exType": "<string>",
+          "fiscalYear": "<number>",
+          "paymentDate": "<date>",
+          "recordDate": "<null>",
+          "securityType": "COMMON",
+          "sharesEmpOwner": "<null>",
+          "sharesholderOwner": "<null>",
+          "sharesOffered": "<null>",
+          "status": "realized",
+          "stockDividendRatio": "<null>",
+          "stockHoldingRatio": "<null>",
+          "subscriptionPricePerShare": "<null>",
+          "subscriptionRatio": "<null>",
+          "symbol": "<numeric-string>"
+        }
+      ]
+    }
   }
 }

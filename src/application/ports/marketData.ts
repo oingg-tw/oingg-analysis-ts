@@ -153,8 +153,6 @@ export interface StockHistoryPort {
   getRecentClosesBatch(symbols: string[]): Promise<Map<string, DailyPriceAsOf[]>>;
   // 依交易日新到舊取最近 limit 筆再反轉成舊到新。
   getDailyPriceHistory(symbol: string, limit: number): Promise<DailyPriceHistory>;
-  // 只回「今天（含）以後」的除權息預告，查不到的 symbol 不會出現在物件裡。
-  getUpcomingExDividendNotices(symbols: string[]): Promise<Record<string, ExDividendNoticeEntry[]>>;
   // 日期區間內全市場的除權息事件（不篩未來），依 exDate、symbol 升冪。
   getExDividendCalendar(startDate: Date, endDate: Date): Promise<ExDividendCalendarEntry[]>;
   // 依日期新到舊取最近 limit 筆。

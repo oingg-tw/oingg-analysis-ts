@@ -3,7 +3,7 @@ import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getOutstandingCommonSharesAsOf, getParRows } from '../mops/capitalStock';
 import { getDailyValuationAsOf, getLatestDailyPrice, getLatestDailyPricesBatch, getRecentClosesBatch, getDailyPriceHistory } from '../exchange/twseMarketData';
 import { getEarliestTradeDate, listClosesBothExchanges, listDailyClosesSince, listTaiexClosesSince } from './dailyPriceSeries';
-import { getExDividendCalendar, getUpcomingExDividendNotices } from './exDividendNotice';
+import { getExDividendCalendar } from './exDividendNotice';
 import { getForeignShareholdingHistory } from './foreignShareholding';
 import { getStockPledgeRatioHistory } from './stockPledgeRatio';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
@@ -110,7 +110,6 @@ export const twseMarketData: MarketDataPort = {
   getLatestDailyPricesBatch,
   getRecentClosesBatch,
   getDailyPriceHistory,
-  getUpcomingExDividendNotices,
   getExDividendCalendar,
   getForeignShareholdingHistory,
   getStockPledgeRatioHistory,

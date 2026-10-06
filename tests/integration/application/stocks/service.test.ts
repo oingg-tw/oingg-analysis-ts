@@ -62,7 +62,9 @@ test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，�
   const entries = result.notices[sample[0].symbol]!;
   assert.ok(entries.some((e) => e.exDate === sample[0]!.ex_date.toISOString().slice(0, 10) && e.exType === sample[0]!.ex_type));
   for (const entry of entries) {
-    assert.ok(entry.exDate >= new Date().toISOString().slice(0, 10), '只應該回傳今天以後的事件');
+    // 2026-10-06 起：還沒除息（announced），或已除息但發放日還沒到（realized、paymentDate 一定 >= 今天）。
+    const today = new Date().toISOString().slice(0, 10);
+    assert.ok(entry.status === 'announced' ? entry.exDate >= today : entry.paymentDate !== null && entry.paymentDate >= today, '只應該回傳還沒除息或還沒發放的事件');
     assert.ok(['息', '權', '權息'].includes(entry.exType));
     // numeric 欄位鎖死要是真正的 JS number，不是 Postgres 驅動預設回傳的字串——這裡曾經
     // 漏做 Number() 轉換，型別宣告寫 number 但實際回傳字串，bff-ts 那邊照型別寫驗證邏輯

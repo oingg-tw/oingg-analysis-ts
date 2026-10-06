@@ -78,20 +78,19 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/stocks/ex-dividend-notices',
-    summary: '批次查詢多家公司/ETF 的除權息預告',
+    summary: '批次查詢多家公司/ETF 即將除權息、或已除權息待發放的事件',
     description:
       '同一支端點同時支援個股頁面「下次除權息」提示（傳單一 symbol）跟觀察清單「近期除權息」卡片（傳多個 symbol）——' +
-      '跟 GET /stocks/prices 同一種批次查詢慣例。資料來源是 twse-ts 的 export.ex_dividend_notice（TWSE TWT48U_ALL），' +
-      '只有 TWSE 上市有這份資料，TPEx 沒有對應資料源，也不是只有一般股票——ETF（例如 00939）也會出現在裡面。' +
-      '純原始公告資料，沒有還原參考價這類衍生欄位。只回傳「今天（含）以後」的預告事件——這張表本身可能還留著剛過去幾天的紀錄，' +
-      '這支端點過濾掉，只給接下來要發生的事。查不到除權息預告的 symbol 不會出現在 notices 物件裡，不是空陣列。' +
-      'exType 只有三種值：息（純除息）、權（純除權）、權息（合併發放）——是同一筆事件用這個欄位標示類型，不是除權/除息各自分開一筆。' +
-      '純除息時權證相關欄位（stockDividendRatio/subscriptionRatio/subscriptionPricePerShare 等）是 null，只有 cashDividend 有值。',
+      '跟 GET /stocks/prices 同一種批次查詢慣例。2026-10-06 起每一筆的形狀、資料來源都跟 GET /stocks/ex-dividend-calendar 相同' +
+      '（twse 除權息預告表＋mops 股利分派公告＋sitca ETF 收益分配合併；還沒除權息的個股只有上市——預告表只收上市，上櫃個股只會以已除權息待發放出現），只是依 symbols 篩、並只留兩種事件：' +
+      '還沒除權息的（status=announced）、已除權息但現金發放日還沒到的（status=realized，paymentDate 一定有值）。' +
+      '已除權息而沒有發放日的事件不會出現。個股頁「下次除權息」只取 announced。還沒除權息的個股列 paymentDate 一律 null（預告表沒有這個欄位），ETF 列發行商公布了就有；' +
+      'ETF 的 distributionPerUnit 要到發行商公布金額才有值，通常是除息前幾天。各欄位的意思見 ex-dividend-calendar。',
     tags: ['Stocks'],
     request: { query: symbolsQuerySchema },
     responses: {
       200: {
-        description: '以 symbol 為 key 的除權息預告陣列對照表（同一檔可能有多筆未來事件），查不到的 symbol 不會出現在裡面。',
+        description: '以 symbol 為 key 的事件陣列對照表（同一檔可能有多筆），沒有事件的 symbol 不會出現在裡面。',
         content: { 'application/json': { schema: exDividendNoticesResultSchema } },
       },
       400: { description: '請求的參數格式錯誤，或 symbols 超過一次上限。' },
