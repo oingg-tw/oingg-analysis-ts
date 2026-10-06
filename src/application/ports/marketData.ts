@@ -148,6 +148,9 @@ export interface StockPledgeRatioEntry {
 export interface StockHistoryPort {
   // 一次查多家公司的最新股價，查不到的 symbol 不會出現在 Map 裡。
   getLatestDailyPricesBatch(symbols: string[]): Promise<Map<string, DailyPriceAsOf>>;
+  // 每家公司上市、上櫃各自最近 2 筆「有收盤價」的列（沒成交的日子 close 是 NULL，不算），兩市合併、新到舊。
+  // 給 GET /stocks/prices 的 previousClose 挑「tradeDate 之前最近一筆」用；各市 2 筆就夠——同一市場裡最多一筆跟最新交易日同一天。
+  getRecentClosesBatch(symbols: string[]): Promise<Map<string, DailyPriceAsOf[]>>;
   // 依交易日新到舊取最近 limit 筆再反轉成舊到新。
   getDailyPriceHistory(symbol: string, limit: number): Promise<DailyPriceHistory>;
   // 只回「今天（含）以後」的除權息預告，查不到的 symbol 不會出現在物件裡。

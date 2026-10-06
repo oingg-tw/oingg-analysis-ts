@@ -67,7 +67,17 @@ export const stockSummaryResultSchema = z.object({
 }) satisfies z.ZodType<StockSummaryResult>;
 
 export const stockPricesResultSchema = z.object({
-  prices: z.record(z.string(), z.object({ close: z.number().nullable(), tradeDate: z.string() })).meta({
+  prices: z.record(
+    z.string(),
+    z.object({
+      close: z.number().nullable(),
+      tradeDate: z.string(),
+      previousClose: z.number().nullable().meta({
+        description: 'tradeDate 之前最近一筆有成交的收盤價（前一天沒成交就往前找最後一個真的收盤價），原始收盤價、不是除權息參考價。新掛牌/ETF 第一天沒有更早的成交 → null',
+      }),
+      previousTradeDate: z.string().nullable().meta({ description: 'previousClose 那一天，"YYYY-MM-DD"；跟 tradeDate 之間可能隔著沒成交的交易日' }),
+    }),
+  ).meta({
     description: 'key 是 symbol，查不到的 symbol 直接不出現（不是回傳 null 值）',
   }),
 }) satisfies z.ZodType<StockPricesResult>;

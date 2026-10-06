@@ -8346,13 +8346,25 @@
                             "nullable": true,
                             "type": "number"
                           },
+                          "previousClose": {
+                            "description": "tradeDate 之前最近一筆有成交的收盤價（前一天沒成交就往前找最後一個真的收盤價），原始收盤價、不是除權息參考價。新掛牌/ETF 第一天沒有更早的成交 → null",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "previousTradeDate": {
+                            "description": "previousClose 那一天，\"YYYY-MM-DD\"；跟 tradeDate 之間可能隔著沒成交的交易日",
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "tradeDate": {
                             "type": "string"
                           }
                         },
                         "required": [
                           "close",
-                          "tradeDate"
+                          "tradeDate",
+                          "previousClose",
+                          "previousTradeDate"
                         ],
                         "type": "object"
                       },

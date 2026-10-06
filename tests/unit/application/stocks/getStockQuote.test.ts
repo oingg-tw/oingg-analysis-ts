@@ -11,10 +11,17 @@ import { createTestDeps } from '../../../fakes/createTestDeps';
 
 const companyProfiles = (exists: boolean): Pick<CompanyProfilePort, 'companyExists'> => ({ companyExists: async () => exists });
 
-const market = (latest: { tradeDate: Date; close: number | null } | null, batch: Map<string, { tradeDate: Date; close: number | null }> = new Map()): Pick<MarketDataPort, 'getLatestDailyPrice' | 'getLatestDailyPricesBatch'> => ({
+type Price = { tradeDate: Date; close: number | null };
+const market = (
+  latest: Price | null,
+  batch: Map<string, Price> = new Map(),
+  closes: Map<string, Price[]> = new Map(),
+): Pick<MarketDataPort, 'getLatestDailyPrice' | 'getLatestDailyPricesBatch' | 'getRecentClosesBatch'> => ({
   getLatestDailyPrice: async () => latest,
   getLatestDailyPricesBatch: async () => batch,
+  getRecentClosesBatch: async () => closes,
 });
+const day = (iso: string): Date => new Date(`${iso}T00:00:00.000Z`);
 
 const snapshots = (values: Record<string, { tradeDate: Date; value: number | null } | null>): Pick<MetricValueQueryPort, 'findLatestSnapshotValue'> => ({
   findLatestSnapshotValue: async (_symbol, metricCode) => values[metricCode] ?? null,
@@ -61,6 +68,34 @@ describe('getStockPrices', () => {
     const deps = createTestDeps({
       market: market(null, new Map([['2330', { tradeDate: new Date('2026-09-15T00:00:00.000Z'), close: 2385 }]])) as MarketDataPort,
     });
-    expect(await getStockPrices(['2330', '0000'], deps)).toEqual({ prices: { '2330': { close: 2385, tradeDate: '2026-09-15' } } });
+    expect(await getStockPrices(['2330', '0000'], deps)).toEqual({
+      prices: { '2330': { close: 2385, tradeDate: '2026-09-15', previousClose: null, previousTradeDate: null } },
+    });
+  });
+
+  // 2026-10-06 bff-ts 觀察清單：previousClose = tradeDate 之前最近一筆有成交的收盤價（兩市合併後的清單，新到舊）。
+  test('previousClose：一般、前一天沒成交往前找、新掛牌 null、轉板跨市場', async () => {
+    const deps = createTestDeps({
+      market: market(
+        null,
+        new Map([
+          ['2330', { tradeDate: day('2026-10-05'), close: 2575 }],
+          ['2064', { tradeDate: day('2026-10-05'), close: null }], // 今天沒成交
+          ['0099', { tradeDate: day('2026-10-05'), close: 15 }], // 新掛牌第一天
+          ['8476', { tradeDate: day('2026-10-05'), close: 300 }], // 轉上市第一天，前一筆在上櫃
+        ]),
+        new Map([
+          ['2330', [{ tradeDate: day('2026-10-05'), close: 2575 }, { tradeDate: day('2026-10-02'), close: 2550 }]],
+          ['2064', [{ tradeDate: day('2026-09-23'), close: 40 }, { tradeDate: day('2026-09-22'), close: 41 }]],
+          ['0099', [{ tradeDate: day('2026-10-05'), close: 15 }]],
+          ['8476', [{ tradeDate: day('2026-10-05'), close: 300 }, { tradeDate: day('2026-10-02'), close: 290 }, { tradeDate: day('2026-10-01'), close: 285 }]],
+        ]),
+      ) as MarketDataPort,
+    });
+    const { prices } = await getStockPrices(['2330', '2064', '0099', '8476'], deps);
+    expect(prices['2330']).toMatchObject({ previousClose: 2550, previousTradeDate: '2026-10-02' });
+    expect(prices['2064']).toMatchObject({ close: null, previousClose: 40, previousTradeDate: '2026-09-23' });
+    expect(prices['0099']).toMatchObject({ previousClose: null, previousTradeDate: null });
+    expect(prices['8476']).toMatchObject({ previousClose: 290, previousTradeDate: '2026-10-02' });
   });
 });

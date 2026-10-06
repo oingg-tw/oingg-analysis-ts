@@ -124,12 +124,23 @@ export const getStockSummary = async (symbol: string, deps: StocksDeps): Promise
 // 給 bff-ts 的 GET /stocks/prices?symbols=... 用——他們的用法是「給我這確切幾檔的股價」
 // （一次最多幾十檔，screener 一頁的量），不是開放式查詢，所以這支刻意不做 limit/count_only：
 // 查不到的 symbol 就不會出現在 prices 物件裡，不是靜默截斷成某個數量以內。
+//
+// 2026-10-06 bff-ts（觀察清單改版，使用者確認過）要前一交易日收盤價算漲跌，省掉每檔一次 daily-price-history?limit=2。
+// previousClose = tradeDate 之前最近一筆「有成交」的收盤價：前一天沒成交（daily_price 有列但 close 是 NULL）就往前找到
+// 最後一個真的收盤價，previousTradeDate 照實給那一天，呼叫端看得出中間隔了幾天。新掛牌/ETF 第一天沒有更早的列 → 兩個都 null。
+// 轉板公司兩市一起看。原始收盤價，不是除權息參考價——除權息當天用它算的漲跌會包含配息造成的價差（交易所沒有給參考價欄位）。
 export const getStockPrices = async (symbols: string[], deps: StocksDeps): Promise<StockPricesResult> => {
-  const priceMap = await deps.market.getLatestDailyPricesBatch(symbols);
+  const [priceMap, closesMap] = await Promise.all([deps.market.getLatestDailyPricesBatch(symbols), deps.market.getRecentClosesBatch(symbols)]);
 
   const prices: StockPricesResult['prices'] = {};
   for (const [symbol, price] of priceMap) {
-    prices[symbol] = { close: price.close, tradeDate: price.tradeDate.toISOString().slice(0, 10) };
+    const previous = closesMap.get(symbol)?.find((row) => row.tradeDate < price.tradeDate) ?? null;
+    prices[symbol] = {
+      close: price.close,
+      tradeDate: price.tradeDate.toISOString().slice(0, 10),
+      previousClose: previous?.close ?? null,
+      previousTradeDate: previous ? previous.tradeDate.toISOString().slice(0, 10) : null,
+    };
   }
   return { prices };
 };

@@ -158,3 +158,27 @@ export const getLatestDailyPricesBatch = async (symbols: string[]): Promise<Map<
   }
   return result;
 };
+
+// 2026-10-06 bff-ts（觀察清單改版）要 GET /stocks/prices 多帶前一交易日收盤價：每家公司兩市各自最近 2 筆有收盤價的列。
+// 兩市都查是為了轉板公司——轉板後第一天在新市場沒有前一筆，前一個收盤價在舊市場。挑哪一筆由 application 決定。
+export const getRecentClosesBatch = async (symbols: string[]): Promise<Map<string, DailyPriceAsOf[]>> => {
+  if (symbols.length === 0) return new Map();
+  const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
+    db.$queryRaw<{ symbol: string; trade_date: Date; close: unknown }[]>`
+      SELECT s.symbol, p.trade_date, p.close FROM unnest(${symbols}::text[]) AS s(symbol)
+      CROSS JOIN LATERAL (
+        SELECT trade_date, close FROM "export"."daily_price"
+        WHERE symbol = s.symbol AND close IS NOT NULL
+        ORDER BY trade_date DESC LIMIT 2
+      ) p
+    `;
+  const [twseRows, tpexRows] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)]);
+  const result = new Map<string, DailyPriceAsOf[]>();
+  for (const row of [...twseRows, ...tpexRows]) {
+    const list = result.get(row.symbol) ?? [];
+    list.push({ tradeDate: row.trade_date, close: toNullableNumber(row.close) });
+    result.set(row.symbol, list);
+  }
+  for (const list of result.values()) list.sort((a, b) => b.tradeDate.getTime() - a.tradeDate.getTime());
+  return result;
+};
