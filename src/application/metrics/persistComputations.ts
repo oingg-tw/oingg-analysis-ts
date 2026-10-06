@@ -162,6 +162,8 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
     (await deps.industry.isFinancialIndustryCompany(input.symbol))
       ? 'not_applicable_industry'
       : input.nullReason;
+  // 2026-10-06 比對既有列也要用改標後的 nullReason：原本拿改標前的 input 去比，金融股這些列每次重跑都判成「變了」、寫回同一個值
+  // （10 家金融股 turnoverRatio 乾跑 316 筆會變的根因；所有 notApplicableToFinancialIndustry 的指標都一樣）。
 
   const formulaVersion = input.formulaVersion ?? 1;
   const values = {
@@ -183,7 +185,7 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
       subsidiaryCompanyId: input.subsidiaryCompanyId,
     };
     const existing = await deps.metricValues.findLatestPeriodRow(coordinateWhere);
-    const decision = decideWrite(existing, input);
+    const decision = decideWrite(existing, { ...input, nullReason });
     if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
 
     await deps.metricValues.upsertPeriodRow(coordinateWhere, values);
@@ -202,7 +204,7 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
       subsidiaryCompanyId: input.subsidiaryCompanyId,
     };
     const existing = await deps.metricValues.findLatestMonthlyRow(monthlyCoordinateWhere);
-    const decision = decideWrite(existing, input);
+    const decision = decideWrite(existing, { ...input, nullReason });
     if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
 
     await deps.metricValues.upsertMonthlyRow(monthlyCoordinateWhere, values);
@@ -220,7 +222,7 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
     tradeDate: input.tradeDate!,
   };
   const existing = await deps.metricValues.findLatestDailyCadenceRow(dailyCoordinateWhere);
-  const decision = decideWrite(existing, input);
+  const decision = decideWrite(existing, { ...input, nullReason });
   if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
 
   // 同上的原子 upsert 理由——這張表的併發寫入場景更常見，因為逐日型指標本來就是每天重算，

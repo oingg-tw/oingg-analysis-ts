@@ -182,4 +182,11 @@ describe('金融業不適用改標（2026-09-28）', () => {
     await persistOne(roeQ({ symbol: '2881', value: null, nullReason: 'missing_input' }), { metricValues, definitions, industry });
     expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['missing_input', null, 'missing_input']);
   });
+
+  // 2026-10-06：比對既有列要用改標後的 nullReason，否則金融股這些列每次重跑都被判成「變了」（turnoverRatio 316 筆的根因）。
+  test('改標過的列重跑一次是 skipped_unchanged，不是每次都改寫', async () => {
+    const metricValues = createInMemoryMetricValues();
+    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry })).toEqual({ action: 'inserted' });
+    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry })).toEqual({ action: 'skipped_unchanged' });
+  });
 });
