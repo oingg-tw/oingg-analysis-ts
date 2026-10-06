@@ -24,8 +24,8 @@ export type PreferredStockSortField = (typeof PREFERRED_STOCK_SORTABLE_FIELDS)[n
 export interface PreferredStockEntry {
   symbol: string;
   name: string;
-  isinCode: string;
-  listedDate: string;
+  isinCode: string | null;
+  listedDate: string | null;
   marketType: string;
   issueDate: string | null;
   issuePrice: number | null;

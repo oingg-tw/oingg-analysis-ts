@@ -59,8 +59,8 @@ export type ListPreferredStocksDeps = Pick<AppDeps, 'preferredStocks' | 'market'
 // 不同的百分比：nominalDividendRatePct（票面利率，dividendRate/issuePrice，發行時基準，
 // 之後不隨股價變動）跟 currentYieldPct（目前殖利率，dividendRate/最新收盤價，隨股價每天
 // 變動）——兩者是不同概念，不要混為一談（例如 2002A 中鋼特票面利率高達 14%，是 1974 年
-// 發行當時的利率環境，不代表現在買進的殖利率也是 14%）。只涵蓋 TWSE（上市）——TPEx 目前
-// 沒有 isin_securities 這張表，上櫃特別股（如果存在）沒有資料源，是外部缺口不是這批的疏漏。
+// 發行當時的利率環境，不代表現在買進的殖利率也是 14%）。2026-10-06 起涵蓋上市＋上櫃
+// （見 infrastructure/repositories/exchange/preferredStock.ts getPreferredStockSecurities）。
 // 2026-09-17 Phase 4：從 http/modules/preferredStock/controller.ts 搬來，資料存取改走 deps 的 port，邏輯逐字不變。
 export const listPreferredStocks = async (query: ListPreferredStocksQuery, deps: ListPreferredStocksDeps): Promise<PreferredStocksResult> => {
   const { symbol, limit, offset, sortField, sortOrder } = query;
@@ -108,7 +108,7 @@ export const listPreferredStocks = async (query: ListPreferredStocksQuery, deps:
         symbol: security.symbol,
         name: security.name,
         isinCode: security.isinCode,
-        listedDate: security.listedDate.toISOString().slice(0, 10),
+        listedDate: security.listedDate?.toISOString().slice(0, 10) ?? null,
         marketType: security.marketType,
         issueDate: right?.issueDate.toISOString().slice(0, 10) ?? null,
         issuePrice: right?.issuePrice ?? null,

@@ -6,8 +6,13 @@ import type { PreferredStockDataSource, PreferredStockEntry, PreferredStocksResu
 export const preferredStockEntrySchema = z.object({
   symbol: z.string().meta({ description: '特別股本身的證券代號，例如 "1101B"，跟發行公司的普通股代號（"1101"）不同' }),
   name: z.string(),
-  isinCode: z.string(),
-  listedDate: z.string(),
+  isinCode: z.string().nullable().meta({
+    description:
+      '2026-10-06 起可為 null：上櫃特別股，以及證交所停抓 ISIN 網頁之後新掛牌的特別股，都沒有合法的官方來源；不自己推算。',
+  }),
+  listedDate: z.string().nullable().meta({
+    description: '"YYYY-MM-DD"。官方上市日期；查不到時（上櫃、新掛牌）改用行情裡的第一個交易日。兩者都查不到才是 null',
+  }),
   marketType: z.string(),
   issueDate: z.string().nullable(),
   issuePrice: z.number().nullable().meta({ description: '發行價（新台幣元）' }),
@@ -23,7 +28,9 @@ export const preferredStockEntrySchema = z.object({
   convertible: z.boolean().nullable().meta({ description: '是否可轉換為普通股' }),
   conversionStartDate: z.string().nullable(),
   redeemable: z.boolean().nullable().meta({ description: '發行公司是否可強制買回（發行人贖回權/call，不是投資人賣回權/put——這批資料源沒有投資人賣回權的欄位）' }),
-  redemptionDate: z.string().nullable(),
+  redemptionDate: z.string().nullable().meta({
+    description: '得收回日：發行公司**最早可以**收回的日期（可收回期間的起點），不是「已收回」的日期——日期過了、特別股仍在外流通很常見（例如 2887A）',
+  }),
   redemptionConditions: z.string().nullable(),
   redemptionVerified: z.boolean().nullable().meta({
     description:

@@ -6900,6 +6900,8 @@
                             "type": "number"
                           },
                           "isinCode": {
+                            "description": "2026-10-06 起可為 null：上櫃特別股，以及證交所停抓 ISIN 網頁之後新掛牌的特別股，都沒有合法的官方來源；不自己推算。",
+                            "nullable": true,
                             "type": "string"
                           },
                           "issueDate": {
@@ -6925,6 +6927,8 @@
                             "type": "boolean"
                           },
                           "listedDate": {
+                            "description": "\"YYYY-MM-DD\"。官方上市日期；查不到時（上櫃、新掛牌）改用行情裡的第一個交易日。兩者都查不到才是 null",
+                            "nullable": true,
                             "type": "string"
                           },
                           "marketType": {
@@ -6958,6 +6962,7 @@
                             "type": "string"
                           },
                           "redemptionDate": {
+                            "description": "得收回日：發行公司**最早可以**收回的日期（可收回期間的起點），不是「已收回」的日期——日期過了、特別股仍在外流通很常見（例如 2887A）",
                             "nullable": true,
                             "type": "string"
                           },

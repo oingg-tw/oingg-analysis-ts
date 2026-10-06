@@ -5,8 +5,8 @@
 export interface PreferredStockSecurity {
   symbol: string;
   name: string;
-  isinCode: string;
-  listedDate: Date;
+  isinCode: string | null; // 2026-10-06 起可為 null：上櫃、以及證交所停抓 ISIN 網頁後新掛牌的特別股
+  listedDate: Date | null;
   marketType: string;
 }
 

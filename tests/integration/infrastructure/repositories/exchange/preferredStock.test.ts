@@ -16,6 +16,17 @@ test('getPreferredStockSecurities: 應該回傳目前上市中的特別股清單
   assert.equal(taiCement!.marketType, '上市');
 });
 
+// 2026-10-06：上櫃從 tpex-ts 的 tpex_preferred_stock 來（沒有 ISIN、上市日期取第一個交易日）；上市只取 is_active。
+test('getPreferredStockSecurities: 含上櫃 8349A（ISIN null、上市日期 2020-02-24），已下市的 4129A 不出現', async () => {
+  const securities = await getPreferredStockSecurities();
+  const hengyao = securities.find((s) => s.symbol === '8349A');
+  assert.ok(hengyao, '應該找得到上櫃的 8349A');
+  assert.equal(hengyao!.marketType, '上櫃');
+  assert.equal(hengyao!.isinCode, null);
+  assert.equal(hengyao!.listedDate?.toISOString().slice(0, 10), '2020-02-24');
+  assert.ok(!securities.some((s) => s.symbol === '4129A'), '已下市的上櫃特別股不應該出現');
+});
+
 test('getLatestPreferredStockRight: 1101B 的發行條款應該跟實測驗證過的真實數字一致', async () => {
   const right = await getLatestPreferredStockRight('1101B');
   assert.ok(right);
