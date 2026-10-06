@@ -5,7 +5,8 @@ import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
 // 年報只認年報文件，不認「四個單季相加」補出來的累計第四季（UBIQUITOUS_LANGUAGE.md〈三〉）。
 // 2317 114 年（2025）在 2026-09-25 是推導列（mops-ts 還沒 ingest 那份年報），2330 是文件列。
-// 2317 補抓年報後這支的第一個斷言會失敗——那時改成新的推導列案例，不要刪掉這個對照。
+// 2026-10-07：mops-ts 已把推導列全部換成年報文件列（累計表第四季 108～114 年 0 筆 derived_from_quarters），固定代號的對照沒有活樣本了，
+// 改成動態找推導列：有就必須回 null，沒有就跳過（推導列重新出現時這個對照自動恢復）。
 
 test('年報：文件列回傳年報 EPS（2330 114 年 = 66.26）', async () => {
   const r = await mopsAnnualReports.getAnnualIncomeStatement({ symbol: '2330', rocYear: 114, dataType: '2', subsidiaryCompanyId: '' });
@@ -14,9 +15,21 @@ test('年報：文件列回傳年報 EPS（2330 114 年 = 66.26）', async () =>
   assert.equal(r!.reportDate.toISOString().slice(0, 10), '2025-12-31');
 });
 
-test('年報：四季相加補出來的推導列不算年報（2317 114 年 → null）', async () => {
-  const r = await mopsAnnualReports.getAnnualIncomeStatement({ symbol: '2317', rocYear: 114, dataType: '2', subsidiaryCompanyId: '' });
+test('年報：四季相加補出來的推導列不算年報（有推導列時 → null）', async () => {
+  const derived = await mopsExportPrisma.$queryRaw<{ symbol: string; year: number }[]>`
+    SELECT d.symbol, d.year FROM "export"."cumulative_income_statement_xbrl" d
+    WHERE d.quarter = 4 AND d.source = 'derived_from_quarters' AND d.data_type = '2' AND d.subsidiary_company_id = ''
+      AND NOT EXISTS (SELECT 1 FROM "export"."cumulative_income_statement_xbrl" x
+        WHERE x.symbol = d.symbol AND x.year = d.year AND x.quarter = 4 AND x.data_type = '2' AND x.source = 'document')
+    LIMIT 1`;
+  if (!derived[0]) return; // 目前沒有推導列，無從驗證
+  const r = await mopsAnnualReports.getAnnualIncomeStatement({ symbol: derived[0].symbol, rocYear: derived[0].year, dataType: '2', subsidiaryCompanyId: '' });
   assert.equal(r, null);
+});
+
+test('年報：2317 114 年已補成年報文件列', async () => {
+  const r = await mopsAnnualReports.getAnnualIncomeStatement({ symbol: '2317', rocYear: 114, dataType: '2', subsidiaryCompanyId: '' });
+  assert.ok(r);
 });
 
 test('年報：查無該年度 → null', async () => {
