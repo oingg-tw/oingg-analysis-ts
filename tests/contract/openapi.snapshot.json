@@ -2705,6 +2705,14 @@
                     "entries": {
                       "items": {
                         "properties": {
+                          "dataType": {
+                            "description": "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。",
+                            "enum": [
+                              "1",
+                              "2"
+                            ],
+                            "type": "string"
+                          },
                           "fiscalQuarter": {
                             "nullable": true,
                             "type": "number"
@@ -2712,6 +2720,10 @@
                           "fiscalYear": {
                             "description": "西元年（民國+1911）",
                             "type": "number"
+                          },
+                          "formulaVersion": {
+                            "description": "2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。",
+                            "type": "integer"
                           },
                           "knowledgeDate": {
                             "description": "這個值最早可被市場知道的日期（YYYY-MM-DD）。注意這不是「最後更新時間」，不能當快取鍵——公式改版重算時值會被改寫、但 knowledgeDate 不變（2026-09-23 的分母改期間平均就是這樣）。我們重算後會主動通知下游清快取。",
@@ -2745,7 +2757,8 @@
                           "value",
                           "nullReason",
                           "knowledgeDate",
-                          "knowledgeDateIsFallback"
+                          "knowledgeDateIsFallback",
+                          "formulaVersion"
                         ],
                         "type": "object"
                       },

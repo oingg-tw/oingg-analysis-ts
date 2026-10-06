@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, type MetricHistoryDeps, type MetricHistoryResult } from '../../shared/queryMetricHistory';
+import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryDeps, type MetricHistoryResult } from '../../shared/queryMetricHistory';
 import type { PeriodType } from '../../../../domain/metrics/metricBasis';
 
 export const roeHistoryEntrySchema = z.object({
@@ -17,6 +17,9 @@ export const roeHistoryEntrySchema = z.object({
   knowledgeDateIsFallback: z
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),
+  // 2026-10-06 bff-ts 指出：getMetricHistory 一直都有回這兩欄（09-26／09-27 加的），這份 schema 漏了沒跟上，回應本身沒變。
+  dataType: metricHistoryEntrySchema.shape.dataType,
+  formulaVersion: metricHistoryEntrySchema.shape.formulaVersion,
 });
 
 // 給前端畫圖用：單一公司 ROE 歷史時序，第一支直接對外曝露 metric_values（不是
