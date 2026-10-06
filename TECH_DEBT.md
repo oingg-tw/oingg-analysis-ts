@@ -11,7 +11,7 @@
 
 - **PRD 上線時機**：DEV 已累積一大批還沒上 PRD 的變更——roce 刪除（PRD 要一併刪 DB 列）、股數修正、FY109、cashPerShare、
   migration、8/28 起證交所殖利率空白當 0 的重算、興櫃半年頻、溯源表全覆蓋＋periodType、ROE 年度版（FY）、神奇公式接進每日重算、
-  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、毛利率／營業利益率／稅後淨利率年度版（5bd3e21e，PRD 要回填 109～114 年各年 Q4）、DR 移出 GET /companies（5870b44c）、liveDividendPerShare 新指標（78fe0f9a，PRD 要寫定義列並跑 live 回填）、上櫃 in_latest_list 篩選（5f8162ad）、GET /brokers（52fea794，PRD 要等 twse-ts PROD 有 export.broker——已套用）、GET /market/etf-distributions（cb2aa41e）、歷年股利表特別股與無年度列修正（4f20b520）、ROA 年度版與上述期別補齊（eafd9558～d7a84dd5，PRD 要回填歷史）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）、GET /stocks/prices 的 previousClose（d25ce186）、GET /stocks/ex-dividend-notices 改用日曆合併資料（9508af23，**要先於 bff-ts PRD 上線**：bff 的共用 normalizer 要求 status 欄位，順序反了 notices 會 502）、日曆 securityType 依 ETF 名單判斷（fde1e48c）、特別股代號規則補上 2887Z1（bb19310f，即時查詢、不用重算）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
+  漲跌停幅度排行下架、GET /industries/tree、/flat 下架（da642b5b）、毛利率／營業利益率／稅後淨利率年度版（5bd3e21e，PRD 要回填 109～114 年各年 Q4）、DR 移出 GET /companies（5870b44c）、liveDividendPerShare 新指標（78fe0f9a，PRD 要寫定義列並跑 live 回填）、上櫃 in_latest_list 篩選（5f8162ad）、GET /brokers（52fea794，PRD 要等 twse-ts PROD 有 export.broker——已套用）、GET /market/etf-distributions（cb2aa41e）、歷年股利表特別股與無年度列修正（4f20b520）、ROA 年度版與上述期別補齊（eafd9558～d7a84dd5，PRD 要回填歷史）、Altman Z″ 改用交易所類股只算 9 個非製造業類股（1148f6d1，PRD 要刪類股外的舊列並回填 109Q3 起；上 PRD 後通知 gov 可處理產業分類 view）、epsPriorYear 新指標（PRD 要先寫 metric_definitions 那一列再回填 109Q3 起歷史）、profile 的 isEmerging（bff 在 PRD 缺席時當 null；上 PRD 後要通知 bff，他們再告訴 web-nuxt 可以信這個欄位）、GET /stocks/prices 的 previousClose（d25ce186）、GET /stocks/ex-dividend-notices 改用日曆合併資料（9508af23，**要先於 bff-ts PRD 上線**：bff 的共用 normalizer 要求 status 欄位，順序反了 notices 會 502）、日曆 securityType 依 ETF 名單判斷（fde1e48c）、特別股代號規則補上 2887Z1（bb19310f，即時查詢、不用重算）、規則 A 擴大到金融業（1c1c22e0，PRD 要重算金融業 42 家全歷史）。PRD 不會自動跟上 DEV（見 [[project_cloud_run_deployment]]），要等使用者說上。
 - **bff-ts 的合併卡住**：卡著溯源端點的 `asOfDate`／`periodType` 轉發，以及漲跌停幅度排行路由的刪除。bff 沒轉發前，web-nuxt
   帶的這兩個參數會被吃掉（溯源退回「最新一筆／溯源表本來的期別」）。
 - **tpex 興櫃股價**：興櫃頁面要「盡可能比照既有」，缺的是 tpex 端收興櫃股價（他們先查發布時間），要使用者在 tpex 那邊放行。
@@ -37,7 +37,8 @@
 - **DEV 全市場全歷史重算（2026-10-06 起跑，使用者拍板）**：16 家對調重算時發現約 3.9% 歷史列是舊值（09-13～09-23 算的、之後的公式升版／上游補資料
   沒回頭重算，例：accrualsRatio v2→v3、早年單季 stockPrice 補到、mops 股利回補後的連續配息年數）。`tmp/fullRecompute.cmd` 兩段：
   109Q3～115Q2 全部 label（2,335 家 × 24 季，log `tmp/full-history-recompute.log`）→ 最新一季含逐日型（`tmp/full-latest-recompute.log`），
-  依 16 家的速度線性推估約 29 小時；中斷用 SYMBOL_OFFSET 續跑。跑完用 metric_upsert_shadow（captured_at ≥ `tmp/full-recompute.start`）量實際改了多少。
+  依 16 家的速度線性推估約 29 小時；中斷用 SYMBOL_OFFSET 續跑。2026-10-07 規則 A 擴大到金融業後停掉重啟（`tmp/fullRecompute2.cmd`）：
+  先重跑舊程式已算過的 28 家金融股（`tmp/full-recompute-fin.log`），再從第 800 家續跑（`tmp/full-history-recompute-2.log`），最後最新一季。跑完用 metric_upsert_shadow（captured_at ≥ `tmp/full-recompute.start`）量實際改了多少。
   涵蓋原本清單的 chowderNumber 約 28 家、1216、4960、8476。
 
 ## 已知限制（刻意不修或修不了，前端要知道）
