@@ -42,6 +42,10 @@
 
 ## 已知限制（刻意不修或修不了，前端要知道）
 
+- **特別股資料（2026-10-06）**：證交所 ISIN 網頁 twse-ts 依使用條款停抓；mops 的 `preferred_stock_right`（發行條款）是 2026-09-08 的永久快照
+  （mops 09-13 退役，t47sb12 屬使用條款風險最高的 5 項）。所以**之後新掛牌的特別股**：ISIN null、上市日期取行情第一個交易日、名稱是代號本身
+  （twse-ts 推導）、發行條款全空。`/preferred-stocks` 已改成可為 null 並補上櫃 8349A、只取仍在交易的（cc647d6f，等 bff 放寬驗證才部署）。
+  1522A 是贖回下市還是暫停交易，mops 批次停了會重抓 profile 確認。mops 那邊有正確簡稱的 `preferred_stock_issuer` 一樣來自 ISIN 網頁、凍結在 09-08。
 - **興櫃不支援半年頻的三支**：priceToResearchRatio、buybackYield、rdIntensity 讀的是單季 xbrlAccounts，興櫃沒有單季列。
 - **computeLeverageDegreeFamily**：用四捨五入過的 EPS、沒扣特別股股利。
 - **Altman Z″ 兩市類股不完全對稱**：TPEx 沒有 18 貿易百貨，上櫃零售同業落在 20 其他／38 居家生活，不算 Z″（少算不錯算）。模糊類股（生技醫療、其他電子、其他、綠能環保、運動休閒、居家生活、造紙、農業科技）使用者拍板一律不算；交易所新增類股預設不算。
@@ -88,10 +92,6 @@
 
 ## 卡在其他微服務，等對方排期
 
-- **/preferred-stocks 缺上櫃特別股 8349A**（2026-10-06 使用者拍板）：`/securities` 已用 tpex-ts 的 `export.tpex_preferred_stock` 補上（2c7fefcd），
-  `/preferred-stocks` 卡在官方 ISIN——請 twse-ts 把 `isin_securities` 擴到證交所 ISIN 頁的上櫃部分（strMode=4）。照規則推算 ISIN 不可靠
-  （台灣代碼 1,291 筆有 3 筆、上市特別股 28 檔有 1 檔對不上），不推。**twse 補上後注意**：`companyProfile.ts` getAllSecurityRows 把
-  isin_securities 的特別股一律標 TWSE，8349A 會同時從兩個來源進來（靠 symbol 去重不會重複，但 market 會標錯），要一起改。
 - **股利分派公告表**（mops-ts `DividendDistribution` domain，資料源 MOPS t108sb27）：
   資料源本身沒有硬限制（沒有已知歷史年份上限），但 mops-ts 自己的 backfill CLI 缺
   公司層級跳過/續傳機制——這個 domain 設計是「一次查一整年」，2349 家公司全市場回補
