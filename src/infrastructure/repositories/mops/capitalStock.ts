@@ -63,12 +63,31 @@ const getUnrecordedParChange = hourly(async (symbol: string): Promise<ParRow | n
 
 // 2026-09-27 規則 A（見 domain/financials/paidInSharesRow.ts reconcileWithBalanceSheet）：每季資產負債表的普通股＋特別股股本（千元）。
 // mops-ts export.quarterly_balance_sheet_xbrl，109Q3 起；兩種財報口徑的股本相同，合併報表優先。
+// 2026-10-07 擴大到金融業（使用者拍板）：銀行／金控／證券／保險的資產負債表在另外四張表，一般表對它們的 ordinary_share 是 null，
+// 規則 A 從來沒套用到金融業。實測 109Q3 起金融業 42 家裡 15 家有季別差 >1%：2897 2024Q3 新發行乙特已從分母扣掉、股本歷史 10 月才登記，
+// 普通股少 2.5 億股（每股偏高 9.8%）；2024-10-17 甲特收回後股本歷史沒記減資，之後普通股多 2.28 億股（每股偏低 7.5%）。
+// 只取**權益**特別股（preferred_stock），不加 preferred_stock_liabilities：那欄單位因申報人而異（2887 近乎面額，2838／2890 是帳面價值），
+// 不加反而對——列為負債的特別股本來就不是普通股，股本取權益部分後，普通股＝資產負債表普通股股本（2887 合併後 11.8% 落差因此消失）。
+// 證券、保險表沒有特別股欄位，只取普通股股本。單位都是千元，已用 2816／2832／2850（保險）、2855／5864／6005（證券）114Q2 對過股本歷史。
 const getBalanceSheetCapitalRows = hourly(async (symbol: string): Promise<(BalanceSheetCapital & { quarterEnd: Date })[]> =>
   mopsExportPrisma.$queryRaw<{ year: number; quarter: number; cap: bigint | null }[]>`
-      SELECT DISTINCT ON (year, quarter) year, quarter, ROUND(COALESCE(ordinary_share, 0) + COALESCE(preference_share, 0))::bigint AS cap
-      FROM "export"."quarterly_balance_sheet_xbrl"
-      WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND ordinary_share > 0
-      ORDER BY year, quarter, data_type DESC`
+      SELECT DISTINCT ON (year, quarter) year, quarter, cap FROM (
+        SELECT year, quarter, data_type, 1 AS pri, ROUND(COALESCE(ordinary_share, 0) + COALESCE(preference_share, 0))::bigint AS cap
+        FROM "export"."quarterly_balance_sheet_xbrl" WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND ordinary_share > 0
+        UNION ALL
+        SELECT year, quarter, data_type, 2, ROUND(COALESCE(common_stock, 0) + COALESCE(preferred_stock, 0))::bigint
+        FROM "export"."bank_balance_sheet_detail_xbrl" WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND common_stock > 0
+        UNION ALL
+        SELECT year, quarter, data_type, 3, ROUND(COALESCE(common_stock, 0) + COALESCE(preferred_stock, 0))::bigint
+        FROM "export"."financial_holding_balance_sheet_detail_xbrl" WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND common_stock > 0
+        UNION ALL
+        SELECT year, quarter, data_type, 4, ROUND(common_stock)::bigint
+        FROM "export"."securities_balance_sheet_detail_xbrl" WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND common_stock > 0
+        UNION ALL
+        SELECT year, quarter, data_type, 5, ROUND(ordinary_share)::bigint
+        FROM "export"."insurance_balance_sheet_detail_xbrl" WHERE symbol = ${symbol} AND subsidiary_company_id = '' AND ordinary_share > 0
+      ) t
+      ORDER BY year, quarter, pri, data_type DESC`
     .then((rows) =>
       rows.map((r) => ({
         quarterEnd: new Date(Date.UTC(r.year + 1911, r.quarter * 3, 0)),

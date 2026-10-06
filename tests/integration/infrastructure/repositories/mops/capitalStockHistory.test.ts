@@ -76,6 +76,18 @@ test('getOutstandingCommonSharesAsOf: 查特定日期會找到「當時生效」
 });
 
 // 2026-09-04 應 web-nuxt 要求新增，給個股頁面「股本變化」卡片用。
+// 2026-10-07 規則 A 擴大到金融業：銀行資產負債表（普通股＋權益特別股）當季末裁判。2897 是兩種方向的實例。
+test('getOutstandingCommonSharesAsOf: 金融業也以季末資產負債表股本為準（2897 乙特晚登記、甲特收回沒記減資）', async () => {
+  // 2024-09-25 發行乙特 2.5 億股、10 月才登記：季末不能已經扣掉特別股卻還沒加進已發行股數。
+  const q3 = await getOutstandingCommonSharesAsOf('2897', new Date('2024-09-30'));
+  const oct = await getOutstandingCommonSharesAsOf('2897', new Date('2024-10-31'));
+  assert.ok(q3 && oct);
+  assert.ok(Math.abs(Number(q3.outstandingCommonShares) - Number(oct.outstandingCommonShares)) < 1000, `Q3 季末 ${q3.outstandingCommonShares} 應該等於 10 月登記後 ${oct.outstandingCommonShares}`);
+  // 2024-10-17 甲特收回，股本歷史沒有減資列：Q4 起已發行股數取資產負債表 30,553,579 千元 ÷ 10。
+  const q4 = await getOutstandingCommonSharesAsOf('2897', new Date('2024-12-31'));
+  assert.equal(q4?.issuedShares, 3055357900n);
+});
+
 test('getCapitalStockHistory: 2330 應該回傳多筆歷史，由新到舊排序', async () => {
   const entries = await getCapitalStockHistory('2330');
   assert.ok(entries.length > 1, `2330 只查到 ${entries.length} 筆，應該要有多筆股本變動歷史`);
