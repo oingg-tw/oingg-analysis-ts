@@ -106,9 +106,11 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
   const needsTwse = filter.market !== 'TPEx';
   const needsTpex = filter.market !== 'TWSE';
   const needsPreferred = filter.preferredStock !== 'exclude' && filter.market !== 'TPEx'; // isin_securities 目前只有 TWSE。
+  // 2026-10-06 上櫃特別股（使用者拍板）：tpex-ts 新開 export.tpex_preferred_stock（TPEx 自己的行情，is_listed = 出現在最新交易日）。
+  const needsTpexPreferred = filter.preferredStock !== 'exclude' && filter.market !== 'TWSE';
   const needsFullDelivery = filter.excludeFullDelivery === true;
 
-  const [twseRows, tpexRows, twsePreferredRows, fullDeliverySets] = await Promise.all([
+  const [twseRows, tpexRows, twsePreferredRows, tpexPreferredRows, fullDeliverySets] = await Promise.all([
     needsTwse
       ? twseExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
           SELECT symbol, short_name FROM "export"."company_profile" WHERE source = 'COMPANY_PROFILE'
@@ -122,6 +124,11 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
     needsPreferred
       ? twseExportPrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
           SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
+        `
+      : Promise.resolve([]),
+    needsTpexPreferred
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
+          SELECT symbol, name FROM "export"."tpex_preferred_stock" WHERE is_listed
         `
       : Promise.resolve([]),
     needsFullDelivery ? getFullDeliverySymbolSets() : Promise.resolve({ twse: new Set<string>(), tpex: new Set<string>() }),
@@ -141,6 +148,7 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
     // 反例，先用同一套判斷邏輯，之後發現不準再調整。全額交割同理，特別股不在
     // changed_trading_method 裡出現過，固定當作不是全額交割，沒有實測過反例。
     ...twsePreferredRows.map((row) => ({ symbol: row.symbol, market: 'TWSE' as const, shortName: row.name, isEmerging: false, isPreferredStock: true, isFullDelivery: false })),
+    ...tpexPreferredRows.map((row) => ({ symbol: row.symbol, market: 'TPEx' as const, shortName: row.name, isEmerging: false, isPreferredStock: true, isFullDelivery: false })),
   ];
 };
 
