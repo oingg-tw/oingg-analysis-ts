@@ -27,13 +27,17 @@ export const findLatestPeriodMetricRow = (where: PeriodCoordinateWhere): Promise
 // 一次原子的 upsert（鍵是完整的 identity 唯一鍵，含 knowledgeDate）——2026-09-11 全市場 backfill
 // 平行化後同一個 knowledgeDate 被重算兩次撞過唯一鍵，改讓 Postgres 自己原子地決定 insert 還是
 // update，多 instance/多併發都不會再噴例外。
+// 2026-10-07 三張表的 update 都補上 computedAt：它是 @default(now())，只在 create 時填，改寫值時一直停在第一次寫入的時間
+// （2897 規則 A 重算後值變了、computed_at 仍是 09-23），讓 completenessCheck 的「這批寫入／更新了幾列」數不到更新、
+// magicFormulaRank 溯源的「批次計算於」也是舊日期。只有 decideWrite 判定真的變了才會走到 update，所以不會因此多寫；
+// shadow 擴充本來就把 computedAt 排除在比對外（AUDIT_TIMESTAMP_KEYS）。
 export const upsertPeriodMetricRow = async (where: PeriodCoordinateWhere, values: MetricRowValues): Promise<void> => {
   await analysisPrisma.metricValue.upsert({
     where: {
       symbol_metricCode_periodType_fiscalYear_fiscalQuarter_dataType_subsidiaryCompanyId_knowledgeDate: { ...where, knowledgeDate: values.knowledgeDate },
     },
     create: { ...where, ...values },
-    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion },
+    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion, computedAt: new Date() },
   });
 };
 
@@ -45,7 +49,7 @@ export const upsertMonthlyMetricRow = async (where: MonthlyCoordinateWhere, valu
   await analysisPrisma.metricMonthlyValue.upsert({
     where: { symbol_metricCode_fiscalYear_fiscalMonth_dataType_subsidiaryCompanyId_knowledgeDate: { ...where, knowledgeDate: values.knowledgeDate } },
     create: { ...where, ...values },
-    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion },
+    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion, computedAt: new Date() },
   });
 };
 
@@ -58,7 +62,7 @@ export const upsertDailyCadenceMetricRow = async (where: DailyCadenceCoordinateW
       symbol_metricCode_lookbackRange_samplingInterval_snapshotCadence_dataType_subsidiaryCompanyId_tradeDate_knowledgeDate: { ...where, knowledgeDate: values.knowledgeDate },
     },
     create: { ...where, ...values },
-    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion },
+    update: { value: values.value, nullReason: values.nullReason, knowledgeDateIsFallback: values.knowledgeDateIsFallback, formulaVersion: values.formulaVersion, computedAt: new Date() },
   });
 };
 

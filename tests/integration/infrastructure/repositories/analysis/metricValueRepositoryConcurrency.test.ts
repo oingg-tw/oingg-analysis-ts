@@ -55,6 +55,20 @@ test('persistOne: 兩個併發呼叫寫入完全相同的新座標，不應該�
   assert.equal(Number(rows[0]!.value), 12.34);
 });
 
+
+// 2026-10-07：改寫值時 computedAt 要跟著更新（原本只在 create 時填，改寫後仍是第一次寫入的時間）。
+test('persistOne: 同一列改寫值之後，computedAt 會更新到改寫的時間', async () => {
+  const quarter = TEST_FISCAL_QUARTER + 1;
+  const where = { symbol: TEST_SYMBOL, metricCode: 'roe', periodType: 'TTM', fiscalYear: TEST_FISCAL_YEAR, fiscalQuarter: quarter } as const;
+  await persistMetricValue({ ...buildInput(1.11), fiscalQuarter: quarter });
+  const first = await analysisPrisma.metricValue.findFirst({ where });
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal((await persistMetricValue({ ...buildInput(2.22), fiscalQuarter: quarter })).action, 'updated_same_knowledge_date');
+  const second = await analysisPrisma.metricValue.findFirst({ where });
+  assert.ok(first && second);
+  assert.ok(second.computedAt.getTime() > first.computedAt.getTime(), `computedAt 應該前進：${first.computedAt.toISOString()} → ${second.computedAt.toISOString()}`);
+});
+
 afterAll(async () => {
   await analysisPrisma.metricValue.deleteMany({ where: { symbol: TEST_SYMBOL } });
   await analysisPrisma.$disconnect();
