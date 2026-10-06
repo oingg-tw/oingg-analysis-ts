@@ -45,7 +45,8 @@
 - **特別股資料（2026-10-06）**：證交所 ISIN 網頁 twse-ts 依使用條款停抓；mops 的 `preferred_stock_right`（發行條款）是 2026-09-08 的永久快照
   （mops 09-13 退役，t47sb12 屬使用條款風險最高的 5 項）。所以**之後新掛牌的特別股**：ISIN null、上市日期取行情第一個交易日、名稱是代號本身
   （twse-ts 推導）、發行條款全空。`/preferred-stocks` 已改成可為 null 並補上櫃 8349A、只取仍在交易的（cc647d6f，等 bff 放寬驗證才部署）。
-  1522A 是贖回下市還是暫停交易，mops 批次停了會重抓 profile 確認。mops 那邊有正確簡稱的 `preferred_stock_issuer` 一樣來自 ISIN 網頁、凍結在 09-08。
+  1522A 是贖回下市還是暫停交易：mops 批次後重抓 t05st05（出現減資 3,000 萬股的變更登記列＝收回，單向決定）＋ t05st03，跟 is_active 時間對齊再下結論。
+  `is_active` 的前提：證交所 daily_price 沒成交的日子也有列（close／volume 為 NULL，2026-10-06 實測），所以冷門股不會被誤判；twse-ts 若換行情來源要重新確認。mops 那邊有正確簡稱的 `preferred_stock_issuer` 一樣來自 ISIN 網頁、凍結在 09-08。
 - **興櫃不支援半年頻的三支**：priceToResearchRatio、buybackYield、rdIntensity 讀的是單季 xbrlAccounts，興櫃沒有單季列。
 - **computeLeverageDegreeFamily**：用四捨五入過的 EPS、沒扣特別股股利。
 - **Altman Z″ 兩市類股不完全對稱**：TPEx 沒有 18 貿易百貨，上櫃零售同業落在 20 其他／38 居家生活，不算 Z″（少算不錯算）。模糊類股（生技醫療、其他電子、其他、綠能環保、運動休閒、居家生活、造紙、農業科技）使用者拍板一律不算；交易所新增類股預設不算。
