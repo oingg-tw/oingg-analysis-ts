@@ -75,7 +75,8 @@
 
 - 定義、方法類文字留在 analysis-ts，web-nuxt 直接顯示，不另外維護一份：`name`、`formulaNote`、`basisNote`、溯源表的 `methodologyNote` 等。
 - 介面文字、錯誤訊息、價值判斷類的標籤由 web-nuxt 自己寫。
-- analysis-ts 的使用者可見文字一律照 web-nuxt 的禁用詞清單掃（便宜、合理、昂貴、偏低、偏高等），也不寫「本站採用／定義」。
+- analysis-ts 的使用者可見文字一律照禁用詞清單掃（便宜、合理、昂貴、偏低、偏高等），也不寫「本站採用／定義」。
+  清單的**唯一來源**是 web-nuxt 的 `shared/utils/compliance-words.ts`，不另外維護副本，掃之前去讀那一份。
 
 ## 變更管理
 
