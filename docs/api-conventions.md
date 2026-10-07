@@ -1,12 +1,12 @@
 # analysis-ts 對外 API 慣例
 
-2026-10-08 由 analysis-ts、bff-ts、web-nuxt 三方一起定的。適用於 analysis-ts 對 bff-ts 提供的所有端點。
+2026-10-08 由 analysis-ts、業務中台（原名 bff-ts，2026-10-08 改名；repo oingg-tw/oingg-business-ts）、web-nuxt 三方一起定的。適用於 analysis-ts 對業務中台提供的所有端點。
 **新端點一律照這份做；既有端點不做破壞性改動，只新增欄位**（破壞性改動的流程見「變更管理」）。
-合約的機器可讀版本：`GET /openapi.json`（要帶 X-Api-Key），bff-ts 在 CI 對它做 diff。
+合約的機器可讀版本：`GET /openapi.json`（要帶 X-Api-Key），業務中台在 CI 對它做 diff。
 
 ## 錯誤：RFC 9457 problem+json
 
-所有 4xx／5xx 都是同一個形狀，`Content-Type: application/problem+json`，跟 bff-ts 對 web-nuxt 的格式完全相同。
+所有 4xx／5xx 都是同一個形狀，`Content-Type: application/problem+json`，跟業務中台對 web-nuxt 的格式完全相同。
 
 | 成員 | 內容 |
 |---|---|
@@ -17,7 +17,7 @@
 | `instance` | `urn:uuid:<request id>`。呼叫端送 `X-Request-Id` 就沿用，回應 header 也會帶同一個值，回報問題時引用它 |
 | `code` | 只在呼叫端需要分支時才有：`unknown_metric`、`unsupported_timeframe`。之後可能新增值，未知的值要放行 |
 | `errors` | 參數驗證失敗（400）才有：body 欄位 `{ detail, pointer: "#/columns/0/field" }`，query／path 參數 `{ detail, parameter: "metricCode" }` |
-| `message` | **過渡期欄位**，bff-ts 改讀 `detail`／`errors` 後移除。驗證錯誤時是第一個欄位的訊息，其他錯誤等於 `detail` |
+| `message` | **過渡期欄位**，業務中台改讀 `detail`／`errors` 後移除。驗證錯誤時是第一個欄位的訊息，其他錯誤等於 `detail` |
 
 狀態碼：
 - 400：參數格式錯誤、缺參數、參數值不合法。
@@ -82,7 +82,7 @@
 **不算破壞性**，直接上線並在通知中列出：
 - 新增選填欄位
 - 新增端點
-- 回應裡新增 enum 值（bff-ts 承諾放行未知值）
+- 回應裡新增 enum 值（業務中台承諾放行未知值）
 
 **破壞性改動**：預告、新舊並存至少 14 天、附 `GET /openapi.json` 的 diff。包括：
 - 刪除或改名欄位、參數、指標代碼（指標改名時 `/metrics` 會標出新代碼與停用日期）
