@@ -38,6 +38,7 @@ interface CteRef {
   samplingInterval: string;
   snapshotCadence: string;
   isDailyCadence: boolean;
+  isMonthly: boolean;
 }
 
 const basisGroupKeyFor = (f: FieldRef): string => `${f.metricCode}:${f.periodType}:${f.lookbackRange}:${f.samplingInterval}:${f.snapshotCadence}`;
@@ -56,7 +57,7 @@ const dedupCtes = (fields: FieldRef[]): Map<string, CteRef> => {
   for (const f of fields) {
     const key = basisGroupKeyFor(f);
     if (!map.has(key)) {
-      map.set(key, { alias: cteAliasFor(key), metricCode: f.metricCode, periodType: f.periodType, lookbackRange: f.lookbackRange, samplingInterval: f.samplingInterval, snapshotCadence: f.snapshotCadence, isDailyCadence: f.isDailyCadence });
+      map.set(key, { alias: cteAliasFor(key), metricCode: f.metricCode, periodType: f.periodType, lookbackRange: f.lookbackRange, samplingInterval: f.samplingInterval, snapshotCadence: f.snapshotCadence, isDailyCadence: f.isDailyCadence, isMonthly: f.isMonthly });
     }
   }
   return map;
@@ -71,6 +72,17 @@ const dedupCtes = (fields: FieldRef[]): Map<string, CteRef> => {
 // trade_date（真正的自然鍵）+ knowledge_date 當 tiebreaker。
 const buildCte = (ref: CteRef): Prisma.Sql => {
   const alias = Prisma.raw(ref.alias);
+  // 2026-10-07 月頻（metric_monthly_values，sus 等）：之前沒有這個分支，月頻被當季報型查 metric_values，排行／名次／分布
+  // 全部安靜回空（susBadge 因此從未有值）。月頻沒有 basis 欄位可篩，最新一列 = 最大的 (年, 月)。
+  if (ref.isMonthly) {
+    return Prisma.sql`${alias} AS (
+      SELECT DISTINCT ON (${q('symbol')}) *
+      FROM ${q('metric_monthly_values')}
+      WHERE ${q('metric_code')} = ${ref.metricCode}
+        AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+      ORDER BY ${q('symbol')}, ${q('fiscal_year')} DESC, ${q('fiscal_month')} DESC, ${q('knowledge_date')} DESC
+    )`;
+  }
   if (ref.isDailyCadence) {
     return Prisma.sql`${alias} AS (
       SELECT DISTINCT ON (${q('symbol')}) *

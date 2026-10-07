@@ -1,5 +1,6 @@
 import type { LookbackRange, PeriodType, SamplingInterval, SnapshotCadence } from '@/domain/metrics/metricBasis';
 import type { FieldRef } from '@/domain/metrics/timeframe';
+import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 import type { DistributionBucket } from '@/domain/shared/distribution';
 
 // analysis DB 的 metric_values / metric_daily_cadence_values 讀取端 port（寫入端是 metricValues.ts 的
@@ -20,6 +21,17 @@ export interface PeriodHistoryRow {
 
 export interface DailyCadenceHistoryRow {
   tradeDate: Date;
+  value: unknown;
+  nullReason: string | null;
+  knowledgeDate: Date;
+  knowledgeDateIsFallback: boolean;
+  formulaVersion: number;
+}
+
+// 2026-10-07 月頻（metric_monthly_values，sus 等）版本：座標是 (fiscalYear, fiscalMonth)。
+export interface MonthlyHistoryRow {
+  fiscalYear: number;
+  fiscalMonth: number;
   value: unknown;
   nullReason: string | null;
   knowledgeDate: Date;
@@ -105,8 +117,9 @@ export interface MetricValueQueryPort {
   // 全市場最新一個交易日，每家公司的現金殖利率（dividendYield，%）跟即時市值（liveMarketCap）——供給面 ERP 算市值加權殖利率用。
   // 每家一列（有兩種財報口徑時取合併）；殖利率 0 是明確不配息，null 是沒資料。
   listLatestDividendYieldWithMarketCap(): Promise<{ tradeDate: Date; symbol: string; dividendYield: number | null; marketCap: number | null }[]>;
-  // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數。
-  countMetricRowsWrittenSince(metricCode: string, symbols: string[], since: Date, isDailyCadence: boolean): Promise<number>;
+  // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數。2026-10-07 改收 definition 的 group（原本 isDailyCadence 布林，
+  // 月頻被當季報型去查 metric_values，計數恆為 0）。
+  countMetricRowsWrittenSince(metricCode: string, symbols: string[], since: Date, group: MetricDefinitionSpec['group']): Promise<number>;
   // 單一 metricCode 的全部歷史列（含重編疊加的多筆），依 fiscalYear/fiscalQuarter 降冪、同座標再依 knowledgeDate 降冪——
   // 去重取最新一筆是 application/metrics/shared/queryMetricHistory.ts 的事。
   listPeriodMetricHistoryRows(symbol: string, metricCode: string, periodType: PeriodType, dataType: string, subsidiaryCompanyId: string): Promise<PeriodHistoryRow[]>;
@@ -118,6 +131,8 @@ export interface MetricValueQueryPort {
     dataType: string,
     subsidiaryCompanyId: string
   ): Promise<DailyCadenceHistoryRow[]>;
+  // 月頻版本：依 (fiscalYear, fiscalMonth) 降冪、同月再依 knowledgeDate 降冪。
+  listMonthlyMetricHistoryRows(symbol: string, metricCode: string, dataType: string, subsidiaryCompanyId: string): Promise<MonthlyHistoryRow[]>;
   // 篩選：每列 symbol + 每個 column 的 v/k/n 三欄 + total_count（COUNT(*) OVER()）；scope=null 代表不限類股。
   screen(filters: ScreenerFilterCondition[], columns: FieldRef[], page: number, pageSize: number, sort: ScreenerSortSpec | null, scope: SymbolScope | null): Promise<Record<string, unknown>[]>;
   // 排行：排序欄位永遠是 index 0，其餘 columns 接在後面。

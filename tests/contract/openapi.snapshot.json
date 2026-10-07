@@ -1582,6 +1582,10 @@
                             ],
                             "type": "string"
                           },
+                          "fiscalMonth": {
+                            "description": "月頻指標專用（1–12，營收所屬月份），季報型與逐日型指標不會有這個欄位",
+                            "type": "integer"
+                          },
                           "fiscalQuarter": {
                             "nullable": true,
                             "type": "number"
@@ -2545,6 +2549,10 @@
                               "2"
                             ],
                             "type": "string"
+                          },
+                          "fiscalMonth": {
+                            "description": "月頻指標專用（1–12，營收所屬月份），季報型與逐日型指標不會有這個欄位",
+                            "type": "integer"
                           },
                           "fiscalQuarter": {
                             "nullable": true,

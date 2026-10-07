@@ -9,7 +9,7 @@ import type {
   MonthlyCoordinateWhere,
   PeriodCoordinateWhere,
 } from '@/application/ports/metricValues';
-import type { DailyCadenceHistoryRow, PeriodHistoryRow } from '@/application/ports/metricValueQueries';
+import type { DailyCadenceHistoryRow, MonthlyHistoryRow, PeriodHistoryRow } from '@/application/ports/metricValueQueries';
 
 // metric_values（季報型）/ metric_daily_cadence_values（逐日型）兩張表的讀寫——2026-09-17 重構
 // Phase 2 從 application/metrics/{metricValueWriter,shared/queryMetricHistory,
@@ -88,7 +88,7 @@ export const prismaMetricValueRepository: MetricValueRepository = {
 
 // ---- 歷史時序（GET /companies/metric-history 等）——列型別 Phase 4 搬到 application/ports/metricValueQueries.ts
 // （讀取端 port 的 DTO），這裡 re-export；port 物件在 ./metricValueQueries.ts 組。
-export type { DailyCadenceHistoryRow, PeriodHistoryRow };
+export type { DailyCadenceHistoryRow, MonthlyHistoryRow, PeriodHistoryRow };
 
 // 全部列，依 (fiscalYear, fiscalQuarter, knowledgeDate) 降冪——去重取每期最大 knowledgeDate 那筆在呼叫端做。
 export const listPeriodMetricHistoryRows = (
@@ -115,4 +115,11 @@ export const listDailyCadenceMetricHistoryRows = (
     where: { symbol, metricCode, ...coordinate, dataType, subsidiaryCompanyId },
     orderBy: [{ tradeDate: 'desc' }, { knowledgeDate: 'desc' }],
     select: { tradeDate: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true, formulaVersion: true },
+  });
+
+export const listMonthlyMetricHistoryRows = (symbol: string, metricCode: string, dataType: string, subsidiaryCompanyId: string): Promise<MonthlyHistoryRow[]> =>
+  analysisPrisma.metricMonthlyValue.findMany({
+    where: { symbol, metricCode, dataType, subsidiaryCompanyId },
+    orderBy: [{ fiscalYear: 'desc' }, { fiscalMonth: 'desc' }, { knowledgeDate: 'desc' }],
+    select: { fiscalYear: true, fiscalMonth: true, value: true, nullReason: true, knowledgeDate: true, knowledgeDateIsFallback: true, formulaVersion: true },
   });

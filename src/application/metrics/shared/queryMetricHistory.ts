@@ -14,6 +14,8 @@ export const metricHistoryEntrySchema = z.object({
   // 這個欄位給需要精確到天的呼叫端用；季報型指標（這支函式）不填。additive，不影響既有
   // 只讀 fiscalYear/fiscalQuarter 的消費端。
   tradeDate: z.string().optional().meta({ description: '逐日型指標專用（YYYY-MM-DD），季報型指標不會有這個欄位' }),
+  // 2026-10-07 新增，選填——月頻指標（sus 等，見 queryMonthlyMetricHistory.ts）的營收所屬月份；fiscalQuarter 此時為 null。
+  fiscalMonth: z.number().int().optional().meta({ description: '月頻指標專用（1–12，營收所屬月份），季報型與逐日型指標不會有這個欄位' }),
   value: z.number().nullable().meta({ description: '這期算出來的數字；null 代表這期算不出來，原因見 nullReason' }),
   nullReason: z
     .enum(['missing_input', 'zero_or_negative_denominator', 'not_applicable_industry', 'insufficient_history'])

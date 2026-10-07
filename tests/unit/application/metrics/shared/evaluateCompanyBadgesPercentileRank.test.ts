@@ -18,9 +18,10 @@ const latestRow = (value: number | null, nullReason: string | null): PeriodHisto
 
 // 2026-09-21 起 percentileRank 徽章跟一般徽章共用同一段「先查最新值」的路徑（web-nuxt 回報 bug 後合併）：
 // latest 是 fetchLatestMetricValue 會看到的最新列（[] = 從未計算過），rows 是 companyRank 的排名結果。
-const queriesWithGpToAssets = (latest: PeriodHistoryRow[], rows: CompanyRankRow[]): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows' | 'listDailyCadenceMetricHistoryRows' | 'findLatestSnapshotValue' | 'companyRank'> => ({
+const queriesWithGpToAssets = (latest: PeriodHistoryRow[], rows: CompanyRankRow[]): Pick<MetricValueQueryPort, 'listPeriodMetricHistoryRows' | 'listDailyCadenceMetricHistoryRows' | 'listMonthlyMetricHistoryRows' | 'findLatestSnapshotValue' | 'companyRank'> => ({
   listPeriodMetricHistoryRows: async (_symbol, metricCode) => (metricCode === 'novyMarxGpToAssets' ? latest : []), // 其餘徽章回空＝從未計算過、略過，結果只會出現 novyMarxGpToAssets 一支
   listDailyCadenceMetricHistoryRows: async () => [],
+  listMonthlyMetricHistoryRows: async () => [], // 月頻徽章（susBadge）回空＝從未計算、略過
   findLatestSnapshotValue: async () => null,
   companyRank: async (_symbol, field) => (field.metricCode === 'novyMarxGpToAssets' ? rows : []),
 });

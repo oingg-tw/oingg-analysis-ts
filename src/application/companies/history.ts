@@ -3,7 +3,7 @@ import type { AppDeps } from '@/application/deps';
 import { getRoeHistory } from '@/application/metrics/profitability/roe/queryRoeHistory';
 import { getRoaHistory } from '@/application/metrics/profitability/roa/queryRoaHistory';
 import { getDupontHistory } from '@/application/metrics/shared/dupont/queryDupontHistory';
-import { getMetricHistory } from '@/application/metrics/shared/queryMetricHistory';
+import { getMetricHistoryByFieldRef } from '@/application/metrics/shared/queryMonthlyMetricHistory';
 import { getDailyCadenceMetricHistory } from '@/application/metrics/shared/queryDailyCadenceMetricHistory';
 import { getMultiMetricHistory } from '@/application/metrics/shared/queryMultiMetricHistory';
 import { restatePerShareHistory } from '@/application/metrics/shared/restatePerShareHistory';
@@ -79,14 +79,12 @@ export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, l
   const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
 
   // 2026-09-09：逐日型指標（beta/exchangePeRatio 等）拆表後查的是不同的 Prisma model/
-  // 去重邏輯，見 queryDailyCadenceMetricHistory.ts 的說明——依 FieldRef.isDailyCadence
+  // 去重邏輯，見 queryDailyCadenceMetricHistory.ts 的說明；2026-10-07 起月頻也走 getMetricHistoryByFieldRef 依 FieldRef
   // 分流，呼叫端（這裡）完全不用知道背後是哪張表。
   const dataType = await deps.reportAvailability.resolveDataType(symbol);
-  const { entries, total, hasMore } = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, dataType, '', limit, deps)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, dataType, '', limit, deps);
+  const { entries, total, hasMore } = await getMetricHistoryByFieldRef(symbol, fieldRef, dataType, '', limit, deps);
   // 2026-09-28 每股類指標換算到今天的股數基準（見 restatePerShareHistory.ts）；逐日型沒有每股類指標。
-  const restated = fieldRef.isDailyCadence ? entries : await restatePerShareHistory(symbol, metricCode, fieldRef.periodType, entries, deps);
+  const restated = fieldRef.isDailyCadence || fieldRef.isMonthly ? entries : await restatePerShareHistory(symbol, metricCode, fieldRef.periodType, entries, deps);
   return { symbol, metricCode, timeframe, total, hasMore, entries: restated };
 };
 
@@ -122,8 +120,8 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
   let periodType: PeriodType | undefined;
   for (const metricCode of metricCodes) {
     const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
-    if (fieldRef.isDailyCadence) {
-      throw new ValidationError(`metricCode "${metricCode}" 是逐日型指標，metrics-history 目前不支援逐日型指標一次查詢多個，請改用 GET /companies/metric-history 逐一查詢。`);
+    if (fieldRef.isDailyCadence || fieldRef.isMonthly) {
+      throw new ValidationError(`metricCode "${metricCode}" 是${fieldRef.isMonthly ? '月頻' : '逐日型'}指標，metrics-history 目前只支援季報型指標一次查詢多個，請改用 GET /companies/metric-history 逐一查詢。`);
     }
     periodType ??= fieldRef.periodType;
   }

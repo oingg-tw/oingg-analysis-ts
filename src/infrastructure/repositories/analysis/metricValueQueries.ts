@@ -2,9 +2,10 @@ import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { Prisma } from '#generated/analysis-client';
 import type { SnapshotCadence } from '@/domain/metrics/metricBasis';
 import type { FieldRef } from '@/domain/metrics/timeframe';
+import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
 import type { CompanyRankRow, FieldDistribution, MetricValueQueryPort } from '@/application/ports/metricValueQueries';
 import { buildDistributionBins, clampBucketIndex } from '@/domain/shared/distribution';
-import { listDailyCadenceMetricHistoryRows, listPeriodMetricHistoryRows } from './metricValueRepository';
+import { listDailyCadenceMetricHistoryRows, listMonthlyMetricHistoryRows, listPeriodMetricHistoryRows } from './metricValueRepository';
 import {
   buildCompanyRankSql,
   buildDistributionBinsSql,
@@ -59,11 +60,12 @@ export const listLatestDividendYieldWithMarketCap = async (): Promise<{ tradeDat
 };
 
 // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數（computedAt >= since）。
-// 季報型查 metric_values、逐日型查 metric_daily_cadence_values。
-export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[], since: Date, isDailyCadence: boolean): Promise<number> =>
-  isDailyCadence
-    ? analysisPrisma.metricDailyCadenceValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } })
-    : analysisPrisma.metricValue.count({ where: { metricCode, symbol: { in: symbols }, computedAt: { gte: since } } });
+// 季報型查 metric_values、逐日型查 metric_daily_cadence_values、月頻查 metric_monthly_values。
+export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[], since: Date, group: MetricDefinitionSpec['group']): Promise<number> => {
+  const where = { metricCode, symbol: { in: symbols }, computedAt: { gte: since } };
+  if (group === 'monthly') return analysisPrisma.metricMonthlyValue.count({ where });
+  return group === 'period' ? analysisPrisma.metricValue.count({ where }) : analysisPrisma.metricDailyCadenceValue.count({ where });
+};
 
 // application/ports/metricValueQueries.ts 的實作；兩支歷史查詢的本體在 metricValueRepository.ts（跟寫入端同一個
 // 檔案，Phase 2 搬進來時就放那裡），screener 四種查詢 = ./screenerQueries.ts 組 SQL + 這裡執行——Prisma.Sql 不出
@@ -126,6 +128,7 @@ export const analysisMetricValueQueries: MetricValueQueryPort = {
   countMetricRowsWrittenSince,
   listPeriodMetricHistoryRows,
   listDailyCadenceMetricHistoryRows,
+  listMonthlyMetricHistoryRows,
   screen: (filters, columns, page, pageSize, sort, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildScreenerSql(filters, columns, page, pageSize, sort, scope)),
   rank: (rankedField, direction, limit, columns, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildRankingSql(rankedField, direction, limit, columns, scope)),
   companyRank: companyRankFromCachedTable,

@@ -57,8 +57,7 @@ export const checkJobCompleteness = async (job: IndicatorJob, companyIds: string
 
   try {
     const definition = metricDefinitionRegistry[job.name]!;
-    const isDailyCadence = definition.group !== 'period';
-    const written = await deps.metricValueQueries.countMetricRowsWrittenSince(job.name, companyIds, batchStartedAt, isDailyCadence);
+    const written = await deps.metricValueQueries.countMetricRowsWrittenSince(job.name, companyIds, batchStartedAt, definition.group);
     return { metricKey: job.name, attempted: companyIds.length, written, coverageRatio: written / companyIds.length };
   } catch (error) {
     deps.logger.error({ err: error, metricKey: job.name }, '[completeness-check]: 查詢寫入列數失敗，本次跳過完整性檢查，不影響批次本身結果。');

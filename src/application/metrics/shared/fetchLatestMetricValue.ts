@@ -1,7 +1,7 @@
 import { ValidationError } from '@/application/errors';
 import { resolveTimeframeForMetric } from '../resolveTimeframeForMetric';
-import { getMetricHistory, type MetricHistoryDeps } from './queryMetricHistory';
-import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
+import type { MetricHistoryDeps } from './queryMetricHistory';
+import { getMetricHistoryByFieldRef } from './queryMonthlyMetricHistory';
 import type { MetricNullReason } from '../../../domain/metrics/metricBasis';
 
 // 2026-09-13 從 evaluateCompanyBadges.ts 抽出來共用——查一支 metricCode 在給定 timeframe 下的
@@ -35,9 +35,7 @@ export const fetchLatestMetricValue = async (symbol: string, metricCode: string,
   }
 
   const dataType = await deps.reportAvailability.resolveDataType(symbol);
-  const result = fieldRef.isDailyCadence
-    ? await getDailyCadenceMetricHistory(symbol, metricCode, { lookbackRange: fieldRef.lookbackRange, samplingInterval: fieldRef.samplingInterval, snapshotCadence: fieldRef.snapshotCadence }, dataType, SUBSIDIARY_COMPANY_ID, 1, deps)
-    : await getMetricHistory(symbol, metricCode, fieldRef.periodType, dataType, SUBSIDIARY_COMPANY_ID, 1, deps);
+  const result = await getMetricHistoryByFieldRef(symbol, fieldRef, dataType, SUBSIDIARY_COMPANY_ID, 1, deps);
 
   const latest = result.entries.at(-1);
   if (!latest) return { value: null, nullReason: null, knowledgeDate: null, knowledgeDateIsFallback: null };
