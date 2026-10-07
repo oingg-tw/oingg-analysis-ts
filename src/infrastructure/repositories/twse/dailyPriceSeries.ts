@@ -14,12 +14,12 @@ export type RawDailyCloseRow = DailyCloseRow;
 const queryClosesSince = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until?: Date) =>
   until
     ? db.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, close FROM "export"."daily_price"
+        SELECT trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price"
         WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until}
         ORDER BY trade_date ASC
       `
     : db.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, close FROM "export"."daily_price"
+        SELECT trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price"
         WHERE symbol = ${symbol} AND trade_date >= ${since}
         ORDER BY trade_date ASC
       `;
@@ -56,7 +56,7 @@ export const getEarliestTradeDate = async (symbol: string): Promise<Date | null>
 const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
   db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
     SELECT trade_date, close FROM "export"."daily_price"
-    WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close IS NOT NULL
+    WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close > 0
     ORDER BY trade_date ASC
   `;
 

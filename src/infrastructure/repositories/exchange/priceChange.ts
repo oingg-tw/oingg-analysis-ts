@@ -74,11 +74,11 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
     const closesByDate =
       group.market === 'TWSE'
         ? await twseExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
-            SELECT symbol, trade_date, close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
+            SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
           `.then((rows) => rows.map((row) => ({ symbol: row.symbol, tradeDate: row.trade_date, close: row.close === null ? null : Number(row.close) })))
         : (
             await tpexExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
-              SELECT symbol, trade_date, close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
+              SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
             `
           ).map((row) => ({ symbol: row.symbol, tradeDate: row.trade_date, close: row.close === null ? null : Number(row.close) }));
 

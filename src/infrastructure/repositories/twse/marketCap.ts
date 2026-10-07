@@ -29,6 +29,12 @@ interface RawPriceRow {
 // 時發現的，改成找「最近一筆真的有成交價的日期」，不是「最新一列」，避免這種可以往前找到
 // 真實價格的情況被誤判成查無股價。
 //
+// **2026-10-07 改成 `close > 0`（所有讀 daily_price 收盤價的查詢一起改）**：上游有時把沒成交寫成 0 而不是 null——證交所
+// 2026-08-17～19 有 24 列（17 檔，含 1538／2321／5906 三檔普通股，OHLC 全 0、成交量只有零股），櫃買 2011 年整年 2,662 列。
+// 0 被當成真價格，beta 的報酬率出現 −100%，2321 一年 beta 存成 0.172（扣掉那筆是 −0.073）、1538 兩年 0.481（應 0.161）、
+// 5906 一年 0.396（應 0.154），數字看起來正常、不報錯。收盤價 0 不可能是真的成交，篩選的查詢用 `close > 0`、
+// 回傳價格的查詢用 `NULLIF(close, 0)`（等同沒成交），已回報 twse-ts 修上游。
+//
 // **2026-09-24 補上上櫃**：這支先前只查 twse 的 daily_price，所以**所有上櫃公司的市值都算不出來**
 // （marketCap 在 115Q2 有 1,255 家 missing_input，實測其中 1,230 家的成因是查不到股價、只有 73 家是
 // 缺股本）。實際兩邊都有資料：twse 1,451 檔（2020-11 起）、**tpex 11,197 檔（2021-09 起）**——
@@ -37,7 +43,7 @@ interface RawPriceRow {
 const queryPriceRow = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, asOfDate: Date) =>
   db.$queryRaw<RawPriceRow[]>`
     SELECT trade_date, close FROM "export"."daily_price"
-    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate} AND close IS NOT NULL
+    WHERE symbol = ${symbol} AND trade_date <= ${asOfDate} AND close > 0
     ORDER BY trade_date DESC LIMIT 1
   `;
 

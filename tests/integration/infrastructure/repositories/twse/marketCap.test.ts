@@ -1,6 +1,7 @@
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getStockPriceAsOf } from '@/infrastructure/repositories/twse/marketCap';
+import { listDailyClosesSince } from '@/infrastructure/repositories/twse/dailyPriceSeries';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 2026-09-06 修正：daily_price 對每個交易日都會有一列，沒成交的那天 close 是 null（不是
@@ -20,6 +21,15 @@ test('getStockPriceAsOf: 冷門股票某天沒成交（close=null）時，應該
 test('getStockPriceAsOf: 查無此 symbol 應該回傳 null，不拋錯', async () => {
   const result = await getStockPriceAsOf('999999', new Date());
   assert.equal(result, null);
+});
+
+
+// 2026-10-07：上游把沒成交寫成 0（證交所 2321 在 2026-08-19 OHLC 全 0）——收盤價 0 要當沒成交，往前找真的成交價，也不能進 beta 的序列。
+test('getStockPriceAsOf／listDailyClosesSince: 收盤價 0 當成沒成交（2321 2026-08-19）', async () => {
+  const price = await getStockPriceAsOf('2321', new Date('2026-08-19'));
+  assert.ok(price && price.closePrice > 0, `應該往前找到 08-18 的真實收盤，實際 ${JSON.stringify(price)}`);
+  const series = await listDailyClosesSince('2321', new Date('2026-08-14'), new Date('2026-08-24'));
+  assert.ok(!series.some((r) => r.close !== null && Number(r.close) === 0), '序列裡不應該出現收盤價 0');
 });
 
 afterAll(async () => {

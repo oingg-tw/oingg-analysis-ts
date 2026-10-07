@@ -129,7 +129,7 @@ export const getLatestTwoTradeDates = async (market: Market): Promise<[Date, Dat
 };
 
 export const listClosesForDate = (market: Market, tradeDate: Date): Promise<{ symbol: string; close: number | null }[]> =>
-  dbFor(market).$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`;
+  dbFor(market).$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, NULLIF(close, 0) AS close FROM "export"."daily_price" WHERE trade_date = ${tradeDate}`;
 
 // ---- 注意股票（export.attention_history_note）----
 // 只保留真正的上市/上櫃公司，比對子查詢直接寫進 SQL 的 WHERE（不是抓回來再用 JS 篩），避免 LIMIT
