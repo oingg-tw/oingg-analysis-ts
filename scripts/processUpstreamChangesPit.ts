@@ -19,7 +19,7 @@ import {
   computeAndWriteLivePbRatioPit,
   computeAndWriteLivePegRatioPit,
   computeAndWriteLivePeRatioPit,
-  computeAndWriteSusPit,
+  MONTHLY_METRIC_PITS,
 } from '../src/bootstrap/pitMetrics';
 import { quarterIndex, toRecomputeTargets, type UpstreamSource } from '../src/domain/upstream/recomputeTargets';
 import { buildGeneralTasks, runTasks } from './backfillTaskDefinitions';
@@ -96,7 +96,8 @@ const processSource = async (source: UpstreamSource, fromExclusive: bigint, toIn
     const dataType = await reportAvailability.resolveDataType(symbol);
     for (const yearMonth of monthsFrom(ym)) {
       try {
-        collectActions(await computeAndWriteSusPit({ symbol, yearMonth, dataType, subsidiaryCompanyId: '' }), monthly.actions);
+        // 2026-10-07 跑整份月頻清單（sus、revenueYoy3m…），不再寫死 sus。
+        for (const run of Object.values(MONTHLY_METRIC_PITS)) collectActions(await run({ symbol, yearMonth, dataType, subsidiaryCompanyId: '' }), monthly.actions);
       } catch (error) {
         monthly.failed.push(`${symbol} ${yearMonth}: ${error instanceof Error ? error.message : String(error)}`);
       }

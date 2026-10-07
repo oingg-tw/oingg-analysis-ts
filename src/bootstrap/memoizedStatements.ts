@@ -38,7 +38,7 @@ export const memoizeStatementsForBackfill = (): { size: () => number; clear: () 
   return { size: () => cache.size, clear: () => cache.clear() };
 };
 
-// 2026-09-23 月頻回填（scripts/backfillSusPit.ts）用：同一家公司的 60 個月各自呼叫一次 computeSus，
+// 2026-09-23 月頻回填（scripts/backfillMonthlyMetricsPit.ts）用：同一家公司的 60 個月各自呼叫一次 computeSus，
 // 每次都會重抓整份月營收歷史——記憶化之後一家公司只查一次。跟上面 memoizeStatementsForBackfill 同一招、
 // 同樣只給一次性跑完就結束的腳本用（沒有失效機制）。
 export const memoizeMonthlyRevenueForBackfill = (): { size: () => number } => {

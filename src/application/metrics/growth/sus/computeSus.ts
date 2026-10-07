@@ -29,24 +29,24 @@ export interface MonthlyMetricQuery {
 export const toRevenue = (raw: string | null): number | null => (raw === null ? null : Number(raw));
 
 // "YYYY-MM" → 次月 10 日（UTC）。12 月會正確進位到隔年 1 月。
-const statutoryDeadline = (yearMonth: string): Date => {
+export const statutoryDeadline = (yearMonth: string): Date => {
   const [year, month] = yearMonth.split('-').map(Number) as [number, number];
   return month === 12 ? new Date(Date.UTC(year + 1, 0, 10)) : new Date(Date.UTC(year, month, 10));
 };
 
-// 目標月（不給就是最新一個有營收的月份）與它往前連續 21 個月的窗口。computeSus 跟溯源表（getSusProvenance）共用，
-// 溯源表列的 21 個月就是算出寫入值的那 21 個月。查無目標月回 null。
-export const resolveSusWindow = (entries: MonthlyRevenueEntry[], yearMonth: string | undefined) => {
+// 目標月（不給就是最新一個有營收的月份）與它往前連續 months 個月的窗口。computeSus 跟溯源表（getSusProvenance）共用，
+// 溯源表列的 21 個月就是算出寫入值的那 21 個月。查無目標月回 null。2026-10-07 窗口長度參數化，revenueYoy3m（15 個月）共用。
+export const resolveContiguousMonthWindow = (entries: MonthlyRevenueEntry[], yearMonth: string | undefined, months: number) => {
   const targetIndex = yearMonth ? entries.findIndex((e) => e.yearMonth === yearMonth) : entries.length - 1;
   if (targetIndex < 0 || entries.length === 0) return null;
   const target = entries[targetIndex]!;
 
   // 窗口是「連續 21 個月」——用 entries 的位置切，但必須驗證中間沒有缺月（來源理論上逐月連續，
   // 不過新上市公司或上游補漏都可能造成跳月，靜默接受會算出錯的季節差分）。
-  const start = targetIndex - (SUS_WINDOW_MONTHS - 1);
+  const start = targetIndex - (months - 1);
   const window = start >= 0 ? entries.slice(start, targetIndex + 1) : [];
   const isContiguous =
-    window.length === SUS_WINDOW_MONTHS &&
+    window.length === months &&
     window.every((entry, i) => {
       if (i === 0) return true;
       const [py, pm] = window[i - 1]!.yearMonth.split('-').map(Number) as [number, number];
@@ -55,6 +55,8 @@ export const resolveSusWindow = (entries: MonthlyRevenueEntry[], yearMonth: stri
     });
   return { target, window, isContiguous };
 };
+
+export const resolveSusWindow = (entries: MonthlyRevenueEntry[], yearMonth: string | undefined) => resolveContiguousMonthWindow(entries, yearMonth, SUS_WINDOW_MONTHS);
 
 export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Promise<MonthlyComputationBatch<'sus'>> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;

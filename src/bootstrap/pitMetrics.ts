@@ -5,6 +5,7 @@ import type { BasisOutcome } from '@/application/metrics/pitOutcome';
 import type { ComputationSlot, MetricComputation } from '@/domain/metrics/computation';
 import type { MetricValueWriteOutcome } from '@/domain/metrics/coordinate';
 import { computeSus } from '@/application/metrics/growth/sus/computeSus';
+import { computeRevenueYoy3m } from '@/application/metrics/growth/revenueYoy3m/computeRevenueYoy3m';
 import { computeBuybackYield } from '@/application/metrics/dividend/buybackYield/computeBuybackYield';
 import { computeChowderNumber } from '@/application/metrics/dividend/chowderNumber/computeChowderNumber';
 import { computeConsecutiveDividendYears } from '@/application/metrics/dividend/consecutiveDividendYears/computeConsecutiveDividendYears';
@@ -140,6 +141,10 @@ export const persistMetricValue = (input: MetricComputation): Promise<MetricValu
 // 2026-09-23 月頻指標 sus——runPit 對它一樣適用（batch 的 slots 形狀相同，只是 context 欄位是 yearMonth
 // 而不是 rocYear/season），不用另外寫一支 runner。
 export const computeAndWriteSusPit = runPit(computeSus);
+export const computeAndWriteRevenueYoy3mPit = runPit(computeRevenueYoy3m);
+// 2026-10-07 月頻指標清單——月頻的任務單位是 (公司, 月)，不走 backfillTaskDefinitions；回填腳本（backfillMonthlyMetricsPit.ts）
+// 與上游變動處理（processUpstreamChangesPit.ts）都跑這份清單，新增月頻指標只要加在這裡。
+export const MONTHLY_METRIC_PITS = { sus: computeAndWriteSusPit, revenueYoy3m: computeAndWriteRevenueYoy3mPit } as const;
 
 export const computeAndWriteBuybackYieldPit = runPit(computeBuybackYield);
 export const computeAndWriteChowderNumberPit = runPit(computeChowderNumber);

@@ -74,6 +74,7 @@ import { assetGrowthDefinition } from '@/domain/metrics/growth/assetGrowth/asset
 import { rdIntensityDefinition } from '@/domain/metrics/growth/rdIntensity/rdIntensityDefinition';
 import { sueDefinition } from '@/domain/metrics/growth/sue/sueDefinition';
 import { susDefinition } from '@/domain/metrics/growth/sus/susDefinition';
+import { revenueYoy3mDefinition } from '@/domain/metrics/growth/revenueYoy3m/revenueYoy3mDefinition';
 import { consecutiveProfitYearsDefinition } from '@/domain/metrics/quality/consecutiveProfitYears/consecutiveProfitYearsDefinition';
 import { earningsYieldDefinition } from '@/domain/metrics/valuation/earningsYield/earningsYieldDefinition';
 import { ocfPerShareDefinition } from '@/domain/metrics/quality/ocfPerShare/ocfPerShareDefinition';
@@ -249,6 +250,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   rdIntensity: rdIntensityDefinition,
   sue: sueDefinition,
   sus: susDefinition,
+  revenueYoy3m: revenueYoy3mDefinition,
   ...revenueCagrFamilyDefinitions,
   oneDollarTest: oneDollarTestDefinition,
   ...epsCagrFamilyDefinitions,

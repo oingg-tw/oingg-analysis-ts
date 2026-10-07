@@ -193,6 +193,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'liveGrahamNumber',
   'livePegRatio',
   'sus',
+  'revenueYoy3m',
   'dividendDistributionCount',
   'dividendPerShare',
   'piotroskiFScore',

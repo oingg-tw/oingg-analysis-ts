@@ -130,6 +130,7 @@ import { getLivePeRatioProvenance } from '@/application/metrics/valuation/livePe
 import { getLiveGrahamNumberProvenance } from '@/application/metrics/valuation/liveGrahamNumber/getLiveGrahamNumberProvenance';
 import { getLivePegRatioProvenance } from '@/application/metrics/valuation/livePegRatio/getLivePegRatioProvenance';
 import { getSusProvenance } from '@/application/metrics/growth/sus/getSusProvenance';
+import { getRevenueYoy3mProvenance } from '@/application/metrics/growth/revenueYoy3m/getRevenueYoy3mProvenance';
 import { getDividendDistributionCountProvenance } from '@/application/metrics/dividend/dividendDistributionCount/getDividendDistributionCountProvenance';
 import { getDividendPerShareProvenance } from '@/application/metrics/dividend/dividendPerShare/getDividendPerShareProvenance';
 import { getPiotroskiFScoreProvenance } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreProvenance';
@@ -315,6 +316,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   liveGrahamNumber: (query) => getLiveGrahamNumberProvenance(query, deps),
   livePegRatio: (query) => getLivePegRatioProvenance(query, deps),
   sus: (query) => getSusProvenance(query, deps),
+  revenueYoy3m: (query) => getRevenueYoy3mProvenance(query, deps),
   dividendDistributionCount: (query) => getDividendDistributionCountProvenance(query, deps),
   dividendPerShare: (query) => getDividendPerShareProvenance(query, deps),
   piotroskiFScore: (query) => getPiotroskiFScoreProvenance(query, deps),
