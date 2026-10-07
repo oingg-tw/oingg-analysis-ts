@@ -76,6 +76,11 @@ export const stockPricesResultSchema = z.object({
         description: 'tradeDate 之前最近一筆有成交的收盤價（前一天沒成交就往前找最後一個真的收盤價），原始收盤價、不是除權息參考價。新掛牌/ETF 第一天沒有更早的成交 → null',
       }),
       previousTradeDate: z.string().nullable().meta({ description: 'previousClose 那一天，"YYYY-MM-DD"；跟 tradeDate 之間可能隔著沒成交的交易日' }),
+      latestClose: z.number().nullable().meta({
+        description:
+          '最近一筆有成交的收盤價（2026-10-07 新增）。tradeDate 那天有成交時等於 close；沒成交（close 是 null）時往前找最後一個真的收盤價，不設年限（長期停牌也會給很久以前的價格）。從沒成交過才是 null',
+      }),
+      latestCloseDate: z.string().nullable().meta({ description: 'latestClose 那一天，"YYYY-MM-DD"。跟 tradeDate 不同代表最新交易日沒成交，前端可以標示價格日期' }),
     }),
   ).meta({
     description: 'key 是 symbol，查不到的 symbol 直接不出現（不是回傳 null 值）',

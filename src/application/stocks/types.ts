@@ -46,7 +46,7 @@ export interface StockSummaryResult {
 }
 
 export interface StockPricesResult {
-  prices: Record<string, { close: number | null; tradeDate: string; previousClose: number | null; previousTradeDate: string | null }>;
+  prices: Record<string, { close: number | null; tradeDate: string; previousClose: number | null; previousTradeDate: string | null; latestClose: number | null; latestCloseDate: string | null }>;
 }
 
 export interface ExDividendNoticesResult {

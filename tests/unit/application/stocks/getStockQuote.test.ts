@@ -69,7 +69,7 @@ describe('getStockPrices', () => {
       market: market(null, new Map([['2330', { tradeDate: new Date('2026-09-15T00:00:00.000Z'), close: 2385 }]])) as MarketDataPort,
     });
     expect(await getStockPrices(['2330', '0000'], deps)).toEqual({
-      prices: { '2330': { close: 2385, tradeDate: '2026-09-15', previousClose: null, previousTradeDate: null } },
+      prices: { '2330': { close: 2385, tradeDate: '2026-09-15', previousClose: null, previousTradeDate: null, latestClose: null, latestCloseDate: null } },
     });
   });
 
@@ -97,5 +97,8 @@ describe('getStockPrices', () => {
     expect(prices['2064']).toMatchObject({ close: null, previousClose: 40, previousTradeDate: '2026-09-23' });
     expect(prices['0099']).toMatchObject({ previousClose: null, previousTradeDate: null });
     expect(prices['8476']).toMatchObject({ previousClose: 290, previousTradeDate: '2026-10-02' });
+    // 2026-10-07 latestClose：當天有成交＝close；當天沒成交往前找最後一個真的收盤價並給日期。
+    expect(prices['2330']).toMatchObject({ latestClose: 2575, latestCloseDate: '2026-10-05' });
+    expect(prices['2064']).toMatchObject({ close: null, latestClose: 40, latestCloseDate: '2026-09-23' });
   });
 });

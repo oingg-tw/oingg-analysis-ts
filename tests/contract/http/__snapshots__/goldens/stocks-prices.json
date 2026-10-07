@@ -4,12 +4,16 @@
     "prices": {
       "2317": {
         "close": "<number>",
+        "latestClose": "<number>",
+        "latestCloseDate": "<date>",
         "previousClose": "<number>",
         "previousTradeDate": "<date>",
         "tradeDate": "<date>"
       },
       "2330": {
         "close": "<number>",
+        "latestClose": "<number>",
+        "latestCloseDate": "<date>",
         "previousClose": "<number>",
         "previousTradeDate": "<date>",
         "tradeDate": "<date>"

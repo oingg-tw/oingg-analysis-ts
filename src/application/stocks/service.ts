@@ -129,17 +129,25 @@ export const getStockSummary = async (symbol: string, deps: StocksDeps): Promise
 // previousClose = tradeDate 之前最近一筆「有成交」的收盤價：前一天沒成交（daily_price 有列但 close 是 NULL）就往前找到
 // 最後一個真的收盤價，previousTradeDate 照實給那一天，呼叫端看得出中間隔了幾天。新掛牌/ETF 第一天沒有更早的列 → 兩個都 null。
 // 轉板公司兩市一起看。原始收盤價，不是除權息參考價——除權息當天用它算的漲跌會包含配息造成的價差（交易所沒有給參考價欄位）。
+//
+// 2026-10-07 web-nuxt 提案（使用者同意）：持股頁「有最新價格就可以了，不需要每天都有成交價」——8416 在 10-06 只有零股成交、close 是 null，
+// 持股顯示「無報價」。close 維持「最新交易日收盤，沒成交就 null」（篩選清單要這個語意），另外加 latestClose／latestCloseDate：
+// 最近一筆有成交的收盤價與它的日期，沒成交過就 null，不設年限（日期照實給，前端自己標）。跟 previousClose 同一份查詢，不多查。
 export const getStockPrices = async (symbols: string[], deps: StocksDeps): Promise<StockPricesResult> => {
   const [priceMap, closesMap] = await Promise.all([deps.market.getLatestDailyPricesBatch(symbols), deps.market.getRecentClosesBatch(symbols)]);
 
   const prices: StockPricesResult['prices'] = {};
   for (const [symbol, price] of priceMap) {
-    const previous = closesMap.get(symbol)?.find((row) => row.tradeDate < price.tradeDate) ?? null;
+    const closes = closesMap.get(symbol) ?? [];
+    const previous = closes.find((row) => row.tradeDate < price.tradeDate) ?? null;
+    const latest = closes[0] ?? null;
     prices[symbol] = {
       close: price.close,
       tradeDate: price.tradeDate.toISOString().slice(0, 10),
       previousClose: previous?.close ?? null,
       previousTradeDate: previous ? previous.tradeDate.toISOString().slice(0, 10) : null,
+      latestClose: latest?.close ?? null,
+      latestCloseDate: latest ? latest.tradeDate.toISOString().slice(0, 10) : null,
     };
   }
   return { prices };
