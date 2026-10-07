@@ -88,6 +88,7 @@ import { computeDupontFamily } from '@/application/metrics/shared/dupont/compute
 import { computeMarketRatios } from '@/application/metrics/shared/marketRatios/computeMarketRatios';
 import { computeBeta } from '@/application/metrics/valuation/beta/computeBeta';
 import { computeFiftyTwoWeek } from '@/application/metrics/valuation/fiftyTwoWeek/computeFiftyTwoWeek';
+import { computeForeignNetBuy20d } from '@/application/metrics/valuation/foreignNetBuy20d/computeForeignNetBuy20d';
 import { computeBvps } from '@/application/metrics/valuation/bvps/computeBvps';
 import { computeEarningsYield } from '@/application/metrics/valuation/earningsYield/computeEarningsYield';
 import { computeEvEbitda } from '@/application/metrics/valuation/evEbitda/computeEvEbitda';
@@ -229,6 +230,7 @@ export const computeAndWriteDupontFamilyPit = runPit(computeDupontFamily);
 export const computeAndWriteMarketRatiosPit = runPit(computeMarketRatios);
 export const computeAndWriteBetaPit = runPit(computeBeta);
 export const computeAndWriteFiftyTwoWeekPit = runPit(computeFiftyTwoWeek);
+export const computeAndWriteForeignNetBuy20dPit = runPit(computeForeignNetBuy20d);
 export const computeAndWriteBvpsPit = runPit(computeBvps);
 export const computeAndWriteEarningsYieldPit = runPit(computeEarningsYield);
 export const computeAndWriteEvEbitdaPit = runPit(computeEvEbitda);

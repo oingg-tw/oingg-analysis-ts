@@ -166,6 +166,7 @@ import { livePeRatioDefinition } from '@/domain/metrics/valuation/livePeRatio/li
 import { livePbRatioDefinition } from '@/domain/metrics/valuation/livePbRatio/livePbRatioDefinition';
 import { betaDefinition } from '@/domain/metrics/valuation/beta/betaDefinition';
 import { distanceFrom52wHighDefinition, distanceFrom52wLowDefinition, priceReturn52wDefinition } from '@/domain/metrics/valuation/fiftyTwoWeek/fiftyTwoWeekDefinition';
+import { foreignNetBuy20dDefinition } from '@/domain/metrics/valuation/foreignNetBuy20d/foreignNetBuy20dDefinition';
 import { famaFrenchOperatingProfitabilityDefinition } from '@/domain/metrics/profitability/famaFrenchOperatingProfitability/famaFrenchOperatingProfitabilityDefinition';
 
 // 程式碼中的宣告式 registry（docs/analysis-ts-spec-v0.2.md §6.3）；DB 的 metric_definitions
@@ -346,6 +347,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   priceReturn52w: priceReturn52wDefinition,
   distanceFrom52wHigh: distanceFrom52wHighDefinition,
   distanceFrom52wLow: distanceFrom52wLowDefinition,
+  foreignNetBuy20d: foreignNetBuy20dDefinition,
   famaFrenchOperatingProfitability: famaFrenchOperatingProfitabilityDefinition,
 };
 

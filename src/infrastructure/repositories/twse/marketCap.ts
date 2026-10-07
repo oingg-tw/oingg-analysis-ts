@@ -6,6 +6,7 @@ import { getEarliestTradeDate, listClosesBothExchanges, listDailyClosesSince, li
 import { getExDividendCalendar } from './exDividendNotice';
 import { getForeignShareholdingHistory } from './foreignShareholding';
 import { getStockPledgeRatioHistory } from './stockPledgeRatio';
+import { getForeignNetBuyWindow } from './institutionalTrading';
 import type { MarketCapAsOf, StockPriceAsOf, MarketDataPort } from '@/application/ports/marketData';
 import { lastConfirmedParChangeBefore, parBasisFactor } from '@/domain/financials/parValueBasis';
 
@@ -119,4 +120,5 @@ export const twseMarketData: MarketDataPort = {
   getExDividendCalendar,
   getForeignShareholdingHistory,
   getStockPledgeRatioHistory,
+  getForeignNetBuyWindow,
 };

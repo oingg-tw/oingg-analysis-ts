@@ -34,7 +34,8 @@ export type PeriodType = z.infer<typeof periodTypeSchema>;
 // 更穩定，見 MDPI 期刊《Time Dependence of CAPM Betas on the Choice of Interval
 // Frequency and Return Timeframes》）。允許值刻意不綁死組合——正交參數化的意義就是
 // 之後要加新組合不用改 enum。
-export const lookbackRangeSchema = z.enum(['N/A', '1Y', '2Y', '3Y', '5Y']);
+// 2026-10-07 加 '20D'（foreignNetBuy20d：近 20 個交易日）。
+export const lookbackRangeSchema = z.enum(['N/A', '20D', '1Y', '2Y', '3Y', '5Y']);
 export type LookbackRange = z.infer<typeof lookbackRangeSchema>;
 export const samplingIntervalSchema = z.enum(['N/A', '1D', '1W', '1M']);
 export type SamplingInterval = z.infer<typeof samplingIntervalSchema>;
