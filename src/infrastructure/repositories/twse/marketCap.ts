@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { getOutstandingCommonSharesAsOf, getParRows } from '../mops/capitalStock';
@@ -42,7 +43,7 @@ interface RawPriceRow {
 // 不會重複也不會衝突（跟 twse/monthlyRevenue.ts 同一天修的是同一類 bug、同一個解法）。
 const queryPriceRow = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, asOfDate: Date) =>
   db.$queryRaw<RawPriceRow[]>`
-    SELECT trade_date, close FROM "export"."daily_price"
+    SELECT trade_date, close FROM ${exportView(db, 'daily_price')}
     WHERE symbol = ${symbol} AND trade_date <= ${asOfDate} AND close > 0
     ORDER BY trade_date DESC LIMIT 1
   `;

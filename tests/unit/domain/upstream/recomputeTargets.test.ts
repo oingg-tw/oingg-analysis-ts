@@ -59,6 +59,26 @@ describe('toRecomputeTargets', () => {
     expect(t.dailyLatestAll).toBe(true);
   });
 
+  test('twse／tpex 改名後的複數表名照樣認得（切換期間新舊名混雜）', () => {
+    const t = toRecomputeTargets(
+      [
+        { source: 'twse', tableName: 'daily_prices', symbol: '2330', key: { date: '2026-10-08' } },
+        { source: 'twse', tableName: 'daily_prices', symbol: '2330', key: { date: '2025-03-14' } },
+        { source: 'tpex', tableName: 'monthly_revenue', symbol: '6488', key: { year_month: '2026-09-01' } },
+        { source: 'twse', tableName: 'monthly_revenues', symbol: '2317', key: { year: 2026, month: 9 } },
+        { source: 'twse', tableName: 'daily_taiex_indices', symbol: null, key: { date: '2026-10-08' } },
+        { source: 'twse', tableName: 'ex_dividend_notices', symbol: '2330', key: { ex_date: '2026-10-08' } },
+      ],
+      bounds
+    );
+    expect([...t.dailyLatest]).toEqual(['2330']);
+    expect(t.quarterlyFrom.get('2330')).toBe(quarterIndex(114, 1));
+    expect(Object.fromEntries(t.monthlyFrom)).toEqual({ '6488': 202609, '2317': 202609 });
+    expect(t.dailyLatestAll).toBe(true);
+    expect(Object.fromEntries(t.ignored)).toEqual({ 'twse.ex_dividend_notice': 1 });
+    expect(t.unmapped.size).toBe(0);
+  });
+
   test('除權息只拿來比對，記 ignored；認不得的表與鍵記 unmapped，不吞掉', () => {
     const t = toRecomputeTargets(
       [

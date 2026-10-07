@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import { logger } from '@/infrastructure/logger';
@@ -24,7 +25,7 @@ let industryCodes: IndustryCodeMap | null = null;
 
 const fetchIndustryCodesOnce = async (): Promise<IndustryCodeMap> => {
   const rows = await twseExportPrisma.$queryRaw<RawIndustryCodeRow[]>`
-    SELECT code, name FROM "export"."industry_code"
+    SELECT code, name FROM ${exportView(twseExportPrisma, 'industry_code')}
   `;
   if (rows.length === 0) throw new Error('export.industry_code 查回來是空的。');
   return Object.fromEntries(rows.map((row) => [row.code, row.name]));

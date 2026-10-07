@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { DailyPriceAsOf, DailyValuationAsOf } from '@/application/ports/marketData';
@@ -30,12 +31,12 @@ const newerOf = <R extends { trade_date: Date }>(a: R | undefined, b: R | undefi
 const queryDailyValuation = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, asOfDate?: Date) =>
   asOfDate
     ? db.$queryRaw<RawTwseDailyValuationRow[]>`
-        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
+        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM ${exportView(db, 'daily_valuation')}
         WHERE symbol = ${symbol} AND trade_date <= ${asOfDate}
         ORDER BY trade_date DESC LIMIT 1
       `
     : db.$queryRaw<RawTwseDailyValuationRow[]>`
-        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM "export"."daily_valuation"
+        SELECT trade_date, pe_ratio, pb_ratio, dividend_yield FROM ${exportView(db, 'daily_valuation')}
         WHERE symbol = ${symbol}
         ORDER BY trade_date DESC LIMIT 1
       `;
@@ -64,7 +65,7 @@ interface RawTpexDailyPriceRow {
 // 改成最近一筆實際成交（tradeDate 是那筆成交的日期）。
 export const getLatestDailyPrice = async (symbol: string): Promise<DailyPriceAsOf | null> => {
   const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
-    db.$queryRaw<RawTpexDailyPriceRow[]>`SELECT trade_date, close FROM "export"."daily_price" WHERE symbol = ${symbol} AND close > 0 ORDER BY trade_date DESC LIMIT 1`;
+    db.$queryRaw<RawTpexDailyPriceRow[]>`SELECT trade_date, close FROM ${exportView(db, 'daily_price')} WHERE symbol = ${symbol} AND close > 0 ORDER BY trade_date DESC LIMIT 1`;
   const [twseRows, tpexRows] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)]);
   const record = newerOf(twseRows[0], tpexRows[0]);
   return record ? { tradeDate: record.trade_date, close: toNullableNumber(record.close) } : null;
@@ -115,12 +116,12 @@ export const getDailyPriceHistory = async (symbol: string, limit: number): Promi
   // 2026-09-26 兩邊合併（轉板公司轉板前的歷史在另一個市場；舊版只要上市有資料就不看上櫃，8476 轉上市前的走勢整段不見）。
   const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
     db.$queryRaw<RawDailyPriceHistoryRow[]>`
-      SELECT trade_date, NULLIF(open, 0) AS open, NULLIF(high, 0) AS high, NULLIF(low, 0) AS low, NULLIF(close, 0) AS close, volume FROM "export"."daily_price"
+      SELECT trade_date, NULLIF(open, 0) AS open, NULLIF(high, 0) AS high, NULLIF(low, 0) AS low, NULLIF(close, 0) AS close, volume FROM ${exportView(db, 'daily_price')}
       WHERE symbol = ${symbol}
       ORDER BY trade_date DESC LIMIT ${limit}
     `;
   const earliest = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
-    db.$queryRaw<{ earliest: Date | null }[]>`SELECT MIN(trade_date) AS earliest FROM "export"."daily_price" WHERE symbol = ${symbol}`;
+    db.$queryRaw<{ earliest: Date | null }[]>`SELECT MIN(trade_date) AS earliest FROM ${exportView(db, 'daily_price')} WHERE symbol = ${symbol}`;
   const [twseRows, tpexRows, twseEarliest, tpexEarliest] = await Promise.all([query(twseExportPrisma), query(tpexExportPrisma), earliest(twseExportPrisma), earliest(tpexExportPrisma)]);
   const byDate = new Map<string, RawDailyPriceHistoryRow>();
   for (const row of [...tpexRows, ...twseRows]) byDate.set(row.trade_date.toISOString().slice(0, 10), row); // 同一天兩邊都有時以上市為準
@@ -140,12 +141,12 @@ export const getLatestDailyPricesBatch = async (symbols: string[]): Promise<Map<
     symbol: string;
   }
   const twseRows = await twseExportPrisma.$queryRaw<RawDailyPriceBatchRow[]>`
-    SELECT DISTINCT ON (symbol) symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price"
+    SELECT DISTINCT ON (symbol) symbol, trade_date, NULLIF(close, 0) AS close FROM ${exportView(twseExportPrisma, 'daily_price')}
     WHERE symbol = ANY(${symbols})
     ORDER BY symbol, trade_date DESC
   `;
   const tpexRows = await tpexExportPrisma.$queryRaw<RawDailyPriceBatchRow[]>`
-    SELECT DISTINCT ON (symbol) symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price"
+    SELECT DISTINCT ON (symbol) symbol, trade_date, NULLIF(close, 0) AS close FROM ${exportView(tpexExportPrisma, 'daily_price')}
     WHERE symbol = ANY(${symbols})
     ORDER BY symbol, trade_date DESC
   `;
@@ -167,7 +168,7 @@ export const getRecentClosesBatch = async (symbols: string[]): Promise<Map<strin
     db.$queryRaw<{ symbol: string; trade_date: Date; close: unknown }[]>`
       SELECT s.symbol, p.trade_date, p.close FROM unnest(${symbols}::text[]) AS s(symbol)
       CROSS JOIN LATERAL (
-        SELECT trade_date, close FROM "export"."daily_price"
+        SELECT trade_date, close FROM ${exportView(db, 'daily_price')}
         WHERE symbol = s.symbol AND close > 0
         ORDER BY trade_date DESC LIMIT 2
       ) p

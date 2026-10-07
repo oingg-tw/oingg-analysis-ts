@@ -6,6 +6,7 @@
 // tpex_preferred_stock 來（見 getPreferredStockSecurities）。preferred_stock_right 是 2026-09-08 的永久快照（mops 09-13 退役），
 // 之後新發行的特別股不會有發行條款。
 
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
@@ -39,14 +40,14 @@ export const getPreferredStockSecurities = async (): Promise<PreferredStockSecur
   const [listed, otc] = await Promise.all([
     twseExportPrisma.$queryRaw<RawIsinSecuritiesRow[]>`
       SELECT i.symbol, i.name, i.isin_code, i.listed_date, i.market_type,
-        CASE WHEN i.listed_date IS NULL THEN (SELECT MIN(trade_date) FROM "export"."daily_price" d WHERE d.symbol = i.symbol) END AS first_trade_date
-      FROM "export"."isin_securities" i
+        CASE WHEN i.listed_date IS NULL THEN (SELECT MIN(trade_date) FROM ${exportView(twseExportPrisma, 'daily_price')} d WHERE d.symbol = i.symbol) END AS first_trade_date
+      FROM ${exportView(twseExportPrisma, 'isin_securities')} i
       WHERE i.security_type = '特別股' AND i.is_active
     `,
     tpexExportPrisma.$queryRaw<RawIsinSecuritiesRow[]>`
       SELECT p.symbol, p.name, NULL::text AS isin_code, NULL::date AS listed_date, '上櫃' AS market_type,
-        (SELECT MIN(trade_date) FROM "export"."daily_price" d WHERE d.symbol = p.symbol) AS first_trade_date
-      FROM "export"."tpex_preferred_stock" p
+        (SELECT MIN(trade_date) FROM ${exportView(tpexExportPrisma, 'daily_price')} d WHERE d.symbol = p.symbol) AS first_trade_date
+      FROM ${exportView(tpexExportPrisma, 'tpex_preferred_stock')} p
       WHERE p.is_listed
     `,
   ]);

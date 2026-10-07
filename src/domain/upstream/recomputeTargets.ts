@@ -41,14 +41,25 @@ const quarterOfDate = (isoDate: string): number | null => {
 // 只是跨源比對或轉發給前端的表，不是任何指標的輸入。列出來是為了跟「認不得」分開——認不得要人看，這些不用。
 const NON_METRIC_TABLES = new Set(['ex_right_dividend', 'ex_dividend_notice']);
 
+// 2026-10-08 twse-ts（10/08）／tpex-ts（10/10）的 row_changes.table_name 改成複數（view 改名成 v_＋複數的同一批），舊列也一起改；
+// 兩邊切換時間不同，所以新舊名都認，一律轉回單數再判斷。mops 沒改名。
+const TWSE_TPEX_SINGULAR: Record<string, string> = {
+  daily_prices: 'daily_price',
+  daily_valuations: 'daily_valuation',
+  daily_taiex_indices: 'daily_taiex_index',
+  monthly_revenues: 'monthly_revenue',
+  ex_dividend_notices: 'ex_dividend_notice',
+  ex_right_dividends: 'ex_right_dividend',
+};
 const bump = (map: Map<string, number>, key: string): void => {
   map.set(key, (map.get(key) ?? 0) + 1);
 };
 
 export const toRecomputeTargets = (
-  changes: UpstreamRowChange[],
+  rawChanges: UpstreamRowChange[],
   bounds: { historyFloorIndex: number; latestQuarterIndex: number }
 ): RecomputeTargets => {
+  const changes = rawChanges.map((c) => (c.source === 'mops' ? c : { ...c, tableName: TWSE_TPEX_SINGULAR[c.tableName] ?? c.tableName }));
   const targets: RecomputeTargets = { quarterlyFrom: new Map(), dailyLatest: new Set(), dailyLatestAll: false, monthlyFrom: new Map(), ignored: new Map(), unmapped: new Map() };
   const label = (c: UpstreamRowChange) => `${c.source}.${c.tableName}`;
   const clamp = (index: number) => Math.min(Math.max(index, bounds.historyFloorIndex), bounds.latestQuarterIndex);

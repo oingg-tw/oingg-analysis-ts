@@ -1,3 +1,4 @@
+import { exportView, exportViewName } from '@/infrastructure/repositories/exchange/exportViews';
 import { Prisma } from '#generated/twse-export-client';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
@@ -30,8 +31,8 @@ interface RawTwseCompanyProfileRow {
 // 不存在才回 404；存在但查無股價/估值資料是另一回事（回 200，欄位是 null）。
 export const companyExists = async (symbol: string): Promise<boolean> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE symbol = ${symbol} LIMIT 1`,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE symbol = ${symbol} LIMIT 1`,
   ]);
   return twseRows.length > 0 || tpexRows.length > 0;
 };
@@ -91,12 +92,12 @@ interface RawSecurityRow {
 const getFullDeliverySymbolSets = async (): Promise<{ twse: Set<string>; tpex: Set<string> }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ symbol: string }[]>`
-      SELECT DISTINCT symbol FROM "export"."changed_trading_method"
-      WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."changed_trading_method")
+      SELECT DISTINCT symbol FROM ${exportView(twseExportPrisma, 'changed_trading_method')}
+      WHERE trade_date = (SELECT MAX(trade_date) FROM ${exportView(twseExportPrisma, 'changed_trading_method')})
     `,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`
-      SELECT DISTINCT symbol FROM "export"."changed_trading_method"
-      WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."changed_trading_method") AND altered_trading = true
+      SELECT DISTINCT symbol FROM ${exportView(tpexExportPrisma, 'changed_trading_method')}
+      WHERE trade_date = (SELECT MAX(trade_date) FROM ${exportView(tpexExportPrisma, 'changed_trading_method')}) AND altered_trading = true
     `,
   ]);
   return { twse: new Set(twseRows.map((r) => r.symbol)), tpex: new Set(tpexRows.map((r) => r.symbol)) };
@@ -113,22 +114,22 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
   const [twseRows, tpexRows, twsePreferredRows, tpexPreferredRows, fullDeliverySets] = await Promise.all([
     needsTwse
       ? twseExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
-          SELECT symbol, short_name FROM "export"."company_profile" WHERE source = 'COMPANY_PROFILE'
+          SELECT symbol, short_name FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE source = 'COMPANY_PROFILE'
         `
       : Promise.resolve([]),
     needsTpex
       ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; source: string | null }[]>`
-          SELECT symbol, short_name, source FROM "export"."company_profile" WHERE in_latest_list
+          SELECT symbol, short_name, source FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE in_latest_list
         `
       : Promise.resolve([]),
     needsPreferred
       ? twseExportPrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
-          SELECT symbol, name FROM "export"."isin_securities" WHERE security_type = '特別股'
+          SELECT symbol, name FROM ${exportView(twseExportPrisma, 'isin_securities')} WHERE security_type = '特別股'
         `
       : Promise.resolve([]),
     needsTpexPreferred
       ? tpexExportPrisma.$queryRaw<{ symbol: string; name: string | null }[]>`
-          SELECT symbol, name FROM "export"."tpex_preferred_stock" WHERE is_listed
+          SELECT symbol, name FROM ${exportView(tpexExportPrisma, 'tpex_preferred_stock')} WHERE is_listed
         `
       : Promise.resolve([]),
     needsFullDelivery ? getFullDeliverySymbolSets() : Promise.resolve({ twse: new Set<string>(), tpex: new Set<string>() }),
@@ -287,7 +288,7 @@ const normalizeWebsiteDomain = normalizeWebsite;
 // COMPANY_PROFILE_PUBLIC 這類非交易性質的登記資料，指名查询時一樣照實回傳。
 export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeCompanyProfileDetail | null> => {
   const twseRows = await twseExportPrisma.$queryRawUnsafe<RawTwseCompanyProfileDetailRow[]>(
-    `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM "export"."company_profile" WHERE symbol = $1 LIMIT 1`,
+    `SELECT ${TWSE_COMPANY_PROFILE_DETAIL_COLUMNS} FROM ${exportViewName(twseExportPrisma, 'company_profile')} WHERE symbol = $1 LIMIT 1`,
     symbol
   );
   const twseRow = twseRows[0];
@@ -340,7 +341,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
       preferred_stock_shares, financial_report_type, stock_transfer_agency, transfer_agency_phone,
       transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
       email, website, issued_shares, source
-    FROM "export"."company_profile" WHERE symbol = ${symbol} LIMIT 1
+    FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE symbol = ${symbol} LIMIT 1
   `;
   const tpexRow = tpexRows[0];
   if (!tpexRow) return null;
@@ -394,8 +395,8 @@ export const getCompanyNamesForSymbols = async (symbols: string[]): Promise<Map<
   if (symbols.length === 0) return new Map();
 
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ANY(${symbols})`,
-    tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM "export"."company_profile" WHERE symbol = ANY(${symbols})`,
+    twseExportPrisma.$queryRaw<RawTwseCompanyProfileRow[]>`SELECT symbol, short_name FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE symbol = ANY(${symbols})`,
+    tpexExportPrisma.$queryRaw<RawTpexCompanyProfileRow[]>`SELECT symbol, short_name FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE symbol = ANY(${symbols})`,
   ]);
 
   const result = new Map<string, string | null>();
@@ -484,8 +485,8 @@ const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
 // 所以拿這個目錄當母體算指標覆蓋率時要先扣掉 isEmerging，否則分母會多 364 家永遠算不出來的公司。
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
-    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."company_profile" WHERE in_latest_list`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
+    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE in_latest_list`,
   ]);
   const all = dedupeBySymbol([
     ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry, isEmerging: false })),
@@ -496,8 +497,8 @@ export const listAllCompanyNames = async (limit: number, offset: number): Promis
 
 export const countAllCompanyNames = async (): Promise<number> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."company_profile" WHERE in_latest_list`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE in_latest_list`,
   ]);
   return new Set([...twseRows.map((r) => r.symbol), ...tpexRows.map((r) => r.symbol)]).size;
 };

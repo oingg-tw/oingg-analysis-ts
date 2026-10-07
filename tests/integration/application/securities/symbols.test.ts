@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getSecuritySymbols } from '@/infrastructure/repositories/exchange/companyProfile';
@@ -21,7 +22,7 @@ test('getSecuritySymbols: 預設值（含興櫃、不排 KY、股票+特別股�
   // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
   // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。
   const kyRows = await twseExportPrisma.$queryRaw<CompanyProfileSymbolRow[]>`
-    SELECT symbol FROM "export"."company_profile" WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
+    SELECT symbol FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
   `;
   const kyRow = kyRows[0];
   if (kyRow) assert.ok(symbols.includes(kyRow.symbol), `${kyRow.symbol}（KY 股）預設不排除，應該在清單裡`);
@@ -57,7 +58,7 @@ test('getSecuritySymbols: excludeKy=true 應該排除 KY 股', async () => {
   // 那些本來就會被排除，跟是不是 KY 股無關；沒加這個篩選會挑到一筆本來就不該出現在
   // getSecuritySymbols 結果裡的「假陽性」KY 股，讓這個斷言失敗但原因其實跟 KY 排除邏輯無關。
   const kyRows = await twseExportPrisma.$queryRaw<CompanyProfileSymbolRow[]>`
-    SELECT symbol FROM "export"."company_profile" WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
+    SELECT symbol FROM ${exportView(twseExportPrisma, 'company_profile')} WHERE short_name LIKE ${'%-KY%'} AND source = 'COMPANY_PROFILE' LIMIT 1
   `;
   const kyRow = kyRows[0];
   if (!kyRow) return; // 開發資料庫這次剛好沒有 KY 股，跳過（不是測試失敗）。

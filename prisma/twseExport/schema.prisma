@@ -1,3 +1,4 @@
+// 2026-10-08 twse-ts 把 export view 改名成 v_＋複數、不保留舊名（下面 @@map 已是新名；退役的 foreign_holding／price_limit_range 已刪）。
 // 本 schema 只用來讀 oingg-twse 的 export schema（不是 public schema，那個在 ../twse/schema.prisma）
 // ——2026-09-03 twse-ts 擴大 export schema 涵蓋 daily_price/daily_valuation/daily_taiex_index/
 // company_profile/foreign_holding/margin_balance 這 6 張（跟原本就有的 monthly_revenue/
@@ -64,7 +65,7 @@ view DailyPrice {
   transaction BigInt?
   monthlyAvg  Decimal?  @map("monthly_avg") @db.Decimal(10, 4)
 
-  @@map("daily_price")
+  @@map("v_daily_prices")
   @@ignore
   @@schema("export")
 }
@@ -77,9 +78,9 @@ view DailyValuation {
   peRatio       Decimal?  @map("pe_ratio") @db.Decimal(10, 2)
   pbRatio       Decimal?  @map("pb_ratio") @db.Decimal(10, 2)
   dividendYield Decimal?  @map("dividend_yield") @db.Decimal(10, 2)
-  updatedAt     DateTime? @map("updated_at")
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz
 
-  @@map("daily_valuation")
+  @@map("v_daily_valuations")
   @@ignore
   @@schema("export")
 }
@@ -93,7 +94,7 @@ view DailyTaiexIndex {
   low       Decimal?  @db.Decimal(10, 4)
   close     Decimal?  @db.Decimal(10, 4)
 
-  @@map("daily_taiex_index")
+  @@map("v_daily_taiex_indices")
   @@ignore
   @@schema("export")
 }
@@ -137,25 +138,7 @@ view CompanyProfile {
   issuedShares               BigInt?   @map("issued_shares")
   source                     String?
 
-  @@map("company_profile")
-  @@ignore
-  @@schema("export")
-}
-
-/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 欄位形狀比照 ../twse/schema.prisma 的 ForeignHolding。
-view ForeignHolding {
-  symbol                  String?
-  tradeDate               DateTime? @map("trade_date") @db.Date
-  rank                    Int?
-  issuedShares            BigInt?   @map("issued_shares")
-  availableShares         BigInt?   @map("available_shares")
-  sharesHeld              BigInt?   @map("shares_held")
-  availableInvestPercent  Decimal?  @map("available_invest_percent") @db.Decimal(5, 2)
-  sharesHeldPercent       Decimal?  @map("shares_held_percent") @db.Decimal(5, 2)
-  upperLimitPercent       Decimal?  @map("upper_limit_percent") @db.Decimal(5, 2)
-
-  @@map("foreign_holding")
+  @@map("v_company_profiles")
   @@ignore
   @@schema("export")
 }
@@ -180,7 +163,7 @@ view MarginBalance {
   offsetting           BigInt?
   note                 String?
 
-  @@map("margin_balance")
+  @@map("v_margin_balances")
   @@ignore
   @@schema("export")
 }
@@ -202,7 +185,7 @@ view MonthlyRevenue {
   cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(14, 4)
   note                      String?
 
-  @@map("monthly_revenue")
+  @@map("v_monthly_revenues")
   @@ignore
   @@schema("export")
 }
@@ -224,7 +207,7 @@ view VolumeTop20 {
   lastBestBidPrice Decimal?  @map("last_best_bid_price") @db.Decimal(10, 4)
   lastBestAskPrice Decimal?  @map("last_best_ask_price") @db.Decimal(10, 4)
 
-  @@map("volume_top20")
+  @@map("v_volume_top20_rankings")
   @@ignore
   @@schema("export")
 }
@@ -241,7 +224,7 @@ view DisposedStock {
   detail              String?
   linkInformation     String?   @map("link_information")
 
-  @@map("disposed_stock")
+  @@map("v_disposed_stocks")
   @@ignore
   @@schema("export")
 }
@@ -253,26 +236,7 @@ view AttentionHistoryNote {
   tradeDate DateTime? @map("trade_date") @db.Date
   criteria  String?
 
-  @@map("attention_history_note")
-  @@ignore
-  @@schema("export")
-}
-
-/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 欄位形狀比照 ../twse/schema.prisma 的 PriceLimitRange。
-view PriceLimitRange {
-  symbol           String?
-  tradeDate        DateTime? @map("trade_date") @db.Date
-  rankGroup        String?   @map("rank_group")
-  rank             Int?
-  limitUp          Decimal?  @map("limit_up") @db.Decimal(10, 4)
-  limitDown        Decimal?  @map("limit_down") @db.Decimal(10, 4)
-  limitRange       Decimal?  @map("limit_range") @db.Decimal(10, 4)
-  openingRefPrice  Decimal?  @map("opening_ref_price") @db.Decimal(10, 4)
-  previousDayPrice Decimal?  @map("previous_day_price") @db.Decimal(10, 4)
-  allowOddLotTrade String?   @map("allow_odd_lot_trade")
-
-  @@map("price_limit_range")
+  @@map("v_attention_history_notes")
   @@ignore
   @@schema("export")
 }
@@ -289,7 +253,7 @@ view MaterialAnnouncement {
   factDate         DateTime? @map("fact_date") @db.Date
   description      String?
 
-  @@map("material_announcement")
+  @@map("v_material_announcements")
   @@ignore
   @@schema("export")
 }
@@ -307,7 +271,7 @@ view IsinSecurities {
   securityType String?   @map("security_type")
   note         String?
 
-  @@map("isin_securities")
+  @@map("v_isin_securities")
   @@ignore
   @@schema("export")
 }
@@ -322,7 +286,7 @@ view ChangedTradingMethod {
   tradeDate                    DateTime? @map("trade_date") @db.Date
   periodicCallAuctionTrading   Boolean?  @map("periodic_call_auction_trading")
 
-  @@map("changed_trading_method")
+  @@map("v_changed_trading_methods")
   @@ignore
   @@schema("export")
 }

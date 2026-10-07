@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { cumulativeChangePercentKey as buildKeyFromPort, type PriceChangePort } from '@/application/ports/priceChange';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
@@ -54,12 +55,12 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
       group.market === 'TWSE'
         ? (
             await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-              SELECT trade_date FROM "export"."daily_taiex_index" WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
+              SELECT trade_date FROM ${exportView(twseExportPrisma, 'daily_taiex_index')} WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
             `
           ).map((row) => row.trade_date)
         : (
             await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-              SELECT DISTINCT trade_date FROM "export"."daily_price" WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
+              SELECT DISTINCT trade_date FROM ${exportView(tpexExportPrisma, 'daily_price')} WHERE trade_date <= ${group.asOfDate} ORDER BY trade_date DESC LIMIT ${tradingDaysBack + 1}
             `
           ).map((row) => row.trade_date);
 
@@ -74,11 +75,11 @@ export const getCumulativeChangePercent = async (keys: ChangeLookupKey[], tradin
     const closesByDate =
       group.market === 'TWSE'
         ? await twseExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
-            SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
+            SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM ${exportView(twseExportPrisma, 'daily_price')} WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
           `.then((rows) => rows.map((row) => ({ symbol: row.symbol, tradeDate: row.trade_date, close: row.close === null ? null : Number(row.close) })))
         : (
             await tpexExportPrisma.$queryRaw<{ symbol: string; trade_date: Date; close: number | null }[]>`
-              SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM "export"."daily_price" WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
+              SELECT symbol, trade_date, NULLIF(close, 0) AS close FROM ${exportView(tpexExportPrisma, 'daily_price')} WHERE trade_date IN (${latestDate}, ${baseDate}) AND symbol = ANY(${symbols})
             `
           ).map((row) => ({ symbol: row.symbol, tradeDate: row.trade_date, close: row.close === null ? null : Number(row.close) }));
 

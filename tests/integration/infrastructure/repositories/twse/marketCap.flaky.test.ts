@@ -3,6 +3,7 @@
 // 超過 5 秒（上游 ingest 時段或連線池忙碌時），vitest 預設 timeout 就炸；不是本服務邏輯問題。
 // 修法候選：把 SQL 縮成固定日期/固定 symbol 子集，或搬進 repository 測試給明確的 timeout。
 // 到期前沒修就刪除，不能無限期隔離。
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
@@ -25,8 +26,8 @@ interface MarketCapRow {
 test('company_profile join daily_price 可以正確算出市值（單一公司，2330）', async () => {
   const rows = await twseExportPrisma.$queryRaw<MarketCapRow[]>`
     SELECT dp.close * cp.issued_shares AS market_cap
-    FROM "export"."daily_price" dp
-    JOIN "export"."company_profile" cp ON cp.symbol = dp.symbol
+    FROM ${exportView(twseExportPrisma, 'daily_price')} dp
+    JOIN ${exportView(twseExportPrisma, 'company_profile')} cp ON cp.symbol = dp.symbol
     WHERE dp.symbol = '2330'
     ORDER BY dp.trade_date DESC
     LIMIT 1
@@ -48,8 +49,8 @@ test('company_profile join daily_price 可以查到大量公司的市值（不�
   // 這樣測的是 schema/join 本身對不對，不會受 ingest 進度影響。
   const rows = await twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`
     SELECT COUNT(DISTINCT dp.symbol) as cnt
-    FROM "export"."daily_price" dp
-    JOIN "export"."company_profile" cp ON cp.symbol = dp.symbol
+    FROM ${exportView(twseExportPrisma, 'daily_price')} dp
+    JOIN ${exportView(twseExportPrisma, 'company_profile')} cp ON cp.symbol = dp.symbol
     WHERE dp.close IS NOT NULL
       AND cp.issued_shares IS NOT NULL
   `;

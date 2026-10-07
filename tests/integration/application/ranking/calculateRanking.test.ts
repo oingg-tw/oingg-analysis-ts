@@ -1,3 +1,4 @@
+import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateRanking } from '@/application/ranking/calculateRanking';
@@ -56,8 +57,8 @@ test('ranking: 指定查無資料的日期，應該優雅降級回傳空陣列�
 // 使用跟 service.ts 查 TWSE 母體同一組 filter（見 queryTwseMarket 呼叫端）。
 test('ranking: 取夠大的 limit 時，合併結果應該同時包含上市跟上櫃公司', async () => {
   const [twseCountRows, tpexCountRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
-    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."daily_valuation"`,
+    twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM ${exportView(twseExportPrisma, 'daily_valuation')}`,
+    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM ${exportView(tpexExportPrisma, 'daily_valuation')}`,
   ]);
   const twseCount = Number(twseCountRows[0]?.cnt ?? 0);
   const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
