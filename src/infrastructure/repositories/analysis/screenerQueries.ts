@@ -70,7 +70,7 @@ const dedupCtes = (fields: FieldRef[]): Map<string, CteRef> => {
 // lookback_range/sampling_interval/snapshot_cadence 這三欄已經不存在），排序鍵不變；
 // metric_daily_cadence_values 沒有 period_type/fiscal_year/fiscal_quarter，排序改用
 // trade_date（真正的自然鍵）+ knowledge_date 當 tiebreaker。
-// symbols（選填）：2026-10-08 只給 POST /screener/values 用——查明確列出的幾檔時先篩公司再去重，走 *_latest_lookup 索引（symbol 開頭）。
+// symbols（選填）：2026-10-08 只給 POST /screener/values 用——查明確列出的幾檔時先篩公司再去重，走 identity 唯一索引（symbol 開頭；重複的 *_latest_lookup 已於 2026-10-08 拆掉）。
 // 沒傳就是全市場（排行、篩選、名次、分布），行為不變。原本 values 也對整支指標全市場 DISTINCT ON 再 LEFT JOIN，
 // 1 檔 12 欄等於掃 12 次全市場（冷啟動 10.5 秒，超過 bff 的 10 秒逾時回 502）。
 const buildCte = (ref: CteRef, symbols?: string[]): Prisma.Sql => {
