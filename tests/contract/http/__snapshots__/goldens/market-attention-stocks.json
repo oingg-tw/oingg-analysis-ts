@@ -13,7 +13,7 @@
             "times": "<number>"
           }
         ],
-        "market": "TWSE",
+        "market": "TPEx",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>",
         "tradeDate": "<date>"

@@ -5,7 +5,7 @@ import { logger } from '@/infrastructure/logger';
 
 // sitca-ts 的 export schema——跟 mops/gov export 不同，sitca-ts 給的是 dev/prod 兩個獨立 Neon
 // 專案（不是同一個專案的 pooler/direct 兩種連線方式），2026-09-01 使用者定調「dev 對 dev、
-// prod 對 prod」：依執行環境二選一（選擇邏輯在 config.ts，這裡直接拿選好的 config.db.sitcaExport）。
+// prod 對 prod」；2026-10-08 改成開發、正式都連 PROD（使用者：開發環境唯讀，直接連正式的後台資料沒關係；見 config.ts，這裡直接拿 config.db.sitcaExport）。
 // prisma/sitcaExport/schema.prisma 的 datasource 不放連線字串（Prisma 7 driver adapter，見
 // ./index.ts 的說明），CLI（db pull/generate）連線資訊在 prisma.config.ts；實際 runtime
 // 連線一律走這裡的 PrismaPg。

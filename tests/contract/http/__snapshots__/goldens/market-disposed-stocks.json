@@ -4,17 +4,17 @@
     "items": [
       {
         "announceDate": "<date>",
-        "announcementCount": "<number>",
+        "announcementCount": "<null>",
         "companyName": "<string>",
         "detail": "<string>",
         "dispositionEndDate": "<date>",
-        "dispositionMeasures": "<string>",
+        "dispositionMeasures": "<null>",
         "dispositionPeriod": "<string>",
         "dispositionStartDate": "<date>",
-        "linkInformation": "<string>",
-        "market": "TWSE",
+        "linkInformation": "<null>",
+        "market": "TPEx",
         "reason": "<string>",
-        "reasonShort": "<null>",
+        "reasonShort": "<string>",
         "reasonTimes": "<number>",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>"

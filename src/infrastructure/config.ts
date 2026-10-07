@@ -27,12 +27,11 @@ const envSchema = z
     // TWSE_EXPORT_DATABASE_URL_DEV——它當初只為了月營收存在（那批資料一度只有 DEV 有），
     // twse-ts 完成上市全市場回填後 PROD 才是正確來源，那條連線已無消費端。
     TWSE_EXPORT_DATABASE_URL: nonEmpty,
-    // tpex-ts / sitca-ts：dev/prod 是兩個獨立的 Neon 專案，依執行環境二選一（下方 superRefine
-    // 只要求當前環境用得到的那一組存在，正式 image 不需要帶 DEV 的連線字串）。
-    TPEX_EXPORT_DATABASE_URL_DEV: nonEmpty.optional(),
-    TPEX_EXPORT_DATABASE_URL_PROD: nonEmpty.optional(),
-    SITCA_EXPORT_DATABASE_URL_DEV: nonEmpty.optional(),
-    SITCA_EXPORT_DATABASE_URL_PROD: nonEmpty.optional(),
+    // tpex-ts / sitca-ts：2026-10-08 使用者定案「開發環境是 readonly，直接連正式環境的後台資料也沒關係」——跟 twse-ts 一樣固定連 PROD，
+    // 本機開發不再讀上游的 DEV 庫（DEV 庫會落後、需要時還得請上游倒資料）。雲端的開發環境（service-dev.yaml）本來就讀 PROD。
+    // analysis 自己的資料庫照樣分兩個分支（DEV 給 development 分支、PRD 給 master），只有上游唯讀資料共用。
+    TPEX_EXPORT_DATABASE_URL_PROD: nonEmpty,
+    SITCA_EXPORT_DATABASE_URL_PROD: nonEmpty,
     // 2026-09-30 上游變動通知（POST /upstream/changes）：每個來源一把金鑰（X-Upstream-Key），沒設的來源在正式環境一律拒絕；
     // 處理程式的 Cloud Run Job 完整名稱（projects/…/locations/…/jobs/…），沒設就不自動叫醒（本機手動跑處理腳本）。
     UPSTREAM_KEY_MOPS: nonEmpty.optional(),
@@ -44,11 +43,6 @@ const envSchema = z
     const isProduction = env.NODE_ENV === 'production';
     if (isProduction && !env.BFF_API_KEY) {
       ctx.addIssue({ code: 'custom', path: ['BFF_API_KEY'], message: '正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/http/middleware/bffAuth.ts。' });
-    }
-    const suffix = isProduction ? 'PROD' : 'DEV';
-    for (const prefix of ['TPEX_EXPORT_DATABASE_URL', 'SITCA_EXPORT_DATABASE_URL'] as const) {
-      const key = `${prefix}_${suffix}` as const;
-      if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${isProduction ? '正式' : '開發'}環境需要 ${key}。` });
     }
   });
 
@@ -72,8 +66,7 @@ export const config = {
     mopsExport: env.MOPS_EXPORT_DATABASE_URL,
     govExport: env.GOV_EXPORT_DATABASE_URL,
     twseExport: env.TWSE_EXPORT_DATABASE_URL,
-    // superRefine 已保證當前環境用得到的那一組存在。
-    tpexExport: (isProduction ? env.TPEX_EXPORT_DATABASE_URL_PROD : env.TPEX_EXPORT_DATABASE_URL_DEV)!,
-    sitcaExport: (isProduction ? env.SITCA_EXPORT_DATABASE_URL_PROD : env.SITCA_EXPORT_DATABASE_URL_DEV)!,
+    tpexExport: env.TPEX_EXPORT_DATABASE_URL_PROD,
+    sitcaExport: env.SITCA_EXPORT_DATABASE_URL_PROD,
   },
 };

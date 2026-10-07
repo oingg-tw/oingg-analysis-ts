@@ -4,7 +4,7 @@ import { config } from '@/infrastructure/config';
 import { logger } from '@/infrastructure/logger';
 
 // tpex-ts 的 export schema——跟 sitca 同一種模式（dev/prod 兩個獨立 Neon 專案，不是同一個
-// 專案的 pooler/direct 兩種連線方式），依執行環境二選一（選擇邏輯在 config.ts，
+// 專案的 pooler/direct 兩種連線方式）。2026-10-08 起開發、正式都連 PROD（使用者：開發環境唯讀，直接連正式的後台資料沒關係；見 config.ts），
 // 這裡直接拿選好的 config.db.tpexExport）。prisma/tpexExport/schema.prisma 的 datasource 不放連線字串（Prisma 7 driver
 // adapter，見 ./index.ts 的說明），CLI（db pull/generate）連線資訊在 prisma.config.ts；
 // 實際 runtime 連線一律走這裡的 PrismaPg。
