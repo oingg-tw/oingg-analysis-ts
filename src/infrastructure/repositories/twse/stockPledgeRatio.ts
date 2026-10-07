@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { StockPledgeRatioEntry } from '@/application/ports/marketData';
 
@@ -25,7 +24,7 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 export const getStockPledgeRatioHistory = async (symbol: string, limit: number): Promise<StockPledgeRatioEntry[]> => {
   const rows = await twseExportPrisma.$queryRaw<RawStockPledgeRatioRow[]>`
     SELECT report_date, pledge_percent
-    FROM ${exportView(twseExportPrisma, 'stock_pledge_ratio')}
+    FROM "export"."v_stock_pledge_ratios"
     WHERE symbol = ${symbol}
     ORDER BY report_date DESC
     LIMIT ${limit}

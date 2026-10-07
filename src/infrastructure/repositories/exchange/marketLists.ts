@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { MarketListsPort, RawTpexVolumeTop20Row } from '@/application/ports/marketLists';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
@@ -36,14 +35,14 @@ export interface RawTwseVolumeTop20Row {
 export type { RawTpexVolumeTop20Row };
 
 export const getLatestVolumeTop20TradeDate = async (market: Market): Promise<Date | null> => {
-  const rows = await dbFor(market).$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM ${exportView(dbFor(market), 'volume_top20')}`;
+  const rows = await dbFor(market).$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."v_volume_top20_rankings"`;
   return rows[0]?.trade_date ?? null;
 };
 
 export const listVolumeTop20Twse = (tradeDate: Date): Promise<RawTwseVolumeTop20Row[]> =>
   twseExportPrisma.$queryRaw<RawTwseVolumeTop20Row[]>`
     SELECT symbol, volume, transaction, open, high, low, close, dir, change
-    FROM ${exportView(twseExportPrisma, 'volume_top20')}
+    FROM "export"."v_volume_top20_rankings"
     WHERE trade_date = ${tradeDate}
   `;
 
@@ -53,8 +52,8 @@ export const listVolumeTop20Tpex = (tradeDate: Date): Promise<RawTpexVolumeTop20
   tpexExportPrisma.$queryRaw<RawTpexVolumeTop20Row[]>`
     SELECT v.symbol, COALESCE(d.volume, v.volume * 1000) AS volume, d.transaction,
       NULLIF(d.open, 0) AS open, NULLIF(d.high, 0) AS high, NULLIF(d.low, 0) AS low, NULLIF(d.close, 0) AS close
-    FROM ${exportView(tpexExportPrisma, 'volume_top20')} v
-    LEFT JOIN ${exportView(tpexExportPrisma, 'daily_price')} d ON d.symbol = v.symbol AND d.trade_date = v.trade_date
+    FROM "export"."v_volume_top20_rankings" v
+    LEFT JOIN "export"."v_daily_prices" d ON d.symbol = v.symbol AND d.trade_date = v.trade_date
     WHERE v.trade_date = ${tradeDate}
   `;
 
@@ -76,8 +75,8 @@ export interface RawMonthlyRevenueRow {
 export const getLatestMonthlyRevenueYearMonth = async (market: Market): Promise<Date | null> => {
   const rows =
     market === 'TWSE'
-      ? await twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM ${exportView(twseExportPrisma, 'monthly_revenue')} WHERE source = 'MONTHLY_REVENUE'`
-      : await tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM ${exportView(tpexExportPrisma, 'monthly_revenue')}`;
+      ? await twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."v_monthly_revenues" WHERE source = 'MONTHLY_REVENUE'`
+      : await tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."v_monthly_revenues"`;
   return rows[0]?.year_month ?? null;
 };
 
@@ -85,12 +84,12 @@ export const listMonthlyRevenueForMonth = (market: Market, yearMonth: Date): Pro
   market === 'TWSE'
     ? twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
         SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
-        FROM ${exportView(twseExportPrisma, 'monthly_revenue')}
+        FROM "export"."v_monthly_revenues"
         WHERE year_month = ${yearMonth} AND source = 'MONTHLY_REVENUE'
       `
     : tpexExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
         SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
-        FROM ${exportView(tpexExportPrisma, 'monthly_revenue')}
+        FROM "export"."v_monthly_revenues"
         WHERE year_month = ${yearMonth}
       `;
 
@@ -102,14 +101,14 @@ export interface RawMarginBalanceRow {
 }
 
 export const getLatestMarginBalanceTradeDate = async (market: Market): Promise<Date | null> => {
-  const rows = await dbFor(market).$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM ${exportView(dbFor(market), 'margin_balance')} ORDER BY trade_date DESC LIMIT 1`;
+  const rows = await dbFor(market).$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."v_margin_balances" ORDER BY trade_date DESC LIMIT 1`;
   return rows[0]?.trade_date ?? null;
 };
 
 // 融資餘額是 0 或 null 時無法算券資比（分母不能是 0），直接在 SQL 排除。
 export const listMarginBalanceForRatio = (market: Market, tradeDate: Date): Promise<RawMarginBalanceRow[]> =>
   dbFor(market).$queryRaw<RawMarginBalanceRow[]>`
-    SELECT symbol, margin_today_balance, short_today_balance FROM ${exportView(dbFor(market), 'margin_balance')}
+    SELECT symbol, margin_today_balance, short_today_balance FROM "export"."v_margin_balances"
     WHERE trade_date = ${tradeDate} AND margin_today_balance > 0 AND short_today_balance IS NOT NULL
   `;
 
@@ -121,17 +120,17 @@ export const getLatestTwoTradeDates = async (market: Market): Promise<[Date, Dat
   const rows =
     market === 'TWSE'
       ? await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-          SELECT trade_date FROM ${exportView(twseExportPrisma, 'daily_taiex_index')} ORDER BY trade_date DESC LIMIT 2
+          SELECT trade_date FROM "export"."v_daily_taiex_indices" ORDER BY trade_date DESC LIMIT 2
         `
       : await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-          SELECT DISTINCT trade_date FROM ${exportView(tpexExportPrisma, 'daily_price')} ORDER BY trade_date DESC LIMIT 2
+          SELECT DISTINCT trade_date FROM "export"."v_daily_prices" ORDER BY trade_date DESC LIMIT 2
         `;
   if (rows.length < 2) return null;
   return [rows[0]!.trade_date, rows[1]!.trade_date];
 };
 
 export const listClosesForDate = (market: Market, tradeDate: Date): Promise<{ symbol: string; close: number | null }[]> =>
-  dbFor(market).$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, NULLIF(close, 0) AS close FROM ${exportView(dbFor(market), 'daily_price')} WHERE trade_date = ${tradeDate}`;
+  dbFor(market).$queryRaw<{ symbol: string; close: number | null }[]>`SELECT symbol, NULLIF(close, 0) AS close FROM "export"."v_daily_prices" WHERE trade_date = ${tradeDate}`;
 
 // ---- 注意股票（export.attention_history_note）----
 // 只保留真正的上市/上櫃公司，比對子查詢直接寫進 SQL 的 WHERE（不是抓回來再用 JS 篩），避免 LIMIT
@@ -147,7 +146,7 @@ export interface RawAttentionHistoryNoteRow {
 export const listAttentionNotesTwse = (eligibleSymbols: string[], limit: number): Promise<RawAttentionHistoryNoteRow[]> =>
   twseExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
     SELECT symbol, trade_date, criteria
-    FROM ${exportView(twseExportPrisma, 'attention_history_note')}
+    FROM "export"."v_attention_history_notes"
     WHERE symbol = ANY(${eligibleSymbols})
     ORDER BY trade_date DESC
     LIMIT ${limit}
@@ -156,8 +155,8 @@ export const listAttentionNotesTwse = (eligibleSymbols: string[], limit: number)
 export const listAttentionNotesTpex = (limit: number): Promise<RawAttentionHistoryNoteRow[]> =>
   tpexExportPrisma.$queryRaw<RawAttentionHistoryNoteRow[]>`
     SELECT symbol, trade_date, criteria
-    FROM ${exportView(tpexExportPrisma, 'attention_history_note')}
-    WHERE symbol IN (SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')})
+    FROM "export"."v_attention_history_notes"
+    WHERE symbol IN (SELECT symbol FROM "export"."v_company_profiles")
     ORDER BY trade_date DESC
     LIMIT ${limit}
   `;
@@ -185,7 +184,7 @@ export interface RawTpexDisposedStockRow {
 export const listDisposedStocksTwse = (eligibleSymbols: string[], limit: number): Promise<RawTwseDisposedStockRow[]> =>
   twseExportPrisma.$queryRaw<RawTwseDisposedStockRow[]>`
     SELECT symbol, announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
-    FROM ${exportView(twseExportPrisma, 'disposed_stock')}
+    FROM "export"."v_disposed_stocks"
     WHERE symbol = ANY(${eligibleSymbols})
     ORDER BY announce_date DESC
     LIMIT ${limit}
@@ -194,8 +193,8 @@ export const listDisposedStocksTwse = (eligibleSymbols: string[], limit: number)
 export const listDisposedStocksTpex = (limit: number): Promise<RawTpexDisposedStockRow[]> =>
   tpexExportPrisma.$queryRaw<RawTpexDisposedStockRow[]>`
     SELECT symbol, announce_date, reason, disposition_period, detail
-    FROM ${exportView(tpexExportPrisma, 'disposed_stock')}
-    WHERE symbol IN (SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')})
+    FROM "export"."v_disposed_stocks"
+    WHERE symbol IN (SELECT symbol FROM "export"."v_company_profiles")
     ORDER BY announce_date DESC
     LIMIT ${limit}
   `;
@@ -204,7 +203,7 @@ export const listDisposedStocksTpex = (limit: number): Promise<RawTpexDisposedSt
 // 它們不會出現在投資人的成交明細上）。兩個旗標都是 twse-ts 在 view 裡定義的，這裡只篩選。
 const listActiveBrokers = () =>
   twseExportPrisma.$queryRaw<{ broker_code: string; short_name: string; last_seen: Date }[]>`
-    SELECT broker_code, short_name, last_seen FROM ${exportView(twseExportPrisma, 'broker')} WHERE is_active AND is_brokerage ORDER BY broker_code`;
+    SELECT broker_code, short_name, last_seen FROM "export"."v_brokers" WHERE is_active AND is_brokerage ORDER BY broker_code`;
 
 // application/ports/marketLists.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
 export const exchangeMarketLists: MarketListsPort = {

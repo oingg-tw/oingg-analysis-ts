@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { calculateMarginShortRatioRanking } from '@/application/market/marginShortRatioRanking/service';
@@ -48,7 +47,7 @@ test('calculateMarginShortRatioRanking: 排行裡不應該出現 ETF/衍生性�
 test('calculateMarginShortRatioRanking: 取夠大的 limit 時，應該同時看得到上市跟上櫃', async () => {
   const [result, tpexCountRows] = await Promise.all([
     calculateMarginShortRatioRanking({ limit: 100 }, appDeps),
-    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM ${exportView(tpexExportPrisma, 'margin_balance')}`,
+    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."v_margin_balances"`,
   ]);
   const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
   if (tpexCount === 0) return; // tpex-ts 這個 dataset 還沒有資料時無從驗證，跳過。

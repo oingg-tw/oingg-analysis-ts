@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCumulativeChangePercent, cumulativeChangePercentKey } from '@/infrastructure/repositories/exchange/priceChange';
@@ -20,7 +19,7 @@ test('getCumulativeChangePercent: TWSE 2330 應該等於最新收盤跟往前6�
   // base/latest 交易日，導致預期值跟實際值不一致——不是計算邏輯錯，是這裡的 ground truth 查詢
   // 本身用錯了交易日曆來源。
   const dates = await twseExportPrisma.$queryRaw<DistinctTradeDateRow[]>`
-    SELECT trade_date FROM ${exportView(twseExportPrisma, 'daily_taiex_index')}
+    SELECT trade_date FROM "export"."v_daily_taiex_indices"
     ORDER BY trade_date DESC
     LIMIT 7
   `;
@@ -29,8 +28,8 @@ test('getCumulativeChangePercent: TWSE 2330 應該等於最新收盤跟往前6�
   const asOfDate = dates[0]!.trade_date;
   const baseDate = dates[6]!.trade_date;
   const [latestRows, baseRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<CloseRow[]>`SELECT close FROM ${exportView(twseExportPrisma, 'daily_price')} WHERE symbol = '2330' AND trade_date = ${asOfDate} LIMIT 1`,
-    twseExportPrisma.$queryRaw<CloseRow[]>`SELECT close FROM ${exportView(twseExportPrisma, 'daily_price')} WHERE symbol = '2330' AND trade_date = ${baseDate} LIMIT 1`,
+    twseExportPrisma.$queryRaw<CloseRow[]>`SELECT close FROM "export"."v_daily_prices" WHERE symbol = '2330' AND trade_date = ${asOfDate} LIMIT 1`,
+    twseExportPrisma.$queryRaw<CloseRow[]>`SELECT close FROM "export"."v_daily_prices" WHERE symbol = '2330' AND trade_date = ${baseDate} LIMIT 1`,
   ]);
   const latestRow = latestRows[0];
   const baseRow = baseRows[0];
@@ -49,7 +48,7 @@ test('getCumulativeChangePercent: 資料不足6個交易日時回傳 null，不�
 
 test('getCumulativeChangePercent: 查無資料的 symbol 也回傳 null，不影響其他 symbol', async () => {
   const dates = await twseExportPrisma.$queryRaw<DistinctTradeDateRow[]>`
-    SELECT DISTINCT trade_date FROM ${exportView(twseExportPrisma, 'daily_price')} ORDER BY trade_date DESC LIMIT 1
+    SELECT DISTINCT trade_date FROM "export"."v_daily_prices" ORDER BY trade_date DESC LIMIT 1
   `;
   if (dates.length === 0) return;
   const asOfDate = dates[0]!.trade_date;

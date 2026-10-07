@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { DailyCloseRow } from '@/application/ports/marketData';
@@ -15,12 +14,12 @@ export type RawDailyCloseRow = DailyCloseRow;
 const queryClosesSince = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until?: Date) =>
   until
     ? db.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, NULLIF(close, 0) AS close FROM ${exportView(db, 'daily_price')}
+        SELECT trade_date, NULLIF(close, 0) AS close FROM "export"."v_daily_prices"
         WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until}
         ORDER BY trade_date ASC
       `
     : db.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, NULLIF(close, 0) AS close FROM ${exportView(db, 'daily_price')}
+        SELECT trade_date, NULLIF(close, 0) AS close FROM "export"."v_daily_prices"
         WHERE symbol = ${symbol} AND trade_date >= ${since}
         ORDER BY trade_date ASC
       `;
@@ -34,12 +33,12 @@ export const listDailyClosesSince = async (symbol: string, since: Date, until?: 
 export const listTaiexClosesSince = (since: Date, until?: Date): Promise<RawDailyCloseRow[]> =>
   until
     ? twseExportPrisma.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, close FROM ${exportView(twseExportPrisma, 'daily_taiex_index')}
+        SELECT trade_date, close FROM "export"."v_daily_taiex_indices"
         WHERE trade_date >= ${since} AND trade_date <= ${until}
         ORDER BY trade_date ASC
       `
     : twseExportPrisma.$queryRaw<RawDailyCloseRow[]>`
-        SELECT trade_date, close FROM ${exportView(twseExportPrisma, 'daily_taiex_index')}
+        SELECT trade_date, close FROM "export"."v_daily_taiex_indices"
         WHERE trade_date >= ${since}
         ORDER BY trade_date ASC
       `;
@@ -47,7 +46,7 @@ export const listTaiexClosesSince = (since: Date, until?: Date): Promise<RawDail
 // 這檔股票在 daily_price 最早的交易日（上市＋上櫃取較早；完全沒有股價資料回 null）。2026-09-30 同上，原本只查上市。
 export const getEarliestTradeDate = async (symbol: string): Promise<Date | null> => {
   const query = (db: typeof twseExportPrisma | typeof tpexExportPrisma) =>
-    db.$queryRaw<{ min_date: Date | null }[]>`SELECT MIN(trade_date) AS min_date FROM ${exportView(db, 'daily_price')} WHERE symbol = ${symbol}`;
+    db.$queryRaw<{ min_date: Date | null }[]>`SELECT MIN(trade_date) AS min_date FROM "export"."v_daily_prices" WHERE symbol = ${symbol}`;
   const dates = (await Promise.all([query(twseExportPrisma), query(tpexExportPrisma)])).map((r) => r[0]?.min_date ?? null).filter((d): d is Date => d !== null);
   return dates.length === 0 ? null : new Date(Math.min(...dates.map((d) => d.getTime())));
 };
@@ -56,7 +55,7 @@ export const getEarliestTradeDate = async (symbol: string): Promise<Date | null>
 // 上市櫃轉板的公司兩邊各有一段（8476 2023-10 轉上市），合併起來才是完整序列。
 const queryClosesBetween = (db: typeof twseExportPrisma | typeof tpexExportPrisma, symbol: string, since: Date, until: Date) =>
   db.$queryRaw<{ trade_date: Date; close: unknown }[]>`
-    SELECT trade_date, close FROM ${exportView(db, 'daily_price')}
+    SELECT trade_date, close FROM "export"."v_daily_prices"
     WHERE symbol = ${symbol} AND trade_date >= ${since} AND trade_date <= ${until} AND close > 0
     ORDER BY trade_date ASC
   `;

@@ -1,3 +1,4 @@
+// 2026-10-08 tpex-ts 把 export view 改名成 v_＋複數、不保留舊名（下面 @@map 已是新名；早已不存在的 price_limit_range 已刪）。
 generator client {
   provider        = "prisma-client-js"
   output          = "../../generated/tpex-export-client"
@@ -32,7 +33,7 @@ view DailyValuation {
   pbRatio       Decimal?  @map("pb_ratio") @db.Decimal(10, 2)
   dividendYield Decimal?  @map("dividend_yield") @db.Decimal(10, 2)
 
-  @@map("daily_valuation")
+  @@map("v_daily_valuations")
   @@ignore
   @@schema("export")
 }
@@ -51,7 +52,7 @@ view DailyPrice {
   turnover    BigInt?
   transaction BigInt?
 
-  @@map("daily_price")
+  @@map("v_daily_prices")
   @@ignore
   @@schema("export")
 }
@@ -99,7 +100,7 @@ view CompanyProfile {
   created_at                   DateTime?
   updated_at                   DateTime?
 
-  @@map("company_profile")
+  @@map("v_company_profiles")
   @@ignore
   @@schema("export")
 }
@@ -121,7 +122,7 @@ view MonthlyRevenue {
   cumulativeChangePercent   Decimal?  @map("cumulative_change_percent") @db.Decimal(14, 4)
   note                      String?
 
-  @@map("monthly_revenue")
+  @@map("v_monthly_revenues")
   @@ignore
   @@schema("export")
 }
@@ -136,7 +137,7 @@ view DisposedStock {
   dispositionPeriod String?   @map("disposition_period")
   detail            String?
 
-  @@map("disposed_stock")
+  @@map("v_disposed_stocks")
   @@ignore
   @@schema("export")
 }
@@ -150,24 +151,7 @@ view VolumeTop20 {
   rank      Int?
   volume    BigInt?
 
-  @@map("volume_top20")
-  @@ignore
-  @@schema("export")
-}
-
-/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 上櫃個股漲跌停幅度最大/最小各 20 檔——欄位比 TWSE 精簡，沒有 opening_ref_price/
-/// previous_day_price/allow_odd_lot_trade。
-view PriceLimitRange {
-  symbol     String?
-  tradeDate  DateTime? @map("trade_date") @db.Date
-  rankGroup  String?   @map("rank_group")
-  rank       Int?
-  limitUp    Decimal?  @map("limit_up") @db.Decimal(10, 4)
-  limitDown  Decimal?  @map("limit_down") @db.Decimal(10, 4)
-  limitRange Decimal?  @map("limit_range") @db.Decimal(10, 4)
-
-  @@map("price_limit_range")
+  @@map("v_volume_top20_rankings")
   @@ignore
   @@schema("export")
 }
@@ -179,7 +163,7 @@ view AttentionHistoryNote {
   tradeDate DateTime? @map("trade_date") @db.Date
   criteria  String?
 
-  @@map("attention_history_note")
+  @@map("v_attention_history_notes")
   @@ignore
   @@schema("export")
 }
@@ -206,7 +190,7 @@ view MarginBalance {
   offsetting           BigInt?
   note                 String?
 
-  @@map("margin_balance")
+  @@map("v_margin_balances")
   @@ignore
   @@schema("export")
 }
@@ -226,7 +210,7 @@ view ChangedTradingMethod {
   suspensionOfTrading    Boolean?  @map("suspension_of_trading")
   financialAnnouncements Boolean?  @map("financial_announcements")
 
-  @@map("changed_trading_method")
+  @@map("v_changed_trading_methods")
   @@ignore
   @@schema("export")
 }

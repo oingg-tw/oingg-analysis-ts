@@ -1,4 +1,3 @@
-import { exportViewName } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
@@ -59,14 +58,14 @@ const COLUMNS = 'year_month, report_date, industry, current_month_revenue, last_
 
 export const getMonthlyRevenueHistory = async (symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult> => {
   const listed = await twseExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-    `SELECT ${COLUMNS} FROM ${exportViewName(twseExportPrisma, 'monthly_revenue')} WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
+    `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
     symbol
   );
   const rows =
     listed.length > 0
       ? listed
       : await tpexExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-          `SELECT ${COLUMNS} FROM ${exportViewName(tpexExportPrisma, 'monthly_revenue')} WHERE symbol = $1 ORDER BY year_month ASC`,
+          `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
           symbol
         );
 

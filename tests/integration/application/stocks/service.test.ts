@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getStockQuote, getStockPrices, getExDividendNotices, getForeignShareholdingHistory } from '@/application/stocks/service';
@@ -26,7 +25,7 @@ test('getStockQuote: 查無此代號的公司應該回傳 null', async () => {
 // 不釘死 price 一定是 null（daily_price 曾經是空表，但那是暫時的資料現況，不是永久保證，
 // tpex-ts 回補之後這裡不該跟著壞掉）。
 test('getStockQuote: 上櫃公司查得到公司資料時，不該被誤判成不存在（不是 404）', async () => {
-  const tpexCompanies = await tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')} LIMIT 1`;
+  const tpexCompanies = await tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT symbol FROM "export"."v_company_profiles" LIMIT 1`;
   const tpexCompany = tpexCompanies[0];
   if (!tpexCompany) return; // TPEx company_profile 目前沒資料時無從驗證，跳過。
 
@@ -52,7 +51,7 @@ test('getStockPrices: 空陣列應該回傳空物件，不拋錯', async () => {
 // 內容每天變動，不能像 2330 那樣寫死一個「長期都有資料」的代號）。
 test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，內容跟真實資料一致', async () => {
   const sample = await twseExportPrisma.$queryRaw<{ symbol: string; ex_date: Date; ex_type: string }[]>`
-    SELECT symbol, ex_date, ex_type FROM ${exportView(twseExportPrisma, 'ex_dividend_notice')} WHERE ex_date >= CURRENT_DATE ORDER BY ex_date ASC LIMIT 1
+    SELECT symbol, ex_date, ex_type FROM "export"."v_ex_dividend_notices" WHERE ex_date >= CURRENT_DATE ORDER BY ex_date ASC LIMIT 1
   `;
   if (!sample[0]) return; // 表裡目前沒有未來事件時無從驗證，跳過（資料量小、每天變動）。
 

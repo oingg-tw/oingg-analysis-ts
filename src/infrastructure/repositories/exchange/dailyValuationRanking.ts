@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { ValuationRankingPort } from '@/application/ports/valuationRanking';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
@@ -33,13 +32,13 @@ export interface ValuationRankingQueryResult {
 export const resolveLatestValuationTradeDate = async (market: Market, referenceDate: Date | null): Promise<Date | null> => {
   if (market === 'TWSE') {
     const rows = referenceDate
-      ? await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM ${exportView(twseExportPrisma, 'daily_valuation')} WHERE trade_date <= ${referenceDate} ORDER BY trade_date DESC LIMIT 1`
-      : await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM ${exportView(twseExportPrisma, 'daily_valuation')} ORDER BY trade_date DESC LIMIT 1`;
+      ? await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."v_daily_valuations" WHERE trade_date <= ${referenceDate} ORDER BY trade_date DESC LIMIT 1`
+      : await twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."v_daily_valuations" ORDER BY trade_date DESC LIMIT 1`;
     return rows[0]?.trade_date ?? null;
   }
   const rows = referenceDate
-    ? await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM ${exportView(tpexExportPrisma, 'daily_valuation')} WHERE trade_date <= ${referenceDate} ORDER BY trade_date DESC LIMIT 1`
-    : await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM ${exportView(tpexExportPrisma, 'daily_valuation')} ORDER BY trade_date DESC LIMIT 1`;
+    ? await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."v_daily_valuations" WHERE trade_date <= ${referenceDate} ORDER BY trade_date DESC LIMIT 1`
+    : await tpexExportPrisma.$queryRaw<{ trade_date: Date }[]>`SELECT trade_date FROM "export"."v_daily_valuations" ORDER BY trade_date DESC LIMIT 1`;
   return rows[0]?.trade_date ?? null;
 };
 
@@ -65,11 +64,11 @@ export const queryTwseValuationRanking = async (
 
   const [rows, excludedCountRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ symbol: string; value: unknown }[]>(
-      TwsePrisma.sql`SELECT symbol, ${column} AS value FROM ${exportView(twseExportPrisma, 'daily_valuation')} WHERE trade_date = ${tradeDate} AND symbol = ANY(${symbolArray}) AND ${filterSql} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
+      TwsePrisma.sql`SELECT symbol, ${column} AS value FROM "export"."v_daily_valuations" WHERE trade_date = ${tradeDate} AND symbol = ANY(${symbolArray}) AND ${filterSql} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
     ),
     excludeNonPositive
       ? twseExportPrisma.$queryRaw<{ cnt: bigint }[]>(
-          TwsePrisma.sql`SELECT count(*)::bigint as cnt FROM ${exportView(twseExportPrisma, 'daily_valuation')} WHERE trade_date = ${tradeDate} AND symbol = ANY(${symbolArray}) AND ${column} <= 0`
+          TwsePrisma.sql`SELECT count(*)::bigint as cnt FROM "export"."v_daily_valuations" WHERE trade_date = ${tradeDate} AND symbol = ANY(${symbolArray}) AND ${column} <= 0`
         )
       : Promise.resolve([{ cnt: 0n }]),
   ]);
@@ -85,7 +84,7 @@ export const queryTwseValuationRanking = async (
 // 是防呆：SQL 的 NOT LIKE 對 NULL 值一律回傳 NULL（不是 TRUE），沒有這個分支會誤刪 short_name
 // 剛好是 NULL 的公司。
 // 2026-10-05 只取還在 TPEx 名單上的公司（in_latest_list，見 companyProfile.ts LISTED_ONLY 下方說明）。
-const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM ${exportView(tpexExportPrisma, 'company_profile')} WHERE in_latest_list AND (short_name IS NULL OR short_name NOT LIKE '%-KY%'))`;
+const COMPANY_SYMBOL_SUBQUERY = Prisma.sql`symbol IN (SELECT symbol FROM "export"."v_company_profiles" WHERE in_latest_list AND (short_name IS NULL OR short_name NOT LIKE '%-KY%'))`;
 
 export const queryTpexValuationRanking = async (
   tradeDate: Date,
@@ -100,11 +99,11 @@ export const queryTpexValuationRanking = async (
 
   const [rows, excludedCountRows] = await Promise.all([
     tpexExportPrisma.$queryRaw<{ symbol: string; value: unknown }[]>(
-      Prisma.sql`SELECT symbol, ${column} AS value FROM ${exportView(tpexExportPrisma, 'daily_valuation')} WHERE trade_date = ${tradeDate} AND ${filterSql} AND ${COMPANY_SYMBOL_SUBQUERY} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
+      Prisma.sql`SELECT symbol, ${column} AS value FROM "export"."v_daily_valuations" WHERE trade_date = ${tradeDate} AND ${filterSql} AND ${COMPANY_SYMBOL_SUBQUERY} ORDER BY ${column} ${directionSql} LIMIT ${limit}`
     ),
     excludeNonPositive
       ? tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>(
-          Prisma.sql`SELECT count(*)::bigint as cnt FROM ${exportView(tpexExportPrisma, 'daily_valuation')} WHERE trade_date = ${tradeDate} AND ${column} <= 0 AND ${COMPANY_SYMBOL_SUBQUERY}`
+          Prisma.sql`SELECT count(*)::bigint as cnt FROM "export"."v_daily_valuations" WHERE trade_date = ${tradeDate} AND ${column} <= 0 AND ${COMPANY_SYMBOL_SUBQUERY}`
         )
       : Promise.resolve([{ cnt: 0n }]),
   ]);

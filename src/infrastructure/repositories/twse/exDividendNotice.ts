@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { ExDividendCalendarEntry, ExDividendNoticeEntry } from '@/application/ports/marketData';
 
@@ -39,7 +38,7 @@ export const getExDividendCalendar = async (startDate: Date, endDate: Date): Pro
   const rows = await twseExportPrisma.$queryRaw<RawExDividendNoticeRow[]>`
     SELECT symbol, ex_date, ex_type, stock_dividend_ratio, subscription_ratio, subscription_price_per_share,
       cash_dividend, shares_offered, shares_emp_owner, sharesholder_owner, stock_holding_ratio
-    FROM ${exportView(twseExportPrisma, 'ex_dividend_notice')}
+    FROM "export"."v_ex_dividend_notices"
     WHERE ex_date >= ${startDate} AND ex_date <= ${endDate}
     ORDER BY ex_date ASC, symbol ASC
   `;

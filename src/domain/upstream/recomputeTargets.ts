@@ -41,8 +41,8 @@ const quarterOfDate = (isoDate: string): number | null => {
 // 只是跨源比對或轉發給前端的表，不是任何指標的輸入。列出來是為了跟「認不得」分開——認不得要人看，這些不用。
 const NON_METRIC_TABLES = new Set(['ex_right_dividend', 'ex_dividend_notice']);
 
-// 2026-10-08 twse-ts（10/08）／tpex-ts（10/10）的 row_changes.table_name 改成複數（view 改名成 v_＋複數的同一批），舊列也一起改；
-// 兩邊切換時間不同，所以新舊名都認，一律轉回單數再判斷。mops 沒改名。
+// 2026-10-08 twse-ts／tpex-ts 的 row_changes.table_name 改成複數（view 改名成 v_＋複數的同一批），舊列也一起改；
+// 新舊名都認（切換當下的批次可能混雜），一律轉回單數再判斷。mops 沒改名。
 const TWSE_TPEX_SINGULAR: Record<string, string> = {
   daily_prices: 'daily_price',
   daily_valuations: 'daily_valuation',

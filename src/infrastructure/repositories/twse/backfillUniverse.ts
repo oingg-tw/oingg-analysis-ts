@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
@@ -7,12 +6,12 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 export const listDailyPriceTradeDates = (symbol: string): Promise<{ trade_date: Date }[]> =>
   twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-    SELECT DISTINCT trade_date FROM ${exportView(twseExportPrisma, 'daily_price')} WHERE symbol = ${symbol} ORDER BY trade_date ASC
+    SELECT DISTINCT trade_date FROM "export"."v_daily_prices" WHERE symbol = ${symbol} ORDER BY trade_date ASC
   `;
 
 export const listDailyValuationTradeDates = (symbol: string): Promise<{ trade_date: Date }[]> =>
   twseExportPrisma.$queryRaw<{ trade_date: Date }[]>`
-    SELECT DISTINCT trade_date FROM ${exportView(twseExportPrisma, 'daily_valuation')} WHERE symbol = ${symbol} ORDER BY trade_date ASC
+    SELECT DISTINCT trade_date FROM "export"."v_daily_valuations" WHERE symbol = ${symbol} ORDER BY trade_date ASC
   `;
 
 // 2026-09-23 月頻指標（sus）的母體——有月營收的公司。上市走 twse（必須篩 source，同一張表混了公開發行
@@ -20,8 +19,8 @@ export const listDailyValuationTradeDates = (symbol: string): Promise<{ trade_da
 // 兩邊 union 去重，回傳排序後的清單。
 export const listSymbolsWithMonthlyRevenue = async (): Promise<{ symbol: string }[]> => {
   const [listed, otc] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM ${exportView(twseExportPrisma, 'monthly_revenue')} WHERE source = 'MONTHLY_REVENUE'`,
-    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM ${exportView(tpexExportPrisma, 'monthly_revenue')}`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_monthly_revenues" WHERE source = 'MONTHLY_REVENUE'`,
+    tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_monthly_revenues"`,
   ]);
   return [...new Set([...listed, ...otc].map((r) => r.symbol))].sort().map((symbol) => ({ symbol }));
 };

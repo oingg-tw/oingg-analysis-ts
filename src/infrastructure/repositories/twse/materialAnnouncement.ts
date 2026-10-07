@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import type { MaterialAnnouncementPort } from '@/application/ports/materialAnnouncements';
 
@@ -19,7 +18,7 @@ export interface RawMaterialAnnouncementRow {
 export const listLatestMaterialAnnouncements = (limit: number): Promise<RawMaterialAnnouncementRow[]> =>
   twseExportPrisma.$queryRaw<RawMaterialAnnouncementRow[]>`
     SELECT symbol, announcement_date, announcement_time, report_date, subject, clause, fact_date, description
-    FROM ${exportView(twseExportPrisma, 'material_announcement')}
+    FROM "export"."v_material_announcements"
     ORDER BY announcement_date DESC, announcement_time DESC
     LIMIT ${limit}
   `;

@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { test, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { listAllCompanyNames, countAllCompanyNames, listAllSecurityNames, countAllSecurityNames } from '@/infrastructure/repositories/exchange/companyProfile';
@@ -21,8 +20,8 @@ test('listAllCompanyNames: 兩邊資料庫都有登記的公司代號，去重�
 
 test('listAllCompanyNames: count 反映去重後的總筆數，不是 twse+tpex 筆數直接相加', async () => {
   const [twseCountRows, tpexCountRows, { count }] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM ${exportView(twseExportPrisma, 'company_profile')}`,
-    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM ${exportView(tpexExportPrisma, 'company_profile')}`,
+    twseExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."v_company_profiles"`,
+    tpexExportPrisma.$queryRaw<{ cnt: bigint }[]>`SELECT count(*)::bigint as cnt FROM "export"."v_company_profiles"`,
     listAllCompanyNames(1, 0),
   ]);
   const twseCount = Number(twseCountRows[0]?.cnt ?? 0);

@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { ForeignShareholdingEntry } from '@/application/ports/marketData';
 
@@ -26,7 +25,7 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingEntry[]> => {
   const rows = await tpexExportPrisma.$queryRaw<RawForeignShareholdingRow[]>`
     SELECT trade_date, shares_held_percent, foreign_limit_percent, available_invest_percent
-    FROM ${exportView(tpexExportPrisma, 'foreign_shareholding')}
+    FROM "export"."v_foreign_shareholdings"
     WHERE symbol = ${symbol}
     ORDER BY trade_date DESC
     LIMIT ${limit}

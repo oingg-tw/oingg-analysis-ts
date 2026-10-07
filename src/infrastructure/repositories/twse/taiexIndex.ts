@@ -1,4 +1,3 @@
-import { exportView } from '@/infrastructure/repositories/exchange/exportViews';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { Prisma } from '#generated/twse-export-client';
 import type { TaiexIndexPort, TaiexInterval } from '@/application/ports/taiexIndex';
@@ -18,13 +17,13 @@ const TRUNC_UNIT: Record<Exclude<TaiexInterval, 'daily'>, string> = { weekly: 'w
 export const listLatestTaiexDailyPrices = (limit: number, interval: TaiexInterval): Promise<RawTaiexDailyPriceRow[]> => {
   if (interval === 'daily') {
     return twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
-      SELECT trade_date, close FROM ${exportView(twseExportPrisma, 'daily_taiex_index')}
+      SELECT trade_date, close FROM "export"."v_daily_taiex_indices"
       ORDER BY trade_date DESC LIMIT ${limit}
     `;
   }
   const unit = Prisma.raw(`'${TRUNC_UNIT[interval]}'`);
   return twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
-    SELECT DISTINCT ON (date_trunc(${unit}, trade_date)) trade_date, close FROM ${exportView(twseExportPrisma, 'daily_taiex_index')}
+    SELECT DISTINCT ON (date_trunc(${unit}, trade_date)) trade_date, close FROM "export"."v_daily_taiex_indices"
     ORDER BY date_trunc(${unit}, trade_date) DESC, trade_date DESC LIMIT ${limit}
   `;
 };
@@ -32,7 +31,7 @@ export const listLatestTaiexDailyPrices = (limit: number, interval: TaiexInterva
 // 全部歷史，依日期升冪（equityRiskPremium 取每月最後一個收盤價用）。
 export const listAllTaiexDailyPricesAsc = (): Promise<RawTaiexDailyPriceRow[]> =>
   twseExportPrisma.$queryRaw<RawTaiexDailyPriceRow[]>`
-    SELECT trade_date, close FROM ${exportView(twseExportPrisma, 'daily_taiex_index')} ORDER BY trade_date ASC
+    SELECT trade_date, close FROM "export"."v_daily_taiex_indices" ORDER BY trade_date ASC
   `;
 
 // application/ports/taiexIndex.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
