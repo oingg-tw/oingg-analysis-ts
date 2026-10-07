@@ -30,7 +30,7 @@ const HOLDER = `${process.env.CLOUD_RUN_EXECUTION ?? 'local'}-${process.pid}`;
 const LEASE_MINUTES = 120; // 要比最長一批處理時間長；處理程式死掉的話，租約過期後下一次叫醒的人可以接手
 const HISTORY_FLOOR = quarterIndex(109, 3); // 全市場歷史回填的起點，見 project_history_backfill_depth
 const CONCURRENCY = 8;
-const DAILY_LABELS = new Set(['beta', 'marketRatios']);
+const DAILY_LABELS = new Set(['beta', 'marketRatios', 'fiftyTwoWeek']);
 
 const runPool = async <T>(items: T[], fn: (item: T) => Promise<void>): Promise<void> => {
   let cursor = 0;

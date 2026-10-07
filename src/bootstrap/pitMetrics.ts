@@ -87,6 +87,7 @@ import { computeCashFlowValuationFamily } from '@/application/metrics/shared/cas
 import { computeDupontFamily } from '@/application/metrics/shared/dupont/computeDupontFamily';
 import { computeMarketRatios } from '@/application/metrics/shared/marketRatios/computeMarketRatios';
 import { computeBeta } from '@/application/metrics/valuation/beta/computeBeta';
+import { computeFiftyTwoWeek } from '@/application/metrics/valuation/fiftyTwoWeek/computeFiftyTwoWeek';
 import { computeBvps } from '@/application/metrics/valuation/bvps/computeBvps';
 import { computeEarningsYield } from '@/application/metrics/valuation/earningsYield/computeEarningsYield';
 import { computeEvEbitda } from '@/application/metrics/valuation/evEbitda/computeEvEbitda';
@@ -227,6 +228,7 @@ export const computeAndWriteCashFlowValuationFamilyPit = runPit(computeCashFlowV
 export const computeAndWriteDupontFamilyPit = runPit(computeDupontFamily);
 export const computeAndWriteMarketRatiosPit = runPit(computeMarketRatios);
 export const computeAndWriteBetaPit = runPit(computeBeta);
+export const computeAndWriteFiftyTwoWeekPit = runPit(computeFiftyTwoWeek);
 export const computeAndWriteBvpsPit = runPit(computeBvps);
 export const computeAndWriteEarningsYieldPit = runPit(computeEarningsYield);
 export const computeAndWriteEvEbitdaPit = runPit(computeEvEbitda);
