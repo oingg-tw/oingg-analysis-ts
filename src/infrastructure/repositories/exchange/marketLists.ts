@@ -1,5 +1,5 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
-import type { MarketListsPort } from '@/application/ports/marketLists';
+import type { MarketListsPort, RawTpexVolumeTop20Row } from '@/application/ports/marketLists';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 
 // 2026-09-17 clean architecture 重構 Phase 2：全市場排行/清單類端點（market/*）原本各自在 HTTP
@@ -32,10 +32,7 @@ export interface RawTwseVolumeTop20Row {
   change: number | null;
 }
 
-export interface RawTpexVolumeTop20Row {
-  symbol: string;
-  volume: bigint;
-}
+export type { RawTpexVolumeTop20Row };
 
 export const getLatestVolumeTop20TradeDate = async (market: Market): Promise<Date | null> => {
   const rows = await dbFor(market).$queryRaw<{ trade_date: Date | null }[]>`SELECT MAX(trade_date) as trade_date FROM "export"."volume_top20"`;
@@ -49,11 +46,15 @@ export const listVolumeTop20Twse = (tradeDate: Date): Promise<RawTwseVolumeTop20
     WHERE trade_date = ${tradeDate}
   `;
 
+// 名單（哪 20 檔）照櫃買官方排行，數字改接同一個 export 庫的 daily_price：volume_top20.volume 是「張」、跟證交所的「股」不同單位
+// （見 application/ports/marketLists.ts 的說明）。daily_price 查無那一列時（理論上不會）退回官方張數 × 1000，仍是股。
 export const listVolumeTop20Tpex = (tradeDate: Date): Promise<RawTpexVolumeTop20Row[]> =>
   tpexExportPrisma.$queryRaw<RawTpexVolumeTop20Row[]>`
-    SELECT symbol, volume
-    FROM "export"."volume_top20"
-    WHERE trade_date = ${tradeDate}
+    SELECT v.symbol, COALESCE(d.volume, v.volume * 1000) AS volume, d.transaction,
+      NULLIF(d.open, 0) AS open, NULLIF(d.high, 0) AS high, NULLIF(d.low, 0) AS low, NULLIF(d.close, 0) AS close
+    FROM "export"."volume_top20" v
+    LEFT JOIN "export"."daily_price" d ON d.symbol = v.symbol AND d.trade_date = v.trade_date
+    WHERE v.trade_date = ${tradeDate}
   `;
 
 // ---- 月營收（export.monthly_revenue，twse-ts/tpex-ts 欄位一致）----
