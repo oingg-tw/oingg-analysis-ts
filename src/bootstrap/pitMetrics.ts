@@ -23,6 +23,7 @@ import { computeBvpsGrowthRate } from '@/application/metrics/growth/bvpsGrowthRa
 import { computeEpsCagrFamily } from '@/application/metrics/growth/epsCagr/computeEpsCagrFamily';
 import { computeEpsGrowthRate } from '@/application/metrics/growth/epsGrowthRate/computeEpsGrowthRate';
 import { computeEpsPriorYear } from '@/application/metrics/growth/epsPriorYear/computeEpsPriorYear';
+import { computeRoeWeighted5y } from '@/application/metrics/profitability/roeWeighted5y/computeRoeWeighted5y';
 import { computeEquityGrowthRate } from '@/application/metrics/growth/equityGrowthRate/computeEquityGrowthRate';
 import { computeNetIncomeGrowthRate } from '@/application/metrics/growth/netIncomeGrowthRate/computeNetIncomeGrowthRate';
 import { computeOperatingIncomeGrowthRate } from '@/application/metrics/growth/operatingIncomeGrowthRate/computeOperatingIncomeGrowthRate';
@@ -186,6 +187,7 @@ export const computeAndWritePretaxIncomePerSharePit = runPit(computePretaxIncome
 export const computeAndWriteRevenuePerSharePit = runPit(computeRevenuePerShare);
 export const computeAndWriteRoaPit = runPit(computeRoa);
 export const computeAndWriteRoePit = runPit(computeRoe);
+export const computeAndWriteRoeWeighted5yPit = runPit(computeRoeWeighted5y);
 export const computeAndWriteRoicPit = runPit(computeRoic);
 export const computeAndWriteAbnormalCapexRatioPit = runPit(computeAbnormalCapexRatio);
 export const computeAndWriteAccrualsRatioPit = runPit(computeAccrualsRatio);

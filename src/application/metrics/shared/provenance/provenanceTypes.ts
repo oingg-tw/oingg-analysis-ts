@@ -95,6 +95,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'bvpsGrowthRate',
   'epsGrowthRate',
   'epsPriorYear',
+  'roeWeighted5y',
   'rdIntensity',
   'sgr',
   'epsCagr3y',

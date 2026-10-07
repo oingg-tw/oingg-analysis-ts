@@ -65,6 +65,7 @@ import { revenueGrowthRateDefinition } from '@/domain/metrics/growth/revenueGrow
 import { ruleOf40Definition } from '@/domain/metrics/growth/ruleOf40/ruleOf40Definition';
 import { epsGrowthRateDefinition } from '@/domain/metrics/growth/epsGrowthRate/epsGrowthRateDefinition';
 import { epsPriorYearDefinition } from '@/domain/metrics/growth/epsPriorYear/epsPriorYearDefinition';
+import { roeWeighted5yDefinition } from '@/domain/metrics/profitability/roeWeighted5y/roeWeighted5yDefinition';
 import { netIncomeGrowthRateDefinition } from '@/domain/metrics/growth/netIncomeGrowthRate/netIncomeGrowthRateDefinition';
 import { operatingIncomeGrowthRateDefinition } from '@/domain/metrics/growth/operatingIncomeGrowthRate/operatingIncomeGrowthRateDefinition';
 import { equityGrowthRateDefinition } from '@/domain/metrics/growth/equityGrowthRate/equityGrowthRateDefinition';
@@ -239,6 +240,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   ruleOf40: ruleOf40Definition,
   epsGrowthRate: epsGrowthRateDefinition,
   epsPriorYear: epsPriorYearDefinition,
+  roeWeighted5y: roeWeighted5yDefinition,
   netIncomeGrowthRate: netIncomeGrowthRateDefinition,
   operatingIncomeGrowthRate: operatingIncomeGrowthRateDefinition,
   equityGrowthRate: equityGrowthRateDefinition,
