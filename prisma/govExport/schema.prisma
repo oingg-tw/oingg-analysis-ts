@@ -45,7 +45,8 @@ model IngestionRun {
   runId       BigInt   @id @default(autoincrement()) @map("run_id")
   dataset     String
   dataDate    DateTime @map("data_date") @db.Date
-  completedAt DateTime @default(now()) @map("completed_at")
+  // 2026-10-08 gov-ts 改成 TIMESTAMPTZ(6)，對齊 twse／tpex／mops／sitca（原本是 gov 唯一的 TIMESTAMP(3)）；DEV 已套用，PRD 跟產業分類 DROP 一起上。
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
   rowCount    Int      @map("row_count")
   status      String // 'success' | 'partial' | 'failed'
 
