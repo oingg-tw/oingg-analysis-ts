@@ -15,7 +15,7 @@
 | `status` | 等於 HTTP 狀態碼 |
 | `detail` | 給人看的說明，措辭會變，**不要解析** |
 | `instance` | `urn:uuid:<request id>`。呼叫端送 `X-Request-Id` 就沿用，回應 header 也會帶同一個值，回報問題時引用它 |
-| `code` | 只在呼叫端需要分支時才有：`unknown_metric`、`unsupported_timeframe`。之後可能新增值，未知的值要放行 |
+| `code` | 只在呼叫端需要分支時才有：`unknown_metric`、`unsupported_timeframe`。之後可能新增值，未知的值要放行。**三個服務的 code 一律小寫加底線**（2026-10-08 使用者拍板，既有的大寫代碼也改），跟 `type` 的 tag URI 一一對應（底線換連字號） |
 | `errors` | 參數驗證失敗（400）才有：body 欄位 `{ detail, pointer: "#/columns/0/field" }`，query／path 參數 `{ detail, parameter: "metricCode" }` |
 | `message` | **過渡期欄位**，業務中台改讀 `detail`／`errors` 後移除。驗證錯誤時是第一個欄位的訊息，其他錯誤等於 `detail` |
 
