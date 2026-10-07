@@ -97,6 +97,7 @@
 - **mops 2020Q4 補算後的重算**（2026-10-07 mops 完成：109Q4 合併報表有淨利 24→1,025 家，順帶更正 110 年 88 家 244 個值）：
   mops 只改 Q4：109 年約 1,001 家、110 年 88 家（改既有值）、112 年 60 家、113 年 29 家、114 年 20 家（111 年 0）。`tmp/recompute2020q4.cmd` 等全市場重算跑完後：
   前 1,010 家 109Q4～111Q3（log `tmp/recompute-2020q4.log`），再補 112～114 年那 94 家 112Q4～115Q2（`tmp/mops-q4-112-114.txt`，log `tmp/recompute-q4-112-114.log`）。
+  接著 `tmp/recomputeA3.cmd`：mops A3 股利所屬年度更正 16 列（13 家，`tmp/mops-a3-dividend-year.txt`）全歷史重算（log `tmp/recompute-a3.log`）。
   mops 主批次另有 829 家（含 8069、9945 回填到 109Q3）重抓後會再重推一次，通知後補算那批，全部完成再發清快取通知給 bff／web-nuxt。
 - **股利分派公告表**（mops-ts `DividendDistribution` domain，資料源 MOPS t108sb27）：
   資料源本身沒有硬限制（沒有已知歷史年份上限），但 mops-ts 自己的 backfill CLI 缺
