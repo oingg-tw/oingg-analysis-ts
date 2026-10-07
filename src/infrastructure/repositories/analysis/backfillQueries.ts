@@ -44,6 +44,18 @@ export const listMetricValuesForGapScan = (input: { metricCodes: string[]; fisca
 // parity 證明（scripts/verifyMetricEquivalencePit.ts）：時間窗內 shadow 表新增的列數，理論上要是 0。
 export const countShadowRowsSince = (since: Date): Promise<number> => analysisPrisma.metricUpsertShadow.count({ where: { capturedAt: { gte: since } } });
 
+// 2026-10-08 稽核表保留 90 天（使用者拍板，跟上游 row_changes 的保留期一致）：每批刪 batchSize 列、迴圈到刪完，
+// 不開一個大交易（5 百萬列等級一次刪會長時間持鎖、產生大量 WAL）。回傳總共刪幾列。
+export const deleteShadowRowsBefore = async (cutoff: Date, batchSize = 10_000): Promise<number> => {
+  let total = 0;
+  for (;;) {
+    const deleted = await analysisPrisma.$executeRaw`
+      DELETE FROM metric_upsert_shadow WHERE id IN (SELECT id FROM metric_upsert_shadow WHERE captured_at < ${cutoff} LIMIT ${batchSize})`;
+    total += deleted;
+    if (deleted < batchSize) return total;
+  }
+};
+
 // 排行榜退化稽核（scripts/auditRankDegeneracy.ts）：每支指標取「每家公司最新一筆非 null 值」由大到小排前 N 名，
 // 回報這 N 名總共跨越幾個不同數值。
 //

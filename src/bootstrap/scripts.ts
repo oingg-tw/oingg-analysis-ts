@@ -2,7 +2,7 @@ import { listSymbolsWithIncomeStatement, listBankSymbols, listBankSymbolsForQuar
 import { getSymbolsWithDividendDistribution } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { listDailyPriceTradeDates, listDailyValuationTradeDates, listSymbolsWithMonthlyRevenue } from '@/infrastructure/repositories/twse/backfillUniverse';
 import { isFinancialIndustryCompany, listCompaniesBySectorCodes } from '@/infrastructure/repositories/exchange/securitiesIndustry';
-import { listLatestTtmValuesAcrossMarket, listMetricValuesForGapScan, countShadowRowsSince, listRankDegeneracy } from '@/infrastructure/repositories/analysis/backfillQueries';
+import { listLatestTtmValuesAcrossMarket, listMetricValuesForGapScan, countShadowRowsSince, deleteShadowRowsBefore, listRankDegeneracy } from '@/infrastructure/repositories/analysis/backfillQueries';
 import { mopsReportAvailability } from '@/infrastructure/repositories/mops/companyReportAvailability';
 
 // scripts/ 的唯一資料出口（scripts-only-bootstrap 規則：scripts 只能 import src/bootstrap 跟 src/domain）——
@@ -28,4 +28,4 @@ export const backfillUniverse = {
 // 每家公司的財報口徑（'1' 個體／'2' 合併），scripts/backfillTaskDefinitions.ts 組 query 時用；見 application/ports/reportAvailability.ts。
 export const reportAvailability = mopsReportAvailability;
 
-export const analysisQueries = { listLatestTtmValuesAcrossMarket, listMetricValuesForGapScan, countShadowRowsSince, listRankDegeneracy };
+export const analysisQueries = { listLatestTtmValuesAcrossMarket, listMetricValuesForGapScan, countShadowRowsSince, deleteShadowRowsBefore, listRankDegeneracy };

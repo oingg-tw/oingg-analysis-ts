@@ -51,15 +51,15 @@ datasource db {
 
 // 產業代碼對照表——不是本服務算出來的指標結果，是從外部服務（localhost:8081，dev 環境的 TWSE
 // 產業代碼服務，見 src/shared/sourceData/industryCodes.ts）抓來的參考資料，所以不遵循上面「<分類>_<指標>」
-// 的指標結果表命名規則，另外取名 reference_industry_code。存起來的目的是「抓不到的時候還有
+// 的指標結果表命名規則，另外取名 reference_industry_codes。存起來的目的是「抓不到的時候還有
 // 上次抓到的可以頂著用」，不是要當成本服務自己的資料來源真相（那個永遠是 localhost:8081）。
 model IndustryCode {
   code String @id // 兩碼產業代碼，例如 "24"
   name String // 中文產業名稱，例如 "半導體業"
 
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@map("reference_industry_code")
+  @@map("reference_industry_codes")
 }
 
 // 股權風險溢酬（Equity Risk Premium）——歷史法：TAIEX 年化報酬率 - 同期 10年期公債次級市場殖利率
@@ -85,11 +85,11 @@ model EquityRiskPremiumResult {
 
   warnings String[]
 
-  computedAt DateTime @default(now()) @map("computed_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  computedAt DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@id([windowStart, windowEnd])
-  @@map("macro_equity_risk_premium")
+  @@map("macro_equity_risk_premiums")
 }
 
 // ============================================================================
@@ -131,8 +131,8 @@ model MetricDefinition {
 
   spec Json
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   values MetricValue[]
   dailyCadenceValues MetricDailyCadenceValue[]
@@ -196,12 +196,13 @@ model MetricValue {
   knowledgeDateIsFallback Boolean @map("knowledge_date_is_fallback")
 
   formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
-  computedAt     DateTime @default(now()) @map("computed_at")
+  computedAt     DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
 
   @@unique([symbol, metricCode, periodType, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_values_identity_key")
-  @@index([symbol, metricCode, periodType, fiscalYear, fiscalQuarter, dataType, subsidiaryCompanyId], map: "metric_values_latest_lookup")
+  // 2026-10-08 全市場查詢（排行／名次／分布）用：以 metric_code 開頭、照 buildCte 的 DISTINCT ON (symbol) … ORDER BY 排好，取代重複的 latest_lookup。
+  @@index([metricCode, periodType, subsidiaryCompanyId, symbol, fiscalYear(sort: Desc), fiscalQuarter(sort: Desc), knowledgeDate(sort: Desc)], map: "metric_values_market_latest")
   @@map("metric_values")
 }
 
@@ -252,12 +253,11 @@ model MetricDailyCadenceValue {
   knowledgeDateIsFallback Boolean  @map("knowledge_date_is_fallback")
 
   formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
-  computedAt     DateTime @default(now()) @map("computed_at")
+  computedAt     DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
 
   @@unique([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId, tradeDate, knowledgeDate], map: "metric_daily_cadence_values_identity_key")
-  @@index([symbol, metricCode, lookbackRange, samplingInterval, snapshotCadence, dataType, subsidiaryCompanyId], map: "metric_daily_cadence_values_latest_lookup")
   @@map("metric_daily_cadence_values")
 }
 
@@ -300,12 +300,11 @@ model MetricMonthlyValue {
   knowledgeDateIsFallback Boolean  @map("knowledge_date_is_fallback")
 
   formulaVersion Int      @default(1) @map("formula_version") @db.SmallInt
-  computedAt     DateTime @default(now()) @map("computed_at")
+  computedAt     DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   metricDefinition MetricDefinition @relation(fields: [metricCode], references: [metricCode])
 
   @@unique([symbol, metricCode, fiscalYear, fiscalMonth, dataType, subsidiaryCompanyId, knowledgeDate], map: "metric_monthly_values_identity_key")
-  @@index([symbol, metricCode, fiscalYear, fiscalMonth, dataType, subsidiaryCompanyId], map: "metric_monthly_values_latest_lookup")
   @@map("metric_monthly_values")
 }
 
@@ -320,9 +319,9 @@ model MetricUpsertShadow {
   modelName   String   @map("model_name") // Prisma model 名稱（PascalCase，如 "RoeResult"）
   primaryKey  Json     @map("primary_key") // 這次 upsert 呼叫的 args.where 原始內容
   previousRow Json     @map("previous_row") // 即將被蓋掉的完整舊列快照
-  capturedAt  DateTime @default(now()) @map("captured_at")
+  capturedAt  DateTime @default(now()) @map("captured_at") @db.Timestamptz(3)
 
-  @@index([modelName, capturedAt])
+  @@index([capturedAt], map: "metric_upsert_shadow_captured_at_idx")
   @@map("metric_upsert_shadow")
 }
 
@@ -353,5 +352,5 @@ model UpstreamProcessorLease {
   holder    String?
   expiresAt DateTime @default(dbgenerated("'1970-01-01 00:00:00+00'::timestamp with time zone")) @map("expires_at") @db.Timestamptz(3)
 
-  @@map("upstream_processor_lease")
+  @@map("upstream_processor_leases")
 }

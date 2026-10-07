@@ -46,15 +46,31 @@ const valuesEqual = (previousValue: unknown, updateValue: unknown): boolean => {
   return JSON.stringify(serializePrismaRow(previousValue)) === JSON.stringify(serializePrismaRow(updateValue));
 };
 
-// 目前 39 個 upsert 呼叫點的 update 區塊都是純量欄位賦值；遇到物件值（疑似 Prisma update
-// operator，例如 { increment }，且不是上面已知會處理的 Date/Decimal）保守視為「有變化」
-// 直接寫快照，不嘗試解析語意——寧可多寫一筆，不能因為誤判「沒變」漏記真正的變化。
-const isChanged = (previousRow: Record<string, unknown>, update: Record<string, unknown>): boolean => {
+// Prisma update operator（{ increment: 1 } 這類）——只有這種物件才保守視為「有變化」，不嘗試解析語意，
+// 寧可多寫一筆，不能因為誤判「沒變」漏記真正的變化。
+const PRISMA_UPDATE_OPERATORS = new Set(['set', 'increment', 'decrement', 'multiply', 'divide', 'push', 'unset']);
+const isUpdateOperator = (value: Record<string, unknown>): boolean => {
+  const keys = Object.keys(value);
+  return keys.length === 1 && PRISMA_UPDATE_OPERATORS.has(keys[0]!);
+};
+
+// JSON 欄位的內容比對：key 排序後再序列化——PostgreSQL 的 jsonb 會重排 key 的順序，直接 JSON.stringify 永遠不相等。
+const canonicalJson = (value: unknown): string =>
+  JSON.stringify(serializePrismaRow(value), (_key, v: unknown) =>
+    v !== null && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : v
+  );
+
+// 2026-10-08：原本「update 值是物件」一律視為 operator、判定有變，結果 metric_definitions.spec（JSON 物件）每次
+// upsertMetricDefinition 都寫一筆沒變的快照（每輪回填 170 多筆，稽核表因此長到 4.6 GB 的一部分原因）。改成只有 Prisma
+// update operator 才保守判定有變，其他物件（JSON 欄位）照內容比對。
+export const isChanged = (previousRow: Record<string, unknown>, update: Record<string, unknown>): boolean => {
   for (const key of Object.keys(update)) {
     if (AUDIT_TIMESTAMP_KEYS.has(key)) continue;
     const updateValue = update[key];
     if (updateValue !== null && typeof updateValue === 'object' && !Array.isArray(updateValue) && !(updateValue instanceof Date) && !(updateValue instanceof Prisma.Decimal)) {
-      return true;
+      if (isUpdateOperator(updateValue as Record<string, unknown>)) return true;
+      if (canonicalJson(previousRow[key]) !== canonicalJson(updateValue)) return true;
+      continue;
     }
     if (!valuesEqual(previousRow[key], updateValue)) return true;
   }

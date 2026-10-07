@@ -11,7 +11,7 @@
 import { appDeps } from '../src/bootstrap/deps';
 import { disconnectAllDbs } from '../src/bootstrap/db';
 import { memoizeStatementsForBackfill } from '../src/bootstrap/memoizedStatements';
-import { backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
+import { analysisQueries, backfillUniverse, reportAvailability } from '../src/bootstrap/scripts';
 import {
   computeAndWriteLiveGrahamNumberPit,
   computeAndWriteLiveMarketCapPit,
@@ -135,7 +135,20 @@ const drainQueue = async (memo: { clear: () => void }): Promise<void> => {
   }
 };
 
+// 2026-10-08 稽核表（metric_upsert_shadow）保留 90 天（使用者拍板，跟上游 row_changes 一致）：這支 Job 每個交易日都會被上游叫醒，
+// 順便清掉過期的列。失敗只記 log，不影響這次的重算。
+const SHADOW_RETENTION_DAYS = 90;
+const pruneShadowRows = async (): Promise<void> => {
+  try {
+    const deleted = await analysisQueries.deleteShadowRowsBefore(new Date(Date.now() - SHADOW_RETENTION_DAYS * 86_400_000));
+    if (deleted > 0) console.log(`[upstream] 稽核表刪除 ${SHADOW_RETENTION_DAYS} 天前的列 ${deleted} 筆。`);
+  } catch (error) {
+    console.error('[upstream] 稽核表保留期清理失敗（不影響重算）：', error);
+  }
+};
+
 const main = async () => {
+  await pruneShadowRows();
   const memo = memoizeStatementsForBackfill();
   for (;;) {
     if (!(await appDeps.upstreamQueue.acquireLease(HOLDER, LEASE_MINUTES))) {

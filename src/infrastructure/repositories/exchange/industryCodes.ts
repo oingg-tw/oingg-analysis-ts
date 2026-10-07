@@ -30,7 +30,7 @@ const fetchIndustryCodesOnce = async (): Promise<IndustryCodeMap> => {
   return Object.fromEntries(rows.map((row) => [row.code, row.name]));
 };
 
-// 抓成功後存進 oingg-analysis DB 的 reference_industry_code，供之後「抓不到的時候頂著用」。
+// 抓成功後存進 oingg-analysis DB 的 reference_industry_codes，供之後「抓不到的時候頂著用」。
 // 存檔失敗不應該讓這次已經抓到、可以直接用的結果算失敗——跟其他指標「算完存進 DB，存檔失敗
 // 不影響本次回傳」是同一種容錯原則。
 const persistIndustryCodes = async (codes: IndustryCodeMap): Promise<void> => {
@@ -45,11 +45,11 @@ const persistIndustryCodes = async (codes: IndustryCodeMap): Promise<void> => {
       )
     );
   } catch (error) {
-    logger.error({ err: error }, '[industry-codes]: 寫入 reference_industry_code 失敗，不影響本次抓到的結果。');
+    logger.error({ err: error }, '[industry-codes]: 寫入 reference_industry_codes 失敗，不影響本次抓到的結果。');
   }
 };
 
-// 從 reference_industry_code 讀上次成功抓到、存下來的對照表，當作 twse-ts export DB 這次連不上時
+// 從 reference_industry_codes 讀上次成功抓到、存下來的對照表，當作 twse-ts export DB 這次連不上時
 // 的備援——不保證是最新的（產業分類本來就很少變動，舊一點的對照表通常還是堪用），有總比完全沒有好。
 const loadIndustryCodesFromDb = async (): Promise<IndustryCodeMap | null> => {
   const rows = await analysisPrisma.industryCode.findMany();
@@ -80,11 +80,11 @@ export const loadIndustryCodes = async (): Promise<void> => {
     const fallback = await loadIndustryCodesFromDb();
     if (fallback) {
       industryCodes = fallback;
-      logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，改用 reference_industry_code 裡上次存的對照表頂著用（共 ${Object.keys(fallback).length} 筆）。`);
+      logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，改用 reference_industry_codes 裡上次存的對照表頂著用（共 ${Object.keys(fallback).length} 筆）。`);
       return;
     }
   } catch (error) {
-    logger.error({ err: error }, '[industry-codes]: 讀 reference_industry_code 備援資料也失敗。');
+    logger.error({ err: error }, '[industry-codes]: 讀 reference_industry_codes 備援資料也失敗。');
   }
   logger.warn(`[industry-codes]: 重試 ${MAX_ATTEMPTS} 次後仍失敗，DB 裡也沒有上次存的備援資料，放棄抓取，不影響伺服器啟動（之後也不會自動再重試，除非重啟伺服器）。`);
 };

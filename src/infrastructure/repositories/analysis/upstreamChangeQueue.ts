@@ -2,7 +2,7 @@ import { analysisPrisma } from '@/infrastructure/prisma/analysisClient';
 import type { UpstreamChangeQueuePort } from '@/application/ports/upstreamChanges';
 import type { UpstreamSource } from '@/domain/upstream/recomputeTargets';
 
-// application/ports/upstreamChanges.ts 的待辦表實作（analysis DB：upstream_change_notices、upstream_processor_lease，
+// application/ports/upstreamChanges.ts 的待辦表實作（analysis DB：upstream_change_notices、upstream_processor_leases，
 // 見 prisma/analysis/migrations/*_upstream_change_notices）。全部 raw SQL：冪等入列與租約都要單一語句原子完成。
 export const analysisUpstreamQueue: UpstreamChangeQueuePort = {
   enqueue: async (source, upToId, tables) => {
@@ -38,13 +38,13 @@ export const analysisUpstreamQueue: UpstreamChangeQueuePort = {
 
   acquireLease: async (holder, ttlMinutes) => {
     const rows = await analysisPrisma.$queryRaw<{ ok: number }[]>`
-      UPDATE upstream_processor_lease SET holder = ${holder}, expires_at = now() + make_interval(mins => ${ttlMinutes})
+      UPDATE upstream_processor_leases SET holder = ${holder}, expires_at = now() + make_interval(mins => ${ttlMinutes})
       WHERE id = 1 AND (expires_at < now() OR holder = ${holder})
       RETURNING 1 AS ok`;
     return rows.length === 1;
   },
 
   releaseLease: async (holder) => {
-    await analysisPrisma.$executeRaw`UPDATE upstream_processor_lease SET expires_at = now() WHERE id = 1 AND holder = ${holder}`;
+    await analysisPrisma.$executeRaw`UPDATE upstream_processor_leases SET expires_at = now() WHERE id = 1 AND holder = ${holder}`;
   },
 };

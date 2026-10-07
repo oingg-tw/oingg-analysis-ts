@@ -230,7 +230,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
     warnings.push(`供給面模型的股利殖利率固定取最新交易日（${supplySide?.dividendYieldTradeDate ?? '無'}），不是窗口終點 ${windowEnd} 當時的殖利率；指定過去的窗口時兩者時間點不一致。`);
   }
 
-  // 存進 oingg-analysis DB 的 macro_equity_risk_premium，PK 用 windowStart+windowEnd——同一組窗口
+  // 存進 oingg-analysis DB 的 macro_equity_risk_premiums，PK 用 windowStart+windowEnd——同一組窗口
   // 重算會覆蓋同一列，跟 beta 用 symbol+asOfDate 同一種「結果快取」模式。存檔失敗不應該讓已經
   // 算好的結果回傳失敗（跟 beta/service.ts 的 try/catch 同一種容錯方式）。
   try {
@@ -246,7 +246,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
       warnings,
     });
   } catch (error) {
-    deps.logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premium 失敗，不影響本次回傳結果。');
+    deps.logger.error({ err: error }, '[equityRiskPremium]: 寫入 macro_equity_risk_premiums 失敗，不影響本次回傳結果。');
   }
 
   return {

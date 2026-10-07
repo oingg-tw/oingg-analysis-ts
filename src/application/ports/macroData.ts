@@ -13,7 +13,7 @@ export interface TaiexDailyClose {
   close: number | null; // 沒成交的日子是 null
 }
 
-// 股權風險溢酬（ERP）計算結果快取（analysis DB 的 macro_equity_risk_premium）——PK 是
+// 股權風險溢酬（ERP）計算結果快取（analysis DB 的 macro_equity_risk_premiums）——PK 是
 // windowStart+windowEnd，同一組窗口重算就覆蓋同一列。
 export interface EquityRiskPremiumCacheRow {
   windowStart: string;
