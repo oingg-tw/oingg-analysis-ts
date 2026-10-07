@@ -132,7 +132,6 @@ import { getLivePegRatioProvenance } from '@/application/metrics/valuation/liveP
 import { getSusProvenance } from '@/application/metrics/growth/sus/getSusProvenance';
 import { getRevenueYoy3mProvenance } from '@/application/metrics/growth/revenueYoy3m/getRevenueYoy3mProvenance';
 import { getFiftyTwoWeekProvenance } from '@/application/metrics/valuation/fiftyTwoWeek/getFiftyTwoWeekProvenance';
-import { getForeignNetBuy20dProvenance } from '@/application/metrics/valuation/foreignNetBuy20d/getForeignNetBuy20dProvenance';
 import { getDividendDistributionCountProvenance } from '@/application/metrics/dividend/dividendDistributionCount/getDividendDistributionCountProvenance';
 import { getDividendPerShareProvenance } from '@/application/metrics/dividend/dividendPerShare/getDividendPerShareProvenance';
 import { getPiotroskiFScoreProvenance } from '@/application/metrics/quality/piotroskiFScore/getPiotroskiFScoreProvenance';
@@ -314,7 +313,6 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   priceReturn52w: (query) => getFiftyTwoWeekProvenance('priceReturn52w', query, deps),
   distanceFrom52wHigh: (query) => getFiftyTwoWeekProvenance('distanceFrom52wHigh', query, deps),
   distanceFrom52wLow: (query) => getFiftyTwoWeekProvenance('distanceFrom52wLow', query, deps),
-  foreignNetBuy20d: (query) => getForeignNetBuy20dProvenance(query, deps),
   liveMarketCap: (query) => getLiveMarketCapProvenance(query, deps),
   liveDividendPerShare: (query) => getLiveDividendPerShareProvenance(query, deps),
   livePbRatio: (query) => getLivePbRatioProvenance(query, deps),

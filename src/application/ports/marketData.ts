@@ -160,16 +160,4 @@ export interface StockHistoryPort {
   getStockPledgeRatioHistory(symbol: string, limit: number): Promise<StockPledgeRatioEntry[]>;
 }
 
-// 2026-10-07 外資買賣超（foreignNetBuy20d 用）：twse export.institutional_trading（T86，2026-09-01 起，只有上市；櫃買中心的版本 tpex-ts 評估可做、
-// 還沒排上線日，上線後再加查 tpex）。窗口是表裡 asOf 當天或之前最近 days 個交易日（全市場的交易日，不是這檔有列的日子）；
-// 這檔在窗口內沒有列的日子視為 0。netBuyShares = 外資及陸資（不含外資自營商）＋外資自營商的買賣超股數。
-export interface ForeignNetBuyWindow {
-  tradeDates: Date[]; // 窗口內的交易日，由舊到新（不足 days 個代表資料還沒累積夠）
-  rows: { tradeDate: Date; netBuyShares: bigint }[]; // 這檔在窗口內有列的日子
-}
-
-export interface InstitutionalTradingPort {
-  getForeignNetBuyWindow(symbol: string, asOf: Date, days: number): Promise<ForeignNetBuyWindow>;
-}
-
-export type MarketDataPort = StockPricePort & MarketCapPort & DailyValuationPort & LatestDailyPricePort & DailyPriceSeriesPort & StockHistoryPort & InstitutionalTradingPort;
+export type MarketDataPort = StockPricePort & MarketCapPort & DailyValuationPort & LatestDailyPricePort & DailyPriceSeriesPort & StockHistoryPort;

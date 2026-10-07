@@ -189,7 +189,6 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'priceReturn52w',
   'distanceFrom52wHigh',
   'distanceFrom52wLow',
-  'foreignNetBuy20d',
   'liveMarketCap',
   'liveDividendPerShare',
   'livePbRatio',
