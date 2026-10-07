@@ -38,7 +38,8 @@
   沒回頭重算，例：accrualsRatio v2→v3、早年單季 stockPrice 補到、mops 股利回補後的連續配息年數）。`tmp/fullRecompute.cmd` 兩段：
   109Q3～115Q2 全部 label（2,335 家 × 24 季，log `tmp/full-history-recompute.log`）→ 最新一季含逐日型（`tmp/full-latest-recompute.log`），
   依 16 家的速度線性推估約 29 小時；中斷用 SYMBOL_OFFSET 續跑。2026-10-07 規則 A 擴大到金融業後停掉重啟（`tmp/fullRecompute2.cmd`）：
-  先重跑舊程式已算過的 28 家金融股（`tmp/full-recompute-fin.log`），再從第 800 家續跑（`tmp/full-history-recompute-2.log`），最後最新一季。跑完用 metric_upsert_shadow（captured_at ≥ `tmp/full-recompute.start`）量實際改了多少。
+  先重跑舊程式已算過的 28 家金融股（`tmp/full-recompute-fin.log`），再從第 800 家續跑（`tmp/full-history-recompute-2.log`），最後最新一季。
+  同日第二次重啟（`tmp/fullRecompute3.cmd`）：mops 在長表加了 account_code=source（05fe1fe7 排除），從第 1,133 家（4949）續跑，log `tmp/full-history-recompute-3.log`。跑完用 metric_upsert_shadow（captured_at ≥ `tmp/full-recompute.start`）量實際改了多少。
   涵蓋原本清單的 chowderNumber 約 28 家、1216、4960、8476。
 
 ## 已知限制（刻意不修或修不了，前端要知道）
