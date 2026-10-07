@@ -2,7 +2,7 @@
 
 2026-10-08 由 analysis-ts、業務中台（原名 bff-ts，2026-10-08 改名；repo oingg-tw/oingg-business-ts）、web-nuxt 三方一起定的。適用於 analysis-ts 對業務中台提供的所有端點。
 **新端點一律照這份做；既有端點不做破壞性改動，只新增欄位**（破壞性改動的流程見「變更管理」）。
-合約的機器可讀版本：`GET /openapi.json`（要帶 X-Api-Key），業務中台在 CI 對它做 diff。
+合約的機器可讀版本：`GET /openapi.json`（要帶 X-Api-Key）。業務中台計畫在 CI 對它做 diff（尚未建置，要不要做由使用者決定）。
 
 ## 錯誤：RFC 9457 problem+json
 
