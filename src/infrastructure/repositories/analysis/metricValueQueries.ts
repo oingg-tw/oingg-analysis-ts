@@ -67,6 +67,18 @@ export const countMetricRowsWrittenSince = (metricCode: string, symbols: string[
   return group === 'period' ? analysisPrisma.metricValue.count({ where }) : analysisPrisma.metricDailyCadenceValue.count({ where });
 };
 
+// GET /data-version 用：三張值表各自依 metric_code 取 computed_at 最大值再合併（同一支指標只會在其中一張表）。
+// ponytail: metric_values 約 890 萬列、沒有 (metric_code, computed_at) 索引，全表分組約 3 秒；application 層用背景更新的快取擋住，
+// 請求不會等。要更快再加索引（migration，照「migration 一律最後一步」）。
+const listLatestComputedAtByMetric = async (): Promise<{ metricCode: string; computedAt: Date }[]> => {
+  const rows = await analysisPrisma.$queryRaw<{ metric_code: string; computed_at: Date }[]>`
+    SELECT metric_code, max(computed_at) AS computed_at FROM metric_values GROUP BY metric_code
+    UNION ALL SELECT metric_code, max(computed_at) FROM metric_daily_cadence_values GROUP BY metric_code
+    UNION ALL SELECT metric_code, max(computed_at) FROM metric_monthly_values GROUP BY metric_code
+  `;
+  return rows.map((r) => ({ metricCode: r.metric_code, computedAt: r.computed_at }));
+};
+
 // application/ports/metricValueQueries.ts 的實作；兩支歷史查詢的本體在 metricValueRepository.ts（跟寫入端同一個
 // 檔案，Phase 2 搬進來時就放那裡），screener 四種查詢 = ./screenerQueries.ts 組 SQL + 這裡執行——Prisma.Sql 不出
 // infrastructure。
@@ -126,6 +138,7 @@ export const analysisMetricValueQueries: MetricValueQueryPort = {
   findLatestSnapshotValue,
   listLatestDividendYieldWithMarketCap,
   countMetricRowsWrittenSince,
+  listLatestComputedAtByMetric,
   listPeriodMetricHistoryRows,
   listDailyCadenceMetricHistoryRows,
   listMonthlyMetricHistoryRows,

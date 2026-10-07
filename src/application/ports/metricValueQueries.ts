@@ -120,6 +120,8 @@ export interface MetricValueQueryPort {
   // 批次完整性檢查用：這批公司在時間窗內實際被寫入/更新的列數。2026-10-07 改收 definition 的 group（原本 isDailyCadence 布林，
   // 月頻被當季報型去查 metric_values，計數恆為 0）。
   countMetricRowsWrittenSince(metricCode: string, symbols: string[], since: Date, group: MetricDefinitionSpec['group']): Promise<number>;
+  // 2026-10-08 GET /data-version：每支指標在三張值表（季、逐日、月）最後一次寫入或更新的時間（computed_at 最大值）。
+  listLatestComputedAtByMetric(): Promise<{ metricCode: string; computedAt: Date }[]>;
   // 單一 metricCode 的全部歷史列（含重編疊加的多筆），依 fiscalYear/fiscalQuarter 降冪、同座標再依 knowledgeDate 降冪——
   // 去重取最新一筆是 application/metrics/shared/queryMetricHistory.ts 的事。
   listPeriodMetricHistoryRows(symbol: string, metricCode: string, periodType: PeriodType, dataType: string, subsidiaryCompanyId: string): Promise<PeriodHistoryRow[]>;

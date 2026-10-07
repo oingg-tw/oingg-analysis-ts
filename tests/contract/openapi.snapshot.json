@@ -3673,6 +3673,51 @@
         ]
       }
     },
+    "/data-version": {
+      "get": {
+        "description": "2026-10-08 新增（跟 bff-ts／web-nuxt 一起定的 API 最佳實務）。把版本放進快取鍵，重算後版本會變、快取自然失效，不用等人工清快取通知。metrics[metricCode] 是該指標最後一次寫入或更新的時間（重算有寫入就會變，即使值相同）；catalog 是 GET /metrics 內容的雜湊，文案、單位、timeframe 改了就會變；global 是所有指標版本的最大值。版本字串只拿來比對相不相等，不要解析。伺服器端每 60 秒更新一次，多個執行個體之間最多差 60 秒。",
+        "operationId": "getDataVersion",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "catalog": {
+                      "description": "GET /metrics 內容的雜湊（16 個十六進位字元）",
+                      "type": "string"
+                    },
+                    "global": {
+                      "description": "所有指標版本的最大值；完全沒有資料時 null",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "metrics": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "metricCode → 版本字串（目前是 ISO 時間）；從未寫入過的指標不會出現",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "global",
+                    "catalog",
+                    "metrics"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "各層級的版本字串。"
+          }
+        },
+        "summary": "資料版本：每支指標、指標目錄、全域各一個版本字串，給下游當快取鍵",
+        "tags": [
+          "System"
+        ]
+      }
+    },
     "/etf-screener": {
       "post": {
         "description": "資料來源是 sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance（目前只有最新一個月的快照），欄位清單見 GET /etf-screener/filters。filters 有兩種形狀：數字欄位（aum/holders/netFlow/dcaAmount/marketShareRate/nav/return3m~return10y/expenseRatio/statutoryAumThreshold）用 {field, min, max, exclude?}；類別欄位（market/assetClass/isActive/belowStatutoryThreshold/distributionFrequency）用 {field, values: [...]}（IN 語意，屬於其中之一就保留）。isActive（是否為主動式 ETF）跟 belowStatutoryThreshold（規模是否低於法定下市門檻，下市風險近似警示）都是 sitca-ts 提供的權威欄位，不是本服務推算的。exclude=false（預設）保留落在 [min,max] 內的值，null 一律排除；exclude=true 保留範圍外的值，min/max 都沒給時篩掉全部。expenseRatio 只用「最新一個完整年度」，發行日在這個基準年（或更晚）的 ETF 那一年不滿一整年，這個欄位的值是 null（不是整檔 ETF 被排除——screener 是列表瀏覽情境，跟 ranking 排行榜的「直接排除」不同）。expenseRatio2001~expenseRatio2026（2026-09-08 新增，共 26 個獨立數字欄位，見 GET /etf-screener/filters）是分年度總費用率，給前端橫向比較歷年費用率變化用——資料源跟 expenseRatio 不同：這裡用 sitca-ts 已經濾掉不完整期間資料的 fund_expense_ratio_annual_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio單純套「calendar year - 1」精確；某年份沒有值（基金那年還沒成立、或該年資料不完整）該年欄位是 null，不影響其他年份。establishedDate（2026-09-08 新增）是日期欄位，filter 用 {field, min, max, exclude?}，min/max 是 \"YYYY-MM-DD\" 字串（跟數字欄位同一套 exclude 語意）。managementFeeRate/custodianFeeRate/guaranteeFeeRate/otherFeeRate/commissionRate/transactionTaxRate/etfTradingFeeRate（2026-09-08 新增）是費用率細項拆分，只取「該基金自己最新一筆完整年度」（跟 expenseRatio 同一種「目前」語意，不是分年度系列），資料源是 fund_expense_ratio_annual_full_year，用該基金最新一筆完整年度資料，不是全體套同一個基準年——所以不同基金即使欄位都有值，對應的年度可能不一樣，這是刻意的設計（比全體套同一個基準年精確，代價是欄位本身不標註是哪一年，需要的話搭配 expenseRatio2001~2026 的分年度序列自己比對）。premiumDiscountPct（2026-09-10 新增）是折溢價率 = (市價-淨值)/淨值*100，正值溢價、負值折價，取「淨值跟市價同一天都有資料」的最新一天，不是各自抓各自的最新一天硬湊。資料源是 sitca-ts 的逐日淨值 + twse-ts/tpex-ts push的逐日市價，市價回填深度比淨值淺很多（上市 2020-11 起、上櫃 2021-09 起），且市價還在持續回填中，目前只有部分ETF 有值，沒有值的是 null（不是 0）。sortField 不給就照 symbol 排序（保證分頁穩定）；要排別的欄位，那個欄位要先出現在 columns 裡。",

@@ -198,4 +198,30 @@ export const registerFiltersOpenApi = (registry: OpenAPIRegistry): void => {
       },
     },
   });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/data-version',
+    summary: '資料版本：每支指標、指標目錄、全域各一個版本字串，給下游當快取鍵',
+    description:
+      '2026-10-08 新增（跟 bff-ts／web-nuxt 一起定的 API 最佳實務）。把版本放進快取鍵，重算後版本會變、快取自然失效，不用等人工清快取通知。' +
+      'metrics[metricCode] 是該指標最後一次寫入或更新的時間（重算有寫入就會變，即使值相同）；catalog 是 GET /metrics 內容的雜湊，' +
+      '文案、單位、timeframe 改了就會變；global 是所有指標版本的最大值。版本字串只拿來比對相不相等，不要解析。' +
+      '伺服器端每 60 秒更新一次，多個執行個體之間最多差 60 秒。',
+    tags: ['System'],
+    responses: {
+      200: {
+        description: '各層級的版本字串。',
+        content: {
+          'application/json': {
+            schema: z.object({
+              global: z.string().nullable().meta({ description: '所有指標版本的最大值；完全沒有資料時 null' }),
+              catalog: z.string().meta({ description: 'GET /metrics 內容的雜湊（16 個十六進位字元）' }),
+              metrics: z.record(z.string(), z.string()).meta({ description: 'metricCode → 版本字串（目前是 ISO 時間）；從未寫入過的指標不會出現' }),
+            }),
+          },
+        },
+      },
+    },
+  });
 };
