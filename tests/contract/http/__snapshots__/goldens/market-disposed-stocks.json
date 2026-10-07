@@ -4,14 +4,14 @@
     "items": [
       {
         "announceDate": "<date>",
-        "announcementCount": "<null>",
+        "announcementCount": "<number>",
         "companyName": "<string>",
         "detail": "<string>",
         "dispositionEndDate": "<date>",
-        "dispositionMeasures": "<null>",
+        "dispositionMeasures": "<string>",
         "dispositionPeriod": "<string>",
         "dispositionStartDate": "<date>",
-        "linkInformation": "<null>",
+        "linkInformation": "<string>",
         "market": "TPEx",
         "reason": "<string>",
         "reasonShort": "<string>",

@@ -19,8 +19,6 @@
       }
     ],
     "tradeDate": "<date>",
-    "warnings": [
-      "<string>"
-    ]
+    "warnings": []
   }
 }
