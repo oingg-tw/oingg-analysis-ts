@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryDeps } from './queryMetricHistory';
+import { getMetricHistory, metricHistoryEntrySchema, type MetricHistoryCoverage, type MetricHistoryDeps } from './queryMetricHistory';
 import type { PeriodType } from '../../../domain/metrics/metricBasis';
 
 // 2026-09-07 使用者要「一次抓多個指標」（例如三率：grossMargin/operatingMargin/
@@ -16,6 +16,8 @@ const multiMetricValueSchema = z
     knowledgeDate: metricHistoryEntrySchema.shape.knowledgeDate,
     knowledgeDateIsFallback: metricHistoryEntrySchema.shape.knowledgeDateIsFallback,
     formulaVersion: metricHistoryEntrySchema.shape.formulaVersion,
+    restated: metricHistoryEntrySchema.shape.restated,
+    shareBasisDate: metricHistoryEntrySchema.shape.shareBasisDate,
   })
   .nullable()
   .meta({ description: '這個 metricCode 在這一期的值；null 代表這個 metricCode 在這一期完全沒有列（例如不同指標 backfill 範圍不同步）' });
@@ -30,6 +32,7 @@ export type MultiMetricHistoryEntry = z.infer<typeof multiMetricHistoryEntrySche
 
 export interface MultiMetricHistoryResult {
   entries: MultiMetricHistoryEntry[];
+  coverage: Record<string, MetricHistoryCoverage>; // 2026-10-08：每支 metricCode 各自最早／最晚有值的一期（見 queryMetricHistory.ts）
   // 取所有請求 metricCode 裡 total 最大的那個（涵蓋最完整的指標）——不同 metricCode 的
   // backfill 範圍不一定同步（例如三率的 netProfitMargin 曾經比 grossMargin 多補幾季），
   // 用最大值才不會低估「還有更多資料」這件事。
@@ -77,5 +80,6 @@ export const getMultiMetricHistory = async (
   });
 
   const total = Math.max(0, ...results.map((r) => r.total));
-  return { entries, total, hasMore: total > entries.length };
+  const coverage = Object.fromEntries(metricCodes.map((metricCode, i) => [metricCode, results[i]!.coverage]));
+  return { entries, coverage, total, hasMore: total > entries.length };
 };

@@ -1,5 +1,5 @@
 import type { DailyCadenceCoordinateGroup } from '@/application/ports/metricValueQueries';
-import type { MetricHistoryDeps, MetricHistoryEntry, MetricHistoryResult } from './queryMetricHistory';
+import { coverageOf, type MetricHistoryDeps, type MetricHistoryEntry, type MetricHistoryResult } from './queryMetricHistory';
 
 export type { DailyCadenceCoordinateGroup };
 
@@ -54,5 +54,6 @@ export const getDailyCadenceMetricHistory = async (
       formulaVersion: row.formulaVersion,
     }));
 
-  return { entries, total, hasMore: total > entries.length };
+  const coverage = coverageOf(allDates.filter((row) => row.value !== null).map((row) => row.tradeDate.toISOString().slice(0, 10)));
+  return { entries, coverage, total, hasMore: total > entries.length };
 };

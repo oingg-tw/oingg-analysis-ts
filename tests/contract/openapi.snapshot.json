@@ -1595,6 +1595,23 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "coverage": {
+                      "description": "最早／最晚有值的一期（不受 limit 影響）：季報型 \"2026Q2\"、FY \"2025\"、逐日型 \"2026-10-06\"、月頻 \"2026-08\"；全部是 null 時為 null",
+                      "nullable": true,
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "type": "object"
+                    },
                     "entries": {
                       "items": {
                         "properties": {
@@ -1640,6 +1657,14 @@
                               null
                             ],
                             "nullable": true,
+                            "type": "string"
+                          },
+                          "restated": {
+                            "description": "2026-10-08 新增，只有每股類指標（eps、bvps…）有：true＝這一期的值已換算到今天的股數基準（之後有分割、配股、股數合併式減資）；false＝倍數為 1 沒有換算。非每股類指標沒有這個欄位",
+                            "type": "boolean"
+                          },
+                          "shareBasisDate": {
+                            "description": "2026-10-08 新增，只有每股類指標有：這個數字以哪一天的股數基準表示（YYYY-MM-DD，一律是查詢當天）。股價（stockPrice）、比值（peRatio、pbRatio）不換算，跟換算後的每股數字相除會差一個倍數",
                             "type": "string"
                           },
                           "tradeDate": {
@@ -1689,6 +1714,7 @@
                     "timeframe",
                     "total",
                     "hasMore",
+                    "coverage",
                     "entries"
                   ],
                   "type": "object"
@@ -1767,6 +1793,27 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "coverage": {
+                      "additionalProperties": {
+                        "description": "最早／最晚有值的一期（不受 limit 影響）：季報型 \"2026Q2\"、FY \"2025\"、逐日型 \"2026-10-06\"、月頻 \"2026-08\"；全部是 null 時為 null",
+                        "nullable": true,
+                        "properties": {
+                          "from": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "to"
+                        ],
+                        "type": "object"
+                      },
+                      "description": "2026-10-08 新增：每支 metricCode 各自最早／最晚有值的一期（格式同 metric-history 的 coverage）",
+                      "type": "object"
+                    },
                     "entries": {
                       "items": {
                         "properties": {
@@ -1813,6 +1860,14 @@
                                     null
                                   ],
                                   "nullable": true,
+                                  "type": "string"
+                                },
+                                "restated": {
+                                  "description": "2026-10-08 新增，只有每股類指標（eps、bvps…）有：true＝這一期的值已換算到今天的股數基準（之後有分割、配股、股數合併式減資）；false＝倍數為 1 沒有換算。非每股類指標沒有這個欄位",
+                                  "type": "boolean"
+                                },
+                                "shareBasisDate": {
+                                  "description": "2026-10-08 新增，只有每股類指標有：這個數字以哪一天的股數基準表示（YYYY-MM-DD，一律是查詢當天）。股價（stockPrice）、比值（peRatio、pbRatio）不換算，跟換算後的每股數字相除會差一個倍數",
                                   "type": "string"
                                 },
                                 "value": {
@@ -1870,6 +1925,7 @@
                     "timeframe",
                     "total",
                     "hasMore",
+                    "coverage",
                     "entries"
                   ],
                   "type": "object"
@@ -2613,6 +2669,14 @@
                               null
                             ],
                             "nullable": true,
+                            "type": "string"
+                          },
+                          "restated": {
+                            "description": "2026-10-08 新增，只有每股類指標（eps、bvps…）有：true＝這一期的值已換算到今天的股數基準（之後有分割、配股、股數合併式減資）；false＝倍數為 1 沒有換算。非每股類指標沒有這個欄位",
+                            "type": "boolean"
+                          },
+                          "shareBasisDate": {
+                            "description": "2026-10-08 新增，只有每股類指標有：這個數字以哪一天的股數基準表示（YYYY-MM-DD，一律是查詢當天）。股價（stockPrice）、比值（peRatio、pbRatio）不換算，跟換算後的每股數字相除會差一個倍數",
                             "type": "string"
                           },
                           "tradeDate": {

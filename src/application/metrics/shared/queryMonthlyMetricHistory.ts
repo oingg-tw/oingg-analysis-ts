@@ -1,5 +1,5 @@
 import type { FieldRef } from '@/domain/metrics/timeframe';
-import { getMetricHistory, type MetricHistoryDeps, type MetricHistoryEntry, type MetricHistoryResult } from './queryMetricHistory';
+import { coverageOf, getMetricHistory, type MetricHistoryDeps, type MetricHistoryEntry, type MetricHistoryResult } from './queryMetricHistory';
 import { getDailyCadenceMetricHistory } from './queryDailyCadenceMetricHistory';
 
 // 2026-10-07 月頻版本（metric_monthly_values，sus 等）——形狀跟 queryDailyCadenceMetricHistory.ts 一致：兩種口徑都查、
@@ -38,7 +38,8 @@ export const getMonthlyMetricHistory = async (
       knowledgeDateIsFallback: row.knowledgeDateIsFallback,
       formulaVersion: row.formulaVersion,
     }));
-  return { entries, total: all.length, hasMore: all.length > entries.length };
+  const coverage = coverageOf(all.filter((row) => row.value !== null).map((row) => `${row.fiscalYear}-${String(row.fiscalMonth).padStart(2, '0')}`));
+  return { entries, coverage, total: all.length, hasMore: all.length > entries.length };
 };
 
 // 依 FieldRef 選表的唯一入口——2026-10-07 之前 metric-history 與 fetchLatestMetricValue（徽章、完整度）各自寫

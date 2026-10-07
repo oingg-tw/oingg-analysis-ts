@@ -82,10 +82,10 @@ export const getCompanyMetricHistory = async ({ symbol, metricCode, timeframe, l
   // 去重邏輯，見 queryDailyCadenceMetricHistory.ts 的說明；2026-10-07 起月頻也走 getMetricHistoryByFieldRef 依 FieldRef
   // 分流，呼叫端（這裡）完全不用知道背後是哪張表。
   const dataType = await deps.reportAvailability.resolveDataType(symbol);
-  const { entries, total, hasMore } = await getMetricHistoryByFieldRef(symbol, fieldRef, dataType, '', limit, deps);
+  const { entries, coverage, total, hasMore } = await getMetricHistoryByFieldRef(symbol, fieldRef, dataType, '', limit, deps);
   // 2026-09-28 每股類指標換算到今天的股數基準（見 restatePerShareHistory.ts）；逐日型沒有每股類指標。
   const restated = fieldRef.isDailyCadence || fieldRef.isMonthly ? entries : await restatePerShareHistory(symbol, metricCode, fieldRef.periodType, entries, deps);
-  return { symbol, metricCode, timeframe, total, hasMore, entries: restated };
+  return { symbol, metricCode, timeframe, total, hasMore, coverage, entries: restated };
 };
 
 export const MAX_METRIC_CODES_PER_REQUEST = 10;
@@ -126,7 +126,7 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
     periodType ??= fieldRef.periodType;
   }
 
-  const { entries, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);
+  const { entries, coverage, total, hasMore } = await getMultiMetricHistory(symbol, metricCodes, periodType!, await deps.reportAvailability.resolveDataType(symbol), '', limit, deps);
   // 2026-09-28 每股類指標逐一換算到今天的股數基準（見 restatePerShareHistory.ts）
   for (const metricCode of metricCodes) {
     const cells = entries.flatMap((e) => (e.values[metricCode] ? [{ ...e.values[metricCode]!, fiscalYear: e.fiscalYear, fiscalQuarter: e.fiscalQuarter, entry: e }] : []));
@@ -135,7 +135,7 @@ export const getCompanyMetricsHistory = async (query: MetricsHistoryQuery, deps:
       entry.values[metricCode] = cell;
     });
   }
-  return { symbol, metricCodes, timeframe, total, hasMore, entries };
+  return { symbol, metricCodes, timeframe, total, hasMore, coverage, entries };
 };
 
 // 月營收歷史——上市＋上櫃全市場，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 兩邊

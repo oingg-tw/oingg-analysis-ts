@@ -29,12 +29,27 @@ export const metricHistoryEntrySchema = z.object({
     .boolean()
     .meta({ description: 'true 代表 knowledgeDate 是用財報期末日頂替（查無真實公告日），有 look-ahead bias 風險，前端可考慮標示' }),
   dataType: z.enum(['1', '2']).optional().meta({ description: "這一期的財報口徑：'2' 合併報表、'1' 個體報表（2026-09-27 新增，web-nuxt 要求）。同一家公司的歷史可能在某一期從 '2' 換成 '1'——合併報表停掉、之後只編個體報表的公司（處分子公司後），前端在轉換期標註用。季報型指標（Q/TTM/FY）每一家每一期都有（一般公司恆為 '2'、只申報個體的公司恆為 '1'）；只有逐日型指標沒有這個欄位。" }),
+  restated: z.boolean().optional().meta({ description: '2026-10-08 新增，只有每股類指標（eps、bvps…）有：true＝這一期的值已換算到今天的股數基準（之後有分割、配股、股數合併式減資）；false＝倍數為 1 沒有換算。非每股類指標沒有這個欄位' }),
+  shareBasisDate: z.string().optional().meta({ description: '2026-10-08 新增，只有每股類指標有：這個數字以哪一天的股數基準表示（YYYY-MM-DD，一律是查詢當天）。股價（stockPrice）、比值（peRatio、pbRatio）不換算，跟換算後的每股數字相除會差一個倍數' }),
   formulaVersion: z.number().int().meta({ description: '2026-09-26 新增：這個值是用第幾版公式算的（metric_values.formula_version）。GET /metrics 同一支指標的 formulaVersion 是「目前的算法版本」；兩者不一致代表這個值以較舊的算法計算、還沒重算到——仍是自洽的結果，可以正常顯示，但不應快取。重算完成後兩者會一致。' }),
 });
 export type MetricHistoryEntry = z.infer<typeof metricHistoryEntrySchema>;
 
+// 2026-10-08 API 最佳實務第一批（web-nuxt：「把截斷當成事實顯示」）：這支指標在這家公司最早／最晚「有值」的一期，不受 limit 影響；
+// 全部都是 null（或完全沒有列）時是 null。格式：季報型 "2026Q2"、FY "2025"、逐日型 "2026-10-06"、月頻 "2026-08"。
+export const metricHistoryCoverageSchema = z
+  .object({ from: z.string(), to: z.string() })
+  .nullable()
+  .meta({ description: '最早／最晚有值的一期（不受 limit 影響）：季報型 "2026Q2"、FY "2025"、逐日型 "2026-10-06"、月頻 "2026-08"；全部是 null 時為 null' });
+export type MetricHistoryCoverage = z.infer<typeof metricHistoryCoverageSchema>;
+
+// labelsNewestFirst：有值的各期標籤，由新到舊（三支歷史查詢去重後的完整列表都是這個順序）。
+export const coverageOf = (labelsNewestFirst: string[]): MetricHistoryCoverage =>
+  labelsNewestFirst.length === 0 ? null : { from: labelsNewestFirst.at(-1)!, to: labelsNewestFirst[0]! };
+
 export interface MetricHistoryResult {
   entries: MetricHistoryEntry[];
+  coverage: MetricHistoryCoverage;
   // 這個 symbol/metricCode/periodType 去重後總共有幾期資料（不受 limit 影響）——前端可以
   // 拿這個數字決定要不要提供「看更長區間」的選項（例如完整歷史只有 6 年，就不要讓使用者
   // 點下「近 10 年」，點了也只會拿到一樣的 6 年資料）。
@@ -105,5 +120,6 @@ export const getMetricHistory = async (
       formulaVersion: row.formulaVersion,
     }));
 
-  return { entries, total, hasMore: total > entries.length };
+  const coverage = coverageOf(allPeriods.filter((row) => row.value !== null).map((row) => (periodType === 'FY' ? String(row.fiscalYear) : `${row.fiscalYear}Q${row.fiscalQuarter}`)));
+  return { entries, coverage, total, hasMore: total > entries.length };
 };

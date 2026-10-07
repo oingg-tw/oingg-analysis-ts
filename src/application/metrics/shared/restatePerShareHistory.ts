@@ -28,15 +28,21 @@ interface RestatableEntry {
   value: number | null;
 }
 
+// 2026-10-08 API 最佳實務第一批（web-nuxt：「每股歷史換算了、股價沒換算，我們分不出來」）：每股類有值的列多帶兩個欄位——
+// shareBasisDate＝這個數字以哪一天的股數基準表示（一律是今天）、restated＝這一期有沒有真的換算過（倍數 ≠ 1）。
+// 非每股類（比率、總額、股價）不帶這兩個欄位：它們沒有股數基準的問題，值就是當時的值。
+export type RestatedEntry<E> = E & { restated?: boolean; shareBasisDate?: string };
+
 export const restatePerShareHistory = async <E extends RestatableEntry>(
   symbol: string,
   metricCode: string,
   periodType: PeriodType,
   entries: E[],
   deps: RestatePerShareDeps
-): Promise<E[]> => {
+): Promise<RestatedEntry<E>[]> => {
   if (!metricDefinitionRegistry[metricCode]?.perShare || entries.every((e) => e.value === null)) return entries;
   const now = new Date();
+  const shareBasisDate = new Date(now.getTime() + 8 * 3_600_000).toISOString().slice(0, 10); // 台北日期（UTC+8），跟交易日同一把尺
   const { basisMultiplier } = await deps.shares.getShareBasisEvents(symbol, now, now);
   return Promise.all(
     entries.map(async (e) => {
@@ -45,7 +51,7 @@ export const restatePerShareHistory = async <E extends RestatableEntry>(
       const annualBasis = e.knowledgeDateIsFallback ? new Date(Date.UTC(e.fiscalYear + 1, 2, 31)) : new Date(e.knowledgeDate);
       const basisDate = periodType === 'FY' ? annualBasis : quarterEnd(e.fiscalYear, e.fiscalQuarter);
       const factor = await restatementFactor(symbol, basisDate, now, basisMultiplier, deps);
-      return isIdentity(factor) ? e : { ...e, value: restate(e.value, factor) };
+      return isIdentity(factor) ? { ...e, restated: false, shareBasisDate } : { ...e, value: restate(e.value, factor), restated: true, shareBasisDate };
     })
   );
 };

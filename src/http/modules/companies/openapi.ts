@@ -3,7 +3,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { roeHistoryEntrySchema } from '@/application/metrics/profitability/roe/queryRoeHistory';
 import { roaHistoryEntrySchema } from '@/application/metrics/profitability/roa/queryRoaHistory';
 import { dupontHistoryEntrySchema } from '@/application/metrics/shared/dupont/queryDupontHistory';
-import { metricHistoryEntrySchema } from '@/application/metrics/shared/queryMetricHistory';
+import { metricHistoryCoverageSchema, metricHistoryEntrySchema } from '@/application/metrics/shared/queryMetricHistory';
 import { multiMetricHistoryEntrySchema } from '@/application/metrics/shared/queryMultiMetricHistory';
 import { metricDefinitionRegistry } from '@/application/metrics/metricDefinitionRegistry';
 import { PILOT_PROVENANCE_METRIC_CODES } from '@/application/metrics/shared/provenance/provenanceTypes';
@@ -94,6 +94,7 @@ const metricHistoryResultSchema = z.object({
   metricCode: z.string(),
   timeframe: z.string(),
   ...totalHasMoreFields,
+  coverage: metricHistoryCoverageSchema,
   entries: z.array(metricHistoryEntrySchema),
 });
 
@@ -102,6 +103,7 @@ const metricsHistoryResultSchema = z.object({
   metricCodes: z.array(z.string()),
   timeframe: z.string(),
   ...totalHasMoreFields,
+  coverage: z.record(z.string(), metricHistoryCoverageSchema).meta({ description: '2026-10-08 新增：每支 metricCode 各自最早／最晚有值的一期（格式同 metric-history 的 coverage）' }),
   entries: z.array(multiMetricHistoryEntrySchema),
 });
 
