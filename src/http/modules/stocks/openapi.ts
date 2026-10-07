@@ -122,11 +122,10 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/stocks/{symbol}/foreign-shareholding-history',
     summary: '查詢單一公司的外資/陸資持股比例歷史',
     description:
-      '2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是 twse-ts 的 export.foreign_shareholding' +
-      '（TWSE MI_QFIIS 端點，取代已退役的 export.foreign_holding）。目前只有 2330 一檔有真實資料' +
-      '（twse-ts 一次性回填 2021-09~2026-09，不是常態排程），其他公司會回傳空陣列 entries，不是' +
-      '404——前端應該視為「尚未提供」而不是查詢失敗，之後 twse-ts 擴大到全市場會自動生效，不需要' +
-      '改任何呼叫方式。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - ' +
+      '2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是證交所與櫃買中心的外資持股統計' +
+      '（上市 TWSE MI_QFIIS；上櫃 2026-10-07 起每個交易日更新）。上市目前只有 2330 一檔有資料' +
+      '（一次性回填 2021-09~2026-09，不是常態排程）；上櫃全部公司從 2026-10-07 開始累積、沒有更早的歷史。' +
+      '查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - ' +
       'sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。',
     tags: ['Stocks'],
     request: { params: symbolParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
