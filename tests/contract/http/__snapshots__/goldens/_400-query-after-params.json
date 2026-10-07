@@ -1,11 +1,14 @@
 {
-  "message": "Invalid query parameters.",
-  "errors": {
-    "_errors": [],
-    "limit": {
-      "_errors": [
-        "Too small: expected number to be >=1"
-      ]
+  "message": "Too small: expected number to be >=1",
+  "errors": [
+    {
+      "detail": "Too small: expected number to be >=1",
+      "parameter": "limit"
     }
-  }
+  ],
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid query parameters.",
+  "instance": "urn:uuid:golden-request-0001"
 }

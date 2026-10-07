@@ -98,6 +98,9 @@ describe('bff-ts 消費的端點：狀態碼 + 回應形狀', () => {
   }
 });
 
+// 2026-10-08 錯誤改成 RFC 9457 problem+json（src/http/problem.ts）：固定帶 X-Request-Id，instance 才是確定值、可以比精確 body。
+const REQUEST_ID = 'golden-request-0001';
+
 describe('固定案例（精確 body，不是形狀）', () => {
   test('GET / 健康檢查：公開、不需要密鑰', async () => {
     const res = await harness.api.get('/');
@@ -105,22 +108,37 @@ describe('固定案例（精確 body，不是形狀）', () => {
     expect(typeof res.body.startupTime).toBe('string');
   });
 
-  test('缺必填參數 → 400，body 是 zod .format() 形狀', async () => {
-    const res = await harness.api.get('/companies/metric-history').set('X-Api-Key', API_KEY);
+  test('GET /health：公開、會查資料庫，正常 200', async () => {
+    const res = await harness.api.get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok', database: 'ok' });
+  });
+
+  test('缺必填參數 → 400 problem+json，errors 用 parameter 指名', async () => {
+    const res = await harness.api.get('/companies/metric-history').set('X-Api-Key', API_KEY).set('X-Request-Id', REQUEST_ID);
+    expect(res.headers['content-type']).toMatch(/^application\/problem\+json/);
     expect(res.status).toBe(400);
     await expect(JSON.stringify(res.body, null, 2)).toMatchFileSnapshot('./__snapshots__/goldens/_400-missing-query.json');
   });
 
   test('不帶 X-Api-Key → 401 精確 body', async () => {
-    const res = await harness.api.get('/metrics');
+    const res = await harness.api.get('/metrics').set('X-Request-Id', REQUEST_ID);
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ message: 'Unauthorized: missing or invalid X-Api-Key header.' });
+    expect(res.body).toEqual({
+      message: 'Unauthorized: missing or invalid X-Api-Key header.',
+      type: 'about:blank',
+      title: 'Unauthorized',
+      status: 401,
+      detail: 'Unauthorized: missing or invalid X-Api-Key header.',
+      instance: `urn:uuid:${REQUEST_ID}`,
+    });
   });
 
-  test('metricCode=beta 走 metric-history → 400（服務層驗證錯誤，只有 message）', async () => {
+  test('metricCode=beta 走 metric-history → 400（服務層驗證錯誤，沒有 code）', async () => {
     const res = await harness.api.get('/companies/metric-history?symbol=2330&metricCode=beta&timeframe=1Y_1D').set('X-Api-Key', API_KEY);
     expect(res.status).toBe(400);
-    expect(Object.keys(res.body)).toEqual(['message']);
+    expect(Object.keys(res.body).sort()).toEqual(['detail', 'instance', 'message', 'status', 'title', 'type']);
+    expect(res.body).toMatchObject({ type: 'about:blank', status: 400 });
   });
 
   // 2026-09-17 Phase 4（薄 controller / validate middleware / errorHandler 接 AppError）之前補的精確 body 案例：
@@ -135,8 +153,9 @@ describe('固定案例（精確 body，不是形狀）', () => {
   ];
   for (const c of exactCases) {
     test(`${c.path} → ${c.status} 精確 body`, async () => {
-      const res = await harness.api.get(c.path).set('X-Api-Key', API_KEY);
+      const res = await harness.api.get(c.path).set('X-Api-Key', API_KEY).set('X-Request-Id', REQUEST_ID);
       expect(res.status).toBe(c.status);
+      expect(res.body.status).toBe(c.status);
       await expect(JSON.stringify(res.body, null, 2)).toMatchFileSnapshot(`./__snapshots__/goldens/${c.slug}.json`);
     });
   }

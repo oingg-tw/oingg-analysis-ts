@@ -20,6 +20,11 @@ const timed = async (label: string, connect: () => Promise<void>): Promise<void>
   logger.info(`[startup] ${label} connect +${((process.uptime() - start) * 1000).toFixed(0)}ms`);
 };
 
+// 2026-10-08 GET /health 用（bff-ts 要求：回報的是資料庫有沒有醒，不只是行程在不在）：analysis 資料庫跑一個最小查詢。
+export const pingAnalysisDb = async (): Promise<void> => {
+  await analysisPrisma.$queryRaw`SELECT 1`;
+};
+
 export const connectAllDbs = async (): Promise<void> => {
   await timed('analysis', connectAnalysisDb);
   await timed('mops', connectMopsExportDb);

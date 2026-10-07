@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'ultimate-express';
+import { sendProblem } from '@/http/problem';
 
 // api/bff 目前只有 bff-ts 會呼叫（2026-09-05 使用者確認）——共用密鑰是這個情境下最簡單、
 // 成本最低的驗證方式，不需要 OAuth/JWT 那種多方發放/撤銷憑證的複雜度。bff-ts 每次請求要帶
@@ -17,7 +18,9 @@ export const createBffAuth =
 
     const providedKey = req.headers['x-api-key'];
     if (providedKey !== apiKey) {
-      res.status(401).json({ message: 'Unauthorized: missing or invalid X-Api-Key header.' });
+      // 2026-10-08 RFC 9457 problem+json（見 http/problem.ts）；message 過渡期保留。
+      const detail = 'Unauthorized: missing or invalid X-Api-Key header.';
+      sendProblem(res, 401, detail);
       return;
     }
 

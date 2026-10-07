@@ -9,6 +9,7 @@ import { NotFoundError, ValidationError } from '@/application/errors';
 // Phase 4 薄 controller 的三個積木用假的 req/res 釘住行為：400 body 的訊息文字與 errors 形狀、驗證順序
 // params → query → body、handle 的 200/錯誤轉交、errorHandler 對 AppError 與其他錯誤的兩種 body。
 // 端到端（真的走 express）由 tests/contract/http/goldens.test.ts 的固定案例守著。
+// 2026-10-08 錯誤改成 RFC 9457 problem+json（見 src/http/problem.ts）：sendProblem 走 type()＋send(JSON 字串)，這裡解析回物件比對。
 
 interface FakeRes {
   statusCode: number;
@@ -18,6 +19,9 @@ interface FakeRes {
   status: (code: number) => FakeRes;
   json: (body: unknown) => FakeRes;
   send: (body: unknown) => FakeRes;
+  type: (contentType: string) => FakeRes;
+  getHeader: (name: string) => string | undefined;
+  contentType?: string;
 }
 
 const fakeRes = (): FakeRes => {
@@ -36,10 +40,15 @@ const fakeRes = (): FakeRes => {
       return res;
     },
     send(body) {
-      res.payload = body;
+      res.payload = typeof body === 'string' ? JSON.parse(body) : body;
       res.headersSent = true;
       return res;
     },
+    type(contentType) {
+      res.contentType = contentType;
+      return res;
+    },
+    getHeader: (name) => (name === 'X-Request-Id' ? 'req-test-0001' : undefined),
   };
   return res;
 };
@@ -72,22 +81,24 @@ describe('validate()', () => {
     const { nextCalled } = await run(validate(spec), fakeReq({ params: { symbol: '' }, query: { limit: '0' } }), res);
     expect(nextCalled).toBe(false);
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toMatchObject({ message: VALIDATION_MESSAGES.params });
-    expect((res.payload as { errors: unknown }).errors).toHaveProperty('symbol');
+    expect(res.payload).toMatchObject({ status: 400, detail: VALIDATION_MESSAGES.params, errors: [{ parameter: 'symbol', detail: expect.any(String) }] });
   });
 
-  test('query 錯 → 400 Invalid query parameters.，errors 是 zod .format() 形狀（有 _errors）', async () => {
+  test('query 錯 → 400 problem+json：errors 用 parameter 指名、舊的頂層 message 是第一個欄位的訊息（bff 過渡期照舊顯示）', async () => {
     const res = fakeRes();
     await run(validate(spec), fakeReq({ params: { symbol: '2330' }, query: { limit: '0' } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toMatchObject({ message: 'Invalid query parameters.', errors: { _errors: [], limit: { _errors: expect.any(Array) } } });
+    expect(res.contentType).toBe('application/problem+json');
+    const payload = res.payload as { errors: { detail: string }[]; message: string };
+    expect(res.payload).toMatchObject({ type: 'about:blank', title: 'Bad Request', status: 400, detail: 'Invalid query parameters.', instance: 'urn:uuid:req-test-0001', errors: [{ parameter: 'limit' }] });
+    expect(payload.message).toBe(payload.errors[0]!.detail);
   });
 
-  test('body 錯 → 400 Invalid request body.', async () => {
+  test('body 錯 → 400，errors 用 URI fragment 形式的 JSON Pointer（含 ~0／~1 跳脫）', async () => {
     const res = fakeRes();
-    await run(validate({ body: z.object({ symbols: z.array(z.string()).min(1) }) }), fakeReq({ body: { symbols: [] } }), res);
+    await run(validate({ body: z.object({ symbols: z.array(z.string()).min(1), 'a/b~c': z.string() }) }), fakeReq({ body: { symbols: [] } }), res);
     expect(res.statusCode).toBe(400);
-    expect(res.payload).toMatchObject({ message: 'Invalid request body.' });
+    expect(res.payload).toMatchObject({ detail: 'Invalid request body.', errors: [{ pointer: '#/symbols' }, { pointer: '#/a~1b~0c' }] });
   });
 });
 
@@ -134,30 +145,32 @@ describe('handle() / jsonRoute()', () => {
 });
 
 describe('createErrorHandler()', () => {
-  test('AppError → 它自己的 status + { message }（跟 controller 手寫 res.status(404).json({ message }) 同形狀）', () => {
+  test('AppError → 它自己的 status；有 problemCode 的帶 code 與 tag URI，沒有的是 about:blank', () => {
     const res = fakeRes();
     createErrorHandler({ isProduction: false })(new NotFoundError('查無公司代號 9999（上市、上櫃都沒有登記資料）。'), fakeReq({}), res as unknown as Response, () => {});
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ message: '查無公司代號 9999（上市、上櫃都沒有登記資料）。' });
+    expect(res.payload).toEqual({ message: '查無公司代號 9999（上市、上櫃都沒有登記資料）。', type: 'about:blank', title: 'Not Found', status: 404, detail: '查無公司代號 9999（上市、上櫃都沒有登記資料）。', instance: 'urn:uuid:req-test-0001' });
 
     const res400 = fakeRes();
-    createErrorHandler({ isProduction: true })(new ValidationError('"nope.TTM" 不是可查詢的欄位'), fakeReq({}), res400 as unknown as Response, () => {});
+    createErrorHandler({ isProduction: true })(new ValidationError('"nope.TTM" 不是可查詢的欄位', 'unknown_metric'), fakeReq({}), res400 as unknown as Response, () => {});
     expect(res400.statusCode).toBe(400);
-    expect(res400.payload).toEqual({ message: '"nope.TTM" 不是可查詢的欄位' });
+    expect(res400.payload).toMatchObject({ type: 'tag:oingg.com,2026:unknown-metric', status: 400, code: 'unknown_metric', detail: '"nope.TTM" 不是可查詢的欄位' });
   });
 
-  test('其他錯誤：開發環境回 { status, message }，正式環境的 5xx 改固定文字', () => {
+  test('其他錯誤：沒有 code；開發環境 detail 是原訊息，正式環境的 5xx 改固定文字；body 的 status 等於狀態碼', () => {
     const dev = fakeRes();
     createErrorHandler({ isProduction: false })(new Error('db exploded'), fakeReq({}), dev as unknown as Response, () => {});
     expect(dev.statusCode).toBe(500);
-    expect(dev.payload).toEqual({ status: 500, message: 'db exploded' });
+    expect(dev.payload).toMatchObject({ type: 'about:blank', title: 'Internal Server Error', status: 500, detail: 'db exploded' });
+    expect(dev.payload).not.toHaveProperty('code');
 
     const prod = fakeRes();
     createErrorHandler({ isProduction: true })(new Error('db exploded'), fakeReq({}), prod as unknown as Response, () => {});
-    expect(prod.payload).toEqual({ status: 500, message: 'Something went wrong on the server.' });
+    expect(prod.payload).toMatchObject({ status: 500, detail: 'Something went wrong on the server.' });
 
     const withStatus = fakeRes();
     createErrorHandler({ isProduction: true })(Object.assign(new Error('bad input'), { status: 422 }), fakeReq({}), withStatus as unknown as Response, () => {});
-    expect(withStatus.payload).toEqual({ status: 422, message: 'bad input' });
+    expect(withStatus.statusCode).toBe(422);
+    expect(withStatus.payload).toMatchObject({ status: 422, title: 'Unprocessable Entity', detail: 'bad input' });
   });
 });

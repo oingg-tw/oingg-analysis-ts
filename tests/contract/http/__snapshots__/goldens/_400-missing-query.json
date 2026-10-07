@@ -1,21 +1,22 @@
 {
-  "message": "Invalid query parameters.",
-  "errors": {
-    "_errors": [],
-    "symbol": {
-      "_errors": [
-        "symbol is required."
-      ]
+  "message": "symbol is required.",
+  "errors": [
+    {
+      "detail": "symbol is required.",
+      "parameter": "symbol"
     },
-    "metricCode": {
-      "_errors": [
-        "metricCode is required."
-      ]
+    {
+      "detail": "metricCode is required.",
+      "parameter": "metricCode"
     },
-    "timeframe": {
-      "_errors": [
-        "timeframe is required."
-      ]
+    {
+      "detail": "timeframe is required.",
+      "parameter": "timeframe"
     }
-  }
+  ],
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid query parameters.",
+  "instance": "urn:uuid:golden-request-0001"
 }

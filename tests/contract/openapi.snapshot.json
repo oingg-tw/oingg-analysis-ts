@@ -1,7 +1,82 @@
 {
   "components": {
     "parameters": {},
-    "schemas": {},
+    "schemas": {
+      "Problem": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）。之後可能新增值。",
+            "enum": [
+              "unknown_metric",
+              "unsupported_timeframe"
+            ],
+            "type": "string"
+          },
+          "detail": {
+            "description": "給人看的說明，措辭不保證穩定，不要解析。",
+            "type": "string"
+          },
+          "errors": {
+            "description": "參數驗證失敗（400）時才有，RFC 9457 §3 的形狀：body 欄位用 pointer（URI fragment 形式的 JSON Pointer，例如 #/columns/0/field）；query／path 參數用 parameter（例如 metricCode）。",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "detail": {
+                  "type": "string"
+                },
+                "parameter": {
+                  "type": "string"
+                },
+                "pointer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "detail"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "instance": {
+            "description": "這次請求的 ID，跟 X-Request-Id header 同值（呼叫端有送 X-Request-Id 就沿用）。",
+            "example": "urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479",
+            "type": "string"
+          },
+          "message": {
+            "description": "過渡期欄位（2026-10-08 前的舊格式）：驗證錯誤時是第一個欄位的錯誤訊息，其他錯誤等於 detail。呼叫端改讀 detail／errors 後會移除。",
+            "type": "string"
+          },
+          "status": {
+            "description": "等於 HTTP 回應的狀態碼。",
+            "example": 400,
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "title": {
+            "description": "HTTP 狀態碼的標準短語，同一個 status 永遠相同。",
+            "example": "Bad Request",
+            "type": "string"
+          },
+          "type": {
+            "description": "問題類別。有 code 的是由 code 推出的 tag URI（無法解析，RFC 9457 §3.1.1 允許），type 與 code 一一對應；沒有 code 的是 about:blank（意思不超出 HTTP 狀態碼）。",
+            "example": "tag:oingg.com,2026:unsupported-timeframe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "message"
+        ],
+        "type": "object"
+      }
+    },
     "securitySchemes": {
       "BffApiKey": {
         "in": "header",
@@ -40,6 +115,16 @@
               }
             },
             "description": "Server status and startup time."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "security": [],
@@ -73,9 +158,23 @@
             "description": "daily 批次計算完成。"
           },
           "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "超過每小時 5 次的觸發上限（暫時性防護，不是驗證失敗）。"
           },
           "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "批次計算過程中發生未預期錯誤（單一公司/單一指標失敗會被 runWithConcurrency 接住繼續跑下一個，不會走到這裡；這裡是連線建立不起來等更根本的失敗）。"
           }
         },
@@ -110,9 +209,23 @@
             "description": "quarterly 批次計算完成。"
           },
           "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "超過每小時 5 次的觸發上限（暫時性防護，不是驗證失敗）。"
           },
           "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "批次計算過程中發生未預期錯誤（單一公司/單一指標失敗會被 runWithConcurrency 接住繼續跑下一個，不會走到這裡；這裡是連線建立不起來等更根本的失敗）。"
           }
         },
@@ -175,6 +288,26 @@
               }
             },
             "description": "證券商名單。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "證券商總公司名單（券商下拉選單用）",
@@ -316,7 +449,34 @@
             "description": "countOnly=true 時是 { count }；否則是 { count, limit, offset, entries }，count 一律是全部符合條件的總筆數（不是這次回傳的筆數）。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤，或 limit 超過上限。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "列出公司代號/名稱對照表（分頁）",
@@ -482,7 +642,34 @@
             "description": "依分類分組的 badge 達成結果。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "這家公司所有分類下、所有有 badge 的指標的達成結果（後端統一算好 passed，前端不用自己比較）",
@@ -591,7 +778,34 @@
             "description": "四個滾動視窗各自最新一筆 Beta 快照。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司 Beta 係數目前值（四個滾動視窗各自最新一筆快照）",
@@ -704,7 +918,34 @@
             "description": "每年一列（舊 → 新），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司淨值變動拆解（每股，每年一列，畫瀑布圖用）",
@@ -829,7 +1070,34 @@
             "description": "股本異動歷史（由新到舊排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司股本異動歷史（現金增資/盈餘轉增資/合併增資/減資等）",
@@ -1040,7 +1308,34 @@
             "description": "歷年股利表（舊 → 新），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司歷年股利表（每個股利所屬年度一列，含逐次分派事件）",
@@ -1246,7 +1541,34 @@
             "description": "杜邦拆解歷史時序（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，或 periodType/limit 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司杜邦分析拆解歷史時序（畫圖用）",
@@ -1389,7 +1711,34 @@
             "description": "該季該表全部科目欄位；查無資料時 found 為 false、statement 為 null。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol/statementType，statementType 不是合法值，或 year/season 只給了其中一個。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司單張財報表原始科目（會計模式，資產負債表/損益表/現金流量表整列透傳，供稽核用）",
@@ -1526,7 +1875,34 @@
             "description": "依分類分組的指標完整度掃描結果。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "這家公司在 GET /metrics 全部指標上的完整度掃描（有沒有算出值，不是達成/未達成）",
@@ -1724,7 +2100,34 @@
             "description": "歷史時序（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol/metricCode/timeframe，或 metricCode 未知，或 metricCode=\"beta\"，或 timeframe 不在該 metricCode 允許的清單內。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司任意 point-in-time 指標歷史時序（泛化版，畫圖用）",
@@ -1935,7 +2338,34 @@
             "description": "多指標歷史時序（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol/metricCodes/timeframe，或某個 metricCode 未知，或 timeframe 不在某個 metricCode 允許的清單內，或 metricCodes 超過上限。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司一次抓多個 point-in-time 指標歷史時序（畫圖/卡片用）",
@@ -2079,7 +2509,34 @@
             "description": "月營收歷史（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，或 limit 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司月營收歷史（畫圖用）",
@@ -2313,7 +2770,34 @@
             "description": "9 個子訊號依 3 組回傳，附帶 groupMetadata/signalLabels 靜態文字；查無資料時 found 為 false、totalScore/groups 為 null（groupMetadata/signalLabels 仍會回傳）。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，或 year/season 只給了其中一個。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "Piotroski F-Score 9 個子訊號分組明細",
@@ -2560,10 +3044,44 @@
             "description": "公司基本資料。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol。"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
           "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "查無此公司代號（上市、上櫃都查不到）。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司基本資料（董事長/總經理/發言人/設立上市日期/資本額等）",
@@ -2742,7 +3260,34 @@
             "description": "ROA 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，或 periodType/limit 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司 ROA 歷史時序（畫圖用）",
@@ -2907,7 +3452,34 @@
             "description": "ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，或 periodType/limit 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司 ROE 歷史時序（畫圖用）",
@@ -3143,7 +3715,34 @@
             "description": "河流圖資料。查無股價時 prices 為空陣列、current 為 null，不是 404。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol、ratio 不合法或 lookbackYears 超出範圍。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司本益比／股價淨值比／股價營收比河流圖",
@@ -3728,7 +4327,34 @@
             "description": "該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺少 symbol，metricCode 不是 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40 之一，或 year/season 只給了其中一個。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一指標的原始計算來源明細（會計模式「點數字看來源」用，目前限 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40 試點）",
@@ -3774,6 +4400,26 @@
               }
             },
             "description": "各層級的版本字串。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "資料版本：每支指標、指標目錄、全域各一個版本字串，給下游當快取鍵",
@@ -3978,7 +4624,34 @@
             "description": "分頁後的篩選結果。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求格式錯誤，或 field 不是 GET /etf-screener/filters 列出的欄位。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "ETF screener（多條件篩選 + 排序 + 分頁）",
@@ -4070,11 +4743,92 @@
               }
             },
             "description": "欄位目錄。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "ETF screener 可篩選/顯示欄位目錄（指標選單）",
         "tags": [
           "Market"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "2026-10-08 新增（bff-ts 要求）。不需要 X-Api-Key。對 analysis 資料庫跑一個最小查詢（3 秒逾時）：正常回 200；資料庫沒醒或查詢失敗回 503（RFC 9457 problem+json）。Cloud Run 冷啟動時第一次可能接近 3 秒。",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "database": {
+                      "enum": [
+                        "ok"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "ok"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "database"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "服務與資料庫都正常。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "資料庫在 3 秒內沒有回應或查詢失敗。"
+          }
+        },
+        "security": [],
+        "summary": "健康檢查：服務與 analysis 資料庫是否可用",
+        "tags": [
+          "System"
         ]
       }
     },
@@ -4179,6 +4933,26 @@
               }
             },
             "description": "每個類股的兩軸彙總。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "各證交所類股的殖利率與股利 3 年成長率彙總（產業分析散佈圖用）",
@@ -4231,6 +5005,26 @@
               }
             },
             "description": "全部合法證交所類股代碼清單。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "證交所類股分類清單（投資人習慣的「半導體業」等類股，非財政部稅籍分類）",
@@ -4343,6 +5137,26 @@
               }
             },
             "description": "由舊到新，查無資料時 entries 是空陣列。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "景氣指標與景氣對策信號（月）",
@@ -4420,6 +5234,26 @@
               }
             },
             "description": "依生效日由舊到新排序的調整事件，查無資料時 entries 是空陣列。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "央行政策利率歷次調整事件（重貼現率／擔保放款融通利率／短期融通利率）",
@@ -4521,6 +5355,26 @@
               }
             },
             "description": "由舊到新，回應帶回實際使用的 category。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "消費者物價指數（月）",
@@ -4618,6 +5472,26 @@
               }
             },
             "description": "依生效日由舊到新排序的調整事件，查無資料時 entries 是空陣列。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "歐洲央行三大政策利率歷次調整事件（存款機制／主要再融資／邊際貸款）",
@@ -4920,7 +5794,34 @@
             "description": "計算結果。若查無資料或樣本數不足，對應欄位會是 null，fieldStatuses 會標明原因分類，warnings 是人類可讀的完整說明，不會回傳錯誤狀態碼。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤（例如只給 startYear 沒給 startMonth）。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "計算歷史股權風險溢酬（Equity Risk Premium）——TAIEX 年化報酬率減同期 10 年期公債殖利率",
@@ -5009,6 +5910,26 @@
               }
             },
             "description": "由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "五大銀行定存與基準放款利率（月）：短天期無風險利率",
@@ -5108,6 +6029,26 @@
               }
             },
             "description": "由舊到新，回應帶回實際使用的 category。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "經濟成長率與需求面貢獻（季）",
@@ -5179,6 +6120,26 @@
               }
             },
             "description": "查無資料時 yieldPct/asOfMonth 是 null，warnings 說明原因，不會回傳錯誤狀態碼。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "10 年期政府公債次級市場殖利率（最新一個月）",
@@ -5249,6 +6210,26 @@
               }
             },
             "description": "由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "10 年期政府公債殖利率整段歷史（月）",
@@ -5349,6 +6330,26 @@
               }
             },
             "description": "由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "貨幣總計數 M1A／M1B／M2（月）",
@@ -5455,6 +6456,26 @@
               }
             },
             "description": "由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "集中市場月摘要：上市家數／市值／成交值／加權指數月平均（月）",
@@ -5527,6 +6548,26 @@
               }
             },
             "description": "依生效日由舊到新排序的調整事件，查無資料時 entries 是空陣列。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "美國聯邦基金利率目標歷次調整事件（目標區間上下限）",
@@ -5619,6 +6660,26 @@
               }
             },
             "description": "由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "新台幣兌美元匯率（日）",
@@ -5748,7 +6809,34 @@
             "description": "最近公告的注意股票清單。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "注意股票清單（上市+上櫃合併）",
@@ -5898,7 +6986,34 @@
             "description": "最近公告的處置股票清單。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "處置股票清單（上市+上櫃合併）",
@@ -6017,7 +7132,34 @@
             "description": "逐次收益分配與近 12 個月加總；查無紀錄時 found=false、events 空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "缺 symbol。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一 ETF 的逐次收益分配與近 12 個月配息",
@@ -6220,7 +7362,34 @@
             "description": "前 limit 名的 ETF 排行。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "ETF 排行",
@@ -6325,7 +7494,34 @@
             "description": "前 limit 名的券資比排行。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "券資比排行",
@@ -6435,7 +7631,34 @@
             "description": "最近公告的重大訊息清單。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "上市公司重大訊息公告",
@@ -6610,7 +7833,34 @@
             "description": "漲幅/跌幅前 limit 名。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "漲跌幅排行（上市+上櫃合併）",
@@ -6756,7 +8006,34 @@
             "description": "前 limit 名的月營收排行。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "月營收排行（上市+上櫃合併）",
@@ -6836,6 +8113,26 @@
               }
             },
             "description": "依交易日由舊到新排序的大盤逐日收盤價，查無資料時 entries 是空陣列。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "大盤加權股價指數（TAIEX）收盤序列（逐日／每週／每月）",
@@ -6958,6 +8255,26 @@
               }
             },
             "description": "成交量前 20 名。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "全市場成交量前 20 名（上市+上櫃合併）",
@@ -7269,6 +8586,26 @@
               }
             },
             "description": "分類 / 指標清單。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "列出目前 pitMetrics 底下已實作的指標，依因子分類分組",
@@ -7579,7 +8916,34 @@
             "description": "特別股清單，查無資料（symbol 篩選後沒有結果）時 entries 是空陣列，count 一律是全部符合條件的總筆數（不受 limit/offset 影響）。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "symbol/limit/offset 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "特別股清單（發行條款 + 目前殖利率）",
@@ -7640,6 +9004,26 @@
               }
             },
             "description": "欄位公式目錄。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "特別股衍生欄位的公式說明目錄（給前端 hover 提示用）",
@@ -7844,7 +9228,34 @@
             "description": "分頁後的篩選結果。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "filters/columns 都是空的、field 格式錯誤或查不到、sortField 不合法、sectorCodes/excludeSectorCodes 有不合法的代碼、或兩者同時提供。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "多條件篩選（AND），分頁瀏覽",
@@ -7965,7 +9376,34 @@
             "description": "該公司在此欄位的排名/百分位（或 found:false）。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "symbol 為空、field 格式錯誤或查不到、direction 不合法。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一公司在全市場某個欄位的排名/百分位",
@@ -8114,7 +9552,34 @@
             "description": "這個欄位全市場的分布。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "field 格式錯誤或查不到、bins 超出範圍。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "全市場某個欄位的分布（直方圖）",
@@ -8272,7 +9737,34 @@
             "description": "依 field 排序的前 N 筆結果。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "field 格式錯誤或查不到、sectorCodes/excludeSectorCodes 有不合法的代碼、或兩者同時提供。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "單一欄位排序取前 N 名",
@@ -8404,7 +9896,34 @@
             "description": "每個要求的 symbol 都會出現。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "symbols/columns 為空、超過上限，或 field 格式錯誤/查不到。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "指定股票清單批次查值",
@@ -8529,7 +10048,34 @@
             "description": "countOnly=true 時是 { count }；否則是 { count, limit, offset, entries }，count 一律是全部符合條件的總筆數（不是這次回傳的筆數）。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "limit/offset 不合法。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "列出證券代號/名稱對照表（分頁，含特別股）",
@@ -8729,7 +10275,34 @@
             "description": "該月全市場除權息事件清單，依日期排序。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "month 格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "全市場除權息日曆（月曆格狀呈現用，不需要先知道 symbol 清單）",
@@ -8932,7 +10505,34 @@
             "description": "以 symbol 為 key 的事件陣列對照表（同一檔可能有多筆），沒有事件的 symbol 不會出現在裡面。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤，或 symbols 超過一次上限。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "批次查詢多家公司/ETF 即將除權息、或已除權息待發放的事件",
@@ -9020,7 +10620,34 @@
             "description": "以 symbol 為 key 的股價對照表，查不到的 symbol 不會出現在裡面。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤，或 symbols 超過一次上限。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "批次查詢多家公司的最新股價",
@@ -9128,7 +10755,34 @@
             "description": "依交易日由舊到新排序的逐日股價，查無資料時 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "查詢單一公司的逐日股價（開高低收量）",
@@ -9223,7 +10877,34 @@
             "description": "依日期新到舊排序的外資持股歷史，查無資料的公司 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "查詢單一公司的外資/陸資持股比例歷史",
@@ -9306,7 +10987,34 @@
             "description": "依日期新到舊排序的董監事質押比例歷史，查無資料的公司 entries 是空陣列。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "查詢單一公司的董監事及大股東股權質押比例歷史",
@@ -9398,8 +11106,35 @@
             },
             "description": "最新報價，price/valuation 個別可能是 null。"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
           "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "公司代號在上市、上櫃都查無登記資料。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "查詢單一公司的最新股價/估值報價",
@@ -9536,8 +11271,35 @@
             },
             "description": "個股頁摘要，price/valuation/marketCap 個別可能是 null。"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
           "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "公司代號在上市、上櫃都查無登記資料。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "個股頁組合端點：一次回傳股價/漲跌/成交量/PER/PBR/殖利率/市值",
@@ -9648,7 +11410,24 @@
             "description": "已入列（queued=true）"
           },
           "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "這個來源的 X-Upstream-Key 不對或沒帶"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "security": [],
@@ -9801,7 +11580,34 @@
             "description": "排行結果，依 rank 由 1 開始編號。查無資料時 rankings 是空陣列，warnings 說明原因，不會回傳錯誤狀態碼。"
           },
           "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
             "description": "請求的參數格式錯誤（例如沒給 metric/order）。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
           }
         },
         "summary": "依 PER、PBR 或殖利率排行全市場公司（上市+上櫃）",

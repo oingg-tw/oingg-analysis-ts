@@ -2,6 +2,7 @@ import { Router } from 'ultimate-express';
 import rateLimit from 'express-rate-limit';
 import { runBatchCompute, type BatchRunnerDeps } from '@/application/batch/runner';
 import { quarterlyIndicatorJobs } from '@/application/batch/quarterly/indicatorRegistry';
+import { sendProblem } from '@/http/problem';
 import { jsonRoute } from '@/http/route';
 
 // 給 GCP Cloud Scheduler 觸發用的 HTTP 入口（同步呼叫，說明見 ../daily/route.ts）。2026-09-07 起
@@ -19,7 +20,12 @@ export const createQuarterlyBatchRouter = (deps: BatchRunnerDeps): Router => {
     limit: 5,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { message: 'quarterly 批次計算端點觸發過於頻繁，請稍後再試（這不是身份驗證，只是防止連線池被打爆的暫時性防護）。' },
+    // 2026-10-08 RFC 9457 problem+json（見 http/problem.ts）＋ Retry-After；message 過渡期保留。
+    handler: (_req, res, _next, options) => {
+      const detail = 'quarterly 批次計算端點觸發過於頻繁，請稍後再試（這不是身份驗證，只是防止連線池被打爆的暫時性防護）。';
+      res.setHeader('Retry-After', String(Math.ceil(options.windowMs / 1000)));
+      sendProblem(res, 429, detail);
+    },
   });
 
   router.post(

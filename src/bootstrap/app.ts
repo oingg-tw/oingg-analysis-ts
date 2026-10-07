@@ -1,4 +1,6 @@
 import express from 'ultimate-express';
+import { randomUUID } from 'node:crypto';
+import { sendProblem } from '@/http/problem';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
@@ -56,7 +58,20 @@ export const createApp = (options: AppOptions = defaultAppOptions()) => {
   // 錯誤判斷（res.statusCode >= 500 那條路徑）本身沒受影響，只有這個文字判斷是錯的，但錯到會
   // 讓人誤判系統一直在出錯，一定要覆蓋掉。走到這個 callback 代表 pino-http 自己已經判定不是
   // 5xx/沒有 err（那條路走 customErrorMessage），直接回「request completed」就對了。
-  app.use(pinoHttp({ logger: options.logger, customSuccessMessage: () => 'request completed' }));
+  // 2026-10-08 request id（RFC 9457 的 instance 用）：沿用 bff-ts 送來的 X-Request-Id（他們會把自己的 id 轉送過來，兩邊 log 對得起來），
+  // 沒有就產生新的；同一個 id 寫回 X-Request-Id 回應 header、進 pino 的 log（req.id）、放進錯誤回應的 instance（見 http/problem.ts）。
+  app.use(
+    pinoHttp({
+      logger: options.logger,
+      customSuccessMessage: () => 'request completed',
+      genReqId: (req, res) => {
+        const incoming = req.headers['x-request-id'];
+        const id = typeof incoming === 'string' && /^[\w-]{8,128}$/.test(incoming) ? incoming : randomUUID();
+        res.setHeader('X-Request-Id', id);
+        return id;
+      },
+    })
+  );
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(options.openApiDocument as Parameters<typeof swaggerUi.setup>[0]));
 
@@ -79,6 +94,9 @@ export const createApp = (options: AppOptions = defaultAppOptions()) => {
     res.json(options.openApiDocument);
   });
   for (const module of options.modules.filter((m) => m.auth === 'bff')) mount(module);
+
+  // 2026-10-08 沒有對應路由：回 RFC 9457 的 404（原本掉到框架預設的純文字頁）。掛在所有路由之後、錯誤處理之前。
+  app.use((_req, res) => sendProblem(res, 404, 'No route matches this method and path.'));
 
   // 一定要是最後一個 middleware，才接得到前面所有路由丟出來的錯誤。
   app.use(createErrorHandler({ isProduction: options.isProduction }));

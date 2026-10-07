@@ -1,6 +1,7 @@
 import type { HttpModule } from '@/http/module';
 import type { AppDeps } from '@/application/deps';
 import { getStartupTime } from './serverInfo';
+import { pingAnalysisDb } from './db';
 import { createSystemRouter } from '@/http/modules/system/root';
 import { registerSystemOpenApi } from '@/http/modules/system/openapi';
 import { createBatchRouter } from '@/http/batch/route';
@@ -74,7 +75,7 @@ import { registerMacroSeriesOpenApi } from '@/http/modules/macro/series/openapi'
 // Phase 4-3 起每個模組都是 createXxxRouter(deps) 工廠（薄 controller + application use case），這裡是唯一把
 // deps 交給 http 層的地方。
 export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
-  { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime }), registerOpenApi: registerSystemOpenApi },
+  { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime, pingDatabase: pingAnalysisDb }), registerOpenApi: registerSystemOpenApi },
   // 2026-09-30 上游變動通知：自己驗 X-Upstream-Key，不套 bff 的共用密鑰（不同的信任邊界），所以跟 batch 一樣掛在 bffAuth 之前。
   { name: 'upstream', auth: 'upstream', router: createUpstreamRouter(deps, { keys: config.upstreamKeys, isProduction: config.isProduction }), registerOpenApi: registerUpstreamOpenApi },
   { name: 'batch', auth: 'batch', router: createBatchRouter(deps), registerOpenApi: registerBatchOpenApi },

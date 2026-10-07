@@ -1,4 +1,5 @@
 import { Router } from 'ultimate-express';
+import { sendProblem } from '@/http/problem';
 import type { z } from 'zod';
 import { enqueueUpstreamChanges, type EnqueueUpstreamChangesDeps } from '@/application/upstream/enqueueUpstreamChanges';
 import { jsonRoute, type RouteHandler } from '@/http/route';
@@ -20,7 +21,8 @@ export const createUpstreamChangesHandler =
     const expected = auth.keys[body.source];
     const mustCheck = auth.isProduction || Object.values(auth.keys).some((k) => k !== null);
     if (mustCheck && (expected === null || req.headers['x-upstream-key'] !== expected)) {
-      res.status(401).json({ message: 'Unauthorized: missing or invalid X-Upstream-Key header for this source.' });
+      const detail = 'Unauthorized: missing or invalid X-Upstream-Key header for this source.';
+      sendProblem(res, 401, detail); // 2026-10-08 RFC 9457（見 http/problem.ts）
       return undefined;
     }
     const result = await enqueueUpstreamChanges(body, deps);

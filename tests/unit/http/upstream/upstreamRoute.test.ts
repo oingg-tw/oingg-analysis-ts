@@ -33,7 +33,7 @@ const setup = (options: { isProduction?: boolean; enqueueResult?: bigint | null;
   };
   const handler = createUpstreamChangesHandler(deps, { keys, isProduction: options.isProduction ?? true });
   const call = async (body: { source: 'mops' | 'tpex' | 'twse'; upToId: number }, key?: string) => {
-    const res = { statusCode: 200, payload: undefined as unknown, status(c: number) { res.statusCode = c; return res; }, json(b: unknown) { res.payload = b; return res; } };
+    const res = { statusCode: 200, payload: undefined as unknown, status(c: number) { res.statusCode = c; return res; }, json(b: unknown) { res.payload = b; return res; }, send(b: string) { res.payload = JSON.parse(b); return res; }, type() { return res; }, getHeader: () => undefined };
     const req = { headers: key === undefined ? {} : { 'x-upstream-key': key } } as unknown as Request;
     await handler({ params: undefined, query: undefined, body }, req, res as unknown as Response);
     return res;

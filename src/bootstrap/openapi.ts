@@ -1,4 +1,5 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
+import { z } from 'zod';
 import type { HttpModule } from '@/http/module';
 
 // 2026-09-05 起改成手動 registry——取代原本 swagger-jsdoc 直接讀 .ts 原始檔文字解析 JSDoc
@@ -14,6 +15,34 @@ import type { HttpModule } from '@/http/module';
 // - 安全宣告：X-Api-Key 是全域預設，public／batch／upstream 模組的路徑覆寫成不需要（它們掛在 bffAuth 之前，見 bootstrap/app.ts）。
 const BFF_API_KEY_SCHEME = 'BffApiKey';
 
+// 2026-10-08 RFC 9457 problem+json（見 http/problem.ts）：所有 4xx/5xx 都是這個形狀，形狀跟 bff-ts 的 Problem schema 一致。
+// 每支端點宣告過的錯誤回應都引用它；另外補上 401（需要金鑰的端點）與 500（全部）。
+const problemSchema = z
+  .object({
+    type: z.string().meta({
+      example: 'tag:oingg.com,2026:unsupported-timeframe',
+      description: '問題類別。有 code 的是由 code 推出的 tag URI（無法解析，RFC 9457 §3.1.1 允許），type 與 code 一一對應；沒有 code 的是 about:blank（意思不超出 HTTP 狀態碼）。',
+    }),
+    title: z.string().meta({ example: 'Bad Request', description: 'HTTP 狀態碼的標準短語，同一個 status 永遠相同。' }),
+    status: z.number().int().meta({ example: 400, description: '等於 HTTP 回應的狀態碼。' }),
+    detail: z.string().meta({ description: '給人看的說明，措辭不保證穩定，不要解析。' }),
+    instance: z.string().meta({ example: 'urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479', description: '這次請求的 ID，跟 X-Request-Id header 同值（呼叫端有送 X-Request-Id 就沿用）。' }),
+    code: z
+      .enum(['unknown_metric', 'unsupported_timeframe'])
+      .optional()
+      .meta({ description: '只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）。之後可能新增值。' }),
+    errors: z
+      .array(z.object({ detail: z.string(), pointer: z.string().optional(), parameter: z.string().optional() }))
+      .optional()
+      .meta({
+        description:
+          '參數驗證失敗（400）時才有，RFC 9457 §3 的形狀：body 欄位用 pointer（URI fragment 形式的 JSON Pointer，例如 #/columns/0/field）；' +
+          'query／path 參數用 parameter（例如 metricCode）。',
+      }),
+    message: z.string().meta({ description: '過渡期欄位（2026-10-08 前的舊格式）：驗證錯誤時是第一個欄位的錯誤訊息，其他錯誤等於 detail。呼叫端改讀 detail／errors 後會移除。' }),
+  });
+
+
 const operationIdOf = (method: string, path: string): string =>
   method +
   (path === '/' ? 'Root' : '') +
@@ -26,6 +55,8 @@ const operationIdOf = (method: string, path: string): string =>
 export const buildOpenApiDocument = (modules: readonly HttpModule[], { port }: { port: number }) => {
   const registry = new OpenAPIRegistry();
   registry.registerComponent('securitySchemes', BFF_API_KEY_SCHEME, { type: 'apiKey', in: 'header', name: 'X-Api-Key' });
+  // 專案其他 schema 都 inline、沒有擴充過 zod（registry.register 需要 extendZodWithOpenApi），共用元件改用 zod 4 內建轉換註冊。
+  registry.registerComponent('schemas', 'Problem', z.toJSONSchema(problemSchema, { target: 'openapi-3.0' }) as Record<string, unknown>);
   // 哪些路徑不需要 X-Api-Key：記下每個非 bff 模組註冊了哪些路徑（registry.definitions 依註冊順序累加）。
   const publicRoutes = new Set<string>();
   for (const module of modules) {
@@ -77,7 +108,14 @@ export const buildOpenApiDocument = (modules: readonly HttpModule[], { port }: {
       if (!operation) continue;
       operation.operationId ??= operationIdOf(method, path);
       // zod-to-openapi 的 route.path 是 {param} 寫法，跟 document.paths 的鍵一致。
-      if (publicRoutes.has(`${method} ${path}`)) operation.security = [];
+      const isPublic = publicRoutes.has(`${method} ${path}`);
+      if (isPublic) operation.security = [];
+      const responses = operation.responses as Record<string, { description: string; content?: unknown }>;
+      if (!isPublic) responses['401'] ??= { description: '沒帶或帶錯 X-Api-Key。' };
+      responses['500'] ??= { description: '伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。' };
+      for (const [code, response] of Object.entries(responses)) {
+        if (Number(code) >= 400) response.content = { 'application/problem+json': { schema: { $ref: '#/components/schemas/Problem' } } };
+      }
     }
   }
   return document;

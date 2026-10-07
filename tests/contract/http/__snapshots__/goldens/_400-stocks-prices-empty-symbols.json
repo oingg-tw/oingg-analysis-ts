@@ -1,11 +1,14 @@
 {
-  "message": "Invalid query parameters.",
-  "errors": {
-    "_errors": [],
-    "symbols": {
-      "_errors": [
-        "symbols is required."
-      ]
+  "message": "symbols is required.",
+  "errors": [
+    {
+      "detail": "symbols is required.",
+      "parameter": "symbols"
     }
-  }
+  ],
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid query parameters.",
+  "instance": "urn:uuid:golden-request-0001"
 }

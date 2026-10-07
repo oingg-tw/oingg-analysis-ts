@@ -25,7 +25,7 @@ export const validTimeframesForMetric = (metricCode: string): string[] => {
 export const resolveTimeframeForMetric = (metricCode: string, timeframe: string, displayField: string): FieldRef => {
   const definition = metricDefinitionRegistry[metricCode];
   if (!definition) {
-    throw new ValidationError(`"${displayField}" 不是可查詢的欄位——"${metricCode}" 不是已註冊的 metricCode，見 GET /metrics 確認可用清單。`);
+    throw new ValidationError(`"${displayField}" 不是可查詢的欄位——"${metricCode}" 不是已註冊的 metricCode，見 GET /metrics 確認可用清單。`, 'unknown_metric');
   }
 
   const ref = resolveTimeframe(definition, timeframe, displayField);
@@ -34,16 +34,17 @@ export const resolveTimeframeForMetric = (metricCode: string, timeframe: string,
   const allowed = validTimeframes(definition).join(', ');
   switch (definition.group) {
     case 'period':
-      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 periodType "${timeframe}"，允許的值：${allowed}。`);
+      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 periodType "${timeframe}"，允許的值：${allowed}。`, 'unsupported_timeframe');
     case 'rollingWindow':
       // 2026-09-08 bff-ts 實測回報：allowedLookbackRanges x allowedSamplingIntervals 不是
       // 自由交叉組合（beta 3x3=9 種裡只有 3 種真的有資料）——訊息直接列出唯一合法的組合清單。
       throw new ValidationError(
         `"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 的 timeframe 要是 "<lookbackRange>_<samplingInterval>" 格式，且必須是下列已知有資料的組合之一（不是 lookbackRange/samplingInterval 的自由交叉組合）：${allowed}。`,
+        'unsupported_timeframe'
       );
     case 'snapshot':
-      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${timeframe}"，允許的值：${allowed}。`);
+      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 不支援 snapshotCadence "${timeframe}"，允許的值：${allowed}。`, 'unsupported_timeframe');
     case 'monthly':
-      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 是月頻指標，timeframe 只有 "M" 一種（收到 "${timeframe}"）。`);
+      throw new ValidationError(`"${displayField}" 不是可查詢的欄位——metricCode "${metricCode}" 是月頻指標，timeframe 只有 "M" 一種（收到 "${timeframe}"）。`, 'unsupported_timeframe');
   }
 };

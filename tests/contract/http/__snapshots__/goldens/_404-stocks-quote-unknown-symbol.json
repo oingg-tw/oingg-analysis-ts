@@ -1,3 +1,8 @@
 {
-  "message": "查無公司代號 9999（上市、上櫃都沒有登記資料）。"
+  "message": "查無公司代號 9999（上市、上櫃都沒有登記資料）。",
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "查無公司代號 9999（上市、上櫃都沒有登記資料）。",
+  "instance": "urn:uuid:golden-request-0001"
 }

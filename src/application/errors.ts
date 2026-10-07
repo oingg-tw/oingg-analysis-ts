@@ -5,24 +5,31 @@
 // 狀態碼；Error subclass 是這個 codebase 唯一允許用 class 的地方（要 stack trace + instanceof）。
 //
 // 訊息文字是對外契約的一部分（bff-ts 會把 400 的 message 直接顯示），改分類時訊息不能變。
+// 2026-10-08 RFC 9457 problem+json（跟 bff-ts 同一套，見 http/problem.ts）：problemCode 只在呼叫端需要分支時才給
+// （unknown_metric、unsupported_timeframe），對應 problem 的 code 與 type；其餘 400／404 看 status 就夠，不給。
+// 訊息文字（problem 的 detail）只給人看，措辭可以改。
 export type AppErrorCode = 'VALIDATION' | 'NOT_FOUND';
+export type AppProblemCode = 'unknown_metric' | 'unsupported_timeframe';
 
 export class AppError extends Error {
+  readonly problemCode: AppProblemCode | undefined;
+
   constructor(
     readonly code: AppErrorCode,
     readonly status: number,
     message: string,
-    options?: { cause?: unknown }
+    options?: { cause?: unknown; problemCode?: AppProblemCode }
   ) {
     super(message, options);
     this.name = new.target.name;
+    this.problemCode = options?.problemCode;
   }
 }
 
 // 請求內容不合法（欄位格式、不存在的 metricCode/timeframe、超過上限…）→ 400。
 export class ValidationError extends AppError {
-  constructor(message: string) {
-    super('VALIDATION', 400, message);
+  constructor(message: string, problemCode?: AppProblemCode) {
+    super('VALIDATION', 400, message, { problemCode });
   }
 }
 
