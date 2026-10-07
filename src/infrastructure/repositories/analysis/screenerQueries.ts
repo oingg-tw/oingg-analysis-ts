@@ -70,8 +70,12 @@ const dedupCtes = (fields: FieldRef[]): Map<string, CteRef> => {
 // lookback_range/sampling_interval/snapshot_cadence 這三欄已經不存在），排序鍵不變；
 // metric_daily_cadence_values 沒有 period_type/fiscal_year/fiscal_quarter，排序改用
 // trade_date（真正的自然鍵）+ knowledge_date 當 tiebreaker。
-const buildCte = (ref: CteRef): Prisma.Sql => {
+// symbols（選填）：2026-10-08 只給 POST /screener/values 用——查明確列出的幾檔時先篩公司再去重，走 *_latest_lookup 索引（symbol 開頭）。
+// 沒傳就是全市場（排行、篩選、名次、分布），行為不變。原本 values 也對整支指標全市場 DISTINCT ON 再 LEFT JOIN，
+// 1 檔 12 欄等於掃 12 次全市場（冷啟動 10.5 秒，超過 bff 的 10 秒逾時回 502）。
+const buildCte = (ref: CteRef, symbols?: string[]): Prisma.Sql => {
   const alias = Prisma.raw(ref.alias);
+  const symbolFilter = symbols ? Prisma.sql`AND ${q('symbol')} = ANY(${symbols}::text[])` : Prisma.empty;
   // 2026-10-07 月頻（metric_monthly_values，sus 等）：之前沒有這個分支，月頻被當季報型查 metric_values，排行／名次／分布
   // 全部安靜回空（susBadge 因此從未有值）。月頻沒有 basis 欄位可篩，最新一列 = 最大的 (年, 月)。
   if (ref.isMonthly) {
@@ -80,6 +84,7 @@ const buildCte = (ref: CteRef): Prisma.Sql => {
       FROM ${q('metric_monthly_values')}
       WHERE ${q('metric_code')} = ${ref.metricCode}
         AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+        ${symbolFilter}
       ORDER BY ${q('symbol')}, ${q('fiscal_year')} DESC, ${q('fiscal_month')} DESC, ${q('knowledge_date')} DESC
     )`;
   }
@@ -92,6 +97,7 @@ const buildCte = (ref: CteRef): Prisma.Sql => {
         AND ${q('sampling_interval')} = ${ref.samplingInterval}
         AND ${q('snapshot_cadence')} = ${ref.snapshotCadence}
         AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+        ${symbolFilter}
       ORDER BY ${q('symbol')}, ${q('trade_date')} DESC, ${q('knowledge_date')} DESC
     )`;
   }
@@ -101,6 +107,7 @@ const buildCte = (ref: CteRef): Prisma.Sql => {
     WHERE ${q('metric_code')} = ${ref.metricCode}
       AND ${q('period_type')} = ${ref.periodType}
       AND ${q('subsidiary_company_id')} = ${SUBSIDIARY_COMPANY_ID}
+      ${symbolFilter}
     ORDER BY ${q('symbol')}, ${q('fiscal_year')} DESC, ${q('fiscal_quarter')} DESC, ${q('knowledge_date')} DESC
   )`;
 };
@@ -210,7 +217,7 @@ export const buildScreenerSql = (
   const columnOnlyCteRefs = [...columnCteRefs.entries()].filter(([key]) => !filterCteRefs.has(key)).map(([, v]) => v);
   const allCteRefs = new Map([...filterCteRefs, ...columnCteRefs]);
 
-  const ctes = [...allCteRefs.values()].map(buildCte);
+  const ctes = [...allCteRefs.values()].map((ref) => buildCte(ref));
   const { extraCte, fromSql, symbolExpr } = buildFromClause([...filterCteRefs.values()], columnOnlyCteRefs);
   const allCtes = extraCte ? [...ctes, extraCte] : ctes;
 
@@ -268,7 +275,7 @@ export const buildRankingSql = (
   const columnOnlyCteRefs = [...columnCteRefs.entries()].filter(([key]) => !filterCteRefs.has(key)).map(([, v]) => v);
   const allCteRefs = new Map([...filterCteRefs, ...columnCteRefs]);
 
-  const ctes = [...allCteRefs.values()].map(buildCte);
+  const ctes = [...allCteRefs.values()].map((ref) => buildCte(ref));
   const { fromSql } = buildFromClause([...filterCteRefs.values()], columnOnlyCteRefs);
 
   const rankedAlias = Prisma.raw(filterCteRefs.get(basisGroupKeyFor(rankedField))!.alias);
@@ -320,7 +327,7 @@ export const buildCompanyRankSql = (
   thresholdTopPercent: number | null = null
 ): Prisma.Sql => {
   const filterCteRefs = dedupCtes([field]);
-  const ctes = [...filterCteRefs.values()].map(buildCte);
+  const ctes = [...filterCteRefs.values()].map((ref) => buildCte(ref));
   const alias = Prisma.raw(filterCteRefs.get(basisGroupKeyFor(field))!.alias);
   const valueCol = Prisma.sql`${alias}.${q('value')}`;
 
@@ -356,7 +363,7 @@ export const buildCompanyRankSql = (
 // 一個 CTE 的內容——這樣每個要求的 symbol 都保證會出現在結果裡，即使所有欄位都沒有資料。
 export const buildValuesSql = (symbols: string[], columns: FieldRef[]): Prisma.Sql => {
   const cteRefs = dedupCtes(columns);
-  const ctes = [...cteRefs.values()].map(buildCte);
+  const ctes = [...cteRefs.values()].map((ref) => buildCte(ref, symbols));
 
   const indexedColumns: IndexedField[] = columns.map((c, index) => ({ ...c, index }));
   const selectCols = buildSelectColumnsSql(indexedColumns, cteRefs);
