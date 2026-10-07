@@ -1,7 +1,6 @@
 import { listSymbolsWithIncomeStatement, listBankSymbols, listBankSymbolsForQuarter, listSymbolsWithBankIncomeStatement, getLatestIncomeStatementQuarter } from '@/infrastructure/repositories/mops/backfillUniverse';
 import { getSymbolsWithDividendDistribution } from '@/infrastructure/repositories/mops/dividendDistribution';
 import { listDailyPriceTradeDates, listDailyValuationTradeDates, listSymbolsWithMonthlyRevenue } from '@/infrastructure/repositories/twse/backfillUniverse';
-import { listManufacturingSymbols } from '@/infrastructure/repositories/gov/backfillUniverse';
 import { isFinancialIndustryCompany, listCompaniesBySectorCodes } from '@/infrastructure/repositories/exchange/securitiesIndustry';
 import { listLatestTtmValuesAcrossMarket, listMetricValuesForGapScan, countShadowRowsSince, listRankDegeneracy } from '@/infrastructure/repositories/analysis/backfillQueries';
 import { mopsReportAvailability } from '@/infrastructure/repositories/mops/companyReportAvailability';
@@ -22,7 +21,6 @@ export const backfillUniverse = {
   listDailyPriceTradeDates,
   listDailyValuationTradeDates,
   listSymbolsWithMonthlyRevenue,
-  listManufacturingSymbols,
   listCompaniesBySectorCodes,
   isFinancialIndustryCompany,
 };

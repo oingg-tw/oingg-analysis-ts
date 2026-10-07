@@ -2,8 +2,10 @@
 // ——2026-08-31 gov-ts 建好 export.monthly_gov_bond_yield_10y view、export.ingestion_runs 握手表、
 // etl_reader role（只能 SELECT export schema，實測驗證過連 INSERT/CREATE TABLE 都會被拒絕，
 // 比 mops pilot 當初的驗證範圍更完整），連線用 .env 的 GOV_EXPORT_DATABASE_URL /
-// GOV_EXPORT_DIRECT_URL。2026-09-01 再加上 export.company_industry_classification view
-// （財政部稅籍登記的官方逐公司行業分類，見 CompanyIndustryClassification 的說明）。
+// GOV_EXPORT_DIRECT_URL。
+// 2026-10-07 移除 CompanyIndustryClassification（export.company_industry_classification）與 TaxIndustryCode（export.industry_codes）
+// 兩個 view model：gov-ts 依使用者裁定整組刪除公司產業分類（DEV 已刪、PRD 等我們上 PRD 才刪）；我們這邊 Z″ 早已改用交易所類股（1148f6d1）、
+// /industries/tree、/flat 已退役，最後一個讀者（Z″ 製造業排除回填腳本）一併刪除。
 //
 // 跟 prisma/mopsExport/schema.prisma 同一種模式，見該檔案開頭的說明。
 //
@@ -60,55 +62,6 @@ view MonthlyGovBondYield10y {
   updatedAt DateTime? @map("updated_at")
 
   @@map("monthly_gov_bond_yield_10y")
-  @@ignore
-  @@schema("export")
-}
-
-/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// dataset='company_industry_classification' 是整批同步（一次全部公司一個 run，不是逐公司），
-/// 跟 mops quarterly_income_statement 那種逐公司 run 不同，見 sync 檔案的說明。
-view CompanyIndustryClassification {
-  symbol               String?
-  taxId                String?   @map("tax_id")
-  rank                 Int?
-  industryCode         String?   @map("industry_code")
-  sourceIndustryName   String?   @map("source_industry_name")
-  sectionCode          String?   @map("section_code")
-  divisionCode         String?   @map("division_code")
-  groupCode            String?   @map("group_code")
-  classCode            String?   @map("class_code")
-  subclassCode         String?   @map("subclass_code")
-  classificationNameZh String?   @map("classification_name_zh")
-  updatedAt            DateTime? @map("updated_at")
-
-  @@map("company_industry_classification")
-  @@ignore
-  @@schema("export")
-}
-
-/// 沒有唯一識別欄位，Prisma Client 不會產生存取子，僅供對照欄位形狀，實際查詢走 $queryRaw。
-/// 2026-09-05 新增：財政部稅籍行業標準分類代碼字典，供「產業同業比較」功能查代碼對應的
-/// 中文/英文名稱用——CompanyIndustryClassification 每個公司只帶最細層級（industryCode）
-/// 的 classificationNameZh，回退到較粗層級（例如 divisionCode）時要查這張表才拿得到名稱。
-/// 已用 govExportPrisma.$queryRaw 對真實 DB 內省過（2026-09-05）：一列一個代碼，level 標明
-/// 這列屬於哪一層（'section'|'division'|'group'|'class'|'subclass'），code 就是該層自己的
-/// 代碼（等同 sectionCode/divisionCode/.../subclassCode 五欄裡跟 level 對應的那一欄），同時
-/// 帶出上層祖先代碼方便追溯。實測 2466 筆，各層代碼格式天生不會互撞（section 單一字母、
-/// division 兩位數字、group 三位數字、class 四位數字、subclass 四位數字+dash+兩位數字），
-/// code 欄位查詢時不需要額外帶 level 當複合鍵。
-view TaxIndustryCode {
-  code         String?
-  level        String? // 'section' | 'division' | 'group' | 'class' | 'subclass'
-  sectionCode  String?   @map("section_code")
-  divisionCode String?   @map("division_code")
-  groupCode    String?   @map("group_code")
-  classCode    String?   @map("class_code")
-  subclassCode String?   @map("subclass_code")
-  nameZh       String?   @map("name_zh")
-  nameEn       String?   @map("name_en")
-  updatedAt    DateTime? @map("updated_at")
-
-  @@map("industry_codes")
   @@ignore
   @@schema("export")
 }
