@@ -19,7 +19,8 @@
 import type { QuarterlyKey } from '../../../domain/financials/quarterlyKey';
 import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 
-const IDENTITY_COLUMNS = new Set(['symbol', 'year', 'quarter', 'data_type', 'subsidiary_company_id', 'report_date', 'raw_context_ref', 'created_at', 'updated_at']);
+// 2026-10-07 加 source：mops-ts 新增的資料來源標記欄（'document'／'comparative'），不是科目，不能出現在會計模式的科目清單裡。
+const IDENTITY_COLUMNS = new Set(['symbol', 'year', 'quarter', 'data_type', 'subsidiary_company_id', 'report_date', 'raw_context_ref', 'created_at', 'updated_at', 'source']);
 
 export const getBalanceSheetXbrlFull = async (key: QuarterlyKey): Promise<object | null> => {
   const rows = await mopsExportPrisma.$queryRaw<Record<string, unknown>[]>`

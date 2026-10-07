@@ -45,6 +45,14 @@ test('getLatestQuarterWithXbrlCashFlowQuarterly: 應該找得到 2330 的最新�
   assert.equal(result!.year, 115);
 });
 
+
+// 2026-10-07 mops-ts 在長表加了 account_code='source'（值是 'document'／'comparative' 的文字），不能進科目 Map、也不能讓 BigInt 丟例外。
+test('getXbrlCashFlowQuarterly: 排除長表的 source 中繼資料列', async () => {
+  const r = await getXbrlCashFlowQuarterly({ symbol: '4951', year: 110, quarter: 1, dataType: '2', subsidiaryCompanyId: '' });
+  assert.ok(r && Object.keys(r.accounts).length > 0);
+  assert.ok(!('source' in r.accounts));
+});
+
 afterAll(async () => {
   await mopsExportPrisma.$disconnect();
 });

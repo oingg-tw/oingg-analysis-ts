@@ -38,7 +38,11 @@ export const getXbrlCashFlow = async (key: XbrlThreeStatementsLongKey, statement
     WHERE symbol = ${key.symbol} AND year = ${key.year} AND quarter = ${key.quarter}
       AND data_type = ${key.dataType} AND subsidiary_company_id = ${key.subsidiaryCompanyId}
       AND statement_type = ${statementType}
+      AND account_code <> 'source'
   `;
+  // 2026-10-07 mops-ts 在長表每個 (公司, 季, 表) 加了一列 account_code='source'、value='document'|'comparative'（資料來源標記，
+  // 不是科目金額），BigInt('comparative') 會丟例外，讓全市場重算中所有讀現金流長表的指標失敗（4949／4951 先踩到 234 筆）。
+  // 只排除這個已知的中繼資料鍵，不是「非數字一律略過」：其他科目出現非數字仍要報錯，不能安靜吞掉。
   if (rows.length === 0) return null;
 
   const accounts: Record<string, bigint> = {};
@@ -61,6 +65,7 @@ const latestCashFlowQuarter = async (symbol: string, dataType: string, subsidiar
     SELECT year, quarter FROM "export"."xbrl_three_statements_long"
     WHERE symbol = ${symbol} AND data_type = ${dataType} AND subsidiary_company_id = ${subsidiaryCompanyId}
       AND statement_type = ${statementType}
+      AND account_code <> 'source'
     ORDER BY year DESC, quarter DESC LIMIT 1
   `;
   return rows[0] ?? null;
