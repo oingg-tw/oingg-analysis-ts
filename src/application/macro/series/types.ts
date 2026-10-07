@@ -23,6 +23,21 @@ export const businessCycleEntrySchema = z.object({
 export const businessCycleResultSchema = z.object({ entries: z.array(businessCycleEntrySchema).meta(entriesMeta) });
 export type BusinessCycleResult = z.infer<typeof businessCycleResultSchema>;
 
+// 2026-10-07 短天期無風險利率（gov-ts monthly_five_major_bank_rate）：百分比數字，1.7 代表 1.7%，不是 0.017。
+export const fiveMajorBankRateEntrySchema = z.object({
+  ...monthPeriod,
+  depositRate1mPct: z.number().nullable().meta({ description: '五大銀行一個月期定存利率（年利率 %，1.23 代表 1.23%）' }),
+  depositRate1yPct: z.number().nullable().meta({ description: '五大銀行一年期定存利率（年利率 %）' }),
+  baseLendingRatePct: z.number().nullable().meta({ description: '五大銀行基準放款利率（年利率 %）' }),
+});
+export const fiveMajorBankRateResultSchema = z.object({
+  latestPeriod: z.string().nullable().meta({
+    description: '最新一筆的 "YYYY-MM"。央行約每月 25 日補上個月，所以通常落後約一個月；算到今天的窗口最後一個月取不到值，怎麼處理由呼叫端決定',
+  }),
+  entries: z.array(fiveMajorBankRateEntrySchema).meta(entriesMeta),
+});
+export type FiveMajorBankRateResult = z.infer<typeof fiveMajorBankRateResultSchema>;
+
 export const monetaryAggregateEntrySchema = z.object({
   ...monthPeriod,
   m1aAmount: z.number().nullable().meta({ description: 'M1A 日平均餘額，百萬新台幣' }),

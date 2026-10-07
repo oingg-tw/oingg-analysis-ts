@@ -29,6 +29,19 @@ export const govMacroSeries: MacroSeriesPort = {
       signalLight: (r.signal_light as string | null) ?? null,
     })),
 
+  listFiveMajorBankRatesAsc: async () =>
+    (
+      await govExportPrisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT year, month, deposit_rate_1m, deposit_rate_1y, base_lending_rate
+        FROM "export"."monthly_five_major_bank_rate" ORDER BY year ASC, month ASC`
+    ).map((r) => ({
+      year: Number(r.year),
+      month: Number(r.month),
+      depositRate1m: num(r.deposit_rate_1m),
+      depositRate1y: num(r.deposit_rate_1y),
+      baseLendingRate: num(r.base_lending_rate),
+    })),
+
   listMonetaryAggregatesAsc: async () =>
     (
       await govExportPrisma.$queryRaw<Record<string, unknown>[]>`

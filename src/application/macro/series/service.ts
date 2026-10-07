@@ -1,7 +1,7 @@
 import type { AppDeps } from '@/application/deps';
 import type { UsdTwdInterval } from '@/application/ports/macroData';
 import { toMonthPeriod, toQuarterPeriod } from './period';
-import type { BusinessCycleResult, CpiResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, StockMarketSummaryResult, UsdTwdRateResult } from './types';
+import type { BusinessCycleResult, CpiResult, FiveMajorBankRateResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, StockMarketSummaryResult, UsdTwdRateResult } from './types';
 
 // 2026-09-22 web-nuxt「總經特區」：側邊欄放各總經指標跟大盤對照。六支都是 gov-ts export view 的純轉發
 // （bff 沒有 DB 直連，只有這條路；使用者拍板整批做），唯一的加工是把 (year, month)/(year, quarter) 組成
@@ -20,6 +20,17 @@ export const getBusinessCycleIndicators = async (query: { from?: string }, deps:
 export const getMonetaryAggregates = async (query: { from?: string }, deps: MacroSeriesDeps): Promise<MonetaryAggregateResult> => {
   const rows = await deps.macroSeries.listMonetaryAggregatesAsc();
   return { entries: fromFilter(rows.map((r) => ({ period: toMonthPeriod(r.year, r.month), ...r })), query.from) };
+};
+
+// 2026-10-07 bff-ts 算使用者持股的 Sharpe／Sortino／M²／Jensen α 要短天期無風險利率（gov-ts 新收，使用者拍板）。持股只有 bff 知道，
+// 所以這裡純轉發；latestPeriod 照實標最新一筆是哪個月（落後約一個月），「沿用最後已知值還是縮短窗口」由 bff 決定並揭露。
+export const getFiveMajorBankRates = async (query: { from?: string }, deps: MacroSeriesDeps): Promise<FiveMajorBankRateResult> => {
+  const rows = await deps.macroSeries.listFiveMajorBankRatesAsc();
+  const entries = fromFilter(
+    rows.map((r) => ({ period: toMonthPeriod(r.year, r.month), year: r.year, month: r.month, depositRate1mPct: r.depositRate1m, depositRate1yPct: r.depositRate1y, baseLendingRatePct: r.baseLendingRate })),
+    query.from
+  );
+  return { latestPeriod: rows.length ? toMonthPeriod(rows.at(-1)!.year, rows.at(-1)!.month) : null, entries };
 };
 
 // 2026-09-22 web-nuxt 大事件年表頁正式提需求：大盤月平均推到 1987-05 才填得滿 35 年回看視窗（twse 月線只到 1999）。

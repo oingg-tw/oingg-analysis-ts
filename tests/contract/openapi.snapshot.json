@@ -4524,6 +4524,93 @@
         ]
       }
     },
+    "/macro/five-major-bank-rate": {
+      "get": {
+        "description": "央行統計的五大銀行平均利率，1987-01 起。給報酬期間約一年的風險調整指標（Sharpe 等）當無風險利率：一年窗口配一年期定存、月報酬配一個月期定存。**跟 /macro/gov-bond-yield-10y 並存、用途不同**——10 年期公債含存續期間風險溢酬，留給 CAPM 與股票風險溢酬（/macro/equity-risk-premium）。數值是年利率百分比（1.7 代表 1.7%）。最新一筆通常落後約一個月（央行約每月 25 日補上個月），見 latestPeriod。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "parameters": [
+          {
+            "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新排序",
+                      "items": {
+                        "properties": {
+                          "baseLendingRatePct": {
+                            "description": "五大銀行基準放款利率（年利率 %）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "depositRate1mPct": {
+                            "description": "五大銀行一個月期定存利率（年利率 %，1.23 代表 1.23%）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "depositRate1yPct": {
+                            "description": "五大銀行一年期定存利率（年利率 %）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "month": {
+                            "type": "integer"
+                          },
+                          "period": {
+                            "description": "\"YYYY-MM\"，字典序即時間序",
+                            "type": "string"
+                          },
+                          "year": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "period",
+                          "year",
+                          "month",
+                          "depositRate1mPct",
+                          "depositRate1yPct",
+                          "baseLendingRatePct"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "latestPeriod": {
+                      "description": "最新一筆的 \"YYYY-MM\"。央行約每月 25 日補上個月，所以通常落後約一個月；算到今天的窗口最後一個月取不到值，怎麼處理由呼叫端決定",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "latestPeriod",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "由舊到新。"
+          }
+        },
+        "summary": "五大銀行定存與基準放款利率（月）：短天期無風險利率",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/gdp": {
       "get": {
         "description": "category=growth_rate 的 contributionPoints 是經濟成長率本身（%），其餘 11 個 category 是國內需求／國外淨需求各項目對成長率的貢獻百分點（各項加總 = growth_rate），1981-Q1 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",

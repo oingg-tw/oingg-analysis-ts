@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { getCpi, getGdp, getUsdTwdRates } from '@/application/macro/series/service';
+import { getCpi, getFiveMajorBankRates, getGdp, getUsdTwdRates } from '@/application/macro/series/service';
 import type { MacroSeriesPort } from '@/application/ports/macroData';
 import { createTestDeps } from '../../../fakes/createTestDeps';
 
@@ -14,6 +14,10 @@ const macroSeries = {
     { year: 2025, quarter: 4, contributionPoints: 6.2 },
     { year: 2026, quarter: 1, contributionPoints: 15.43 },
   ],
+  listFiveMajorBankRatesAsc: async () => [
+    { year: 2026, month: 7, depositRate1m: 1.23, depositRate1y: 1.7, baseLendingRate: 3.265 },
+    { year: 2026, month: 8, depositRate1m: 1.23, depositRate1y: 1.7, baseLendingRate: 3.265 },
+  ],
   listLatestUsdTwdRates: async (limit) =>
     [
       { tradeDate: new Date('2026-07-31'), bankBuyingRate: 32.26, bankSellingRate: 32.36, interbankClosingRate: 32.292 },
@@ -24,6 +28,13 @@ const macroSeries = {
 const deps = createTestDeps({ macroSeries: macroSeries as unknown as MacroSeriesPort });
 
 describe('macro series', () => {
+  // 2026-10-07 短天期無風險利率：百分比數字原樣（1.7 不是 0.017）、latestPeriod 是整段最新一筆，不受 from 影響。
+  test('五大銀行利率：百分比原樣、from 過濾、latestPeriod 是最新一筆', async () => {
+    const r = await getFiveMajorBankRates({ from: '2026-08' }, deps);
+    expect(r).toEqual({ latestPeriod: '2026-08', entries: [{ period: '2026-08', year: 2026, month: 8, depositRate1mPct: 1.23, depositRate1yPct: 1.7, baseLendingRatePct: 3.265 }] });
+    expect((await getFiveMajorBankRates({ from: '2027-01' }, deps)).latestPeriod).toBe('2026-08');
+  });
+
   test('月 period 補零、from 用字典序過濾、回應帶回 category', async () => {
     const all = await getCpi({ category: 'total' }, deps);
     expect(all.entries.map((e) => e.period)).toEqual(['2025-12', '2026-01']);

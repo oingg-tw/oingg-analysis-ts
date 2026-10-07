@@ -129,6 +129,16 @@ export interface GdpQuarter {
   contributionPoints: number | null; // category=growth_rate 時就是經濟成長率 %；其餘是對成長率的貢獻百分點，各項加總 = growth_rate
 }
 
+// 2026-10-07 gov-ts export.monthly_five_major_bank_rate（CBC EG2BM01en，1987-01 起）：短天期無風險利率，給 bff 算使用者持股的
+// Sharpe／Sortino／M²／Jensen α。百分比數字（1.70 = 1.70%），跟 10 年期公債（ERP 用）並存、用途不同。
+export interface FiveMajorBankRateMonth {
+  year: number;
+  month: number;
+  depositRate1m: number | null; // 一個月期定存 %
+  depositRate1y: number | null; // 一年期定存 %
+  baseLendingRate: number | null; // 基準放款利率 %
+}
+
 export type UsdTwdInterval = 'daily' | 'weekly' | 'monthly';
 
 export interface MacroSeriesPort {
@@ -139,4 +149,5 @@ export interface MacroSeriesPort {
   listLatestUsdTwdRates(limit: number, interval: UsdTwdInterval): Promise<UsdTwdRateDay[]>;
   listCpiAsc(category: string): Promise<CpiMonth[]>;
   listGdpAsc(category: string): Promise<GdpQuarter[]>;
+  listFiveMajorBankRatesAsc(): Promise<FiveMajorBankRateMonth[]>;
 }

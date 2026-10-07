@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { businessCycleResultSchema, cpiResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, stockMarketSummaryResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
+import { businessCycleResultSchema, cpiResultSchema, fiveMajorBankRateResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, stockMarketSummaryResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
 import { cpiQuerySchema, gdpQuerySchema, monthlySeriesQuerySchema, usdTwdRateQuerySchema } from './schemas';
 
 const SOURCE_NOTE = '資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。';
@@ -31,6 +31,15 @@ export const registerMacroSeriesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['Macro'],
     request: { query: monthlySeriesQuerySchema },
     responses: { 200: { description: '由舊到新。', content: { 'application/json': { schema: stockMarketSummaryResultSchema } } } },
+  });
+  registry.registerPath({
+    method: 'get',
+    path: '/macro/five-major-bank-rate',
+    summary: '五大銀行定存與基準放款利率（月）：短天期無風險利率',
+    description: `央行統計的五大銀行平均利率，1987-01 起。給報酬期間約一年的風險調整指標（Sharpe 等）當無風險利率：一年窗口配一年期定存、月報酬配一個月期定存。**跟 /macro/gov-bond-yield-10y 並存、用途不同**——10 年期公債含存續期間風險溢酬，留給 CAPM 與股票風險溢酬（/macro/equity-risk-premium）。數值是年利率百分比（1.7 代表 1.7%）。最新一筆通常落後約一個月（央行約每月 25 日補上個月），見 latestPeriod。${SOURCE_NOTE}`,
+    tags: ['Macro'],
+    request: { query: monthlySeriesQuerySchema },
+    responses: { 200: { description: '由舊到新。', content: { 'application/json': { schema: fiveMajorBankRateResultSchema } } } },
   });
   registry.registerPath({
     method: 'get',

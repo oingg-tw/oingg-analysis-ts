@@ -1,5 +1,5 @@
 import { Router } from 'ultimate-express';
-import { getBusinessCycleIndicators, getCpi, getGdp, getGovBondYield10yHistory, getMonetaryAggregates, getStockMarketSummaries, getUsdTwdRates, type MacroSeriesDeps } from '@/application/macro/series/service';
+import { getBusinessCycleIndicators, getCpi, getFiveMajorBankRates, getGdp, getGovBondYield10yHistory, getMonetaryAggregates, getStockMarketSummaries, getUsdTwdRates, type MacroSeriesDeps } from '@/application/macro/series/service';
 import { jsonRoute } from '@/http/route';
 import { cpiQuerySchema, gdpQuerySchema, monthlySeriesQuerySchema, usdTwdRateQuerySchema } from './schemas';
 
@@ -12,6 +12,7 @@ export const createMacroSeriesRouter = (deps: MacroSeriesDeps): Router => {
   router.get('/gov-bond-yield-10y-history', ...jsonRoute({ query: monthlySeriesQuerySchema }, ({ query }) => getGovBondYield10yHistory(query, deps)));
   router.get('/usd-twd-rate', ...jsonRoute({ query: usdTwdRateQuerySchema }, ({ query }) => getUsdTwdRates(query.limit, query.interval, deps)));
   router.get('/cpi', ...jsonRoute({ query: cpiQuerySchema }, ({ query }) => getCpi(query, deps)));
+  router.get('/five-major-bank-rate', ...jsonRoute({ query: monthlySeriesQuerySchema }, ({ query }) => getFiveMajorBankRates(query, deps)));
   router.get('/gdp', ...jsonRoute({ query: gdpQuerySchema }, ({ query }) => getGdp(query, deps)));
   return router;
 };
