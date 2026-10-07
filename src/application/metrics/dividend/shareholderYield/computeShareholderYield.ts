@@ -64,6 +64,7 @@ export interface ShareholderYieldResolution {
   quarters: ShareholderYieldQuarter[]; // 近四季，舊到新
   ttmComplete: boolean;
   shareholderCashOutflow: bigint; // |股利加總| + |買回加總|，千元
+  dividendsAbs: bigint; // |股利加總|，千元——2026-10-08 cashDividendYield（股利那一段）共用，跟分子同一個數
   marketCap: MarketCapAsOf | null;
   reportDate: Date | null;
   value: number | null;
@@ -113,7 +114,8 @@ export const resolveShareholderYieldInputs = async (query: QuarterlyMetricQuery,
     }
   }
 
-  const shareholderCashOutflow = (dividendsSum < 0n ? -dividendsSum : dividendsSum) + (buybackSum < 0n ? -buybackSum : buybackSum);
+  const dividendsAbs = dividendsSum < 0n ? -dividendsSum : dividendsSum;
+  const shareholderCashOutflow = dividendsAbs + (buybackSum < 0n ? -buybackSum : buybackSum);
 
   const marketCap = reportDate ? await deps.market.getMarketCap(symbol, reportDate) : null;
   // 現金流量表欄位單位是千元，marketCap.marketCap 單位是元，跟 buybackYield.ts 同一種
@@ -122,7 +124,7 @@ export const resolveShareholderYieldInputs = async (query: QuarterlyMetricQuery,
     ttmComplete && marketCap && marketCap.marketCap > 0 ? Math.round(((Number(shareholderCashOutflow) * 1000) / marketCap.marketCap) * 100 * 100) / 100 : null;
   const ttmNullReason: MetricNullReason | null = shareholderYieldTtm !== null ? null : !ttmComplete ? 'insufficient_history' : 'missing_input';
 
-  return { year, season, fiscalYear, fiscalQuarter: seasonNum, quarters, ttmComplete, shareholderCashOutflow, marketCap, reportDate, value: shareholderYieldTtm, nullReason: ttmNullReason };
+  return { year, season, fiscalYear, fiscalQuarter: seasonNum, quarters, ttmComplete, shareholderCashOutflow, dividendsAbs, marketCap, reportDate, value: shareholderYieldTtm, nullReason: ttmNullReason };
 };
 
 export const computeShareholderYield = async (query: QuarterlyMetricQuery, deps: ShareholderYieldDeps): Promise<ShareholderYieldComputationBatch> => {

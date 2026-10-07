@@ -16,6 +16,7 @@ import { computeDividendPayoutRatio } from '@/application/metrics/dividend/divid
 import { computeDividendPerShare } from '@/application/metrics/dividend/dividendPerShare/computeDividendPerShare';
 import { computeShareCountChangeRate } from '@/application/metrics/dividend/shareCountChangeRate/computeShareCountChangeRate';
 import { computeShareholderYield } from '@/application/metrics/dividend/shareholderYield/computeShareholderYield';
+import { computeCashDividendYield } from '@/application/metrics/dividend/cashDividendYield/computeCashDividendYield';
 import { computeCapexToRevenue } from '@/application/metrics/efficiency/capexToRevenue/computeCapexToRevenue';
 import { computeOperatingExpenseRatio } from '@/application/metrics/efficiency/operatingExpenseRatio/computeOperatingExpenseRatio';
 import { computeTurnoverRatioFamily } from '@/application/metrics/efficiency/turnoverRatio/computeTurnoverRatioFamily';
@@ -157,6 +158,7 @@ export const computeAndWriteDividendPayoutRatioPit = runPit(computeDividendPayou
 export const computeAndWriteDividendPerSharePit = runPit(computeDividendPerShare);
 export const computeAndWriteShareCountChangeRatePit = runPit(computeShareCountChangeRate);
 export const computeAndWriteShareholderYieldPit = runPit(computeShareholderYield);
+export const computeAndWriteCashDividendYieldPit = runPit(computeCashDividendYield);
 export const computeAndWriteCapexToRevenuePit = runPit(computeCapexToRevenue);
 export const computeAndWriteOperatingExpenseRatioPit = runPit(computeOperatingExpenseRatio);
 export const computeAndWriteTurnoverRatioFamilyPit = runPit(computeTurnoverRatioFamily);

@@ -55,6 +55,7 @@ import { revenueCagrFamilyDefinitions } from '@/domain/metrics/growth/revenueCag
 import { oneDollarTestDefinition } from '@/domain/metrics/profitability/oneDollarTest/oneDollarTestDefinition';
 import { epsCagrFamilyDefinitions } from '@/domain/metrics/growth/epsCagr/epsCagrDefinition';
 import { buybackYieldDefinition } from '@/domain/metrics/dividend/buybackYield/buybackYieldDefinition';
+import { cashDividendYieldDefinition } from '@/domain/metrics/dividend/cashDividendYield/cashDividendYieldDefinition';
 import { dividendCoverageRatioDefinition } from '@/domain/metrics/dividend/dividendCoverageRatio/dividendCoverageRatioDefinition';
 import { shareholderYieldDefinition } from '@/domain/metrics/dividend/shareholderYield/shareholderYieldDefinition';
 import { shareCountChangeRateDefinition } from '@/domain/metrics/dividend/shareCountChangeRate/shareCountChangeRateDefinition';
@@ -234,6 +235,7 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   buybackYield: buybackYieldDefinition,
   dividendCoverageRatio: dividendCoverageRatioDefinition,
   shareholderYield: shareholderYieldDefinition,
+  cashDividendYield: cashDividendYieldDefinition,
   shareCountChangeRate: shareCountChangeRateDefinition,
   sgr: sgrDefinition,
   threeMarginsRising: threeMarginsRisingDefinition,

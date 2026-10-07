@@ -111,6 +111,7 @@ import { getOwnerEarningsProvenance } from '@/application/metrics/quality/ownerE
 import { getEarningsToRecordHighProvenance } from '@/application/metrics/growth/earningsToRecordHigh/getEarningsToRecordHighProvenance';
 import { getThreeMarginsRisingProvenance } from '@/application/metrics/growth/threeMarginsRising/getThreeMarginsRisingProvenance';
 import { getShareholderYieldProvenance } from '@/application/metrics/dividend/shareholderYield/getShareholderYieldProvenance';
+import { getCashDividendYieldProvenance } from '@/application/metrics/dividend/cashDividendYield/getCashDividendYieldProvenance';
 import { getAssetTurnoverProvenance } from '@/application/metrics/efficiency/assetTurnover/getAssetTurnoverProvenance';
 import { getEquityMultiplierProvenance } from '@/application/metrics/resilience/equityMultiplier/getEquityMultiplierProvenance';
 import { PILOT_PROVENANCE_METRIC_CODES, type MetricProvenanceResult } from './provenanceTypes';
@@ -273,6 +274,7 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   earningsToRecordHigh: (query) => getEarningsToRecordHighProvenance(query, deps),
   threeMarginsRising: (query) => getThreeMarginsRisingProvenance(query, deps),
   shareholderYield: (query) => getShareholderYieldProvenance(query, deps),
+  cashDividendYield: (query) => getCashDividendYieldProvenance(query, deps),
   assetTurnover: (query) => getAssetTurnoverProvenance(query, deps),
   equityMultiplier: (query) => getEquityMultiplierProvenance(query, deps),
   grossProfitPerShare: (query) => getIncomeStatementPerShareProvenance('grossProfitPerShare', query, deps),

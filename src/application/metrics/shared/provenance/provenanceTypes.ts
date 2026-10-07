@@ -147,6 +147,7 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'earningsToRecordHigh',
   'threeMarginsRising',
   'shareholderYield',
+  'cashDividendYield',
   'assetTurnover',
   'equityMultiplier',
   // 2026-10-01 使用者要求「溯源表請務必都加上」——補齊目錄裡剩下的 47 支（之前標為結構性不合的逐日／月頻指標，
