@@ -20,6 +20,9 @@ spec:
         # owner 帳號已於 2026-09-03 退場，全部改走 etl_reader export schema），本機實測開發模式
         # 啟動要 3~5 秒，正式環境保守抓大一點，避免健康檢查太早判定失敗。
         run.googleapis.com/startup-cpu-boost: 'true'
+        # 2026-10-08 使用者拍板正式環境常駐 1 個執行個體：冷啟動約 13 秒（容器＋8 個 Neon 喚醒＋第一個查詢），
+        # 超過 bff-ts 的 10 秒逾時，閒置後第一個請求回 502。開發環境（service-dev.yaml）維持可縮到 0。
+        autoscaling.knative.dev/minScale: '1'
     spec:
       serviceAccountName: oingg-analysis-run@oingg-analysis.iam.gserviceaccount.com
       containerConcurrency: 80
