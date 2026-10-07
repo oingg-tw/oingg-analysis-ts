@@ -26,8 +26,8 @@ interface PoolRow {
 // 合併後排出來的前 20 一定涵蓋真正的全市場前 20（標準的「合併已排序列表取前 N 名」邏輯），
 // 不需要重新查整個市場的原始資料。
 //
-// TPEx 版本欄位比 TWSE 精簡很多（只有 symbol/trade_date/rank/volume），沒有的欄位（
-// transaction/open/high/low/close/dir/change）回傳 null，不是查詢失敗。
+// TPEx 官方排行只有 symbol/trade_date/rank/volume（張），2026-10-08 起成交量（股）、成交筆數與開高低收改從 daily_price 補上；
+// dir/change 只有 TWSE 有，上櫃回 null，不是查詢失敗。
 //
 // ⚠️ 沒有排除 ETF/衍生性商品（跟本服務其他主打「上市公司證券」的排行榜不一樣，2026-09-01
 // 應使用者要求維持原樣，直接回傳兩邊官方排名合併後的結果）。
@@ -45,12 +45,28 @@ export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20
     return { tradeDate: '', rankings: [], warnings };
   }
   const tradeDate = candidates.reduce((latest, current) => (current > latest ? current : latest));
+  // 2026-10-08 修：原本兩個市場都查「較晚的那一天」，上市還沒更新到那天時整批消失、沒有警告（本機改讀上櫃 PROD 後現形：
+  // 上櫃 10-07、上市 10-06，前 20 名全是上櫃）。改成跟 marginShortRatioRanking／calculateRanking 一樣各用自己最新的交易日，日期不同時加警告。
+  if (twseLatest && tpexLatest && twseLatest.getTime() !== tpexLatest.getTime()) {
+    warnings.push(
+      `上市（TWSE）跟上櫃（TPEx）目前不是同一個最新交易日——上市 ${twseLatest.toISOString().slice(0, 10)}、上櫃 ${tpexLatest.toISOString().slice(0, 10)}，兩邊各自用自己最新的交易日排行，不是同一天的比較。`
+    );
+  } else if (!twseLatest) {
+    warnings.push('上市（TWSE）查無成交量前20名資料，這次排行只有上櫃（TPEx）。');
+  } else if (!tpexLatest) {
+    warnings.push('上櫃（TPEx）查無成交量前20名資料，這次排行只有上市（TWSE）。');
+  }
 
-  const [twseRows, tpexRows] = await Promise.all([deps.marketLists.listVolumeTop20Twse(tradeDate), deps.marketLists.listVolumeTop20Tpex(tradeDate)]);
+  // 每一列的漲跌幅用它自己市場的交易日算（兩邊日期可能不同）。
+  const dateOf = (market: 'TWSE' | 'TPEx'): Date => (market === 'TWSE' ? twseLatest : tpexLatest) ?? tradeDate;
+  const [twseRows, tpexRows] = await Promise.all([
+    twseLatest ? deps.marketLists.listVolumeTop20Twse(twseLatest) : Promise.resolve([]),
+    tpexLatest ? deps.marketLists.listVolumeTop20Tpex(tpexLatest) : Promise.resolve([]),
+  ]);
 
   const pool: PoolRow[] = [
     ...twseRows.map((row): PoolRow => ({ market: 'TWSE', ...row })),
-    ...tpexRows.map((row): PoolRow => ({ market: 'TPEx', symbol: row.symbol, volume: row.volume, transaction: null, open: null, high: null, low: null, close: null, dir: null, change: null })),
+    ...tpexRows.map((row): PoolRow => ({ market: 'TPEx', ...row, dir: null, change: null })),
   ];
 
   const sorted = [...pool].sort((a, b) => (b.volume > a.volume ? 1 : b.volume < a.volume ? -1 : 0)).slice(0, 20);
@@ -58,7 +74,7 @@ export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20
   const [companyNames, changePercents] = await Promise.all([
     deps.companyProfiles.getCompanyNamesForSymbols(sorted.map((row) => row.symbol)),
     deps.priceChange.getCumulativeChangePercent(
-      sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: tradeDate })),
+      sorted.map((row) => ({ symbol: row.symbol, market: row.market, asOfDate: dateOf(row.market) })),
       ONE_DAY_CHANGE_TRADING_DAYS
     ),
   ]);
@@ -78,7 +94,7 @@ export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20
     close: toNumber(row.close),
     dir: row.dir,
     change: toNumber(row.change),
-    changePercent: changePercents.get(cumulativeChangePercentKey(row.market, row.symbol, tradeDate)) ?? null,
+    changePercent: changePercents.get(cumulativeChangePercentKey(row.market, row.symbol, dateOf(row.market))) ?? null,
   }));
 
   return { tradeDate: tradeDate.toISOString().slice(0, 10), rankings, warnings };

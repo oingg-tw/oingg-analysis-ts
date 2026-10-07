@@ -17,9 +17,16 @@ export interface RawTwseVolumeTop20Row {
   change: number | null;
 }
 
+// 2026-10-08：櫃買的 volume_top20.volume 單位是「張」、證交所是「股」（1815 10-07：105,100 張 = daily_price 105,100,390 股），
+// 直接合併排序上櫃永遠排不進前 20。上櫃改從同一個 export 庫的 daily_price 接成交量（股）、成交筆數與開高低收；沒有 dir/change。
 export interface RawTpexVolumeTop20Row {
   symbol: string;
-  volume: bigint;
+  volume: bigint; // 股（daily_price.volume）
+  transaction: bigint | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
 }
 
 // ---- 月營收（export.monthly_revenue，twse-ts/tpex-ts 欄位一致）

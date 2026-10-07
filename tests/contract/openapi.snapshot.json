@@ -2824,7 +2824,7 @@
     },
     "/companies/valuation-river": {
       "get": {
-        "description": "2026-10-08 新增。帶狀 = bases[].base × multiples[].multiple（或 ratioRange 等分），由前端相乘畫出；股價線用 prices。股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。",
+        "description": "2026-10-08 新增。河道線 = bases[].base × bandMultiples[i]（六條線、五條河道，第 5～95 百分位截尾後等分），由前端相乘畫出；股價線用 prices。股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。",
         "parameters": [
           {
             "description": "公司代號",
@@ -2873,6 +2873,14 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "bandMultiples": {
+                      "description": "六條河道線的倍數，由低到高：窗口內每日比值的第 5 百分位到第 95 百分位（線性內插）之間等分成五條河道。整張圖固定一組；沒有任何有效比值時 null。約 10% 的日子比值落在最外兩條線之外，屬正常。",
+                      "items": {
+                        "type": "number"
+                      },
+                      "nullable": true,
+                      "type": "array"
+                    },
                     "bases": {
                       "description": "階梯狀，由舊到新；第一筆是窗口起點當下適用的那一份",
                       "items": {
@@ -2969,26 +2977,6 @@
                       ],
                       "type": "object"
                     },
-                    "multiples": {
-                      "description": "窗口內每日比值的第 10、25、50、75、90 百分位（線性內插），整張圖固定一組；沒有任何有效比值時 null",
-                      "items": {
-                        "properties": {
-                          "multiple": {
-                            "type": "number"
-                          },
-                          "percentile": {
-                            "type": "integer"
-                          }
-                        },
-                        "required": [
-                          "percentile",
-                          "multiple"
-                        ],
-                        "type": "object"
-                      },
-                      "nullable": true,
-                      "type": "array"
-                    },
                     "prices": {
                       "description": "每日收盤價，由舊到新，已換算到今天的股數基準（分割、配股、股數合併式減資；現金股利不換算）",
                       "items": {
@@ -3017,7 +3005,7 @@
                       "type": "string"
                     },
                     "ratioRange": {
-                      "description": "窗口內每日比值的最小／最大值（要畫「最低～最高等分」河道時用）",
+                      "description": "窗口內實際最低／最高比值（河道外的日子有多遠）",
                       "nullable": true,
                       "properties": {
                         "max": {
@@ -3047,7 +3035,7 @@
                     "basisNote",
                     "lookback",
                     "sampleDays",
-                    "multiples",
+                    "bandMultiples",
                     "ratioRange",
                     "current",
                     "prices",

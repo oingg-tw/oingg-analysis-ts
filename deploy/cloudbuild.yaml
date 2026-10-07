@@ -1,0 +1,35 @@
+# 2026-10-08 使用者把 GitHub repo 接上 GCP，要「推送 development 或 main 就自動 Cloud Build」。兩個 trigger 共用這一份，用 substitution 分環境：
+#   - development 分支 → 開發環境：_SERVICE=oingg-analysis-ts-dev，_JOBS="oingg-analysis-ts-refresh-dev oingg-analysis-ts-upstream-dev"
+#   - main 分支        → 正式環境：_SERVICE=oingg-analysis-ts，_JOBS=""（正式 Job 還沒建），_EXTRA_TAG=latest
+# 映像一律用 commit 編號當標籤（$SHORT_SHA，不會被下一次建置蓋掉），服務與 Job 都指到這個標籤——不再讓開發、正式共用 :latest
+# （開發的兩個 Job 原本指 :latest，開發建置會讓它們跑到哪一版要看誰最後推）。revision 名稱尾碼＝commit 編號，跟手動部署的慣例一樣。
+# 刻意不在這裡跑 prisma migrate deploy：schema 變更依 memory「Migration 一律排最後一步」手動處理，推程式不等於套 migration。
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_IMAGE}:${SHORT_SHA}', '-t', '${_IMAGE}:${_EXTRA_TAG}', '.']
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ['push', '--all-tags', '${_IMAGE}']
+  - id: deploy-service
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args: ['run', 'services', 'update', '${_SERVICE}', '--region=${_REGION}', '--image=${_IMAGE}:${SHORT_SHA}', '--revision-suffix=${SHORT_SHA}']
+  - id: update-jobs
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        for job in ${_JOBS}; do
+          gcloud run jobs update "$$job" --region=${_REGION} --image=${_IMAGE}:${SHORT_SHA}
+        done
+substitutions:
+  _IMAGE: asia-southeast1-docker.pkg.dev/oingg-analysis/oingg/oingg-analysis-ts
+  _REGION: asia-southeast1
+  _SERVICE: oingg-analysis-ts-dev
+  _JOBS: ''
+  _EXTRA_TAG: dev
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1800s

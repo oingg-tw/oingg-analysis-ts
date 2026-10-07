@@ -22,7 +22,7 @@ test('面額 10→1：股價換算到今天基準後，比值跨事件連續（�
   ];
   const closes = adjustForBasisChanges(raw, [{ date: d('2026-08-10'), multiplier: 10 }]);
   const r = calculateValuationRiver(closes, [{ effectiveFrom: d('2026-01-01'), base: 7 }]);
-  expect(r.multiples?.map((m) => m.multiple)).toEqual([10, 10, 10, 10, 10]);
+  expect(r.bandMultiples).toEqual([10, 10, 10, 10, 10, 10]);
 });
 
 test('基準 ≤ 0（近四季虧損）的日子不進百分位；目前那天虧損時 ratio 與 percentile 為 null', () => {
@@ -35,18 +35,22 @@ test('基準 ≤ 0（近四季虧損）的日子不進百分位；目前那天�
   expect(r.current).toMatchObject({ price: 50, base: -1, ratio: null, percentile: null });
 });
 
-test('百分位線性內插（PERCENTILE.INC）與目前百分位', () => {
+test('第 5～95 百分位截尾後等分五條：六條線等距；目前百分位', () => {
   expect(percentileOf([1, 2, 3, 4, 5], 25)).toBe(2);
   expect(percentileOf([1, 2, 3, 4], 50)).toBe(2.5);
   const closes = [8, 10, 12, 14, 16].map((close, i) => ({ tradeDate: d(`2026-01-0${i + 1}`), close }));
   const r = calculateValuationRiver(closes, [{ effectiveFrom: d('2026-01-01'), base: 1 }]);
-  expect(r.multiples).toEqual([
-    { percentile: 10, multiple: 8.8 },
-    { percentile: 25, multiple: 10 },
-    { percentile: 50, multiple: 12 },
-    { percentile: 75, multiple: 14 },
-    { percentile: 90, multiple: 15.2 },
-  ]);
+  // P5 = 8.4、P95 = 15.6，等分五條每條 1.44
+  expect(r.bandMultiples).toEqual([8.4, 9.84, 11.28, 12.72, 14.16, 15.6]);
   expect(r.current).toMatchObject({ ratio: 16, percentile: 100 });
   expect(r.ratioRange).toEqual({ min: 8, max: 16 });
+});
+
+test('單一極端日子不會撐開河道（最低～最高等分會被 1000 倍拉到每條 200 倍寬）', () => {
+  const ratios = [...Array.from({ length: 20 }, (_, i) => i + 1), 1000];
+  const closes = ratios.map((close, i) => ({ tradeDate: new Date(Date.UTC(2026, 0, i + 1)), close }));
+  const r = calculateValuationRiver(closes, [{ effectiveFrom: d('2026-01-01'), base: 1 }]);
+  expect(r.bandMultiples![0]).toBe(2);
+  expect(r.bandMultiples!.at(-1)).toBe(20);
+  expect(r.ratioRange).toEqual({ min: 1, max: 1000 });
 });

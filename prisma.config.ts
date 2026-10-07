@@ -19,15 +19,15 @@ const schemaArg = (() => {
 
 // tpexExport/sitcaExport 兩個 schema 沒有 non-pooled 的 DIRECT_URL 環境變數（sitca-ts/tpex-ts
 // 給的是 dev/prod 兩個獨立 Neon 專案的 pooled 連線，沒有另外提供直連字串）——這兩個 CLI 只有
-// 偶爾手動跑 db pull/studio 會用到，退回用 DEV 的 pooled 連線頂著，這是延續升級前就有的既有
+// 偶爾手動跑 db pull/studio 會用到，退回用 pooled 連線頂著（2026-10-08 起跟執行期一樣連 PROD），這是延續升級前就有的既有
 // 限制，不是這次升級造成的新問題。
 const DIRECT_URL_BY_SCHEMA: Record<string, string | undefined> = {
   'prisma/analysis/schema.prisma': env('ANALYSIS_DIRECT_URL'),
   'prisma/mopsExport/schema.prisma': env('MOPS_EXPORT_DIRECT_URL'),
   'prisma/govExport/schema.prisma': env('GOV_EXPORT_DIRECT_URL'),
   'prisma/twseExport/schema.prisma': env('TWSE_EXPORT_DIRECT_URL'),
-  'prisma/tpexExport/schema.prisma': env('TPEX_EXPORT_DATABASE_URL_DEV'),
-  'prisma/sitcaExport/schema.prisma': env('SITCA_EXPORT_DATABASE_URL_DEV'),
+  'prisma/tpexExport/schema.prisma': env('TPEX_EXPORT_DATABASE_URL_PROD'),
+  'prisma/sitcaExport/schema.prisma': env('SITCA_EXPORT_DATABASE_URL_PROD'),
 };
 
 // 舊的 MOPS/TWSE/GOV owner 帳號直連 schema（prisma/schema.prisma、prisma/twse/schema.prisma、

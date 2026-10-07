@@ -38,26 +38,32 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // 現在唯一適用的 metric=yoy 情境。
 const YOY_DISTORTION_THRESHOLD_PERCENT = 300;
 
-const getLatestYearMonth = async (deps: RevenueRankingDeps): Promise<Date | null> => {
-  const [twseLatest, tpexLatest] = await Promise.all([deps.marketLists.getLatestMonthlyRevenueYearMonth('TWSE'), deps.marketLists.getLatestMonthlyRevenueYearMonth('TPEx')]);
-  const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
-  if (candidates.length === 0) return null;
-  return candidates.reduce((latest, current) => (current > latest ? current : latest));
-};
-
 export const calculateRevenueRanking = async (query: RevenueRankingQuery, deps: RevenueRankingDeps): Promise<RevenueRankingResult> => {
   const { metric, order, limit } = query;
   const warnings: string[] = [];
 
-  const yearMonth = await getLatestYearMonth(deps);
-  if (!yearMonth) {
+  // 2026-10-08 修：原本兩個市場都查「較晚的那個月」，其中一邊還沒更新到那個月時整批消失、沒有警告（成交量前 20 名同一個 bug，
+  // 本機改讀上櫃 PROD 後現形）。改成各用自己最新的月份，月份不同時加警告，跟 marginShortRatioRanking／calculateRanking 一致。
+  const [twseLatest, tpexLatest] = await Promise.all([deps.marketLists.getLatestMonthlyRevenueYearMonth('TWSE'), deps.marketLists.getLatestMonthlyRevenueYearMonth('TPEx')]);
+  const candidates = [twseLatest, tpexLatest].filter((d): d is Date => d != null);
+  if (candidates.length === 0) {
     warnings.push('查無任何月營收資料。');
     return { yearMonth: '', metric, order, limit, rankings: [], warnings };
   }
+  const yearMonth = candidates.reduce((latest, current) => (current > latest ? current : latest));
+  if (twseLatest && tpexLatest && twseLatest.getTime() !== tpexLatest.getTime()) {
+    warnings.push(
+      `上市（TWSE）跟上櫃（TPEx）目前不是同一個最新月份——上市 ${twseLatest.toISOString().slice(0, 7)}、上櫃 ${tpexLatest.toISOString().slice(0, 7)}，兩邊各自用自己最新的月份排行。`
+    );
+  } else if (!twseLatest) {
+    warnings.push('上市（TWSE）查無月營收資料，這次排行只有上櫃（TPEx）。');
+  } else if (!tpexLatest) {
+    warnings.push('上櫃（TPEx）查無月營收資料，這次排行只有上市（TWSE）。');
+  }
 
   const [twseRows, tpexRows, twseSymbols, tpexSymbols] = await Promise.all([
-    deps.marketLists.listMonthlyRevenueForMonth('TWSE', yearMonth),
-    deps.marketLists.listMonthlyRevenueForMonth('TPEx', yearMonth),
+    twseLatest ? deps.marketLists.listMonthlyRevenueForMonth('TWSE', twseLatest) : Promise.resolve([]),
+    tpexLatest ? deps.marketLists.listMonthlyRevenueForMonth('TPEx', tpexLatest) : Promise.resolve([]),
     deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
     deps.companyProfiles.getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
