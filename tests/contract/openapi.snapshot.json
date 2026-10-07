@@ -1,7 +1,14 @@
 {
   "components": {
     "parameters": {},
-    "schemas": {}
+    "schemas": {},
+    "securitySchemes": {
+      "BffApiKey": {
+        "in": "header",
+        "name": "X-Api-Key",
+        "type": "apiKey"
+      }
+    }
   },
   "info": {
     "description": "API documentation for the OINGG financial-ratios service",
@@ -13,6 +20,7 @@
     "/": {
       "get": {
         "description": "Returns a welcome message and the time it took for the server to initialize.",
+        "operationId": "getRoot",
         "responses": {
           "200": {
             "content": {
@@ -34,6 +42,7 @@
             "description": "Server status and startup time."
           }
         },
+        "security": [],
         "summary": "Get server status and startup time",
         "tags": [
           "System"
@@ -43,6 +52,7 @@
     "/batch/compute/daily": {
       "post": {
         "description": "涵蓋 marketRatios（PER/PBR/殖利率）、beta、以及 8 支技術指標（ma/rsi/kd/bollingerBands/atr/bias/macd/obv）——這些都依賴每日更新的股價/市場行情資料（daily_price/daily_valuation），理論上每天都要重算才跟得上股價變化，跟 quarterly 那組（依賴財報、一季才變一次）刻意分開，避免兩者共用同一個觸發頻率時互相牽就。跟 api/bff 的各支指標端點共用同一份計算邏輯（見 src/domainMetrics/），差別是這支端點一次跑全市場每家公司，不是單一公司查詢。實際邏輯在 src/api/batch/runner.ts 的 runBatchCompute，跑完才回應（同步），視資料量可能要好幾分鐘，呼叫方逾時設定要抓夠長。目前沒有身份驗證——正式環境部署前要靠 Cloud Run IAM invoker 權限（只允許指定的 Scheduler 服務帳號呼叫）擋住，不能公開曝露。已加上每小時 5 次的 rate limit 當臨時防護（超過回 429），不是驗證機制的替代品。",
+        "operationId": "postBatchComputeDaily",
         "responses": {
           "200": {
             "content": {
@@ -69,6 +79,7 @@
             "description": "批次計算過程中發生未預期錯誤（單一公司/單一指標失敗會被 runWithConcurrency 接住繼續跑下一個，不會走到這裡；這裡是連線建立不起來等更根本的失敗）。"
           }
         },
+        "security": [],
         "summary": "觸發每日批次預算（10 支依賴每日股價/市場行情的指標 x 全部公司），給 GCP Cloud Scheduler 用",
         "tags": [
           "System"
@@ -78,6 +89,7 @@
     "/batch/compute/quarterly": {
       "post": {
         "description": "2026-09-07：原本登記在這裡的 34 支舊架構指標（profitability/cashFlow/resilience/turnover/guru/valuation 六個分類）已經全部有 pitMetrics 版本可查（見 GET /companies/metric-history），使用者要求把舊架構（domainMetrics/*.ts + 各自一張 Result 表）整批 DROP，quarterlyIndicatorJobs 目前是空陣列——這支端點呼叫了不會出錯，只是空跑，之後如果要新增新的季度型批次指標可以直接復用這個殼。這些指標本來的共同特徵是依賴 mops 季度財報，一家公司一季頂多變一次，跟 daily 那組（依賴每日股價/市場行情，目前還在跑的 marketRatios/beta）刻意分開，避免每天對財報資料白算一次。實際邏輯在 src/api/batch/runner.ts 的 runBatchCompute，跑完才回應（同步），視資料量可能要好幾分鐘，呼叫方逾時設定要抓夠長。目前沒有身份驗證——正式環境部署前要靠 Cloud Run IAM invoker 權限（只允許指定的 Scheduler 服務帳號呼叫）擋住，不能公開曝露。已加上每小時 5 次的 rate limit 當臨時防護（超過回 429），不是驗證機制的替代品。",
+        "operationId": "postBatchComputeQuarterly",
         "responses": {
           "200": {
             "content": {
@@ -104,6 +116,7 @@
             "description": "批次計算過程中發生未預期錯誤（單一公司/單一指標失敗會被 runWithConcurrency 接住繼續跑下一個，不會走到這裡；這裡是連線建立不起來等更根本的失敗）。"
           }
         },
+        "security": [],
         "summary": "觸發季度批次預算（依賴財報的舊架構指標 x 全部公司），給 GCP Cloud Scheduler 用",
         "tags": [
           "System"
@@ -113,6 +126,7 @@
     "/brokers": {
       "get": {
         "description": "來源是證交所 OpenAPI 的證券商總公司基本資料（/brokerService/brokerList）與證券商基本資料（t187ap18），由 twse-ts 每日鏡像（export.broker）。只列營業中（出現在最新一次抓取）且業務種類含經紀的總公司，依代號排序；只做自營的期貨商（元大期貨等 4 家）不列。只用於顯示與選擇，不參與任何計算。",
+        "operationId": "getBrokers",
         "responses": {
           "200": {
             "content": {
@@ -172,6 +186,7 @@
     "/companies": {
       "get": {
         "description": "給 bff-ts 自己快取用——多公司陣列結果（screener、valuation/ranking、market/*-ranking 這類）已經直接在回應裡帶 companyName/name，單一公司的一般指標 API 也會明確補上 companyName（見 registerCompanyRoute.ts）。這支端點還留著，是給還沒被涵蓋到的情境、或 bff-ts 想自己維護本地快取時用，不是唯一的補名稱管道。涵蓋上市（TWSE）+ 上櫃（TPEx），查不到簡稱的公司 companyName 會是 null。這是低頻異動的參考資料，建議 bff-ts 自己快取、不用每次都打。2026-09-19 每筆新增 market（TWSE/TPEx）、sectorCode/sectorName（證交所類股，跟 GET /industries/securities-sectors 同一套 36 個代碼；掛在非產業代碼的公司為 null）——給 hub 頁一次拿到全市場分類用，不用逐檔打 profile。limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責上限（1000，避免一次回應過大）；也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。",
+        "operationId": "getCompanies",
         "parameters": [
           {
             "description": "這次要拿幾筆，預設 200，上限 1000。",
@@ -306,13 +321,14 @@
         },
         "summary": "列出公司代號/名稱對照表（分頁）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/badges": {
       "get": {
         "description": "2026-09-13 新增：前端原本拿 GET /metrics 的 badge.threshold（門檻 metadata）自己跟metric-history 的數值比較算「達成/未達成」，已證實會出錯（不同性質的指標混在同一組計數、沒處理產業排除等 null 情境）——這支端點統一由後端算好每支 badge 的 passed，依 GET /metrics既有的 categoryKey 分組回傳，前端只管呈現，不用再自己比較。範圍只涵蓋 15 支「有 badge」的指標（GET /metrics 的 badge 欄位非 undefined 的那些），沒有 badge 的其餘指標不在這支端點範圍內，那些指標的數值繼續走既有的 metric-history/metrics-history 端點。value 為 null 時 passed 一定也是 null（無法判定，不是「未達成」），nullReason 說明原因（例如金融保險業套用 Z-Score 這類模型時是 not_applicable_industry）。metricCode 可以直接拿去打 GET /companies/metric-history（查數值歷史）或 GET /companies/:symbol/metric-provenance（查原始計算來源，目前限 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40 試點範圍）。財務韌性三模型（Altman Z-Score/Beneish M-Score/Ohlson O-Score）的正式聚合計數（依 oingg-conductor-ts 文件庫《財務韌性三模型交叉驗證計算引擎》定義的zone/calibrationStatus/分母浮動邏輯）還在跟文件維護方確認落差，目前這支端點的三個模型都是各自獨立判定 passed，還沒有聚合計數欄位，等規格定案後再擴充，不會是 breaking change（只會新增欄位）。",
+        "operationId": "getCompaniesBadges",
         "parameters": [
           {
             "description": "公司代號",
@@ -471,13 +487,14 @@
         },
         "summary": "這家公司所有分類下、所有有 badge 的指標的達成結果（後端統一算好 passed，前端不用自己比較）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/beta": {
       "get": {
         "description": "2026-09-14 web-nuxt 轉達使用者需求：股票詳情頁 Beta 卡片要直接顯示係數數值。GET /companies/metric-history 對 metricCode=beta 一律回 400（beta 沒有真正的歷史時間序列可畫河流圖，這支端點針對的是「查目前值」這個不同情境，不是要繞過那個限制），排行/篩選情境仍請用 screener/ranking（field: \"beta.1Y_1D\" 等）。一次回傳 1Y_1D/2Y_1W/3Y_1W/5Y_1M 四個滾動視窗各自最新一筆（2026-09-15 新增 3Y_1W，介於 Bloomberg 2 年週頻跟 Morningstar 5 年月頻之間的折衷週期），查無資料的窗口 value/nullReason/tradeDate 等欄位皆為 null，不是 404。",
+        "operationId": "getCompaniesBeta",
         "parameters": [
           {
             "description": "公司代號",
@@ -579,13 +596,14 @@
         },
         "summary": "單一公司 Beta 係數目前值（四個滾動視窗各自最新一筆快照）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/book-value-breakdown": {
       "get": {
         "description": "2026-09-27 新增——回答「每股淨值這一年為什麼變動」：期初每股淨值 → +歸屬普通股淨利 → ±其他綜合損益 → −現金股利 → +增資 → ±股數變動影響 → ±其他（未分類）→ 期末每股淨值，每一列到分精確成立（各項四捨五入的差額由 other 吸收）。資料源是 mops-ts 權益變動表（XBRL）第四季＝全年，歸屬母公司那一欄（沒有非控制權益的公司用權益合計）；普通股口徑跟 bvps 一致（扣特別股股本、淨利扣特別股股利）。現金股利是宣告時認列的金額（權益變動表），不是現金流量表的實付，所以不會因為某季現金流量表缺漏而斷掉。股數換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，跟 metric-history 的每股歷史同一原則），期末每股淨值跟 bvps 走勢對得上。「其他（未分類）」是權益變動表沒有獨立欄位的項目（庫藏股買回、員工酬勞、子公司持股變動…）加上對帳差額，照實列出、不硬塞進別的項目；2025 年全市場約 73% 的公司這一項在期初淨值 1% 以內。XBRL 從 109Q3 開始，最早 2020 年。查無資料回 entries: []，是 200 不是 404。",
+        "operationId": "getCompaniesBookValueBreakdown",
         "parameters": [
           {
             "description": "公司代號",
@@ -691,13 +709,14 @@
         },
         "summary": "單一公司淨值變動拆解（每股，每年一列，畫瀑布圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/capital-stock-history": {
       "get": {
         "description": "給個股頁面「股本變化」卡片用——讓使用者對照流通股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。資料來源是 mops-ts 的 export.capital_stock_history，是「異動事件序列」不是固定季度/年度快照，entries 依 effectiveDate 由新到舊排序。changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。sharesChangePercent 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。",
+        "operationId": "getCompaniesCapitalStockHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -815,13 +834,14 @@
         },
         "summary": "單一公司股本異動歷史（現金增資/盈餘轉增資/合併增資/減資等）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/dividend-history": {
       "get": {
         "description": "2026-09-19 應 web-nuxt SEO 個股頁需求新增，「台積電 股利」這類頁面的核心表格。資料源是 mops-ts 的 export.dividend_distribution（MOPS 股利分派公告 t108sb27，每股數字），一列＝一次分派決議：年配公司一年一筆、季配公司一年四筆，這裡先依「股利所屬年度」彙總成年度列（cashDividend/stockDividend/totalDividend 加總、distributionCount 是分派次數、exDividendDate/paymentDate 取該年度最後一次），逐次事件放在 events。payoutRatio 是盈餘發放率＝盈餘分配的現金股利 ÷ 年報公告的基本每股盈餘（eps.FY），不含法定盈餘公積、資本公積發放，該年度沒有年報或 EPS ≤ 0 為 null。yieldAtExDate 是各次除息日「當天收盤價（已除息）」算的殖利率加總，任一次查無股價整年為 null——目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。查無任何分派紀錄回 entries: []，是 200 不是 404。",
+        "operationId": "getCompaniesDividendHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -1025,13 +1045,14 @@
         },
         "summary": "單一公司歷年股利表（每個股利所屬年度一列，含逐次分派事件）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/dupont-history": {
       "get": {
         "description": "直接讀 metric_values 的 netProfitMargin/assetTurnover/equityMultiplier/dupontDecomposedRoe四個 metric_code 組合而成——**這批遷移刻意只做 Dupont 拆解嚴格需要的最小集合**：只有淨利率、總資產週轉率兩個因子，不是完整的毛利率（含毛利率/營業利益率）或週轉率（含存貨/應收帳款/固定資產/應付帳款周轉率跟 DIO/DSO/DPO/CCC）家族，這兩個因子也因此不單獨開歷史查詢端點，只在這支組合端點裡曝露。decomposedRoePct = netProfitMarginPct x assetTurnover x equityMultiplier，理論上應該接近（但不必完全等於）GET /companies/roe-history 的實際 ROE，差異來自中間值四捨五入造成的正常誤差。periodType=TTM 時 equityMultiplier 恆為 null（權益乘數是資產負債表時點快照，沒有 TTM變體，Q/TTM 拆解共用同一個 Q 快照值）。knowledgeDate/knowledgeDateIsFallback 取這四個 metric_code裡 netProfitMargin 那組的值當代表（同一次計算共用同一組 knowledge_date，正常情況下一致）。**目前資料覆蓋率極低**：只有少數公司/季度有資料，查無資料回傳 entries: []，是正常情境。",
+        "operationId": "getCompaniesDupontHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -1230,13 +1251,14 @@
         },
         "summary": "單一公司杜邦分析拆解歷史時序（畫圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/financial-statement": {
       "get": {
         "description": "給前端「會計模式」用——選定 statementType（資產負債表/損益表/現金流量表其中一張），一次拿到該季申報方原始揭露的**全部**科目欄位金額，不是算好的單一比率、也不是服務內部計算需要的精簡欄位子集，是給會計用戶稽核數字用的完整版本，符合傳統看報表的習慣，跟 point-in-time 那套算好的指標歷史（GET /companies/roe-history 那些）刻意分開。2026-09-07 起資產負債表/損益表改接 XBRL 寬表（export.quarterly_balance_sheet_xbrl/quarterly_income_statement_xbrl，動態回傳扣掉 identity/metadata 欄位後的全部科目，資產負債表約 90 個、損益表約 48 個，不手動列舉欄位名稱，mops-ts 那邊寬表新增欄位會自動出現），現金流量表接 XBRL 長表（export.xbrl_three_statements_long，account_code 數量依該公司該季實際揭露而定，沒有固定欄位數）——**這批 XBRL 情境下 statement 物件的 key 是資料庫原始 snake_case account_code（例如 current_fin_assets_fvtpl），不轉 camelCase**，方便使用者直接拿科目代碼去對照 XBRL 官方分類或其他工具核對，這是刻意的設計。查無 XBRL 資料時會 fallback 到舊三大表（mops-ts 較早期的季報表 export view，欄位數量少很多，資產負債表約 26 個），**這個情境下 key 會是 camelCase**——同一支端點依資料源不同回傳不同 key 風格，是刻意的不一致，前端不應該假設 key 一定是某一種風格，應該把 statement 當成不透明的 key-value 集合整包呈現。year/season 選填但要成對，不給就自動抓該張表（只看這一張，不是三張表的交集）最新一季——這個「最新一季」的判斷仍然只看舊三大表（跟哪一季有資料無關的 XBRL 覆蓋率不影響這個判斷）。dataType 固定用合併報表、subsidiaryCompanyId固定空字串，不對外曝露這兩個內部參數，跟 metric-history 同一個慣例。金額欄位序列化成字串避免JS 數字精度問題；查無資料（這家公司這張表完全沒有資料，新舊都沒有，或指定的 year/season 那一季沒有資料）回傳 200 + found:false + statement:null，不是 404，跟 roe-history/capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。",
+        "operationId": "getCompaniesFinancialStatement",
         "parameters": [
           {
             "description": "公司代號",
@@ -1372,13 +1394,14 @@
         },
         "summary": "單一公司單張財報表原始科目（會計模式，資產負債表/損益表/現金流量表整列透傳，供稽核用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/metric-completeness": {
       "get": {
         "description": "2026-09-13 使用者要求：想知道有沒有機制掃描每家公司的指標完整度。GET /companies/badges只涵蓋 15 支「有 badge」的指標，且是判定「達成/未達成門檻」；這支端點掃過 GET /metrics全部指標（不限有 badge 的），對每支指標查一筆代表性 timeframe 的最新值（優先取 TTM，沒有 TTM 就取該指標第一個可用 timeframe，不是掃全部 timeframe 組合），回傳 hasValue/nullReason，目的是資料品質稽核/前端呈現「這家公司資料涵蓋度」，不是選股門檻判定。每個分類跟總計都附 coveredCount/totalCount，方便直接算覆蓋率百分比。metricCode 可以直接拿去打GET /companies/metric-history 查完整歷史（可能有其他 timeframe 有值，這裡只是代表性抽查）。",
+        "operationId": "getCompaniesMetricCompleteness",
         "parameters": [
           {
             "description": "公司代號",
@@ -1508,13 +1531,14 @@
         },
         "summary": "這家公司在 GET /metrics 全部指標上的完整度掃描（有沒有算出值，不是達成/未達成）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/metric-history": {
       "get": {
         "description": "直接讀 metric_values（point-in-time 事實層）的泛化版查詢端點——2026-09-06 第三批遷移（10 個新 metric_code）動工前新增，取代每遷一支指標就各自複製貼上一段端點樣板碼的模式。metricCode 決定要查哪支指標，完整清單見程式碼裡的 metricDefinitionRegistry（目前已知：roe、novyMarxGpToAssets、croci、consecutiveProfitYears、roa、netProfitMargin、assetTurnover、operatingExpenseRatio、equityMultiplier、dupontDecomposedRoe、dupontTaxBurden、dupontInterestBurden、dupontEbitMargin、dupontExtendedRoe、eps、pretaxIncomePerShare、grossProfitPerShare、operatingIncomePerShare、operatingCostsPerShare、operatingExpensePerShare、nonOperatingIncomeExpensesPerShare、sellingExpensePerShare、administrativeExpensePerShare、researchAndDevelopmentExpensePerShare、interestRevenuePerShare、otherRevenuePerShare、otherGainsLossesPerShare、shareOfProfitLossOfAssociatesPerShare、financeCostPerShare、nonControllingInterestsPerShare、netOtherIncomeExpensesPerShare、impairmentLossGainIfrs9PerShare、incomeTaxExpensePerShare、bvps、peRatio、pegRatio、earningsYield、pbRatio、stockPrice、marketCap、tobinsQ、greenblattRoc、greenblattEarningsYield、magicFormulaRank、revenuePerShare、dividendPayoutRatio、dividendPerShare、consecutiveDividendYears、dividendDistributionCount、dividendGrowthRate3y、dividendGrowthRate5y、dividendGrowthRate8y、chowderNumber、buybackYield、dividendCoverageRatio、shareholderYield、cashDividendYield、shareCountChangeRate、sgr、threeMarginsRising、earningsToRecordHigh、revenueGrowthRate、ruleOf40、epsGrowthRate、epsPriorYear、roeWeighted5y、netIncomeGrowthRate、operatingIncomeGrowthRate、equityGrowthRate、bvpsGrowthRate、assetGrowth、rdIntensity、sue、sus、revenueYoy3m、revenueCagr3y、revenueCagr5y、revenueCagr8y、oneDollarTest、epsCagr3y、epsCagr5y、epsCagr8y、ocfPerShare、fcfPerShare、depreciationAmortisationPerShare、ocfToNetIncome、accrualsRatio、fcfMargin、abnormalCapexRatio、debtRatio、netWorkingCapitalToAssets、totalDebtToCapital、currentRatio、quickRatio、cashRatio、deRatio、longTermDebtToNetCurrentAssets、interestCoverage、netDebtToEbitda、capexToRevenue、psr、pFcf、evEbitda、evToEbit、evToFcf、priceToResearchRatio、roic、grossMargin、operatingMargin、inventoryTurnover、receivablesTurnover、fixedAssetTurnover、payablesTurnover、inventoryDays、receivablesDays、payablesDays、cashConversionCycle、operatingCycle、netWorkingCapitalTurnover、inventoryToRevenueRatio、receivablesToRevenueRatio、capexToOcfRatio、evToOcf、evToSales、priceToOcf、debtToFcf、croic、ocfMargin、fcfConversionRate、financialLeverageDegree、totalLeverageDegree、nonOperatingIncomeRatio、equityRatio、cashToAssetsRatio、cashPerShare、grahamNumber、ncav、ownerEarnings、altmanZScore、altmanZDoublePrimeScore、piotroskiFScore、beneishMScore、beneishAqi、beneishDsri、nissimPenmanRnoa、zmijewskiScore、ohlsonOScore、fcfYield、bankNplRatio、bankNplCoverageRatio、bankCarRatio、bankCet1Ratio、bankTier1Ratio、bankNetInterestIncomePerShare、bankNetNonInterestIncomePerShare、bankBadDebtProvisionPerShare、bankEmployeeBenefitsExpensePerShare、bankDepreciationAmortisationExpensePerShare、bankGeneralAdministrativeExpensePerShare、bankOtherOperatingExpensePerShare、exchangePeRatio、exchangePbRatio、dividendYield、liveGrahamNumber、livePegRatio、liveMarketCap、liveDividendPerShare、livePeRatio、livePbRatio、beta、priceReturn52w、distanceFrom52wHigh、distanceFrom52wLow、famaFrenchOperatingProfitability），之後新增指標會持續增加，這裡不逐一列出维護。timeframe 允許的值由 metricCode 決定（例如 bvps 只允許 periodType \"Q\"，exchangePeRatio 只允許 \"EOD\"），傳不允許的值會回 400 並附上這個 metricCode 實際允許的清單，完整組合見 GET /metrics。knowledgeDate/knowledgeDateIsFallback 語意跟 roe-history一致。**2026-09-28 起每股類指標（元／股：eps、bvps、每股股利、各種每股科目…）換算到今天的股數基準**——分割、配股、股數合併式減資追溯調整（IAS 33），讓走勢只反映價值變化、不會因為拆股突然掉成十分之一；現金股利與退還股款不換算。年報的 FY 值從年報公告日起算（期後分割年報已重編）。比率、總額、股價不受影響。資料庫存的值不動，這個換算只在回應時做。**metricCode=\"beta\" 不支援這支端點**（2026-09-11 使用者確認 beta 不畫河流圖，沒有查單一公司歷史/最新值的需求）——固定回 400，請改用 screener/ranking（field: \"beta.1Y_1D\" 等）。**roe-history/roa-history/dupont-history 三支既有端點不受影響，繼續保留**——這支只是之後新增指標的曝露管道，不是要取代它們。（2026-09-08：這個 query 參數原本叫 basis，改名 token 並改成同時涵蓋四組概念（periodType/lookbackRange+samplingInterval/snapshotCadence，見 metric_values.basis 拆分重構）——「basis」違反 ubiquitous language。2026-09-14：token 再改名 timeframe——同樣理由，「token」一樣是空洞用詞，沒有傳達「挑時間切法」的領域語意，改用金融 API 常見的 timeframe。）",
+        "operationId": "getCompaniesMetricHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -1679,13 +1703,14 @@
         },
         "summary": "單一公司任意 point-in-time 指標歷史時序（泛化版，畫圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/metrics-history": {
       "get": {
         "description": "泛化版「一次抓多個指標」端點——跟 metric-history 一次只能查一個 metricCode 不同，這支用逗號分隔的 metricCodes 一次查多個（例如三率一次拿：\"grossMargin,operatingMargin,netProfitMargin\"，最多 10 個），依 (fiscalYear,fiscalQuarter)合併成一列，entries[].values 是以 metricCode 為 key 的物件，對應請求時給的清單。timeframe 套用到清單裡的每個 metricCode，任一個不允許該 timeframe 就整體回 400（附上是哪個metricCode 不允許），不會部分成功。**這支跟 dupont-history 是不同定位**：dupont-history是杜邦拆解這種真正有語意組裝關係（三/五因子相乘）的家族專用組合端點，寫死具名欄位；這支是任意 metricCode 的通用合併，沒有假設彼此有數學關係，純粹省去前端自己併多次呼叫結果的麻煩。某個 metricCode 在某一期完全沒有列時（例如不同指標 backfill 範圍不同步），對應values[metricCode] 為 null。total 取清單裡所有 metricCode 中最完整（total 最大）的那個。**2026-09-28 起每股類指標（元／股：eps、bvps、每股股利、各種每股科目…）換算到今天的股數基準**——分割、配股、股數合併式減資追溯調整（IAS 33），讓走勢只反映價值變化、不會因為拆股突然掉成十分之一；現金股利與退還股款不換算。年報的 FY 值從年報公告日起算（期後分割年報已重編）。比率、總額、股價不受影響。資料庫存的值不動，這個換算只在回應時做。（2026-09-08：query 參數原本叫 basis，改名 token；2026-09-14 再改名 timeframe，理由同GET /companies/metric-history。）",
+        "operationId": "getCompaniesMetricsHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -1859,13 +1884,14 @@
         },
         "summary": "單一公司一次抓多個 point-in-time 指標歷史時序（畫圖/卡片用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/monthly-revenue-history": {
       "get": {
         "description": "**上市＋上櫃全市場**，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 完成歷史回填）。2026-09 之後的月份由上游每月自動 ingest，會持續長出來。公開發行未上市的證券商（六碼代號）已在資料層排除。上櫃公司的 `reportDate` 在歷史月份是 null——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，上游選擇誠實留空而不是照抄一個錯的日期。查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的（來源這批一次性回填的資料沒有這個欄位）；yoyChangePercent（年增率）、cumulativeChangePercent（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePercent 有約 0.4% 是 null，那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是bigint 序列化成字串，單位新台幣千元（本服務不換算）。",
+        "operationId": "getCompaniesMonthlyRevenueHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -2002,13 +2028,14 @@
         },
         "summary": "單一公司月營收歷史（畫圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/piotroski-breakdown": {
       "get": {
         "description": "piotroskiFScore.Q 只寫入最終 0-9 分（見 GET /metrics），9 個二元子訊號本身不是獨立可篩選的metric_code，這支端點現查現算，依 Piotroski (2000) 原始論文的分組回傳：獲利能力（4 訊號：positiveRoa/positiveCfo/roaImproved/accrualQuality）、財務槓桿與流動性（3 訊號：leverageDecreased/liquidityImproved/noDilution）、營運效率（2 訊號：grossMarginImproved/assetTurnoverImproved）。組內子分數（denominator 4/3/2）不在這裡計算，呼叫端自行依 boolean 值加總即可。totalScore 跟 piotroskiFScore.Q 同一套全有全無邏輯——9 個子訊號只要有一個評估不出來（例如缺去年同季資料），totalScore 跟該子訊號都是 null，不會拿其他8 個湊分數。year/season 選填但要成對，不給就自動抓最新一季。查無資料（found:false）是正常情境，回 200 不是 404，跟 financial-statement/roe-history 同一種慣例。groupMetadata（3 個子分組各自的name/nameEn/summary/detail/denominator）跟 signalLabels（9 個訊號 key 各自的中文顯示標籤）是2026-09-11 新增的純靜態文字，不隨 symbol/期別變化、found=false 時也會回傳——給前端 i18n 用，取代原本寫死在前端的文字，刻意不放進 GET /metrics 的 badge 欄位（那是 12 支 badge 共用的型別，只有 Piotroski 有「拆組」這個概念，不適合污染共用形狀）。",
+        "operationId": "getCompaniesPiotroskiBreakdown",
         "parameters": [
           {
             "description": "公司代號",
@@ -2235,13 +2262,14 @@
         },
         "summary": "Piotroski F-Score 9 個子訊號分組明細",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/profile": {
       "get": {
         "description": "給個股詳情頁的公司基本資料卡片用。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。TWSE/TPEx 兩邊欄位範圍不完全一樣（TPEx 沒有 englishAddress/industryName），沒有的欄位回傳 null。paidInCapital/issuedShares/privatePlacementShares/preferredStockShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。financialReportTypeName 是 financialReportType 裸代碼（\"1\"/\"2\"）解出來的可讀名稱（個別財報／合併財報），未知代碼回 null。website 已正規化成乾淨的裸網域（去 scheme/尾斜線/www. 前綴），呼叫端不用自己再清洗一次。",
+        "operationId": "getCompaniesProfile",
         "parameters": [
           {
             "description": "公司代號",
@@ -2484,13 +2512,14 @@
         },
         "summary": "單一公司基本資料（董事長/總經理/發言人/設立上市日期/資本額等）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/roa-history": {
       "get": {
         "description": "第二支直接讀 metric_values（point-in-time 事實層）而不是傳統結果表（profitability_roa）的端點，完全比照 GET /companies/roe-history 的模式（periodType 語意、knowledgeDate/knowledgeDateIsFallback、排序、資料覆蓋率現況說明皆相同，這裡不重複列一次）。",
+        "operationId": "getCompaniesRoaHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -2654,13 +2683,14 @@
         },
         "summary": "單一公司 ROA 歷史時序（畫圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/roe-history": {
       "get": {
         "description": "第一支直接讀 metric_values（point-in-time 事實層，見 docs/analysis-ts-spec-v0.2.md）而不是傳統結果表（profitability_roe）的端點——每一筆帶 knowledgeDate（該值最早可被市場知道的日期）跟 knowledgeDateIsFallback（true 代表查無真實財報公告日、用財報期末日頂替，有 look-ahead bias 風險，前端可考慮標示）。periodType 預設 TTM（近四季滾動）；同一個 (fiscalYear, fiscalQuarter) 如果有多筆（未來的重編疊加情境），只回傳 knowledge_date 最新的那一筆。entries 依期別由舊到新排序，方便直接畫時序圖。**目前資料覆蓋率極低**：只有少數公司/季度有資料（全市場 backfill 尚未進行），查無資料回傳 entries: []，不是 404 或錯誤，是正常情境。（2026-09-08：這個 query 參數原本叫 basis，改名 periodType——「basis」違反 ubiquitous language，是會計保留用語，不是這裡要表達的「季報聚合方式」。）",
+        "operationId": "getCompaniesRoeHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -2818,13 +2848,14 @@
         },
         "summary": "單一公司 ROE 歷史時序（畫圖用）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/valuation-river": {
       "get": {
         "description": "2026-10-08 新增。河道線 = bases[].base × bandMultiples[i]（六條線、五條河道，第 5～95 百分位截尾後等分），由前端相乘畫出；股價線用 prices。股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。",
+        "operationId": "getCompaniesValuationRiver",
         "parameters": [
           {
             "description": "公司代號",
@@ -3053,13 +3084,14 @@
         },
         "summary": "單一公司本益比／股價淨值比／股價營收比河流圖",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/companies/{symbol}/metric-provenance": {
       "get": {
         "description": "讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始財報欄位、各自的值，用來跳轉到GET /companies/financial-statement 對應的那一列——現查現算，不持久化，跟 GET /companies/piotroski-breakdown 同一個模式。entries 是依公式使用順序排列的扁平清單，不是巢狀的推導樹；每一筆帶自己的 fiscalYear/fiscalQuarter，已經足夠表達「用了哪幾季」。type=\"statementField\" 的 fieldKey 是 snake_case，跟 GET /companies/financial-statement 回傳的XBRL key 完全一致，可直接連結；該筆命中舊表 fallback 時會降級成 type=\"other\"、sourceDescription=\"舊表資料，非 XBRL\"（因為舊表 fallback 情境下 financial-statement 回的是camelCase key，跟這裡的 snake_case fieldKey 對不上）。type=\"other\" 是非財報欄位的來源（市場快照、股本變動申報等），只給 sourceDescription 文字說明，沒有可連結的 fieldKey。methodologyNote是部分指標的完整計算方法無法用單純欄位清單呈現時的補充說明——例如 sue 的標準差取自最近 20 期未預期盈餘樣本，entries 只列出構成本季 UE 的 2 期（本季/去年同季）原始欄位，20 期樣本本身不逐筆列出，methodologyNote 會講清楚這個取捨；其餘指標為 null。試點範圍刻意只有 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40這幾支（metricCode 用 zod enum 驗證，其餘一律 400，不是隱性涵蓋所有指標——全系統目前 117 支指標裡只有這幾支有稽核鏈）。roe/dupontTaxBurden/dupontInterestBurden 目前固定回傳 TTM basis的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料（found:false）是正常情境，回 200 不是 404，跟 financial-statement/piotroski-breakdown 同一種慣例。symbol 是路徑參數，跟其餘 /companies/* 端點的 query 參數用法不同，這是刻意的設計。",
+        "operationId": "getCompaniesSymbolMetricProvenance",
         "parameters": [
           {
             "description": "公司代號",
@@ -3637,13 +3669,14 @@
         },
         "summary": "單一指標的原始計算來源明細（會計模式「點數字看來源」用，目前限 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40 試點）",
         "tags": [
-          "System"
+          "Companies"
         ]
       }
     },
     "/etf-screener": {
       "post": {
         "description": "資料來源是 sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance（目前只有最新一個月的快照），欄位清單見 GET /etf-screener/filters。filters 有兩種形狀：數字欄位（aum/holders/netFlow/dcaAmount/marketShareRate/nav/return3m~return10y/expenseRatio/statutoryAumThreshold）用 {field, min, max, exclude?}；類別欄位（market/assetClass/isActive/belowStatutoryThreshold/distributionFrequency）用 {field, values: [...]}（IN 語意，屬於其中之一就保留）。isActive（是否為主動式 ETF）跟 belowStatutoryThreshold（規模是否低於法定下市門檻，下市風險近似警示）都是 sitca-ts 提供的權威欄位，不是本服務推算的。exclude=false（預設）保留落在 [min,max] 內的值，null 一律排除；exclude=true 保留範圍外的值，min/max 都沒給時篩掉全部。expenseRatio 只用「最新一個完整年度」，發行日在這個基準年（或更晚）的 ETF 那一年不滿一整年，這個欄位的值是 null（不是整檔 ETF 被排除——screener 是列表瀏覽情境，跟 ranking 排行榜的「直接排除」不同）。expenseRatio2001~expenseRatio2026（2026-09-08 新增，共 26 個獨立數字欄位，見 GET /etf-screener/filters）是分年度總費用率，給前端橫向比較歷年費用率變化用——資料源跟 expenseRatio 不同：這裡用 sitca-ts 已經濾掉不完整期間資料的 fund_expense_ratio_annual_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio單純套「calendar year - 1」精確；某年份沒有值（基金那年還沒成立、或該年資料不完整）該年欄位是 null，不影響其他年份。establishedDate（2026-09-08 新增）是日期欄位，filter 用 {field, min, max, exclude?}，min/max 是 \"YYYY-MM-DD\" 字串（跟數字欄位同一套 exclude 語意）。managementFeeRate/custodianFeeRate/guaranteeFeeRate/otherFeeRate/commissionRate/transactionTaxRate/etfTradingFeeRate（2026-09-08 新增）是費用率細項拆分，只取「該基金自己最新一筆完整年度」（跟 expenseRatio 同一種「目前」語意，不是分年度系列），資料源是 fund_expense_ratio_annual_full_year，用該基金最新一筆完整年度資料，不是全體套同一個基準年——所以不同基金即使欄位都有值，對應的年度可能不一樣，這是刻意的設計（比全體套同一個基準年精確，代價是欄位本身不標註是哪一年，需要的話搭配 expenseRatio2001~2026 的分年度序列自己比對）。premiumDiscountPct（2026-09-10 新增）是折溢價率 = (市價-淨值)/淨值*100，正值溢價、負值折價，取「淨值跟市價同一天都有資料」的最新一天，不是各自抓各自的最新一天硬湊。資料源是 sitca-ts 的逐日淨值 + twse-ts/tpex-ts push的逐日市價，市價回填深度比淨值淺很多（上市 2020-11 起、上櫃 2021-09 起），且市價還在持續回填中，目前只有部分ETF 有值，沒有值的是 null（不是 0）。sortField 不給就照 symbol 排序（保證分頁穩定）；要排別的欄位，那個欄位要先出現在 columns 裡。",
+        "operationId": "postEtfScreener",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3848,6 +3881,7 @@
     "/etf-screener/filters": {
       "get": {
         "description": "給前端動態畫篩選 UI 用，不用寫死欄位清單。2026-09-11 起比照股票 GET /filters，回應是巢狀分類（categories: [{categoryKey, categoryDisplayName, fields: [...]}]）——身分分類/規模與資金/淨值與市價/績效表現/成本費用共 5 組，不再是扁平陣列（breaking change）。每個 field 帶 unit（只有 numeric 才有，例如 \"元\"/\"%\"/\"人\"）。kind: \"numeric\" 的欄位畫成最小值~最大值區間輸入；kind: \"date\"（目前只有 establishedDate）畫成日期範圍輸入，min/max 是 \"YYYY-MM-DD\" 字串；kind: \"categorical\" 的欄位畫成勾選清單，選項直接來自 values——market/isActive/belowStatutoryThreshold 選項固定已知，assetClass/distributionFrequency 是現查資料庫的 distinct 值，之後 sitca-ts 分類異動會直接反映在這支端點，不用改程式碼。",
+        "operationId": "getEtfScreenerFilters",
         "responses": {
           "200": {
             "content": {
@@ -3938,6 +3972,7 @@
     "/industries/sector-dividend-summary": {
       "get": {
         "description": "每個類股一列，給「Y 軸殖利率、X 軸股利成長率」的產業散佈圖用。類股代碼與名稱同 GET /industries/securities-sectors；母體是上市＋上櫃公司（不含興櫃），每家取各自最新一筆值再按類股彙總。\n\n每一軸都同時給平均數（mean）與中位數（median）：成長率有極端值（基期很小的公司 CAGR 可以上百 %），平均數會被少數公司拉走，中位數比較能代表類股；兩個都給，前端自行挑。count 是那一軸有值的公司數，樣本很少的類股（例如個位數）點的位置不穩定，建議在圖上標出 count 或淡化；兩軸的 count 通常不同，一個點的 X 與 Y 是對不同的公司子集合算的（例如成長率常只有六成公司有值）。\n\n殖利率：交易所每日公布值（dividendYield.EOD），只收最新交易日往前 14 天內的值（停牌、下市前的舊值不算現況）；0（沒配息）照算進去，因為那是類股真實樣貌的一部分。成長率：dividendGrowthRate3y.FY，基期沒配息或歷史不足的公司沒有值、不計入。個別類股內每家公司的數值請用 POST /screener 帶 sectorCodes 與這兩個 field 查。",
+        "operationId": "getIndustriesSectorDividendSummary",
         "responses": {
           "200": {
             "content": {
@@ -4046,6 +4081,7 @@
     "/industries/securities-sectors": {
       "get": {
         "description": "資料源是 twse-ts/tpex-ts 的 company_profile.industry 欄位（證交所公告的類股分類，兩碼代碼），這支是「半導體業」「電子零組件業」這類投資人熟悉的類股名稱。只有單一層級，扁平回傳有公司的代碼（排除證券商/期貨商/第一上市外國公司身份別/舊產業代碼殘留這幾個非真正產業分類的代碼，以及目前 0 家的代碼）。companyCount = 用這個代碼在 screener 篩得到幾家：母體跟 GET /companies 相同（上市＋上櫃＋興櫃，不含公開發行未上市），轉板公司只算一次，所以各類股加總等於 GET /companies 裡有類股的公司數。screener 的 POST /screener、GET /screener/ranking 的 sectorCodes 參數用的就是這支端點回傳的代碼；不在清單上但仍屬合法代碼的（例如 0 家的舊分類）照樣接受、篩出 0 家。",
+        "operationId": "getIndustriesSecuritiesSectors",
         "responses": {
           "200": {
             "content": {
@@ -4097,6 +4133,7 @@
     "/macro/business-cycle-indicator": {
       "get": {
         "description": "國發會領先／同時／落後指標（綜合指數與不含趨勢指數）＋景氣對策信號綜合分數與燈號，1982-01 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroBusinessCycleIndicator",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -4208,6 +4245,7 @@
     "/macro/cbc-policy-rate": {
       "get": {
         "description": "事件型序列：一列就是一次利率調整的生效日，不是逐日/逐月快照，直接當圖上的事件標記用（例如疊在 /market/taiex-daily-price 或個股 daily-price-history 上）。資料來源是 gov-ts 的 export.cbc_policy_rate（央行統計資料庫 EG28D01en，1989-04-01 起，本服務只讀），本服務唯一的加工是 changeBp（重貼現率相對前一次的變動，基點）。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。只有生效日、沒有理監事會決議日。",
+        "operationId": "getMacroCbcPolicyRate",
         "parameters": [
           {
             "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1989-04-01 起，不到百筆，不需要分頁）。",
@@ -4284,6 +4322,7 @@
     "/macro/cpi": {
       "get": {
         "description": "總指數或七大類（category 參數），指數值與年增率，1981-01 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroCpi",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -4384,6 +4423,7 @@
     "/macro/ecb-policy-rate": {
       "get": {
         "description": "事件型序列：一列就是一次調整的生效日，不是逐日快照，形狀跟 /macro/us-policy-rate、/macro/cbc-policy-rate 對稱，可以疊在走勢上當事件標記。資料來源是 gov-ts 的 export.ecb_policy_rate（ECB Data Portal），本服務只讀；本服務唯一的加工是三支利率各自相對前一次的變動（基點）。三支利率不一定同步調整（有些次只動利率走廊），所以三個幅度分開給，不挑代表利率。這是政策利率，不是公債殖利率。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。",
+        "operationId": "getMacroEcbPolicyRate",
         "parameters": [
           {
             "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1999-01-01 起，約七十筆，不需要分頁）。",
@@ -4480,6 +4520,7 @@
     "/macro/equity-risk-premium": {
       "get": {
         "description": "歷史法（Historical Risk Premium Approach）：用 oingg-twse 的 daily_taiex_index 月底收盤算 TAIEX 年化報酬率，減去 GOV 的 monthly_gov_bond_yield_10y（10 年期政府公債次級市場殖利率）同期平均值。本服務不向任何來源抓取原始資料，只讀取兩個資料源已鏡像進資料庫的資料，若查無資料請先確認 oingg-twse / oingg-gov-ts 那邊有沒有涵蓋所需月份。樣本窗口越長越可信：不指定 start/end 就用「TAIEX 與無風險利率都有資料」的完整重疊區間（目前約 1999-01 至今）。實測過，短窗口（例如 5~10 年）容易算出遠高於文獻常見的 4%~8% 的 ERP，是台股單一段極端多頭造成的樣本偏誤；27 年窗口算出來才貼近文獻。窗口低於 20 年（240 個月）仍然會算，但 warnings 會提醒可信度風險，不會擋下計算。計算口徑：marketReturnGeometric = TAIEX 年化幾何報酬率 = (期末收盤/期初收盤)^(12/月數) - 1；marketReturnArithmetic = TAIEX 年化算術報酬率 = 月報酬率平均 * 12；avgRiskFreeRate = 窗口內 10 年期公債殖利率的簡單平均；erpGeometric / erpArithmetic = 對應的市場報酬率 - 無風險利率。兩者哪個更適合視用途而定（長期資本預算常建議用幾何，CAPM 單期折現率常見用算術——本服務兩者都算，不替使用者預設）。全部欄位是百分比數字（例如 5.80 代表 5.80%），不是小數。窗口內重疊月份少於 2 個月無法算出任何報酬率，fieldStatuses 標註 calculation_error。指定的 start/end 超出實際資料涵蓋範圍時，會裁切到實際涵蓋範圍並在 warnings 說明，clippedToAvailableData 會是 true。",
+        "operationId": "getMacroEquityRiskPremium",
         "parameters": [
           {
             "description": "選填，窗口起始年（西元），要跟 startMonth 一起給",
@@ -4782,6 +4823,7 @@
     "/macro/five-major-bank-rate": {
       "get": {
         "description": "央行統計的五大銀行平均利率，1987-01 起。給報酬期間約一年的風險調整指標（Sharpe 等）當無風險利率：一年窗口配一年期定存、月報酬配一個月期定存。**跟 /macro/gov-bond-yield-10y 並存、用途不同**——10 年期公債含存續期間風險溢酬，留給 CAPM 與股票風險溢酬（/macro/equity-risk-premium）。數值是年利率百分比（1.7 代表 1.7%）。最新一筆通常落後約一個月（央行約每月 25 日補上個月），見 latestPeriod。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroFiveMajorBankRate",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -4869,6 +4911,7 @@
     "/macro/gdp": {
       "get": {
         "description": "category=growth_rate 的 contributionPoints 是經濟成長率本身（%），其餘 11 個 category 是國內需求／國外淨需求各項目對成長率的貢獻百分點（各項加總 = growth_rate），1981-Q1 起。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroGdp",
         "parameters": [
           {
             "description": "只回傳 period >= 這一季（\"YYYY-Qn\"）的資料；不給就回全部歷史。",
@@ -4967,6 +5010,7 @@
     "/macro/gov-bond-yield-10y": {
       "get": {
         "description": "只回傳最新一筆，不是歷史序列——給估值排行卡片當中性的利率參考基準用，不做投資建議。資料來源跟 /macro/equity-risk-premium 同一張表（monthly_gov_bond_yield_10y，來源是央行統計資料庫 EG43M01en，本服務只讀）；要完整歷史序列或窗口計算請改用 /macro/equity-risk-premium。",
+        "operationId": "getMacroGovBondYield10y",
         "responses": {
           "200": {
             "content": {
@@ -5037,6 +5081,7 @@
     "/macro/gov-bond-yield-10y-history": {
       "get": {
         "description": "跟 /macro/gov-bond-yield-10y 同一張表（那支只回最新一筆），這支回 1994-01 起整段序列。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroGovBondYield10yHistory",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -5106,6 +5151,7 @@
     "/macro/monetary-aggregate": {
       "get": {
         "description": "央行日平均餘額（百萬新台幣）與年增率，1987-05 起（年增率前 12 個月為 null）。央行會修正近月數字，gov-ts 排程不覆寫、修正值需手動重建才會進來。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroMonetaryAggregate",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -5205,6 +5251,7 @@
     "/macro/stock-market-summary": {
       "get": {
         "description": "央行統計的集中市場月資料，1987-05 起（比 /market/taiex-daily-price 的 1999 年月線再往前 12 年）。avgTaiex 是加權指數的**當月平均**，不是月底收盤：同一套證交所指數（1966 年平均=100）但取樣不同，畫圖要整條線用同一種取樣、並標明是月平均。金額欄位皆為百萬新台幣。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroStockMarketSummary",
         "parameters": [
           {
             "description": "只回傳 period >= 這個月（\"YYYY-MM\"）的資料；不給就回全部歷史。",
@@ -5310,6 +5357,7 @@
     "/macro/us-policy-rate": {
       "get": {
         "description": "事件型序列：一列就是一次調整的生效日，不是逐日快照，形狀跟 /macro/cbc-policy-rate 對稱，可以疊在大盤或個股走勢上當事件標記。資料來源是 gov-ts 的 export.us_policy_rate（Federal Reserve 經 FRED：1982–2008 單一目標值 DFEDTAR、2008-12-16 起目標區間 DFEDTARU／DFEDTARL），本服務只讀；2008-12-16 以前的單一目標值上下限同值，所以同一套欄位跨得過那條制度斷點。本服務唯一的加工是 changeBp（上限相對前一次的變動，基點）。這是政策利率，不是公債殖利率，不能直接當無風險利率。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。",
+        "operationId": "getMacroUsPolicyRate",
         "parameters": [
           {
             "description": "只回傳生效日 >= 這天（\"YYYY-MM-DD\"）的事件；不給就回全部歷史（1982-09-27 起，約兩百筆，不需要分頁）。",
@@ -5381,6 +5429,7 @@
     "/macro/usd-twd-rate": {
       "get": {
         "description": "央行銀行買入／賣出／銀行間收盤三個匯率，1992-01 起。不是即時匯率：央行按月批次補、落後約一個月，前端請標明資料涵蓋到哪一天。limit/interval 慣例跟 /market/taiex-daily-price 相同。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroUsdTwdRate",
         "parameters": [
           {
             "description": "取最近幾筆，預設 250，上限 2000。",
@@ -5472,6 +5521,7 @@
     "/market/attention-stocks": {
       "get": {
         "description": "合併 twse-ts（上市）/tpex-ts（上櫃）注意股票累計次數異常公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。取最近公告的前 limit 筆（依交易日由新到舊），不是固定某一天的資料。criteria 是原始中文說明（例如「115年8月28日至115年8月31日連續二次」），criteriaDetails 是解析出的結構化資料（開始/結束日期、次數）——criteria 可能包含多個原因子句直接串接在一起，所以 criteriaDetails 是陣列；解析失敗（上游文字格式之後改變）時是空陣列，不影響 criteria 原始文字本身。sixDayChangePercent 是以 tradeDate 為基準日的近6個交易日累積漲跌幅——交易所注意股票的門檻本來就包含「近6日累積漲跌幅逾25%~32%」這類標準，這裡是點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。",
+        "operationId": "getMarketAttentionStocks",
         "parameters": [
           {
             "description": "預設 20，上限 50。",
@@ -5601,6 +5651,7 @@
     "/market/disposed-stocks": {
       "get": {
         "description": "合併 twse-ts（上市）/tpex-ts（上櫃）處置股票公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。稀疏資料，不是每天都有，取最近公告的前 limit 筆（依公告日期由新到舊），不是固定某一天的資料。TPEx 版本欄位比 TWSE 精簡（沒有 announcementCount/dispositionMeasures/linkInformation），沒有的欄位回傳 null。sixDayChangePercent 是以 announceDate 為基準日的近6個交易日累積漲跌幅，點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。reasonTimes 是從 reason 解析出的次數（例如「連續五次」→5、「最近10個營業日內有6個營業日」→6），部分處置原因（例如可轉債標的證券）本身沒有次數概念，這時是 null。reasonShort 是從 reason 解析出的中文短標籤（例如引用「第一款」→「漲跌異常」、可轉換公司債標的證券→「轉(交)換公司債」），解析不出來時是 null。dispositionStartDate/dispositionEndDate 是從 dispositionPeriod 拆出的西元起訖日期，dispositionPeriod 原始字串仍然保留，解析不出來時兩個新欄位都是 null。",
+        "operationId": "getMarketDisposedStocks",
         "parameters": [
           {
             "description": "預設 20，上限 50。",
@@ -5750,6 +5801,7 @@
     "/market/etf-distributions": {
       "get": {
         "description": "來源是 sitca-ts 的 FundClear ETF 收益分配（fundclear_etf_dividend），跟 GET /stocks/ex-dividend-calendar 的 ETF 列同一份資料、同一個已實現判斷（除息日早於今天）。events 是全部紀錄（含預告），trailing12MonthDistributionPerUnit 只加總近 12 個月已實現的。個股與特別股的股利請用 GET /companies/dividend-history（ETF 在那裡是空的：ETF 沒有股利所屬年度）。",
+        "operationId": "getMarketEtfDistributions",
         "parameters": [
           {
             "description": "ETF 代號",
@@ -5868,6 +5920,7 @@
     "/market/etf-ranking": {
       "get": {
         "description": "取最新一個月份的 ETF 快照資料排行（來源：sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance）。metric 決定依哪個數字排序：aum（規模，新台幣）、holders（受益人數）、netFlow（淨申購，申購金額 - 贖回金額，本服務計算，不是來源現成欄位）、dcaAmount（定期定額申購金額）、return3m/return6m/return1y/return2y/return3y/return5y/returnYtd/return10y（各天期累積報酬率，百分比，不是年化報酬率）、expenseRatio（總費用率——只用「最新一個完整年度」，該年度不滿一整年的 ETF（當年新掛牌、或當年中途清算/分割，來源：sitca-ts 的 fund_expense_ratio_annual_full_year，已排除 is_partial_year 的列）會被排除，不套用其他年度或做時間比例換算，確保每一檔都是同一個基準年比較）。目前 sitca-ts 只有單一個月的快照資料，還沒有累積多月，暫時無法做月增/年增這類趨勢型指標。asOf 標示這筆資料實際採用的月份（YYYY-MM）或年度（expenseRatio 是 YYYY）。category（原始分類字串，例如「上市ETF_國外成分證券ETF」）已拆成兩個獨立欄位：market（TWSE/TPEx）、assetClass（國內成分證券/國外成分證券/債券成分/槓桿型/反向型/多資產/連結式，主動式 ETF 沒有這個概念時是 null）。isActive（是否為主動式 ETF，不追蹤特定指數、經理人自訂策略操作）是 sitca-ts 提供的權威欄位，不是從 category 猜的。belowStatutoryThreshold：規模是否低於法定下市門檻（下市風險近似警示，sitca-ts 提供）。distributionFrequency 是從 distribution_class_info 拆出的配息頻率（月配/季配/半年配/年配/一年兩次配息/其他/不分配），純客觀顯示欄位，不是投資建議。",
+        "operationId": "getMarketEtfRanking",
         "parameters": [
           {
             "in": "query",
@@ -6070,6 +6123,7 @@
     "/market/margin-short-ratio-ranking": {
       "get": {
         "description": "券資比 = 融券今日餘額 / 融資今日餘額 x 100，是籌碼面「軋空/放空熱度」的常用指標——比值愈高代表放空的人相對融資買進的人愈多，籌碼愈集中在空方，有機會出現軋空。融資餘額是 0 或查無融券資料的公司排除在外（分母不能是 0），不是回傳無限大或 0。取最新一個交易日，依比值由高到低排序。",
+        "operationId": "getMarketMarginShortRatioRanking",
         "parameters": [
           {
             "description": "預設 20，上限 100。",
@@ -6174,6 +6228,7 @@
     "/market/material-announcements": {
       "get": {
         "description": "上市公司每日重大訊息公告，取最近公告的前 limit 筆（依公告日期、公告時間由新到舊），不是固定某一天的資料。announcementTime 是來源原始字串格式（例如 \"70003\"），不是標準 HH:MM:SS，本服務不嘗試解析/重新格式化。",
+        "operationId": "getMarketMaterialAnnouncements",
         "parameters": [
           {
             "description": "預設 20，上限 50。",
@@ -6283,6 +6338,7 @@
     "/market/price-change-ranking": {
       "get": {
         "description": "比較最新交易日跟前一個交易日的收盤價，算出漲跌幅——本服務用 daily_price（全市場收盤價鏡像）自己算的，不是 twse-ts/tpex-ts 現成算好的 dataset。同時回傳 gainers（漲幅前 limit，由大到小）跟 losers（跌幅前 limit，由小到大，跌最多排最前面）。上市（TWSE）跟上櫃（TPEx）各自用自己最新的兩個交易日計算，不強迫兩邊用同一個日期，每一列的 tradeDate/previousTradeDate 是該列實際採用的交易日，兩個市場可能不同。已排除 ETF/衍生性商品，只留真正的上市/上櫃公司。",
+        "operationId": "getMarketPriceChangeRanking",
         "parameters": [
           {
             "description": "預設 20，上限 50，漲幅/跌幅各取這麼多筆。",
@@ -6457,6 +6513,7 @@
     "/market/revenue-ranking": {
       "get": {
         "description": "取最新一個月份的月營收資料排行，合併 twse-ts（上市）/tpex-ts（上櫃）兩邊來源，market 欄位標示來源，只留上市或上櫃公司（monthly_revenue 來源範圍是「公開發行公司」，比上市櫃更廣，不篩選會混進非上市櫃公司）。metric 目前只接受 yoy（年增率，最常見的「營收爆發」選股指標）——2026-09-13 拔掉 mom（月增率排行，波動太大容易受季節性因素干擾）跟revenue（單純營收金額排行，偏向大型權值股，沒有「成長」意涵），這兩者被判定沒有實際選股價值，momChangePercent/currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來排序。會排除 yoyChangePercent 超過 300% 的公司——這是前期基期趨近於零造成的統計失真（例如建案交屋、生技授權金等認列時點集中的產業特性），不是真實的營運成長，300% 這個門檻依據是使用者提供的分析文件，之後有多年歷史資料可以改用更嚴謹的「基期 vs 歷史中位數」判斷。",
+        "operationId": "getMarketRevenueRanking",
         "parameters": [
           {
             "in": "query",
@@ -6602,6 +6659,7 @@
     "/market/taiex-daily-price": {
       "get": {
         "description": "直接查詢 export.daily_taiex_index（跟 beta 這支 metricCode 算 Beta 係數用的同一張表），不做任何額外加工，只有 tradeDate+close（沒有 OHLV，大盤指數沒有適用場景），依交易日由舊到新排序，跟 GET /stocks/{symbol}/daily-price-history 同一種慣例，方便前端把「個股股價 vs 大盤」疊圖比較（例如視覺化 Beta 卡片背後在算的東西）。interval=weekly|monthly 取每區間最後一個交易日，給 25 年尺度的圖（例如疊 /macro/cbc-policy-rate 的升降息事件）用。limit 上限 8000（2026-09-22 從 2000 放寬），daily 一次可取回 1999 起整段約 6,800 個交易日。",
+        "operationId": "getMarketTaiexDailyPrice",
         "parameters": [
           {
             "description": "取最近幾筆，預設 250（daily 約 1 年），上限 8000。",
@@ -6680,6 +6738,7 @@
     "/market/volume-top20": {
       "get": {
         "description": "最新一個交易日，合併 twse-ts（上市）/tpex-ts（上櫃）官方各自算好的成交量前 20 後重新排序取全市場前 20，market 欄位標示來源。TPEx 版本欄位比 TWSE 精簡（只有 symbol/trade_date/rank/volume），沒有的欄位（transaction/open/high/low/close/dir/change）回傳 null。⚠️ 沒有排除 ETF/衍生性商品，回傳的是原始排名（跟本服務其他主打「上市公司證券」的排行榜不一樣，這支是應使用者要求刻意保留原樣）。changePercent 是單日漲跌幅，本服務自己用 daily_price 算的點對點百分比（不是來源的 dir/change，確保上市/上櫃算法一致），資料不足時是 null。",
+        "operationId": "getMarketVolumeTop20",
         "responses": {
           "200": {
             "content": {
@@ -6801,6 +6860,7 @@
     "/metrics": {
       "get": {
         "description": "直接掃描 src/domainPitMetrics/<分類>/<指標>/ 資料夾結構產生，不是手動維護的清單——每個資料夾嚴格對應一個獨立 metricCode。分類（categoryKey）是 dividend/efficiency/growth/profitability/quality/resilience/valuation 之一，只列有指標的分類，每個分類同時帶 categoryDisplayName（中文名稱），前端不用自己維護一份分類對照表。每個 metric 有 metricCode/name（中文名稱）/unit（單位）/validTimeframes（這個 metricCode 實際可查詢的 timeframe 清單，直接拿來組欄位選單，不用前端自己組合或維護一份中文對照表）。可以拿 metricCode 直接打 GET /companies/metric-history、GET /companies/metrics-history 查歷史數值。部分指標另外帶 formulaLatex（公式的 LaTeX 字串，前後端統一算式顯示用，目前只在少數指標試點）、academicSourceUrl（學術論文出處連結，只有大師模型有）、referenceUrl（給終端使用者查證用的公開參考頁面，例如維基百科）、tier（raw/derived/composite 三層計算複雜度分層，必填）、badge（大師徽章資料，只有部分指標有）。",
+        "operationId": "getMetrics",
         "responses": {
           "200": {
             "content": {
@@ -7111,6 +7171,7 @@
     "/preferred-stocks": {
       "get": {
         "description": "特別股本身是獨立證券（例如 1101 台泥的普通股 vs 1101B 台泥乙特是兩檔不同證券），跟「一家公司+季度財報」骨架的一般指標端點不合，獨立成一支平行分類。symbol 選填，給了就只回那一檔（查無資料回 entries: []，不是 404），不給就回全部目前上市中的特別股（2026-09-06 實測共 28 檔）。只涵蓋 TWSE（上市）——TPEx 目前沒有對應的證券登記資料，上櫃特別股（如果存在）沒有資料源。dividendRate 是「每股固定配息金額」（新台幣元），不是百分比，欄位名稱容易誤會。這裡算兩個不同的百分比：nominalDividendRatePct（票面利率，dividendRate/issuePrice，發行時基準，之後不隨股價變動）跟 currentYieldPct（目前殖利率，dividendRate/最新收盤價，隨股價每天變動，查無股價資料時為 null）——兩者是不同概念，票面利率偏高不代表現在買進的殖利率也高（例如 2002A 中鋼特票面利率 14% 是 1974 年發行當時的利率環境）。redeemable/redemptionDate/redemptionConditions 描述的是發行人贖回權（call，公司單方面選擇是否買回），不是投資人賣回權（put）——這批資料源沒有投資人賣回權的欄位。redemptionVerified（2026-09-08 新增）標示這檔是否經過人工查證章程確認收回權利，跟 redemptionDate 是否為 null 是兩件事——有些特別股已查證確認可收回，但條款本身沒有固定收回日，redemptionDate 仍是 null，這個欄位用來區分「已查證只是沒有固定日期」跟「還沒有人查證過」。limit/offset 分頁沿用 GET /companies 的慣例。dataSources 是給終端使用者查證用的公開頁面連結（TWSE ISIN 網站/MOPS 特別股權利查詢/TWSE 個股日成交資訊查詢），不是內部資料庫的表名——顆粒度到來源，不到逐欄位（逐欄位對照見 preferredStock/README.md），每個 entry 都是同一組來源組成的。這些連結目前都是互動查詢頁，不是能帶參數直接跳到某一筆記錄的深連結，需要使用者自行輸入公司代號/日期查詢，note 欄位會說明這一點。ytwPct（最差殖利率 YTW）= min(currentYieldPct, ytcPct)——currentYieldPct 就是永續殖利率（YTP）；ytcPct（贖回殖利率 YTC）用二分法對現金流現值公式求根，只在可贖回且發行價/配息/現價都齊全時才有值，不再要求 redemptionDate 非 null（2026-09-08 起）。ytcAssumption 標記 ytcPct 的期數假設，三種情境：贖回日還沒到（scheduled_redemption_date，用真實到贖回日的年數）；有排定贖回日但已經過了（past_redemption_date_assumed_next_period）；條款本身就沒有排定贖回日（no_scheduled_redemption_date_assumed_next_period，例如1312A/2002A，公司可隨時自行決定）。後兩種都假設「下一次配息後即被贖回」的簡化情境，不是真實排定的時間，只是起點狀態不同（有過期日 vs 從來沒有日期），前端顯示時應該根據ytcAssumption 額外標註不同措辭的警語。premiumRatePct（溢價率）= (最新收盤價 − 發行價) / 發行價 * 100，只在可贖回時才計算——現價高於發行價代表投資人可能被發行人用發行價買回、被迫吃下溢價部分的損失，前端可以自行決定要用什麼門檻標示風險。sortField/sortOrder（2026-09-08 新增）：sortField 只能是 symbol/issueDate/listedDate/issuePrice/dividendRate/nominalDividendRatePct/currentYieldPct/ytcPct/ytwPct/premiumRatePct 這幾個排名/日期類欄位，不給就維持 symbol 字母序；sortOrder 是 asc/desc，預設 asc。排序在分頁之前套用（先排序全部符合條件的結果，再切 limit/offset），跨頁順序正確。null 值（例如不可贖回沒有 ytcPct）一律排在最後，不管 asc/desc，避免被誤讀成最小值。",
+        "operationId": "getPreferredStocks",
         "parameters": [
           {
             "description": "公司代號選填，給了就只回這一檔；不給回全部目前上市中的特別股",
@@ -7421,6 +7482,7 @@
     "/preferred-stocks/field-catalog": {
       "get": {
         "description": "2026-09-08 web-nuxt 轉達使用者需求：特別股頁面每個計算/衍生欄位都要能溯源，能看到這個值是怎麼算出來的、用了哪些原始輸入。公式是「欄位層級」的靜態中繼資料（同一個欄位對每一列特別股都是同一條公式，只有輸入值不同），所以做成獨立端點，不逐筆帶——跟 GET /etf-screener/filters 那種欄位目錄端點是同一種精神。只列出「有公式、需要解釋」的衍生欄位（nominalDividendRatePct/currentYieldPct/premiumRatePct/ytcPct/ytcAssumption/ytwPct），不含 symbol/issuePrice/dividendRate 這類原始 passthrough欄位（值本身就是來源，見 GET /preferred-stocks 跟 README.md 的逐欄位對照）。純靜態資料，不查任何資料庫，不受 GET /preferred-stocks 的 symbol/limit/offset 等參數影響。",
+        "operationId": "getPreferredStocksFieldCatalog",
         "responses": {
           "200": {
             "content": {
@@ -7480,6 +7542,7 @@
     "/screener": {
       "post": {
         "description": "篩選條件之間是 AND，field 格式 \"metricCode.basis\"（例如 \"roe.TTM\"），可用組合見 GET /metrics。查詢引擎直接讀 pitMetrics 共用的 metric_values 表，取每個 symbol 目前已知的最新一筆值——不是歷史查詢，只回傳「現在」，跟 GET /companies/metric-history（單一 symbol 的完整歷史時序）是不同用途。exclude=false（預設）保留落在 [min,max] 內的值；exclude=true 保留落在 [min,max] 外的值，兩者 null 值一律排除。columns 只影響回應要不要帶這個欄位，不影響篩選結果的 symbol 集合。sortField 是 \"symbol\" 或已列在 columns 裡的欄位。2026-09-11 新增 sectorCodes（選填）：證交所類股代碼（twse-ts/tpex-ts company_profile.industry，兩碼，例如「24」半導體業，不是財政部稅籍分類），多個代碼是聯集，跟 filters 是 AND 關係，用來先縮小候選公司範圍再套用數字篩選（例如「半導體業 + ROE > 15%」）。合法代碼請查 GET /industries/securities-sectors，未分類的公司用類股篩選時會被排除，不是 bug，是資料源本身的已知限制。2026-09-20 新增 excludeSectorCodes（選填）：排除這些類股（例如「金融保險以外全部」），跟 sectorCodes 互斥，兩個都給會 400。查詢引擎原生用 NOT IN，不是下游用補集重算——那樣存成篩選範本會把「排除 X」凍結成「包含其餘 N 個」，之後新增的類股會被默默漏掉。未分類的公司在 excludeSectorCodes 下會被保留（跟 sectorCodes 相反）。",
+        "operationId": "postScreener",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7684,6 +7747,7 @@
     "/screener/company-rank": {
       "get": {
         "description": "跟 GET /screener/ranking（取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾、贏過全市場前百分之多少」，不需要先知道前 N 名是誰，也不用自己抓全市場清單再數名次——rank/totalCount 是在同一次查詢裡用 window function 對全市場一次算完，只回傳目標 symbol 那一列。direction=desc：數值越高排名越前面（例如殖利率）；direction=asc：數值越低排名越前面（例如本益比）。totalCount 只計入這個欄位有值（非 null）的公司；並列數值共用同一個名次（RANK() 語意）。topPercent 是 rank÷totalCount×100（四捨五入到小數點後一位），數字越小代表排名越前面，例如 5 代表排在全市場前 5%——跟「百分位」是相反的敘述方向（百分位越高代表越好），刻意選這個命名貼近「贏過前 X%」的中文口語問法。found:false 代表這家公司這個欄位查無資料（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPercent/quintile 皆為 null。excludeZero=true 會把值精確等於 0 的公司排除在排名母體之外（殖利率這類「0 代表不配息」的欄位用，比照 GET /screener/distribution 同名參數），影響 rank/totalCount/topPercent/quintile。quintile 是這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高切分，跟 direction 排名方向無關，方便前端直接標示區間不用自己算切點。",
+        "operationId": "getScreenerCompanyRank",
         "parameters": [
           {
             "description": "公司代號",
@@ -7804,6 +7868,7 @@
     "/screener/distribution": {
       "get": {
         "description": "給「這家公司這個欄位在全市場排第幾」卡片展開後的分布圖用——一次查詢在資料庫端算完全部分箱，取代逐一打固定區間湊出粗粒度長條圖的做法。裁切邊界是第 1/99 百分位（clippedMin/clippedMax），避免極端值把其餘資料壓成一根柱子；bins 等寬切割這個範圍，小於 clippedMin 或大於等於 clippedMax 的值算進最左/最右一格，不會被丟掉——bins 的 count 加總永遠等於 totalCount。trueMin/trueMax 是未裁切的實際最小/最大值，供需要顯示「範圍外還有異常值」的呼叫端參考。totalCount=0（這個欄位全市場都查無資料）時 trueMin/trueMax/clippedMin/clippedMax 皆為 null、bins 是空陣列，不是錯誤。excludeZero=true 排除值精確等於 0 的列（殖利率這類「0 代表不配息，不是連續分布的邊緣值」的欄位常用），totalCount 也會跟著只計入非零的列。",
+        "operationId": "getScreenerDistribution",
         "parameters": [
           {
             "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
@@ -7952,6 +8017,7 @@
     "/screener/ranking": {
       "get": {
         "description": "排序欄位本身一定會出現在 values 裡（不管有沒有另外列進 columns），且保證非 null（WHERE value IS NOT NULL）。sectorCodes（選填，逗號分隔）比照 POST /screener 同一套證交所類股篩選語意，先縮小候選公司範圍再排序；excludeSectorCodes（選填，逗號分隔，2026-09-20 新增）整批排除指定類股，跟 sectorCodes 互斥。",
+        "operationId": "getScreenerRanking",
         "parameters": [
           {
             "in": "query",
@@ -8109,6 +8175,7 @@
     "/screener/values": {
       "post": {
         "description": "給「已經在畫面上的這幾檔股票，補一個新欄位」這種情境用，不是篩選查詢——每個要求的 symbol 都保證出現在結果裡，查不到資料的欄位是 null，不會因為沒資料整個 symbol 被拿掉。一次最多 200 檔。",
+        "operationId": "postScreenerValues",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8240,6 +8307,7 @@
     "/securities": {
       "get": {
         "description": "跟 GET /companies 是刻意分開的兩個概念：「公司」是 company_profile 的完整登記範疇（不含特別股/ETF），「證券」是真正能交易的標的（一般股票＋特別股＋ETF），searchbar 這類需要涵蓋特別股（例如 2891B）/ETF（例如 00919）的情境請改用這支，不要用 GET /companies。範圍涵蓋上市（TWSE）＋上櫃（TPEx）的一般股票，加上 TWSE 的特別股（isin_securities，目前 TPEx 特別股查無資料，不是 bug），再加上sitca-ts 的全部 ETF（etf_basic_info）。興櫃／KY 股／全額交割股都不排除（最大範圍），查不到簡稱的證券 companyName 會是 null。每筆 entry 帶 type（COMMON/PREFERRED/ETF），給前端做導頁判斷用（不同類型詳情頁路由不同），不要用 symbol 格式自己猜。limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責上限（1000）；也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。",
+        "operationId": "getSecurities",
         "parameters": [
           {
             "description": "這次要拿幾筆，預設 200，上限 1000。",
@@ -8364,6 +8432,7 @@
     "/stocks/ex-dividend-calendar": {
       "get": {
         "description": "傳一個月份（month=\"YYYY-MM\"）就能拿到全市場那個月所有除權息事件，適合「這個月市場上會發生什麼事」的日曆瀏覽情境，不用先給 symbol 清單。2026-09-22 起可以往回翻：以「今天」為界，今天（含）以後的事件來自 twse 除權息預告表（跟 ex-dividend-notices 同一張，只有 TWSE 上市含 ETF；status=announced，內容可能再變動），之前的事件來自 mops股利分派公告（跟 /companies/dividend-history 同一張，上市＋上櫃；status=realized）。兩種來源共用同一個 envelope，填不出來的欄位是 null：realized 列只有 cashDividend、stockDividendRatio（元／股 ÷ 面額換成股／股）、paymentDate、fiscalYear 有值，現金增資相關欄位一律 null。歷史深度受分派公告涵蓋範圍限制（全市場 2026-03 起，更早只有少數公司，mops-ts 回補中），有多少給多少。每筆都帶 symbol/companyName，依除權息基準日、symbol 排序。",
+        "operationId": "getStocksExDividendCalendar",
         "parameters": [
           {
             "description": "要查詢的月份，\"YYYY-MM\"",
@@ -8563,6 +8632,7 @@
     "/stocks/ex-dividend-notices": {
       "get": {
         "description": "同一支端點同時支援個股頁面「下次除權息」提示（傳單一 symbol）跟觀察清單「近期除權息」卡片（傳多個 symbol）——跟 GET /stocks/prices 同一種批次查詢慣例。2026-10-06 起每一筆的形狀、資料來源都跟 GET /stocks/ex-dividend-calendar 相同（twse 除權息預告表＋mops 股利分派公告＋sitca ETF 收益分配合併；還沒除權息的個股只有上市——預告表只收上市，上櫃個股只會以已除權息待發放出現），只是依 symbols 篩、並只留兩種事件：還沒除權息的（status=announced）、已除權息但現金發放日還沒到的（status=realized，paymentDate 一定有值）。已除權息而沒有發放日的事件不會出現。個股頁「下次除權息」只取 announced。還沒除權息的個股列 paymentDate 一律 null（預告表沒有這個欄位），ETF 列發行商公布了就有；ETF 的 distributionPerUnit 要到發行商公布金額才有值，通常是除息前幾天。各欄位的意思見 ex-dividend-calendar。",
+        "operationId": "getStocksExDividendNotices",
         "parameters": [
           {
             "description": "逗號分隔的公司/ETF 代號清單，一次最多 100 檔",
@@ -8765,6 +8835,7 @@
     "/stocks/prices": {
       "get": {
         "description": "給 bff-ts 用，一次查明確列出的幾檔公司（例如 screener 一頁的量），不是開放式查詢。刻意不做 limit/count_only：查不到的 symbol 就不會出現在 prices 物件裡，不會靜默截斷成某個數量以內——symbols 一次最多 100 檔，超過直接回 400，不會默默只回一部分。",
+        "operationId": "getStocksPrices",
         "parameters": [
           {
             "description": "逗號分隔的公司/ETF 代號清單，一次最多 100 檔",
@@ -8852,6 +8923,7 @@
     "/stocks/{symbol}/daily-price-history": {
       "get": {
         "description": "2026-09-10 新增，給個股頁面「市場評價」分頁的逐日股價線圖用——跟既有 PE/PB 河流圖用的stockPrice metricCode（季報型，每季一個點）不同，這支是真正的逐日資料，直接查twse-ts/tpex-ts 的 export.daily_price，不經過 pitMetrics 架構（逐日股價沒有「隨財報更新知識時點」的概念，不需要 knowledgeDate 解析）。一家公司只會在 TWSE/TPEx其中一邊掛牌，本服務內部自己判斷、查兩邊，呼叫端不用先知道是上市還是上櫃。依交易日由舊到新排序（畫線圖方便直接照順序畫）。查無資料（例如代號不存在）entries 是空陣列，不是 404。\n\nearliestAvailableTradeDate（2026-09-16 新增）：這檔股票在資料庫裡最早的交易日，不受這次查詢的 limit 影響（即使 entries 因為 limit 被截斷，這欄還是回傳真正最早的日期）——給「切換近1/2/3/5/8年」這類視窗選擇器用，直接拿這個日期跟今天算精確天數/年數，判斷這檔股票夠不夠長的歷史（例如近期 IPO 公司），不用再用「250 交易日≈1年」概估。",
+        "operationId": "getStocksSymbolDailyPriceHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -8959,6 +9031,7 @@
     "/stocks/{symbol}/foreign-shareholding-history": {
       "get": {
         "description": "2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是櫃買中心的外資持股統計（2026-10-07 起每個交易日更新，沒有更早的歷史）。2026-10-08 起**只有上櫃公司有資料**：證交所 OpenAPI 只開放每天持股比率前 20 名，上市公司一律回空陣列。查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。",
+        "operationId": "getStocksSymbolForeignShareholdingHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -9053,6 +9126,7 @@
     "/stocks/{symbol}/pledge-ratio-history": {
       "get": {
         "description": "2026-09-10 新增，給個股頁面董監事質押比例卡片用（質押比例偏高通常被視為公司治理/財務風險警訊）。資料來源是 twse-ts 的 export.stock_pledge_ratio（TWSE t187ap09_L），跟 foreign-shareholding-history同一套模式。report_date 是 TWSE 出表日期，不定期更新（不是每個交易日、也不綁季度末），呼叫端不能假設固定週期。刻意回傳完整歷史陣列（不是單一最新值/指標）——讓前端直接對照 TWSE 公告的原始數字序列，比包一層「指標」抽象更利於使用者核對來源。剛開放，目前只回填了少數幾檔驗證用資料，其他公司會回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。",
+        "operationId": "getStocksSymbolPledgeRatioHistory",
         "parameters": [
           {
             "description": "公司代號",
@@ -9135,6 +9209,7 @@
     "/stocks/{symbol}/quote": {
       "get": {
         "description": "給 bff-ts 用，取代他們拆掉直連 twse/tpex DB 後留的 503——本服務不想讓呼叫端知道一檔股票是上市還是上櫃，這支內部自己判斷、查兩邊。price/valuation 個別是 null 代表「公司存在，但查無股價/估值資料」（例如剛上市還沒有交易紀錄），跟「公司根本不存在」（回 404）是不同情境。",
+        "operationId": "getStocksSymbolQuote",
         "parameters": [
           {
             "description": "公司代號",
@@ -9227,6 +9302,7 @@
     "/stocks/{symbol}/summary": {
       "get": {
         "description": "2026-09-13 web-nuxt 回報：個股頁靠前端寫死的 20 檔權值股清單判斷「股票存不存在」，不在清單裡的股票（例如 2801）一律顯示查無資料——根本原因是誤把這個後端當成「要先撈全市場清單」的架構，實際上是按 symbol 現查，任何有效代號都查得到。這支端點把個股頁需要的 6 項組合成一次回傳，取代原本要串 GET /stocks/{symbol}/quote + GET /stocks/{symbol}/daily-price-history + GET /companies/metric-history（metricCode=liveMarketCap）三支的做法。price/valuation/marketCap 三個區塊各自獨立查詢、各自有自己的 tradeDate——理論上同一交易日會同步，但不保證，不要假設三者一定同一天。change（漲跌）是用 daily_price 最近兩個交易日的收盤價算出來的，跟price/volume 同一次查詢、保證同一組交易日；查無前一個交易日資料（例如剛掛牌）時change 整體是 null。",
+        "operationId": "getStocksSymbolSummary",
         "parameters": [
           {
             "description": "公司代號",
@@ -9364,6 +9440,7 @@
     "/upstream/changes": {
       "post": {
         "description": "只給 mops-ts、tpex-ts、twse-ts 呼叫，不是給 bff-ts 的。通知只帶「處理到 export.row_changes 的第幾筆」，明細留在上游；analysis 存成待辦並叫醒處理程式，處理程式讀那一段明細、換算要重算的公司與期間、只重算那些。冪等：upToId 小於或等於這個來源已收過的值時回 200、不做事，所以重送、亂序、漏送一次都沒關係（下一次會涵蓋）。驗證：Cloud Run IAM（Google ID token）＋每個來源自己的 X-Upstream-Key。",
+        "operationId": "postUpstreamChanges",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9465,6 +9542,7 @@
             "description": "這個來源的 X-Upstream-Key 不對或沒帶"
           }
         },
+        "security": [],
         "summary": "上游（mops／tpex／twse）通知 analysis 有新的資料變動",
         "tags": [
           "Upstream"
@@ -9474,6 +9552,7 @@
     "/valuation/ranking": {
       "get": {
         "description": "直接查詢 oingg-twse（上市，daily_valuation，約 1080 檔）跟 oingg-tpex（上櫃，daily_valuation，約 890 檔）兩邊已經算好、每天更新的數字，合併排序後取前 N 名，本服務不重新計算，也不需要事先把每家公司都查過一次——跟本服務其他「查一家公司」的指標完全不同的查詢型態，這支是全市場（上市+上櫃）排行。計算口徑：metric=peRatio&order=asc 是低本益比排行，metric=pbRatio&order=asc 是低淨值比排行，metric=dividendYield&order=desc 是高殖利率排行，order 沒有預設值，必須自己指定，避免呼叫端誤會排序方向。peRatio/pbRatio 排除 <= 0 的公司（虧損或淨值為負），這種情況不是「便宜」，是財務體質出問題，混進「最低本益比」排行榜會誤導——回應的 excludedNonPositiveCount 記錄排除了幾家；dividendYield 沒有這個排除（沒配息是 0，不是負的）。date 選填，不給就抓 daily_valuation 目前最新一個交易日。已排除 ETF/衍生性商品，以及 KY 股（境外註冊掛牌公司，股票簡稱以「-KY」結尾）——只有這支排行有排除 KY 股，不是全服務性質的政策。",
+        "operationId": "getValuationRanking",
         "parameters": [
           {
             "description": "要排行的欄位",
@@ -9623,13 +9702,26 @@
       }
     }
   },
+  "security": [
+    {
+      "BffApiKey": []
+    }
+  ],
   "tags": [
     {
-      "description": "伺服器狀態與跨分類的系統性 API，例如可用 filter 分類/指標/欄位清單、單一公司基本資料",
+      "description": "伺服器狀態、指標目錄（GET /metrics）、證券清單、OpenAPI 文件、批次觸發",
       "name": "System"
     },
     {
-      "description": "產業分類階層瀏覽（財政部稅籍五層分類 section/division/group/class/subclass）",
+      "description": "單一公司：基本資料、各指標歷史、財報、徽章、溯源、河流圖等",
+      "name": "Companies"
+    },
+    {
+      "description": "證券商（券商分點）清單",
+      "name": "Securities"
+    },
+    {
+      "description": "證交所／櫃買中心產業類別與類股股利彙總",
       "name": "Industries"
     },
     {
@@ -9637,7 +9729,7 @@
       "name": "Stocks"
     },
     {
-      "description": "多條件篩選、排行、指定股票批次查值（field 格式 \"metricCode.basis\"，見 GET /metrics）",
+      "description": "多條件篩選、排行、指定股票批次查值（field 格式 \"metricCode.timeframe\"，見 GET /metrics）",
       "name": "Screener"
     },
     {
@@ -9649,8 +9741,12 @@
       "name": "Valuation"
     },
     {
-      "description": "總體經濟——股權風險溢酬（ERP）、10 年期政府公債殖利率",
+      "description": "總體經濟——股權風險溢酬、公債殖利率、政策利率、CPI、GDP、景氣燈號、匯率、貨幣總計數等",
       "name": "Macro"
+    },
+    {
+      "description": "上游服務（mops-ts／tpex-ts／twse-ts）抓完資料後的變動通知",
+      "name": "Upstream"
     }
   ]
 }

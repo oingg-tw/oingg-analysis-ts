@@ -181,7 +181,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '同一套 36 個代碼；掛在非產業代碼的公司為 null）——給 hub 頁一次拿到全市場分類用，不用逐檔打 profile。' +
       'limit 這次要拿幾筆由呼叫端自己依業務邏輯決定，本服務只負責上限（1000，避免一次回應過大）；' +
       '也提供 countOnly=true 只回總筆數，不用先拉一批資料才知道總共幾筆。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompaniesQuerySchema },
     responses: {
       200: {
@@ -204,7 +204,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'paidInCapital/issuedShares/privatePlacementShares/preferredStockShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。' +
       'financialReportTypeName 是 financialReportType 裸代碼（"1"/"2"）解出來的可讀名稱（個別財報／合併財報），未知代碼回 null。' +
       'website 已正規化成乾淨的裸網域（去 scheme/尾斜線/www. 前綴），呼叫端不用自己再清洗一次。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyProfileQuerySchema },
     responses: {
       200: { description: '公司基本資料。', content: { 'application/json': { schema: companyProfileDetailSchema } } },
@@ -223,7 +223,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。' +
       'sharesChangePercent 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。' +
       '查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyCapitalStockHistoryQuerySchema },
     responses: {
       200: { description: '股本異動歷史（由新到舊排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: capitalStockHistoryResultSchema } } },
@@ -244,7 +244,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '目前只有少數種子公司有完整歷史股價，其他公司 2026-06 之後才有，歷史列多半是 null，是 twse-ts 資料範圍限制。' +
       'knowledgeDate 是該年度最後一次分派決議的公告日。深度目前是民國 107 年起（有多少給多少），mops-ts 排定回補更早年份後會自然變長。' +
       '查無任何分派紀錄回 entries: []，是 200 不是 404。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyDividendHistoryQuerySchema },
     responses: {
       200: { description: '歷年股利表（舊 → 新），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dividendHistoryResultSchema } } },
@@ -264,7 +264,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '股數換算到今天的股數基準（分割、配股、股數合併式減資追溯調整，跟 metric-history 的每股歷史同一原則），期末每股淨值跟 bvps 走勢對得上。' +
       '「其他（未分類）」是權益變動表沒有獨立欄位的項目（庫藏股買回、員工酬勞、子公司持股變動…）加上對帳差額，照實列出、不硬塞進別的項目；' +
       '2025 年全市場約 73% 的公司這一項在期初淨值 1% 以內。XBRL 從 109Q3 開始，最早 2020 年。查無資料回 entries: []，是 200 不是 404。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyBookValueBreakdownQuerySchema },
     responses: {
       200: { description: '每年一列（舊 → 新），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: bookValueBreakdownResultSchema } } },
@@ -285,7 +285,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '**目前資料覆蓋率極低**：只有少數公司/季度有資料（全市場 backfill 尚未進行），查無資料回傳 entries: []，' +
       '不是 404 或錯誤，是正常情境。（2026-09-08：這個 query 參數原本叫 basis，改名 periodType——' +
       '「basis」違反 ubiquitous language，是會計保留用語，不是這裡要表達的「季報聚合方式」。）',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyRoeHistoryQuerySchema },
     responses: {
       200: { description: 'ROE 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roeHistoryResultSchema } } },
@@ -301,7 +301,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '第二支直接讀 metric_values（point-in-time 事實層）而不是傳統結果表（profitability_roa）的端點，' +
       '完全比照 GET /companies/roe-history 的模式（periodType 語意、knowledgeDate/knowledgeDateIsFallback、' +
       '排序、資料覆蓋率現況說明皆相同，這裡不重複列一次）。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyRoaHistoryQuerySchema },
     responses: {
       200: { description: 'ROA 歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: roaHistoryResultSchema } } },
@@ -324,7 +324,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '變體，Q/TTM 拆解共用同一個 Q 快照值）。knowledgeDate/knowledgeDateIsFallback 取這四個 metric_code' +
       '裡 netProfitMargin 那組的值當代表（同一次計算共用同一組 knowledge_date，正常情況下一致）。' +
       '**目前資料覆蓋率極低**：只有少數公司/季度有資料，查無資料回傳 entries: []，是正常情境。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyDupontHistoryQuerySchema },
     responses: {
       200: { description: '杜邦拆解歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: dupontHistoryResultSchema } } },
@@ -357,7 +357,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'snapshotCadence，見 metric_values.basis 拆分重構）——「basis」違反 ubiquitous language。' +
       '2026-09-14：token 再改名 timeframe——同樣理由，「token」一樣是空洞用詞，沒有傳達' +
       '「挑時間切法」的領域語意，改用金融 API 常見的 timeframe。）',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyMetricHistoryQuerySchema },
     responses: {
       200: { description: '歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricHistoryResultSchema } } },
@@ -385,7 +385,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '（期後分割年報已重編）。比率、總額、股價不受影響。資料庫存的值不動，這個換算只在回應時做。' +
       '（2026-09-08：query 參數原本叫 basis，改名 token；2026-09-14 再改名 timeframe，理由同' +
       'GET /companies/metric-history。）',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyMetricsHistoryQuerySchema },
     responses: {
       200: { description: '多指標歷史時序（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: metricsHistoryResultSchema } } },
@@ -409,7 +409,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePercent 有約 0.4% 是 null，' +
       '那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是' +
       'bigint 序列化成字串，單位新台幣千元（本服務不換算）。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyMonthlyRevenueHistoryQuerySchema },
     responses: {
       200: { description: '月營收歷史（由舊到新排序），查無資料時 entries 是空陣列。', content: { 'application/json': { schema: monthlyRevenueHistoryResultSchema } } },
@@ -442,7 +442,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'JS 數字精度問題；查無資料（這家公司這張表完全沒有資料，新舊都沒有，或指定的 year/season 那一季' +
       '沒有資料）回傳 200 + found:false + statement:null，不是 404，跟 roe-history/' +
       'capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyFinancialStatementQuerySchema },
     responses: {
       200: { description: '該季該表全部科目欄位；查無資料時 found 為 false、statement 為 null。', content: { 'application/json': { schema: financialStatementResultSchema } } },
@@ -472,7 +472,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '2026-09-11 新增的純靜態文字，不隨 symbol/期別變化、found=false 時也會回傳——給前端 i18n 用，' +
       '取代原本寫死在前端的文字，刻意不放進 GET /metrics 的 badge 欄位（那是 12 支 badge 共用的型別，' +
       '只有 Piotroski 有「拆組」這個概念，不適合污染共用形狀）。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyPiotroskiBreakdownQuerySchema },
     responses: {
       200: {
@@ -505,7 +505,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料' +
       '（found:false）是正常情境，回 200 不是 404，跟 financial-statement/piotroski-breakdown 同一' +
       '種慣例。symbol 是路徑參數，跟其餘 /companies/* 端點的 query 參數用法不同，這是刻意的設計。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { params: z.object({ symbol: z.string().meta({ description: '公司代號', example: '2330' }) }), query: getCompanyMetricProvenanceQuerySchema },
     responses: {
       200: { description: '該指標計算所用的原始欄位明細；查無資料時 found 為 false、entries 為空陣列。', content: { 'application/json': { schema: metricProvenanceResponseSchema } } },
@@ -533,7 +533,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       'zone/calibrationStatus/分母浮動邏輯）還在跟文件維護方確認落差，目前這支端點的三個模型' +
       '都是各自獨立判定 passed，還沒有聚合計數欄位，等規格定案後再擴充，不會是 breaking change' +
       '（只會新增欄位）。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyBadgesQuerySchema },
     responses: {
       200: { description: '依分類分組的 badge 達成結果。', content: { 'application/json': { schema: companyBadgesResultSchema } } },
@@ -553,7 +553,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '目的是資料品質稽核/前端呈現「這家公司資料涵蓋度」，不是選股門檻判定。每個分類跟總計' +
       '都附 coveredCount/totalCount，方便直接算覆蓋率百分比。metricCode 可以直接拿去打' +
       'GET /companies/metric-history 查完整歷史（可能有其他 timeframe 有值，這裡只是代表性抽查）。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyMetricCompletenessQuerySchema },
     responses: {
       200: { description: '依分類分組的指標完整度掃描結果。', content: { 'application/json': { schema: companyMetricCompletenessResultSchema } } },
@@ -572,7 +572,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '（field: "beta.1Y_1D" 等）。一次回傳 1Y_1D/2Y_1W/3Y_1W/5Y_1M 四個滾動視窗各自最新一筆' +
       '（2026-09-15 新增 3Y_1W，介於 Bloomberg 2 年週頻跟 Morningstar 5 年月頻之間的折衷週期），' +
       '查無資料的窗口 value/nullReason/tradeDate 等欄位皆為 null，不是 404。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyBetaQuerySchema },
     responses: {
       200: { description: '四個滾動視窗各自最新一筆 Beta 快照。', content: { 'application/json': { schema: companyBetaResultSchema } } },
@@ -588,7 +588,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '2026-10-08 新增。河道線 = bases[].base × bandMultiples[i]（六條線、五條河道，第 5～95 百分位截尾後等分），由前端相乘畫出；股價線用 prices。' +
       '股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。' +
       '帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。',
-    tags: ['System'],
+    tags: ['Companies'],
     request: { query: getCompanyValuationRiverQuerySchema },
     responses: {
       200: { description: '河流圖資料。查無股價時 prices 為空陣列、current 為 null，不是 404。', content: { 'application/json': { schema: valuationRiverResultSchema } } },

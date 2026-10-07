@@ -74,6 +74,10 @@ export const createApp = (options: AppOptions = defaultAppOptions()) => {
   for (const module of options.modules.filter((m) => m.auth === 'upstream')) mount(module);
   // 以下都是只給 bff-ts 呼叫的模組，2026-09-05 起套用共用密鑰驗證。
   app.use(createBffAuth({ apiKey: options.bffApiKey }));
+  // 2026-10-08 bff-ts 要在 CI 對我們的合約做 diff：OpenAPI 文件的 JSON 版（/api-docs 只有 Swagger 網頁介面），跟其他 bff 端點一樣要 X-Api-Key。
+  app.get('/openapi.json', (_req, res) => {
+    res.json(options.openApiDocument);
+  });
   for (const module of options.modules.filter((m) => m.auth === 'bff')) mount(module);
 
   // 一定要是最後一個 middleware，才接得到前面所有路由丟出來的錯誤。
