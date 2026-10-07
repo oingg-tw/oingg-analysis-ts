@@ -37,6 +37,7 @@ const cases: GoldenCase[] = [
   { slug: 'companies-financial-statement', method: 'get', path: '/companies/financial-statement?symbol=2330&statementType=balanceSheet' },
   { slug: 'companies-badges', method: 'get', path: '/companies/badges?symbol=2330' },
   { slug: 'companies-beta', method: 'get', path: '/companies/beta?symbol=2330' },
+  { slug: 'companies-valuation-river', method: 'get', path: '/companies/valuation-river?symbol=2330&ratio=pb' },
   { slug: 'companies-metric-history', method: 'get', path: '/companies/metric-history?symbol=2330&metricCode=eps&timeframe=TTM&limit=5' },
   { slug: 'companies-metrics-history', method: 'get', path: '/companies/metrics-history?symbol=2330&metricCodes=roe,eps&timeframe=TTM&limit=5' },
   { slug: 'companies-dupont-history', method: 'get', path: '/companies/dupont-history?symbol=2330&limit=5' },

@@ -15,6 +15,7 @@ import {
 import { getCompanyDividendHistory } from '@/application/companies/dividendHistory';
 import { getCompanyBookValueBreakdown } from '@/application/companies/bookValueBreakdown';
 import { getCompanyFinancialStatement } from '@/application/companies/financialStatement';
+import { getCompanyValuationRiver } from '@/application/companies/valuationRiver';
 import { getCompanyBadges, getCompanyMetricCompleteness, getCompanyPiotroskiBreakdown, getCompanyMetricProvenance } from '@/application/companies/insights';
 import { jsonRoute } from '@/http/route';
 import {
@@ -35,6 +36,7 @@ import {
   getCompanyBadgesQuerySchema,
   getCompanyMetricCompletenessQuerySchema,
   getCompanyBetaQuerySchema,
+  getCompanyValuationRiverQuerySchema,
 } from './schemas';
 
 // 15 支 /companies/* 端點——掛載順序沿用舊 route.ts。provenance 那支需要整份 PitDeps（107 支 resolver 各自挑不同
@@ -69,6 +71,7 @@ export const createCompaniesRouter = (deps: AppDeps): Router => {
   router.get('/companies/badges', ...jsonRoute({ query: getCompanyBadgesQuerySchema }, ({ query }) => getCompanyBadges(query.symbol, deps)));
   router.get('/companies/metric-completeness', ...jsonRoute({ query: getCompanyMetricCompletenessQuerySchema }, ({ query }) => getCompanyMetricCompleteness(query.symbol, deps)));
   router.get('/companies/beta', ...jsonRoute({ query: getCompanyBetaQuerySchema }, ({ query }) => getCompanyBeta(query.symbol, deps)));
+  router.get('/companies/valuation-river', ...jsonRoute({ query: getCompanyValuationRiverQuerySchema }, ({ query }) => getCompanyValuationRiver(query, deps)));
 
   return router;
 };

@@ -25,6 +25,7 @@ import {
   getCompanyBadgesQuerySchema,
   getCompanyMetricCompletenessQuerySchema,
   getCompanyBetaQuerySchema,
+  getCompanyValuationRiverQuerySchema,
 } from './schemas';
 import {
   capitalStockHistoryEntrySchema,
@@ -122,6 +123,44 @@ const companyBetaResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('beta'),
   windows: z.array(betaWindowSchema).meta({ description: '固定 4 筆，依 1Y_1D/2Y_1W/3Y_1W/5Y_1M 順序（2026-09-15 新增 3Y_1W），查無資料的窗口欄位皆為 null' }),
+});
+
+const valuationRiverResultSchema = z.object({
+  symbol: z.string(),
+  ratio: z.enum(['pe', 'pb', 'ps']),
+  basisNote: z.string().meta({ description: '每股基準、生效時點與股數換算方式的說明文字' }),
+  lookback: z.object({
+    requestedYears: z.number().int(),
+    from: z.string().nullable().meta({ description: '實際起點（YYYY-MM-DD），資料不足時比要求的晚；查無股價為 null' }),
+    to: z.string().nullable(),
+  }),
+  sampleDays: z.number().int().meta({ description: '進入倍數計算的交易日數（基準 ≤ 0 或尚無基準的日子不計）' }),
+  multiples: z
+    .array(z.object({ percentile: z.number().int(), multiple: z.number() }))
+    .nullable()
+    .meta({ description: '窗口內每日比值的第 10、25、50、75、90 百分位（線性內插），整張圖固定一組；沒有任何有效比值時 null' }),
+  ratioRange: z.object({ min: z.number(), max: z.number() }).nullable().meta({ description: '窗口內每日比值的最小／最大值（要畫「最低～最高等分」河道時用）' }),
+  current: z
+    .object({
+      tradeDate: z.string(),
+      price: z.number().meta({ description: '最新收盤價（今天股數基準，就是原始收盤價）' }),
+      base: z.number().nullable(),
+      ratio: z.number().nullable().meta({ description: '目前比值；基準 ≤ 0 時 null' }),
+      percentile: z.number().nullable().meta({ description: '目前比值在窗口內每日比值中的百分位（≤ 目前比值的天數占比 × 100）' }),
+    })
+    .nullable(),
+  prices: z.array(z.object({ tradeDate: z.string(), close: z.number() })).meta({ description: '每日收盤價，由舊到新，已換算到今天的股數基準（分割、配股、股數合併式減資；現金股利不換算）' }),
+  bases: z
+    .array(
+      z.object({
+        effectiveFrom: z.string().meta({ description: '財報公告日（YYYY-MM-DD），從這天起適用這個基準；查無公告日時用法定申報期限（Q1 5/15、Q2 8/14、Q3 11/14、年報隔年 3/31）' }),
+        base: z.number().nullable().meta({ description: '每股基準（今天股數基準，跟 GET /companies/metric-history 顯示的同一個數字）；null 或 ≤ 0 時這段沒有帶狀' }),
+        fiscalYear: z.number().int(),
+        fiscalQuarter: z.number().int().nullable(),
+        knowledgeDateIsFallback: z.boolean().meta({ description: 'true 代表查無真實公告日，effectiveFrom 是法定申報期限' }),
+      })
+    )
+    .meta({ description: '階梯狀，由舊到新；第一筆是窗口起點當下適用的那一份' }),
 });
 
 export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
@@ -534,6 +573,22 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     responses: {
       200: { description: '四個滾動視窗各自最新一筆 Beta 快照。', content: { 'application/json': { schema: companyBetaResultSchema } } },
       400: { description: '缺少 symbol。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/companies/valuation-river',
+    summary: '單一公司本益比／股價淨值比／股價營收比河流圖',
+    description:
+      '2026-10-08 新增。帶狀 = bases[].base × multiples[].multiple（或 ratioRange 等分），由前端相乘畫出；股價線用 prices。' +
+      '股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。' +
+      '帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。',
+    tags: ['System'],
+    request: { query: getCompanyValuationRiverQuerySchema },
+    responses: {
+      200: { description: '河流圖資料。查無股價時 prices 為空陣列、current 為 null，不是 404。', content: { 'application/json': { schema: valuationRiverResultSchema } } },
+      400: { description: '缺少 symbol、ratio 不合法或 lookbackYears 超出範圍。' },
     },
   });
 };

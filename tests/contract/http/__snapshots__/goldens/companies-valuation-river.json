@@ -1,0 +1,46 @@
+{
+  "status": 200,
+  "body": {
+    "bases": [
+      {
+        "base": "<number>",
+        "effectiveFrom": "<date>",
+        "fiscalQuarter": "<number>",
+        "fiscalYear": "<number>",
+        "knowledgeDateIsFallback": "<boolean>"
+      }
+    ],
+    "basisNote": "<string>",
+    "current": {
+      "base": "<number>",
+      "percentile": "<number>",
+      "price": "<number>",
+      "ratio": "<number>",
+      "tradeDate": "<date>"
+    },
+    "lookback": {
+      "from": "<date>",
+      "requestedYears": "<number>",
+      "to": "<date>"
+    },
+    "multiples": [
+      {
+        "multiple": "<number>",
+        "percentile": "<number>"
+      }
+    ],
+    "prices": [
+      {
+        "close": "<number>",
+        "tradeDate": "<date>"
+      }
+    ],
+    "ratio": "pb",
+    "ratioRange": {
+      "max": "<number>",
+      "min": "<number>"
+    },
+    "sampleDays": "<number>",
+    "symbol": "<numeric-string>"
+  }
+}

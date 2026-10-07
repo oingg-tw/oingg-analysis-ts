@@ -173,3 +173,10 @@ export const getCompanyMetricCompletenessQuerySchema = z.object({
 export const getCompanyBetaQuerySchema = z.object({
   symbol: symbolField,
 });
+
+// 2026-10-08 河流圖（見 application/companies/valuationRiver.ts）。
+export const getCompanyValuationRiverQuerySchema = z.object({
+  symbol: symbolField,
+  ratio: z.enum(['pe', 'pb', 'ps'], { error: "ratio 必須是 'pe'、'pb' 或 'ps'。" }).meta({ description: "'pe' 本益比（近四季 EPS）、'pb' 股價淨值比（最近一季每股淨值）、'ps' 股價營收比（近四季每股營收）" }),
+  lookbackYears: z.coerce.number().int().min(1).max(10).default(5).meta({ description: '回溯幾年，預設 5；資料不足時 lookback.from 會比要求的晚' }),
+});

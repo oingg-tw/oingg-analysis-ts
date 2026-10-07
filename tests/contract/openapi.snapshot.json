@@ -2822,6 +2822,253 @@
         ]
       }
     },
+    "/companies/valuation-river": {
+      "get": {
+        "description": "2026-10-08 新增。帶狀 = bases[].base × multiples[].multiple（或 ratioRange 等分），由前端相乘畫出；股價線用 prices。股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。",
+        "parameters": [
+          {
+            "description": "公司代號",
+            "in": "query",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "description": "公司代號",
+              "example": "2330",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "'pe' 本益比（近四季 EPS）、'pb' 股價淨值比（最近一季每股淨值）、'ps' 股價營收比（近四季每股營收）",
+            "in": "query",
+            "name": "ratio",
+            "required": true,
+            "schema": {
+              "description": "'pe' 本益比（近四季 EPS）、'pb' 股價淨值比（最近一季每股淨值）、'ps' 股價營收比（近四季每股營收）",
+              "enum": [
+                "pe",
+                "pb",
+                "ps"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "回溯幾年，預設 5；資料不足時 lookback.from 會比要求的晚",
+            "in": "query",
+            "name": "lookbackYears",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "description": "回溯幾年，預設 5；資料不足時 lookback.from 會比要求的晚",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bases": {
+                      "description": "階梯狀，由舊到新；第一筆是窗口起點當下適用的那一份",
+                      "items": {
+                        "properties": {
+                          "base": {
+                            "description": "每股基準（今天股數基準，跟 GET /companies/metric-history 顯示的同一個數字）；null 或 ≤ 0 時這段沒有帶狀",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "effectiveFrom": {
+                            "description": "財報公告日（YYYY-MM-DD），從這天起適用這個基準；查無公告日時用法定申報期限（Q1 5/15、Q2 8/14、Q3 11/14、年報隔年 3/31）",
+                            "type": "string"
+                          },
+                          "fiscalQuarter": {
+                            "nullable": true,
+                            "type": "integer"
+                          },
+                          "fiscalYear": {
+                            "type": "integer"
+                          },
+                          "knowledgeDateIsFallback": {
+                            "description": "true 代表查無真實公告日，effectiveFrom 是法定申報期限",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "effectiveFrom",
+                          "base",
+                          "fiscalYear",
+                          "fiscalQuarter",
+                          "knowledgeDateIsFallback"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "basisNote": {
+                      "description": "每股基準、生效時點與股數換算方式的說明文字",
+                      "type": "string"
+                    },
+                    "current": {
+                      "nullable": true,
+                      "properties": {
+                        "base": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "percentile": {
+                          "description": "目前比值在窗口內每日比值中的百分位（≤ 目前比值的天數占比 × 100）",
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "price": {
+                          "description": "最新收盤價（今天股數基準，就是原始收盤價）",
+                          "type": "number"
+                        },
+                        "ratio": {
+                          "description": "目前比值；基準 ≤ 0 時 null",
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "tradeDate": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tradeDate",
+                        "price",
+                        "base",
+                        "ratio",
+                        "percentile"
+                      ],
+                      "type": "object"
+                    },
+                    "lookback": {
+                      "properties": {
+                        "from": {
+                          "description": "實際起點（YYYY-MM-DD），資料不足時比要求的晚；查無股價為 null",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "requestedYears": {
+                          "type": "integer"
+                        },
+                        "to": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "requestedYears",
+                        "from",
+                        "to"
+                      ],
+                      "type": "object"
+                    },
+                    "multiples": {
+                      "description": "窗口內每日比值的第 10、25、50、75、90 百分位（線性內插），整張圖固定一組；沒有任何有效比值時 null",
+                      "items": {
+                        "properties": {
+                          "multiple": {
+                            "type": "number"
+                          },
+                          "percentile": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "percentile",
+                          "multiple"
+                        ],
+                        "type": "object"
+                      },
+                      "nullable": true,
+                      "type": "array"
+                    },
+                    "prices": {
+                      "description": "每日收盤價，由舊到新，已換算到今天的股數基準（分割、配股、股數合併式減資；現金股利不換算）",
+                      "items": {
+                        "properties": {
+                          "close": {
+                            "type": "number"
+                          },
+                          "tradeDate": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tradeDate",
+                          "close"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "ratio": {
+                      "enum": [
+                        "pe",
+                        "pb",
+                        "ps"
+                      ],
+                      "type": "string"
+                    },
+                    "ratioRange": {
+                      "description": "窗口內每日比值的最小／最大值（要畫「最低～最高等分」河道時用）",
+                      "nullable": true,
+                      "properties": {
+                        "max": {
+                          "type": "number"
+                        },
+                        "min": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ],
+                      "type": "object"
+                    },
+                    "sampleDays": {
+                      "description": "進入倍數計算的交易日數（基準 ≤ 0 或尚無基準的日子不計）",
+                      "type": "integer"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "ratio",
+                    "basisNote",
+                    "lookback",
+                    "sampleDays",
+                    "multiples",
+                    "ratioRange",
+                    "current",
+                    "prices",
+                    "bases"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "河流圖資料。查無股價時 prices 為空陣列、current 為 null，不是 404。"
+          },
+          "400": {
+            "description": "缺少 symbol、ratio 不合法或 lookbackYears 超出範圍。"
+          }
+        },
+        "summary": "單一公司本益比／股價淨值比／股價營收比河流圖",
+        "tags": [
+          "System"
+        ]
+      }
+    },
     "/companies/{symbol}/metric-provenance": {
       "get": {
         "description": "讓使用者點擊徽章上的數字時，能看到這個數字實際用了哪些原始財報欄位、各自的值，用來跳轉到GET /companies/financial-statement 對應的那一列——現查現算，不持久化，跟 GET /companies/piotroski-breakdown 同一個模式。entries 是依公式使用順序排列的扁平清單，不是巢狀的推導樹；每一筆帶自己的 fiscalYear/fiscalQuarter，已經足夠表達「用了哪幾季」。type=\"statementField\" 的 fieldKey 是 snake_case，跟 GET /companies/financial-statement 回傳的XBRL key 完全一致，可直接連結；該筆命中舊表 fallback 時會降級成 type=\"other\"、sourceDescription=\"舊表資料，非 XBRL\"（因為舊表 fallback 情境下 financial-statement 回的是camelCase key，跟這裡的 snake_case fieldKey 對不上）。type=\"other\" 是非財報欄位的來源（市場快照、股本變動申報等），只給 sourceDescription 文字說明，沒有可連結的 fieldKey。methodologyNote是部分指標的完整計算方法無法用單純欄位清單呈現時的補充說明——例如 sue 的標準差取自最近 20 期未預期盈餘樣本，entries 只列出構成本季 UE 的 2 期（本季/去年同季）原始欄位，20 期樣本本身不逐筆列出，methodologyNote 會講清楚這個取捨；其餘指標為 null。試點範圍刻意只有 sue/chowderNumber/roe/accrualsRatio/dividendPayoutRatio/altmanZScore/dupontTaxBurden/dupontInterestBurden/inventoryTurnover/receivablesTurnover/fixedAssetTurnover/payablesTurnover/inventoryDays/receivablesDays/payablesDays/cashConversionCycle/operatingCycle/netWorkingCapitalTurnover/inventoryToRevenueRatio/receivablesToRevenueRatio/capexToRevenue/capexToOcfRatio/operatingExpenseRatio/currentRatio/quickRatio/cashRatio/debtRatio/deRatio/longTermDebtToNetCurrentAssets/equityRatio/cashToAssetsRatio/cashPerShare/financialLeverageDegree/totalLeverageDegree/interestCoverage/netDebtToEbitda/netWorkingCapitalToAssets/totalDebtToCapital/debtToFcf/altmanZDoublePrimeScore/zmijewskiScore/ohlsonOScore/eps/pretaxIncomePerShare/revenuePerShare/roa/netProfitMargin/dupontEbitMargin/novyMarxGpToAssets/nonOperatingIncomeRatio/croci/croic/roic/greenblattRoc/nissimPenmanRnoa/famaFrenchOperatingProfitability/consecutiveProfitYears/grossMargin/operatingMargin/assetGrowth/revenueGrowthRate/netIncomeGrowthRate/operatingIncomeGrowthRate/equityGrowthRate/bvpsGrowthRate/epsGrowthRate/epsPriorYear/roeWeighted5y/rdIntensity/sgr/epsCagr3y/epsCagr5y/epsCagr8y/revenueCagr3y/revenueCagr5y/revenueCagr8y/buybackYield/consecutiveDividendYears/dividendCoverageRatio/dividendGrowthRate3y/dividendGrowthRate5y/dividendGrowthRate8y/shareCountChangeRate/stockPrice/marketCap/bvps/pbRatio/peRatio/psr/pFcf/fcfYield/ncav/evEbitda/evToEbit/evToFcf/evToOcf/evToSales/priceToOcf/grahamNumber/earningsYield/tobinsQ/pegRatio/abnormalCapexRatio/beneishAqi/beneishDsri/beneishMScore/fcfConversionRate/fcfMargin/fcfPerShare/ocfMargin/ocfPerShare/depreciationAmortisationPerShare/ocfToNetIncome/ownerEarnings/earningsToRecordHigh/threeMarginsRising/shareholderYield/cashDividendYield/assetTurnover/equityMultiplier/grossProfitPerShare/operatingIncomePerShare/operatingCostsPerShare/operatingExpensePerShare/incomeTaxExpensePerShare/sellingExpensePerShare/administrativeExpensePerShare/researchAndDevelopmentExpensePerShare/impairmentLossGainIfrs9PerShare/netOtherIncomeExpensesPerShare/nonOperatingIncomeExpensesPerShare/interestRevenuePerShare/otherRevenuePerShare/otherGainsLossesPerShare/shareOfProfitLossOfAssociatesPerShare/financeCostPerShare/nonControllingInterestsPerShare/bankCarRatio/bankCet1Ratio/bankTier1Ratio/bankNplRatio/bankNplCoverageRatio/bankNetInterestIncomePerShare/bankNetNonInterestIncomePerShare/bankBadDebtProvisionPerShare/bankOtherOperatingExpensePerShare/bankEmployeeBenefitsExpensePerShare/bankDepreciationAmortisationExpensePerShare/bankGeneralAdministrativeExpensePerShare/exchangePeRatio/exchangePbRatio/dividendYield/greenblattEarningsYield/priceToResearchRatio/beta/priceReturn52w/distanceFrom52wHigh/distanceFrom52wLow/liveMarketCap/liveDividendPerShare/livePbRatio/livePeRatio/liveGrahamNumber/livePegRatio/sus/revenueYoy3m/dividendDistributionCount/dividendPerShare/piotroskiFScore/magicFormulaRank/oneDollarTest/ruleOf40這幾支（metricCode 用 zod enum 驗證，其餘一律 400，不是隱性涵蓋所有指標——全系統目前 117 支指標裡只有這幾支有稽核鏈）。roe/dupontTaxBurden/dupontInterestBurden 目前固定回傳 TTM basis的溯源。year/season 選填但要成對，不給就自動抓最新一季。查無資料（found:false）是正常情境，回 200 不是 404，跟 financial-statement/piotroski-breakdown 同一種慣例。symbol 是路徑參數，跟其餘 /companies/* 端點的 query 參數用法不同，這是刻意的設計。",
@@ -8723,7 +8970,7 @@
     },
     "/stocks/{symbol}/foreign-shareholding-history": {
       "get": {
-        "description": "2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是證交所與櫃買中心的外資持股統計（上市 TWSE MI_QFIIS；上櫃 2026-10-07 起每個交易日更新）。上市目前只有 2330 一檔有資料（一次性回填 2021-09~2026-09，不是常態排程）；上櫃全部公司從 2026-10-07 開始累積、沒有更早的歷史。查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。",
+        "description": "2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是櫃買中心的外資持股統計（2026-10-07 起每個交易日更新，沒有更早的歷史）。2026-10-08 起**只有上櫃公司有資料**：證交所 OpenAPI 只開放每天持股比率前 20 名，上市公司一律回空陣列。查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。",
         "parameters": [
           {
             "description": "公司代號",
