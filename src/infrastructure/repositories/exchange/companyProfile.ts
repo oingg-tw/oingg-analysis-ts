@@ -506,7 +506,7 @@ export const countAllCompanyNames = async (): Promise<number> => {
 // 結構性不含），web-nuxt 的 searchbar 需要「代碼+名稱」涵蓋真正能交易的證券（含特別股、
 // ETF）。使用者明確拍板：「公司是公司，證券是證券」，不把特別股/ETF 塞進 GET /companies
 // （語意錯誤），改成獨立的 GET /securities，重用 getAllSecurityRows（已經在 UNION
-// isin_securities 取得特別股，見上方說明）+ 額外 UNION sitca-ts 的 export.etf_basic_info
+// isin_securities 取得特別股，見上方說明）+ 額外 UNION sitca-ts 的 export.etf_monthly_profiles
 // 取得 ETF（一般股票/特別股是 twse-ts/tpex-ts 的資料，ETF 是完全不同服務的資料，見
 // etfScreener/queryBuilder.ts 既有的查詢慣例）。預設 filter 給空物件——不排除興櫃（真正
 // 公司）、不排除 KY、不排除特別股、不排除全額交割股，是「這個市場上所有能交易的證券」
@@ -522,7 +522,7 @@ interface RawTypedSecurityRow {
 
 const getEtfRows = async (): Promise<RawTypedSecurityRow[]> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
-    SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."etf_basic_info"
+    SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."etf_monthly_profiles"
   `;
   return rows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, type: 'ETF' as const }));
 };
@@ -550,10 +550,10 @@ export const countAllSecurityNames = async (): Promise<number> => {
   return new Set([...securityRows.map((r) => r.symbol), ...etfRows.map((r) => r.symbol)]).size;
 };
 
-// 2026-10-06 除權息日曆／觀察清單的 securityType 改依證券本身判斷，跟 GET /securities 的 type=ETF 同一個依據（sitca etf_basic_info），
+// 2026-10-06 除權息日曆／觀察清單的 securityType 改依證券本身判斷，跟 GET /securities 的 type=ETF 同一個依據（sitca etf_monthly_profiles），
 // 不靠代號格式猜（見上方 type 欄位的說明）。
 const listEtfSymbols = async (): Promise<Set<string>> => {
-  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."etf_basic_info"`;
+  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."etf_monthly_profiles"`;
   return new Set(rows.map((r) => r.symbol));
 };
 

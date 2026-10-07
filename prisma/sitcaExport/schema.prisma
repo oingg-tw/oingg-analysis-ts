@@ -1,5 +1,5 @@
 // 本 schema 只用來讀 oingg-sitca-ts 的 export schema——2026-09-01 sitca-ts 建好
-// export.fund_expense_ratio_annual/export.fund_lifecycle_event 兩個 view、
+// export.fund_annual_expense_ratios/export.fund_lifecycle_events 兩個 view、
 // export.ingestion_runs 握手表、etl_reader role（實測驗證過 7 項唯讀邊界：讀不到 export 以外
 // 的 schema、INSERT/UPDATE/DELETE/CREATE TABLE 全部被拒絕，兩個 view 可正常 SELECT），連線用
 // .env 的 SITCA_EXPORT_DATABASE_URL_DEV / SITCA_EXPORT_DATABASE_URL_PROD。
@@ -10,8 +10,8 @@
 // config.isProduction 動態決定（見該檔案說明），跟 mops/gov export 那種「單一連線、不分
 // dev/prod」的模式不同。
 //
-// 2026-09-02 sitca-ts 又開了三個 ETF dataset（etf_basic_info/etf_monthly_statement/
-// etf_performance），本服務用來做 GET /market/etf-ranking（見
+// 2026-09-02 sitca-ts 又開了三個 ETF dataset（etf_monthly_profiles/etf_monthly_statements/
+// etf_monthly_returns），本服務用來做 GET /market/etf-ranking（見
 // src/domains/market/etfRanking/）——規模/受益人數/淨申購贖回/定期定額/報酬率/總費用率
 // 六種 metric 的排行。目前只有 202607 一個月的快照資料，之後累積更多月份才能做趨勢類指標。
 //
@@ -75,7 +75,7 @@ view FundExpenseRatioAnnual {
   fetchedAt           DateTime? @map("fetched_at")
 
   @@ignore
-  @@map("fund_expense_ratio_annual")
+  @@map("fund_annual_expense_ratios")
   @@schema("export")
 }
 
@@ -111,7 +111,7 @@ view FundExpenseRatioAnnualFullYear {
   isPartialYear        Boolean?  @map("is_partial_year")
 
   @@ignore
-  @@map("fund_expense_ratio_annual_full_year")
+  @@map("fund_annual_expense_ratios_full_year")
   @@schema("export")
 }
 
@@ -127,7 +127,7 @@ view FundLifecycleEvent {
   fetchedAt       DateTime? @map("fetched_at")
 
   @@ignore
-  @@map("fund_lifecycle_event")
+  @@map("fund_lifecycle_events")
   @@schema("export")
 }
 
@@ -154,7 +154,7 @@ view EtfBasicInfo {
   isActivelyManaged      Boolean?  @map("is_actively_managed")
 
   @@ignore
-  @@map("etf_basic_info")
+  @@map("etf_monthly_profiles")
   @@schema("export")
 }
 
@@ -178,7 +178,7 @@ view EtfMonthlyStatement {
   aumBelowStatutoryThreshold Boolean? @map("aum_below_statutory_threshold")
 
   @@ignore
-  @@map("etf_monthly_statement")
+  @@map("etf_monthly_statements")
   @@schema("export")
 }
 
@@ -197,6 +197,6 @@ view EtfPerformance {
   return10y    Decimal? @map("return_10y") @db.Decimal(10, 4)
 
   @@ignore
-  @@map("etf_performance")
+  @@map("etf_monthly_returns")
   @@schema("export")
 }

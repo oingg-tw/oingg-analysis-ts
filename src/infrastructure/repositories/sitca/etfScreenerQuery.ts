@@ -4,7 +4,7 @@ import { EXPENSE_RATIO_FULL_YEAR_RANGE, type NumericFieldDefinition, type Catego
 // 2026-09-17 重構 Phase 2：從 http/modules/market/etfScreener/queryBuilder.ts 搬來——只有 Prisma.sql
 // 的組裝（純函式、寫死 sitca export view 的表名欄位名），執行交給 ./etfQueries.ts 的 runEtfRawQuery。
 
-// 核心查詢組裝——ETF 資料只有 etf_basic_info/etf_monthly_statement/etf_performance 三張表
+// 核心查詢組裝——ETF 資料只有 etf_monthly_profiles/etf_monthly_statements/etf_monthly_returns 三張表
 // （用 symbol+year_month 對齊），不像股票 screener 要動態拼多張各自獨立的 curated
 // 表，這裡直接組一個固定形狀的 base CTE（所有欄位都在同一個查詢裡），filters/columns/sort
 // 都是對 base（或加上 expense）的欄位下條件，不需要股票那套「每個 field 各自找表、動態
@@ -56,9 +56,9 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       p.return_5y,
       p.return_ytd,
       p.return_10y
-    FROM "export"."etf_basic_info" b
-    JOIN "export"."etf_monthly_statement" m ON m.symbol = b.symbol AND m.year_month = b.year_month
-    JOIN "export"."etf_performance" p ON p.symbol = b.symbol AND p.year_month = b.year_month
+    FROM "export"."etf_monthly_profiles" b
+    JOIN "export"."etf_monthly_statements" m ON m.symbol = b.symbol AND m.year_month = b.year_month
+    JOIN "export"."etf_monthly_returns" p ON p.symbol = b.symbol AND p.year_month = b.year_month
     WHERE b.year_month = ${yearMonth}
   )
 `;
@@ -72,7 +72,7 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const latestCompleteYear = new Date().getFullYear() - 1;
   const cte = Prisma.sql`
     expense AS (
-      SELECT fund_tax_id, total_rate FROM "export"."fund_expense_ratio_annual" WHERE year = ${latestCompleteYear}
+      SELECT fund_tax_id, total_rate FROM "export"."fund_annual_expense_ratios" WHERE year = ${latestCompleteYear}
     )
   `;
   const join = Prisma.sql`
@@ -82,7 +82,7 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   return { cte, join };
 };
 
-// 分年度總費用率 pivot——一次把 export.fund_expense_ratio_annual_full_year（已經濾掉
+// 分年度總費用率 pivot——一次把 export.fund_annual_expense_ratios_full_year（已經濾掉
 // is_partial_year=true 的不完整期間資料）用條件式聚合攤平成「一個 fund_tax_id 一列、
 // 每年一欄」，不是對 26 個年份各自 LEFT JOIN 26 次（那樣可讀性差、SQL 也長很多）。
 // 欄位別名 expense_ratio_<year> 要跟 fieldRegistry.ts 的 sqlColumn 完全對應。
@@ -94,7 +94,7 @@ const buildExpensePivotJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const cte = Prisma.sql`
     expense_pivot AS (
       SELECT fund_tax_id, ${Prisma.join(yearColumns, ', ')}
-      FROM "export"."fund_expense_ratio_annual_full_year"
+      FROM "export"."fund_annual_expense_ratios_full_year"
       GROUP BY fund_tax_id
     )
   `;
@@ -105,7 +105,7 @@ const buildExpensePivotJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
 // 費用率細項拆分（經理費/保管費/保證費/其他/手續費/交易稅/ETF買賣手續費）——跟
 // buildExpenseJoin 的「全體套同一個 calendar year - 1 基準年」不同，這裡是「該基金
 // 自己最新一筆完整年度」：DISTINCT ON (fund_tax_id) + ORDER BY year DESC 直接取每個
-// fund_tax_id 在 fund_expense_ratio_annual_full_year（已經濾掉不完整期間）裡最新的
+// fund_tax_id 在 fund_annual_expense_ratios_full_year（已經濾掉不完整期間）裡最新的
 // 一列，不用手動判斷「今年還沒過完」，因為這張 view 本來就已經濾掉不完整年度。
 const buildExpenseLatestFullYearJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const cte = Prisma.sql`
@@ -113,7 +113,7 @@ const buildExpenseLatestFullYearJoin = (): { cte: Prisma.Sql; join: Prisma.Sql }
       SELECT DISTINCT ON (fund_tax_id)
         fund_tax_id, management_fee_rate, custodian_fee_rate, guarantee_fee_rate,
         other_fee_rate, commission_rate, transaction_tax_rate, etf_trading_fee_rate
-      FROM "export"."fund_expense_ratio_annual_full_year"
+      FROM "export"."fund_annual_expense_ratios_full_year"
       ORDER BY fund_tax_id, year DESC
     )
   `;
@@ -132,8 +132,8 @@ const buildPremiumDiscountJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
       SELECT DISTINCT ON (n.symbol)
         n.symbol,
         CASE WHEN n.nav_value IS NOT NULL AND n.nav_value <> 0 THEN ROUND(((c.close - n.nav_value) / n.nav_value * 100)::numeric, 2) END AS premium_discount_pct
-      FROM "export"."fundclear_etf_nav_history" n
-      JOIN "export"."etf_closing_price" c ON c.symbol = n.symbol AND c.date = n.date
+      FROM "export"."fundclear_etf_daily_navs" n
+      JOIN "export"."etf_closing_prices" c ON c.symbol = n.symbol AND c.date = n.date
       ORDER BY n.symbol, n.date DESC
     )
   `;

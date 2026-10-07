@@ -25,7 +25,7 @@ export const symbolsListQuerySchema = symbolsQuerySchema.extend({
 
 // 2026-09-10 web-nuxt 轉達使用者需求：全市場除權息日曆（月曆格狀呈現）。month="YYYY-MM"
 // 而不是 startDate/endDate 兩個參數——呼叫端本來就是月曆 UI 在一格一格選月份，直接傳月份
-// 字串比自己算月初/月底日期再傳兩個日期參數更貼近使用情境，跟 fund_expense_ratio_annual
+// 字串比自己算月初/月底日期再傳兩個日期參數更貼近使用情境，跟 fund_annual_expense_ratios
 // 用整數年份（不是日期區間）當參數是同一種「參數形狀貼近呼叫端實際擁有的資料」的設計判斷。
 export const getExDividendCalendarQuerySchema = z.object({
   month: z

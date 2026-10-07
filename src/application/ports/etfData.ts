@@ -1,7 +1,7 @@
 import type { CategoricalFieldDefinition, DateFieldDefinition, NumericFieldDefinition } from '@/domain/market/etfFieldRegistry';
 
-// sitca-ts 的 ETF export view（etf_basic_info / etf_monthly_statement / etf_performance /
-// fund_expense_ratio_annual_full_year）port——GET /market/etf-ranking、POST /etf-screener、GET /etf-screener/filters 用。
+// sitca-ts 的 ETF export view（etf_monthly_profiles / etf_monthly_statements / etf_monthly_returns /
+// fund_annual_expense_ratios_full_year）port——GET /market/etf-ranking、POST /etf-screener、GET /etf-screener/filters 用。
 // 回傳原始列形狀（bigint / Decimal 物件），轉換維持在 use case。screenEtfs 把 SQL 組裝（etfScreenerQuery.ts）+
 // 執行藏在 infrastructure 裡，application 只拿到已執行完的列。實作在 infrastructure/repositories/sitca/etfQueries.ts。
 
@@ -75,7 +75,7 @@ export interface EtfSortSpec {
 }
 
 // 2026-09-23 除權息月曆併入 ETF 收益分配用。一列＝一次分配，依除息日升冪。
-// 來源 sitca-ts export.fundclear_etf_dividend（FundClear）——跟 mops 的 dividend_distribution 是
+// 來源 sitca-ts export.fundclear_etf_dividends（FundClear）——跟 mops 的 dividend_distribution 是
 // 完全不同的法規途徑與資料源，ETF 不會出現在後者（實測 00 開頭零筆）。
 export interface RawEtfDividendRow {
   symbol: string;

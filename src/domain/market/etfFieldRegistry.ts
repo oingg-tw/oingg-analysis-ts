@@ -1,6 +1,6 @@
 // ETF screener 可篩選/排序/顯示的欄位白名單——不像股票 screener 有 40+ 張各自獨立的 curated
-// 表需要動態解析（那邊才需要 metricTableRegistry 那種通用機制），ETF 資料就是 etf_basic_info/
-// etf_monthly_statement/etf_performance 三張表（用 symbol+year_month 對齊）合併成一份
+// 表需要動態解析（那邊才需要 metricTableRegistry 那種通用機制），ETF 資料就是 etf_monthly_profiles/
+// etf_monthly_statements/etf_monthly_returns 三張表（用 symbol+year_month 對齊）合併成一份
 // base 查詢，欄位固定已知，直接手動列出白名單即可，見 queryBuilder.ts 的 base CTE。
 //
 // market/assetClass 是 sitca-ts 的 category 字串（例如「上市ETF_國外成分證券ETF」）現場用
@@ -85,8 +85,8 @@ export const NUMERIC_FIELDS: Record<string, NumericFieldDefinition> = {
   },
   // 2026-09-10 新增：折溢價率 = (市價 - 淨值) / 淨值 * 100，取「淨值跟市價同一天都有資料」
   // 的最新一天（見 queryBuilder.ts 的 buildPremiumDiscountJoin）。正值代表市價高於淨值
-  // （溢價），負值代表市價低於淨值（折價）。資料源是 sitca-ts 的 export.fundclear_etf_nav_history
-  // （逐日淨值）+ export.etf_closing_price（twse-ts/tpex-ts push 的逐日市價），市價回填
+  // （溢價），負值代表市價低於淨值（折價）。資料源是 sitca-ts 的 export.fundclear_etf_daily_navs
+  // （逐日淨值）+ export.etf_closing_prices（twse-ts/tpex-ts push 的逐日市價），市價回填
   // 深度比淨值淺很多（上市 2020-11 起、上櫃 2021-09 起），見 TECH_DEBT.md。
   premiumDiscountPct: {
     kind: 'numeric',
@@ -101,9 +101,9 @@ export const NUMERIC_FIELDS: Record<string, NumericFieldDefinition> = {
 
 // 2026-09-08 新增：分年度總費用率（bff-ts 轉達 web-nuxt 需求，2001~2026 共 26 年，橫向
 // 瀏覽/比較用，不是只顯示近幾年）。資料源刻意跟上面的 expenseRatio 不同：這裡用
-// export.fund_expense_ratio_annual_full_year（sitca-ts 已經濾掉 is_partial_year=true
+// export.fund_annual_expense_ratios_full_year（sitca-ts 已經濾掉 is_partial_year=true
 // 的不完整期間資料，逐檔逐年判斷，比「calendar year - 1」這種全體套一個門檻精確）；
-// expenseRatio 是舊的 export.fund_expense_ratio_annual 表 + 手動猜「最新完整年度」，
+// expenseRatio 是舊的 export.fund_annual_expense_ratios 表 + 手動猜「最新完整年度」，
 // 兩者資料源/精確度不同，這次刻意不去動既有欄位（避免影響任何既有消費端），只加新的。
 // 見 queryBuilder.ts 的 buildExpensePivotJoin。
 export const EXPENSE_RATIO_FULL_YEAR_RANGE = { start: 2001, end: 2026 } as const;
@@ -128,7 +128,7 @@ export const DATE_FIELDS: Record<string, DateFieldDefinition> = {
 };
 
 // 費用率細項拆分——只用「最新一個完整年度」（跟 expenseRatio 同一種「目前」語意，不是
-// 分年度系列），但資料源改用 export.fund_expense_ratio_annual_full_year（已經濾掉
+// 分年度系列），但資料源改用 export.fund_annual_expense_ratios_full_year（已經濾掉
 // is_partial_year=true 的不完整期間資料），不沿用 expenseRatio 舊表 + 手動猜
 // 「calendar year - 1」那套——這是本檔案第一次用「該基金自己最新一筆完整年度」而不是
 // 「全體套同一個基準年」，見 queryBuilder.ts 的 buildExpenseLatestFullYearJoin。

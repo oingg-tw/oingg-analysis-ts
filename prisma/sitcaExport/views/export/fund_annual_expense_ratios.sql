@@ -21,4 +21,4 @@ SELECT
   total_rate,
   fetched_at
 FROM
-  fund_expense_ratio_annual;
+  fund_annual_expense_ratios;

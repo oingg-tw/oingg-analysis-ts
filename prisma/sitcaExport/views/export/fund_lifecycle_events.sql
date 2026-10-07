@@ -8,4 +8,4 @@ SELECT
   description,
   fetched_at
 FROM
-  fund_lifecycle_event;
+  fund_lifecycle_events;

@@ -25,7 +25,7 @@ export const registerEtfScreenerOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/etf-screener',
     summary: 'ETF screener（多條件篩選 + 排序 + 分頁）',
     description:
-      '資料來源是 sitca-ts 的 etf_basic_info/etf_monthly_statement/etf_performance（目前只有最新一個月的快照），欄位清單見 ' +
+      '資料來源是 sitca-ts 的 etf_monthly_profiles/etf_monthly_statements/etf_monthly_returns（目前只有最新一個月的快照），欄位清單見 ' +
       'GET /etf-screener/filters。filters 有兩種形狀：數字欄位（aum/holders/netFlow/dcaAmount/marketShareRate/nav/return3m~return10y/' +
       'expenseRatio/statutoryAumThreshold）用 {field, min, max, exclude?}；類別欄位（market/assetClass/isActive/belowStatutoryThreshold/' +
       'distributionFrequency）用 {field, values: [...]}（IN 語意，屬於其中之一就保留）。isActive（是否為主動式 ETF）跟 ' +
@@ -35,14 +35,14 @@ export const registerEtfScreenerOpenApi = (registry: OpenAPIRegistry): void => {
       '（不是整檔 ETF 被排除——screener 是列表瀏覽情境，跟 ranking 排行榜的「直接排除」不同）。' +
       'expenseRatio2001~expenseRatio2026（2026-09-08 新增，共 26 個獨立數字欄位，見 GET /etf-screener/filters）' +
       '是分年度總費用率，給前端橫向比較歷年費用率變化用——資料源跟 expenseRatio 不同：這裡用 sitca-ts 已經濾掉' +
-      '不完整期間資料的 fund_expense_ratio_annual_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio' +
+      '不完整期間資料的 fund_annual_expense_ratios_full_year，逐檔逐年判斷該年是否為完整年度，比 expenseRatio' +
       '單純套「calendar year - 1」精確；某年份沒有值（基金那年還沒成立、或該年資料不完整）該年欄位是 null，' +
       '不影響其他年份。' +
       'establishedDate（2026-09-08 新增）是日期欄位，filter 用 {field, min, max, exclude?}，min/max 是 "YYYY-MM-DD" ' +
       '字串（跟數字欄位同一套 exclude 語意）。' +
       'managementFeeRate/custodianFeeRate/guaranteeFeeRate/otherFeeRate/commissionRate/transactionTaxRate/' +
       'etfTradingFeeRate（2026-09-08 新增）是費用率細項拆分，只取「該基金自己最新一筆完整年度」（跟 expenseRatio 同一種' +
-      '「目前」語意，不是分年度系列），資料源是 fund_expense_ratio_annual_full_year，用該基金最新一筆完整年度資料，' +
+      '「目前」語意，不是分年度系列），資料源是 fund_annual_expense_ratios_full_year，用該基金最新一筆完整年度資料，' +
       '不是全體套同一個基準年——所以不同基金即使欄位都有值，對應的年度可能不一樣，這是刻意的設計（比全體套同一個基準年' +
       '精確，代價是欄位本身不標註是哪一年，需要的話搭配 expenseRatio2001~2026 的分年度序列自己比對）。' +
       'premiumDiscountPct（2026-09-10 新增）是折溢價率 = (市價-淨值)/淨值*100，正值溢價、負值折價，取「淨值跟市價' +

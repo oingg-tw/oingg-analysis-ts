@@ -34,8 +34,8 @@ const RETURN_COLUMN: Partial<Record<EtfRankingMetric, keyof RawEtfPerformanceRow
 
 const formatYearMonth = (yearMonth: string): string => `${yearMonth.slice(0, 4)}-${yearMonth.slice(4, 6)}`;
 
-// 規模/受益人數/淨申購贖回/定期定額——都是 etf_monthly_statement 當月快照的欄位（或欄位組合），
-// join etf_basic_info 補基金名稱/投信公司/分類。netFlow = 申購金額 - 贖回金額，是本服務算的，
+// 規模/受益人數/淨申購贖回/定期定額——都是 etf_monthly_statements 當月快照的欄位（或欄位組合），
+// join etf_monthly_profiles 補基金名稱/投信公司/分類。netFlow = 申購金額 - 贖回金額，是本服務算的，
 // 不是來源現成欄位。
 const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string, deps: EtfRankingDeps): Promise<ResolvedRow[]> => {
   const [basicRows, statementRows] = await Promise.all([deps.etfData.listEtfBasicInfo(yearMonth), deps.etfData.listEtfMonthlyStatement(yearMonth)]);
@@ -84,8 +84,8 @@ const resolveSnapshotMetric = async (metric: EtfRankingMetric, yearMonth: string
   return rows;
 };
 
-// 報酬率——etf_performance 是累積報酬率（百分比），不是年化報酬率，join etf_basic_info 補
-// 基金名稱/投信公司/分類；join etf_monthly_statement 只為了補 belowStatutoryThreshold 這個
+// 報酬率——etf_monthly_returns 是累積報酬率（百分比），不是年化報酬率，join etf_monthly_profiles 補
+// 基金名稱/投信公司/分類；join etf_monthly_statements 只為了補 belowStatutoryThreshold 這個
 // 額外顯示欄位，報酬率本身跟月快照無關。
 const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string, deps: EtfRankingDeps): Promise<ResolvedRow[]> => {
   const column = RETURN_COLUMN[metric];
@@ -122,7 +122,7 @@ const resolveReturnMetric = async (metric: EtfRankingMetric, yearMonth: string, 
 };
 
 // 總費用率——只用「最新一個完整年度」（今年還沒過完，不能拿來跟其他基金比，見
-// route.ts 說明）。2026-09-06 起改吃 sitca-ts 的 fund_expense_ratio_annual_full_year
+// route.ts 說明）。2026-09-06 起改吃 sitca-ts 的 fund_annual_expense_ratios_full_year
 // view（取代原本自己用 established_date 判斷「這個基準年本身不滿一整年」的手動邏輯）——
 // 那個手動邏輯只抓得到「當年新掛牌」，抓不到「當年中途清算/分割」這類同樣會讓 total_rate
 // 只涵蓋部分期間的情況；sitca-ts 這個 view 用他們自己的 is_partial_year 判斷，涵蓋範圍
