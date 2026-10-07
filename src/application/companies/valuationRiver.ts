@@ -66,11 +66,11 @@ export const getCompanyValuationRiver = async ({ symbol, ratio, lookbackYears }:
     symbol,
     ratio,
     basisNote:
-      `帶狀 = 每股基準 × 倍數；每股基準是${label}，在財報公告日起生效（季底到公告日之間沿用上一份財報）。` +
+      `河道線 = 每股基準 × 倍數；倍數是窗口內每日比值第 5～95 百分位之間等分成五條河道（六條線），每股基準是${label}，在財報公告日起生效（季底到公告日之間沿用上一份財報）。` +
       '股價與每股基準都換算到今天的股數基準（分割、配股、股數合併式減資），現金股利不換算。基準 ≤ 0（例如近四季虧損）的期間沒有比值，不計入倍數。',
     lookback: { requestedYears: lookbackYears, from: closes[0] ? day(closes[0].tradeDate) : null, to: closes.at(-1) ? day(closes.at(-1)!.tradeDate) : null },
     sampleDays: result.sampleDays,
-    multiples: result.multiples,
+    bandMultiples: result.bandMultiples,
     ratioRange: result.ratioRange,
     current: result.current && { ...result.current, tradeDate: day(result.current.tradeDate) },
     prices: closes.map((c) => ({ tradeDate: day(c.tradeDate), close: Math.round(c.close * 100) / 100 })),

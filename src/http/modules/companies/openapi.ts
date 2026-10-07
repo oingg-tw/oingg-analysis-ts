@@ -135,11 +135,15 @@ const valuationRiverResultSchema = z.object({
     to: z.string().nullable(),
   }),
   sampleDays: z.number().int().meta({ description: '進入倍數計算的交易日數（基準 ≤ 0 或尚無基準的日子不計）' }),
-  multiples: z
-    .array(z.object({ percentile: z.number().int(), multiple: z.number() }))
+  bandMultiples: z
+    .array(z.number())
     .nullable()
-    .meta({ description: '窗口內每日比值的第 10、25、50、75、90 百分位（線性內插），整張圖固定一組；沒有任何有效比值時 null' }),
-  ratioRange: z.object({ min: z.number(), max: z.number() }).nullable().meta({ description: '窗口內每日比值的最小／最大值（要畫「最低～最高等分」河道時用）' }),
+    .meta({
+      description:
+        '六條河道線的倍數，由低到高：窗口內每日比值的第 5 百分位到第 95 百分位（線性內插）之間等分成五條河道。整張圖固定一組；沒有任何有效比值時 null。' +
+        '約 10% 的日子比值落在最外兩條線之外，屬正常。',
+    }),
+  ratioRange: z.object({ min: z.number(), max: z.number() }).nullable().meta({ description: '窗口內實際最低／最高比值（河道外的日子有多遠）' }),
   current: z
     .object({
       tradeDate: z.string(),
@@ -581,7 +585,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/companies/valuation-river',
     summary: '單一公司本益比／股價淨值比／股價營收比河流圖',
     description:
-      '2026-10-08 新增。帶狀 = bases[].base × multiples[].multiple（或 ratioRange 等分），由前端相乘畫出；股價線用 prices。' +
+      '2026-10-08 新增。河道線 = bases[].base × bandMultiples[i]（六條線、五條河道，第 5～95 百分位截尾後等分），由前端相乘畫出；股價線用 prices。' +
       '股價與每股基準都換算到今天的股數基準，跨分割、配股時線條連續、倍數不跳；每股基準在財報公告日才換成新的一季，不偷看未來。' +
       '帶狀請用倍數或百分位命名，不要用便宜／合理／昂貴這類價格評價字眼。',
     tags: ['System'],

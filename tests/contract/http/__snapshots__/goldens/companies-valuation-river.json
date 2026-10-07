@@ -1,6 +1,9 @@
 {
   "status": 200,
   "body": {
+    "bandMultiples": [
+      "<number>"
+    ],
     "bases": [
       {
         "base": "<number>",
@@ -23,12 +26,6 @@
       "requestedYears": "<number>",
       "to": "<date>"
     },
-    "multiples": [
-      {
-        "multiple": "<number>",
-        "percentile": "<number>"
-      }
-    ],
     "prices": [
       {
         "close": "<number>",
