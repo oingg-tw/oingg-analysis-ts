@@ -1,6 +1,7 @@
 {
   "recordedAt": "2026-09-25T15:37:59.308Z",
   "entries": {
+    "quarters.latestQuarterWith([\"bankIncomeStatement\",\"2887\",\"2\",\"\"])": null,
     "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
     "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
     "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
