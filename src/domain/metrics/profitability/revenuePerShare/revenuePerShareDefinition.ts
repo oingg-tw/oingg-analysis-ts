@@ -6,7 +6,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   unit: '元',
   // 2026-10-08 補上（web-nuxt 回報）：金融股損益表沒有一般意義的營業收入，原本被標成 insufficient_history，讀者會以為「以後會有」。
   // 同日稍後純銀行改用銀行口徑照算（application/metrics/shared/bankAwareIncome.ts），這個旗標只剩金控、保險等算不出來的會改標不適用。
-  notApplicableToFinancialIndustry: true,
+  notApplicableToFinancialIndustry: 'exceptBanks',
   perShare: true,
   formulaNote:
     'Q(單季) = 本季營收*1000/流通股數；TTM = 近四季（含本季）營收加總*1000/流通' +

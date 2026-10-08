@@ -4,6 +4,9 @@ export const netProfitMarginDefinition: MetricDefinitionSpec = {
   metricCode: 'netProfitMargin',
   name: '稅後淨利率',
   unit: '%',
+  // 2026-10-08 補上：純銀行照銀行口徑算得出值（見 application/metrics/shared/bankAwareIncome.ts），金控、保險等算不出來的
+  // 原本標 missing_input／insufficient_history，讀者會以為「以後會有」，改標不適用（9/28 使用者「金融業不適用的就標示不適用」）。
+  notApplicableToFinancialIndustry: 'exceptBanks',
   formulaNote:
     'Q(單季) = 本季淨利/本季營收*100，淨利優先採歸屬於母公司口徑，缺漏退回整體口徑；' +
     'TTM = 近四季（含本季）淨利加總/近四季營收加總*100，四季不齊為 null。' +

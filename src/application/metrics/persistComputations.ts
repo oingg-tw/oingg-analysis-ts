@@ -148,7 +148,7 @@ export const validateCoordinate = (input: MetricComputation, definition: MetricD
 // 撞 metric_values_identity_key 唯一鍵（2026-09-11 真實發生過，見 tmp/backfill-failures-general.json
 // 的 revenuePerShare/2104）。upsert 讓 Postgres 原子地決定 insert 還是 update，多 instance/多併發
 // 都不會再噴例外，這是 Cloud Run 多 instance 部署後的必要條件。
-export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry'>): Promise<MetricValueWriteOutcome> => {
+export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters'>): Promise<MetricValueWriteOutcome> => {
   const definition = deps.definitions.get(input.metricCode);
   const rejection = validateCoordinate(input, definition);
   if (rejection) return rejection;
@@ -159,7 +159,9 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
     input.value === null &&
     definition?.notApplicableToFinancialIndustry &&
     (input.nullReason === 'missing_input' || input.nullReason === 'insufficient_history') &&
-    (await deps.industry.isFinancialIndustryCompany(input.symbol))
+    (await deps.industry.isFinancialIndustryCompany(input.symbol)) &&
+    // 2026-10-08 'exceptBanks'：純銀行（銀行損益表明細查得到）這支用銀行口徑算得出來，null 是真的缺資料或歷史不足，保留原因。
+    !(definition.notApplicableToFinancialIndustry === 'exceptBanks' && (await deps.quarters.latestQuarterWith('bankIncomeStatement', input.symbol, input.dataType, input.subsidiaryCompanyId)))
       ? 'not_applicable_industry'
       : input.nullReason;
   // 2026-10-06 比對既有列也要用改標後的 nullReason：原本拿改標前的 input 去比，金融股這些列每次重跑都判成「變了」、寫回同一個值
@@ -238,7 +240,7 @@ export type PersistedBatch<B extends { slots: Record<string, ComputationSlot> }>
 // 逐槽、依插入順序、一次一筆 await（跟舊架構相同的資料庫負載與順序，不用 Promise.all）。
 export const persistComputations = async <B extends { slots: Record<string, ComputationSlot> }>(
   batch: B,
-  deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry'>
+  deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters'>
 ): Promise<PersistedBatch<B>> => {
   const { slots, ...context } = batch;
   const outcomes: Record<string, BasisOutcome> = {};

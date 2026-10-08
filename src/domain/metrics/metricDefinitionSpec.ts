@@ -176,7 +176,10 @@ interface MetricDefinitionSpecBase extends NamedEntity {
   // 流動與非流動分類、存貨與應收應付），算不出來是結構性的——使用者：「金融業不適用的就標示不適用」。寫入時（application/metrics/
   // persistComputations.ts）金融業公司這支指標若結果為 null（缺少輸入／歷史不足），原因改成 not_applicable_industry；
   // 算得出值的（保險業毛利率走保險損益表 fallback、少數一般格式的公司）照樣保留數值。
-  notApplicableToFinancialIndustry?: true;
+  // 2026-10-08 'exceptBanks'：純銀行改用銀行口徑算得出來的指標（每股營收、PSR、淨利率、營收成長率、營收 CAGR，見
+  // application/metrics/shared/bankAwareIncome.ts）——純銀行的 null 是真的缺資料或歷史不足（例如起點附近近四季湊不齊），
+  // 不改標；金控、保險等仍改標不適用。「不適用是公司層級的事實，不該隨期間改變」。
+  notApplicableToFinancialIndustry?: true | 'exceptBanks';
   // 2026-10-05 溯源表描述的期別（GET /companies/:symbol/metric-provenance 回應的 periodType）。不填＝預設規則「有 TTM 就是 TTM，
   // 否則是唯一允許的期別」（application/companies/insights.ts provenancePeriodType）。只有溯源表刻意維持別的期別時才填——
   // 例如年增率類補了 TTM／FY，溯源仍是單季年增率（頁面預設顯示單季）。

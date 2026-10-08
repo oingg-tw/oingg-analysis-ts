@@ -7,6 +7,9 @@ const buildDefinition = (years: number): MetricDefinitionSpec => ({
   folderName: 'revenueCagr',
   name: `營收${years}年複合成長率`,
   unit: '%',
+  // 2026-10-08 補上：純銀行照銀行口徑算得出值（見 application/metrics/shared/bankAwareIncome.ts），金控、保險等算不出來的
+  // 原本標 missing_input／insufficient_history，讀者會以為「以後會有」，改標不適用（9/28 使用者「金融業不適用的就標示不適用」）。
+  notApplicableToFinancialIndustry: 'exceptBanks',
   formulaNote:
     `= (本年營收 / ${years}年前營收)^(1/${years}) - 1，取「最近一個資料完整的完整會計年度」` +
     `跟「${years}年前的那個完整會計年度」，各自年度營收 = 4 季 operatingRevenue 加總（任一季` +
