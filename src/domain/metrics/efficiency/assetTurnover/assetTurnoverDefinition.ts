@@ -6,6 +6,8 @@ export const assetTurnoverDefinition: MetricDefinitionSpec = {
   metricCode: 'assetTurnover',
   name: '總資產週轉率',
   unit: '次',
+  // 2026-10-08 補上（web-nuxt 回報）：金融股損益表沒有一般意義的營業收入，原本被標成 insufficient_history，讀者會以為「以後會有」。
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'Q(單季) = 本季營收/平均總資產（次），平均總資產 = (本季期末 + 上季期末)/2；' +
     'TTM = 近四季（含本季）營收加總/平均總資產，平均總資產 = 近四季窗口 5 個季末（t−4 … t）的平均。四季損益表或任一季末資產負債表不齊為 null。' +

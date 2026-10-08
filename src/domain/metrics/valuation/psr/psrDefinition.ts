@@ -4,6 +4,8 @@ export const psrDefinition: MetricDefinitionSpec = {
   metricCode: 'psr',
   name: '股價營收比',
   unit: '倍',
+  // 2026-10-08 補上（web-nuxt 回報）：金融股損益表沒有一般意義的營業收入，原本被標成 insufficient_history，讀者會以為「以後會有」。
+  notApplicableToFinancialIndustry: true,
   formulaNote:
     'TTM = 市值/(近四季營收加總*1000)。市值取這個座標解析出來的' +
     'knowledge_date 當天（或之前最近一筆交易日）市值——跟財報公告日共用同一個 knowledge_date。' +
