@@ -13,7 +13,7 @@ import { createFixedAnnouncements } from '../../../fakes/pit/fixedAnnouncements'
 // 總資產週轉率沒被帶進銀行營收、金控（銀行明細查無）照舊是 null。
 const bankQuarter: QuarterStatementSeed = {
   income: { interestIncome: 6193510n, profitBeforeTax: 2427328n, netIncome: 2107119n, netIncomeAttributableToParent: 2110316n },
-  bankIncome: { netInterestIncome: 2681816n, netNonInterestIncome: 3977763n, badDebtProvision: 1036765n, profitBeforeTax: 2427328n },
+  bankIncome: { netInterestIncome: 2681816n, netNonInterestIncome: 3977763n, badDebtProvision: 1036765n, profitBeforeTax: 2427328n, fvociRealizedGain: 108094n },
   balance: { totalAssets: 1_000_000_000n, totalEquity: 80_000_000n },
 };
 const fourQuarters = (q: QuarterStatementSeed) => ({ '114Q3': q, '114Q4': q, '115Q1': q, '115Q2': q });
@@ -37,8 +37,8 @@ test('毛利率／營業利益率（Q、TTM）用銀行口徑，對得上券商�
   const { slots } = await computeMarginsFamily(query, depsFor({ '2838': fourQuarters(bankQuarter) }));
   expect(valueOf(slots.grossMarginQ)).toBe(55.28);
   expect(valueOf(slots.grossMarginTtm)).toBe(55.28);
-  expect(valueOf(slots.operatingMarginQ)).toBe(23.86);
-  expect(valueOf(slots.operatingMarginTtm)).toBe(23.86);
+  expect(valueOf(slots.operatingMarginQ)).toBe(22.8);
+  expect(valueOf(slots.operatingMarginTtm)).toBe(22.8);
 });
 
 test('杜邦：淨利率用銀行口徑營收，總資產週轉率不受影響（仍 null）', async () => {

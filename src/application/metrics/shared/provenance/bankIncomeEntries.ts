@@ -16,7 +16,8 @@ const BANK_SOURCE = '銀行業損益表明細（XBRL 申報）';
 
 export const BANK_INCOME_METHODOLOGY_NOTE =
   '銀行的損益表沒有營業收入與營業成本，這段期間依券商看盤軟體的銀行口徑換算：營收＝利息收入總額＋非利息淨收益；' +
-  '毛利＝利息淨收益＋非利息淨收益－呆帳費用及保證責任準備（等於營收扣掉利息費用與呆帳）；營業利益＝稅前淨利。';
+  '毛利＝利息淨收益＋非利息淨收益－呆帳費用及保證責任準備（等於營收扣掉利息費用與呆帳）；' +
+  '營業利益＝稅前淨利－透過其他綜合損益按公允價值衡量之金融資產已實現損益－除列按攤銷後成本衡量之金融資產損益（處分收息用債券投資的已實現損益列為業外）。';
 
 const fromBank = (role: string, period: Period, value: bigint | null): ProvenanceEntry => ({
   role,
@@ -52,5 +53,8 @@ export const bankGrossProfitEntries = (prefix: string, period: Period, detail: B
   fromBank(`${prefix} 毛利：－呆帳費用及保證責任準備（${period.label}，銀行）`, period, detail.bank.badDebtProvision),
 ];
 
-export const bankOperatingIncomeEntry = (prefix: string, period: Period, profitBeforeTax: bigint | null): ProvenanceEntry =>
-  fromIncomeStatement(`${prefix} 營業利益：稅前淨利（${period.label}，銀行）`, period, 'profit_loss_before_tax', profitBeforeTax);
+export const bankOperatingIncomeEntries = (prefix: string, period: Period, detail: BankIncomeDetail): ProvenanceEntry[] => [
+  fromBank(`${prefix} 營業利益：稅前淨利（${period.label}，銀行）`, period, detail.bank.profitBeforeTax),
+  fromBank(`${prefix} 營業利益：－透過其他綜合損益按公允價值衡量之金融資產已實現損益（${period.label}，銀行）`, period, detail.bank.fvociRealizedGain),
+  fromBank(`${prefix} 營業利益：－除列按攤銷後成本衡量之金融資產損益（${period.label}，銀行；沒有這一行視為 0）`, period, detail.bank.amortisedCostDerecognitionGain),
+];

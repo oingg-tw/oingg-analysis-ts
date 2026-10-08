@@ -120,6 +120,8 @@ const emptyBankIncome = (reportDate: Date): BankIncomeStatementFields => ({
   netNonInterestIncome: null,
   badDebtProvision: null,
   profitBeforeTax: null,
+  fvociRealizedGain: null,
+  amortisedCostDerecognitionGain: null,
 });
 
 const emptyBankOperatingExpense = (reportDate: Date): BankOperatingExpenseFields => ({ reportDate, employeeBenefits: null, depreciationAmortisation: null, otherGeneralAdministrative: null });

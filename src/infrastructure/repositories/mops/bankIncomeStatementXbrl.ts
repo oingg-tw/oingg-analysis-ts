@@ -34,6 +34,8 @@ interface RawBankIncomeStatementQuarterRow {
   net_non_interest_income: bigint | null;
   bad_debt_provision: bigint | null;
   profit_before_tax: bigint | null;
+  fvoci_realized_gain: bigint | null;
+  amortised_cost_derecognition_gain: bigint | null;
 }
 
 // 只取單季欄位（不是 _ytd）——TTM 由呼叫端自己加總近四季的單季值（跟 eps/
@@ -45,7 +47,9 @@ export const getBankIncomeStatementQuarter = async (key: BankRegulatoryKey): Pro
             net_income_loss_of_interest_quarter AS net_interest_income,
             net_non_interest_income_loss_quarter AS net_non_interest_income,
             bad_debt_expenses_and_guarantee_liability_provis_962f67 AS bad_debt_provision,
-            profit_loss_before_tax_quarter AS profit_before_tax
+            profit_loss_before_tax_quarter AS profit_before_tax,
+            realized_gain_loss_on_financial_assets_at_fair_v_800357 AS fvoci_realized_gain,
+            gain_loss_arising_from_derecognition_of_financia_e8b164 AS amortised_cost_derecognition_gain
      FROM "export"."bank_income_statement_detail_xbrl"
      WHERE symbol = $1 AND year = $2 AND quarter = $3 AND data_type = $4 AND subsidiary_company_id = $5
      LIMIT 1`,
@@ -63,6 +67,8 @@ export const getBankIncomeStatementQuarter = async (key: BankRegulatoryKey): Pro
     netNonInterestIncome: row.net_non_interest_income,
     badDebtProvision: row.bad_debt_provision,
     profitBeforeTax: row.profit_before_tax,
+    fvociRealizedGain: row.fvoci_realized_gain,
+    amortisedCostDerecognitionGain: row.amortised_cost_derecognition_gain,
   };
 };
 

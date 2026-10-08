@@ -123,6 +123,9 @@ export interface BankIncomeStatementFields {
   netNonInterestIncome: bigint | null; // 非利息淨收益（net_non_interest_income_loss，含手續費/投資/匯兌等全部非利息項目淨額）
   badDebtProvision: bigint | null; // 呆帳費用及保證責任準備（官方單一總計欄位，不拆子項）
   profitBeforeTax: bigint | null; // 稅前淨利，跟一般三大表（xbrl_three_statements_long）的 profit_loss_before_tax 是同一份文件的同一個數字，可交叉驗證
+  // 2026-10-09 銀行口徑營業利益要扣的兩項（處分收息用債券投資的已實現損益，見 domain/financials/bankIncome.ts）：
+  fvociRealizedGain: bigint | null; // 透過其他綜合損益按公允價值衡量之金融資產已實現損益（tifrs-bsci-basi:RealizedGainLossOnFinancialAssetsAtFairValueThroughOtherComprehensiveIncome）
+  amortisedCostDerecognitionGain: bigint | null; // 除列按攤銷後成本衡量之金融資產損益（ifrs-full:GainLossArisingFromDerecognitionOfFinancialAssetsMeasuredAtAmortisedCost）
 }
 
 // 2026-09-28 銀行／金控營業費用三分拆（使用者：「做」）：營業費用 = 員工福利 + 折舊及攤銷 + 其他業務及管理費用

@@ -30,6 +30,8 @@ export const withBankIncome = async <T extends IncomeStatementFields>(record: T 
         netNonInterestIncome: bank.netNonInterestIncome,
         badDebtProvision: bank.badDebtProvision,
         profitBeforeTax: record.profitBeforeTax ?? bank.profitBeforeTax,
+        fvociRealizedGain: bank.fvociRealizedGain,
+        amortisedCostDerecognitionGain: bank.amortisedCostDerecognitionGain,
       })
     : null;
   if (!derived) return asGeneral(record);
