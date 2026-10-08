@@ -25,17 +25,18 @@ export const registerSystemOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
     method: 'get',
     path: '/health',
-    summary: '健康檢查：服務與 analysis 資料庫是否可用',
+    summary: '健康檢查：服務、analysis 資料庫與各上游 export 庫是否可用',
     description:
-      '2026-10-08 新增（bff-ts 要求）。不需要 X-Api-Key。對 analysis 資料庫跑一個最小查詢（3 秒逾時）：正常回 200；' +
-      '資料庫沒醒或查詢失敗回 503（RFC 9457 problem+json）。Cloud Run 冷啟動時第一次可能接近 3 秒。',
+      '2026-10-08 新增（bff-ts 要求）。不需要 X-Api-Key。對 analysis 資料庫跑一個最小查詢，並對 mops／gov／tpex／twse／sitca 各探測一個代表 view' +
+      '（只檢查存在與讀取權限、不讀資料），全部平行、3 秒逾時：都正常回 200；任何一個沒醒、查詢失敗或 view 不存在回 503' +
+      '（RFC 9457 problem+json，detail 列出是哪幾個）。Cloud Run 冷啟動時第一次可能接近 3 秒。',
     tags: ['System'],
     responses: {
       200: {
         description: '服務與資料庫都正常。',
         content: { 'application/json': { schema: z.object({ status: z.literal('ok'), database: z.literal('ok') }) } },
       },
-      503: { description: '資料庫在 3 秒內沒有回應或查詢失敗。' },
+      503: { description: 'analysis 資料庫或任一上游 export 庫在 3 秒內沒有回應、查詢失敗或代表 view 不存在（detail 列出是哪幾個）。' },
     },
   });
 };

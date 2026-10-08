@@ -21,8 +21,22 @@ const timed = async (label: string, connect: () => Promise<void>): Promise<void>
 };
 
 // 2026-10-08 GET /health 用（bff-ts 要求：回報的是資料庫有沒有醒，不只是行程在不在）：analysis 資料庫跑一個最小查詢。
-export const pingAnalysisDb = async (): Promise<void> => {
-  await analysisPrisma.$queryRaw`SELECT 1`;
+// 同一天加上每個上游 export 庫各一個代表 view（業務中台建議、使用者同意）：sitca／tpex／twse 當天各自把 view 改名、
+// 不留舊名，我們一半的端點 500 了半天，SELECT 1 照樣回 ok。WHERE false 只做解析與權限檢查、不讀資料。
+// ponytail: 一個庫只探一個 view，抓得到整批改名、權限被收、庫連不上，抓不到單一 view 被拆；要更細就把各 repository 用到的 view 全列進來。
+const DB_PROBES: [name: string, probe: () => Promise<unknown>][] = [
+  ['analysis', () => analysisPrisma.$queryRaw`SELECT 1`],
+  ['mops', () => mopsExportPrisma.$queryRaw`SELECT 1 FROM "export"."quarterly_income_statement_xbrl" WHERE false`],
+  ['gov', () => govExportPrisma.$queryRaw`SELECT 1 FROM "export"."quarterly_gdp" WHERE false`],
+  ['tpex', () => tpexExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
+  ['twse', () => twseExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
+  ['sitca', () => sitcaExportPrisma.$queryRaw`SELECT 1 FROM "export"."etf_monthly_profiles" WHERE false`],
+];
+
+// 回傳查不到的庫名稱（空陣列 = 全部正常）。
+export const pingDatabases = async (): Promise<string[]> => {
+  const results = await Promise.allSettled(DB_PROBES.map(([, probe]) => probe()));
+  return DB_PROBES.filter((_, i) => results[i]!.status === 'rejected').map(([name]) => name);
 };
 
 export const connectAllDbs = async (): Promise<void> => {
