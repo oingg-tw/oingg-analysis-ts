@@ -12,7 +12,7 @@
         "dispositionPeriod": "<string>",
         "dispositionStartDate": "<date>",
         "linkInformation": "<string>",
-        "market": "TPEx",
+        "market": "TWSE",
         "reason": "<string>",
         "reasonShort": "<string>",
         "reasonTimes": "<number>",
