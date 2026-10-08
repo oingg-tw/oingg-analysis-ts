@@ -8,12 +8,12 @@
         "criteriaDetails": [
           {
             "endDate": "<date>",
-            "observationDays": "<number>",
+            "observationDays": "<null>",
             "startDate": "<date>",
             "times": "<number>"
           }
         ],
-        "market": "TWSE",
+        "market": "TPEx",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>",
         "tradeDate": "<date>"

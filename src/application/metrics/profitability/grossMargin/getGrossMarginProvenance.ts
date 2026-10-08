@@ -5,11 +5,13 @@ import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { BANK_INCOME_METHODOLOGY_NOTE, bankGrossProfitEntries, bankRevenueEntries } from '../../shared/provenance/bankIncomeEntries';
 
 // 2026-09-13 使用者要求擴大稽核鏈——grossMargin(TTM) = 近四季毛利（或保險業替代科目
 // insurance_service_result）加總 / 近四季營收加總。跟 computeMarginsFamilyPit.ts 共用
 // 同一個 getMarginInputs（一般表查無 operatingRevenue 時自動退回保險業 IFRS17 替代科目，
 // 金控業刻意不做同樣的事，見該檔案檔頭說明）。固定回傳 TTM。
+// 2026-10-08 純銀行的季別改列銀行口徑的構成項目（見 shared/provenance/bankIncomeEntries.ts）。
 
 export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps: MarginsFamilyDeps): Promise<MetricProvenanceResult> => {
   const { symbol, dataType, subsidiaryCompanyId } = query;
@@ -50,13 +52,18 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
 
   const value = complete ? toPercent(grossProfitTtmSum, revenueTtmSum) : null;
 
-  const usedInsuranceFallback = ttmRecords.some((r) => r?.isInsuranceFallback);
+  const usedInsuranceFallback = ttmRecords.some((r) => r?.source === 'insurance');
+  const usedBank = ttmRecords.some((r) => r?.source === 'bank');
 
   const entries: ProvenanceEntry[] = ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
     const record = ttmRecords[i];
     const entryFiscalYear = rocYearToGregorian(Number(tq.year));
     const entryFiscalQuarter = Number(tq.season);
-    const isInsurance = record?.isInsuranceFallback ?? false;
+    const isInsurance = record?.source === 'insurance';
+    if (record?.bankDetail) {
+      const period = { label: trailingPeriodLabel(tq, trailing.basis), fiscalYear: entryFiscalYear, fiscalQuarter: entryFiscalQuarter };
+      return [...bankRevenueEntries('近一年', period, record.bankDetail), ...bankGrossProfitEntries('近一年', period, record.bankDetail)];
+    }
     return [
       {
         role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}${isInsurance ? '，保險業替代科目' : ''}）`,
@@ -91,6 +98,8 @@ export const getGrossMarginProvenance = async (query: QuarterlyMetricQuery, deps
     entries,
     methodologyNote: usedInsuranceFallback
       ? '這家公司這段期間至少有一季查無一般產業科目（無銷貨成本/毛利概念），改用保險業 IFRS17 替代科目：revenue→insurance_revenue、grossProfit→insurance_service_result（保險服務結果）。'
-      : null,
+      : usedBank
+        ? BANK_INCOME_METHODOLOGY_NOTE
+        : null,
   };
 };

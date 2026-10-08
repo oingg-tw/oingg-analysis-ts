@@ -12,7 +12,7 @@ export const revenueGrowthRateDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{RevenueGrowthRate} = \\frac{\\mathrm{Revenue}_t - \\mathrm{Revenue}_{t-4}}{|\\mathrm{Revenue}_{t-4}|} \\times 100',
   referenceUrl: 'https://corporatefinanceinstitute.com/resources/accounting/quarterly-revenue-growth/',
   tier: 'derived',
-  sources: ['公開發行公司損益表（XBRL）'],
+  sources: ['公開發行公司損益表（XBRL）', '銀行業損益表明細（XBRL，銀行適用）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   provenancePeriodType: 'Q',

@@ -7,7 +7,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingBankAwareIncome } from '@/application/metrics/shared/bankAwareIncome';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
 // 每股淨值類分子扣特別股股本；讀股數或市值的指標一起跳版，讓下游有訊號知道值變了（使用者 2026-09-26 拍板）。
@@ -54,7 +54,8 @@ export const computePsr = async (
   // TTM：近四季（含本季）營收加總；市值沿用上面同一筆（本季 knowledge_date 查到的），不是
   // 另外用 TTM anchor 重查一次，跟 fcfYield 的既有行為一致。
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  // 2026-10-08 純銀行用銀行口徑營收（見 shared/bankAwareIncome.ts）。
+  const trailing = await resolveTrailingBankAwareIncome({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
   const ttmRecords = trailing.periods.map((p) => p.record);
 

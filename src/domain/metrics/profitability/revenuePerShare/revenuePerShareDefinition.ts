@@ -5,6 +5,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   name: '每股營收',
   unit: '元',
   // 2026-10-08 補上（web-nuxt 回報）：金融股損益表沒有一般意義的營業收入，原本被標成 insufficient_history，讀者會以為「以後會有」。
+  // 同日稍後純銀行改用銀行口徑照算（application/metrics/shared/bankAwareIncome.ts），這個旗標只剩金控、保險等算不出來的會改標不適用。
   notApplicableToFinancialIndustry: true,
   perShare: true,
   formulaNote:
@@ -14,7 +15,7 @@ export const revenuePerShareDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{RevenuePerShare} = \\frac{\\mathrm{Revenue}}{\\mathrm{Shares}}',
   referenceUrl: 'https://www.investing.com/academy/analysis/revenue-per-share-definition/',
   tier: 'derived',
-  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）'],
+  sources: ['公開發行公司損益表（XBRL）', '公開發行公司股本變動申報', '公開發行公司年度財務報告（XBRL）', '銀行業損益表明細（XBRL，銀行適用）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['revenue', 'outstandingCommonShares'],

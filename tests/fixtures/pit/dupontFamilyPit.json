@@ -1,6 +1,10 @@
 {
   "recordedAt": "2026-09-25T15:37:59.308Z",
   "entries": {
+    "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":4,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
+    "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":3,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
+    "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":2,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":114}])": null,
+    "statements.getBankIncomeStatement([{\"dataType\":\"2\",\"quarter\":1,\"subsidiaryCompanyId\":\"\",\"symbol\":\"2887\",\"year\":115}])": null,
     "industry.isFinancialIndustryCompany([\"2887\"])": true,
     "announcements.getPriceAnchorDate([\"2317\",114,3,{\"$date\":\"2025-09-30T00:00:00.000Z\"}])": {
       "date": {

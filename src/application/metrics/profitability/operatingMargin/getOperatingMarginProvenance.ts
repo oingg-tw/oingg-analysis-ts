@@ -5,6 +5,7 @@ import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { toPercent } from '@/domain/metrics/shared/numericHelpers';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
+import { BANK_INCOME_METHODOLOGY_NOTE, bankOperatingIncomeEntry, bankRevenueEntries } from '../../shared/provenance/bankIncomeEntries';
 
 // 2026-09-13 使用者要求擴大稽核鏈——operatingMargin(TTM) = 近四季營業利益（或保險業替代
 // 科目 net_operating_income_loss）加總 / 近四季營收加總。跟 computeMarginsFamilyPit.ts
@@ -49,13 +50,19 @@ export const getOperatingMarginProvenance = async (query: QuarterlyMetricQuery, 
 
   const value = complete ? toPercent(operatingIncomeTtmSum, revenueTtmSum) : null;
 
-  const usedInsuranceFallback = ttmRecords.some((r) => r?.isInsuranceFallback);
+  const usedInsuranceFallback = ttmRecords.some((r) => r?.source === 'insurance');
+  const usedBank = ttmRecords.some((r) => r?.source === 'bank');
 
   const entries: ProvenanceEntry[] = ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
     const record = ttmRecords[i];
     const entryFiscalYear = rocYearToGregorian(Number(tq.year));
     const entryFiscalQuarter = Number(tq.season);
-    const isInsurance = record?.isInsuranceFallback ?? false;
+    const isInsurance = record?.source === 'insurance';
+    // 2026-10-08 純銀行：營收拆成利息收入總額＋非利息淨收益，營業利益＝稅前淨利（見 shared/provenance/bankIncomeEntries.ts）。
+    if (record?.bankDetail) {
+      const period = { label: trailingPeriodLabel(tq, trailing.basis), fiscalYear: entryFiscalYear, fiscalQuarter: entryFiscalQuarter };
+      return [...bankRevenueEntries('近一年', period, record.bankDetail), bankOperatingIncomeEntry('近一年', period, record.operatingIncomeLike)];
+    }
     return [
       {
         role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}${isInsurance ? '，保險業替代科目' : ''}）`,
@@ -90,6 +97,8 @@ export const getOperatingMarginProvenance = async (query: QuarterlyMetricQuery, 
     entries,
     methodologyNote: usedInsuranceFallback
       ? '這家公司這段期間至少有一季查無一般產業科目，改用保險業 IFRS17 替代科目：revenue→insurance_revenue、operatingIncome→net_operating_income_loss（淨營業損益）。'
-      : null,
+      : usedBank
+        ? BANK_INCOME_METHODOLOGY_NOTE
+        : null,
   };
 };

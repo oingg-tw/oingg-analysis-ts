@@ -1,6 +1,8 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { resolveTrailingIncomeStatements, trailingPeriodLabel, type ReportingBasis } from '../../shared/trailingYear';
+import { trailingPeriodLabel, type ReportingBasis } from '../../shared/trailingYear';
+import { resolveTrailingBankAwareIncome } from '../../shared/bankAwareIncome';
+import { BANK_INCOME_METHODOLOGY_NOTE, bankRevenueEntries, type BankIncomeDetail } from '../../shared/provenance/bankIncomeEntries';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry, type ProvenanceMetricCode } from '../../shared/provenance/provenanceTypes';
 import { REVENUE_CAGR_YEARS } from '../../../../domain/metrics/growth/revenueCagr/revenueCagrDefinition';
@@ -15,7 +17,7 @@ import type { PitDeps } from '@/application/metrics/deps';
 interface AnnualRevenueResult {
   value: bigint | null;
   basis: ReportingBasis;
-  quarters: { year: string; season: Season; fiscalYear: number; fiscalQuarter: number; value: bigint | null }[];
+  quarters: { year: string; season: Season; fiscalYear: number; fiscalQuarter: number; value: bigint | null; bankDetail: BankIncomeDetail | null }[];
 }
 
 const getAnnualRevenue = async (
@@ -28,9 +30,10 @@ const getAnnualRevenue = async (
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   // 2026-10-01 年度加總跟 computeRevenueCagrFamily 同一個共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  // 2026-10-08 純銀行用銀行口徑營收，跟 compute 同一個 resolver（見 shared/bankAwareIncome.ts）。
+  const trailing = await resolveTrailingBankAwareIncome({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
   const records = trailing.periods.map((p) => p.record);
-  const quarters = trailing.periods.map((p) => ({ year: p.year, season: p.season, fiscalYear: rocYearToGregorian(Number(p.year)), fiscalQuarter: Number(p.season), value: p.record?.operatingRevenue ?? null }));
+  const quarters = trailing.periods.map((p) => ({ year: p.year, season: p.season, fiscalYear: rocYearToGregorian(Number(p.year)), fiscalQuarter: Number(p.season), value: p.record?.operatingRevenue ?? null, bankDetail: p.record?.revenueSource === 'bank' ? { interestIncome: p.record.interestIncome, bank: p.record.bank! } : null }));
   const value = records.some((r) => r === null || r.operatingRevenue === null) ? null : records.reduce((sum, r) => sum + r!.operatingRevenue!, 0n);
   const result: AnnualRevenueResult = { value, basis: trailing.basis, quarters };
   cache.set(rocYear, result);
@@ -67,7 +70,8 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
         : null;
 
     const buildQuarterEntries = (label: string, annual: AnnualRevenueResult): ProvenanceEntry[] =>
-      annual.quarters.map((q) => ({
+      annual.quarters.flatMap((q): ProvenanceEntry[] =>
+        q.bankDetail ? bankRevenueEntries(label, { label: trailingPeriodLabel(q, annual.basis), fiscalYear: q.fiscalYear, fiscalQuarter: q.fiscalQuarter }, q.bankDetail) : [{
         role: `${label}${trailingPeriodLabel(q, annual.basis)}營收`,
         fiscalYear: q.fiscalYear,
         fiscalQuarter: q.fiscalQuarter,
@@ -76,7 +80,7 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
         fieldKey: 'revenue',
         sourceDescription: null,
         value: toProvenanceEntryValue(q.value),
-      }));
+      }]);
 
     const entries: ProvenanceEntry[] = [
       ...buildQuarterEntries(`最近完整年度（民國 ${latestCompleteFiscalYear} 年）`, current),
@@ -91,7 +95,7 @@ export const getRevenueCagrProvenanceForYears = (years: (typeof REVENUE_CAGR_YEA
       fiscalQuarter: seasonNum,
       value,
       entries,
-      methodologyNote: `年營收 = 該年度 4 季營收加總，不是財報原始欄位。最近完整年度（民國 ${latestCompleteFiscalYear} 年）營收＝${current.value ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）營收＝${prior.value ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。`,
+      methodologyNote: `年營收 = 該年度 4 季營收加總，不是財報原始欄位。最近完整年度（民國 ${latestCompleteFiscalYear} 年）營收＝${current.value ?? 'null'}，${years} 年前（民國 ${latestCompleteFiscalYear - years} 年）營收＝${prior.value ?? 'null'}。CAGR = (最近/N年前)^(1/${years})-1。${[...current.quarters, ...prior.quarters].some((q) => q.bankDetail) ? BANK_INCOME_METHODOLOGY_NOTE : ''}`,
     };
   };
 };

@@ -5,7 +5,8 @@ import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { type ComputationBatch, noQuarterBatch, periodSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements, sumTrailingPeriods } from '@/application/metrics/shared/trailingYear';
+import { sumTrailingPeriods } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingBankAwareIncome, withBankAnnualIncome, withBankIncome } from '@/application/metrics/shared/bankAwareIncome';
 import { annualReportSlot, getPriorAnnualIncomeStatement, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 import type { CalcResult } from '@/domain/metrics/shared/numericHelpers';
 
@@ -32,18 +33,14 @@ export const computeRevenueGrowthRate = async (query: QuarterlyMetricQuery, deps
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await deps.statements.getIncomeStatement(key);
+  // 2026-10-08 純銀行四條路徑（本季、去年同季、近四季、年報）都改用銀行口徑營收（見 shared/bankAwareIncome.ts）。
+  const incomeStatement = await withBankIncome(await deps.statements.getIncomeStatement(key), key, deps);
   const reportDate = incomeStatement?.reportDate ?? null;
   const currentRevenue = incomeStatement?.operatingRevenue ?? null;
 
   const prior = getPastNQuarters({ rocYear, season: season as Season }, 5)[0]!;
-  const priorIncomeStatement = await deps.statements.getIncomeStatement({
-    symbol,
-    year: Number(prior.year),
-    quarter: Number(prior.season),
-    dataType,
-    subsidiaryCompanyId,
-  });
+  const priorKey = { symbol, year: Number(prior.year), quarter: Number(prior.season), dataType, subsidiaryCompanyId };
+  const priorIncomeStatement = await withBankIncome(await deps.statements.getIncomeStatement(priorKey), priorKey, deps);
   const priorRevenue = priorIncomeStatement?.operatingRevenue ?? null;
 
   const { value: growthRate, nullReason } = calculateYoyGrowthRateBigint(currentRevenue, priorRevenue);
@@ -57,14 +54,19 @@ export const computeRevenueGrowthRate = async (query: QuarterlyMetricQuery, deps
   // TTM＝近四季加總 vs 去年同期的近四季加總（興櫃半年段照 trailingYear 推）；FY＝年報全年 vs 上一年度年報。任一邊不齊為 insufficient_history。
   // 溯源表維持單季（definition 的 provenancePeriodType）。
   const yoy = (current: bigint | null, prior: bigint | null): CalcResult => (current === null || prior === null ? { value: null, nullReason: 'insufficient_history' } : calculateYoyGrowthRateBigint(current, prior));
-  const trailing = (y: number) => resolveTrailingIncomeStatements({ symbol, rocYear: y, season: season as Season, dataType, subsidiaryCompanyId }, deps).then((t) => sumTrailingPeriods(t.periods, (r) => r.operatingRevenue));
+  const trailing = (y: number) => resolveTrailingBankAwareIncome({ symbol, rocYear: y, season: season as Season, dataType, subsidiaryCompanyId }, deps).then((t) => sumTrailingPeriods(t.periods, (r) => r.operatingRevenue));
   const [currentTtm, priorTtm] = await Promise.all([trailing(rocYear), trailing(rocYear - 1)]);
   const ttmCalc = yoy(currentTtm, priorTtm);
   const ttm = periodSlot(mainAnchor, coordinateBase, 'TTM', ttmCalc.value, ttmCalc.nullReason);
 
   const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
   const priorAnnual = await getPriorAnnualIncomeStatement(annual, { symbol, dataType, subsidiaryCompanyId }, deps);
-  const fy = annualReportSlot(annual, { symbol, metricCode: 'revenueGrowthRate', dataType, subsidiaryCompanyId }, yoy(annual ? annual.annual.operatingRevenue : null, priorAnnual ? priorAnnual.operatingRevenue : null));
+  const annualYear = annual ? annual.fiscalYear - 1911 : 0;
+  const [annualIncome, priorAnnualIncome] = await Promise.all([
+    withBankAnnualIncome(annual?.annual ?? null, { symbol, rocYear: annualYear, dataType, subsidiaryCompanyId }, deps),
+    withBankAnnualIncome(priorAnnual, { symbol, rocYear: annualYear - 1, dataType, subsidiaryCompanyId }, deps),
+  ]);
+  const fy = annualReportSlot(annual, { symbol, metricCode: 'revenueGrowthRate', dataType, subsidiaryCompanyId }, yoy(annualIncome?.operatingRevenue ?? null, priorAnnualIncome?.operatingRevenue ?? null));
 
   return { symbol, rocYear: year, season, slots: { q, ttm, fy } };
 };

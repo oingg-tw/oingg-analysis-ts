@@ -7,7 +7,7 @@ import { REVENUE_CAGR_YEARS } from '../../../../domain/metrics/growth/revenueCag
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '../../shared/trailingYear';
+import { resolveTrailingBankAwareIncome } from '../../shared/bankAwareIncome';
 
 // 營收 3/5/8 年複合成長率——一次查詢，拆多個 metric_code（跟 dupont/margins 家族同一種
 // 「一次查詢、拆多個 metric_code」模式，這裡是「同一組年度營收快取，拆多個回溯窗口」）。
@@ -27,7 +27,8 @@ const getAnnualRevenue = async (
   if (cache.has(rocYear)) return cache.get(rocYear)!;
 
   // 2026-10-01 年度加總改走共用近一年來源（興櫃半年頻：上下半年，見 shared/trailingYear.ts）；上市櫃仍是該年度四季。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
+  // 2026-10-08 純銀行用銀行口徑營收（見 shared/bankAwareIncome.ts）。
+  const trailing = await resolveTrailingBankAwareIncome({ symbol, rocYear, season: '4', dataType, subsidiaryCompanyId }, deps);
   const quarters = trailing.periods.map((p) => p.record);
   const value = quarters.some((q) => q === null || q.operatingRevenue === null) ? null : quarters.reduce((sum, q) => sum + q!.operatingRevenue!, 0n);
   cache.set(rocYear, value);

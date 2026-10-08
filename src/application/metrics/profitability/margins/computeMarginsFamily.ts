@@ -1,6 +1,6 @@
 import { getLatestAvailableQuarter } from '@/application/financials/latestQuarter';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import type { IncomeStatementFields } from '@/application/ports/financialStatements';
+import type { BankIncomeStatementFields, IncomeStatementFields } from '@/application/ports/financialStatements';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
 import { calculateGrossMargin } from '@/domain/metrics/profitability/grossMargin/calculateGrossMargin';
@@ -11,6 +11,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { resolveTrailingIncomeStatements, type TrailingYear } from '@/application/metrics/shared/trailingYear';
+import { withBankAnnualIncome, withBankIncome } from '@/application/metrics/shared/bankAwareIncome';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts
@@ -28,18 +29,23 @@ import { resolveTrailingIncomeStatements, type TrailingYear } from '@/applicatio
 // operatingIncome -> net_operating_income_loss。金控業刻意不做同樣的事（margin/
 // turnover 概念在金控業結構性不成立，需要全新指標概念，不是替代科目能解決的問題，
 // 同樣見那份研究筆記的說明），不要看到這裡的模式就依樣畫葫蘆幫金控業加。
+// 2026-10-08 使用者推翻銀行這一塊：純銀行改照券商軟體口徑算（營收＝利息收入總額＋非利息淨收益、毛利再扣利息費用與呆帳、
+// 營業利益＝稅前淨利，見 domain/financials/bankIncome.ts，2838 毛利率／淨利率對得上）。金控、保險以外的金融業仍維持不適用，
+// 等使用者給券商軟體數字驗證後再另做。
 export interface MarginInputs {
   reportDate: Date;
   revenue: bigint | null;
   grossProfitLike: bigint | null;
   operatingIncomeLike: bigint | null;
-  isInsuranceFallback: boolean;
+  source: 'general' | 'insurance' | 'bank';
+  // 銀行口徑時的原始科目（溯源表拆解用）：利息收入總額來自一般損益表，其餘來自銀行損益表明細。
+  bankDetail: { interestIncome: bigint | null; bank: BankIncomeStatementFields } | null;
 }
 
 // 2026-09-13 稽核鏈擴大到 grossMargin/operatingMargin 需要重用這支「一般表 or 保險替代表」
 // 的查詢邏輯（見下方保險業 fallback 說明），改成 export——純查詢函式，沒有副作用，跟
 // getGreenblattRocInputs 抽出來給 provenance 重用是同一個模式。多回傳一個
-// isInsuranceFallback 旗標，讓 provenance 知道這筆該標哪個 statementType/fieldKey。
+// source（一般／保險／銀行），讓 provenance 知道這筆該標哪個 statementType/fieldKey。
 type MarginKey = { symbol: string; year: number; quarter: number; dataType: string; subsidiaryCompanyId: string };
 
 export const getMarginInputs = async (key: MarginKey, deps: Pick<MarginsFamilyDeps, 'statements'>): Promise<MarginInputs | null> =>
@@ -66,19 +72,25 @@ export const resolveTrailingMarginInputs = async (
 // insuranceKey 為 null 時不退回保險替代表——興櫃半年期間沒有對應的單季保險表可拿。
 const marginInputsFrom = async (incomeStatement: IncomeStatementFields | null, insuranceKey: MarginKey | null, deps: Pick<MarginsFamilyDeps, 'statements'>): Promise<MarginInputs | null> => {
   if (incomeStatement?.operatingRevenue != null) {
-    return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome, isInsuranceFallback: false };
+    return { reportDate: incomeStatement.reportDate, revenue: incomeStatement.operatingRevenue, grossProfitLike: incomeStatement.grossProfit, operatingIncomeLike: incomeStatement.operatingIncome, source: 'general', bankDetail: null };
   }
 
   const insurance = insuranceKey ? await deps.statements.getInsuranceIncomeStatement(insuranceKey) : null;
   if (insurance) {
-    return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss, isInsuranceFallback: true };
+    return { reportDate: insurance.reportDate, revenue: insurance.insuranceRevenue, grossProfitLike: insurance.insuranceServiceResult, operatingIncomeLike: insurance.netOperatingIncomeLoss, source: 'insurance', bankDetail: null };
+  }
+
+  // 2026-10-08 純銀行（銀行損益表明細查得到）。跟保險一樣只有單季，興櫃半年期間（insuranceKey: null）不退回。
+  const bankAware = insuranceKey ? await withBankIncome(incomeStatement, insuranceKey, deps) : null;
+  if (bankAware?.revenueSource === 'bank') {
+    return { reportDate: bankAware.reportDate, revenue: bankAware.operatingRevenue, grossProfitLike: bankAware.grossProfit, operatingIncomeLike: bankAware.operatingIncome, source: 'bank', bankDetail: { interestIncome: bankAware.interestIncome, bank: bankAware.bank! } };
   }
 
   // 一般查得到列但 operatingRevenue 是 null（例如保險業在一般表裡有 profit_loss 等
   // 欄位、只是沒有 revenue），且保險替代也查無資料——回傳一般查詢結果的 reportDate（如果
   // 有）讓 knowledgeDate 解析至少能跑，三個金額欄位維持 null 走既有的 missing_input 邏輯。
   if (incomeStatement) {
-    return { reportDate: incomeStatement.reportDate, revenue: null, grossProfitLike: null, operatingIncomeLike: null, isInsuranceFallback: false };
+    return { reportDate: incomeStatement.reportDate, revenue: null, grossProfitLike: null, operatingIncomeLike: null, source: 'general', bankDetail: null };
   }
   return null;
 };
@@ -222,7 +234,8 @@ export const computeMarginsFamily = async (
   // netProfitMargin 的 Q／TTM 在杜邦家族算，FY 跟另外兩支共用同一份年報放在這裡。年報與座標、公告日規則沿用 annualReportSlot。
   // ponytail: 保險業年報沒有毛利／營業利益科目，FY 是 null（Q／TTM 有保險替代科目），要補再把 marginInputsFrom 的保險替代接到年報。
   const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
-  const a = annual?.annual ?? null;
+  // 2026-10-08 銀行年報同樣沒有營收／毛利／營業利益，用同年四個單季的銀行公式加總補上（見 shared/bankAwareIncome.ts）。
+  const a = annual ? await withBankAnnualIncome(annual.annual, { symbol, rocYear: annual.fiscalYear - 1911, dataType, subsidiaryCompanyId }, deps) : null;
   const fyBase = (metricCode: string) => ({ symbol, metricCode, dataType, subsidiaryCompanyId });
   const grossMarginFy = annualReportSlot(annual, fyBase('grossMargin'), calculateGrossMargin(a?.grossProfit ?? null, a?.operatingRevenue ?? null));
   const operatingMarginFy = annualReportSlot(annual, fyBase('operatingMargin'), calculateOperatingMargin(a?.operatingIncome ?? null, a?.operatingRevenue ?? null));
@@ -232,8 +245,11 @@ export const computeMarginsFamily = async (
   // 毛利率／營業利益率對它們適用。IFRS 17 保險收入 115Q1 才開始有資料，近四季要到 115Q4 才湊滿——那段期間 TTM 是
   // insufficient_history（真的歷史不足），不是不適用（bff-ts／web-nuxt 抓到：產險 5 家 Q 有值、TTM 卻被標不適用，
   // 「不適用是公司層級的事實，不該隨基準改變」）。只有沒有任何保險損益表的金融業（銀行、金控、證券）才標不適用。
+  // 2026-10-08 純銀行也適用了（銀行口徑），同樣排除：早期季度近四季湊不齊是真的歷史不足，不是不適用。
   const notApplicable =
-    (await deps.industry.isFinancialIndustryCompany(symbol)) && !(await deps.quarters.latestQuarterWith('insuranceIncomeStatement', symbol, dataType, subsidiaryCompanyId));
+    (await deps.industry.isFinancialIndustryCompany(symbol)) &&
+    !(await deps.quarters.latestQuarterWith('insuranceIncomeStatement', symbol, dataType, subsidiaryCompanyId)) &&
+    !(await deps.quarters.latestQuarterWith('bankIncomeStatement', symbol, dataType, subsidiaryCompanyId));
   const relabel = (slot: ComputationSlot): ComputationSlot =>
     notApplicable && !isComputationSkip(slot) && slot.value === null ? { ...slot, nullReason: 'not_applicable_industry' } : slot;
   return {

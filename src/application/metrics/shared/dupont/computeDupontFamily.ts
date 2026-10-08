@@ -16,6 +16,7 @@ import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, isComputationSkip, type ComputationBatch, type ComputationSlot, noQuarterBatch } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
 import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { toBankAwareTrailing, withBankIncome } from '@/application/metrics/shared/bankAwareIncome';
 import type { MetricNullReason } from '@/domain/metrics/metricBasis';
 import { resolveAverageBalances } from '../averageBalances';
 
@@ -80,7 +81,10 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
   const withAverageDenominator = (calc: { value: number | null; nullReason: MetricNullReason | null }, avg: bigint | null, current: bigint | null) =>
     calc.value === null && avg === null && current !== null ? { value: null, nullReason: 'insufficient_history' as const } : calc;
 
-  const netProfitMarginQuarterly = calculateNetProfitMargin(netIncome.value, operatingRevenue);
+  // 2026-10-08 淨利率（只有它）對純銀行改用銀行口徑營收（見 shared/bankAwareIncome.ts）；assetTurnover、dupontEbitMargin、
+  // 拆解 ROE 繼續用一般營收（銀行是 null → 照舊標不適用，使用者選定的範圍不含週轉率）。一般公司兩者相同。
+  const npmRevenue = (await withBankIncome(incomeStatement, key, deps))?.operatingRevenue ?? null;
+  const netProfitMarginQuarterly = calculateNetProfitMargin(netIncome.value, npmRevenue);
   const assetTurnoverQuarterly = withAverageDenominator(calculateAssetTurnover(operatingRevenue, balances.assetsAvgQ), balances.assetsAvgQ, totalAssets);
   const equityMultiplierResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgQ, balances.equityAvgQ), balances.equityAvgQ, equity.value);
   const equityMultiplierTtmResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgTtm, balances.equityAvgTtm), balances.equityAvgTtm, equity.value);
@@ -139,7 +143,21 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
     }
   }
 
-  const netProfitMarginTtmCalc = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  // 淨利率 TTM 用自己的營收與完整度（銀行口徑），一般公司跟 ttmComplete／revenueTtmSum 完全相同。
+  const npmTrailing = await toBankAwareTrailing(trailing, { symbol, dataType, subsidiaryCompanyId }, deps);
+  let npmRevenueTtmSum = 0n;
+  let npmNetIncomeTtmSum = 0n;
+  let npmTtmComplete = true;
+  for (const record of npmTrailing.periods.map((p) => p.record)) {
+    const picked = pickNetIncome(record);
+    if (record === null || record.operatingRevenue === null || picked.value === null) {
+      npmTtmComplete = false;
+    } else {
+      npmRevenueTtmSum += record.operatingRevenue;
+      npmNetIncomeTtmSum += picked.value;
+    }
+  }
+  const netProfitMarginTtmCalc = npmTtmComplete ? calculateNetProfitMargin(npmNetIncomeTtmSum, npmRevenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
   const assetTurnoverTtmCalc = ttmComplete && balances.assetsAvgTtm !== null ? calculateAssetTurnover(revenueTtmSum, balances.assetsAvgTtm) : { value: null, nullReason: 'insufficient_history' as const };
 
   const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
@@ -163,7 +181,7 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
     symbol, year, season, rocYear, seasonNum, fiscalYear, reportDate, balances,
     netProfitMarginQuarterly, assetTurnoverQuarterly, equityMultiplierResult, equityMultiplierTtmResult, decomposedRoeQuarterly,
     dupontTaxBurdenQuarterly, dupontInterestBurdenQuarterly, dupontEbitMarginQuarterly, extendedRoeQuarterly,
-    basis: trailing.basis, ttmQuarters, ttmRecords, ttmComplete, revenueTtmSum,
+    basis: trailing.basis, ttmQuarters, ttmRecords, ttmComplete, revenueTtmSum, npmTtmComplete,
     netProfitMarginTtmCalc, assetTurnoverTtmCalc, decomposedRoeTtmCalc, decomposedRoeTtmNullReason,
     dupontTaxBurdenTtmCalc, dupontInterestBurdenTtmCalc, dupontEbitMarginTtmCalc, extendedRoeTtmCalc, extendedRoeTtmNullReason,
   };
@@ -184,7 +202,7 @@ export const computeDupontFamily = async (
     year, season, rocYear, seasonNum, fiscalYear, reportDate,
     netProfitMarginQuarterly, assetTurnoverQuarterly, equityMultiplierResult, equityMultiplierTtmResult, decomposedRoeQuarterly,
     dupontTaxBurdenQuarterly, dupontInterestBurdenQuarterly, dupontEbitMarginQuarterly, extendedRoeQuarterly,
-    ttmQuarters, ttmRecords, ttmComplete,
+    ttmQuarters, ttmRecords, ttmComplete, npmTtmComplete,
     netProfitMarginTtmCalc, assetTurnoverTtmCalc, decomposedRoeTtmCalc, decomposedRoeTtmNullReason,
     dupontTaxBurdenTtmCalc, dupontInterestBurdenTtmCalc, dupontEbitMarginTtmCalc, extendedRoeTtmCalc, extendedRoeTtmNullReason,
   } = resolution;
@@ -449,6 +467,18 @@ export const computeDupontFamily = async (
     dupontInterestBurdenTtm = { action: 'skipped_no_knowledge_date' };
     dupontEbitMarginTtm = { action: 'skipped_no_knowledge_date' };
     dupontExtendedRoeTtm = { action: 'skipped_no_knowledge_date' };
+  }
+
+  // 2026-10-08 純銀行：一般營收是 null 所以 ttmComplete=false（上面整組寫 insufficient_history），但淨利率用銀行口徑是齊的——
+  // 用同一組季度解 knowledge date 另外寫淨利率。一般公司 npmTtmComplete === ttmComplete，不會進來。
+  if (npmTtmComplete && !ttmComplete) {
+    const npmAnchor = await resolveKnowledgeDate(
+      symbol,
+      ttmQuarters.map((tq, i) => ({ rocYear: Number(tq.year), season: Number(tq.season), reportDate: ttmRecords[i]?.reportDate ?? null })), deps.announcements
+    );
+    netProfitMarginTtm = npmAnchor
+      ? computation({ ...coordinateFor('netProfitMargin'), ...periodTypeGroup('TTM'), value: netProfitMarginTtmCalc.value, nullReason: netProfitMarginTtmCalc.nullReason, knowledgeDate: npmAnchor.knowledgeDate, knowledgeDateIsFallback: npmAnchor.isFallback })
+      : { action: 'skipped_no_knowledge_date' };
   }
 
   const slots = { netProfitMarginQ, netProfitMarginTtm, assetTurnoverQ, assetTurnoverTtm, equityMultiplier: equityMultiplierOutcome, equityMultiplierTtm, dupontDecomposedRoeQ, dupontDecomposedRoeTtm, dupontTaxBurdenQ, dupontTaxBurdenTtm, dupontInterestBurdenQ, dupontInterestBurdenTtm, dupontEbitMarginQ, dupontEbitMarginTtm, dupontExtendedRoeQ, dupontExtendedRoeTtm };

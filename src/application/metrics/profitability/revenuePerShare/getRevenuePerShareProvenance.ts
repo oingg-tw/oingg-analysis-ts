@@ -1,7 +1,9 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { toPerShare } from '@/domain/metrics/shared/numericHelpers';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
-import { trailingPeriodLabel, resolveTrailingIncomeStatements } from '../../shared/trailingYear';
+import { trailingPeriodLabel } from '../../shared/trailingYear';
+import { resolveTrailingBankAwareIncome } from '../../shared/bankAwareIncome';
+import { BANK_INCOME_METHODOLOGY_NOTE, bankRevenueEntries } from '../../shared/provenance/bankIncomeEntries';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { toProvenanceEntryValue, type MetricProvenanceResult, type ProvenanceEntry } from '../../shared/provenance/provenanceTypes';
 import type { PitDeps } from '@/application/metrics/deps';
@@ -31,7 +33,8 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const sharesValue = shares?.outstandingCommonShares ?? null;
 
   // 2026-10-01 近一年改走共用來源，跟 compute 同一份資料（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  // 2026-10-08 純銀行用銀行口徑營收，跟 compute 同一個 resolver（見 shared/bankAwareIncome.ts）。
+  const trailing = await resolveTrailingBankAwareIncome({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
   const ttmRecords = trailing.periods.map((p) => p.record);
   const revenues = ttmRecords.map((record) => record?.operatingRevenue ?? null);
@@ -46,8 +49,13 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
   const value = complete && sharesValue !== null ? toPerShare(revenueTtmSum, sharesValue) : null;
 
   const entries: ProvenanceEntry[] = [
-    ...ttmQuarters.map(
-      (tq, i): ProvenanceEntry => ({
+    ...ttmQuarters.flatMap((tq, i): ProvenanceEntry[] => {
+      const record = ttmRecords[i];
+      if (record?.revenueSource === 'bank') {
+        const period = { label: trailingPeriodLabel(tq, trailing.basis), fiscalYear: rocYearToGregorian(Number(tq.year)), fiscalQuarter: Number(tq.season) };
+        return bankRevenueEntries('近一年', period, { interestIncome: record.interestIncome, bank: record.bank! });
+      }
+      return [{
         role: `近一年 營收（${trailingPeriodLabel(tq, trailing.basis)}）`,
         fiscalYear: rocYearToGregorian(Number(tq.year)),
         fiscalQuarter: Number(tq.season),
@@ -56,10 +64,11 @@ export const getRevenuePerShareProvenance = async (query: QuarterlyMetricQuery, 
         fieldKey: 'revenue',
         sourceDescription: null,
         value: toProvenanceEntryValue(revenues[i]),
-      })
-    ),
+      }];
+    }),
     { role: '流通股數（本季報告日當下有效）', fiscalYear, fiscalQuarter: seasonNum, type: 'other', statementType: null, fieldKey: null, sourceDescription: '公開發行公司股本變動申報', value: toProvenanceEntryValue(sharesValue) },
   ];
 
-  return { symbol, metricCode: 'revenuePerShare', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote: null };
+  const methodologyNote = ttmRecords.some((r) => r?.revenueSource === 'bank') ? BANK_INCOME_METHODOLOGY_NOTE : null;
+  return { symbol, metricCode: 'revenuePerShare', found: true, fiscalYear, fiscalQuarter: seasonNum, value, entries, methodologyNote };
 };

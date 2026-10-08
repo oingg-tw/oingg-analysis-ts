@@ -20,7 +20,7 @@ export const grossMarginDefinition: MetricDefinitionSpec = {
   formulaLatex: '\\mathrm{GrossMargin} = \\frac{\\mathrm{GrossProfit}}{\\mathrm{Revenue}} \\times 100',
   referenceUrl: 'https://zh.wikipedia.org/zh-tw/%E6%AF%9B%E5%88%A9%E7%8E%87',
   tier: 'derived',
-  sources: ['公開發行公司損益表（XBRL）', '保險業損益明細表（XBRL，保險業適用）'],
+  sources: ['公開發行公司損益表（XBRL）', '保險業損益明細表（XBRL，保險業適用）', '銀行業損益表明細（XBRL，銀行適用）'],
   group: 'period',
   allowedPeriodTypes: ['Q', 'TTM', 'FY'],
   dependsOn: ['gross_profit', 'revenue'],

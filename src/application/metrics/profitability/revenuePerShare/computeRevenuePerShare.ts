@@ -7,7 +7,7 @@ import type { MetricNullReason } from '../../../../domain/metrics/metricBasis';
 import { periodTypeGroup } from '@/domain/metrics/coordinate';
 import { computation, type ComputationBatch, type ComputationSlot, noQuarterBatch, periodSlot, withFormulaVersion } from '@/domain/metrics/computation';
 import type { PitDeps } from '@/application/metrics/deps';
-import { resolveTrailingIncomeStatements } from '@/application/metrics/shared/trailingYear';
+import { resolveTrailingBankAwareIncome, withBankAnnualIncome, withBankIncome } from '@/application/metrics/shared/bankAwareIncome';
 import { annualReportSlot, resolveAnnualReportContext } from '@/application/metrics/shared/annualReportSlot';
 
 // 2026-09-26 formulaVersion 2：流通股數改為 IAS 33 流通在外普通股（已發行 − 特別股 − 庫藏股），EPS 類分子扣特別股股利、
@@ -37,7 +37,8 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
   const fiscalYear = rocYearToGregorian(rocYear);
 
   const key = { symbol, year: rocYear, quarter: seasonNum, dataType, subsidiaryCompanyId };
-  const incomeStatement = await deps.statements.getIncomeStatement(key);
+  // 2026-10-08 純銀行改用銀行口徑營收（利息收入總額＋非利息淨收益，見 shared/bankAwareIncome.ts）；一般公司原樣。
+  const incomeStatement = await withBankIncome(await deps.statements.getIncomeStatement(key), key, deps);
   const operatingRevenue = incomeStatement?.operatingRevenue ?? null;
   const reportDate = incomeStatement?.reportDate ?? null;
 
@@ -54,7 +55,7 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
   const q = periodSlot(mainAnchor, coordinateBase, 'Q', quarterly, quarterlyNullReason);
 
   // 2026-10-01 近一年改走共用來源（興櫃半年頻，見 shared/trailingYear.ts）。
-  const trailing = await resolveTrailingIncomeStatements({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
+  const trailing = await resolveTrailingBankAwareIncome({ symbol, rocYear, season: season as Season, dataType, subsidiaryCompanyId }, deps);
   const ttmQuarters = trailing.periods;
   const ttmRecords = trailing.periods.map((p) => p.record);
 
@@ -104,7 +105,7 @@ export const computeRevenuePerShare = async (query: QuarterlyMetricQuery, deps: 
 
   // FY（2026-09-25）：年報營收 ÷ 反推的全年加權平均股數（shared/annualReportSlot.ts）。
   const annual = await resolveAnnualReportContext({ symbol, rocYear, season: seasonNum, dataType, subsidiaryCompanyId }, deps);
-  const annualRevenue = annual?.annual.operatingRevenue ?? null;
+  const annualRevenue = annual ? ((await withBankAnnualIncome(annual.annual, { symbol, rocYear: annual.fiscalYear - 1911, dataType, subsidiaryCompanyId }, deps))?.operatingRevenue ?? null) : null;
   const annualShares = annual?.weightedShares ?? null;
   const fyValue = annualRevenue !== null && annualShares !== null ? toPerShare(annualRevenue, annualShares) : null;
   const fy = annualReportSlot(
