@@ -1,3 +1,4 @@
+import type { ReportAvailabilityPort } from '@/application/ports/reportAvailability';
 import type { FinancialStatementsPort } from '@/application/ports/financialStatements';
 import type { QuarterResolverPort } from '@/application/ports/quarterResolver';
 import type { AnnouncementDatePort } from '@/application/ports/announcementDates';
@@ -35,4 +36,5 @@ export interface PitDeps {
   priceLevel: PriceLevelPort; // 美元匯率＋美國 GNP 平減指數（Ohlson SIZE 換算）
   metricValues: MetricValueRepository; // metric_values / metric_daily_cadence_values 讀寫
   definitions: MetricDefinitionLookup; // 寫入前座標驗證用的 definition 查詢
+  reportAvailability: ReportAvailabilityPort; // 2026-10-09 每一期的財報口徑（寫入前檢查座標口徑對不對）
 }

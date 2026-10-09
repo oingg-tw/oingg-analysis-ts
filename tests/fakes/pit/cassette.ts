@@ -95,6 +95,8 @@ export const createReplayPitDeps = (cassette: Cassette, overrides: Partial<PitDe
     dividendEvents: replayPort('dividendEvents'),
     priceLevel: replayPort('priceLevel'),
     definitions: { get: (metricCode) => metricDefinitionRegistry[metricCode] },
+    // 2026-10-09 寫入前的口徑檢查（persistOne）：回放的 query 一律合併報表，要測個體口徑的測試自己覆寫。
+    reportAvailability: { resolveDataType: async () => '2', resolveDataTypeForPeriod: async () => '2' },
     ...overrides,
     metricValues,
   };

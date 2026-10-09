@@ -60,6 +60,11 @@ export const createInMemoryMetricValues = (): InMemoryMetricValues => {
         .map((row) => ({ symbol: row.where.symbol, fiscalYear: row.where.fiscalYear, fiscalQuarter: row.where.fiscalQuarter, value: row.values.value, computedAt: row.values.knowledgeDate }));
     },
     upsertPeriodRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
+    deletePeriodRowsOfOtherDataType: async ({ dataType, ...coordinate }) => {
+      const before = rows.length;
+      for (let i = rows.length - 1; i >= 0; i--) if (matches(rows[i]!, coordinate) && (rows[i]!.where as PeriodCoordinateWhere).dataType !== dataType && 'fiscalQuarter' in rows[i]!.where) rows.splice(i, 1);
+      return before - rows.length;
+    },
     findLatestDailyCadenceRow: (where) => findLatest(where as unknown as Record<string, unknown>),
     upsertDailyCadenceRow: (where, values) => upsert(where as unknown as Record<string, unknown>, values),
     findLatestMonthlyRow: (where) => findLatest(where as unknown as Record<string, unknown>),

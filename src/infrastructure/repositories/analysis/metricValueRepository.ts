@@ -41,6 +41,10 @@ export const upsertPeriodMetricRow = async (where: PeriodCoordinateWhere, values
   });
 };
 
+// 2026-10-09 寫入正確口徑之後，刪掉同座標另一種口徑的舊列（使用者拍板：上游補財報讓口徑翻轉時自動清，見 persistComputations.ts）。
+export const deletePeriodRowsOfOtherDataType = async ({ dataType, ...coordinate }: PeriodCoordinateWhere): Promise<number> =>
+  (await analysisPrisma.metricValue.deleteMany({ where: { ...coordinate, dataType: { not: dataType } } })).count;
+
 // 2026-09-23 月頻（metric_monthly_values，目前只有 sus）——跟上面兩組同一套：座標查最新、identity 鍵原子 upsert。
 export const findLatestMonthlyMetricRow = (where: MonthlyCoordinateWhere): Promise<ExistingMetricRow | null> =>
   analysisPrisma.metricMonthlyValue.findFirst({ where, orderBy: { knowledgeDate: 'desc' }, select: { value: true, nullReason: true, knowledgeDate: true, formulaVersion: true } });
@@ -80,6 +84,7 @@ export const prismaMetricValueRepository: MetricValueRepository = {
   findLatestPeriodRow: findLatestPeriodMetricRow,
   listPeriodRowsAcrossMarket: listPeriodMetricRowsAcrossMarket,
   upsertPeriodRow: upsertPeriodMetricRow,
+  deletePeriodRowsOfOtherDataType,
   findLatestDailyCadenceRow: findLatestDailyCadenceMetricRow,
   upsertDailyCadenceRow: upsertDailyCadenceMetricRow,
   findLatestMonthlyRow: findLatestMonthlyMetricRow,

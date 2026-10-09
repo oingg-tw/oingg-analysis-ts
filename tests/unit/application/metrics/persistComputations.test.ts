@@ -25,6 +25,8 @@ const industry = {
 const quarters = {
   latestQuarterWith: async (source: string, symbol: string) => (source === 'bankIncomeStatement' && symbol === '2801' ? { year: 115, quarter: 2 } : null),
 } as never;
+// 2026-10-09 每一期的財報口徑：預設一律合併（'2'）；1524 在 2026Q2 已改制只編個體（'1'），測口徑檢查用。
+const reportAvailability = { resolveDataType: async () => '2' as const, resolveDataTypeForPeriod: async (symbol: string) => (symbol === '1524' ? ('1' as const) : ('2' as const)) };
 
 const roeQ = (overrides: Partial<MetricComputation> = {}): MetricComputation => ({
   symbol: '2330',
@@ -114,7 +116,7 @@ describe('validateCoordinate：spec v0.2 §5.5 的強制檢查', () => {
 describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
   test('第一次 inserted、原樣重跑 skipped_unchanged、同一天改值就地覆蓋（列數不變）、更新的 knowledgeDate 疊加新列', async () => {
     const metricValues = createInMemoryMetricValues();
-    const deps = { metricValues, definitions, industry, quarters };
+    const deps = { metricValues, definitions, industry, quarters, reportAvailability };
 
     expect(await persistOne(roeQ(), deps)).toEqual({ action: 'inserted' });
     expect(await persistOne(roeQ(), deps)).toEqual({ action: 'skipped_unchanged' });
@@ -134,7 +136,7 @@ describe('persistOne：記憶體 repository 上的完整寫入路徑', () => {
 
   test('座標驗證失敗時什麼都不寫', async () => {
     const metricValues = createInMemoryMetricValues();
-    const outcome = await persistOne(roeQ({ periodType: 'YTD' }), { metricValues, definitions, industry, quarters });
+    const outcome = await persistOne(roeQ({ periodType: 'YTD' }), { metricValues, definitions, industry, quarters, reportAvailability });
     expect(outcome.action).toBe('rejected');
     expect(metricValues.rows()).toHaveLength(0);
   });
@@ -155,7 +157,7 @@ describe('persistComputations：整批攤平成舊 outcome 形狀', () => {
       },
     };
 
-    const persisted = await persistComputations(batch, { metricValues, definitions, industry, quarters });
+    const persisted = await persistComputations(batch, { metricValues, definitions, industry, quarters, reportAvailability });
 
     expect(persisted).toEqual({ symbol: '2330', rocYear: '115', season: '2', q: { action: 'inserted' }, ttm: { action: 'skipped_no_knowledge_date' } });
     expect(metricValues.rows()).toHaveLength(1);
@@ -163,8 +165,24 @@ describe('persistComputations：整批攤平成舊 outcome 形狀', () => {
   });
 
   test('noQuarterBatch 攤平後就是舊架構的 skipped_no_quarter 回傳值', async () => {
-    const persisted = await persistComputations(noQuarterBatch('9999', ['q', 'ttm']), { metricValues: createInMemoryMetricValues(), definitions, industry, quarters });
+    const persisted = await persistComputations(noQuarterBatch('9999', ['q', 'ttm']), { metricValues: createInMemoryMetricValues(), definitions, industry, quarters, reportAvailability });
     expect(persisted).toEqual({ symbol: '9999', rocYear: null, season: null, q: { action: 'skipped_no_quarter' }, ttm: { action: 'skipped_no_quarter' } });
+  });
+});
+
+describe('財報口徑檢查與另一種口徑清理（2026-10-09）', () => {
+  test('座標那一期不該用這個口徑 → skipped_other_data_type，什麼都不寫', async () => {
+    const metricValues = createInMemoryMetricValues();
+    expect(await persistOne(roeQ({ symbol: '1524', dataType: '2' }), { metricValues, definitions, industry, quarters, reportAvailability })).toEqual({ action: 'skipped_other_data_type' });
+    expect(metricValues.rows()).toHaveLength(0);
+  });
+
+  test('寫入正確口徑後，同座標另一種口徑的舊列被刪掉；值沒變（skipped_unchanged）時不動', async () => {
+    const metricValues = createInMemoryMetricValues();
+    const { symbol, metricCode, periodType, fiscalYear, fiscalQuarter, subsidiaryCompanyId, value, nullReason, knowledgeDate, knowledgeDateIsFallback } = roeQ();
+    metricValues.seed([{ where: { symbol, metricCode, periodType, fiscalYear: fiscalYear!, fiscalQuarter: fiscalQuarter!, dataType: '1', subsidiaryCompanyId }, values: { value, nullReason, knowledgeDate, knowledgeDateIsFallback, formulaVersion: roeDefinition.currentFormulaVersion } }]);
+    expect(await persistOne(roeQ(), { metricValues, definitions, industry, quarters, reportAvailability })).toEqual({ action: 'inserted' });
+    expect(metricValues.rows().map((r) => (r.where as { dataType: string }).dataType)).toEqual(['2']);
   });
 });
 
@@ -174,16 +192,16 @@ describe('金融業不適用改標（2026-09-28）', () => {
 
   test('金融業 + 標記的指標 + null（缺少輸入／歷史不足）→ not_applicable_industry', async () => {
     const metricValues = createInMemoryMetricValues();
-    await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters });
-    await persistOne(quickRatioQ('2881', { fiscalQuarter: 1, nullReason: 'insufficient_history' }), { metricValues, definitions, industry, quarters });
+    await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters, reportAvailability });
+    await persistOne(quickRatioQ('2881', { fiscalQuarter: 1, nullReason: 'insufficient_history' }), { metricValues, definitions, industry, quarters, reportAvailability });
     expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['not_applicable_industry', 'not_applicable_industry']);
   });
 
   test('一般業、金融業算得出值、沒標記的指標都不動', async () => {
     const metricValues = createInMemoryMetricValues();
-    await persistOne(quickRatioQ('2330'), { metricValues, definitions, industry, quarters });
-    await persistOne(quickRatioQ('2881', { fiscalQuarter: 1, value: 25.1, nullReason: null }), { metricValues, definitions, industry, quarters });
-    await persistOne(roeQ({ symbol: '2881', value: null, nullReason: 'missing_input' }), { metricValues, definitions, industry, quarters });
+    await persistOne(quickRatioQ('2330'), { metricValues, definitions, industry, quarters, reportAvailability });
+    await persistOne(quickRatioQ('2881', { fiscalQuarter: 1, value: 25.1, nullReason: null }), { metricValues, definitions, industry, quarters, reportAvailability });
+    await persistOne(roeQ({ symbol: '2881', value: null, nullReason: 'missing_input' }), { metricValues, definitions, industry, quarters, reportAvailability });
     expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['missing_input', null, 'missing_input']);
   });
 
@@ -191,15 +209,15 @@ describe('金融業不適用改標（2026-09-28）', () => {
   test('exceptBanks：純銀行保留 insufficient_history，金控照樣改標不適用', async () => {
     const metricValues = createInMemoryMetricValues();
     const psrTtm = (symbol: string): MetricComputation => roeQ({ symbol, metricCode: 'psr', ...periodTypeGroup('TTM'), value: null, nullReason: 'insufficient_history', formulaVersion: psrDefinition.currentFormulaVersion });
-    await persistOne(psrTtm('2801'), { metricValues, definitions, industry, quarters });
-    await persistOne(psrTtm('2881'), { metricValues, definitions, industry, quarters });
+    await persistOne(psrTtm('2801'), { metricValues, definitions, industry, quarters, reportAvailability });
+    await persistOne(psrTtm('2881'), { metricValues, definitions, industry, quarters, reportAvailability });
     expect(metricValues.rows().map((r) => r.values.nullReason)).toEqual(['insufficient_history', 'not_applicable_industry']);
   });
 
   // 2026-10-06：比對既有列要用改標後的 nullReason，否則金融股這些列每次重跑都被判成「變了」（turnoverRatio 316 筆的根因）。
   test('改標過的列重跑一次是 skipped_unchanged，不是每次都改寫', async () => {
     const metricValues = createInMemoryMetricValues();
-    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters })).toEqual({ action: 'inserted' });
-    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters })).toEqual({ action: 'skipped_unchanged' });
+    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters, reportAvailability })).toEqual({ action: 'inserted' });
+    expect(await persistOne(quickRatioQ('2881'), { metricValues, definitions, industry, quarters, reportAvailability })).toEqual({ action: 'skipped_unchanged' });
   });
 });

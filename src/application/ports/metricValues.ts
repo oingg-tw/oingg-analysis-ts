@@ -73,6 +73,8 @@ export interface MetricValueRepository {
   listPeriodRowsAcrossMarket(metricCode: string, periodType: PeriodType, coordinate?: { fiscalYear: number; fiscalQuarter: number }): Promise<MarketPeriodRow[]>;
   // 一次原子的 upsert，鍵是完整的 identity 唯一鍵（座標 + knowledgeDate）。
   upsertPeriodRow(where: PeriodCoordinateWhere, values: MetricRowValues): Promise<void>;
+  // 2026-10-09 刪掉同一個座標（symbol、metric、期別、年季、子公司）上「另一種財報口徑」的列，回傳刪了幾列。
+  deletePeriodRowsOfOtherDataType(where: PeriodCoordinateWhere): Promise<number>;
   findLatestDailyCadenceRow(where: DailyCadenceCoordinateWhere): Promise<ExistingMetricRow | null>;
   upsertDailyCadenceRow(where: DailyCadenceCoordinateWhere, values: MetricRowValues): Promise<void>;
   findLatestMonthlyRow(where: MonthlyCoordinateWhere): Promise<ExistingMetricRow | null>;

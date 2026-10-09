@@ -28,5 +28,7 @@ export const createTestPitDeps = (overrides: Partial<PitDeps> = {}): PitDeps => 
   priceLevel: unusedPort('priceLevel'),
   metricValues: createInMemoryMetricValues(),
   definitions: { get: (metricCode) => metricDefinitionRegistry[metricCode] },
+  // 單元測試的公司都是合併報表；要測個體口徑或口徑翻轉的測試自己覆寫。
+  reportAvailability: { resolveDataType: async () => '2', resolveDataTypeForPeriod: async () => '2' },
   ...overrides,
 });

@@ -148,7 +148,7 @@ export const validateCoordinate = (input: MetricComputation, definition: MetricD
 // 撞 metric_values_identity_key 唯一鍵（2026-09-11 真實發生過，見 tmp/backfill-failures-general.json
 // 的 revenuePerShare/2104）。upsert 讓 Postgres 原子地決定 insert 還是 update，多 instance/多併發
 // 都不會再噴例外，這是 Cloud Run 多 instance 部署後的必要條件。
-export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters'>): Promise<MetricValueWriteOutcome> => {
+export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters' | 'reportAvailability'>): Promise<MetricValueWriteOutcome> => {
   const definition = deps.definitions.get(input.metricCode);
   const rejection = validateCoordinate(input, definition);
   if (rejection) return rejection;
@@ -186,11 +186,21 @@ export const persistOne = async (input: MetricComputation, deps: Pick<PitDeps, '
       dataType: input.dataType,
       subsidiaryCompanyId: input.subsidiaryCompanyId,
     };
+    // 2026-10-09 財報口徑跟座標那一期不符就不寫（使用者拍板）。有些計算寫的座標不是它正在算的那一季，口徑卻沿用正在算的那一季
+    // （dividendDistributionCount 寫最新除息季、annualReportSlot 的 Q1～Q3 寫前一年 FY、magicFormulaRank、15 支舊回填腳本用
+    // 公司最新口徑），全歷史重算時同一座標兩種口徑各寫一次——量到 72 家 90 期。值是用錯口徑的報表算的，改標籤硬寫進去也是錯的，
+    // 所以直接略過，由口徑正確的那一季任務寫入。一處擋住所有路徑，不逐支改 compute。
+    const expectedDataType = await deps.reportAvailability.resolveDataTypeForPeriod(input.symbol, input.fiscalYear! - 1911, input.fiscalQuarter!);
+    if (expectedDataType !== input.dataType) return { action: 'skipped_other_data_type' };
+
     const existing = await deps.metricValues.findLatestPeriodRow(coordinateWhere);
     const decision = decideWrite(existing, { ...input, nullReason });
     if (decision.action === 'skipped_unchanged') return { action: 'skipped_unchanged' };
 
     await deps.metricValues.upsertPeriodRow(coordinateWhere, values);
+    // 2026-10-09 寫入正確口徑後刪掉同座標另一種口徑的舊列（使用者拍板自動清）：上游補了某些年度的合併／個體報表，按期別的口徑跟著翻，
+    // 新口徑重算寫入、舊口徑的列沒人刪（1465、2816、2237…）。只在真的寫入時做，值沒變的大多數列不多打一次 DB；既有殘留另外一次清。
+    await deps.metricValues.deletePeriodRowsOfOtherDataType(coordinateWhere);
     return decision.action === 'insert' ? { action: 'inserted' } : { action: 'updated_same_knowledge_date' };
   }
 
@@ -240,7 +250,7 @@ export type PersistedBatch<B extends { slots: Record<string, ComputationSlot> }>
 // 逐槽、依插入順序、一次一筆 await（跟舊架構相同的資料庫負載與順序，不用 Promise.all）。
 export const persistComputations = async <B extends { slots: Record<string, ComputationSlot> }>(
   batch: B,
-  deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters'>
+  deps: Pick<PitDeps, 'metricValues' | 'definitions' | 'industry' | 'quarters' | 'reportAvailability'>
 ): Promise<PersistedBatch<B>> => {
   const { slots, ...context } = batch;
   const outcomes: Record<string, BasisOutcome> = {};

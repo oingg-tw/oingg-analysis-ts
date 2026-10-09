@@ -73,4 +73,5 @@ export type MetricValueWriteOutcome =
   | { action: 'inserted' }
   | { action: 'updated_same_knowledge_date' } // 同一天重跑，非新資訊，就地覆蓋而非疊列
   | { action: 'skipped_unchanged' } // spec v0.2 §5.2：值沒變就不寫
+  | { action: 'skipped_other_data_type' } // 2026-10-09 這一期不該用這個財報口徑（按期別判斷不同），不寫——見 persistComputations.ts
   | { action: 'rejected'; reason: string }; // spec v0.2 §5.5：欄位組合不在 allowed* 內 / metricCode 未註冊 / 結構不變式違反
