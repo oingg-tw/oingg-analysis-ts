@@ -1,5 +1,15 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { sectorDividendSummaryResultSchema, securitiesIndustrySectorsResultSchema } from './types';
+import {
+  getSectorMetricHistoryQuerySchema,
+  getSectorMonthlyRevenueHistoryQuerySchema,
+  getSectorSummaryQuerySchema,
+  sectorDividendSummaryResultSchema,
+  sectorMetricHistoryResultSchema,
+  sectorMonthlyRevenueHistoryResultSchema,
+  sectorParamsSchema,
+  sectorSummaryResultSchema,
+  securitiesIndustrySectorsResultSchema,
+} from './types';
 
 export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
   registry.registerPath({
@@ -36,6 +46,57 @@ export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['Industries'],
     responses: {
       200: { description: '每個類股的兩軸彙總。', content: { 'application/json': { schema: sectorDividendSummaryResultSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/{sectorCode}/metric-history',
+    summary: '類股指標逐期四分位（中位數、q1、q3、家數）',
+    description:
+      '每一期只用「那一期」各公司的值算中位數與四分位，不是各公司最新一期混在一起。只支援季報型、非每股類的指標' +
+      '（每股數字取決於各家股數，跨公司取中位數沒有意義；逐日型與月頻指標回 400）。' +
+      'count 是那一期有值的公司數；count 為 0 時 median／q1／q3 為 null，nullReason 是那一期最多公司的原因' +
+      '（例如金融業不適用的指標是 not_applicable_industry）。金融保險類股的營收類與三率只有部分公司有值' +
+      '（銀行、票券、產險、保經等；金控不適用），那一類的中位數只代表有值的這些公司，請看 count。\n\n類股成員是「今天的分類」：母體為上市＋上櫃、有類股代碼的公司（不含興櫃）；已下市公司不在名單內，所以較早的期別是「現存公司的歷史」，不是當年類股的全貌。',
+    tags: ['Industries'],
+    request: { params: sectorParamsSchema, query: getSectorMetricHistoryQuerySchema },
+    responses: {
+      200: { description: '逐期四分位，由舊到新。', content: { 'application/json': { schema: sectorMetricHistoryResultSchema } } },
+      400: { description: 'metricCode／timeframe 不合法，或不是季報型、是每股類指標。' },
+      404: { description: '查無這個類股代碼的上市櫃公司。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/{sectorCode}/monthly-revenue-history',
+    summary: '類股月營收合計與年增率（同一批公司口徑）',
+    description:
+      '每個月只加總「當月有營收、去年同月營收大於 0」的公司，revenue 與 lastYearRevenue 都是這一批的合計，' +
+      'companyCount 是這一批的家數；這樣新上市、下市不會讓年增率跳動。去年同月營收用公司當月申報裡自帶的比較數字。' +
+      '金額是新台幣千元、字串。資料從 2021-09 開始（上市與上櫃的月營收）。\n\n類股成員是「今天的分類」：母體為上市＋上櫃、有類股代碼的公司（不含興櫃）；已下市公司不在名單內，所以較早的期別是「現存公司的歷史」，不是當年類股的全貌。',
+    tags: ['Industries'],
+    request: { params: sectorParamsSchema, query: getSectorMonthlyRevenueHistoryQuerySchema },
+    responses: {
+      200: { description: '逐月合計，由舊到新。', content: { 'application/json': { schema: sectorMonthlyRevenueHistoryResultSchema } } },
+      404: { description: '查無這個類股代碼的上市櫃公司。' },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/industries/sector-summary',
+    summary: '各類股多個欄位的四分位彙總（最新快照）',
+    description:
+      '每個類股一列，每個請求的欄位給 count／median／q1／q3。每家公司取各自最新一筆（跟 screener 同一套查詢），' +
+      '所以是各公司最新一期混在一起的快照，不是同一期的比較；要同一期請用 GET /industries/{sectorCode}/metric-history。' +
+      '母體是上市＋上櫃、有類股代碼的公司（不含興櫃）。',
+    tags: ['Industries'],
+    request: { query: getSectorSummaryQuerySchema },
+    responses: {
+      200: { description: '每個類股每個欄位的四分位。', content: { 'application/json': { schema: sectorSummaryResultSchema } } },
+      400: { description: 'fields 為空、超過上限或有不合法的欄位。' },
     },
   });
 };

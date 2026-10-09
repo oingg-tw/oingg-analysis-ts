@@ -4983,6 +4983,135 @@
         ]
       }
     },
+    "/industries/sector-summary": {
+      "get": {
+        "description": "每個類股一列，每個請求的欄位給 count／median／q1／q3。每家公司取各自最新一筆（跟 screener 同一套查詢），所以是各公司最新一期混在一起的快照，不是同一期的比較；要同一期請用 GET /industries/{sectorCode}/metric-history。母體是上市＋上櫃、有類股代碼的公司（不含興櫃）。",
+        "operationId": "getIndustriesSectorSummary",
+        "parameters": [
+          {
+            "description": "逗號分隔的欄位，格式同 screener（metricCode.timeframe），最多 10 個",
+            "in": "query",
+            "name": "fields",
+            "required": true,
+            "schema": {
+              "description": "逗號分隔的欄位，格式同 screener（metricCode.timeframe），最多 10 個",
+              "example": "revenueGrowthRate.TTM,netIncomeGrowthRate.TTM",
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "sectors": {
+                      "items": {
+                        "properties": {
+                          "companyCount": {
+                            "description": "這個類股的上市＋上櫃公司數（不含興櫃）",
+                            "type": "number"
+                          },
+                          "fields": {
+                            "additionalProperties": {
+                              "properties": {
+                                "count": {
+                                  "description": "有值的公司數；0 時 median／q1／q3 都是 null",
+                                  "type": "number"
+                                },
+                                "median": {
+                                  "description": "中位數（連續內插，同 Postgres percentile_cont；偶數家取中間兩家平均）",
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "q1": {
+                                  "description": "第 25 百分位",
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "q3": {
+                                  "description": "第 75 百分位",
+                                  "nullable": true,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "count",
+                                "median",
+                                "q1",
+                                "q3"
+                              ],
+                              "type": "object"
+                            },
+                            "description": "key 是請求的 field 字串（例如 \"revenueGrowthRate.TTM\"）",
+                            "type": "object"
+                          },
+                          "sectorCode": {
+                            "type": "string"
+                          },
+                          "sectorName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "sectorCode",
+                          "sectorName",
+                          "companyCount",
+                          "fields"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "sectors"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "每個類股每個欄位的四分位。"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "fields 為空、超過上限或有不合法的欄位。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
+          }
+        },
+        "summary": "各類股多個欄位的四分位彙總（最新快照）",
+        "tags": [
+          "Industries"
+        ]
+      }
+    },
     "/industries/securities-sectors": {
       "get": {
         "description": "資料源是 twse-ts/tpex-ts 的 company_profile.industry 欄位（證交所公告的類股分類，兩碼代碼），這支是「半導體業」「電子零組件業」這類投資人熟悉的類股名稱。只有單一層級，扁平回傳有公司的代碼（排除證券商/期貨商/第一上市外國公司身份別/舊產業代碼殘留這幾個非真正產業分類的代碼，以及目前 0 家的代碼）。companyCount = 用這個代碼在 screener 篩得到幾家：母體跟 GET /companies 相同（上市＋上櫃＋興櫃，不含公開發行未上市），轉板公司只算一次，所以各類股加總等於 GET /companies 裡有類股的公司數。screener 的 POST /screener、GET /screener/ranking 的 sectorCodes 參數用的就是這支端點回傳的代碼；不在清單上但仍屬合法代碼的（例如 0 家的舊分類）照樣接受、篩出 0 家。",
@@ -5050,6 +5179,329 @@
           }
         },
         "summary": "證交所類股分類清單（投資人習慣的「半導體業」等類股，非財政部稅籍分類）",
+        "tags": [
+          "Industries"
+        ]
+      }
+    },
+    "/industries/{sectorCode}/metric-history": {
+      "get": {
+        "description": "每一期只用「那一期」各公司的值算中位數與四分位，不是各公司最新一期混在一起。只支援季報型、非每股類的指標（每股數字取決於各家股數，跨公司取中位數沒有意義；逐日型與月頻指標回 400）。count 是那一期有值的公司數；count 為 0 時 median／q1／q3 為 null，nullReason 是那一期最多公司的原因（例如金融業不適用的指標是 not_applicable_industry）。金融保險類股的營收類與三率只有部分公司有值（銀行、票券、產險、保經等；金控不適用），那一類的中位數只代表有值的這些公司，請看 count。\n\n類股成員是「今天的分類」：母體為上市＋上櫃、有類股代碼的公司（不含興櫃）；已下市公司不在名單內，所以較早的期別是「現存公司的歷史」，不是當年類股的全貌。",
+        "operationId": "getIndustriesSectorCodeMetricHistory",
+        "parameters": [
+          {
+            "description": "證交所類股代碼，同 GET /industries/securities-sectors",
+            "in": "path",
+            "name": "sectorCode",
+            "required": true,
+            "schema": {
+              "description": "證交所類股代碼，同 GET /industries/securities-sectors",
+              "example": "24",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "季報型、非每股類的 metricCode，例如 \"roe\"、\"grossMargin\"",
+            "in": "query",
+            "name": "metricCode",
+            "required": true,
+            "schema": {
+              "description": "季報型、非每股類的 metricCode，例如 \"roe\"、\"grossMargin\"",
+              "example": "grossMargin",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "'Q'/'YTD'/'TTM'/'FY' 之一，實際允許哪些由 metricCode 決定（見 GET /metrics），同 GET /companies/metric-history",
+            "in": "query",
+            "name": "timeframe",
+            "required": true,
+            "schema": {
+              "description": "'Q'/'YTD'/'TTM'/'FY' 之一，實際允許哪些由 metricCode 決定（見 GET /metrics），同 GET /companies/metric-history",
+              "example": "TTM",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "取最近幾期，預設 20，上限 40。",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "取最近幾期，預設 20，上限 40。",
+              "maximum": 40,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新",
+                      "items": {
+                        "properties": {
+                          "count": {
+                            "description": "有值的公司數；0 時 median／q1／q3 都是 null",
+                            "type": "number"
+                          },
+                          "fiscalQuarter": {
+                            "description": "季別；FY 固定是 4",
+                            "type": "number"
+                          },
+                          "fiscalYear": {
+                            "description": "西元年",
+                            "type": "number"
+                          },
+                          "median": {
+                            "description": "中位數（連續內插，同 Postgres percentile_cont；偶數家取中間兩家平均）",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "nullReason": {
+                            "description": "count 為 0 時，那一期最多公司的 nullReason（例如 not_applicable_industry）；有值的期別為 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "q1": {
+                            "description": "第 25 百分位",
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "q3": {
+                            "description": "第 75 百分位",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "fiscalYear",
+                          "fiscalQuarter",
+                          "count",
+                          "median",
+                          "q1",
+                          "q3",
+                          "nullReason"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "metricCode": {
+                      "type": "string"
+                    },
+                    "sectorCode": {
+                      "type": "string"
+                    },
+                    "sectorName": {
+                      "type": "string"
+                    },
+                    "timeframe": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "sectorCode",
+                    "sectorName",
+                    "metricCode",
+                    "timeframe",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "逐期四分位，由舊到新。"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "metricCode／timeframe 不合法，或不是季報型、是每股類指標。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "查無這個類股代碼的上市櫃公司。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
+          }
+        },
+        "summary": "類股指標逐期四分位（中位數、q1、q3、家數）",
+        "tags": [
+          "Industries"
+        ]
+      }
+    },
+    "/industries/{sectorCode}/monthly-revenue-history": {
+      "get": {
+        "description": "每個月只加總「當月有營收、去年同月營收大於 0」的公司，revenue 與 lastYearRevenue 都是這一批的合計，companyCount 是這一批的家數；這樣新上市、下市不會讓年增率跳動。去年同月營收用公司當月申報裡自帶的比較數字。金額是新台幣千元、字串。資料從 2021-09 開始（上市與上櫃的月營收）。\n\n類股成員是「今天的分類」：母體為上市＋上櫃、有類股代碼的公司（不含興櫃）；已下市公司不在名單內，所以較早的期別是「現存公司的歷史」，不是當年類股的全貌。",
+        "operationId": "getIndustriesSectorCodeMonthlyRevenueHistory",
+        "parameters": [
+          {
+            "description": "證交所類股代碼，同 GET /industries/securities-sectors",
+            "in": "path",
+            "name": "sectorCode",
+            "required": true,
+            "schema": {
+              "description": "證交所類股代碼，同 GET /industries/securities-sectors",
+              "example": "24",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "取最近幾個月，預設 60，上限 120（資料從 2021-09 開始）。",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "description": "取最近幾個月，預設 60，上限 120（資料從 2021-09 開始）。",
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "由舊到新",
+                      "items": {
+                        "properties": {
+                          "companyCount": {
+                            "description": "這一批（當月有營收、去年同月營收大於 0）的公司數",
+                            "type": "number"
+                          },
+                          "lastYearRevenue": {
+                            "description": "同一批公司的去年同月營收合計（千元）",
+                            "type": "string"
+                          },
+                          "revenue": {
+                            "description": "同一批公司的當月營收合計（新台幣千元，字串避免精度問題）",
+                            "type": "string"
+                          },
+                          "yearMonth": {
+                            "description": "營收所屬月份 YYYY-MM",
+                            "type": "string"
+                          },
+                          "yoyChangePercent": {
+                            "description": "年增率（%）＝ revenue ÷ lastYearRevenue − 1",
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "yearMonth",
+                          "revenue",
+                          "lastYearRevenue",
+                          "yoyChangePercent",
+                          "companyCount"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "hasMore": {
+                      "description": "還有更早的月份沒有回傳",
+                      "type": "boolean"
+                    },
+                    "sectorCode": {
+                      "type": "string"
+                    },
+                    "sectorName": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "description": "總共有幾個月（不受 limit 影響）",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "sectorCode",
+                    "sectorName",
+                    "total",
+                    "hasMore",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "逐月合計，由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "查無這個類股代碼的上市櫃公司。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
+          }
+        },
+        "summary": "類股月營收合計與年增率（同一批公司口徑）",
         "tags": [
           "Industries"
         ]

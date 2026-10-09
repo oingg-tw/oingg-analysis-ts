@@ -19,6 +19,14 @@ export interface PeriodHistoryRow {
   formulaVersion: number;
 }
 
+export interface SectorPeriodValueRow {
+  symbol: string;
+  fiscalYear: number;
+  fiscalQuarter: number;
+  value: unknown;
+  nullReason: string | null;
+}
+
 export interface DailyCadenceHistoryRow {
   tradeDate: Date;
   value: unknown;
@@ -125,6 +133,9 @@ export interface MetricValueQueryPort {
   // 單一 metricCode 的全部歷史列（含重編疊加的多筆），依 fiscalYear/fiscalQuarter 降冪、同座標再依 knowledgeDate 降冪——
   // 去重取最新一筆是 application/metrics/shared/queryMetricHistory.ts 的事。
   listPeriodMetricHistoryRows(symbol: string, metricCode: string, periodType: PeriodType, dataType: string, subsidiaryCompanyId: string): Promise<PeriodHistoryRow[]>;
+  // 2026-10-09 類股逐期中位數（GET /industries/{sectorCode}/metric-history）：這批公司每家每期一列（同座標取 knowledgeDate
+  // 最新、data_type '2' 優先——寫入端已保證同座標只留一種口徑，見 persistComputations.ts），排序不保證。
+  listPeriodValuesForSymbols(symbols: string[], metricCode: string, periodType: PeriodType): Promise<SectorPeriodValueRow[]>;
   // 逐日型版本：依 tradeDate 降冪、同 tradeDate 再依 knowledgeDate 降冪。
   listDailyCadenceMetricHistoryRows(
     symbol: string,

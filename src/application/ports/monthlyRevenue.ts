@@ -2,6 +2,8 @@
 // 查無資料再查上櫃，並已篩掉公開發行未上市那批。查無資料回空陣列，是正常情境不是錯誤。
 // 實作在 infrastructure/repositories/twse/monthlyRevenue.ts。
 
+import type { CompanyMonthlyRevenue } from '@/domain/industry/sectorAggregates';
+
 export interface MonthlyRevenueEntry {
   yearMonth: string; // "YYYY-MM"
   reportDate: string | null; // 公告日 "YYYY-MM-DD"
@@ -24,4 +26,7 @@ export interface MonthlyRevenueHistoryResult {
 
 export interface MonthlyRevenuePort {
   getMonthlyRevenueHistory(symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult>;
+  // 2026-10-09 類股月營收彙總用：這批公司全部月份的當月與去年同月營收（千元）。同一家公司上市有資料就只用上市、
+  // 否則用上櫃（跟 getMonthlyRevenueHistory 同一條規則，轉板公司不會重複算）。
+  listMonthlyRevenueForSymbols(symbols: string[]): Promise<CompanyMonthlyRevenue[]>;
 }

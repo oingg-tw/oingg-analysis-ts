@@ -3,7 +3,8 @@ import type { Prisma } from '#generated/analysis-client';
 import type { SnapshotCadence } from '@/domain/metrics/metricBasis';
 import type { FieldRef } from '@/domain/metrics/timeframe';
 import type { MetricDefinitionSpec } from '@/domain/metrics/metricDefinitionSpec';
-import type { CompanyRankRow, FieldDistribution, MetricValueQueryPort } from '@/application/ports/metricValueQueries';
+import type { CompanyRankRow, FieldDistribution, MetricValueQueryPort, SectorPeriodValueRow } from '@/application/ports/metricValueQueries';
+import type { PeriodType } from '@/domain/metrics/metricBasis';
 import { buildDistributionBins, clampBucketIndex } from '@/domain/shared/distribution';
 import { listDailyCadenceMetricHistoryRows, listMonthlyMetricHistoryRows, listPeriodMetricHistoryRows } from './metricValueRepository';
 import {
@@ -79,6 +80,18 @@ const listLatestComputedAtByMetric = async (): Promise<{ metricCode: string; com
   return rows.map((r) => ({ metricCode: r.metric_code, computedAt: r.computed_at }));
 };
 
+// 2026-10-09 類股逐期中位數用：這批公司每家每期最新一列（見 port 說明）。subsidiary_company_id '' = 公司本身。
+const listPeriodValuesForSymbols = async (symbols: string[], metricCode: string, periodType: PeriodType): Promise<SectorPeriodValueRow[]> => {
+  if (symbols.length === 0) return [];
+  const rows = await analysisPrisma.$queryRaw<{ symbol: string; fiscal_year: number; fiscal_quarter: number; value: unknown; null_reason: string | null }[]>`
+    SELECT DISTINCT ON (symbol, fiscal_year, fiscal_quarter) symbol, fiscal_year, fiscal_quarter, value, null_reason
+    FROM metric_values
+    WHERE metric_code = ${metricCode} AND period_type = ${periodType} AND subsidiary_company_id = '' AND symbol = ANY(${symbols}::text[])
+    ORDER BY symbol, fiscal_year, fiscal_quarter, knowledge_date DESC, data_type DESC
+  `;
+  return rows.map((r) => ({ symbol: r.symbol, fiscalYear: r.fiscal_year, fiscalQuarter: r.fiscal_quarter, value: r.value, nullReason: r.null_reason }));
+};
+
 // application/ports/metricValueQueries.ts 的實作；兩支歷史查詢的本體在 metricValueRepository.ts（跟寫入端同一個
 // 檔案，Phase 2 搬進來時就放那裡），screener 四種查詢 = ./screenerQueries.ts 組 SQL + 這裡執行——Prisma.Sql 不出
 // infrastructure。
@@ -142,6 +155,7 @@ export const analysisMetricValueQueries: MetricValueQueryPort = {
   listPeriodMetricHistoryRows,
   listDailyCadenceMetricHistoryRows,
   listMonthlyMetricHistoryRows,
+  listPeriodValuesForSymbols,
   screen: (filters, columns, page, pageSize, sort, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildScreenerSql(filters, columns, page, pageSize, sort, scope)),
   rank: (rankedField, direction, limit, columns, scope) => runAnalysisRawQuery<Record<string, unknown>>(buildRankingSql(rankedField, direction, limit, columns, scope)),
   companyRank: companyRankFromCachedTable,

@@ -1,6 +1,7 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
 import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
+import type { CompanyMonthlyRevenue } from '@/domain/industry/sectorAggregates';
 
 // twse-ts export.monthly_revenue（PROD）——2026-09-23 從 DEV 庫換過來。先前接 DEV 是因為當時只有那邊
 // 有一次性回填的樣本（356 筆 / 297 家，而且 2330 以外多半只有一兩個月），實際效果是
@@ -107,5 +108,25 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
   return { entries, total, hasMore: total > entries.length };
 };
 
+// 2026-10-09 類股月營收彙總：一次撈一批公司（半導體約 200 家 × 60 個月），上市、上櫃各查一次。
+// 「上市有資料就只用上市」跟 getMonthlyRevenueHistory 同一條規則（上櫃那張一樣不篩 source）。
+type RawSymbolMonthRow = { symbol: string; year_month: Date; current_month_revenue: bigint | null; last_year_same_month_revenue: bigint | null };
+const SYMBOL_MONTH_COLUMNS = 'symbol, year_month, current_month_revenue, last_year_same_month_revenue';
+
+const listMonthlyRevenueForSymbols = async (symbols: string[]): Promise<CompanyMonthlyRevenue[]> => {
+  if (symbols.length === 0) return [];
+  const [listed, otc] = await Promise.all([
+    twseExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[]) AND source = 'MONTHLY_REVENUE'`, symbols),
+    tpexExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[])`, symbols),
+  ]);
+  const listedSymbols = new Set(listed.map((r) => r.symbol));
+  return [...listed, ...otc.filter((r) => !listedSymbols.has(r.symbol))].map((r) => ({
+    symbol: r.symbol,
+    yearMonth: toYearMonthString(r.year_month),
+    revenue: r.current_month_revenue,
+    lastYearRevenue: r.last_year_same_month_revenue,
+  }));
+};
+
 // application/ports/monthlyRevenue.ts 的實作——src/bootstrap/deps.ts 綁進 AppDeps。
-export const twseDevMonthlyRevenue: MonthlyRevenuePort = { getMonthlyRevenueHistory };
+export const twseDevMonthlyRevenue: MonthlyRevenuePort = { getMonthlyRevenueHistory, listMonthlyRevenueForSymbols };
