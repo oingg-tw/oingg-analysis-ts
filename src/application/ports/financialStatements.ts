@@ -50,6 +50,10 @@ export interface BalanceSheetFields {
   equityAttributableToParent: bigint | null;
   totalEquity: bigint | null;
   accountsPayable: bigint | null;
+  // 2026-10-09 負債組成九項用（應付票據及帳款含關係人、合約負債）；accountsPayable 維持只有一般應付帳款（應付帳款週轉率在用）。
+  tradePayablesToRelatedParties: bigint | null; // trade_payables_to_related_parties
+  notesPayable: bigint | null; // notes_payable
+  currentContractLiabilities: bigint | null; // current_contract_liabilities
   accountsReceivable: bigint | null;
   bondsPayable: bigint | null;
   shortTermBorrowings: bigint | null;

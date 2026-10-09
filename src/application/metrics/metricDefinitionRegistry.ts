@@ -88,6 +88,15 @@ import { abnormalCapexRatioDefinition } from '@/domain/metrics/quality/abnormalC
 import { debtRatioDefinition } from '@/domain/metrics/resilience/debtRatio/debtRatioDefinition';
 import { currentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/currentLiabilitiesToAssets/currentLiabilitiesToAssetsDefinition';
 import { nonCurrentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/nonCurrentLiabilitiesToAssets/nonCurrentLiabilitiesToAssetsDefinition';
+import { shortTermBorrowingsToAssetsDefinition } from '@/domain/metrics/resilience/shortTermBorrowingsToAssets/shortTermBorrowingsToAssetsDefinition';
+import { accountsPayableToAssetsDefinition } from '@/domain/metrics/resilience/accountsPayableToAssets/accountsPayableToAssetsDefinition';
+import { contractLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/contractLiabilitiesToAssets/contractLiabilitiesToAssetsDefinition';
+import { currentPortionOfLongTermDebtToAssetsDefinition } from '@/domain/metrics/resilience/currentPortionOfLongTermDebtToAssets/currentPortionOfLongTermDebtToAssetsDefinition';
+import { otherCurrentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/otherCurrentLiabilitiesToAssets/otherCurrentLiabilitiesToAssetsDefinition';
+import { longTermBorrowingsToAssetsDefinition } from '@/domain/metrics/resilience/longTermBorrowingsToAssets/longTermBorrowingsToAssetsDefinition';
+import { bondsPayableToAssetsDefinition } from '@/domain/metrics/resilience/bondsPayableToAssets/bondsPayableToAssetsDefinition';
+import { leaseLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/leaseLiabilitiesToAssets/leaseLiabilitiesToAssetsDefinition';
+import { otherNonCurrentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/otherNonCurrentLiabilitiesToAssets/otherNonCurrentLiabilitiesToAssetsDefinition';
 import { netWorkingCapitalToAssetsDefinition } from '@/domain/metrics/resilience/netWorkingCapitalToAssets/netWorkingCapitalToAssetsDefinition';
 import { totalDebtToCapitalDefinition } from '@/domain/metrics/resilience/totalDebtToCapital/totalDebtToCapitalDefinition';
 import { currentRatioDefinition } from '@/domain/metrics/resilience/currentRatio/currentRatioDefinition';
@@ -269,6 +278,15 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   debtRatio: debtRatioDefinition,
   currentLiabilitiesToAssets: currentLiabilitiesToAssetsDefinition,
   nonCurrentLiabilitiesToAssets: nonCurrentLiabilitiesToAssetsDefinition,
+  shortTermBorrowingsToAssets: shortTermBorrowingsToAssetsDefinition,
+  accountsPayableToAssets: accountsPayableToAssetsDefinition,
+  contractLiabilitiesToAssets: contractLiabilitiesToAssetsDefinition,
+  currentPortionOfLongTermDebtToAssets: currentPortionOfLongTermDebtToAssetsDefinition,
+  otherCurrentLiabilitiesToAssets: otherCurrentLiabilitiesToAssetsDefinition,
+  longTermBorrowingsToAssets: longTermBorrowingsToAssetsDefinition,
+  bondsPayableToAssets: bondsPayableToAssetsDefinition,
+  leaseLiabilitiesToAssets: leaseLiabilitiesToAssetsDefinition,
+  otherNonCurrentLiabilitiesToAssets: otherNonCurrentLiabilitiesToAssetsDefinition,
   netWorkingCapitalToAssets: netWorkingCapitalToAssetsDefinition,
   totalDebtToCapital: totalDebtToCapitalDefinition,
   currentRatio: currentRatioDefinition,
