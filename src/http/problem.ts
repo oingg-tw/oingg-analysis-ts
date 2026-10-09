@@ -15,7 +15,7 @@ import type { ZodError } from 'zod';
 // - 過渡期：舊的頂層 `message` 保留。驗證錯誤時它是「第一個欄位的錯誤訊息」——bff-ts 現在從舊 zod 樹挖出來顯示的就是這一句
 //   （analysisServiceClient.readUpstreamValidationMessage，碰到陣列會退回讀 message），所以換格式後 bff 顯示的文字不變。
 //   bff 改讀 errors／detail 後約定日期移除。
-export type ProblemCode = 'unknown_metric' | 'unsupported_timeframe';
+export type ProblemCode = 'unknown_metric' | 'unsupported_timeframe' | 'per_share_not_aggregatable' | 'unknown_sector';
 
 export type ProblemFieldError = { detail: string; pointer: string } | { detail: string; parameter: string };
 

@@ -9,7 +9,8 @@
 // （unknown_metric、unsupported_timeframe），對應 problem 的 code 與 type；其餘 400／404 看 status 就夠，不給。
 // 訊息文字（problem 的 detail）只給人看，措辭可以改。
 export type AppErrorCode = 'VALIDATION' | 'NOT_FOUND';
-export type AppProblemCode = 'unknown_metric' | 'unsupported_timeframe';
+// 2026-10-10 業務中台要求加 per_share_not_aggregatable（類股中位數拒收每股類指標）、unknown_sector（查無類股的 404，跟「路由不存在」的 404 分開）。
+export type AppProblemCode = 'unknown_metric' | 'unsupported_timeframe' | 'per_share_not_aggregatable' | 'unknown_sector';
 
 export class AppError extends Error {
   readonly problemCode: AppProblemCode | undefined;
@@ -35,8 +36,8 @@ export class ValidationError extends AppError {
 
 // 明確查無此資源（例如不存在的公司代號）→ 404。
 export class NotFoundError extends AppError {
-  constructor(message: string) {
-    super('NOT_FOUND', 404, message);
+  constructor(message: string, problemCode?: AppProblemCode) {
+    super('NOT_FOUND', 404, message, { problemCode });
   }
 }
 

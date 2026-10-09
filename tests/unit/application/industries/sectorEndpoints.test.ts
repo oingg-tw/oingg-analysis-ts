@@ -36,11 +36,11 @@ describe('getSectorMetricHistory', () => {
     ]);
   });
 
-  test('每股類、逐日型指標 400；查無類股 404', async () => {
+  test('每股類、逐日型指標 400；查無類股 404（各帶自己的 code，業務中台靠 code 分支）', async () => {
     const deps = createTestDeps({ companyProfiles: profiles });
-    await expect(getSectorMetricHistory({ sectorCode: '24', metricCode: 'eps', timeframe: 'TTM', limit: 20 }, deps)).rejects.toMatchObject({ status: 400 });
-    await expect(getSectorMetricHistory({ sectorCode: '24', metricCode: 'dividendYield', timeframe: 'EOD', limit: 20 }, deps)).rejects.toMatchObject({ status: 400 });
-    await expect(getSectorMetricHistory({ sectorCode: '99', metricCode: 'roe', timeframe: 'TTM', limit: 20 }, deps)).rejects.toMatchObject({ status: 404 });
+    await expect(getSectorMetricHistory({ sectorCode: '24', metricCode: 'eps', timeframe: 'TTM', limit: 20 }, deps)).rejects.toMatchObject({ status: 400, problemCode: 'per_share_not_aggregatable' });
+    await expect(getSectorMetricHistory({ sectorCode: '24', metricCode: 'dividendYield', timeframe: 'EOD', limit: 20 }, deps)).rejects.toMatchObject({ status: 400, problemCode: 'unsupported_timeframe' });
+    await expect(getSectorMetricHistory({ sectorCode: '99', metricCode: 'roe', timeframe: 'TTM', limit: 20 }, deps)).rejects.toMatchObject({ status: 404, problemCode: 'unknown_sector' });
   });
 });
 

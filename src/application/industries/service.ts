@@ -73,7 +73,7 @@ const listedSectorMembers = async (deps: Pick<AppDeps, 'companyProfiles'>) => {
 
 const sectorOrThrow = async (sectorCode: string, deps: Pick<AppDeps, 'companyProfiles'>) => {
   const members = (await listedSectorMembers(deps)).filter((e) => e.sectorCode === sectorCode);
-  if (members.length === 0) throw new NotFoundError(`查無類股 "${sectorCode}" 的上市櫃公司，合法代碼見 GET /industries/securities-sectors。`);
+  if (members.length === 0) throw new NotFoundError(`查無類股 "${sectorCode}" 的上市櫃公司，合法代碼見 GET /industries/securities-sectors。`, 'unknown_sector');
   return { sectorName: members[0]!.sectorName!, symbols: members.map((m) => m.symbol) };
 };
 
@@ -92,7 +92,7 @@ export const getSectorMetricHistory = async ({ sectorCode, metricCode, timeframe
     throw new ValidationError(`metricCode "${metricCode}" 不是季報型指標，類股逐期中位數只支援季報型（timeframe Q／TTM／FY 等）。`, 'unsupported_timeframe');
   }
   if (metricDefinitionRegistry[metricCode]?.perShare) {
-    throw new ValidationError(`metricCode "${metricCode}" 是每股類指標，數值大小取決於各家股數，跨公司取中位數沒有意義，不提供類股中位數。`, 'unsupported_timeframe');
+    throw new ValidationError(`metricCode "${metricCode}" 是每股類指標，數值大小取決於各家股數，跨公司取中位數沒有意義，不提供類股中位數。`, 'per_share_not_aggregatable');
   }
   const { sectorName, symbols } = await sectorOrThrow(sectorCode, deps);
   const rows = await deps.metricValueQueries.listPeriodValuesForSymbols(symbols, metricCode, field.periodType);

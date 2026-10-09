@@ -28,9 +28,9 @@ const problemSchema = z
     detail: z.string().meta({ description: '給人看的說明，措辭不保證穩定，不要解析。' }),
     instance: z.string().meta({ example: 'urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479', description: '這次請求的 ID，跟 X-Request-Id header 同值（呼叫端有送 X-Request-Id 就沿用）。' }),
     code: z
-      .enum(['unknown_metric', 'unsupported_timeframe'])
+      .enum(['unknown_metric', 'unsupported_timeframe', 'per_share_not_aggregatable', 'unknown_sector'])
       .optional()
-      .meta({ description: '只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）。之後可能新增值。' }),
+      .meta({ description: '只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）、per_share_not_aggregatable（每股類指標不提供類股中位數）、unknown_sector（類股代碼查無上市櫃公司，404）。之後可能新增值。' }),
     errors: z
       .array(z.object({ detail: z.string(), pointer: z.string().optional(), parameter: z.string().optional() }))
       .optional()

@@ -6,10 +6,12 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "description": "只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）。之後可能新增值。",
+            "description": "只在呼叫端需要分支時才有：unknown_metric（metricCode 不存在）、unsupported_timeframe（這支指標不支援這個 timeframe）、per_share_not_aggregatable（每股類指標不提供類股中位數）、unknown_sector（類股代碼查無上市櫃公司，404）。之後可能新增值。",
             "enum": [
               "unknown_metric",
-              "unsupported_timeframe"
+              "unsupported_timeframe",
+              "per_share_not_aggregatable",
+              "unknown_sector"
             ],
             "type": "string"
           },
