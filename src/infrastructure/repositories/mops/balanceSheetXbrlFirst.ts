@@ -28,6 +28,7 @@ interface RawBalanceSheetXbrlRow {
   liabilities: bigint | null;
   current_assets: bigint | null;
   current_liabilities: bigint | null;
+  noncurrent_liabilities: bigint | null;
   inventories: bigint | null;
   longterm_borrowings: bigint | null;
   property_plant_and_equipment: bigint | null;
@@ -55,6 +56,7 @@ const mapXbrlRow = (row: RawBalanceSheetXbrlRow): BalanceSheetFields => ({
   totalLiabilities: row.liabilities,
   currentAssets: row.current_assets,
   currentLiabilities: row.current_liabilities,
+  noncurrentLiabilities: row.noncurrent_liabilities,
   inventory: row.inventories,
   longTermBorrowings: row.longterm_borrowings,
   propertyPlantEquipment: row.property_plant_and_equipment,
@@ -91,7 +93,7 @@ export const getLatestQuarterWithBalanceSheetXbrl = async (symbol: string, dataT
 
 export const getBalanceSheetXbrlFirst = async (key: QuarterlyKey): Promise<BalanceSheetFields | null> => {
   const rows = await mopsExportPrisma.$queryRaw<RawBalanceSheetXbrlRow[]>`
-    SELECT report_date, assets, liabilities, current_assets, current_liabilities, inventories,
+    SELECT report_date, assets, liabilities, current_assets, current_liabilities, noncurrent_liabilities, inventories,
       longterm_borrowings, property_plant_and_equipment, retained_earnings, cash_and_cash_equivalents,
       equity_attributable_to_owners_of_parent, equity, trade_payables_to_trade_suppliers,
       accounts_receivable_net, noncurrent_portion_of_bonds_issued, shortterm_borrowings, preference_share,

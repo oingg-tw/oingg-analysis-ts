@@ -41,6 +41,7 @@ export interface BalanceSheetFields {
   totalLiabilities: bigint | null;
   currentAssets: bigint | null;
   currentLiabilities: bigint | null;
+  noncurrentLiabilities: bigint | null; // 2026-10-09 非流動負債合計（noncurrent_liabilities；負債比率拆流動／非流動用）
   inventory: bigint | null;
   longTermBorrowings: bigint | null;
   propertyPlantEquipment: bigint | null;

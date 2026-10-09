@@ -86,6 +86,8 @@ import { accrualsRatioDefinition } from '@/domain/metrics/quality/accrualsRatio/
 import { fcfMarginDefinition } from '@/domain/metrics/quality/fcfMargin/fcfMarginDefinition';
 import { abnormalCapexRatioDefinition } from '@/domain/metrics/quality/abnormalCapexRatio/abnormalCapexRatioDefinition';
 import { debtRatioDefinition } from '@/domain/metrics/resilience/debtRatio/debtRatioDefinition';
+import { currentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/currentLiabilitiesToAssets/currentLiabilitiesToAssetsDefinition';
+import { nonCurrentLiabilitiesToAssetsDefinition } from '@/domain/metrics/resilience/nonCurrentLiabilitiesToAssets/nonCurrentLiabilitiesToAssetsDefinition';
 import { netWorkingCapitalToAssetsDefinition } from '@/domain/metrics/resilience/netWorkingCapitalToAssets/netWorkingCapitalToAssetsDefinition';
 import { totalDebtToCapitalDefinition } from '@/domain/metrics/resilience/totalDebtToCapital/totalDebtToCapitalDefinition';
 import { currentRatioDefinition } from '@/domain/metrics/resilience/currentRatio/currentRatioDefinition';
@@ -265,6 +267,8 @@ export const metricDefinitionRegistry: Record<string, MetricDefinitionSpec> = {
   fcfMargin: fcfMarginDefinition,
   abnormalCapexRatio: abnormalCapexRatioDefinition,
   debtRatio: debtRatioDefinition,
+  currentLiabilitiesToAssets: currentLiabilitiesToAssetsDefinition,
+  nonCurrentLiabilitiesToAssets: nonCurrentLiabilitiesToAssetsDefinition,
   netWorkingCapitalToAssets: netWorkingCapitalToAssetsDefinition,
   totalDebtToCapital: totalDebtToCapitalDefinition,
   currentRatio: currentRatioDefinition,

@@ -55,6 +55,8 @@ export const PILOT_PROVENANCE_METRIC_CODES = [
   'quickRatio',
   'cashRatio',
   'debtRatio',
+  'currentLiabilitiesToAssets',
+  'nonCurrentLiabilitiesToAssets',
   'deRatio',
   'longTermDebtToNetCurrentAssets',
   'equityRatio',

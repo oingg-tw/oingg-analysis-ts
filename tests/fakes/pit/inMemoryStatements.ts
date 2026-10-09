@@ -74,6 +74,7 @@ const emptyBalance = (reportDate: Date): BalanceSheetFields => ({
   totalLiabilities: null,
   currentAssets: null,
   currentLiabilities: null,
+  noncurrentLiabilities: null,
   inventory: null,
   longTermBorrowings: null,
   propertyPlantEquipment: null,

@@ -73,6 +73,7 @@ import { computeBankCapitalAdequacyFamily } from '@/application/metrics/resilien
 import { computeCashToAssetsRatio } from '@/application/metrics/resilience/cashToAssetsRatio/computeCashToAssetsRatio';
 import { computeCashPerShare } from '@/application/metrics/resilience/cashPerShare/computeCashPerShare';
 import { computeDebtRatio } from '@/application/metrics/resilience/debtRatio/computeDebtRatio';
+import { computeLiabilityComposition } from '@/application/metrics/resilience/liabilityComposition/computeLiabilityComposition';
 import { computeDeRatio } from '@/application/metrics/resilience/deRatio/computeDeRatio';
 import { computeEquityRatio } from '@/application/metrics/resilience/equityRatio/computeEquityRatio';
 import { computeInterestCoverage } from '@/application/metrics/resilience/interestCoverage/computeInterestCoverage';
@@ -215,6 +216,7 @@ export const computeAndWriteBankCapitalAdequacyFamilyPit = runPit(computeBankCap
 export const computeAndWriteCashToAssetsRatioPit = runPit(computeCashToAssetsRatio);
 export const computeAndWriteCashPerSharePit = runPit(computeCashPerShare);
 export const computeAndWriteDebtRatioPit = runPit(computeDebtRatio);
+export const computeAndWriteLiabilityCompositionPit = runPit(computeLiabilityComposition);
 export const computeAndWriteDeRatioPit = runPit(computeDeRatio);
 export const computeAndWriteEquityRatioPit = runPit(computeEquityRatio);
 export const computeAndWriteInterestCoveragePit = runPit(computeInterestCoverage);

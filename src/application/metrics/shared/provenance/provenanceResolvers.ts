@@ -27,6 +27,7 @@ import { getCurrentRatioProvenance } from '@/application/metrics/resilience/curr
 import { getQuickRatioProvenance } from '@/application/metrics/resilience/quickRatio/getQuickRatioProvenance';
 import { getCashRatioProvenance } from '@/application/metrics/resilience/cashRatio/getCashRatioProvenance';
 import { getDebtRatioProvenance } from '@/application/metrics/resilience/debtRatio/getDebtRatioProvenance';
+import { getLiabilityCompositionProvenance } from '@/application/metrics/resilience/liabilityComposition/getLiabilityCompositionProvenance';
 import { getDeRatioProvenance } from '@/application/metrics/resilience/deRatio/getDeRatioProvenance';
 import { getLongTermDebtToNetCurrentAssetsProvenance } from '@/application/metrics/resilience/longTermDebtToNetCurrentAssets/getLongTermDebtToNetCurrentAssetsProvenance';
 import { getEquityRatioProvenance } from '@/application/metrics/resilience/equityRatio/getEquityRatioProvenance';
@@ -184,6 +185,8 @@ export const createProvenanceResolvers = (deps: PitDeps): ProvenanceResolvers =>
   quickRatio: (query) => getQuickRatioProvenance(query, deps),
   cashRatio: (query) => getCashRatioProvenance(query, deps),
   debtRatio: (query) => getDebtRatioProvenance(query, deps),
+  currentLiabilitiesToAssets: getLiabilityCompositionProvenance('currentLiabilitiesToAssets', deps),
+  nonCurrentLiabilitiesToAssets: getLiabilityCompositionProvenance('nonCurrentLiabilitiesToAssets', deps),
   deRatio: (query) => getDeRatioProvenance(query, deps),
   longTermDebtToNetCurrentAssets: (query) => getLongTermDebtToNetCurrentAssetsProvenance(query, deps),
   equityRatio: (query) => getEquityRatioProvenance(query, deps),
