@@ -43,9 +43,9 @@ test('毛利率／營業利益率（Q、TTM）用銀行口徑，對得上券商�
 
 test('杜邦：淨利率用銀行口徑營收，總資產週轉率不受影響（仍 null）', async () => {
   const { slots } = await computeDupontFamily(query, depsFor({ '2838': fourQuarters(bankQuarter) }));
-  // Q/TTM 淨利率照既有慣例用歸屬母公司淨利（2,110,316 → 20.75%）；券商軟體的 20.72% 是合併淨利（2,107,119），FY 才用合併口徑。
-  expect(valueOf(slots.netProfitMarginQ)).toBe(20.75);
-  expect(valueOf(slots.netProfitMarginTtm)).toBe(20.75);
+  // 2026-10-09 淨利率改用合併淨利（2,107,119，總額優先），對上券商軟體的 20.72%。
+  expect(valueOf(slots.netProfitMarginQ)).toBe(20.72);
+  expect(valueOf(slots.netProfitMarginTtm)).toBe(20.72);
   expect(valueOf(slots.assetTurnoverQ)).toBeNull();
   expect(valueOf(slots.assetTurnoverTtm)).toBeNull();
 });
@@ -63,7 +63,7 @@ test('溯源表的值跟 compute 一致，並逐項列出銀行口徑的構成',
   expect(gross.entries[0]!.fieldKey).toBe('revenue_from_interest');
   expect(gross.methodologyNote).toContain('利息收入總額');
   const npm = await getNetProfitMarginProvenance(query, deps);
-  expect(npm.value).toBe(20.75);
+  expect(npm.value).toBe(20.72);
 });
 
 test('金控（銀行明細查無）：照舊 null、標不適用', async () => {

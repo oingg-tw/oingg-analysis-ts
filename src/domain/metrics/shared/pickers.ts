@@ -33,6 +33,15 @@ export const pickNetIncomeWithFieldKey = (record: NetIncomeRecord | null): Picke
   return { value: null, fieldKey: null };
 };
 
+// 2026-10-09 反過來的版本：總額（本期淨利，含非控制權益）優先、缺漏才退回歸屬母公司。只給稅後淨利率用——使用者要求對齊券商軟體
+// （2838 券商 20.72% 是合併淨利），也跟淨利率 FY、證交所營益分析的稅後純益率同口徑。ROE、EPS、杜邦拆解仍用上面的歸屬母公司優先。
+export const pickConsolidatedNetIncomeWithFieldKey = (record: NetIncomeRecord | null): PickedField => {
+  if (!record) return { value: null, fieldKey: null };
+  if (record.netIncome !== null) return { value: record.netIncome, fieldKey: 'profit_loss' };
+  if (record.netIncomeAttributableToParent !== null) return { value: record.netIncomeAttributableToParent, fieldKey: 'profit_loss_attributable_to_owners_of_parent' };
+  return { value: null, fieldKey: null };
+};
+
 interface EquityRecord {
   equityAttributableToParent: bigint | null;
   totalEquity: bigint | null;

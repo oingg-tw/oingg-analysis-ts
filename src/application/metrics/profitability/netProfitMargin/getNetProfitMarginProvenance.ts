@@ -1,5 +1,6 @@
 import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
-import { pickNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
+// 2026-10-09 稅後淨利率改用合併淨利（總額優先），跟杜邦 compute 的淨利率同一個 picker。
+import { pickConsolidatedNetIncomeWithFieldKey as pickNetIncome } from '@/domain/metrics/shared/pickers';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import { trailingPeriodLabel } from '../../shared/trailingYear';
 import { resolveTrailingBankAwareIncome } from '../../shared/bankAwareIncome';

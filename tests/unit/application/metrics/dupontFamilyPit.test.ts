@@ -27,8 +27,8 @@ test('dupontFamilyPit: 2330 115Q2 合併報表，跟 dupont.test.ts 的既有基
 
   assert.ok(netProfitMarginQ && netProfitMarginTtm && assetTurnoverQ && assetTurnoverTtm && equityMultiplier && equityMultiplierTtm && decomposedRoeQ && decomposedRoeTtm, '5 個 metric_code（equityMultiplier 含 Q/TTM）應該全部寫入 metric_values');
 
-  assert.equal(Number(netProfitMarginQ!.value), 55.62);
-  assert.equal(Number(netProfitMarginTtm!.value), 50.38);
+  assert.equal(Number(netProfitMarginQ!.value), 55.64); // 2026-10-09 淨利改總額優先（舊 55.62，歸屬母公司）
+  assert.equal(Number(netProfitMarginTtm!.value), 50.37); // 2026-10-09 淨利改總額優先（舊 50.38）
   // 2026-09-22 週轉率/權益乘數分母改期間平均（Q 兩點、TTM 5 點），數字用 cassette 裡的五季資產負債表獨立算過。
   assert.equal(Number(assetTurnoverQ!.value), 0.1409);
   assert.equal(Number(assetTurnoverTtm!.value), 0.5505);
@@ -114,7 +114,7 @@ test('dupontFamilyPit: 2317 115Q2 的 TTM 換源後（XBRL 補齊 114Q4）應該
   // 114Q3~115Q2 四季營收加總 9310748978、淨利加總 212778460，除以 115Q2 期末
   // totalAssets 5622576474 / equityAttributableToParent 1907936607，手動核算過：
   // netProfitMargin=2.29%、assetTurnover=1.66 次、decomposedRoe = round2(2.29*1.66*2.95) = 11.21%。
-  assert.equal(Number(netProfitMarginTtm!.value), 2.29);
+  assert.equal(Number(netProfitMarginTtm!.value), 2.65); // 2026-10-09 淨利改總額優先（舊 2.29 是歸屬母公司；鴻海非控制權益大）。拆解 ROE 仍用歸屬母公司的 2.29%
   assert.equal(netProfitMarginTtm!.nullReason, null);
   assert.equal(Number(assetTurnoverTtm!.value), 1.8628); // 2026-09-22 平均分母（舊 1.656）
   assert.equal(assetTurnoverTtm!.nullReason, null);

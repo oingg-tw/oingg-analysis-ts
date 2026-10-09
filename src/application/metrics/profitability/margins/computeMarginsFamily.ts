@@ -12,6 +12,7 @@ import { computation, isComputationSkip, type ComputationBatch, type Computation
 import type { PitDeps } from '@/application/metrics/deps';
 import { resolveTrailingIncomeStatements, type TrailingYear } from '@/application/metrics/shared/trailingYear';
 import { withBankAnnualIncome, withBankIncome } from '@/application/metrics/shared/bankAwareIncome';
+import { NET_PROFIT_MARGIN_FORMULA_VERSION } from '@/application/metrics/shared/dupont/computeDupontFamily';
 
 // 這份檔案獨立重新實作 src/domainMetrics/margins.ts 裡「還沒遷移」的兩個率（毛利率/
 // 營業利益率）——netProfitMargin 已經由 src/domainPitMetrics/shared/dupont/computeDupontFamilyPit.ts
@@ -100,6 +101,8 @@ const marginInputsFrom = async (incomeStatement: IncomeStatementFields | null, i
 // 這裡只負責把查回來的原始財報數字傳給對應的 calculateXxx() 純函式、串接輸出、決定
 // knowledge_date、呼叫 writeMetricValue。
 
+
+const withNetProfitMarginVersion = (slot: ComputationSlot): ComputationSlot => (isComputationSkip(slot) ? slot : { ...slot, formulaVersion: NET_PROFIT_MARGIN_FORMULA_VERSION });
 
 export type MarginsFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'industry' | 'cumulativeStatements' | 'annualReports' | 'shares'>;
 
@@ -263,7 +266,8 @@ export const computeMarginsFamily = async (
       operatingMarginQ: relabel(operatingMarginQ),
       operatingMarginTtm: relabel(operatingMarginTtm),
       operatingMarginFy: relabel(operatingMarginFy),
-      netProfitMarginFy: relabel(netProfitMarginFy),
+      // FY 本來就是總額口徑，但版本號跟著 metricCode 走（同一支指標的列不能混 v1／v2），見 computeDupontFamily.ts。
+      netProfitMarginFy: withNetProfitMarginVersion(relabel(netProfitMarginFy)),
     },
   };
 };

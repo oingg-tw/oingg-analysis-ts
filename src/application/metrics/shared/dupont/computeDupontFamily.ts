@@ -2,7 +2,7 @@ import { resolveQuarterOrLatest } from '@/application/financials/latestQuarter';
 import { rocYearToGregorian, type Season } from '@/domain/calendar/rocQuarter';
 import type { QuarterlyMetricQuery } from '@/domain/financials/quarterlyMetric';
 import { resolveKnowledgeDate } from '../../knowledgeDate';
-import { pickNetIncome, pickEquity } from '../../../../domain/metrics/shared/pickers';
+import { pickNetIncome, pickEquity , pickConsolidatedNetIncomeWithFieldKey } from '../../../../domain/metrics/shared/pickers';
 import { calculateEbit } from './ebit';
 import { calculateNetProfitMargin } from '@/domain/metrics/profitability/netProfitMargin/calculateNetProfitMargin';
 import { calculateAssetTurnover } from '@/domain/metrics/efficiency/assetTurnover/calculateAssetTurnover';
@@ -48,6 +48,8 @@ import { resolveAverageBalances } from '../averageBalances';
 // 5 點平均權益），讓 TTM 的杜邦恆等式 roe.TTM = npm.TTM × at.TTM × em.TTM 用儲存的欄位就能對上；Q 的恆等式用 em.Q。
 export const DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION = 2;
 const AVERAGE_DENOMINATOR_CODES = new Set(['assetTurnover', 'equityMultiplier', 'dupontDecomposedRoe', 'dupontExtendedRoe']);
+// 2026-10-09 稅後淨利率 formulaVersion 2：淨利改總額優先（對齊券商軟體，見 netProfitMarginDefinition.ts）。FY 在毛利率家族寫，同一個版本號。
+export const NET_PROFIT_MARGIN_FORMULA_VERSION = 2;
 
 export type DupontFamilyDeps = Pick<PitDeps, 'statements' | 'quarters' | 'announcements' | 'cumulativeStatements'>;
 
@@ -84,11 +86,14 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
   // 2026-10-08 淨利率（只有它）對純銀行改用銀行口徑營收（見 shared/bankAwareIncome.ts）；assetTurnover、dupontEbitMargin、
   // 拆解 ROE 繼續用一般營收（銀行是 null → 照舊標不適用，使用者選定的範圍不含週轉率）。一般公司兩者相同。
   const npmRevenue = (await withBankIncome(incomeStatement, key, deps))?.operatingRevenue ?? null;
-  const netProfitMarginQuarterly = calculateNetProfitMargin(netIncome.value, npmRevenue);
+  // 2026-10-09 對外的稅後淨利率改用合併淨利（總額優先，使用者要求對齊券商軟體）；杜邦拆解的淨利率因子仍用歸屬母公司淨利＋一般營收，
+  // 三因子乘回去才對得上 ROE（ROE 是歸屬母公司口徑）。一般公司沒有非控制權益時兩者相同。
+  const netProfitMarginQuarterly = calculateNetProfitMargin(pickConsolidatedNetIncomeWithFieldKey(incomeStatement).value, npmRevenue);
+  const decompositionNpmQuarterly = calculateNetProfitMargin(netIncome.value, operatingRevenue);
   const assetTurnoverQuarterly = withAverageDenominator(calculateAssetTurnover(operatingRevenue, balances.assetsAvgQ), balances.assetsAvgQ, totalAssets);
   const equityMultiplierResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgQ, balances.equityAvgQ), balances.equityAvgQ, equity.value);
   const equityMultiplierTtmResult = withAverageDenominator(calculateEquityMultiplier(balances.assetsAvgTtm, balances.equityAvgTtm), balances.equityAvgTtm, equity.value);
-  const decomposedRoeQuarterly = calculateDupontDecomposedRoe(netProfitMarginQuarterly.value, assetTurnoverQuarterly.value, equityMultiplierResult.value);
+  const decomposedRoeQuarterly = calculateDupontDecomposedRoe(decompositionNpmQuarterly.value, assetTurnoverQuarterly.value, equityMultiplierResult.value);
 
   // 五因子 Extended DuPont：把上面的 netProfitMargin 再拆成稅務負擔×利息負擔×EBIT利潤率。
   const profitBeforeTax = incomeStatement?.profitBeforeTax ?? null;
@@ -149,7 +154,7 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
   let npmNetIncomeTtmSum = 0n;
   let npmTtmComplete = true;
   for (const record of npmTrailing.periods.map((p) => p.record)) {
-    const picked = pickNetIncome(record);
+    const picked = pickConsolidatedNetIncomeWithFieldKey(record);
     if (record === null || record.operatingRevenue === null || picked.value === null) {
       npmTtmComplete = false;
     } else {
@@ -160,7 +165,8 @@ export const resolveDupontFamilyData = async (query: QuarterlyMetricQuery, deps:
   const netProfitMarginTtmCalc = npmTtmComplete ? calculateNetProfitMargin(npmNetIncomeTtmSum, npmRevenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
   const assetTurnoverTtmCalc = ttmComplete && balances.assetsAvgTtm !== null ? calculateAssetTurnover(revenueTtmSum, balances.assetsAvgTtm) : { value: null, nullReason: 'insufficient_history' as const };
 
-  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(netProfitMarginTtmCalc.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
+  const decompositionNpmTtm = ttmComplete ? calculateNetProfitMargin(netIncomeTtmSum, revenueTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
+  const decomposedRoeTtmCalc = calculateDupontDecomposedRoe(decompositionNpmTtm.value, assetTurnoverTtmCalc.value, equityMultiplierTtmResult.value);
   const decomposedRoeTtmNullReason: MetricNullReason | null = decomposedRoeTtmCalc.value !== null ? null : ttmComplete ? 'missing_input' : 'insufficient_history';
 
   const dupontTaxBurdenTtmCalc = extendedTtmComplete ? calculateDupontTaxBurden(netIncomeTtmSum, preTaxTtmSum) : { value: null, nullReason: 'insufficient_history' as const };
@@ -482,9 +488,11 @@ export const computeDupontFamily = async (
   }
 
   const slots = { netProfitMarginQ, netProfitMarginTtm, assetTurnoverQ, assetTurnoverTtm, equityMultiplier: equityMultiplierOutcome, equityMultiplierTtm, dupontDecomposedRoeQ, dupontDecomposedRoeTtm, dupontTaxBurdenQ, dupontTaxBurdenTtm, dupontInterestBurdenQ, dupontInterestBurdenTtm, dupontEbitMarginQ, dupontEbitMarginTtm, dupontExtendedRoeQ, dupontExtendedRoeTtm };
-  // 分母改平均的四支標 formulaVersion 2，其餘維持預設 1。
+  // 分母改平均的四支標 formulaVersion 2、稅後淨利率標 2（淨利總額優先），其餘維持預設 1。
+  const versionOf = (metricCode: string): number | undefined =>
+    AVERAGE_DENOMINATOR_CODES.has(metricCode) ? DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION : metricCode === 'netProfitMargin' ? NET_PROFIT_MARGIN_FORMULA_VERSION : undefined;
   const versioned = Object.fromEntries(
-    Object.entries(slots).map(([key, slot]) => [key, !isComputationSkip(slot) && AVERAGE_DENOMINATOR_CODES.has(slot.metricCode) ? { ...slot, formulaVersion: DUPONT_AVERAGE_DENOMINATOR_FORMULA_VERSION } : slot])
+    Object.entries(slots).map(([key, slot]) => [key, !isComputationSkip(slot) && versionOf(slot.metricCode) !== undefined ? { ...slot, formulaVersion: versionOf(slot.metricCode) } : slot])
   ) as typeof slots;
   return { symbol, rocYear: year, season, slots: versioned };
 };

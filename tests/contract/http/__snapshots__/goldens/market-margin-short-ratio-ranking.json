@@ -6,7 +6,7 @@
       {
         "companyName": "<string>",
         "marginTodayBalance": "<numeric-string>",
-        "market": "TPEx",
+        "market": "TWSE",
         "rank": "<number>",
         "shortTodayBalance": "<numeric-string>",
         "shortToMarginRatioPct": "<number>",
@@ -14,8 +14,6 @@
       }
     ],
     "tradeDate": "<date>",
-    "warnings": [
-      "<string>"
-    ]
+    "warnings": []
   }
 }

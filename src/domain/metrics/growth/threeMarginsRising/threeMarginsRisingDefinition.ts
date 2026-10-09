@@ -21,5 +21,6 @@ export const threeMarginsRisingDefinition: MetricDefinitionSpec = {
   group: 'period',
   allowedPeriodTypes: ['Q'],
   dependsOn: ['revenue', 'gross_profit', 'operatingIncome', 'profit_loss_attributable_to_owners_of_parent', 'profit_loss'],
-  currentFormulaVersion: 1,
+  // 2026-10-09 formulaVersion 2：讀的稅後淨利率改成總額優先（netProfitMargin v2），有非控制權益的公司訊號可能變。
+  currentFormulaVersion: 2,
 };

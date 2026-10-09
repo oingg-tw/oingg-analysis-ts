@@ -130,5 +130,6 @@ export const computeThreeMarginsRising = async (query: QuarterlyMetricQuery, dep
     knowledgeDateIsFallback,
   });
 
-  return { symbol: query.symbol, rocYear: year, season, slots: { q } };
+  // 2026-10-09 formulaVersion 2：讀的稅後淨利率改成總額優先（見 threeMarginsRisingDefinition.ts）。
+  return { symbol: query.symbol, rocYear: year, season, slots: { q: isComputationSkip(q) ? q : { ...q, formulaVersion: 2 } } };
 };

@@ -13,14 +13,12 @@
         "market": "TWSE",
         "open": "<number>",
         "rank": "<number>",
-        "symbol": "<numeric-string>",
+        "symbol": "<string>",
         "transaction": "<numeric-string>",
         "volume": "<numeric-string>"
       }
     ],
     "tradeDate": "<date>",
-    "warnings": [
-      "<string>"
-    ]
+    "warnings": []
   }
 }
