@@ -49,18 +49,16 @@ const resolveFilterCondition = (input: EtfFilterInput): EtfFilterCondition => {
   if (!('values' in input) || !Array.isArray(input.values)) {
     throw new ValidationError(`"${input.field}" 是類別欄位，filter 要給 values 陣列，不是 min/max。`);
   }
-  if (definition.isBoolean) {
-    const invalid = input.values.filter((v) => v !== 'true' && v !== 'false');
+  // 選項固定的欄位（market／布林）收到選項外的值就擋：IN 比對不到不會報錯，只會安靜回空清單。2026-10-11 market 改成
+  // MOPS TYPEK（sii／otc）後舊值 TWSE／TPEx 就是這種情況（業務中台、web-nuxt 實測都沒存舊值，換算已拿掉）。
+  if (definition.staticValues) {
+    const invalid = input.values.filter((v) => !definition.staticValues!.includes(v));
     if (invalid.length > 0) {
-      throw new ValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
+      throw new ValidationError(`"${input.field}" 的 values 只能是 ${definition.staticValues.map((v) => `"${v}"`).join('/')}，收到不合法的值：${invalid.join(', ')}`);
     }
   }
-  // 2026-10-11 詞彙表：market 值改成 MOPS TYPEK（sii／otc）。舊值 TWSE／TPEx 仍換算接受——業務中台存的使用者篩選條件
-  // 可能還帶舊值（metricCode 改名時 cascade 默默刪條件的教訓），等業務中台確認掃過使用者資料再拿掉。
-  const values = input.field === 'market' ? input.values.map((v) => ETF_MARKET_FILTER_ALIASES[v] ?? v) : input.values;
-  return { kind: 'categorical', definition, values };
+  return { kind: 'categorical', definition, values: input.values };
 };
-const ETF_MARKET_FILTER_ALIASES: Record<string, string> = { TWSE: 'sii', TPEx: 'otc' };
 
 const resolveColumn = (input: EtfColumnInput): EtfColumnRef => {
   const definition = resolveEtfField(input.field);
