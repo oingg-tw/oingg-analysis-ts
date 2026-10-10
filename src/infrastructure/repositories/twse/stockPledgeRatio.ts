@@ -23,10 +23,10 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 // 依日期新到舊排序，取最近 limit 筆——跟 getForeignShareholdingHistory 同一個慣例。
 export const getStockPledgeRatioHistory = async (symbol: string, limit: number): Promise<StockPledgeRatioEntry[]> => {
   const rows = await twseExportPrisma.$queryRaw<RawStockPledgeRatioRow[]>`
-    SELECT report_date, pledge_percent
+    SELECT generated_date AS report_date, pledge_pct AS pledge_percent -- 2026-10-11 改讀 twse 詞彙表新欄名
     FROM "export"."v_stock_pledge_ratios"
     WHERE symbol = ${symbol}
-    ORDER BY report_date DESC
+    ORDER BY generated_date DESC
     LIMIT ${limit}
   `;
   return rows.map((row) => ({

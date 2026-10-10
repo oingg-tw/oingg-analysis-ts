@@ -22,7 +22,7 @@ export const listSymbolsWithMonthlyRevenue = async (): Promise<{ symbol: string 
   // 2026-10-10 加上 mops market_monthly_revenue：交易所月營收缺 124 家（多為 -KY），讀取端已用 mops 補（見 twse/monthlyRevenue.ts），
   // 回填母體也要涵蓋，否則這些公司的月頻指標永遠不會被算。
   const [listed, otc, mops] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_monthly_revenues" WHERE source = 'MONTHLY_REVENUE'`,
+    twseExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_monthly_revenues" WHERE market = 'sii'`,
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_monthly_revenues"`,
     mopsExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."market_monthly_revenue"`,
   ]);

@@ -75,7 +75,7 @@ export interface RawMonthlyRevenueRow {
 export const getLatestMonthlyRevenueYearMonth = async (market: Market): Promise<Date | null> => {
   const rows =
     market === 'TWSE'
-      ? await twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."v_monthly_revenues" WHERE source = 'MONTHLY_REVENUE'`
+      ? await twseExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."v_monthly_revenues" WHERE market = 'sii'`
       : await tpexExportPrisma.$queryRaw<{ year_month: Date | null }[]>`SELECT MAX(year_month) as year_month FROM "export"."v_monthly_revenues"`;
   return rows[0]?.year_month ?? null;
 };
@@ -83,9 +83,9 @@ export const getLatestMonthlyRevenueYearMonth = async (market: Market): Promise<
 export const listMonthlyRevenueForMonth = (market: Market, yearMonth: Date): Promise<RawMonthlyRevenueRow[]> =>
   market === 'TWSE'
     ? twseExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
-        SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
+        SELECT symbol, year_month, current_month_revenue, mom_change_pct AS mom_change_percent, yoy_change_pct AS yoy_change_percent
         FROM "export"."v_monthly_revenues"
-        WHERE year_month = ${yearMonth} AND source = 'MONTHLY_REVENUE'
+        WHERE year_month = ${yearMonth} AND market = 'sii'
       `
     : tpexExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
         SELECT symbol, year_month, current_month_revenue, mom_change_pct AS mom_change_percent, yoy_change_pct AS yoy_change_percent
@@ -183,10 +183,10 @@ export interface RawTpexDisposedStockRow {
 
 export const listDisposedStocksTwse = (eligibleSymbols: string[], limit: number): Promise<RawTwseDisposedStockRow[]> =>
   twseExportPrisma.$queryRaw<RawTwseDisposedStockRow[]>`
-    SELECT symbol, announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
+    SELECT symbol, announcement_date AS announce_date, announcement_count, reason, disposition_period, disposition_measures, detail, link_information
     FROM "export"."v_disposed_stocks"
     WHERE symbol = ANY(${eligibleSymbols})
-    ORDER BY announce_date DESC
+    ORDER BY announcement_date DESC
     LIMIT ${limit}
   `;
 

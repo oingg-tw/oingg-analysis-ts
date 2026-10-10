@@ -38,8 +38,8 @@ interface RawIsinSecuritiesRow {
 export const getPreferredStockSecurities = async (): Promise<PreferredStockSecurity[]> => {
   const [listed, otc] = await Promise.all([
     twseExportPrisma.$queryRaw<RawIsinSecuritiesRow[]>`
-      SELECT i.symbol, i.name, i.isin_code, i.listed_date, i.market_type,
-        CASE WHEN i.listed_date IS NULL THEN (SELECT MIN(trade_date) FROM "export"."v_daily_prices" d WHERE d.symbol = i.symbol) END AS first_trade_date
+      SELECT i.symbol, i.name, i.isin_code, i.listing_date AS listed_date, i.market_type,
+        CASE WHEN i.listing_date IS NULL THEN (SELECT MIN(trade_date) FROM "export"."v_daily_prices" d WHERE d.symbol = i.symbol) END AS first_trade_date
       FROM "export"."v_isin_securities" i
       WHERE i.security_type = '特別股' AND i.is_active
     `,

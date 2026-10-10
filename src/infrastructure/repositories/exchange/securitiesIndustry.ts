@@ -31,8 +31,8 @@ export const isValidSecuritiesSectorCode = (code: string): boolean => {
 // 各自複製一份同樣的兩庫查詢，Altman Z″ 改用類股判斷後是第三個用途。
 export const getSecuritiesSectorCode = async (symbol: string): Promise<string | null> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1`,
-    tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT industry FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1`,
+    twseExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT sector_code AS industry FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1`,
+    tpexExportPrisma.$queryRaw<{ industry: string | null }[]>`SELECT sector_code AS industry FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1`,
   ]);
   return twseRows[0]?.industry ?? tpexRows[0]?.industry ?? null;
 };
@@ -62,11 +62,11 @@ export interface SecuritiesIndustrySector {
 const listSectorMembers = async (codes: string[] | null): Promise<{ symbol: string; industry: string }[]> => {
   const [twseRows, tpexRows] = await Promise.all([
     codes
-      ? twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."v_company_profiles" WHERE industry = ANY(${codes}) AND ${Prisma.raw(LISTED_ONLY)}`
-      : twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."v_company_profiles" WHERE industry IS NOT NULL AND ${Prisma.raw(LISTED_ONLY)}`,
+      ? twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, sector_code AS industry FROM "export"."v_company_profiles" WHERE sector_code = ANY(${codes}) AND ${Prisma.raw(LISTED_ONLY)}`
+      : twseExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, sector_code AS industry FROM "export"."v_company_profiles" WHERE sector_code IS NOT NULL AND ${Prisma.raw(LISTED_ONLY)}`,
     codes
-      ? tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."v_company_profiles" WHERE industry = ANY(${codes}) AND in_latest_list`
-      : tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, industry FROM "export"."v_company_profiles" WHERE industry IS NOT NULL AND in_latest_list`,
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, sector_code AS industry FROM "export"."v_company_profiles" WHERE sector_code = ANY(${codes}) AND in_latest_list`
+      : tpexExportPrisma.$queryRaw<{ symbol: string; industry: string }[]>`SELECT symbol, sector_code AS industry FROM "export"."v_company_profiles" WHERE sector_code IS NOT NULL AND in_latest_list`,
   ]);
   const bySymbol = new Map<string, string>();
   for (const r of [...twseRows, ...tpexRows]) if (!bySymbol.has(r.symbol)) bySymbol.set(r.symbol, r.industry); // twse 優先，同 /companies

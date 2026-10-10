@@ -17,7 +17,7 @@ export interface RawMaterialAnnouncementRow {
 // 最近公告的前 limit 筆（依公告日期、公告時間由新到舊）。
 export const listLatestMaterialAnnouncements = (limit: number): Promise<RawMaterialAnnouncementRow[]> =>
   twseExportPrisma.$queryRaw<RawMaterialAnnouncementRow[]>`
-    SELECT symbol, announcement_date, announcement_time, report_date, subject, clause, fact_date, description
+    SELECT symbol, announcement_date, announcement_time, generated_date AS report_date, subject, clause, fact_date, description
     FROM "export"."v_material_announcements"
     ORDER BY announcement_date DESC, announcement_time DESC
     LIMIT ${limit}

@@ -93,8 +93,8 @@ const getFullDeliverySymbolSets = async (): Promise<{ twse: Set<string>; tpex: S
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<{ symbol: string }[]>`
       SELECT DISTINCT symbol FROM "export"."v_changed_trading_methods"
-      WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."v_changed_trading_methods")
-    `,
+      WHERE observed_date = (SELECT MAX(observed_date) FROM "export"."v_changed_trading_methods")
+    `, // 2026-10-11 twse 這張的 trade_date 是觀測日，詞彙表改名 observed_date（tpex 那張是真實交易日，維持 trade_date）
     tpexExportPrisma.$queryRaw<{ symbol: string }[]>`
       SELECT DISTINCT symbol FROM "export"."v_changed_trading_methods"
       WHERE trade_date = (SELECT MAX(trade_date) FROM "export"."v_changed_trading_methods") AND altered_trading = true
@@ -114,7 +114,7 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
   const [twseRows, tpexRows, twsePreferredRows, tpexPreferredRows, fullDeliverySets] = await Promise.all([
     needsTwse
       ? twseExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
-          SELECT symbol, short_name FROM "export"."v_company_profiles" WHERE source = 'COMPANY_PROFILE'
+          SELECT symbol, short_name FROM "export"."v_company_profiles" WHERE market = 'sii'
         `
       : Promise.resolve([]),
     needsTpex
@@ -249,10 +249,11 @@ interface RawTwseCompanyProfileDetailRow {
   issued_shares: bigint | null;
 }
 
-const TWSE_COMPANY_PROFILE_DETAIL_COLUMNS = `symbol, report_date, name, short_name, foreign_registration_country, industry,
-  industry_name, address, tax_id, chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson,
-  phone, established_date, listed_date, par_value, paid_in_capital, private_placement_shares, preferred_stock_shares,
-  financial_report_type, stock_transfer_agency, transfer_agency_phone, transfer_agency_address, auditing_firm,
+// 2026-10-11 改讀 twse 詞彙表新欄名（twse migration 20261011120000 已上 PRD），別名回舊欄名讓型別不動。
+const TWSE_COMPANY_PROFILE_DETAIL_COLUMNS = `symbol, generated_date AS report_date, name, short_name, foreign_registration_country, sector_code AS industry,
+  sector_name AS industry_name, address, tax_id, chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson,
+  phone, established_date, listing_date AS listed_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares, preferred_stock_shares,
+  CASE data_type WHEN '2' THEN '1' WHEN '1' THEN '2' END AS financial_report_type, stock_transfer_agency, transfer_agency_phone, transfer_agency_address, auditing_firm,
   auditor1, auditor2, english_short_name, english_address, fax_number, email, website, issued_shares`;
 
 // 這 5 個 industry 代碼的 industry_name 不是真正的產業分類，是 twse-ts 自己為了說明「這代碼
@@ -482,7 +483,8 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
 // 四碼的公開發行公司）。公司目錄／計數只要上市的，用 view 本來就有的 source 欄位過濾（twse-ts 說篩選權在消費端，view 是
 // 整張表鏡像，因為 monthly_revenue 也是同一套 source 要能 join）。曾短暫用「industry='XX' 且六碼」的啟發式，只擋得掉證券商，
 // 其他 280 家公開發行公司仍會混進目錄，twse-ts 糾正後改用 source。六碼 TDR（910322）、6008 凱基證都是 COMPANY_PROFILE，自然保留。
-export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
+// 2026-10-11 改用詞彙表官方市場別（twse 已上 PRD）：上市是 market='sii'，不再看 source（source 只代表出處）。
+export const LISTED_ONLY = `market = 'sii'`;
 // 2026-10-05 tpex-ts 加了 in_latest_list：company_profile 是只增不刪的快照，離開 TPEx 名單（下市、轉上市、上櫃↔興櫃互轉）的公司那一列
 // 永遠留著、跟現役公司長得一樣（當天 6 家：4150、5371、3659、7812、6618、8183）。清單、計數、排行一律只取 in_latest_list；
 // 單一代號的查詢（companyExists、名稱、profile、類股）不篩，保留查得到已離開名單的公司（tpex-ts 刻意保留的用意）。
@@ -490,7 +492,7 @@ export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
 // 2026-10-02 使用者拍板：存託憑證移出公司目錄。上市類股代碼 91（第一上市外國公司，身份別不是產業）剛好就是 10 檔 DR
 // （9103、910322、9105、910861、9110、911608、911622、911868、912000、9136），mops 回報它們一季財報都沒有、以後也不會有，
 // 留在目錄只會讓「拿目錄當母體」的覆蓋率永遠掛著 10 家。只從目錄／計數拿掉；個股 profile、行情、GET /securities 不受影響。
-const COMPANY_DIRECTORY_TWSE = `${LISTED_ONLY} AND industry IS DISTINCT FROM '91'`;
+const COMPANY_DIRECTORY_TWSE = `${LISTED_ONLY} AND sector_code IS DISTINCT FROM '91'`;
 // tpex-ts 的 company_profile 也用 source 分兩種，但語意跟 twse 不同：COMPANY_PROFILE 是上櫃（891 家）、
 // COMPANY_PROFILE_EMERGING 是興櫃（364 家），兩者都是正牌公司，差別是市場別不是雜訊。
 // 2026-10-11 tpex 改用詞彙表官方市場別（MOPS TYPEK）：興櫃是 market='rotc'，不再看 source='COMPANY_PROFILE_EMERGING'。
@@ -508,7 +510,7 @@ const TPEX_EMERGING_MARKET = 'rotc';
 // 所以拿這個目錄當母體算指標覆蓋率時要先扣掉 isEmerging，否則分母會多 364 家永遠算不出來的公司。
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
-    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."v_company_profiles" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
+    twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, sector_code AS industry FROM "export"."v_company_profiles" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
     tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; market: string | null })[]>`SELECT symbol, short_name, sector_code AS industry, market FROM "export"."v_company_profiles" WHERE in_latest_list`,
   ]);
   const all = dedupeBySymbol([

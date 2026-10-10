@@ -36,11 +36,13 @@ interface RawExDividendNoticeRow {
 // 自己決定要看哪個月，可能是本月已經過去一半的事件，也是合理的查詢。
 export const getExDividendCalendar = async (startDate: Date, endDate: Date): Promise<ExDividendCalendarEntry[]> => {
   const rows = await twseExportPrisma.$queryRaw<RawExDividendNoticeRow[]>`
-    SELECT symbol, ex_date, ex_type, stock_dividend_ratio, subscription_ratio, subscription_price_per_share,
+    -- 2026-10-11 改讀 twse 詞彙表新欄名：除息日／除權日分兩欄（權息同日兩欄都有）。ex_date／ex_type 由新欄位推回（PRD 實測 174 列 0 差異）。
+    SELECT symbol, COALESCE(ex_dividend_date, ex_rights_date) AS ex_date,
+      CASE WHEN ex_dividend_date IS NOT NULL AND ex_rights_date IS NOT NULL THEN '權息' WHEN ex_rights_date IS NOT NULL THEN '權' ELSE '息' END AS ex_type, stock_dividend_ratio, subscription_ratio, subscription_price_per_share,
       cash_dividend, shares_offered, shares_emp_owner, sharesholder_owner, stock_holding_ratio
     FROM "export"."v_ex_dividend_notices"
-    WHERE ex_date >= ${startDate} AND ex_date <= ${endDate}
-    ORDER BY ex_date ASC, symbol ASC
+    WHERE COALESCE(ex_dividend_date, ex_rights_date) >= ${startDate} AND COALESCE(ex_dividend_date, ex_rights_date) <= ${endDate}
+    ORDER BY COALESCE(ex_dividend_date, ex_rights_date) ASC, symbol ASC
   `;
 
   const toNumber = (value: string | null): number | null => (value === null ? null : Number(value));

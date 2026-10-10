@@ -56,9 +56,8 @@ const toDateString = (value: Date | null): string | null => (value === null ? nu
 const toYearMonthString = (value: Date): string => value.toISOString().slice(0, 7);
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
-const COLUMNS = 'year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue, yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note';
-// 2026-10-11 tpex 已上詞彙表新欄名（fb18820，PRD）：改讀新名稱，別名回舊名讓下游型別不動。sector_name 是對齊 twse 字典的類股名稱。
-const TPEX_COLUMNS =
+// 2026-10-11 twse、tpex 都已上詞彙表新欄名（PRD）：改讀新名稱，別名回舊名讓下游型別不動。上市篩選改用 market='sii'（source 只代表出處）。
+const COLUMNS =
   'year_month, generated_date AS report_date, sector_name AS industry, current_month_revenue, last_year_same_month_revenue, yoy_change_pct AS yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_pct AS cumulative_change_percent, note';
 
 // 2026-10-10 mops-ts export.market_monthly_revenue（MOPS t21sc03 彙總表，上市＋上櫃，2016-01 起、含 -KY）補交易所缺的月份。
@@ -86,7 +85,7 @@ const fillMissingMonths = <T extends { year_month: Date }>(primary: T[], fallbac
 export const getMonthlyRevenueHistory = async (symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult> => {
   const [listed, mops] = await Promise.all([
     twseExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-      `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
+      `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 AND market = 'sii' ORDER BY year_month ASC`,
       symbol
     ),
     mopsExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(`SELECT ${MOPS_COLUMNS} FROM "export"."market_monthly_revenue" WHERE symbol = $1`, symbol),
@@ -95,7 +94,7 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
     listed.length > 0
       ? listed
       : await tpexExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-          `SELECT ${TPEX_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
+          `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
           symbol
         );
   const rows = fillMissingMonths(exchange, mops);
@@ -149,7 +148,7 @@ const SYMBOL_MONTH_COLUMNS = 'symbol, year_month, current_month_revenue, last_ye
 const listMonthlyRevenueForSymbols = async (symbols: string[]): Promise<CompanyMonthlyRevenue[]> => {
   if (symbols.length === 0) return [];
   const [listed, otc, mops] = await Promise.all([
-    twseExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[]) AND source = 'MONTHLY_REVENUE'`, symbols),
+    twseExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[]) AND market = 'sii'`, symbols),
     tpexExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[])`, symbols),
     mopsExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."market_monthly_revenue" WHERE symbol = ANY($1::text[])`, symbols),
   ]);
