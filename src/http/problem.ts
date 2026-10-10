@@ -4,7 +4,7 @@ import type { ZodError } from 'zod';
 
 // 2026-10-08 RFC 9457 problem+json（跟 bff-ts／web-nuxt 一起定的 API 最佳實務）。形狀刻意跟 bff-ts 的 errorHandler 完全一致：
 // 三個服務同一套成員名稱（oingg-conductor-ts「Architectural Guide to RFC 9457」的 Extension Key Inconsistency 反模式）。
-// 所有錯誤回應都走這支：errorHandler、validate（zod）、bffAuth／upstream（401）、batch 的 rate limiter（429）、未知路由（404）。
+// 所有錯誤回應都走這支：errorHandler、validate（zod）、businessAuth／upstream（401）、batch 的 rate limiter（429）、未知路由（404）。
 // - type：有 code 的是 tag URI（tag:oingg.com,2026:unsupported-timeframe，§3.1.1 允許不可解析的 URI，type 與 code 一一對應）；
 //   沒有 code 的是 about:blank（§4.2.1：錯誤的意思不超出 HTTP 狀態碼本身）。
 // - code：只在呼叫端需要分支時才帶（unknown_metric、unsupported_timeframe）；400／401／404／429／500 本身的意思看 status 就夠。

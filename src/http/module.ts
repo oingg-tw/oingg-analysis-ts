@@ -6,7 +6,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 // 新增路由要改兩個地方；現在 src/bootstrap/httpModules.ts 是唯一的有序清單，createApp 跟 buildOpenApiDocument
 // 都吃同一份。
 //
-// auth 標籤取代「掛載在 bffAuth 之前/之後」這種靠順序表達的隱規則：
+// auth 標籤取代「掛載在 businessAuth 之前/之後」這種靠順序表達的隱規則：
 // - public：健康檢查，不需要密鑰（監控系統不該知道密鑰）。
 // - batch：GCP Cloud Scheduler 用，刻意不套 BFF 共用密鑰（之後接 Cloud Run IAM，是不同的信任邊界；
 //   2026-09-17 使用者拍板維持現狀不驗證）。

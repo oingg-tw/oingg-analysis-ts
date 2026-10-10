@@ -10,7 +10,7 @@ import { jsonRoute } from '@/http/route';
 // Service 的 request timeout（可設到 60 分鐘）跟 Cloud Scheduler 本身的逾時上限都要另外調整才扛得住；等真的
 // 接近這個上限造成逾時失敗，再改成「收到請求先回 202、背景繼續跑」的非同步模式。
 //
-// 目前沒有任何驗證機制擋這支端點——跟 bff 端點不一樣，這支是刻意留在 bffAuth 的驗證範圍之外（HttpModule
+// 目前沒有任何驗證機制擋這支端點——跟 bff 端點不一樣，這支是刻意留在 businessAuth 的驗證範圍之外（HttpModule
 // auth: 'batch'），因為呼叫方是 Cloud Scheduler 不是 bff-ts，不該共用同一把密鑰。正式部署前至少要靠 Cloud Run
 // 的 IAM invoker 權限（只有指定的 Scheduler 服務帳號能呼叫）擋住，不能公開曝露。2026-09-17 使用者拍板維持現狀。
 export const createDailyBatchRouter = (deps: BatchRunnerDeps): Router => {

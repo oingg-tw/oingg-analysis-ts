@@ -9,7 +9,7 @@ import { shape } from './shape';
 // nullability 本身由 openapi.test.ts 的 snapshot 釘住。
 //
 // 刻意不打的：POST /batch/compute/* —— 那支會同步跑完整批次計算（有真實副作用）且每小時
-// 限 5 次，「batch 在 bffAuth 之外」這個決策改由 Phase 4 的 HttpModule.auth 標籤單元測試釘住。
+// 限 5 次，「batch 在 businessAuth 之外」這個決策改由 Phase 4 的 HttpModule.auth 標籤單元測試釘住。
 interface GoldenCase {
   slug: string;
   method: 'get' | 'post';

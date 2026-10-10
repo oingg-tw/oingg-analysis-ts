@@ -8,7 +8,7 @@ import { sendProblem } from '@/http/problem';
 // 本機開發沒設 BFF_API_KEY 時直接放行——正式環境一定要設（config 載入時就檢查，沒設會直接讓
 // 伺服器啟動失敗，不會悄悄變成「正式環境也不驗證」）。
 // 2026-09-17 Phase 4 改成工廠：密鑰由 bootstrap 從 config 讀了傳進來，http 層不碰 config。
-export const createBffAuth =
+export const createBusinessAuth =
   ({ apiKey }: { apiKey: string | null | undefined }): RequestHandler =>
   (req, res, next) => {
     if (!apiKey) {

@@ -67,7 +67,7 @@ import { registerMacroSeriesOpenApi } from '@/http/modules/macro/series/openapi'
 // 依這裡的順序掛載（順序沿用舊 routes.ts）；buildOpenApiDocument 依同一個順序註冊 OpenAPI 路徑
 // （tests/contract/openapi.test.ts 的 snapshot 有 deep key-sort，註冊順序不是契約）。
 //
-// 掛載細節：public 先、batch 次之（都在 bffAuth 之前），再 bffAuth，最後 bff 模組；有 mountPath 的掛在前綴下
+// 掛載細節：public 先、batch 次之（都在 businessAuth 之前），再 businessAuth，最後 bff 模組；有 mountPath 的掛在前綴下
 // （ranking 的 route 是 /ranking，對外是 /valuation/ranking；macro 兩支同理）。
 //
 // 新增端點：在對應模組的 route.ts/openapi.ts 加，然後在這裡加一筆——只有一個地方要改。
@@ -76,7 +76,7 @@ import { registerMacroSeriesOpenApi } from '@/http/modules/macro/series/openapi'
 // deps 交給 http 層的地方。
 export const createHttpModules = (deps: AppDeps): readonly HttpModule[] => [
   { name: 'system', auth: 'public', router: createSystemRouter({ getStartupTime, pingDatabases }), registerOpenApi: registerSystemOpenApi },
-  // 2026-09-30 上游變動通知：自己驗 X-Upstream-Key，不套 bff 的共用密鑰（不同的信任邊界），所以跟 batch 一樣掛在 bffAuth 之前。
+  // 2026-09-30 上游變動通知：自己驗 X-Upstream-Key，不套 bff 的共用密鑰（不同的信任邊界），所以跟 batch 一樣掛在 businessAuth 之前。
   { name: 'upstream', auth: 'upstream', router: createUpstreamRouter(deps, { keys: config.upstreamKeys, isProduction: config.isProduction }), registerOpenApi: registerUpstreamOpenApi },
   { name: 'batch', auth: 'batch', router: createBatchRouter(deps), registerOpenApi: registerBatchOpenApi },
   { name: 'metrics', auth: 'bff', router: createMetricsRouter(deps), registerOpenApi: registerFiltersOpenApi },

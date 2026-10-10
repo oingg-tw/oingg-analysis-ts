@@ -15,8 +15,11 @@ const envSchema = z
   .object({
     NODE_ENV: z.string().optional(),
     PORT: z.coerce.number().int().positive().default(3000),
-    // api/bff 跟 bff-ts 約定的共用密鑰（X-Api-Key），見 src/http/middleware/bffAuth.ts——本機開發
+    // api/bff 跟 bff-ts 約定的共用密鑰（X-Api-Key），見 src/http/middleware/businessAuth.ts——本機開發
     // 可以不設（直接放行），正式環境一定要設（下方 superRefine），不要悄悄退化成不驗證。
+    // 2026-10-10 詞彙表：服務正名「業務中台」，環境變數官方名 BUSINESS_API_KEY；舊名 BFF_API_KEY 仍可用（優先讀新名），
+    // 部署設定（deploy/*.yaml、Cloud Run secret）的改名由使用者決定時程。
+    BUSINESS_API_KEY: nonEmpty.optional(),
     BFF_API_KEY: nonEmpty.optional(),
     // 沒設就依環境決定（正式 info、開發 debug，見 logger.ts）；測試 harness 設 'silent'。
     LOG_LEVEL: nonEmpty.optional(),
@@ -41,8 +44,8 @@ const envSchema = z
   })
   .superRefine((env, ctx) => {
     const isProduction = env.NODE_ENV === 'production';
-    if (isProduction && !env.BFF_API_KEY) {
-      ctx.addIssue({ code: 'custom', path: ['BFF_API_KEY'], message: '正式環境的 api/bff 一定要有共用密鑰才能啟動，見 src/http/middleware/bffAuth.ts。' });
+    if (isProduction && !env.BUSINESS_API_KEY && !env.BFF_API_KEY) {
+      ctx.addIssue({ code: 'custom', path: ['BUSINESS_API_KEY'], message: '正式環境一定要有業務中台的共用密鑰（BUSINESS_API_KEY，舊名 BFF_API_KEY）才能啟動，見 src/http/middleware/businessAuth.ts。' });
     }
   });
 
@@ -57,7 +60,7 @@ const isProduction = env.NODE_ENV === 'production';
 export const config = {
   isProduction,
   port: env.PORT,
-  bffApiKey: env.BFF_API_KEY ?? null,
+  businessApiKey: env.BUSINESS_API_KEY ?? env.BFF_API_KEY ?? null,
   logLevel: env.LOG_LEVEL ?? null,
   upstreamKeys: { mops: env.UPSTREAM_KEY_MOPS ?? null, tpex: env.UPSTREAM_KEY_TPEX ?? null, twse: env.UPSTREAM_KEY_TWSE ?? null },
   upstreamProcessorJob: env.UPSTREAM_PROCESSOR_JOB ?? null,

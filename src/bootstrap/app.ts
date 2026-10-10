@@ -7,7 +7,7 @@ import pinoHttp from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
 import type { Logger } from 'pino';
 import type { HttpModule } from '@/http/module';
-import { createBffAuth } from '@/http/middleware/bffAuth';
+import { createBusinessAuth } from '@/http/middleware/businessAuth';
 import { createErrorHandler } from '@/http/middleware/errorHandler';
 import { logger } from '@/infrastructure/logger';
 import { config } from '@/infrastructure/config';
@@ -18,12 +18,12 @@ import { buildOpenApiDocument } from './openapi';
 // 2026-09-17 clean architecture 重構：Phase 0 把「組 express app」從 src/index.ts 抽出來，跟「連 DB /
 // 載快取 / listen」分開（HTTP 契約測試要一個不 listen、不連 DB 的 app）；Phase 4 改成從 HttpModule
 // 清單組裝——middleware 鏈跟以前一模一樣，只是路由掛載不再靠 src/http/routes.ts 手寫順序，而是
-// 依模組的 auth 標籤分組（public → batch → bffAuth → bff）。
+// 依模組的 auth 標籤分組（public → batch → businessAuth → bff）。
 export interface AppOptions {
   modules: readonly HttpModule[];
   logger: Logger;
   isProduction: boolean;
-  bffApiKey: string | null | undefined;
+  businessApiKey: string | null | undefined;
   openApiDocument: object;
 }
 
@@ -34,7 +34,7 @@ export const defaultAppOptions = (): AppOptions => {
     modules,
     logger,
     isProduction: config.isProduction,
-    bffApiKey: config.bffApiKey,
+    businessApiKey: config.businessApiKey,
     openApiDocument: buildOpenApiDocument(modules, { port: config.port }),
   };
 };
@@ -88,7 +88,7 @@ export const createApp = (options: AppOptions = defaultAppOptions()) => {
   // 上游變動通知：路由自己驗每個來源的 X-Upstream-Key（見 http/modules/upstream/route.ts），也不能套 bff 的密鑰。
   for (const module of options.modules.filter((m) => m.auth === 'upstream')) mount(module);
   // 以下都是只給 bff-ts 呼叫的模組，2026-09-05 起套用共用密鑰驗證。
-  app.use(createBffAuth({ apiKey: options.bffApiKey }));
+  app.use(createBusinessAuth({ apiKey: options.businessApiKey }));
   // 2026-10-08 bff-ts 要在 CI 對我們的合約做 diff：OpenAPI 文件的 JSON 版（/api-docs 只有 Swagger 網頁介面），跟其他 bff 端點一樣要 X-Api-Key。
   app.get('/openapi.json', (_req, res) => {
     res.json(options.openApiDocument);

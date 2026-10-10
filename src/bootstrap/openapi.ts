@@ -13,7 +13,7 @@ import type { HttpModule } from '@/http/module';
 // 2026-10-08 API 最佳實務第一批（跟 bff-ts／web-nuxt 一起定的）：
 // - operationId 依「method ＋ path」自動產生（getCompaniesMetricHistory、getCompaniesSymbolMetricProvenance…），不靠逐支手寫，
 //   不會漏；bff 拿 GET /openapi.json 進 CI 做 diff 時有穩定的鍵。路徑改了 operationId 跟著變，本來就是破壞性變更。
-// - 安全宣告：X-Api-Key 是全域預設，public／batch／upstream 模組的路徑覆寫成不需要（它們掛在 bffAuth 之前，見 bootstrap/app.ts）。
+// - 安全宣告：X-Api-Key 是全域預設，public／batch／upstream 模組的路徑覆寫成不需要（它們掛在 businessAuth 之前，見 bootstrap/app.ts）。
 const BFF_API_KEY_SCHEME = 'BffApiKey';
 
 // 2026-10-08 RFC 9457 problem+json（見 http/problem.ts）：所有 4xx/5xx 都是這個形狀，形狀跟 bff-ts 的 Problem schema 一致。
