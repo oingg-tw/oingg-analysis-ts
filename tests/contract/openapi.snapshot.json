@@ -2920,6 +2920,16 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "declaredDataType": {
+                      "description": "交易所申報的財報口徑，用 MOPS 編碼：\"2\" 合併、\"1\" 個別（沒有子公司）；未知代碼 null。判斷指標實際口徑請用 metricDataType",
+                      "enum": [
+                        "1",
+                        "2",
+                        null
+                      ],
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "deputySpokesperson": {
                       "nullable": true,
                       "type": "string"
@@ -2945,7 +2955,8 @@
                       "type": "string"
                     },
                     "financialReportType": {
-                      "description": "交易所「編製財務報告類型」裸代碼：\"1\" 合併財報、\"2\" 個別財報（注意跟 MOPS dataType 相反）；前端顯示請用 financialReportTypeName，判斷指標口徑請用 metricDataType",
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 declaredDataType；這個舊欄位是交易所編碼 \"1\" 合併、\"2\" 個別，跟 MOPS 相反）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -2962,13 +2973,20 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "generatedDate": {
+                      "description": "交易所出表日 \"YYYY-MM-DD\"",
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "industry": {
-                      "description": "產業裸代碼，例如 \"24\"，前端顯示請用 industryName",
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 sectorCode）",
                       "nullable": true,
                       "type": "string"
                     },
                     "industryName": {
-                      "description": "可讀產業名稱；TPEx 目前沒有對應欄位，一律是 null，不是猜出來的代碼對照",
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 sectorName；這個舊欄位 TPEx 一律是 null）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -2981,6 +2999,13 @@
                       "type": "string"
                     },
                     "listedDate": {
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 listingDate）",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "listingDate": {
+                      "description": "上市（櫃）日 \"YYYY-MM-DD\"",
                       "nullable": true,
                       "type": "string"
                     },
@@ -2993,7 +3018,7 @@
                       "type": "string"
                     },
                     "metricDataType": {
-                      "description": "本服務指標對這家公司實際採用的財報口徑（MOPS dataType）：\"2\" 合併報表、\"1\" 個體報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個體報表的公司（約 249 家）用個體。要標示「個體報表」看這個欄位。",
+                      "description": "本服務指標對這家公司實際採用的財報口徑（MOPS dataType）：\"2\" 合併報表、\"1\" 個別報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個別報表的公司（約 249 家）用個別。要標示「個別報表」看這個欄位。",
                       "enum": [
                         "1",
                         "2"
@@ -3001,6 +3026,11 @@
                       "type": "string"
                     },
                     "name": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "numberOfPreferenceShares": {
+                      "description": "特別股股數，BigInt 序列化成字串",
                       "nullable": true,
                       "type": "string"
                     },
@@ -3018,6 +3048,8 @@
                       "type": "string"
                     },
                     "preferredStockShares": {
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 numberOfPreferenceShares）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -3026,6 +3058,18 @@
                       "type": "string"
                     },
                     "reportDate": {
+                      "deprecated": true,
+                      "description": "（已退役，2026-10-24 移除，改用 generatedDate）",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "sectorCode": {
+                      "description": "證交所類股代碼，例如 \"24\"，同 GET /industries/securities-sectors",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "sectorName": {
+                      "description": "類股名稱，從類股代碼表取，上市上櫃都有；非產業代碼（證券商、期貨商、第一上市外國公司等）為 null",
                       "nullable": true,
                       "type": "string"
                     },
@@ -3105,6 +3149,12 @@
                     "email",
                     "website",
                     "issuedShares",
+                    "generatedDate",
+                    "sectorCode",
+                    "sectorName",
+                    "declaredDataType",
+                    "listingDate",
+                    "numberOfPreferenceShares",
                     "metricDataType"
                   ],
                   "type": "object"
@@ -5268,7 +5318,8 @@
                       "items": {
                         "properties": {
                           "code": {
-                            "description": "兩碼證交所類股代碼，例如 \"24\"",
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 sectorCode",
                             "type": "string"
                           },
                           "companyCount": {
@@ -5276,11 +5327,22 @@
                             "type": "number"
                           },
                           "name": {
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 sectorName",
+                            "type": "string"
+                          },
+                          "sectorCode": {
+                            "description": "兩碼證交所類股代碼，例如 \"24\"",
+                            "type": "string"
+                          },
+                          "sectorName": {
                             "description": "中文類股名稱，例如「半導體業」",
                             "type": "string"
                           }
                         },
                         "required": [
+                          "sectorCode",
+                          "sectorName",
                           "code",
                           "name",
                           "companyCount"

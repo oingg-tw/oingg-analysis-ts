@@ -44,9 +44,17 @@ export interface CompanyProfileDetail {
   email: string | null;
   website: string | null; // 已正規化成裸網域（去 scheme/尾斜線/www.）
   issuedShares: string | null;
-  // 2026-09-22 新增：本服務所有指標對這家公司實際採用的財報口徑（MOPS dataType，'2' 合併／'1' 個體），來自
-  // mops-ts 的 export.company_report_availability——有合併報表就永遠用合併，完全沒有才用個體（249 家）。前端要
-  // 標示「個體報表」看這個欄位，不要看交易所申報的 financialReportType（兩者對 31 家不一致）。
+  // 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位。上面對應的舊欄位（reportDate／industry／industryName／
+  // financialReportType／listedDate／preferredStockShares）並存到 2026-10-24 後刪除。
+  generatedDate: string | null; // 交易所出表日（舊名 reportDate）
+  sectorCode: string | null; // 證交所類股代碼（舊名 industry）
+  sectorName: string | null; // 類股名稱，一律從類股代碼表取，上櫃也有（舊的 industryName 上櫃一律 null）
+  declaredDataType: '1' | '2' | null; // 交易所申報的財報口徑，改用 MOPS 編碼：'2' 合併、'1' 個別（舊的 financialReportType 方向相反）
+  listingDate: string | null; // 上市（櫃）日（舊名 listedDate）
+  numberOfPreferenceShares: string | null; // 特別股股數（舊名 preferredStockShares）
+  // 2026-09-22 新增：本服務所有指標對這家公司實際採用的財報口徑（MOPS dataType，'2' 合併／'1' 個別），來自
+  // mops-ts 的 export.company_report_availability——有合併報表就永遠用合併，完全沒有才用個別（249 家）。前端要
+  // 標示「個別報表」看這個欄位，不要看交易所申報的 financialReportType（兩者對 31 家不一致）。
   metricDataType: '1' | '2';
 }
 

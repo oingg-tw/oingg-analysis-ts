@@ -20,16 +20,16 @@ export const companyProfileDetailSchema = z.object({
   // 2026-10-01 應 web-nuxt／bff-ts 要求：個股頁拿不到 GET /companies 清單上的 isEmerging，per-symbol 分不出上櫃與興櫃。
   // 刻意加旗標而不是把 market 擴成 'EMERGING'——把 market 當二元值的下游會把未知值默默標錯（bff-ts 實測會落到 TWSE）。
   isEmerging: z.boolean().meta({ description: '興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同' }),
-  reportDate: z.string().nullable(),
+  reportDate: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 generatedDate）', deprecated: true }),
   name: z.string().nullable(),
   shortName: z.string().nullable(),
   foreignRegistrationCountry: z.string().nullable(),
-  industry: z.string().nullable().meta({ description: '產業裸代碼，例如 "24"，前端顯示請用 industryName' }),
+  industry: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 sectorCode）', deprecated: true }),
   // 2026-09-02 應 bff-ts/web-nuxt 要求新增——industry 是裸代碼（例如 "24"），前端顯示沒意義。
   // TWSE company_profile 本身就有這個欄位（例如 "半導體業"），直接透傳；TPEx 的 export view
   // 沒有對應欄位，這邊先回 null，已經去信請 tpex-ts 評估補上（見對話紀錄），避免自己猜代碼
   // 對照表猜錯——bff-ts 明確要求「有官方對照表才給，不要亂猜」。
-  industryName: z.string().nullable().meta({ description: '可讀產業名稱；TPEx 目前沒有對應欄位，一律是 null，不是猜出來的代碼對照' }),
+  industryName: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 sectorName；這個舊欄位 TPEx 一律是 null）', deprecated: true }),
   address: z.string().nullable(),
   taxId: z.string().nullable(),
   chairman: z.string().nullable(),
@@ -39,12 +39,12 @@ export const companyProfileDetailSchema = z.object({
   deputySpokesperson: z.string().nullable(),
   phone: z.string().nullable(),
   establishedDate: z.string().nullable(),
-  listedDate: z.string().nullable(),
+  listedDate: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 listingDate）', deprecated: true }),
   parValue: z.number().nullable(),
   paidInCapital: z.string().nullable().meta({ description: 'BigInt 序列化成字串，避免 JS 數字精度問題' }),
   privatePlacementShares: z.string().nullable(),
-  preferredStockShares: z.string().nullable(),
-  financialReportType: z.string().nullable().meta({ description: '交易所「編製財務報告類型」裸代碼："1" 合併財報、"2" 個別財報（注意跟 MOPS dataType 相反）；前端顯示請用 financialReportTypeName，判斷指標口徑請用 metricDataType' }),
+  preferredStockShares: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 numberOfPreferenceShares）', deprecated: true }),
+  financialReportType: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 declaredDataType；這個舊欄位是交易所編碼 "1" 合併、"2" 個別，跟 MOPS 相反）', deprecated: true }),
   // 2026-09-02 應 bff-ts/web-nuxt 要求新增的可讀名稱；2026-09-22 修正代碼對照（原本寫反，見
   // infrastructure/repositories/exchange/companyProfile.ts 的交叉比對）。
   financialReportTypeName: z.string().nullable().meta({ description: '「合併財報」或「個別財報」，未知代碼回 null（2026-09-22 前的對照是反的）' }),
@@ -60,7 +60,14 @@ export const companyProfileDetailSchema = z.object({
   email: z.string().nullable(),
   website: z.string().nullable().meta({ description: '2026-09-04 起已正規化成裸網域（去 scheme/尾斜線/www. 前綴），方便直接接 logo 服務' }),
   issuedShares: z.string().nullable(),
-  metricDataType: z.enum(['1', '2']).meta({ description: '本服務指標對這家公司實際採用的財報口徑（MOPS dataType）："2" 合併報表、"1" 個體報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個體報表的公司（約 249 家）用個體。要標示「個體報表」看這個欄位。' }),
+  // 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位；上面標 deprecated 的舊欄位並存到 2026-10-24。
+  generatedDate: z.string().nullable().meta({ description: '交易所出表日 "YYYY-MM-DD"' }),
+  sectorCode: z.string().nullable().meta({ description: '證交所類股代碼，例如 "24"，同 GET /industries/securities-sectors' }),
+  sectorName: z.string().nullable().meta({ description: '類股名稱，從類股代碼表取，上市上櫃都有；非產業代碼（證券商、期貨商、第一上市外國公司等）為 null' }),
+  declaredDataType: z.enum(['1', '2']).nullable().meta({ description: '交易所申報的財報口徑，用 MOPS 編碼："2" 合併、"1" 個別（沒有子公司）；未知代碼 null。判斷指標實際口徑請用 metricDataType' }),
+  listingDate: z.string().nullable().meta({ description: '上市（櫃）日 "YYYY-MM-DD"' }),
+  numberOfPreferenceShares: z.string().nullable().meta({ description: '特別股股數，BigInt 序列化成字串' }),
+  metricDataType: z.enum(['1', '2']).meta({ description: '本服務指標對這家公司實際採用的財報口徑（MOPS dataType）："2" 合併報表、"1" 個別報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個別報表的公司（約 249 家）用個別。要標示「個別報表」看這個欄位。' }),
   // 2026-09-17：型別的真理來源改成 application/companies/types.ts 的介面（infrastructure 的
   // companyProfile.ts 也用它，不再反過來 import HTTP 層），這裡的 schema 用 satisfies 釘住，
   // 欄位對不上會編譯失敗。

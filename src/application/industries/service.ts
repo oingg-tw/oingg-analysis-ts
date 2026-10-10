@@ -21,7 +21,7 @@ export type IndustriesDeps = Pick<AppDeps, 'industryReference' | 'companyProfile
 // GET /industries/tree 是不同分類體系（證交所類股 vs 財政部稅籍），刻意獨立端點，不合併。
 export const getSecuritiesIndustrySectors = async (deps: Pick<AppDeps, 'industryReference'>): Promise<SecuritiesIndustrySectorsResult> => {
   const sectors = await deps.industryReference.listSecuritiesIndustrySectors();
-  return { sectors };
+  return { sectors: sectors.map((s) => ({ ...s, sectorCode: s.code, sectorName: s.name })) };
 };
 
 // 2026-09-30 使用者設計「產業分析圖表」（每個證交所類股一個點，Y 殖利率、X 股利 3 年成長率），彙總規則見

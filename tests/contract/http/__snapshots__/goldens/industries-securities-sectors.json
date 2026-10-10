@@ -5,7 +5,9 @@
       {
         "code": "<numeric-string>",
         "companyCount": "<number>",
-        "name": "<string>"
+        "name": "<string>",
+        "sectorCode": "<numeric-string>",
+        "sectorName": "<string>"
       }
     ]
   }

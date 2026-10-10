@@ -274,6 +274,25 @@ const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '合併財報
 const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
   financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
 
+// 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位，跟舊欄位並存到 2026-10-24。
+// - sectorName 一律從類股代碼表取（getIndustryCodes，跟 GET /companies 清單同一份），上櫃也有名稱；NON_INDUSTRY_CODES 回 null。
+// - declaredDataType 把交易所申報口徑換成 MOPS 編碼（交易所 '1' 合併 → '2'、'2' 個別 → '1'），未知代碼回 null。
+const EXCHANGE_TO_MOPS_DATA_TYPE: Record<string, '1' | '2'> = { '1': '2', '2': '1' };
+type ProfileWithoutCanonicalKeys = Omit<ExchangeCompanyProfileDetail, 'generatedDate' | 'sectorCode' | 'sectorName' | 'declaredDataType' | 'listingDate' | 'numberOfPreferenceShares'>;
+const withCanonicalProfileKeys = (d: ProfileWithoutCanonicalKeys): ExchangeCompanyProfileDetail => {
+  const codes = getIndustryCodes();
+  const isRealSector = d.industry !== null && !NON_INDUSTRY_CODES.has(d.industry);
+  return {
+    ...d,
+    generatedDate: d.reportDate,
+    sectorCode: d.industry,
+    sectorName: isRealSector && codes ? (codes[d.industry!] ?? null) : null,
+    declaredDataType: d.financialReportType !== null ? (EXCHANGE_TO_MOPS_DATA_TYPE[d.financialReportType] ?? null) : null,
+    listingDate: d.listedDate,
+    numberOfPreferenceShares: d.preferredStockShares,
+  };
+};
+
 // 2026-09-04 應 web-nuxt/conductor 要求新增：website 欄位的格式在源頭就不一致，統一在資料離開本服務之前
 // 清洗一次，不讓每個消費端各自防禦性處理。2026-09-23 搬去 domain/shared/normalizeWebsite.ts（純字串函式 +
 // 單元測試，規則與已知例外都記在那裡），這裡只留別名讓呼叫點不動。
@@ -292,7 +311,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   );
   const twseRow = twseRows[0];
   if (twseRow) {
-    return {
+    return withCanonicalProfileKeys({
       symbol: twseRow.symbol,
       market: 'TWSE',
       isEmerging: false,
@@ -330,7 +349,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
       email: twseRow.email,
       website: normalizeWebsiteDomain(twseRow.website),
       issuedShares: twseRow.issued_shares?.toString() ?? null,
-    };
+    });
   }
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileDetailRow[]>`
@@ -345,7 +364,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   const tpexRow = tpexRows[0];
   if (!tpexRow) return null;
 
-  return {
+  return withCanonicalProfileKeys({
     symbol: tpexRow.symbol,
     market: 'TPEx',
     isEmerging: tpexRow.source === 'COMPANY_PROFILE_EMERGING',
@@ -383,7 +402,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
     email: tpexRow.email,
     website: normalizeWebsiteDomain(tpexRow.website),
     issuedShares: tpexRow.issued_shares?.toString() ?? null,
-  };
+  });
 };
 
 // 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果

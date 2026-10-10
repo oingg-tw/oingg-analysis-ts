@@ -9,8 +9,9 @@ import type { SecuritiesIndustrySector } from '@/application/ports/industryRefer
 // ChainClassification*/ChainCluster*/IndustryChainTree* 型別（對應已刪除的 GET /industries/
 // chain-{classification,clusters,tree} 三支端點）已移除。
 
+// 2026-10-10 詞彙表：sectorCode／sectorName 是官方名，code／name 並存到 2026-10-24 後刪除。
 export interface SecuritiesIndustrySectorsResult {
-  sectors: SecuritiesIndustrySector[];
+  sectors: (SecuritiesIndustrySector & { sectorCode: string; sectorName: string })[];
 }
 
 export interface SectorDividendSummaryResult {
