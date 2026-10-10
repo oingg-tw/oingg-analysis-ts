@@ -78,8 +78,10 @@ export const sectorMetricHistoryResultSchema = z.object({
     .meta({ description: '由舊到新' }),
 }) satisfies z.ZodType<SectorMetricHistoryResult>;
 
+// 2026-10-10 上限 132：同個股月營收端點（companies/schemas.ts），上游回補到 2016-01 後約 128 個月。
+const MAX_SECTOR_MONTHLY_REVENUE_LIMIT = 132;
 export const getSectorMonthlyRevenueHistoryQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(120).default(60).meta({ description: '取最近幾個月，預設 60，上限 120（資料從 2021-09 開始）。' }),
+  limit: z.coerce.number().int().min(1).max(MAX_SECTOR_MONTHLY_REVENUE_LIMIT).default(60).meta({ description: `取最近幾個月，預設 60，上限 ${MAX_SECTOR_MONTHLY_REVENUE_LIMIT}。` }),
 });
 
 export const sectorMonthlyRevenueHistoryResultSchema = z.object({

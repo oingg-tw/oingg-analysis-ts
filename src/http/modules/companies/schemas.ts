@@ -105,7 +105,7 @@ export const getCompanyMetricsHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_METRIC_HISTORY_LIMIT).default(20).meta({ description: `取最近幾期，預設 20（約 5 年季度資料），上限 ${MAX_METRIC_HISTORY_LIMIT}。` }),
 });
 
-const MAX_MONTHLY_REVENUE_HISTORY_LIMIT = 120; // 上限抓 10 年份，目前資料只有 2330 60 個月，上限只是預留空間
+const MAX_MONTHLY_REVENUE_HISTORY_LIMIT = 132; // 2026-10-10 從 120 提高：web-nuxt 景氣循環頁要 2016-01 起（約 128 個月，跨國發會第 15 次循環谷底 2016-02），上游回補中，業務中台同步調整
 
 export const getCompanyMonthlyRevenueHistoryQuerySchema = z.object({
   symbol: symbolField,
