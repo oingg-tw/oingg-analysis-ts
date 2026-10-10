@@ -63,73 +63,9 @@
 | 報表格式業別 | `statement_format`（`ci`／`bd`／`fh`／`ins`／`basi`／`mim`），**不是**類股 | — | 報表格式 | industry_type | twse、tpex 的 fs 叫 `industry_type`（twse、tpex） |
 | 公司名稱 | `company_name` | `companyName` | 公司名稱 | 拿 `name`／`issuerName` 表示公司名稱 | 業務中台把 `companyName` 轉成 `name`；ETF 那處轉成 `issuerName`，要先確認是不是發行投信（業務中台） |
 | 投信代號 | `member_code`（SITCA 稱「會員代號」，照源頭；值如 `A0047`） | `memberCode` | 投信代號 | company_code | sitca `fund_etf_daily_navs.company_code`，sitca 實測跟 `member_code` 同一個概念，不一致的兩組是新光投信併入台新投信（sitca）；gov 10/10 實測 82,682 列全部符合 `^A[0-9]{4}# Ubiquitous Language：oingg 生態系官方詞彙表
-
-**這是 oingg 生態系唯一的官方詞彙表（single source of truth）。** 涵蓋範圍：
-- 上游來源服務：twse-ts、tpex-ts、mops-ts、gov-ts、sitca-ts。
-- 中游：analysis-ts。
-- 下游：業務中台（oingg-business-ts）、web-nuxt。
-
-2026-10-10 使用者指定由 analysis-ts 主導，全面改名。各服務沒有共用文件的機制，所以其他 repo 的 CLAUDE.md 用絕對路徑
-`C:\Users\Chuia\Documents\oingg-analysis-ts\UBIQUITOUS_LANGUAGE.md` 指向這裡，**不要複製一份**。複製的副本一定會漂移，
-`oingg-analysis-ts-twse\UBIQUITOUS_LANGUAGE.md` 就是例子。
-
-放在 repo 根目錄、不放 `docs/`：`docs/` 是隨手筆記，可能被清掉，這份是跨服務引用的參考資料。conductor 的舊版跨服務詞彙表
-（`docs/1_extracted/ubiquitous-language-glossary.md`）2026-09-06 在 vault 重整時被刪（commit `53a1af2`），
-內容已併入下方第二節與第五節。
-
-## 一、治理
-
-- **誰定詞**：analysis-ts 維護這份文件。各服務發現新的命名落差，或要新增跨服務概念，就 SendMessage 給 analysis-ts，由它補進來。
-  conductor 在跨服務稽核時找出新落差，也一樣回報到這裡。
-- **定詞優先順序**（2026-10-10 使用者：「要極力以 XBRL 的名稱為主」）：
-  1. **XBRL 元素名稱**，轉成 snake_case 的規則同 mops `account_code`（`ProfitLossAttributableToOwnersOfParent` → `profit_loss_attributable_to_owners_of_parent`）。
-     - 同一概念在不同產業的元素名稱不同時（例：普通股股本，一般業 `OrdinaryShare`、金控 `CommonStock`），**優先用 ifrs-full 的 line item 元素**，不分產業；ifrs-full 沒有才用一般業（ci）的 tifrs 元素。其他產業的元素名稱列在對照欄。
-     - 查證來源：mops-ts 的 `scripts/data/taxonomy/<版本>/*.json`（`concepts`）。每個標成 XBRL 的名稱都要查得到原元素；
-       TW 分類標準沒有、照 IFRS 構詞的要標「借用 IFRS 構詞」。2026-10-10 由 mops-ts 逐列核對過（四個版本 × 六個產業入口）。
-  2. XBRL 沒有的概念，才用主管機關的官方代碼（MOPS TYPEK、MOPS `data_type`、REPORT_ID）。
-  3. 以上都沒有，才用外部研究報告的慣例或生態系既有名稱。
-  - **例外**：月營收維持 `revenue` 字根（使用者 10/10；月營收公告不是 XBRL）。剛好跟營收的元素 `ifrs-full:Revenue` 同字根。
-  - **中文**：程式裡的名稱（DB 欄位、API key）照 XBRL；使用者看到的中文照券商軟體習慣（例「稅後淨利」），下表另列 XBRL 中文標籤。
-  - **PostgreSQL 63 字元上限**：元素名放不下時，照第六節的**縮寫字典**縮，對照表也在第六節（使用者 10/10：人工縮寫＋對照表，不用截斷加雜湊）。
-    只有超過 63 字元才縮，而且一律照字典，所以任何人縮出來都一樣。
-- **其他原則**（沿用 conductor〈跨服務命名裁定原則〉）：
-  1. 語意不確定就先抽樣查實際資料驗證，不憑「聽起來比較精確」決定。
-  2. 名稱一樣但分類系統不同時，不硬併成一個名字，改成在名稱上就能分辨。
-  3. 一個名字只能有一種意思（同名不同義是最常造成靜默錯誤的形狀）。
-- **大小寫**：資料庫用 snake_case，API 的 JSON 用 camelCase，兩者是同一個詞的兩種寫法，不另外取名。
-  指標代碼（`metricCode`）有公認縮寫就用縮寫（`roe`、`eps`），沒有就用完整 camelCase，禁止自創縮寫。
-- **使用者可見的指標名稱**（`name`）只在 analysis-ts 維護，web-nuxt 直接顯示，不另存一份（見 `docs/api-conventions.md`）。
-- **改名程序**（2026-10-10 使用者核准）：
-  1. **上游 view**：view 先多輸出新欄名，舊欄名保留 → 通知 analysis-ts → analysis-ts 改讀新欄名並驗證新舊值逐列相同 → 14 天後上游移除舊欄名。
-  2. **analysis-ts 對外 API**：照 `docs/api-conventions.md`，新舊並存 14 天、附 openapi diff，再移除舊 key。
-  3. **值的編碼變了**（例如市場別、財報口徑代碼）：新欄位用新編碼，舊欄位維持舊編碼直到移除；**不在同一個欄位裡換編碼**。
-  4. **各服務的改動要該服務的使用者親自核准**：轉述的核准不算。
-  5. 全部先上 DEV；PRD 等使用者指示。
-  6. **不改名的**：
-     - metricCode：業務中台的使用者資料會被連帶刪除，要改就走 metricCode 改名程序。
-     - GCP 專案 ID：GCP 不允許改名。
-- **資料集歸屬**（使用者 10/10）：同一份來源只由一個服務收。data.gov.tw 的資料集一律歸 gov-ts，生態系從 gov 讀；sitca-ts 退掉重複的 11109（每日淨值）、43476（境內基金基本資料）。
-- **範圍**：這份詞彙表管的是**對外介面**，也就是各服務的 export view 和 API。內部表與欄位要不要跟著改，由該服務自己決定（sitca-ts 10/10 提出、analysis 同意：只在 view 層用別名欄位，不動表）。
-- **防退化**（第四階段加上）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
-
-## 二、官方用詞表
-
-「落差」欄記錄還沒改完的地方和負責的服務，改完就移到第五節的改名追蹤表。
-
-### 二之一、識別與分類
-
-| 概念 | 官方 DB 欄位／值 | 官方 API key／值 | 中文 | 退役的同義詞 | 落差（負責服務） |
-|---|---|---|---|---|---|
-| 證券代號 | `symbol`＝證券本身（特別股 `2881A` 有自己的 symbol）；母公司用 `company_symbol` | `symbol` | 代號 | stock_code、security_code、code、公司代號 | mops 特別股表 `symbol` 存的是母公司，特別股本身放在 `preferred_stock_code`（mops）；twse `v_fs_*` 還輸出中文欄名 `"公司代號"`（twse） |
-| 市場別 | `market` ∈ `sii` 上市／`otc` 上櫃／`rotc` 興櫃（MOPS TYPEK，唯一兩個交易所共用的官方代碼，mops 實測三種都有）；公開發行暫定 `pub`（mops 資料裡沒有，待查證 MOPS 代碼） | `market` 同值域 | 上市／上櫃／興櫃／公開發行 | TWSE／TPEx＋isEmerging、L／X／O／U、中文「上市」、拿 `source` 表示市場 | twse、tpex 用 `source` 表示市場族群；`'COMPANY_PROFILE'` 在 twse 指上市、在 tpex 指上櫃（twse、tpex）。fs 的 `market` 是 L／X／O／U（twse、tpex）。analysis API 是 `'TWSE'\|'TPEx'`＋`isEmerging`（analysis）。業務中台在缺值時預設 TWSE（業務中台） |
-| 資料出處 | `source`：**只**代表這一列來自哪份報表或哪種推導（例：`TPEX_T187AP05`、`MOPS_T21SC03`、`document`、`comparative`） | `source` | 出處 | 拿 `source` 表示市場族群 | 同上一列（twse、tpex） |
-| 類股 | `sector_code`（兩碼證交所產業類別）／`sector_name` | `sectorCode`／`sectorName` | 類股 | industry、industry_code（指類股時）、industry_name、industry_category、類股字典端點的 `{code,name}` | twse、tpex 叫 `industry`／`industry_name`；月營收的 `industry` 存的是名稱（twse、tpex）。mops 叫 `industry_category`（mops）。analysis profile 的 `industry`／`industryName` 上櫃一律 null（analysis）。同一代碼名稱不一致：14、16、17、20、33（tpex 對齊 twse） |
-| 報表格式業別 | `statement_format`（`ci`／`bd`／`fh`／`ins`／`basi`／`mim`），**不是**類股 | — | 報表格式 | industry_type | twse、tpex 的 fs 叫 `industry_type`（twse、tpex） |
-| 公司名稱 | `company_name` | `companyName` | 公司名稱 | 拿 `name`／`issuerName` 表示公司名稱 | 業務中台把 `companyName` 轉成 `name`；ETF 那處轉成 `issuerName`，要先確認是不是發行投信（業務中台） |
-| 投信代號 | `member_code`（SITCA 稱「會員代號」，照源頭；值如 `A0047`） | `memberCode` | 投信代號 | company_code | sitca `fund_etf_daily_navs.company_code`，sitca 實測跟 `member_code` 同一個概念，不一致的兩組是新光投信併入台新投信（sitca）；、36 個代號，跟 sitca 是同一欄。**代號是穩定的鍵，公司名稱不是**（A0021 對到「大都會投信」與「柏瑞投信」兩個名稱，疑為改名或合併後沿用），join 投信一律用代號 |
 | 基金代號（SITCA） | `sitca_fund_code`：SITCA 內部基金代號，**不唯一、不是證券代號，不能當鍵** | `sitcaFundCode` | 基金代號 | fund_code | gov `fund_basic_info.fund_code`、`fund_daily_nav.fund_code`（gov） |
 | 基金統編 | `fund_tax_id` | `fundTaxId` | 基金統編 | fund_id；拿 fund_code 表示統編 | sitca fundclear 的 `fund_code` 是統編、gov `fund_code` 是基金代號、tdcc `fund_code` 是境外基金代碼，三義（sitca、gov）。投信代號 `member_code`／`company_code` 是否同一概念待驗證 |
-| 服務名稱 | repo `oingg-business-ts`；環境變數 `BUSINESS_API_KEY` | — | **業務中台**；web-nuxt 的 Nitro 叫「web-nuxt 伺服器層」 | BFF、bff、應用後端 | analysis 的 `BFF_API_KEY`、`bffAuth.ts`（analysis）；業務中台的環境變數與 Cloud Run 服務名（業務中台）；web-nuxt 的 `/api/bff`、`bffBase`，以及把 Nitro 叫 BFF（web-nuxt）。web-nuxt 實測 422 處 BFF 字樣：新寫的文字和註解不再用 BFF；設定名稱（`bffBase`、`NUXT_BFF_*`）改不改由 web-nuxt 的使用者決定；conductor vault 的「應用後端」（conductor） |
+| 服務名稱 | repo `oingg-business-ts`；環境變數 `BUSINESS_API_KEY` | — | **業務中台**；web-nuxt 的 Nitro 叫「web-nuxt 伺服器層」 | BFF、bff、應用後端 | analysis 的 `BFF_API_KEY`、`bffAuth.ts`（analysis）；業務中台的環境變數與 Cloud Run 服務名（業務中台）；web-nuxt 10/11 已全面改名（7fe0787：businessFetch、/api/cached、NUXT_BUSINESS_*；指向本機目錄 oingg-bff-ts 的路徑保留）；conductor vault 的「應用後端」（conductor） |
 
 ### 二之二、期間與日期
 
@@ -138,7 +74,7 @@
 | 年度 | 西元：`year`／`fiscal_year`；**民國一律叫 `roc_year`** | `fiscalYear`（西元，見 api-conventions） | 年度 | 民國年也叫 year、rocFiscalYear | mops xbrl 各表、`fiscal_year` 存民國；`capital_stock_history.license_change_year` 是民國，但同表 `effective_year` 是西元（mops）。twse fs 輸出中文欄名 `"年度"`（twse）。analysis 的 financial-statement、piotroski、metric-provenance 用民國 `year`；dividend-history 有 `rocFiscalYear`（analysis） |
 | 季別 | `quarter`＝**單季**或**季末時點**（資產負債表）。**年初累計**用 `ytd_quarter`，或放在 `cumulative_*` 表裡（表名已說明是累計，欄位可沿用 `quarter`）。例外（2026-10-11 定案）：混放多種報表的原始落地表（例 twse／tpex 的 `v_financial_statements`）維持 `quarter`，COMMENT 寫明「依 dataset：損益類＝年初累計、資產負債表＝季末」；從它切出來的單一報表 view（`v_fs_*`）損益類改用 `ytd_quarter` | `fiscalQuarter`；FY 那一列固定是 4 | 單季／累計 | season；累計也叫 quarter | twse 的 fs 沒標明是單季還是累計（twse，待驗證）；**tpex 10/10 實測：損益類（t187ap06、t187ap15／16、t187ap17）是年初累計、資產負債表是季末時點**，已寫進 COMMENT。analysis financial-statement 回 `season`（analysis）。業務中台型別寫 FY 列的 fiscalQuarter 是 null（業務中台） |
 | 月份 | `year_month`（DATE，月初那天） | `yearMonth`（"YYYY-MM"） | 月份 | TEXT "YYYYMM"、year＋month 兩欄 | sitca 的 `year_month` 是 TEXT（sitca）；gov 拆成 `year`／`month`（gov）。月頻指標的座標暫用 `fiscalYear`＋`fiscalMonth`（analysis，待定） |
-| 期別 | — | `timeframe`：`Q`／`YTD`／`TTM`／`FY`／`N/A`、`<lookbackRange>_<samplingInterval>`、`EOD`、`M` | 期別：單季／累計／近四季／年度 | basis、periodType、period、token | analysis 的 roe、roa、dupont-history、metric-provenance 用 `periodType`（analysis）。業務中台對外叫 `basis`，型錄叫 `period`（業務中台）。web-nuxt 送 `basis`，期別標籤有 4 份副本、缺 M 和 YTD（web-nuxt） |
+| 期別 | — | `timeframe`：`Q`／`YTD`／`TTM`／`FY`／`N/A`、`<lookbackRange>_<samplingInterval>`、`EOD`、`M` | 期別：單季／累計／近四季／年度 | basis、periodType、period、token | analysis 的 roe、roa、dupont-history、metric-provenance 用 `periodType`（analysis）。業務中台對外叫 `basis`，型錄叫 `period`（業務中台）。web-nuxt 10/11 已改送 timeframe，期別標籤收成一份 shared/utils/timeframe-labels.ts（51d3698，補 M、YTD，EOD 叫「每日」） |
 | 期末日 | `fiscal_period_end_date` | `fiscalPeriodEndDate` | 期末日 | mops 的 report_date、period_end_date | mops 長表 view 已經是 `fiscal_period_end_date`（`report_date AS`），寬表和底表還叫 `report_date`（mops） |
 | 公告日 | `announcement_date`：公司或主管機關**公告**的日期 | `announcementDate` | 公告日 | announce_date | twse、tpex 處置股票的 `announce_date`（twse、tpex）。analysis 內部的 `announceDate`（analysis） |
 | 出表日 | `generated_date`：交易所 OpenAPI **產生**這份資料的日期，晚於公告日（月營收：2330 2026-08 出表 9/17、實際 9/10 公告；重大訊息：通常是公告日隔天）。**不能拿來當可知悉日** | `generatedDate` | 出表日 | twse、tpex 的 report_date（含月營收、重大訊息、質押、公司基本資料） | twse、tpex 的 company_profile、fs、monthly_revenue、pledge 都用 `report_date`（twse、tpex）。twse 回填的月營收自行填「次月 10 日」，應改成真實公告日，不知道就 null（twse）。analysis 質押比例的 `reportDate`（analysis） |
@@ -168,15 +104,15 @@
 
 | 概念 | 官方 | 退役的同義詞 | 落差（負責服務） |
 |---|---|---|---|
-| 指標代碼 | `metricCode` | key、path、metricKey、fieldKey、Filter* | 業務中台型錄的 `key`／`path`，screener 的 `metricKey`／`fieldKey`（業務中台）。web-nuxt 的 `FilterMetric`／`FilterCategory` 型別（web-nuxt） |
+| 指標代碼 | `metricCode` | key、path、metricKey、fieldKey、Filter* | 業務中台型錄的 `key`／`path`，screener 的 `metricKey`／`fieldKey`（業務中台）。web-nuxt 10/11 已改成 Metric*（0498b05；FilterCriterion 是篩選條件，保留） |
 | 欄位字串 | `metricCode.timeframe`（例 `roe.TTM`） | metricCode.basis | analysis screener 的說明文字（analysis） |
 | 排序 | `order: asc\|desc` | direction、sortOrder | analysis 的 ranking、company-rank 用 `direction`，POST screener 用 `sortOrder`（analysis） |
 | 沒有值 | `nullReason` 只用 analysis 定義的值域 | 自創 sentinel | web-nuxt 的 `__no_record__` 只能留在前端內部，不能出現在 API（web-nuxt） |
 | export view 命名 | 資料 view 用 `export.v_<複數名詞>`；**`export.ingestion_runs` 例外**：它是各服務共用的交接表，不是資料 view，名稱維持不變（gov-ts 10/10）。`ingestion_runs.dataset` 的鍵＝資料 view 名，view 改名時跟著改 | 單數、沒有 `v_` | sitca 沒有 `v_`；mops、gov 是單數且沒有 `v_`（mops、gov、sitca） |
 | 中文用字 | 使用者看到的中文照券商軟體：**營收**、**稅後淨利**（合併總額，含非控制權益；XBRL 中文標籤是「本期淨利」）、**歸屬母公司淨利**（另一個概念）。程式名稱照 XBRL（`revenue`、`profit_loss`、`profit_loss_attributable_to_owners_of_parent`） | 顯示用的「本期淨利」 | — |
-| 殖利率 | `dividendYield`＝交易所每日公布的殖利率；`cashDividendYield`＝近四季現金股利殖利率 | 把 dividendYield 叫「現金殖利率」 | web-nuxt 的標籤（web-nuxt） |
+| 殖利率 | `dividendYield`＝交易所每日公布的殖利率；`cashDividendYield`＝近四季現金股利殖利率 | 把 dividendYield 叫「現金殖利率」 | web-nuxt 10/11 已改（363134c） |
 | 「占」 | 用「占」 | 佔 | 指標名稱「資本支出佔營收比」（analysis） |
-| 指標名稱 | 頁面就是那支指標時，一律用 analysis-ts 的 `name`；`topic` 只用在「同一支指標、不同頁面」需要另一個頁名時（例：負債組成頁用 debtRatio） | 頁面就是指標本身時手寫名稱 | dividendCoverageRatio 兩邊名稱不同，web-nuxt 會改用 `name`；web-nuxt 實測 54 個 topic 只有這 1 個是真的不一致（web-nuxt） |
+| 指標名稱 | 頁面就是那支指標時，一律用 analysis-ts 的 `name`；`topic` 只用在「同一支指標、不同頁面」需要另一個頁名時（例：負債組成頁用 debtRatio） | 頁面就是指標本身時手寫名稱 | web-nuxt 10/11 已改用 name，並加檢查：頁面就是指標本身時頁名必須等於 /metrics 的 name（51d3698，54 頁 0 不一致） |
 
 ## 三、期間口徑：「第四季」只代表單季，「年報」是另一個概念（2026-09-25 使用者拍板）
 
