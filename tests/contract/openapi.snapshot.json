@@ -4805,6 +4805,14 @@
                     },
                     "type": "array"
                   },
+                  "order": {
+                    "description": "排序方向",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "type": "string"
+                  },
                   "page": {
                     "default": 1,
                     "minimum": 1,
@@ -4822,6 +4830,8 @@
                     "type": "string"
                   },
                   "sortOrder": {
+                    "deprecated": true,
+                    "description": "已退役，2026-10-24 移除，改用 order",
                     "enum": [
                       "asc",
                       "desc"
@@ -9445,11 +9455,25 @@
           {
             "description": "排序方向，預設 asc；只有給了 sortField 才有作用。",
             "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "description": "排序方向，預設 asc；只有給了 sortField 才有作用。",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，2026-10-24 移除，改用 order",
+            "in": "query",
             "name": "sortOrder",
             "required": false,
             "schema": {
-              "default": "asc",
-              "description": "排序方向，預設 asc；只有給了 sortField 才有作用。",
+              "deprecated": true,
+              "description": "已退役，2026-10-24 移除，改用 order",
               "enum": [
                 "asc",
                 "desc"
@@ -9831,7 +9855,7 @@
                   },
                   "filters": {
                     "default": [],
-                    "description": "篩選條件之間是 AND，field 一定要能對到 GET /metrics 裡的 \"metricCode.basis\"",
+                    "description": "篩選條件之間是 AND，field 一定要能對到 GET /metrics 裡的 \"metricCode.timeframe\"",
                     "items": {
                       "properties": {
                         "exclude": {
@@ -9859,6 +9883,14 @@
                     },
                     "type": "array"
                   },
+                  "order": {
+                    "description": "排序方向",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "type": "string"
+                  },
                   "page": {
                     "default": 1,
                     "minimum": 1,
@@ -9884,6 +9916,8 @@
                     "type": "string"
                   },
                   "sortOrder": {
+                    "deprecated": true,
+                    "description": "已退役，2026-10-24 移除，改用 order",
                     "enum": [
                       "asc",
                       "desc"
@@ -10045,24 +10079,39 @@
             }
           },
           {
-            "description": "\"metricCode.basis\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
+            "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
             "in": "query",
             "name": "field",
             "required": true,
             "schema": {
-              "description": "\"metricCode.basis\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
+              "description": "\"metricCode.timeframe\" 格式，例如 \"dividendYield.EOD\"，可用組合見 GET /metrics",
               "example": "dividendYield.EOD",
               "minLength": 1,
               "type": "string"
             }
           },
           {
-            "description": "desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
+            "description": "必填（並存期間可用舊名 direction 代替）。desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "description": "必填（並存期間可用舊名 direction 代替）。desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，2026-10-24 移除，改用 order",
             "in": "query",
             "name": "direction",
-            "required": true,
+            "required": false,
             "schema": {
-              "description": "desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
+              "deprecated": true,
+              "description": "已退役，2026-10-24 移除，改用 order",
               "enum": [
                 "asc",
                 "desc"
@@ -10367,10 +10416,27 @@
             }
           },
           {
+            "description": "排序方向（必填，並存期間可用舊名 direction 代替）",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "description": "排序方向（必填，並存期間可用舊名 direction 代替）",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，2026-10-24 移除，改用 order",
             "in": "query",
             "name": "direction",
-            "required": true,
+            "required": false,
             "schema": {
+              "deprecated": true,
+              "description": "已退役，2026-10-24 移除，改用 order",
               "enum": [
                 "asc",
                 "desc"
@@ -10392,12 +10458,12 @@
             }
           },
           {
-            "description": "逗號分隔的額外顯示欄位（\"metricCode.basis\" 格式）。",
+            "description": "逗號分隔的額外顯示欄位（\"metricCode.timeframe\" 格式）。",
             "in": "query",
             "name": "columns",
             "required": false,
             "schema": {
-              "description": "逗號分隔的額外顯示欄位（\"metricCode.basis\" 格式）。",
+              "description": "逗號分隔的額外顯示欄位（\"metricCode.timeframe\" 格式）。",
               "type": "string"
             }
           },
