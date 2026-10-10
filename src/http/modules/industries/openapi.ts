@@ -73,7 +73,7 @@ export const registerIndustriesOpenApi = (registry: OpenAPIRegistry): void => {
     path: '/industries/{sectorCode}/monthly-revenue-history',
     summary: '類股月營收合計與年增率（同一批公司口徑）',
     description:
-      '每個月只加總「當月有營收、去年同月營收大於 0」的公司，revenue 與 lastYearRevenue 都是這一批的合計，' +
+      '每個月只加總「當月有營收、去年同月營收大於 0」的公司，currentMonthRevenue 與 lastYearSameMonthRevenue 都是這一批的合計，' +
       'companyCount 是這一批的家數；這樣新上市、下市不會讓年增率跳動。去年同月營收用公司當月申報裡自帶的比較數字。' +
       '金額是新台幣千元、字串。起點看第一筆 yearMonth（2026-10 時是 2021-09，上游正在往前回補）。\n\n類股成員是「今天的分類」：母體為上市＋上櫃、有類股代碼的公司（不含興櫃）；已下市公司不在名單內，所以較早的期別是「現存公司的歷史」，不是當年類股的全貌。',
     tags: ['Industries'],

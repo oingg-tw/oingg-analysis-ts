@@ -63,36 +63,36 @@ export const summarizeSectorPeriods = (rows: SectorPeriodValue[]): SectorPeriodS
 export interface CompanyMonthlyRevenue {
   symbol: string;
   yearMonth: string; // "YYYY-MM"
-  revenue: bigint | null; // 千元
-  lastYearRevenue: bigint | null; // 同一份申報裡的去年同月營收（千元）
+  currentMonthRevenue: bigint | null; // 千元
+  lastYearSameMonthRevenue: bigint | null; // 同一份申報裡的去年同月營收（千元）
 }
 
 export interface SectorMonthlyRevenue {
   yearMonth: string;
-  revenue: string; // 千元，bigint 序列化成字串（同個股月營收）
-  lastYearRevenue: string;
-  yoyChangePercent: number | null;
+  currentMonthRevenue: string; // 千元，bigint 序列化成字串（同個股月營收）
+  lastYearSameMonthRevenue: string;
+  yoyChangePct: number | null;
   companyCount: number;
 }
 
 // 同一批公司口徑（web-nuxt 要求，避免新上市／下市讓年增率跳動）：只加「當月有營收、去年同月營收 > 0」的公司，
-// revenue 與 lastYearRevenue 都只算這一批，companyCount 是這一批的家數。去年同月 0 視為不可比（來源的
+// currentMonthRevenue 與 lastYearSameMonthRevenue 都只算這一批，companyCount 是這一批的家數。去年同月 0 視為不可比（來源的
 // yoy_change_percent 對這種列也是 null）。去年同月用申報裡自帶的欄位，不是自己去年那一列，兩者就是同一家公司。
 // 由舊到新；一家都不可比的月份不出現。
 export const summarizeSectorMonthlyRevenue = (rows: CompanyMonthlyRevenue[]): SectorMonthlyRevenue[] => {
-  const months = new Map<string, { revenue: bigint; lastYearRevenue: bigint; companyCount: number }>();
+  const months = new Map<string, { currentMonthRevenue: bigint; lastYearSameMonthRevenue: bigint; companyCount: number }>();
   for (const r of rows) {
-    if (r.revenue === null || r.lastYearRevenue === null || r.lastYearRevenue <= 0n) continue;
-    const m = months.get(r.yearMonth) ?? { revenue: 0n, lastYearRevenue: 0n, companyCount: 0 };
-    months.set(r.yearMonth, { revenue: m.revenue + r.revenue, lastYearRevenue: m.lastYearRevenue + r.lastYearRevenue, companyCount: m.companyCount + 1 });
+    if (r.currentMonthRevenue === null || r.lastYearSameMonthRevenue === null || r.lastYearSameMonthRevenue <= 0n) continue;
+    const m = months.get(r.yearMonth) ?? { currentMonthRevenue: 0n, lastYearSameMonthRevenue: 0n, companyCount: 0 };
+    months.set(r.yearMonth, { currentMonthRevenue: m.currentMonthRevenue + r.currentMonthRevenue, lastYearSameMonthRevenue: m.lastYearSameMonthRevenue + r.lastYearSameMonthRevenue, companyCount: m.companyCount + 1 });
   }
   return [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([yearMonth, m]) => ({
       yearMonth,
-      revenue: m.revenue.toString(),
-      lastYearRevenue: m.lastYearRevenue.toString(),
-      yoyChangePercent: round2((Number(m.revenue - m.lastYearRevenue) / Number(m.lastYearRevenue)) * 100),
+      currentMonthRevenue: m.currentMonthRevenue.toString(),
+      lastYearSameMonthRevenue: m.lastYearSameMonthRevenue.toString(),
+      yoyChangePct: round2((Number(m.currentMonthRevenue - m.lastYearSameMonthRevenue) / Number(m.lastYearSameMonthRevenue)) * 100),
       companyCount: m.companyCount,
     }));
 };

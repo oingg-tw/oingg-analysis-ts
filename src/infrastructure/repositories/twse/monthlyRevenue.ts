@@ -123,8 +123,8 @@ const listMonthlyRevenueForSymbols = async (symbols: string[]): Promise<CompanyM
   return [...listed, ...otc.filter((r) => !listedSymbols.has(r.symbol))].map((r) => ({
     symbol: r.symbol,
     yearMonth: toYearMonthString(r.year_month),
-    revenue: r.current_month_revenue,
-    lastYearRevenue: r.last_year_same_month_revenue,
+    currentMonthRevenue: r.current_month_revenue,
+    lastYearSameMonthRevenue: r.last_year_same_month_revenue,
   }));
 };
 

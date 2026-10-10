@@ -93,9 +93,9 @@ export const sectorMonthlyRevenueHistoryResultSchema = z.object({
     .array(
       z.object({
         yearMonth: z.string().meta({ description: '營收所屬月份 YYYY-MM' }),
-        revenue: z.string().meta({ description: '同一批公司的當月營收合計（新台幣千元，字串避免精度問題）' }),
-        lastYearRevenue: z.string().meta({ description: '同一批公司的去年同月營收合計（千元）' }),
-        yoyChangePercent: z.number().nullable().meta({ description: '年增率（%）＝ revenue ÷ lastYearRevenue − 1' }),
+        currentMonthRevenue: z.string().meta({ description: '同一批公司的當月營收合計（新台幣千元，字串避免精度問題）' }),
+        lastYearSameMonthRevenue: z.string().meta({ description: '同一批公司的去年同月營收合計（千元）' }),
+        yoyChangePct: z.number().nullable().meta({ description: '年增率（%）＝ currentMonthRevenue ÷ lastYearSameMonthRevenue − 1' }),
         companyCount: z.number().meta({ description: '這一批（當月有營收、去年同月營收大於 0）的公司數' }),
       })
     )

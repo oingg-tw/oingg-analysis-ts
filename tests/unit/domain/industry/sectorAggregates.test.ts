@@ -24,14 +24,14 @@ test('逐期分組由舊到新；全部 null 的期別帶最多公司的 nullRea
 
 test('月營收只加當月有值、去年同月 > 0 的同一批公司（新上市那家不進分子也不進分母）', () => {
   const result = summarizeSectorMonthlyRevenue([
-    { symbol: 'A', yearMonth: '2026-08', revenue: 1200n, lastYearRevenue: 1000n },
-    { symbol: 'B', yearMonth: '2026-08', revenue: 300n, lastYearRevenue: 200n },
-    { symbol: 'NEW', yearMonth: '2026-08', revenue: 5000n, lastYearRevenue: 0n }, // 去年還沒營收：不可比
-    { symbol: 'A', yearMonth: '2026-07', revenue: 900n, lastYearRevenue: 1000n },
-    { symbol: 'B', yearMonth: '2026-07', revenue: null, lastYearRevenue: 200n },
+    { symbol: 'A', yearMonth: '2026-08', currentMonthRevenue: 1200n, lastYearSameMonthRevenue: 1000n },
+    { symbol: 'B', yearMonth: '2026-08', currentMonthRevenue: 300n, lastYearSameMonthRevenue: 200n },
+    { symbol: 'NEW', yearMonth: '2026-08', currentMonthRevenue: 5000n, lastYearSameMonthRevenue: 0n }, // 去年還沒營收：不可比
+    { symbol: 'A', yearMonth: '2026-07', currentMonthRevenue: 900n, lastYearSameMonthRevenue: 1000n },
+    { symbol: 'B', yearMonth: '2026-07', currentMonthRevenue: null, lastYearSameMonthRevenue: 200n },
   ]);
   expect(result).toEqual([
-    { yearMonth: '2026-07', revenue: '900', lastYearRevenue: '1000', yoyChangePercent: -10, companyCount: 1 },
-    { yearMonth: '2026-08', revenue: '1500', lastYearRevenue: '1200', yoyChangePercent: 25, companyCount: 2 },
+    { yearMonth: '2026-07', currentMonthRevenue: '900', lastYearSameMonthRevenue: '1000', yoyChangePct: -10, companyCount: 1 },
+    { yearMonth: '2026-08', currentMonthRevenue: '1500', lastYearSameMonthRevenue: '1200', yoyChangePct: 25, companyCount: 2 },
   ]);
 });
