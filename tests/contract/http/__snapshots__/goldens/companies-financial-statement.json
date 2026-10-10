@@ -2,6 +2,9 @@
   "status": 200,
   "body": {
     "dataType": "<numeric-string>",
+    "fiscalPeriodEndDate": "<date>",
+    "fiscalQuarter": "<number>",
+    "fiscalYear": "<number>",
     "found": "<boolean>",
     "reportDate": "<date>",
     "season": "<numeric-string>",

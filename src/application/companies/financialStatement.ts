@@ -22,6 +22,10 @@ export interface FinancialStatementResult {
   statementType: FinancialStatementType;
   dataType: string;
   subsidiaryCompanyId: string;
+  // 2026-10-10 詞彙表：fiscalYear（西元）／fiscalQuarter／fiscalPeriodEndDate 是官方名；民國 year／season 與 reportDate 並存到 2026-10-24。
+  fiscalYear: number | null;
+  fiscalQuarter: number | null;
+  fiscalPeriodEndDate: string | null; // 財報期末日（mops 的 report_date 指的是期末日）
   year: string | null; // 民國年；查無資料時 null
   season: string | null;
   reportDate: string | null;
@@ -88,7 +92,7 @@ export const getCompanyFinancialStatement = async (query: GetCompanyFinancialSta
       : await getLatestAvailableQuarter(symbol, dataType, subsidiaryCompanyId, [statementType as StatementSource], deps.quarters);
 
   if (!resolvedQuarter) {
-    return { symbol, statementType, dataType, subsidiaryCompanyId, year: null, season: null, reportDate: null, found: false, statement: null };
+    return { symbol, statementType, dataType, subsidiaryCompanyId, fiscalYear: null, fiscalQuarter: null, fiscalPeriodEndDate: null, year: null, season: null, reportDate: null, found: false, statement: null };
   }
 
   const key = { symbol, year: Number(resolvedQuarter.year), quarter: Number(resolvedQuarter.season), dataType, subsidiaryCompanyId };
@@ -103,6 +107,9 @@ export const getCompanyFinancialStatement = async (query: GetCompanyFinancialSta
       year: resolvedQuarter.year,
       season: resolvedQuarter.season,
       reportDate: null,
+      fiscalYear: null,
+      fiscalQuarter: null,
+      fiscalPeriodEndDate: null,
       found: false,
       statement: null,
     };
@@ -117,6 +124,9 @@ export const getCompanyFinancialStatement = async (query: GetCompanyFinancialSta
     year: resolvedQuarter.year,
     season: resolvedQuarter.season,
     reportDate: reportDate.toISOString().slice(0, 10),
+    fiscalYear: Number(resolvedQuarter.year) + 1911,
+    fiscalQuarter: Number(resolvedQuarter.season),
+    fiscalPeriodEndDate: reportDate.toISOString().slice(0, 10),
     found: true,
     statement: serializeStatementRow(row),
   };

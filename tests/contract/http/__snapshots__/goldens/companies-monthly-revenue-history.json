@@ -3,6 +3,7 @@
   "body": {
     "entries": [
       {
+        "announcementDate": "<date>",
         "cumulativeChangePct": "<number>",
         "cumulativeChangePercent": "<number>",
         "cumulativeLastYearRevenue": "<numeric-string>",
@@ -14,6 +15,7 @@
         "momChangePercent": "<number>",
         "note": "<string>",
         "reportDate": "<date>",
+        "sectorName": "<string>",
         "yearMonth": "<string>",
         "yoyChangePct": "<number>",
         "yoyChangePercent": "<number>"

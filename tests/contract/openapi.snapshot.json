@@ -1258,6 +1258,8 @@
                             "type": "number"
                           },
                           "rocFiscalYear": {
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 fiscalYear（西元）",
                             "nullable": true,
                             "type": "integer"
                           },
@@ -1529,6 +1531,8 @@
                       "type": "boolean"
                     },
                     "periodType": {
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 timeframe",
                       "enum": [
                         "Q",
                         "TTM"
@@ -1538,6 +1542,13 @@
                     "symbol": {
                       "type": "string"
                     },
+                    "timeframe": {
+                      "enum": [
+                        "Q",
+                        "TTM"
+                      ],
+                      "type": "string"
+                    },
                     "total": {
                       "description": "這個查詢條件去重後總共有幾期資料，不受 limit 影響——前端可以用這個數字判斷要不要提供更長區間的選項",
                       "type": "number"
@@ -1545,6 +1556,7 @@
                   },
                   "required": [
                     "symbol",
+                    "timeframe",
                     "periodType",
                     "total",
                     "hasMore",
@@ -1695,15 +1707,34 @@
                       ],
                       "type": "string"
                     },
+                    "fiscalPeriodEndDate": {
+                      "description": "財報期末日 \"YYYY-MM-DD\"",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "fiscalQuarter": {
+                      "description": "季別 1-4；查無資料時為 null",
+                      "nullable": true,
+                      "type": "integer"
+                    },
+                    "fiscalYear": {
+                      "description": "西元年度，例如 2026；查無資料時為 null",
+                      "nullable": true,
+                      "type": "integer"
+                    },
                     "found": {
                       "description": "false 代表查無該公司這張表的資料（或指定的 year/season 那一季查無資料），此時 statement 為 null",
                       "type": "boolean"
                     },
                     "reportDate": {
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 fiscalPeriodEndDate",
                       "nullable": true,
                       "type": "string"
                     },
                     "season": {
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 fiscalQuarter",
                       "nullable": true,
                       "type": "string"
                     },
@@ -1731,7 +1762,8 @@
                       "type": "string"
                     },
                     "year": {
-                      "description": "民國年，例如 \"115\"；查無資料時為 null",
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 fiscalYear（西元）",
                       "nullable": true,
                       "type": "string"
                     }
@@ -1741,6 +1773,9 @@
                     "statementType",
                     "dataType",
                     "subsidiaryCompanyId",
+                    "fiscalYear",
+                    "fiscalQuarter",
+                    "fiscalPeriodEndDate",
                     "year",
                     "season",
                     "reportDate",
@@ -2457,6 +2492,11 @@
                     "entries": {
                       "items": {
                         "properties": {
+                          "announcementDate": {
+                            "description": "公告日 \"YYYY-MM-DD\"；2021-09 以前（mops 補的月份）與上櫃回填的歷史列為 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "cumulativeChangePct": {
                             "description": "累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳",
                             "nullable": true,
@@ -2478,6 +2518,8 @@
                             "type": "string"
                           },
                           "industry": {
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 sectorName",
                             "nullable": true,
                             "type": "string"
                           },
@@ -2496,7 +2538,13 @@
                             "type": "string"
                           },
                           "reportDate": {
-                            "description": "公告日 \"YYYY-MM-DD\"",
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 announcementDate",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "sectorName": {
+                            "description": "類股名稱（來源原樣）；mops 補的月份為 null",
                             "nullable": true,
                             "type": "string"
                           },
@@ -2512,6 +2560,8 @@
                         },
                         "required": [
                           "yearMonth",
+                          "announcementDate",
+                          "sectorName",
                           "reportDate",
                           "industry",
                           "currentMonthRevenue",
@@ -3365,6 +3415,8 @@
                       "type": "string"
                     },
                     "periodType": {
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 timeframe",
                       "enum": [
                         "Q",
                         "TTM"
@@ -3372,6 +3424,13 @@
                       "type": "string"
                     },
                     "symbol": {
+                      "type": "string"
+                    },
+                    "timeframe": {
+                      "enum": [
+                        "Q",
+                        "TTM"
+                      ],
                       "type": "string"
                     },
                     "total": {
@@ -3382,6 +3441,7 @@
                   "required": [
                     "symbol",
                     "metricCode",
+                    "timeframe",
                     "periodType",
                     "total",
                     "hasMore",
@@ -3571,6 +3631,8 @@
                       "type": "string"
                     },
                     "periodType": {
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 timeframe",
                       "enum": [
                         "Q",
                         "TTM",
@@ -3581,6 +3643,14 @@
                     "symbol": {
                       "type": "string"
                     },
+                    "timeframe": {
+                      "enum": [
+                        "Q",
+                        "TTM",
+                        "FY"
+                      ],
+                      "type": "string"
+                    },
                     "total": {
                       "description": "這個查詢條件去重後總共有幾期資料，不受 limit 影響——前端可以用這個數字判斷要不要提供更長區間的選項",
                       "type": "number"
@@ -3589,6 +3659,7 @@
                   "required": [
                     "symbol",
                     "metricCode",
+                    "timeframe",
                     "periodType",
                     "total",
                     "hasMore",
@@ -4494,7 +4565,8 @@
                       "type": "string"
                     },
                     "periodType": {
-                      "description": "這張溯源表描述的期別；逐日／月頻指標（用 asOfDate 定位）為 null。要求的 periodType 跟這裡不同時 found=false，不會拿別的期別頂替",
+                      "deprecated": true,
+                      "description": "已退役，2026-10-24 移除，改用 timeframe",
                       "enum": [
                         "Q",
                         "YTD",
@@ -4506,6 +4578,18 @@
                       "type": "string"
                     },
                     "symbol": {
+                      "type": "string"
+                    },
+                    "timeframe": {
+                      "description": "這張溯源表描述的期別；逐日／月頻指標（用 asOfDate 定位）為 null。要求的 timeframe 跟這裡不同時 found=false，不會拿別的期別頂替",
+                      "enum": [
+                        "Q",
+                        "YTD",
+                        "TTM",
+                        "FY",
+                        null
+                      ],
+                      "nullable": true,
                       "type": "string"
                     },
                     "value": {
@@ -4532,6 +4616,7 @@
                     "value",
                     "entries",
                     "methodologyNote",
+                    "timeframe",
                     "periodType"
                   ],
                   "type": "object"
@@ -11632,17 +11717,23 @@
                       "description": "依日期新到舊排序",
                       "items": {
                         "properties": {
+                          "generatedDate": {
+                            "description": "\"YYYY-MM-DD\"，TWSE 出表日期，不定期更新",
+                            "type": "string"
+                          },
                           "pledgePct": {
                             "description": "董監事及大股東股權質押比例（%）",
                             "nullable": true,
                             "type": "number"
                           },
                           "reportDate": {
-                            "description": "\"YYYY-MM-DD\"，TWSE 出表日期，不定期更新",
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
                             "type": "string"
                           }
                         },
                         "required": [
+                          "generatedDate",
                           "reportDate",
                           "pledgePct"
                         ],

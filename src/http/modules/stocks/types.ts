@@ -185,7 +185,8 @@ export const foreignShareholdingHistoryResultSchema = z.object({
 // 2026-09-10 twse-ts 新建的 export.stock_pledge_ratio view——董監事及大股東股權質押比例（TWSE t187ap09_L），
 // report_date 是 TWSE 出表日期、不定期更新。刻意回傳完整歷史陣列讓使用者自己核對原始公告數字。
 export const stockPledgeRatioEntrySchema = z.object({
-  reportDate: z.string().meta({ description: '"YYYY-MM-DD"，TWSE 出表日期，不定期更新' }),
+  generatedDate: z.string().meta({ description: '"YYYY-MM-DD"，TWSE 出表日期，不定期更新' }),
+  reportDate: z.string().meta({ description: '已退役，2026-10-24 移除，改用 generatedDate', deprecated: true }),
   pledgePct: z.number().nullable().meta({ description: '董監事及大股東股權質押比例（%）' }),
 }) satisfies z.ZodType<StockPledgeRatioEntry>;
 

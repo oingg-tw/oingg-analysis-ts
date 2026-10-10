@@ -23,6 +23,7 @@
     "hasMore": "<boolean>",
     "periodType": "Q",
     "symbol": "<numeric-string>",
+    "timeframe": "Q",
     "total": "<number>"
   }
 }

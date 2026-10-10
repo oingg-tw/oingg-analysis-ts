@@ -6,8 +6,10 @@ import type { CompanyMonthlyRevenue } from '@/domain/industry/sectorAggregates';
 
 export interface MonthlyRevenueEntry {
   yearMonth: string; // "YYYY-MM"
-  reportDate: string | null; // 公告日 "YYYY-MM-DD"
-  industry: string | null;
+  announcementDate: string | null; // 公告日 "YYYY-MM-DD"（2026-10-10 詞彙表官方名）
+  sectorName: string | null; // 類股名稱（2026-10-10 詞彙表官方名）
+  reportDate: string | null; // 舊名，並存到 2026-10-24
+  industry: string | null; // 舊名，並存到 2026-10-24
   currentMonthRevenue: string | null; // 當月營收（新台幣千元），bigint 序列化成字串
   lastYearSameMonthRevenue: string | null;
   yoyChangePct: number | null; // 來源直接算好的欄位，原樣透傳

@@ -146,7 +146,7 @@ export const dividendHistoryEventSchema = z.object({
 
 export const dividendHistoryEntrySchema = z.object({
   fiscalYear: z.number().int().nullable().meta({ description: '西元，股利所屬年度（不是除息年度）。null＝公告沒填所屬年度的配發，集中成最後一列（2026-10-05 起）' }),
-  rocFiscalYear: z.number().int().nullable(),
+  rocFiscalYear: z.number().int().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalYear（西元）', deprecated: true }),
   cashDividend: z.number().meta({ description: '該年度全部分派案的現金股利加總，元／股' }),
   cashDividendFromEarnings: z.number().meta({ description: '該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01' }),
   cashDividendFromLegalReserveAndCapitalSurplus: z.number().meta({ description: '該年度各次「法定盈餘公積、資本公積發放之現金」加總，元／股' }),
@@ -180,8 +180,10 @@ export const bookValueBreakdownEntrySchema = z.object({
 
 export const monthlyRevenueEntrySchema = z.object({
   yearMonth: z.string().meta({ description: '"YYYY-MM"' }),
-  reportDate: z.string().nullable().meta({ description: '公告日 "YYYY-MM-DD"' }),
-  industry: z.string().nullable(),
+  announcementDate: z.string().nullable().meta({ description: '公告日 "YYYY-MM-DD"；2021-09 以前（mops 補的月份）與上櫃回填的歷史列為 null' }),
+  sectorName: z.string().nullable().meta({ description: '類股名稱（來源原樣）；mops 補的月份為 null' }),
+  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 announcementDate', deprecated: true }),
+  industry: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 sectorName', deprecated: true }),
   currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
   lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),
   yoyChangePct: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
@@ -201,9 +203,12 @@ export const financialStatementResultSchema = z.object({
   statementType: z.enum(['balanceSheet', 'incomeStatement', 'cashFlowStatement']),
   dataType: z.enum(['1', '2']),
   subsidiaryCompanyId: z.string(),
-  year: z.string().nullable().meta({ description: '民國年，例如 "115"；查無資料時為 null' }),
-  season: z.string().nullable(),
-  reportDate: z.string().nullable(),
+  fiscalYear: z.number().int().nullable().meta({ description: '西元年度，例如 2026；查無資料時為 null' }),
+  fiscalQuarter: z.number().int().nullable().meta({ description: '季別 1-4；查無資料時為 null' }),
+  fiscalPeriodEndDate: z.string().nullable().meta({ description: '財報期末日 "YYYY-MM-DD"' }),
+  year: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalYear（西元）', deprecated: true }),
+  season: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalQuarter', deprecated: true }),
+  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalPeriodEndDate', deprecated: true }),
   found: z.boolean().meta({ description: 'false 代表查無該公司這張表的資料（或指定的 year/season 那一季查無資料），此時 statement 為 null' }),
   statement: z
     .record(z.string(), z.string().nullable())

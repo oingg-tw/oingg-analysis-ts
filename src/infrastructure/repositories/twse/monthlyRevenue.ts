@@ -119,6 +119,8 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
 
     return {
       yearMonth,
+      announcementDate: toDateString(row.report_date),
+      sectorName: row.industry,
       reportDate: toDateString(row.report_date),
       industry: row.industry,
       currentMonthRevenue: currentMonthRevenue === null ? null : currentMonthRevenue.toString(),

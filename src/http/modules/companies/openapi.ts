@@ -69,7 +69,8 @@ const totalHasMoreFields = {
 const roeHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roe'),
-  periodType: z.enum(['Q', 'TTM', 'FY']),
+  timeframe: z.enum(['Q', 'TTM', 'FY']),
+  periodType: z.enum(['Q', 'TTM', 'FY']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(roeHistoryEntrySchema),
 });
@@ -77,14 +78,16 @@ const roeHistoryResultSchema = z.object({
 const roaHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roa'),
-  periodType: z.enum(['Q', 'TTM']),
+  timeframe: z.enum(['Q', 'TTM']),
+  periodType: z.enum(['Q', 'TTM']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(roaHistoryEntrySchema),
 });
 
 const dupontHistoryResultSchema = z.object({
   symbol: z.string(),
-  periodType: z.enum(['Q', 'TTM']),
+  timeframe: z.enum(['Q', 'TTM']),
+  periodType: z.enum(['Q', 'TTM']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(dupontHistoryEntrySchema),
 });

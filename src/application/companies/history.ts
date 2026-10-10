@@ -34,14 +34,14 @@ export interface PeriodHistoryQuery {
 // 或錯誤——跟 getCompanyCapitalStockHistory 同一種「查無歷史資料是正常情境」的慣例。
 export const getCompanyRoeHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getRoeHistory(symbol, periodType, limit, deps);
-  return { symbol, metricCode: 'roe' as const, periodType, total, hasMore, entries };
+  return { symbol, metricCode: 'roe' as const, timeframe: periodType, periodType, total, hasMore, entries };
 };
 
 // 給前端畫「ROA 歷史時序」圖表用，完全比照 getCompanyRoeHistory 的模式（第二支直接讀
 // metric_values 的端點）。查無資料回傳 entries: []，不是 404。
 export const getCompanyRoaHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getRoaHistory(symbol, periodType, limit, deps);
-  return { symbol, metricCode: 'roa' as const, periodType, total, hasMore, entries };
+  return { symbol, metricCode: 'roa' as const, timeframe: periodType, periodType, total, hasMore, entries };
 };
 
 // 給前端畫「杜邦拆解」圖表用——這批遷移嚴格需要的最小集合（淨利率/總資產週轉率兩個因子 +
@@ -49,7 +49,7 @@ export const getCompanyRoaHistory = async ({ symbol, periodType, limit }: Period
 // periodType=TTM 時 equityMultiplier 沿用同一期的 Q 快照值（不是恆為 null）。查無資料回傳 entries: []，不是 404。
 export const getCompanyDupontHistory = async ({ symbol, periodType, limit }: PeriodHistoryQuery, deps: Pick<AppDeps, 'metricValueQueries' | 'reportAvailability'>) => {
   const { entries, total, hasMore } = await getDupontHistory(symbol, periodType, limit, deps);
-  return { symbol, periodType, total, hasMore, entries };
+  return { symbol, timeframe: periodType, periodType, total, hasMore, entries };
 };
 
 export interface MetricHistoryQuery {

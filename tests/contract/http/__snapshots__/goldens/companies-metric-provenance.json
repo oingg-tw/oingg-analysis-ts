@@ -20,6 +20,7 @@
     "metricCode": "roe",
     "periodType": "TTM",
     "symbol": "<numeric-string>",
+    "timeframe": "TTM",
     "value": "<number>"
   }
 }
