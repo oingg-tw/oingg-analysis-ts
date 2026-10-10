@@ -24,7 +24,7 @@ const toNullableNumber = (value: unknown): number | null => (value === null || v
 // 這裡維持跟其他「取最近 N 筆」端點（例如 GET /companies/metric-history）一致的慣例，不在查詢層先反轉。
 export const getForeignShareholdingHistory = async (symbol: string, limit: number): Promise<ForeignShareholdingEntry[]> => {
   const rows = await tpexExportPrisma.$queryRaw<RawForeignShareholdingRow[]>`
-    SELECT trade_date, shares_held_percent, foreign_limit_percent, available_invest_percent
+    SELECT trade_date, shares_held_pct AS shares_held_percent, foreign_limit_pct AS foreign_limit_percent, available_invest_pct AS available_invest_percent -- 2026-10-11 改讀 tpex 新欄名
     FROM "export"."v_foreign_shareholdings"
     WHERE symbol = ${symbol}
     ORDER BY trade_date DESC

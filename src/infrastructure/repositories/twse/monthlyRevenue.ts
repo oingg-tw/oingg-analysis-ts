@@ -57,6 +57,9 @@ const toYearMonthString = (value: Date): string => value.toISOString().slice(0, 
 const round2 = (x: number): number => Math.round(x * 100) / 100;
 
 const COLUMNS = 'year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue, yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note';
+// 2026-10-11 tpex 已上詞彙表新欄名（fb18820，PRD）：改讀新名稱，別名回舊名讓下游型別不動。sector_name 是對齊 twse 字典的類股名稱。
+const TPEX_COLUMNS =
+  'year_month, generated_date AS report_date, sector_name AS industry, current_month_revenue, last_year_same_month_revenue, yoy_change_pct AS yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_pct AS cumulative_change_percent, note';
 
 // 2026-10-10 mops-ts export.market_monthly_revenue（MOPS t21sc03 彙總表，上市＋上櫃，2016-01 起、含 -KY）補交易所缺的月份。
 // 使用者 10/10 核准：twse-ts／tpex-ts 不往前補 2021-09 以前，改由 mops-ts 破例抓 MOPS 並開表。
@@ -92,7 +95,7 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
     listed.length > 0
       ? listed
       : await tpexExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-          `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
+          `SELECT ${TPEX_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
           symbol
         );
   const rows = fillMissingMonths(exchange, mops);

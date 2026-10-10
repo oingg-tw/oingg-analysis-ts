@@ -88,7 +88,7 @@ export const listMonthlyRevenueForMonth = (market: Market, yearMonth: Date): Pro
         WHERE year_month = ${yearMonth} AND source = 'MONTHLY_REVENUE'
       `
     : tpexExportPrisma.$queryRaw<RawMonthlyRevenueRow[]>`
-        SELECT symbol, year_month, current_month_revenue, mom_change_percent, yoy_change_percent
+        SELECT symbol, year_month, current_month_revenue, mom_change_pct AS mom_change_percent, yoy_change_pct AS yoy_change_percent
         FROM "export"."v_monthly_revenues"
         WHERE year_month = ${yearMonth}
       `;
@@ -192,10 +192,10 @@ export const listDisposedStocksTwse = (eligibleSymbols: string[], limit: number)
 
 export const listDisposedStocksTpex = (limit: number): Promise<RawTpexDisposedStockRow[]> =>
   tpexExportPrisma.$queryRaw<RawTpexDisposedStockRow[]>`
-    SELECT symbol, announce_date, reason, disposition_period, detail
+    SELECT symbol, announcement_date AS announce_date, reason, disposition_period, detail
     FROM "export"."v_disposed_stocks"
     WHERE symbol IN (SELECT symbol FROM "export"."v_company_profiles")
-    ORDER BY announce_date DESC
+    ORDER BY announcement_date DESC
     LIMIT ${limit}
   `;
 

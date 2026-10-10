@@ -118,8 +118,8 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
         `
       : Promise.resolve([]),
     needsTpex
-      ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; source: string | null }[]>`
-          SELECT symbol, short_name, source FROM "export"."v_company_profiles" WHERE in_latest_list
+      ? tpexExportPrisma.$queryRaw<{ symbol: string; short_name: string | null; market: string | null }[]>`
+          SELECT symbol, short_name, market FROM "export"."v_company_profiles" WHERE in_latest_list
         `
       : Promise.resolve([]),
     needsPreferred
@@ -140,7 +140,7 @@ const getAllSecurityRows = async (filter: SecuritySymbolsFilter): Promise<RawSec
       symbol: row.symbol,
       market: 'TPEx' as const,
       shortName: row.short_name,
-      isEmerging: row.source === 'COMPANY_PROFILE_EMERGING',
+      isEmerging: row.market === TPEX_EMERGING_MARKET,
       isPreferredStock: false,
       isFullDelivery: fullDeliverySets.tpex.has(row.symbol),
     })),
@@ -209,7 +209,7 @@ interface RawTpexCompanyProfileDetailRow {
   email: string | null;
   website: string | null;
   issued_shares: bigint | null;
-  source: string | null;
+  market: string | null;
 }
 
 interface RawTwseCompanyProfileDetailRow {
@@ -355,12 +355,13 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   }
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileDetailRow[]>`
-    SELECT symbol, report_date, name, short_name, foreign_registration_country, industry, address, tax_id,
+    SELECT symbol, generated_date AS report_date, name, short_name, foreign_registration_country, sector_code AS industry, address, tax_id,
       chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson, phone,
-      established_date, listed_date, par_value, paid_in_capital, private_placement_shares,
-      preferred_stock_shares, financial_report_type, stock_transfer_agency, transfer_agency_phone,
+      established_date, listing_date AS listed_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares,
+      preferred_stock_shares, CASE data_type WHEN '2' THEN '1' WHEN '1' THEN '2' END AS financial_report_type, stock_transfer_agency, transfer_agency_phone,
       transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
-      email, website, issued_shares, source
+      email, website, issued_shares, market
+      -- 2026-10-11 改讀 tpex 詞彙表新欄名（tpex fb18820 上 PRD），舊欄位等 analysis 驗證完就可以刪（data_type 是 MOPS 編碼，這裡換回交易所編碼給舊的 financialReportType；那個 API 欄位 10/24 前移除後就直接用 data_type）
     FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1
   `;
   const tpexRow = tpexRows[0];
@@ -369,7 +370,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   return withCanonicalProfileKeys({
     symbol: tpexRow.symbol,
     market: 'TPEx',
-    isEmerging: tpexRow.source === 'COMPANY_PROFILE_EMERGING',
+    isEmerging: tpexRow.market === TPEX_EMERGING_MARKET,
     reportDate: tpexRow.report_date?.toISOString().slice(0, 10) ?? null,
     name: tpexRow.name,
     shortName: tpexRow.short_name,
@@ -492,7 +493,8 @@ export const LISTED_ONLY = `source = 'COMPANY_PROFILE'`;
 const COMPANY_DIRECTORY_TWSE = `${LISTED_ONLY} AND industry IS DISTINCT FROM '91'`;
 // tpex-ts 的 company_profile 也用 source 分兩種，但語意跟 twse 不同：COMPANY_PROFILE 是上櫃（891 家）、
 // COMPANY_PROFILE_EMERGING 是興櫃（364 家），兩者都是正牌公司，差別是市場別不是雜訊。
-const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
+// 2026-10-11 tpex 改用詞彙表官方市場別（MOPS TYPEK）：興櫃是 market='rotc'，不再看 source='COMPANY_PROFILE_EMERGING'。
+const TPEX_EMERGING_MARKET = 'rotc';
 
 // 2026-09-23 使用者拍板：**這個目錄刻意包含興櫃，不要篩掉**（tpex 側 source='COMPANY_PROFILE_EMERGING'
 // 364 家），理由是未來可能有專門處理興櫃公司的業務線，先留著比之後再補回來容易。改成多回一個
@@ -507,11 +509,11 @@ const EMERGING_SOURCE = 'COMPANY_PROFILE_EMERGING';
 export const listAllCompanyNames = async (limit: number, offset: number): Promise<{ count: number; entries: CompanyNameEntry[] }> => {
   const [twseRows, tpexRows] = await Promise.all([
     twseExportPrisma.$queryRaw<(RawTwseCompanyProfileRow & { industry: string | null })[]>`SELECT symbol, short_name, industry FROM "export"."v_company_profiles" WHERE ${Prisma.raw(COMPANY_DIRECTORY_TWSE)}`,
-    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; source: string | null })[]>`SELECT symbol, short_name, industry, source FROM "export"."v_company_profiles" WHERE in_latest_list`,
+    tpexExportPrisma.$queryRaw<(RawTpexCompanyProfileRow & { industry: string | null; market: string | null })[]>`SELECT symbol, short_name, sector_code AS industry, market FROM "export"."v_company_profiles" WHERE in_latest_list`,
   ]);
   const all = dedupeBySymbol([
     ...twseRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TWSE' as const, industry: r.industry, isEmerging: false })),
-    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TPEx' as const, industry: r.industry, isEmerging: r.source === EMERGING_SOURCE })),
+    ...tpexRows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, market: 'TPEx' as const, industry: r.industry, isEmerging: r.market === TPEX_EMERGING_MARKET })),
   ]); // twseRows 排在前面，去重時優先保留
   return { count: all.length, entries: all.slice(offset, offset + limit) };
 };
