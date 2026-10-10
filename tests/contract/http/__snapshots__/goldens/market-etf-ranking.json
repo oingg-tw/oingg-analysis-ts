@@ -1,7 +1,6 @@
 {
   "status": 200,
   "body": {
-    "direction": "desc",
     "limit": "<number>",
     "metric": "aum",
     "order": "desc",
