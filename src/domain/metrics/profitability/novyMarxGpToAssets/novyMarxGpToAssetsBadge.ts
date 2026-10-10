@@ -31,6 +31,6 @@ export const novyMarxGpToAssetsBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{GPToAssets\\ Percentile} \\geq 80',
     note: 'Novy-Marx 論文用全市場五等分（quintile）排名，最高一組即前 20%，不是絕對數字門檻。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPct: 20 },
+    percentileRank: { scope: 'market', order: 'desc', topPct: 20 },
   },
 };

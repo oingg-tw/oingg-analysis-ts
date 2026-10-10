@@ -144,7 +144,7 @@ export interface MetricBadge extends NamedEntity {
       // 是「非產業」代碼（07/91/98/XX）或字典查無資料時，sector 排名無法計算（null，不是 0%）。
       scope: 'market' | 'sector';
       // desc：數值越大排名越前面（例如毛利率、ROE）；asc：數值越小排名越前面（例如本益比）。
-      direction: 'asc' | 'desc';
+      order: 'asc' | 'desc';
       // 前 N%（1–100 之間），例如 Novy-Marx 的最高五分位是 20。用 RANK()/總數換算百分位，
       // 並列的公司拿到相同名次（跟 GET /screener/company-rank 同一套規則）。
       topPct: number;

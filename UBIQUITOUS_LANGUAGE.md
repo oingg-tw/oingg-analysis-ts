@@ -46,7 +46,7 @@
      - GCP 專案 ID：GCP 不允許改名。
 - **資料集歸屬**（使用者 10/10）：同一份來源只由一個服務收。data.gov.tw 的資料集一律歸 gov-ts，生態系從 gov 讀；sitca-ts 退掉重複的 11109（每日淨值）、43476（境內基金基本資料）。
 - **範圍**：這份詞彙表管的是**對外介面**，也就是各服務的 export view 和 API。內部表與欄位要不要跟著改，由該服務自己決定（sitca-ts 10/10 提出、analysis 同意：只在 view 層用別名欄位，不動表）。
-- **防退化**（第四階段加上）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
+- **防退化**（2026-10-10 上線）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
 
 ## 二、官方用詞表
 
@@ -267,7 +267,8 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 | 2026-10-10 | twse | 上市月營收 2021-09～2026-07 刪除（當初從 MOPS _0 頁匯入、缺 -KY），只留 2026-08 起 OpenAPI 的月份；analysis 那些月份自動改由 mops 補 | DEV 已刪，PROD 待 twse 的使用者放行 |
 | — | mops | view 改成 `export.v_<複數>`（例 `market_monthly_revenue` → `v_market_monthly_revenues`） | 待核准 |
 | — | twse、tpex | `source`（市場族群）→ `market`；`financial_report_type` → `data_type`（MOPS 編碼）；`report_date` → `generated_date`；`industry` → `sector_code` 等（見第二節落差欄） | 待核准 |
-| — | analysis | 對外 API：`periodType` → `timeframe`；民國 `year`／`season` → `fiscalYear`／`fiscalQuarter`；`paidInShares` → `numberOfSharesIssued`；`*Percent` → `*Pct`；`direction`／`sortOrder` → `order` 等（見第二節） | 待排程（並存 14 天） |
+| 2026-10-10 | analysis | 對外 API 批次 1（查詢參數 timeframe、西元 fiscalYear／fiscalQuarter，05967082）、2a（15 個 *Percent → *Pct、paidInShares → numberOfSharesIssued，8e3fe418）、2b（profile 的 generatedDate／sectorCode／sectorName／declaredDataType／listingDate／numberOfPreferenceShares，securities-sectors 的 sectorCode／sectorName，875ffaaf）、2c（financial-statement 西元年季與 fiscalPeriodEndDate、歷史與溯源的 timeframe、月營收 announcementDate／sectorName、質押 generatedDate，4cb5c4d6）、3（排序 order，含 GET /metrics 徽章 percentileRank.direction → order，810da900） | 並存中，舊名 2026-10-24 移除 |
+| — | analysis | 市場別 `market`：`TWSE`／`TPEx`＋`isEmerging` → TYPEK。分兩步：先新增 `marketCode`（舊欄位並存 14 天），再改名回 `market`（`marketCode` 並存 14 天） | 已預告業務中台，等回覆 |
 | — | 業務中台、web-nuxt | `basis` → `timeframe`；型錄 `key`／`path` → `metricCode`；`name` → `companyName` 等 | 待排程（跟著 analysis） |
 
 ## 六、縮寫字典（PostgreSQL 63 字元上限用）
@@ -401,5 +402,5 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 
 - **`metricCode`**（camelCase）＋ **`timeframe`** 是指標在 API 上唯一的定址方式，欄位字串寫成 `metricCode.timeframe`（例 `roe.TTM`）。
   - 資料庫的 `metric_values` 把 timeframe 拆成 `period_type`／`lookback_range`／`sampling_interval`／`snapshot_cadence` 四欄（2026-09-08，舊的 `basis` 一欄已拆掉）。
-- **`dependsOn`** 與溯源表的 `fieldKey`：填 mops XBRL 的 `account_code`（元素名的 snake_case），不是自取的英文。非 XBRL 的輸入（例流通股數）用第二節的官方名稱。
+- **`dependsOn`** 與溯源表的 `fieldKey`（溯源表項目的 `fieldKey` 就是這個意思；舊 filterCatalog 的 `metricKey.fieldKey` 已刪，`fieldKey` 現在只有這一種意思）：填 mops XBRL 的 `account_code`（元素名的 snake_case），不是自取的英文。非 XBRL 的輸入（例流通股數）用第二節的官方名稱。
 - 舊的 filterCatalog（`metricKey.fieldKey`）已在 2026-09-08 整套刪除。業務中台與 web-nuxt 裡殘留的 `metricKey`／`fieldKey`／`Filter*` 是退役詞，見第二節。

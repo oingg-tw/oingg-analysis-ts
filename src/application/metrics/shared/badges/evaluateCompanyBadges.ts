@@ -141,7 +141,7 @@ const evaluatePercentileRank = async (
   if (candidateSymbols === undefined) return NULL_PERCENTILE_RESULT;
 
   const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
-  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols, percentileRank.topPct);
+  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.order, percentileRank.excludeZero ?? false, candidateSymbols, percentileRank.topPct);
   const row = rows[0];
   if (!row) return NULL_PERCENTILE_RESULT;
 

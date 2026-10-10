@@ -31,6 +31,6 @@ export const shareholderYieldBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{ShareholderYield\\ Percentile} \\geq 75',
     note: 'Faber 論文用全市場四等分（quartile）排名，最高一組即前 25%，不是絕對數字門檻。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPct: 25 },
+    percentileRank: { scope: 'market', order: 'desc', topPct: 25 },
   },
 };

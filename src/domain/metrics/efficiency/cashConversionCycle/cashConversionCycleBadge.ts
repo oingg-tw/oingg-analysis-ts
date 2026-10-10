@@ -30,6 +30,6 @@ export const cashConversionCycleBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{CCC\\ Percentile} \\geq 90',
     note: 'Wang (2019) 用全市場十等分（decile）排序法，最短現金轉換循環那組即最低 10%，不是絕對天數門檻。direction 用 asc（天數越少排名越前面）。論文排除金融業，本站對銀行本來就不計算此指標。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'asc', topPct: 10 },
+    percentileRank: { scope: 'market', order: 'asc', topPct: 10 },
   },
 };

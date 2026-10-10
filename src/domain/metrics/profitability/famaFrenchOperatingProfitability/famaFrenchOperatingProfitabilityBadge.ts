@@ -30,6 +30,6 @@ export const famaFrenchOperatingProfitabilityBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{OP\\ Percentile} \\geq 70',
     note: 'Fama & French 五因子模型的 OP breakpoints 是 NYSE 第 30/70 百分位，「Robust」組即第 70 百分位以上（前 30%），不是絕對數字門檻。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPct: 30 },
+    percentileRank: { scope: 'market', order: 'desc', topPct: 30 },
   },
 };

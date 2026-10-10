@@ -88,7 +88,7 @@
     }
   },
   "info": {
-    "description": "API documentation for the OINGG financial-ratios service.\n\n欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 2026-10-24）：回應同時帶舊 key（值相同），本文件只列新 key；舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued。",
+    "description": "API documentation for the OINGG financial-ratios service.\n\n欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 2026-10-24）：回應同時帶舊 key（值相同），本文件只列新 key；舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued，GET /metrics 徽章 threshold.percentileRank 的 direction → order。",
     "title": "OINGG Ratios API",
     "version": "1.0.0"
   },
@@ -568,7 +568,7 @@
                                   "type": "integer"
                                 },
                                 "thresholdValue": {
-                                  "description": "2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPct 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPct/100）。(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。",
+                                  "description": "2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.order 排序）恰好落在 topPct 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPct/100）。(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。",
                                   "nullable": true,
                                   "type": "number"
                                 },
@@ -9149,17 +9149,17 @@
                                         "percentileRank": {
                                           "description": "2026-09-21 新增（選填）：跟固定常數比較的第六種變體——出處本來就是用十分位/五分位定義「高/低」（Novy-Marx、O'Shaughnessy 這類），不是自訂絕對門檻。有這個欄位時 comparator/value/valueMin/valueMax/compareAgainstFieldId/allPositiveFieldIds 都不使用，GET /companies/badges 改用 percentile/rank/totalCount 三個欄位表達結果。",
                                           "properties": {
-                                            "direction": {
+                                            "excludeZero": {
+                                              "description": "排名母體要不要排除精確等於 0 的公司，同 GET /screener/company-rank 的 excludeZero",
+                                              "type": "boolean"
+                                            },
+                                            "order": {
                                               "description": "desc=數值越大排名越前面（例如毛利率）；asc=數值越小排名越前面（例如本益比）",
                                               "enum": [
                                                 "asc",
                                                 "desc"
                                               ],
                                               "type": "string"
-                                            },
-                                            "excludeZero": {
-                                              "description": "排名母體要不要排除精確等於 0 的公司，同 GET /screener/company-rank 的 excludeZero",
-                                              "type": "boolean"
                                             },
                                             "scope": {
                                               "description": "market=跟全市場比較；sector=只跟同一個證交所類股（company_profile.industry）的公司比較",
@@ -9176,7 +9176,7 @@
                                           },
                                           "required": [
                                             "scope",
-                                            "direction",
+                                            "order",
                                             "topPct"
                                           ],
                                           "type": "object"

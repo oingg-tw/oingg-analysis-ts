@@ -38,6 +38,7 @@ const RETIRED_RESPONSE_KEYS: Record<string, string> = {
   m2YoyPct: 'm2YoyPercent',
   avgTaiexYoyPct: 'avgTaiexYoyPercent',
   numberOfSharesIssued: 'paidInShares',
+  order: 'direction', // GET /metrics 徽章 threshold.percentileRank 的排名方向（回應裡只有這一處叫 order）
 };
 const isPlainObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype;
 export const withRetiredKeys = (value: unknown): unknown => {
