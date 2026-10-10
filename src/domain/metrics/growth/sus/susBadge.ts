@@ -57,6 +57,6 @@ export const susBadge: MetricBadge = {
       '賣後 20%，取得 1~12 個月顯著正的平均報酬，且在控制產業、規模、週轉率、淨值市價比、過去報酬、未預期盈餘' +
       '與風險之後仍然存在；同一篇也發現持有第 25~36 個月間出現顯著負的累積平均報酬，效果會隨時間反轉。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPercent: 20 },
+    percentileRank: { scope: 'market', direction: 'desc', topPct: 20 },
   },
 };

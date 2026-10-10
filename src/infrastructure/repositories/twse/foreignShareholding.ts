@@ -32,8 +32,8 @@ export const getForeignShareholdingHistory = async (symbol: string, limit: numbe
   `;
   return rows.map((row) => ({
     tradeDate: row.trade_date.toISOString().slice(0, 10),
-    sharesHeldPercent: toNullableNumber(row.shares_held_percent),
-    foreignLimitPercent: toNullableNumber(row.foreign_limit_percent),
-    availableInvestPercent: toNullableNumber(row.available_invest_percent),
+    sharesHeldPct: toNullableNumber(row.shares_held_percent),
+    foreignLimitPct: toNullableNumber(row.foreign_limit_percent),
+    availableInvestPct: toNullableNumber(row.available_invest_percent),
   }));
 };

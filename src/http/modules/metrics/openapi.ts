@@ -122,7 +122,7 @@ const metricFolderCatalogEntrySchema = z.object({
           .object({
             scope: z.enum(['market', 'sector']).meta({ description: 'market=跟全市場比較；sector=只跟同一個證交所類股（company_profile.industry）的公司比較' }),
             direction: z.enum(['asc', 'desc']).meta({ description: 'desc=數值越大排名越前面（例如毛利率）；asc=數值越小排名越前面（例如本益比）' }),
-            topPercent: z.number().meta({ description: '前 N%（1-100），例如 Novy-Marx 的最高五分位是 20' }),
+            topPct: z.number().meta({ description: '前 N%（1-100），例如 Novy-Marx 的最高五分位是 20' }),
             excludeZero: z.boolean().optional().meta({ description: '排名母體要不要排除精確等於 0 的公司，同 GET /screener/company-rank 的 excludeZero' }),
           })
           .optional()

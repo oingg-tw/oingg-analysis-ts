@@ -15,7 +15,7 @@ export const priceChangeRowSchema = z.object({
   close: z.number(),
   previousClose: z.number(),
   changeAmount: z.number().meta({ description: 'close - previousClose' }),
-  changePercent: z.number().meta({ description: '(close - previousClose) / previousClose x 100' }),
+  changePct: z.number().meta({ description: '(close - previousClose) / previousClose x 100' }),
 });
 export type PriceChangeRow = z.infer<typeof priceChangeRowSchema>;
 

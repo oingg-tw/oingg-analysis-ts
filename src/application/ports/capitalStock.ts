@@ -2,7 +2,7 @@ import type { ShareBasisEvent } from '@/domain/financials/liveShareBasis';
 
 // 流通在外普通股 port——每股型指標（EPS/BVPS/每股現金流…）跟市值都靠它。2026-09-25 起回傳的是 IAS 33 的
 // 「流通在外普通股」＝已發行 − 特別股 − 庫藏股（見 domain/financials/outstandingCommonShares.ts），不再是
-// capital_stock_history 的實收股數（那個含特別股與庫藏股）；名稱同日從 paidInShares 改成 outstandingCommonShares。
+// capital_stock_history 的實收股數（那個含特別股與庫藏股）；名稱同日從 numberOfSharesIssued 改成 outstandingCommonShares。
 // 注意單位：是實際股數（不是千股），財報金額是千元，算每股數字時分子要先 ×1000，見 numericHelpers.ts 的 toPerShare。
 // 有特別股卻查不到特別股股本的公司回 null（分母定義待補）。實作在 infrastructure/repositories/mops/capitalStock.ts。
 export interface OutstandingCommonSharesAsOf {
@@ -51,9 +51,9 @@ export interface CapitalStockChangeSource {
 
 export interface CapitalStockHistoryEntry {
   effectiveDate: string; // "YYYY-MM"，異動事件序列，同一年可能 0 筆或多筆
-  paidInShares: string; // 實際流通股數（不是千股），bigint 序列化成字串
+  numberOfSharesIssued: string; // 實際流通股數（不是千股），bigint 序列化成字串
   paidInCapital: string | null; // 實收資本額（元）
-  sharesChangePercent: number | null; // 跟時間序列上更早的前一筆相比的變動百分比，最早一筆是 null
+  sharesChangePct: number | null; // 跟時間序列上更早的前一筆相比的變動百分比，最早一筆是 null
   changeSource: CapitalStockChangeSource;
   remarks: string | null;
 }

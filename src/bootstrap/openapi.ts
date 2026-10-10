@@ -1,3 +1,4 @@
+import { RETIRED_RESPONSE_KEYS_REMOVED_ON } from '@/http/route';
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import type { HttpModule } from '@/http/module';
@@ -74,7 +75,11 @@ export const buildOpenApiDocument = (modules: readonly HttpModule[], { port }: {
     info: {
       title: 'OINGG Ratios API',
       version: '1.0.0',
-      description: 'API documentation for the OINGG financial-ratios service',
+      // 2026-10-10 詞彙表改名的並存期說明（舊 key 由 http/route.ts 的 withRetiredKeys 補上，文件只列新 key）。
+      description:
+        'API documentation for the OINGG financial-ratios service.\n\n' +
+        `欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 ${RETIRED_RESPONSE_KEYS_REMOVED_ON}）：回應同時帶舊 key（值相同），本文件只列新 key；` +
+        '舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued。',
     },
     servers: [
       {

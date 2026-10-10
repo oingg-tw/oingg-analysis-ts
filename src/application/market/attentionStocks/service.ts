@@ -59,7 +59,7 @@ export const listAttentionStocks = async (query: AttentionStocksQuery, deps: Att
     tradeDate: row.trade_date.toISOString().slice(0, 10),
     criteria: row.criteria,
     criteriaDetails: parseAttentionCriteria(row.criteria),
-    sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.trade_date)) ?? null,
+    sixDayChangePct: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.trade_date)) ?? null,
   }));
 
   return { limit, items, warnings };

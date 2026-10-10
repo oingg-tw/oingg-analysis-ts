@@ -216,7 +216,7 @@ import { psrBadge } from './valuation/psr/psrBadge';
 // 且 sue 指標本身同步換成該論文的定義（淨利金額、含漂移項、μ/σ 取前 8 季；formulaVersion 2）——舊的
 // Bernard & Thomas 版全市場最新一季只有 2330 算得出來（24 季 EPS + 股本缺口），顧 2011 版只要 13 季
 // 淨利。門檻「前 1/3」逐字：「依每月個別股票之 SUE…均分成 3 個組合…SUE 最高之組合 E3 為盈餘贏家組合」，
-// percentileRank topPercent 33.33。第二輪下架時的理由（原始論文用排名法、本站硬湊 > 2 絕對切點）現在
+// percentileRank topPct 33.33。第二輪下架時的理由（原始論文用排名法、本站硬湊 > 2 絕對切點）現在
 // 兩個都解掉了。
 //
 // 2026-09-20 第六輪：ohlsonOScoreBadge 掛回。使用者放寬標準：門檻不必是原始出處規定的數字，只要有

@@ -20,8 +20,8 @@ export const revenueRankingRowSchema = z.object({
   companyName: z.string().nullable(),
   market: z.enum(['TWSE', 'TPEx']),
   currentMonthRevenue: z.string().nullable().meta({ description: 'BigInt 用字串傳遞' }),
-  momChangePercent: z.number().nullable(),
-  yoyChangePercent: z.number().nullable(),
+  momChangePct: z.number().nullable(),
+  yoyChangePct: z.number().nullable(),
 });
 export type RevenueRankingRow = z.infer<typeof revenueRankingRowSchema>;
 

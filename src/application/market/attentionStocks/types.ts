@@ -14,7 +14,7 @@ export const attentionStockRowSchema = z.object({
   tradeDate: z.string(),
   criteria: z.string().nullable().meta({ description: '原始中文說明，可能包含多個原因子句直接串接' }),
   criteriaDetails: z.array(attentionCriteriaDetailSchema).meta({ description: '從 criteria 解析出的結構化資料，解析失敗時是空陣列' }),
-  sixDayChangePercent: z.number().nullable().meta({ description: '以 tradeDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null' }),
+  sixDayChangePct: z.number().nullable().meta({ description: '以 tradeDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null' }),
 });
 export type AttentionStockRow = z.infer<typeof attentionStockRowSchema>;
 

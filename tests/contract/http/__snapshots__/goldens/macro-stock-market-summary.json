@@ -5,6 +5,7 @@
       {
         "avgDailyTradingValue": "<number>",
         "avgTaiex": "<number>",
+        "avgTaiexYoyPct": "<number>",
         "avgTaiexYoyPercent": "<number>",
         "listedCompanies": "<number>",
         "month": "<number>",

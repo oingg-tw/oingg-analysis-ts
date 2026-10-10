@@ -112,9 +112,9 @@ export const capitalStockChangeSourceSchema = z.object({
 
 export const capitalStockHistoryEntrySchema = z.object({
   effectiveDate: z.string().meta({ description: '"YYYY-MM"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆' }),
-  paidInShares: z.string().meta({ description: '實際流通股數（不是千股），bigint 序列化成字串' }),
+  numberOfSharesIssued: z.string().meta({ description: '實際流通股數（不是千股），bigint 序列化成字串' }),
   paidInCapital: z.string().nullable().meta({ description: '實收資本額（元）' }),
-  sharesChangePercent: z.number().nullable().meta({
+  sharesChangePct: z.number().nullable().meta({
     description: '跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。',
   }),
   changeSource: capitalStockChangeSourceSchema,
@@ -177,13 +177,13 @@ export const monthlyRevenueEntrySchema = z.object({
   industry: z.string().nullable(),
   currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
   lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),
-  yoyChangePercent: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
-  momChangePercent: z.number().nullable().meta({
+  yoyChangePct: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
+  momChangePct: z.number().nullable().meta({
     description: '月增率（%）——來源這批一次性回填的資料沒有算這個欄位，本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆（沒有更早的月份可比較）固定 null',
   }),
   cumulativeRevenue: z.string().nullable().meta({ description: '本年累計營收（新台幣千元）' }),
   cumulativeLastYearRevenue: z.string().nullable().meta({ description: '去年累計營收（新台幣千元）' }),
-  cumulativeChangePercent: z.number().nullable().meta({ description: '累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
+  cumulativeChangePct: z.number().nullable().meta({ description: '累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
   note: z.string().nullable(),
 }) satisfies z.ZodType<MonthlyRevenueEntry>;
 
@@ -290,8 +290,8 @@ export const companyBadgeResultSchema = z.object({
   totalCount: z.number().int().nullable().meta({ description: '2026-09-21 新增：只有 percentileRank 徽章才會填，排名母體總數（market=全市場、sector=同類股家數），其餘一律 null。' }),
   thresholdValue: z.number().nullable().meta({
     description:
-      '2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPercent 分界那家公司的指標值，單位與精度同 value。' +
-      '前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPercent/100）。' +
+      '2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPct 分界那家公司的指標值，單位與精度同 value。' +
+      '前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPct/100）。' +
       '(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：' +
       '比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。',
   }),

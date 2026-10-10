@@ -20,7 +20,7 @@ export const disposedStockRowSchema = z.object({
   dispositionMeasures: z.string().nullable().meta({ description: 'TPEx 版本沒有這個欄位，null' }),
   detail: z.string().nullable(),
   linkInformation: z.string().nullable().meta({ description: 'TPEx 版本沒有這個欄位，null' }),
-  sixDayChangePercent: z.number().nullable().meta({ description: '以 announceDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null' }),
+  sixDayChangePct: z.number().nullable().meta({ description: '以 announceDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null' }),
 });
 export type DisposedStockRow = z.infer<typeof disposedStockRowSchema>;
 

@@ -4,6 +4,7 @@
     "gainers": [
       {
         "changeAmount": "<number>",
+        "changePct": "<number>",
         "changePercent": "<number>",
         "close": "<number>",
         "companyName": "<string>",
@@ -19,6 +20,7 @@
     "losers": [
       {
         "changeAmount": "<number>",
+        "changePct": "<number>",
         "changePercent": "<number>",
         "close": "<number>",
         "companyName": "<string>",

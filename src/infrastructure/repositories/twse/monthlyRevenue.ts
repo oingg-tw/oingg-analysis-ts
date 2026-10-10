@@ -114,7 +114,7 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
     prevDate.setUTCMonth(prevDate.getUTCMonth() - 1);
     const prevRevenue = revenueByYearMonth.get(toYearMonthString(prevDate)) ?? null;
 
-    const momChangePercent =
+    const momChangePct =
       currentMonthRevenue !== null && prevRevenue !== null && prevRevenue !== 0n ? round2((Number(currentMonthRevenue - prevRevenue) / Number(prevRevenue)) * 100) : null;
 
     return {
@@ -123,11 +123,11 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
       industry: row.industry,
       currentMonthRevenue: currentMonthRevenue === null ? null : currentMonthRevenue.toString(),
       lastYearSameMonthRevenue: row.last_year_same_month_revenue === null ? null : row.last_year_same_month_revenue.toString(),
-      yoyChangePercent: toDecimalNumber(row.yoy_change_percent),
-      momChangePercent,
+      yoyChangePct: toDecimalNumber(row.yoy_change_percent),
+      momChangePct,
       cumulativeRevenue: row.cumulative_revenue === null ? null : row.cumulative_revenue.toString(),
       cumulativeLastYearRevenue: row.cumulative_last_year_revenue === null ? null : row.cumulative_last_year_revenue.toString(),
-      cumulativeChangePercent: toDecimalNumber(row.cumulative_change_percent),
+      cumulativeChangePct: toDecimalNumber(row.cumulative_change_percent),
       note: row.note,
     };
   });

@@ -147,7 +147,7 @@ export interface MetricBadge extends NamedEntity {
       direction: 'asc' | 'desc';
       // 前 N%（1–100 之間），例如 Novy-Marx 的最高五分位是 20。用 RANK()/總數換算百分位，
       // 並列的公司拿到相同名次（跟 GET /screener/company-rank 同一套規則）。
-      topPercent: number;
+      topPct: number;
       // 同 GET /screener/company-rank 的 excludeZero——排名母體要不要排除精確等於 0 的公司。
       excludeZero?: boolean;
     };

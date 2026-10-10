@@ -87,11 +87,11 @@ export interface MonetaryAggregateMonth {
   year: number;
   month: number;
   m1aAmount: number | null; // 日平均餘額，百萬新台幣
-  m1aYoyPercent: number | null;
+  m1aYoyPct: number | null;
   m1bAmount: number | null;
-  m1bYoyPercent: number | null;
+  m1bYoyPct: number | null;
   m2Amount: number | null;
-  m2YoyPercent: number | null;
+  m2YoyPct: number | null;
 }
 
 // 2026-09-22 gov-ts export.monthly_stock_market_summary（CBC EG27M01en，1987-05 起）：web-nuxt 大事件年表頁要把大盤推到
@@ -105,7 +105,7 @@ export interface StockMarketSummaryMonth {
   totalTradingValue: number | null;
   avgDailyTradingValue: number | null; // 1987–88 為 null
   avgTaiex: number | null; // 加權指數月平均
-  avgTaiexYoyPercent: number | null;
+  avgTaiexYoyPct: number | null;
 }
 
 export interface UsdTwdRateDay {
@@ -119,7 +119,7 @@ export interface CpiMonth {
   year: number;
   month: number;
   indexValue: number | null;
-  yoyChangePercent: number | null;
+  yoyChangePct: number | null;
 }
 
 // 2026-09-22 gov-ts 核對主計總處原表後把 yoy_change_percent 整欄移除（它是對「百分點」再算年增率，全部 12 個項目都沒意義）。

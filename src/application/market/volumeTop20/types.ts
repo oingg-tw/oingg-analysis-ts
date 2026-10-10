@@ -13,7 +13,7 @@ export const volumeTop20RowSchema = z.object({
   close: z.number().nullable().meta({ description: 'TPEx 版本沒有這個欄位，null' }),
   dir: z.string().nullable().meta({ description: "'+' 漲 / '-' 跌 / '' 平盤，TPEx 版本沒有這個欄位，null" }),
   change: z.number().nullable().meta({ description: 'TPEx 版本沒有這個欄位，null' }),
-  changePercent: z.number().nullable().meta({ description: '單日漲跌幅（自己用 daily_price 算的點對點百分比，不是來源的 dir/change），資料不足時是 null' }),
+  changePct: z.number().nullable().meta({ description: '單日漲跌幅（自己用 daily_price 算的點對點百分比，不是來源的 dir/change），資料不足時是 null' }),
 });
 export type VolumeTop20Row = z.infer<typeof volumeTop20RowSchema>;
 

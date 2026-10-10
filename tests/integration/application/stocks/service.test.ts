@@ -90,8 +90,8 @@ test('getForeignShareholdingHistory: 2330 應該有真實的外資持股歷史�
   assert.ok(result.entries.length <= 5, 'limit=5 應該最多回傳 5 筆');
   for (const entry of result.entries) {
     assert.match(entry.tradeDate, /^\d{4}-\d{2}-\d{2}$/);
-    if (entry.sharesHeldPercent !== null) assert.equal(typeof entry.sharesHeldPercent, 'number');
-    if (entry.foreignLimitPercent !== null) assert.equal(typeof entry.foreignLimitPercent, 'number');
+    if (entry.sharesHeldPct !== null) assert.equal(typeof entry.sharesHeldPct, 'number');
+    if (entry.foreignLimitPct !== null) assert.equal(typeof entry.foreignLimitPct, 'number');
   }
   // 依日期新到舊排序。
   for (let i = 1; i < result.entries.length; i++) {

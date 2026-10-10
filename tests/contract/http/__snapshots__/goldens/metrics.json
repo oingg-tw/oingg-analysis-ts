@@ -24,6 +24,7 @@
                 "percentileRank": {
                   "direction": "asc",
                   "scope": "market",
+                  "topPct": "<number>",
                   "topPercent": "<number>"
                 },
                 "thresholdLatex": "<string>",

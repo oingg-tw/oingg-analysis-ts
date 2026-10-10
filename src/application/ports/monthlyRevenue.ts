@@ -10,11 +10,11 @@ export interface MonthlyRevenueEntry {
   industry: string | null;
   currentMonthRevenue: string | null; // 當月營收（新台幣千元），bigint 序列化成字串
   lastYearSameMonthRevenue: string | null;
-  yoyChangePercent: number | null; // 來源直接算好的欄位，原樣透傳
-  momChangePercent: number | null; // 本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆固定 null
+  yoyChangePct: number | null; // 來源直接算好的欄位，原樣透傳
+  momChangePct: number | null; // 本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆固定 null
   cumulativeRevenue: string | null;
   cumulativeLastYearRevenue: string | null;
-  cumulativeChangePercent: number | null;
+  cumulativeChangePct: number | null;
   note: string | null;
 }
 

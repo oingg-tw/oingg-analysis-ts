@@ -19,11 +19,11 @@ test('getVolumeTop20: 應該依 rank 由小到大排序，且沒有跳號', asyn
   }
 });
 
-test('getVolumeTop20: changePercent 有值時應該落在合理範圍內（沒有離譜的計算錯誤）', async () => {
+test('getVolumeTop20: changePct 有值時應該落在合理範圍內（沒有離譜的計算錯誤）', async () => {
   const result = await getVolumeTop20(appDeps);
   for (const row of result.rankings) {
-    if (row.changePercent === null) continue;
-    assert.ok(Math.abs(row.changePercent) < 50, `${row.symbol} 的 changePercent (${row.changePercent}) 超出合理範圍`);
+    if (row.changePct === null) continue;
+    assert.ok(Math.abs(row.changePct) < 50, `${row.symbol} 的 changePct (${row.changePct}) 超出合理範圍`);
   }
 });
 

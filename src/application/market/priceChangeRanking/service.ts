@@ -12,7 +12,7 @@ interface RawChangeRow {
   close: number;
   previousClose: number;
   changeAmount: number;
-  changePercent: number;
+  changePct: number;
 }
 
 // 漲跌幅排行——2026-09-02 應使用者要求新增。twse-ts/tpex-ts 沒有現成的「漲幅前20」dataset
@@ -60,7 +60,7 @@ const computeChanges = (
       close,
       previousClose: previousCloseNum,
       changeAmount: Math.round((close - previousCloseNum) * 10000) / 10000,
-      changePercent: Math.round(((close - previousCloseNum) / previousCloseNum) * 100 * 100) / 100,
+      changePct: Math.round(((close - previousCloseNum) / previousCloseNum) * 100 * 100) / 100,
     });
   }
   return changes;
@@ -118,8 +118,8 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
     warnings.push('查無任何可計算漲跌幅的公司。');
   }
 
-  const gainers = [...pool].sort((a, b) => b.changePercent - a.changePercent).slice(0, limit);
-  const losers = [...pool].sort((a, b) => a.changePercent - b.changePercent).slice(0, limit);
+  const gainers = [...pool].sort((a, b) => b.changePct - a.changePct).slice(0, limit);
+  const losers = [...pool].sort((a, b) => a.changePct - b.changePct).slice(0, limit);
 
   const companyNames = await deps.companyProfiles.getCompanyNamesForSymbols([...new Set([...gainers, ...losers].map((row) => row.symbol))]);
   const toRow = (row: RawChangeRow, index: number): PriceChangeRow => ({
@@ -132,7 +132,7 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
     close: row.close,
     previousClose: row.previousClose,
     changeAmount: row.changeAmount,
-    changePercent: row.changePercent,
+    changePct: row.changePct,
   });
 
   return {

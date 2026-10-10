@@ -30,6 +30,6 @@ export const rdIntensityBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{RdIntensity\\ Percentile} \\geq 80',
     note: '范宏書、林彥廷（2010）用五等級（quintile）排序，最高一組即前 20%，不是絕對數字門檻。論文分子是資本化的淨研發資產，這裡以當期研發費用計算；查無研發費用欄位的公司不在排名母體內。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPercent: 20 },
+    percentileRank: { scope: 'market', direction: 'desc', topPct: 20 },
   },
 };

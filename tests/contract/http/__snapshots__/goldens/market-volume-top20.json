@@ -4,6 +4,7 @@
     "rankings": [
       {
         "change": "<number>",
+        "changePct": "<number>",
         "changePercent": "<number>",
         "close": "<number>",
         "companyName": "<string>",

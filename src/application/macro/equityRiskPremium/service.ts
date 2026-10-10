@@ -107,7 +107,7 @@ export const calculateEquityRiskPremium = async (query: EquityRiskPremiumQuery, 
     deps.companyProfiles.getSecuritySymbolSet({ market: 'TWSE', preferredStock: 'exclude' }),
   ]);
   const supplySideSources: SupplySideSources = {
-    cpi: cpiRows.map((r) => ({ key: toKey(r.year, r.month), yoy: r.yoyChangePercent })),
+    cpi: cpiRows.map((r) => ({ key: toKey(r.year, r.month), yoy: r.yoyChangePct })),
     gdp: gdpRows.map((r) => ({ key: toKey(r.year, r.quarter * 3), growth: r.contributionPoints })),
     dividendRows,
     listedSymbols,

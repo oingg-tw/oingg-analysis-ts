@@ -98,8 +98,8 @@ test('getCapitalStockHistory: 2330 應該回傳多筆歷史，由新到舊排序
 
   for (const entry of entries) {
     assert.match(entry.effectiveDate, /^\d{4}-\d{2}$/, 'effectiveDate 應該是 YYYY-MM 格式');
-    assert.equal(typeof entry.paidInShares, 'string', 'paidInShares 應該序列化成字串，不是 bigint');
-    assert.ok(BigInt(entry.paidInShares) > 0n, 'paidInShares 應該是正數');
+    assert.equal(typeof entry.numberOfSharesIssued, 'string', 'numberOfSharesIssued 應該序列化成字串，不是 bigint');
+    assert.ok(BigInt(entry.numberOfSharesIssued) > 0n, 'numberOfSharesIssued 應該是正數');
   }
 });
 
@@ -109,19 +109,19 @@ test('getCapitalStockHistory: 查無資料的代號應該回傳空陣列，不�
 });
 
 // 2026-09-04 應使用者要求新增——跟時間序列上更早的前一筆相比的流通股數變動百分比。
-test('getCapitalStockHistory: sharesChangePercent 應該正確反映跟前一筆（時間序列上更早）的變動百分比，最舊一筆是 null', async () => {
+test('getCapitalStockHistory: sharesChangePct 應該正確反映跟前一筆（時間序列上更早）的變動百分比，最舊一筆是 null', async () => {
   const entries = await getCapitalStockHistory('2330');
   assert.ok(entries.length > 1);
 
   // entries 是新到舊排序，index+1 才是時間序列上更早的前一筆。
   for (let i = 0; i < entries.length - 1; i++) {
-    const current = BigInt(entries[i]!.paidInShares);
-    const previous = BigInt(entries[i + 1]!.paidInShares);
+    const current = BigInt(entries[i]!.numberOfSharesIssued);
+    const previous = BigInt(entries[i + 1]!.numberOfSharesIssued);
     const expected = Math.round((Number(current - previous) / Number(previous)) * 100 * 100) / 100;
-    assert.equal(entries[i]!.sharesChangePercent, expected, `第 ${i} 筆（${entries[i]!.effectiveDate}）的 sharesChangePercent 應該是 ${expected}`);
+    assert.equal(entries[i]!.sharesChangePct, expected, `第 ${i} 筆（${entries[i]!.effectiveDate}）的 sharesChangePct 應該是 ${expected}`);
   }
 
-  assert.equal(entries[entries.length - 1]!.sharesChangePercent, null, '最舊一筆沒有更早的可以比較，應該是 null');
+  assert.equal(entries[entries.length - 1]!.sharesChangePct, null, '最舊一筆沒有更早的可以比較，應該是 null');
 });
 
 afterAll(async () => {

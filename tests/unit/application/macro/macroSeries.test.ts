@@ -7,8 +7,8 @@ import { createTestDeps } from '../../../fakes/createTestDeps';
 // 釘住這兩件事跟日資料的「由新到舊查、回傳反轉成由舊到新」。
 const macroSeries = {
   listCpiAsc: async (category) => [
-    { year: 2025, month: 12, indexValue: 110.1, yoyChangePercent: 1.8 },
-    { year: 2026, month: 1, indexValue: 110.5, yoyChangePercent: category === 'total' ? 2.1 : 9.9 },
+    { year: 2025, month: 12, indexValue: 110.1, yoyChangePct: 1.8 },
+    { year: 2026, month: 1, indexValue: 110.5, yoyChangePct: category === 'total' ? 2.1 : 9.9 },
   ],
   listGdpAsc: async () => [
     { year: 2025, quarter: 4, contributionPoints: 6.2 },
@@ -39,7 +39,7 @@ describe('macro series', () => {
     const all = await getCpi({ category: 'total' }, deps);
     expect(all.entries.map((e) => e.period)).toEqual(['2025-12', '2026-01']);
     const filtered = await getCpi({ category: 'food', from: '2026-01' }, deps);
-    expect(filtered).toMatchObject({ category: 'food', entries: [{ period: '2026-01', year: 2026, month: 1, yoyChangePercent: 9.9 }] });
+    expect(filtered).toMatchObject({ category: 'food', entries: [{ period: '2026-01', year: 2026, month: 1, yoyChangePct: 9.9 }] });
   });
 
   test('季 period 用 Qn，from 過濾同樣字典序', async () => {

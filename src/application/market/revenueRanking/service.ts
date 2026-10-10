@@ -12,7 +12,7 @@ interface EligibleRow extends RawMonthlyRevenueRow {
 // 月營收排行——2026-09-01 應使用者要求新增，原本 metric 讓呼叫端在 yoy/mom/revenue 三者
 //間選要依哪個數字排序；2026-09-13 使用者要求拔掉 mom（月增率波動太大、容易受季節性因素
 // 干擾）跟 revenue（單純營收金額排行，偏向大型權值股，沒有「成長」意涵）——兩者都被判定
-// 沒有實際選股價值，只留 yoy（有基期趨近於零的統計失真排除規則，見下方）。momChangePercent/
+// 沒有實際選股價值，只留 yoy（有基期趨近於零的統計失真排除規則，見下方）。momChangePct/
 // currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來當排序依據。
 //
 // monthly_revenue 的範圍是「公開發行公司」，不是只有上市櫃（dev 樣本看過 000xxx 開頭的代號），
@@ -97,8 +97,8 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery, deps: 
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
     currentMonthRevenue: row.current_month_revenue?.toString() ?? null,
-    momChangePercent: row.mom_change_percent === null ? null : Number(row.mom_change_percent),
-    yoyChangePercent: row.yoy_change_percent === null ? null : Number(row.yoy_change_percent),
+    momChangePct: row.mom_change_percent === null ? null : Number(row.mom_change_percent),
+    yoyChangePct: row.yoy_change_percent === null ? null : Number(row.yoy_change_percent),
   }));
 
   return { yearMonth: yearMonth.toISOString().slice(0, 7), metric, order, limit, rankings, warnings };

@@ -174,3 +174,22 @@ describe('createErrorHandler()', () => {
     expect(withStatus.payload).toMatchObject({ status: 422, title: 'Unprocessable Entity', detail: 'bad input' });
   });
 });
+
+// 2026-10-10 詞彙表改名的並存期：新 key 照常回傳，另外補上舊 key（值相同）；巢狀物件與陣列也要補，Date 這類非一般物件不動，
+// 已經有舊 key 的物件不覆蓋。
+describe('withRetiredKeys', () => {
+  test('補上舊 key（巢狀、陣列），其他欄位原樣', async () => {
+    const { withRetiredKeys } = await import('@/http/route');
+    const date = new Date('2026-10-10');
+    expect(withRetiredKeys({ entries: [{ yoyChangePct: 5, other: 1 }], nested: { numberOfSharesIssued: '10' }, at: date })).toEqual({
+      entries: [{ yoyChangePct: 5, yoyChangePercent: 5, other: 1 }],
+      nested: { numberOfSharesIssued: '10', paidInShares: '10' },
+      at: date,
+    });
+  });
+
+  test('物件本來就有舊 key 時不覆蓋', async () => {
+    const { withRetiredKeys } = await import('@/http/route');
+    expect(withRetiredKeys({ changePct: 1, changePercent: 2 })).toEqual({ changePct: 1, changePercent: 2 });
+  });
+});

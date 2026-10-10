@@ -16,6 +16,7 @@
         "reason": "<string>",
         "reasonShort": "<null>",
         "reasonTimes": "<number>",
+        "sixDayChangePct": "<number>",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>"
       }

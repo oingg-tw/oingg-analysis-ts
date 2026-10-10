@@ -141,14 +141,14 @@ const evaluatePercentileRank = async (
   if (candidateSymbols === undefined) return NULL_PERCENTILE_RESULT;
 
   const fieldRef = resolveTimeframeForMetric(metricCode, timeframe, `${metricCode}.${timeframe}`);
-  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols, percentileRank.topPercent);
+  const rows = await deps.metricValueQueries.companyRank(symbol, fieldRef, percentileRank.direction, percentileRank.excludeZero ?? false, candidateSymbols, percentileRank.topPct);
   const row = rows[0];
   if (!row) return NULL_PERCENTILE_RESULT;
 
   const rank = Number(row.rank);
   const totalCount = Number(row.total_count);
   const percentile = totalCount > 0 ? Math.round((1 - (rank - 1) / totalCount) * 1000) / 10 : null;
-  const passed = percentile !== null ? rank / totalCount <= percentileRank.topPercent / 100 : null;
+  const passed = percentile !== null ? rank / totalCount <= percentileRank.topPct / 100 : null;
   // 分界線上最後一家的值（跟 passed 同一條規則），單位、精度同 value；母體太小連一家都不到線時是 null。
   const thresholdValue = row.threshold_value === null || row.threshold_value === undefined ? null : Number(row.threshold_value);
 

@@ -7,7 +7,7 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 // 起訖是 2021-08~2026-07；PROD 完成上市全市場回填後是 2021-09~2026-08 共 60 個月、993 家）。
 // 2026-10-10 起 mops-ts 的 market_monthly_revenue 補交易所沒有的月份（2016-01 起），2330 變成 128 個月；
 // 2021-09 以後仍以交易所的列為準（有公告日、類股名稱），2021-08 以前是 mops 補的（公告日 null）。
-// 下面的數字是換源後從 PROD 取的真實值。momChangePercent 是本服務自己用相鄰兩個月的 currentMonthRevenue
+// 下面的數字是換源後從 PROD 取的真實值。momChangePct 是本服務自己用相鄰兩個月的 currentMonthRevenue
 // 反推的（來源沒有這個欄位），這裡手動核算過交叉驗證。
 
 test('getMonthlyRevenueHistory: 2330 從 2016-01 到 2026-08 共 128 個月，由舊到新排序', async () => {
@@ -19,12 +19,12 @@ test('getMonthlyRevenueHistory: 2330 從 2016-01 到 2026-08 共 128 個月，�
   assert.equal(result.entries[127]!.yearMonth, '2026-08', '最後一筆應該是最新的月份');
 });
 
-test('getMonthlyRevenueHistory: 最舊一筆（沒有更早的月份可比較）momChangePercent 應該是 null', async () => {
+test('getMonthlyRevenueHistory: 最舊一筆（沒有更早的月份可比較）momChangePct 應該是 null', async () => {
   const result = await getMonthlyRevenueHistory('2330', 132);
   const oldest = result.entries[0]!;
 
   assert.equal(oldest.yearMonth, '2016-01');
-  assert.equal(oldest.momChangePercent, null);
+  assert.equal(oldest.momChangePct, null);
   assert.equal(oldest.currentMonthRevenue, '70855235');
 });
 
@@ -36,25 +36,25 @@ test('getMonthlyRevenueHistory: 交易所有的月份以交易所為準，mops �
   const aug2021 = result.entries.find((e) => e.yearMonth === '2021-08')!;
 
   assert.equal(sep2021.industry, '半導體業', '2021-09 是交易所（tpex）的列');
-  assert.equal(sep2021.yoyChangePercent, 5.63, '交易所列的 yoyChangePercent 原樣透傳');
-  assert.equal(sep2021.momChangePercent, 4.6, '上個月由 mops 補上之後，2021-09 也算得出月增率');
+  assert.equal(sep2021.yoyChangePct, 5.63, '交易所列的 yoyChangePct 原樣透傳');
+  assert.equal(sep2021.momChangePct, 4.6, '上個月由 mops 補上之後，2021-09 也算得出月增率');
   assert.equal(aug2021.industry, null, 'mops 補的列沒有類股名稱');
   assert.equal(aug2021.reportDate, null, 'mops 補的列沒有公告日');
   // (5147501-4555613)/4555613*100 = 12.992...% → 12.99
-  assert.equal(aug2021.yoyChangePercent, 12.99);
+  assert.equal(aug2021.yoyChangePct, 12.99);
 });
 
-test('getMonthlyRevenueHistory: momChangePercent 手動核算過的真實數字交叉驗證', async () => {
+test('getMonthlyRevenueHistory: momChangePct 手動核算過的真實數字交叉驗證', async () => {
   const result = await getMonthlyRevenueHistory('2330', 60);
   const oct2021 = result.entries.find((e) => e.yearMonth === '2021-10');
 
   assert.ok(oct2021);
   // (134539477-152685418)/152685418*100 = -11.884...% 四捨五入到 -11.88
   assert.equal(oct2021!.currentMonthRevenue, '134539477');
-  assert.equal(oct2021!.momChangePercent, -11.88);
+  assert.equal(oct2021!.momChangePct, -11.88);
 });
 
-test('getMonthlyRevenueHistory: limit 小於總月數時，momChangePercent 仍然用完整資料反推（不受 limit 影響）', async () => {
+test('getMonthlyRevenueHistory: limit 小於總月數時，momChangePct 仍然用完整資料反推（不受 limit 影響）', async () => {
   const limited = await getMonthlyRevenueHistory('2330', 5);
 
   assert.equal(limited.total, 128);
@@ -62,8 +62,8 @@ test('getMonthlyRevenueHistory: limit 小於總月數時，momChangePercent 仍�
   assert.equal(limited.entries.length, 5);
   assert.equal(limited.entries[0]!.yearMonth, '2026-04');
   // 2026-04 是 limit=5 切出來範圍裡最舊的一筆，但往前還有 2026-03 可以比較，
-  // momChangePercent 不應該因為被 limit 切到範圍邊界就變成 null。
-  assert.notEqual(limited.entries[0]!.momChangePercent, null);
+  // momChangePct 不應該因為被 limit 切到範圍邊界就變成 null。
+  assert.notEqual(limited.entries[0]!.momChangePct, null);
 });
 
 test('getMonthlyRevenueHistory: 查無資料的公司應該回傳空陣列，不是拋錯', async () => {

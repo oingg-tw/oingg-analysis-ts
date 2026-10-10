@@ -9,9 +9,11 @@
         "companyName": "<string>",
         "currentMonthRevenue": "<numeric-string>",
         "market": "TWSE",
+        "momChangePct": "<number>",
         "momChangePercent": "<number>",
         "rank": "<number>",
         "symbol": "<numeric-string>",
+        "yoyChangePct": "<number>",
         "yoyChangePercent": "<number>"
       }
     ],

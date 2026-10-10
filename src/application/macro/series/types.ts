@@ -41,11 +41,11 @@ export type FiveMajorBankRateResult = z.infer<typeof fiveMajorBankRateResultSche
 export const monetaryAggregateEntrySchema = z.object({
   ...monthPeriod,
   m1aAmount: z.number().nullable().meta({ description: 'M1A 日平均餘額，百萬新台幣' }),
-  m1aYoyPercent: z.number().nullable().meta({ description: 'M1A 年增率 %' }),
+  m1aYoyPct: z.number().nullable().meta({ description: 'M1A 年增率 %' }),
   m1bAmount: z.number().nullable().meta({ description: 'M1B 日平均餘額，百萬新台幣' }),
-  m1bYoyPercent: z.number().nullable().meta({ description: 'M1B 年增率 %' }),
+  m1bYoyPct: z.number().nullable().meta({ description: 'M1B 年增率 %' }),
   m2Amount: z.number().nullable().meta({ description: 'M2 日平均餘額，百萬新台幣' }),
-  m2YoyPercent: z.number().nullable().meta({ description: 'M2 年增率 %' }),
+  m2YoyPct: z.number().nullable().meta({ description: 'M2 年增率 %' }),
 });
 export const monetaryAggregateResultSchema = z.object({ entries: z.array(monetaryAggregateEntrySchema).meta(entriesMeta) });
 export type MonetaryAggregateResult = z.infer<typeof monetaryAggregateResultSchema>;
@@ -58,7 +58,7 @@ export const stockMarketSummaryEntrySchema = z.object({
   totalTradingValue: z.number().nullable().meta({ description: '當月成交值，百萬新台幣' }),
   avgDailyTradingValue: z.number().nullable().meta({ description: '日平均成交值，百萬新台幣（1987–88 為 null）' }),
   avgTaiex: z.number().nullable().meta({ description: '發行量加權股價指數當月平均（證交所編製、1966 年平均=100）——是月平均不是月底收盤，不要跟 /market/taiex-daily-price 的收盤序列接成同一條線' }),
-  avgTaiexYoyPercent: z.number().nullable().meta({ description: '加權指數月平均年增率 %' }),
+  avgTaiexYoyPct: z.number().nullable().meta({ description: '加權指數月平均年增率 %' }),
 });
 export const stockMarketSummaryResultSchema = z.object({ entries: z.array(stockMarketSummaryEntrySchema).meta(entriesMeta) });
 export type StockMarketSummaryResult = z.infer<typeof stockMarketSummaryResultSchema>;
@@ -82,7 +82,7 @@ export type UsdTwdRateResult = z.infer<typeof usdTwdRateResultSchema>;
 export const cpiEntrySchema = z.object({
   ...monthPeriod,
   indexValue: z.number().nullable().meta({ description: '指數（基期 = 100）' }),
-  yoyChangePercent: z.number().nullable().meta({ description: '年增率 %' }),
+  yoyChangePct: z.number().nullable().meta({ description: '年增率 %' }),
 });
 export const cpiResultSchema = z.object({ category: z.string(), entries: z.array(cpiEntrySchema).meta(entriesMeta) });
 export type CpiResult = z.infer<typeof cpiResultSchema>;

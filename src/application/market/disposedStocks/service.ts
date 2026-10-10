@@ -37,7 +37,7 @@ interface PoolRow {
 // 'COMPANY_PROFILE_PUBLIC'（見 companyProfile.ts 的說明）；KY 股跟
 // 興櫃都算真正公司，不篩掉。TPEx 沒有對應的非公司性質分類，維持原樣不加條件。
 //
-// sixDayChangePercent：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
+// sixDayChangePct：以 announceDate 為基準日的近6個交易日累積漲跌幅（點對點，見
 // priceChange.ts）——2026-09-02 應使用者要求新增，給「為什麼被列為處置」補價格脈絡。
 //
 // reasonTimes：從 reason 解析出的次數（見 parseReason.ts）——比照 attentionStocks 的
@@ -109,7 +109,7 @@ export const listDisposedStocks = async (query: DisposedStocksQuery, deps: Dispo
       dispositionMeasures: row.disposition_measures,
       detail: row.detail,
       linkInformation: row.link_information,
-      sixDayChangePercent: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.announce_date)) ?? null,
+      sixDayChangePct: sixDayChanges.get(cumulativeChangePercentKey(row.market, row.symbol, row.announce_date)) ?? null,
     };
   });
 

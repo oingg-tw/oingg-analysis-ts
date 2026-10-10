@@ -51,11 +51,11 @@ export const govMacroSeries: MacroSeriesPort = {
       year: Number(r.year),
       month: Number(r.month),
       m1aAmount: num(r.m1a_amount),
-      m1aYoyPercent: num(r.m1a_yoy_percent),
+      m1aYoyPct: num(r.m1a_yoy_percent),
       m1bAmount: num(r.m1b_amount),
-      m1bYoyPercent: num(r.m1b_yoy_percent),
+      m1bYoyPct: num(r.m1b_yoy_percent),
       m2Amount: num(r.m2_amount),
-      m2YoyPercent: num(r.m2_yoy_percent),
+      m2YoyPct: num(r.m2_yoy_percent),
     })),
 
   listStockMarketSummariesAsc: async () =>
@@ -72,7 +72,7 @@ export const govMacroSeries: MacroSeriesPort = {
       totalTradingValue: num(r.total_trading_value),
       avgDailyTradingValue: num(r.avg_daily_trading_value),
       avgTaiex: num(r.avg_taiex),
-      avgTaiexYoyPercent: num(r.avg_taiex_yoy_percent),
+      avgTaiexYoyPct: num(r.avg_taiex_yoy_percent),
     })),
 
   // 跟 twse/taiexIndex.ts 的 listLatestTaiexDailyPrices 同一招：weekly/monthly 用 DISTINCT ON date_trunc 取區間最後一天。
@@ -99,7 +99,7 @@ export const govMacroSeries: MacroSeriesPort = {
       await govExportPrisma.$queryRaw<Record<string, unknown>[]>`
         SELECT year, month, index_value, yoy_change_percent FROM "export"."monthly_cpi"
         WHERE category = ${category} ORDER BY year ASC, month ASC`
-    ).map((r) => ({ year: Number(r.year), month: Number(r.month), indexValue: num(r.index_value), yoyChangePercent: num(r.yoy_change_percent) })),
+    ).map((r) => ({ year: Number(r.year), month: Number(r.month), indexValue: num(r.index_value), yoyChangePct: num(r.yoy_change_percent) })),
 
   listGdpAsc: async (category) =>
     (

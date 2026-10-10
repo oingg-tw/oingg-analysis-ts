@@ -4,8 +4,8 @@ import type { CompanyRankRow, MetricValueQueryPort, PeriodHistoryRow } from '@/a
 import { createTestDeps } from '../../../../fakes/createTestDeps';
 
 // 2026-09-21 threshold.percentileRank（跟同一批公司橫斷面排名比較，不是跟固定常數）——用
-// novyMarxGpToAssetsBadge（scope: 'market'，direction: 'desc'，topPercent: 20）釘住主要行為：
-// 分數/名次/母體總數怎麼換算成 percentile、topPercent 邊界怎麼判定 passed。
+// novyMarxGpToAssetsBadge（scope: 'market'，direction: 'desc'，topPct: 20）釘住主要行為：
+// 分數/名次/母體總數怎麼換算成 percentile、topPct 邊界怎麼判定 passed。
 //
 // scope: 'sector' 那條路徑（resolveCandidateSymbols 查公司自己的證交所類股、展開同類股成分股）
 // 目前沒有真正掛在任何一支徽章上（novyMarxGpToAssetsBadge 依 Novy-Marx 論文原文用 market 排名），

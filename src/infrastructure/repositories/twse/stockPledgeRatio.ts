@@ -31,6 +31,6 @@ export const getStockPledgeRatioHistory = async (symbol: string, limit: number):
   `;
   return rows.map((row) => ({
     reportDate: row.report_date.toISOString().slice(0, 10),
-    pledgePercent: toNullableNumber(row.pledge_percent),
+    pledgePct: toNullableNumber(row.pledge_percent),
   }));
 };

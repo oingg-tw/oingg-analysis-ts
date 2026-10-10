@@ -14,7 +14,7 @@ export interface MarketCapAsOf {
   marketCap: number; // 股價 x 流通股數（元）
   tradeDate: string; // YYYY-MM-DD；實際用到的股價交易日（asOfDate 或之前最近一筆）
   closePrice: number;
-  outstandingCommonShares: bigint; // 2026-09-25 起是流通在外普通股（原 paidInShares）
+  outstandingCommonShares: bigint; // 2026-09-25 起是流通在外普通股（原 numberOfSharesIssued）
 }
 
 export interface DailyValuationAsOf {
@@ -135,14 +135,14 @@ export interface ExDividendCalendarEntry extends ExDividendNoticeEntry {
 
 export interface ForeignShareholdingEntry {
   tradeDate: string; // "YYYY-MM-DD"
-  sharesHeldPercent: number | null;
-  foreignLimitPercent: number | null;
-  availableInvestPercent: number | null;
+  sharesHeldPct: number | null;
+  foreignLimitPct: number | null;
+  availableInvestPct: number | null;
 }
 
 export interface StockPledgeRatioEntry {
   reportDate: string; // "YYYY-MM-DD"，TWSE 出表日期，不定期更新
-  pledgePercent: number | null;
+  pledgePct: number | null;
 }
 
 export interface StockHistoryPort {

@@ -32,7 +32,7 @@ interface PoolRow {
 // ⚠️ 沒有排除 ETF/衍生性商品（跟本服務其他主打「上市公司證券」的排行榜不一樣，2026-09-01
 // 應使用者要求維持原樣，直接回傳兩邊官方排名合併後的結果）。
 //
-// changePercent：2026-09-02 應使用者要求新增，不是用 TWSE 原生的 dir/change（那個只有 TWSE
+// changePct：2026-09-02 應使用者要求新增，不是用 TWSE 原生的 dir/change（那個只有 TWSE
 // 有、TPEx 沒有，兩邊算法不一定一致），統一改用 daily_price 自己算的單日漲跌幅（點對點，
 // tradingDaysBack=1，見 priceChange.ts），確保兩個市場算法一致；資料不足時是 null。
 export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20Result> => {
@@ -94,7 +94,7 @@ export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20
     close: toNumber(row.close),
     dir: row.dir,
     change: toNumber(row.change),
-    changePercent: changePercents.get(cumulativeChangePercentKey(row.market, row.symbol, dateOf(row.market))) ?? null,
+    changePct: changePercents.get(cumulativeChangePercentKey(row.market, row.symbol, dateOf(row.market))) ?? null,
   }));
 
   return { tradeDate: tradeDate.toISOString().slice(0, 10), rankings, warnings };

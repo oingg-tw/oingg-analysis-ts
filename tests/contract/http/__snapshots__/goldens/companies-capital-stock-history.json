@@ -12,9 +12,11 @@
           "retainedEarningsTransfer": "<numeric-string>"
         },
         "effectiveDate": "<string>",
+        "numberOfSharesIssued": "<numeric-string>",
         "paidInCapital": "<numeric-string>",
         "paidInShares": "<numeric-string>",
         "remarks": "<string>",
+        "sharesChangePct": "<number>",
         "sharesChangePercent": "<number>"
       }
     ],

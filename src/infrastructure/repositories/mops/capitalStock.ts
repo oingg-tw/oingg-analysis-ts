@@ -416,16 +416,16 @@ export const getCapitalStockHistory = async (symbol: string): Promise<CapitalSto
   // rows 是新到舊排序，index+1 才是時間序列上「更早的前一筆」，用來算變動百分比。
   return rows.map((row, index) => {
     const previous = rows[index + 1];
-    const sharesChangePercent =
+    const sharesChangePct =
       previous?.paid_in_shares != null && previous.paid_in_shares !== 0n
         ? Math.round((Number(row.paid_in_shares! - previous.paid_in_shares) / Number(previous.paid_in_shares)) * 100 * 100) / 100
         : null;
 
     return {
       effectiveDate: `${row.effective_year}-${String(row.effective_month).padStart(2, '0')}`,
-      paidInShares: row.paid_in_shares!.toString(),
+      numberOfSharesIssued: row.paid_in_shares!.toString(),
       paidInCapital: row.paid_in_capital?.toString() ?? null,
-      sharesChangePercent,
+      sharesChangePct,
       changeSource: {
         cashIncrease: row.source_cash_increase?.toString() ?? null,
         capitalReserveTransfer: row.source_capital_reserve_transfer?.toString() ?? null,

@@ -124,8 +124,8 @@ export const registerStocksOpenApi = (registry: OpenAPIRegistry): void => {
     description:
       '2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是櫃買中心的外資持股統計（2026-10-07 起每個交易日更新，' +
       '沒有更早的歷史）。2026-10-08 起**只有上櫃公司有資料**：證交所 OpenAPI 只開放每天持股比率前 20 名，上市公司一律回空陣列。' +
-      '查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - ' +
-      'sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。',
+      '查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPct（尚可投資比例）理論上等於 foreignLimitPct - ' +
+      'sharesHeldPct，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。',
     tags: ['Stocks'],
     request: { params: symbolParamsSchema, query: getForeignShareholdingHistoryQuerySchema },
     responses: {

@@ -223,7 +223,7 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '給個股頁面「股本變化」卡片用——讓使用者對照流通股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。' +
       '資料來源是 mops-ts 的 export.capital_stock_history，是「異動事件序列」不是固定季度/年度快照，entries 依 effectiveDate 由新到舊排序。' +
       'changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。' +
-      'sharesChangePercent 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。' +
+      'sharesChangePct 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。' +
       '查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。',
     tags: ['Companies'],
     request: { query: getCompanyCapitalStockHistoryQuerySchema },
@@ -406,9 +406,9 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
       '上游選擇誠實留空而不是照抄一個錯的日期。' +
       '查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種' +
       '「查無歷史資料是正常情境」的慣例。' +
-      'momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的' +
-      '（來源這批一次性回填的資料沒有這個欄位）；yoyChangePercent（年增率）、cumulativeChangePercent' +
-      '（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePercent 有約 0.4% 是 null，' +
+      'momChangePct（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的' +
+      '（來源這批一次性回填的資料沒有這個欄位）；yoyChangePct（年增率）、cumulativeChangePct' +
+      '（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePct 有約 0.4% 是 null，' +
       '那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是' +
       'bigint 序列化成字串，單位新台幣千元（本服務不換算）。',
     tags: ['Companies'],

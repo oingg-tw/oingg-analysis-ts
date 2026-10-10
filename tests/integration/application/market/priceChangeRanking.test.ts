@@ -9,17 +9,17 @@ test('calculatePriceChangeRanking: gainers 由大到小、losers 由小到大排
   const result = await calculatePriceChangeRanking({ limit: 20 }, appDeps);
 
   for (let i = 1; i < result.gainers.length; i++) {
-    assert.ok(result.gainers[i - 1]!.changePercent >= result.gainers[i]!.changePercent, 'gainers 應該由大到小排序');
+    assert.ok(result.gainers[i - 1]!.changePct >= result.gainers[i]!.changePct, 'gainers 應該由大到小排序');
   }
   for (let i = 1; i < result.losers.length; i++) {
-    assert.ok(result.losers[i - 1]!.changePercent <= result.losers[i]!.changePercent, 'losers 應該由小到大排序（跌最多排最前面）');
+    assert.ok(result.losers[i - 1]!.changePct <= result.losers[i]!.changePct, 'losers 應該由小到大排序（跌最多排最前面）');
   }
   assert.ok(result.gainers.length <= 20);
   assert.ok(result.losers.length <= 20);
 
   for (const row of [...result.gainers, ...result.losers]) {
     const expected = Math.round(((row.close - row.previousClose) / row.previousClose) * 100 * 100) / 100;
-    assert.equal(row.changePercent, expected, 'changePercent 應該等於 (close-previousClose)/previousClose*100');
+    assert.equal(row.changePct, expected, 'changePct 應該等於 (close-previousClose)/previousClose*100');
     assert.ok(row.previousClose > 0, '分母不應該是 0 或負值');
   }
 });

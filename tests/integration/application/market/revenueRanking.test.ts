@@ -14,12 +14,12 @@ test('calculateRevenueRanking: yoy desc 應該由高到低排序，且只留上�
   assert.ok(result.yearMonth !== '', '應該找得到最新一個有資料的月份');
 
   for (let i = 1; i < result.rankings.length; i++) {
-    assert.ok(result.rankings[i - 1]!.yoyChangePercent! >= result.rankings[i]!.yoyChangePercent!, '應該由高到低排序');
+    assert.ok(result.rankings[i - 1]!.yoyChangePct! >= result.rankings[i]!.yoyChangePct!, '應該由高到低排序');
   }
   result.rankings.forEach((row, index) => assert.equal(row.rank, index + 1));
   for (const row of result.rankings) {
     assert.ok(twseSymbols.has(row.symbol) || tpexSymbols.has(row.symbol), `${row.symbol} 應該是上市或上櫃公司`);
-    assert.ok(row.yoyChangePercent !== null, 'yoy 排行不應該出現 yoyChangePercent 是 null 的公司');
+    assert.ok(row.yoyChangePct !== null, 'yoy 排行不應該出現 yoyChangePct 是 null 的公司');
   }
 });
 
@@ -36,7 +36,7 @@ test('calculateRevenueRanking: yoy 排行不應該出現超過 300% 的公司（
   const result = await calculateRevenueRanking({ metric: 'yoy', order: 'desc', limit: 50 }, appDeps);
   assert.ok(result.rankings.length > 0);
   for (const row of result.rankings) {
-    assert.ok(row.yoyChangePercent! <= 300, `${row.symbol} 的 yoyChangePercent (${row.yoyChangePercent}) 應該已經被排除`);
+    assert.ok(row.yoyChangePct! <= 300, `${row.symbol} 的 yoyChangePct (${row.yoyChangePct}) 應該已經被排除`);
   }
 });
 

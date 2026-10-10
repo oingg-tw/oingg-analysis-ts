@@ -35,6 +35,6 @@ export const sueBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{SUE\\ Percentile} \\geq 90',
     note: 'Chan, Jegadeesh & Lakonishok (1996) 把股票依 SUE 分成十個十分位組合（NYSE 分界點），最高一組即前 10%，不是絕對數字門檻。SUE 定義為（本季盈餘 − 去年同季盈餘）/ 前八季該變動值的標準差；論文用每股盈餘，這裡用單季淨利金額（股數沒有大幅變動時結果相同）。台灣採用實例：顧廣平（2011，管理學報）以含漂移項的變體對 1994–2009 年台灣上市櫃公司做三分位排序，最高一組後續報酬顯著為正。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'desc', topPercent: 10 },
+    percentileRank: { scope: 'market', direction: 'desc', topPct: 10 },
   },
 };

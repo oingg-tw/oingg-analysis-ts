@@ -35,7 +35,7 @@ test('getMarketCapAsOf: 上櫃公司算得出市值，且等於股價 × 流通�
   assert.ok(price);
   // 市值必須跟「股價 × 股數」一致——這同時驗證了兩個資料源（tpex 股價 + mops 股本）真的被組在一起，
   // 而不是其中一邊回了預設值。
-  // paidInShares 是 bigint（股數是整數、可能超過 Number.MAX_SAFE_INTEGER 的量級），要顯式轉換。
+  // numberOfSharesIssued 是 bigint（股數是整數、可能超過 Number.MAX_SAFE_INTEGER 的量級），要顯式轉換。
   assert.equal(cap!.marketCap, price!.closePrice * Number(cap!.outstandingCommonShares));
 });
 

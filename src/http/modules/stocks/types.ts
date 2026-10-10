@@ -172,9 +172,9 @@ export const exDividendCalendarResultSchema = z.object({
 // （來源 TWSE MI_QFIIS）。只挑個股頁面卡片實際會用到的三個欄位。
 export const foreignShareholdingEntrySchema = z.object({
   tradeDate: z.string().meta({ description: '"YYYY-MM-DD"' }),
-  sharesHeldPercent: z.number().nullable().meta({ description: '外資/陸資持股比例（%）' }),
-  foreignLimitPercent: z.number().nullable().meta({ description: '法定外資/陸資持股上限（%），大多數股票是 100（無限制）' }),
-  availableInvestPercent: z.number().nullable().meta({ description: '尚可投資比例（%）= foreignLimitPercent - sharesHeldPercent，理論上的關係，不保證逐筆對得上（資料源自己算的）' }),
+  sharesHeldPct: z.number().nullable().meta({ description: '外資/陸資持股比例（%）' }),
+  foreignLimitPct: z.number().nullable().meta({ description: '法定外資/陸資持股上限（%），大多數股票是 100（無限制）' }),
+  availableInvestPct: z.number().nullable().meta({ description: '尚可投資比例（%）= foreignLimitPct - sharesHeldPct，理論上的關係，不保證逐筆對得上（資料源自己算的）' }),
 }) satisfies z.ZodType<ForeignShareholdingEntry>;
 
 export const foreignShareholdingHistoryResultSchema = z.object({
@@ -186,7 +186,7 @@ export const foreignShareholdingHistoryResultSchema = z.object({
 // report_date 是 TWSE 出表日期、不定期更新。刻意回傳完整歷史陣列讓使用者自己核對原始公告數字。
 export const stockPledgeRatioEntrySchema = z.object({
   reportDate: z.string().meta({ description: '"YYYY-MM-DD"，TWSE 出表日期，不定期更新' }),
-  pledgePercent: z.number().nullable().meta({ description: '董監事及大股東股權質押比例（%）' }),
+  pledgePct: z.number().nullable().meta({ description: '董監事及大股東股權質押比例（%）' }),
 }) satisfies z.ZodType<StockPledgeRatioEntry>;
 
 export const stockPledgeRatioHistoryResultSchema = z.object({

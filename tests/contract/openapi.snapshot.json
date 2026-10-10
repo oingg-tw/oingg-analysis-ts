@@ -88,7 +88,7 @@
     }
   },
   "info": {
-    "description": "API documentation for the OINGG financial-ratios service",
+    "description": "API documentation for the OINGG financial-ratios service.\n\n欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 2026-10-24）：回應同時帶舊 key（值相同），本文件只列新 key；舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued。",
     "title": "OINGG Ratios API",
     "version": "1.0.0"
   },
@@ -568,7 +568,7 @@
                                   "type": "integer"
                                 },
                                 "thresholdValue": {
-                                  "description": "2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPercent 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPercent/100）。(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。",
+                                  "description": "2026-09-22 新增。兩種徽章會填，其餘一律 null：(1) percentileRank 徽章：門檻分界線落在指標本身單位上的值——排名母體裡（依 badge.threshold.percentileRank.direction 排序）恰好落在 topPct 分界那家公司的指標值，單位與精度同 value。前端可印成「前 20%（研發密度 ≥ 12.34%）」，asc 方向的徽章則是「≤」。跟 passed 用同一條規則（rank/totalCount ≤ topPct/100）。(2) 2026-09-28 起，跟另一支指標比較的徽章（型錄 threshold.compareAgainstFieldId，目前是 ncav 對 marketCap.Q、sgr 對 revenueCagr3y.FY）：比較對象那支指標的值（市值／近三年營收 CAGR），跟 passed 判斷用的是同一期同一個數字；比較對象算不出來時為 null。",
                                   "nullable": true,
                                   "type": "number"
                                 },
@@ -958,7 +958,7 @@
     },
     "/companies/capital-stock-history": {
       "get": {
-        "description": "給個股頁面「股本變化」卡片用——讓使用者對照流通股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。資料來源是 mops-ts 的 export.capital_stock_history，是「異動事件序列」不是固定季度/年度快照，entries 依 effectiveDate 由新到舊排序。changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。sharesChangePercent 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。",
+        "description": "給個股頁面「股本變化」卡片用——讓使用者對照流通股數變化跟 EPS 成長，判斷是真成長還是股本膨脹稀釋出來的假象。資料來源是 mops-ts 的 export.capital_stock_history，是「異動事件序列」不是固定季度/年度快照，entries 依 effectiveDate 由新到舊排序。changeSource 是結構化的變動原因細分，other 是不屬於這五種時的自由格式文字。sharesChangePct 是跟時間序列上更早的前一筆相比的變動百分比（四捨五入到小數 2 位），最早一筆是 null。查無資料回傳 entries: []，是 200 不是 404——404 只代表「這家公司在 company_profile 查不到」，跟「查不到股本異動歷史」是兩件事。",
         "operationId": "getCompaniesCapitalStockHistory",
         "parameters": [
           {
@@ -1025,13 +1025,13 @@
                             "description": "\"YYYY-MM\"，這批資料是「異動事件序列」不是固定季度/年度快照，同一年可能 0 筆或多筆",
                             "type": "string"
                           },
+                          "numberOfSharesIssued": {
+                            "description": "實際流通股數（不是千股），bigint 序列化成字串",
+                            "type": "string"
+                          },
                           "paidInCapital": {
                             "description": "實收資本額（元）",
                             "nullable": true,
-                            "type": "string"
-                          },
-                          "paidInShares": {
-                            "description": "實際流通股數（不是千股），bigint 序列化成字串",
                             "type": "string"
                           },
                           "remarks": {
@@ -1039,7 +1039,7 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "sharesChangePercent": {
+                          "sharesChangePct": {
                             "description": "跟「前一次異動」（時間序列上更早的那一筆，不是陣列順序上的前一筆——entries 是新到舊排序）相比，流通股數變動的百分比，四捨五入到小數 2 位。最早一筆（沒有更早的可以比較）是 null。",
                             "nullable": true,
                             "type": "number"
@@ -1047,9 +1047,9 @@
                         },
                         "required": [
                           "effectiveDate",
-                          "paidInShares",
+                          "numberOfSharesIssued",
                           "paidInCapital",
-                          "sharesChangePercent",
+                          "sharesChangePct",
                           "changeSource",
                           "remarks"
                         ],
@@ -2419,7 +2419,7 @@
     },
     "/companies/monthly-revenue-history": {
       "get": {
-        "description": "**上市＋上櫃全市場**，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 完成歷史回填）。2026-09 之後的月份由上游每月自動 ingest，會持續長出來。公開發行未上市的證券商（六碼代號）已在資料層排除。上櫃公司的 `reportDate` 在歷史月份是 null——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，上游選擇誠實留空而不是照抄一個錯的日期。查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。momChangePercent（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的（來源這批一次性回填的資料沒有這個欄位）；yoyChangePercent（年增率）、cumulativeChangePercent（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePercent 有約 0.4% 是 null，那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是bigint 序列化成字串，單位新台幣千元（本服務不換算）。",
+        "description": "**上市＋上櫃全市場**，2021-09 起逐月共 60 個月（上市 993 家、上櫃 894 家，2026-09-23 完成歷史回填）。2026-09 之後的月份由上游每月自動 ingest，會持續長出來。公開發行未上市的證券商（六碼代號）已在資料層排除。上櫃公司的 `reportDate` 在歷史月份是 null——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，上游選擇誠實留空而不是照抄一個錯的日期。查無資料的公司會正確回 entries: []（不是 404 或錯誤），跟 capital-stock-history 同一種「查無歷史資料是正常情境」的慣例。momChangePct（月增率）是本服務自己用相鄰兩個月的 currentMonthRevenue 反推算出來的（來源這批一次性回填的資料沒有這個欄位）；yoyChangePct（年增率）、cumulativeChangePct（累計營收年增率）是來源直接算好的欄位，原樣透傳——其中 yoyChangePct 有約 0.4% 是 null，那是當年新上市、沒有去年同期可比，**不是漏抓也不是 0**。金額欄位（currentMonthRevenue 等）都是bigint 序列化成字串，單位新台幣千元（本服務不換算）。",
         "operationId": "getCompaniesMonthlyRevenueHistory",
         "parameters": [
           {
@@ -2457,7 +2457,7 @@
                     "entries": {
                       "items": {
                         "properties": {
-                          "cumulativeChangePercent": {
+                          "cumulativeChangePct": {
                             "description": "累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳",
                             "nullable": true,
                             "type": "number"
@@ -2486,7 +2486,7 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "momChangePercent": {
+                          "momChangePct": {
                             "description": "月增率（%）——來源這批一次性回填的資料沒有算這個欄位，本服務用相鄰兩個月的 currentMonthRevenue 自己反推；最舊一筆（沒有更早的月份可比較）固定 null",
                             "nullable": true,
                             "type": "number"
@@ -2504,7 +2504,7 @@
                             "description": "\"YYYY-MM\"",
                             "type": "string"
                           },
-                          "yoyChangePercent": {
+                          "yoyChangePct": {
                             "description": "年增率（%），來源直接算好的欄位，本服務原樣透傳",
                             "nullable": true,
                             "type": "number"
@@ -2516,11 +2516,11 @@
                           "industry",
                           "currentMonthRevenue",
                           "lastYearSameMonthRevenue",
-                          "yoyChangePercent",
-                          "momChangePercent",
+                          "yoyChangePct",
+                          "momChangePct",
                           "cumulativeRevenue",
                           "cumulativeLastYearRevenue",
-                          "cumulativeChangePercent",
+                          "cumulativeChangePct",
                           "note"
                         ],
                         "type": "object"
@@ -5944,7 +5944,7 @@
                           "year": {
                             "type": "integer"
                           },
-                          "yoyChangePercent": {
+                          "yoyChangePct": {
                             "description": "年增率 %",
                             "nullable": true,
                             "type": "number"
@@ -5955,7 +5955,7 @@
                           "year",
                           "month",
                           "indexValue",
-                          "yoyChangePercent"
+                          "yoyChangePct"
                         ],
                         "type": "object"
                       },
@@ -6886,7 +6886,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "m1aYoyPercent": {
+                          "m1aYoyPct": {
                             "description": "M1A 年增率 %",
                             "nullable": true,
                             "type": "number"
@@ -6896,7 +6896,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "m1bYoyPercent": {
+                          "m1bYoyPct": {
                             "description": "M1B 年增率 %",
                             "nullable": true,
                             "type": "number"
@@ -6906,7 +6906,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "m2YoyPercent": {
+                          "m2YoyPct": {
                             "description": "M2 年增率 %",
                             "nullable": true,
                             "type": "number"
@@ -6927,11 +6927,11 @@
                           "year",
                           "month",
                           "m1aAmount",
-                          "m1aYoyPercent",
+                          "m1aYoyPct",
                           "m1bAmount",
-                          "m1bYoyPercent",
+                          "m1bYoyPct",
                           "m2Amount",
-                          "m2YoyPercent"
+                          "m2YoyPct"
                         ],
                         "type": "object"
                       },
@@ -7011,7 +7011,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "avgTaiexYoyPercent": {
+                          "avgTaiexYoyPct": {
                             "description": "加權指數月平均年增率 %",
                             "nullable": true,
                             "type": "number"
@@ -7057,7 +7057,7 @@
                           "totalTradingValue",
                           "avgDailyTradingValue",
                           "avgTaiex",
-                          "avgTaiexYoyPercent"
+                          "avgTaiexYoyPct"
                         ],
                         "type": "object"
                       },
@@ -7306,7 +7306,7 @@
     },
     "/market/attention-stocks": {
       "get": {
-        "description": "合併 twse-ts（上市）/tpex-ts（上櫃）注意股票累計次數異常公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。取最近公告的前 limit 筆（依交易日由新到舊），不是固定某一天的資料。criteria 是原始中文說明（例如「115年8月28日至115年8月31日連續二次」），criteriaDetails 是解析出的結構化資料（開始/結束日期、次數）——criteria 可能包含多個原因子句直接串接在一起，所以 criteriaDetails 是陣列；解析失敗（上游文字格式之後改變）時是空陣列，不影響 criteria 原始文字本身。sixDayChangePercent 是以 tradeDate 為基準日的近6個交易日累積漲跌幅——交易所注意股票的門檻本來就包含「近6日累積漲跌幅逾25%~32%」這類標準，這裡是點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。",
+        "description": "合併 twse-ts（上市）/tpex-ts（上櫃）注意股票累計次數異常公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。取最近公告的前 limit 筆（依交易日由新到舊），不是固定某一天的資料。criteria 是原始中文說明（例如「115年8月28日至115年8月31日連續二次」），criteriaDetails 是解析出的結構化資料（開始/結束日期、次數）——criteria 可能包含多個原因子句直接串接在一起，所以 criteriaDetails 是陣列；解析失敗（上游文字格式之後改變）時是空陣列，不影響 criteria 原始文字本身。sixDayChangePct 是以 tradeDate 為基準日的近6個交易日累積漲跌幅——交易所注意股票的門檻本來就包含「近6日累積漲跌幅逾25%~32%」這類標準，這裡是點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。",
         "operationId": "getMarketAttentionStocks",
         "parameters": [
           {
@@ -7378,7 +7378,7 @@
                             ],
                             "type": "string"
                           },
-                          "sixDayChangePercent": {
+                          "sixDayChangePct": {
                             "description": "以 tradeDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null",
                             "nullable": true,
                             "type": "number"
@@ -7397,7 +7397,7 @@
                           "tradeDate",
                           "criteria",
                           "criteriaDetails",
-                          "sixDayChangePercent"
+                          "sixDayChangePct"
                         ],
                         "type": "object"
                       },
@@ -7463,7 +7463,7 @@
     },
     "/market/disposed-stocks": {
       "get": {
-        "description": "合併 twse-ts（上市）/tpex-ts（上櫃）處置股票公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。稀疏資料，不是每天都有，取最近公告的前 limit 筆（依公告日期由新到舊），不是固定某一天的資料。TPEx 版本欄位比 TWSE 精簡（沒有 announcementCount/dispositionMeasures/linkInformation），沒有的欄位回傳 null。sixDayChangePercent 是以 announceDate 為基準日的近6個交易日累積漲跌幅，點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。reasonTimes 是從 reason 解析出的次數（例如「連續五次」→5、「最近10個營業日內有6個營業日」→6），部分處置原因（例如可轉債標的證券）本身沒有次數概念，這時是 null。reasonShort 是從 reason 解析出的中文短標籤（例如引用「第一款」→「漲跌異常」、可轉換公司債標的證券→「轉(交)換公司債」），解析不出來時是 null。dispositionStartDate/dispositionEndDate 是從 dispositionPeriod 拆出的西元起訖日期，dispositionPeriod 原始字串仍然保留，解析不出來時兩個新欄位都是 null。",
+        "description": "合併 twse-ts（上市）/tpex-ts（上櫃）處置股票公告，market 欄位標示來源，只保留真正的上市/上櫃公司（比對 company_profile）。稀疏資料，不是每天都有，取最近公告的前 limit 筆（依公告日期由新到舊），不是固定某一天的資料。TPEx 版本欄位比 TWSE 精簡（沒有 announcementCount/dispositionMeasures/linkInformation），沒有的欄位回傳 null。sixDayChangePct 是以 announceDate 為基準日的近6個交易日累積漲跌幅，點對點比較（基準日收盤 vs 往前數6個交易日收盤），不是逐日漲跌幅相加，隱含複利效應；資料不足6個交易日時是 null。reasonTimes 是從 reason 解析出的次數（例如「連續五次」→5、「最近10個營業日內有6個營業日」→6），部分處置原因（例如可轉債標的證券）本身沒有次數概念，這時是 null。reasonShort 是從 reason 解析出的中文短標籤（例如引用「第一款」→「漲跌異常」、可轉換公司債標的證券→「轉(交)換公司債」），解析不出來時是 null。dispositionStartDate/dispositionEndDate 是從 dispositionPeriod 拆出的西元起訖日期，dispositionPeriod 原始字串仍然保留，解析不出來時兩個新欄位都是 null。",
         "operationId": "getMarketDisposedStocks",
         "parameters": [
           {
@@ -7550,7 +7550,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "sixDayChangePercent": {
+                          "sixDayChangePct": {
                             "description": "以 announceDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null",
                             "nullable": true,
                             "type": "number"
@@ -7574,7 +7574,7 @@
                           "dispositionMeasures",
                           "detail",
                           "linkInformation",
-                          "sixDayChangePercent"
+                          "sixDayChangePct"
                         ],
                         "type": "object"
                       },
@@ -8316,7 +8316,7 @@
                             "description": "close - previousClose",
                             "type": "number"
                           },
-                          "changePercent": {
+                          "changePct": {
                             "description": "(close - previousClose) / previousClose x 100",
                             "type": "number"
                           },
@@ -8361,7 +8361,7 @@
                           "close",
                           "previousClose",
                           "changeAmount",
-                          "changePercent"
+                          "changePct"
                         ],
                         "type": "object"
                       },
@@ -8378,7 +8378,7 @@
                             "description": "close - previousClose",
                             "type": "number"
                           },
-                          "changePercent": {
+                          "changePct": {
                             "description": "(close - previousClose) / previousClose x 100",
                             "type": "number"
                           },
@@ -8423,7 +8423,7 @@
                           "close",
                           "previousClose",
                           "changeAmount",
-                          "changePercent"
+                          "changePct"
                         ],
                         "type": "object"
                       },
@@ -8487,7 +8487,7 @@
     },
     "/market/revenue-ranking": {
       "get": {
-        "description": "取最新一個月份的月營收資料排行，合併 twse-ts（上市）/tpex-ts（上櫃）兩邊來源，market 欄位標示來源，只留上市或上櫃公司（monthly_revenue 來源範圍是「公開發行公司」，比上市櫃更廣，不篩選會混進非上市櫃公司）。metric 目前只接受 yoy（年增率，最常見的「營收爆發」選股指標）——2026-09-13 拔掉 mom（月增率排行，波動太大容易受季節性因素干擾）跟revenue（單純營收金額排行，偏向大型權值股，沒有「成長」意涵），這兩者被判定沒有實際選股價值，momChangePercent/currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來排序。會排除 yoyChangePercent 超過 300% 的公司——這是前期基期趨近於零造成的統計失真（例如建案交屋、生技授權金等認列時點集中的產業特性），不是真實的營運成長，300% 這個門檻依據是使用者提供的分析文件，之後有多年歷史資料可以改用更嚴謹的「基期 vs 歷史中位數」判斷。",
+        "description": "取最新一個月份的月營收資料排行，合併 twse-ts（上市）/tpex-ts（上櫃）兩邊來源，market 欄位標示來源，只留上市或上櫃公司（monthly_revenue 來源範圍是「公開發行公司」，比上市櫃更廣，不篩選會混進非上市櫃公司）。metric 目前只接受 yoy（年增率，最常見的「營收爆發」選股指標）——2026-09-13 拔掉 mom（月增率排行，波動太大容易受季節性因素干擾）跟revenue（單純營收金額排行，偏向大型權值股，沒有「成長」意涵），這兩者被判定沒有實際選股價值，momChangePct/currentMonthRevenue 仍保留在回應列裡當參考資訊，只是不能拿來排序。會排除 yoyChangePct 超過 300% 的公司——這是前期基期趨近於零造成的統計失真（例如建案交屋、生技授權金等認列時點集中的產業特性），不是真實的營運成長，300% 這個門檻依據是使用者提供的分析文件，之後有多年歷史資料可以改用更嚴謹的「基期 vs 歷史中位數」判斷。",
         "operationId": "getMarketRevenueRanking",
         "parameters": [
           {
@@ -8568,7 +8568,7 @@
                             ],
                             "type": "string"
                           },
-                          "momChangePercent": {
+                          "momChangePct": {
                             "nullable": true,
                             "type": "number"
                           },
@@ -8578,7 +8578,7 @@
                           "symbol": {
                             "type": "string"
                           },
-                          "yoyChangePercent": {
+                          "yoyChangePct": {
                             "nullable": true,
                             "type": "number"
                           }
@@ -8589,8 +8589,8 @@
                           "companyName",
                           "market",
                           "currentMonthRevenue",
-                          "momChangePercent",
-                          "yoyChangePercent"
+                          "momChangePct",
+                          "yoyChangePct"
                         ],
                         "type": "object"
                       },
@@ -8759,7 +8759,7 @@
     },
     "/market/volume-top20": {
       "get": {
-        "description": "最新一個交易日，合併 twse-ts（上市）/tpex-ts（上櫃）官方各自算好的成交量前 20 後重新排序取全市場前 20，market 欄位標示來源。TPEx 版本欄位比 TWSE 精簡（只有 symbol/trade_date/rank/volume），沒有的欄位（transaction/open/high/low/close/dir/change）回傳 null。⚠️ 沒有排除 ETF/衍生性商品，回傳的是原始排名（跟本服務其他主打「上市公司證券」的排行榜不一樣，這支是應使用者要求刻意保留原樣）。changePercent 是單日漲跌幅，本服務自己用 daily_price 算的點對點百分比（不是來源的 dir/change，確保上市/上櫃算法一致），資料不足時是 null。",
+        "description": "最新一個交易日，合併 twse-ts（上市）/tpex-ts（上櫃）官方各自算好的成交量前 20 後重新排序取全市場前 20，market 欄位標示來源。TPEx 版本欄位比 TWSE 精簡（只有 symbol/trade_date/rank/volume），沒有的欄位（transaction/open/high/low/close/dir/change）回傳 null。⚠️ 沒有排除 ETF/衍生性商品，回傳的是原始排名（跟本服務其他主打「上市公司證券」的排行榜不一樣，這支是應使用者要求刻意保留原樣）。changePct 是單日漲跌幅，本服務自己用 daily_price 算的點對點百分比（不是來源的 dir/change，確保上市/上櫃算法一致），資料不足時是 null。",
         "operationId": "getMarketVolumeTop20",
         "responses": {
           "200": {
@@ -8775,7 +8775,7 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "changePercent": {
+                          "changePct": {
                             "description": "單日漲跌幅（自己用 daily_price 算的點對點百分比，不是來源的 dir/change），資料不足時是 null",
                             "nullable": true,
                             "type": "number"
@@ -8845,7 +8845,7 @@
                           "close",
                           "dir",
                           "change",
-                          "changePercent"
+                          "changePct"
                         ],
                         "type": "object"
                       },
@@ -9012,7 +9012,7 @@
                                               ],
                                               "type": "string"
                                             },
-                                            "topPercent": {
+                                            "topPct": {
                                               "description": "前 N%（1-100），例如 Novy-Marx 的最高五分位是 20",
                                               "type": "number"
                                             }
@@ -9020,7 +9020,7 @@
                                           "required": [
                                             "scope",
                                             "direction",
-                                            "topPercent"
+                                            "topPct"
                                           ],
                                           "type": "object"
                                         },
@@ -9882,7 +9882,7 @@
     },
     "/screener/company-rank": {
       "get": {
-        "description": "跟 GET /screener/ranking（取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾、贏過全市場前百分之多少」，不需要先知道前 N 名是誰，也不用自己抓全市場清單再數名次——rank/totalCount 是在同一次查詢裡用 window function 對全市場一次算完，只回傳目標 symbol 那一列。direction=desc：數值越高排名越前面（例如殖利率）；direction=asc：數值越低排名越前面（例如本益比）。totalCount 只計入這個欄位有值（非 null）的公司；並列數值共用同一個名次（RANK() 語意）。topPercent 是 rank÷totalCount×100（四捨五入到小數點後一位），數字越小代表排名越前面，例如 5 代表排在全市場前 5%——跟「百分位」是相反的敘述方向（百分位越高代表越好），刻意選這個命名貼近「贏過前 X%」的中文口語問法。found:false 代表這家公司這個欄位查無資料（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPercent/quintile 皆為 null。excludeZero=true 會把值精確等於 0 的公司排除在排名母體之外（殖利率這類「0 代表不配息」的欄位用，比照 GET /screener/distribution 同名參數），影響 rank/totalCount/topPercent/quintile。quintile 是這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高切分，跟 direction 排名方向無關，方便前端直接標示區間不用自己算切點。",
+        "description": "跟 GET /screener/ranking（取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾、贏過全市場前百分之多少」，不需要先知道前 N 名是誰，也不用自己抓全市場清單再數名次——rank/totalCount 是在同一次查詢裡用 window function 對全市場一次算完，只回傳目標 symbol 那一列。direction=desc：數值越高排名越前面（例如殖利率）；direction=asc：數值越低排名越前面（例如本益比）。totalCount 只計入這個欄位有值（非 null）的公司；並列數值共用同一個名次（RANK() 語意）。topPct 是 rank÷totalCount×100（四捨五入到小數點後一位），數字越小代表排名越前面，例如 5 代表排在全市場前 5%——跟「百分位」是相反的敘述方向（百分位越高代表越好），刻意選這個命名貼近「贏過前 X%」的中文口語問法。found:false 代表這家公司這個欄位查無資料（從沒被算過，或算出來是 null），此時 value/rank/totalCount/topPct/quintile 皆為 null。excludeZero=true 會把值精確等於 0 的公司排除在排名母體之外（殖利率這類「0 代表不配息」的欄位用，比照 GET /screener/distribution 同名參數），影響 rank/totalCount/topPct/quintile。quintile 是這家公司在排名母體裡由低到高的五等分位（1 最低 20%、5 最高 20%），固定用數值由低到高切分，跟 direction 排名方向無關，方便前端直接標示區間不用自己算切點。",
         "operationId": "getScreenerCompanyRank",
         "parameters": [
           {
@@ -9944,7 +9944,7 @@
                       "type": "string"
                     },
                     "found": {
-                      "description": "false 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時 rank/totalCount/topPercent/value 皆為 null",
+                      "description": "false 代表這家公司這個欄位查無資料（從沒被算過或算出來是 null），此時 rank/totalCount/topPct/value 皆為 null",
                       "type": "boolean"
                     },
                     "quintile": {
@@ -9960,7 +9960,7 @@
                     "symbol": {
                       "type": "string"
                     },
-                    "topPercent": {
+                    "topPct": {
                       "description": "rank÷totalCount×100，四捨五入到小數點後一位。數字越小代表排名越前面，例如 5 代表排在全市場前 5%（不是「百分位」那種越高越好的敘述方向，刻意選這個命名貼近「贏過前 X%」的中文口語問法）",
                       "nullable": true,
                       "type": "number"
@@ -9982,7 +9982,7 @@
                     "value",
                     "rank",
                     "totalCount",
-                    "topPercent",
+                    "topPct",
                     "quintile"
                   ],
                   "type": "object"
@@ -11409,7 +11409,7 @@
     },
     "/stocks/{symbol}/foreign-shareholding-history": {
       "get": {
-        "description": "2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是櫃買中心的外資持股統計（2026-10-07 起每個交易日更新，沒有更早的歷史）。2026-10-08 起**只有上櫃公司有資料**：證交所 OpenAPI 只開放每天持股比率前 20 名，上市公司一律回空陣列。查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPercent（尚可投資比例）理論上等於 foreignLimitPercent - sharesHeldPercent，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。",
+        "description": "2026-09-08 新增，給個股頁面外資持股卡片用。資料來源是櫃買中心的外資持股統計（2026-10-07 起每個交易日更新，沒有更早的歷史）。2026-10-08 起**只有上櫃公司有資料**：證交所 OpenAPI 只開放每天持股比率前 20 名，上市公司一律回空陣列。查無資料的公司回傳空陣列 entries，不是 404——前端應該視為「尚未提供」而不是查詢失敗。availableInvestPct（尚可投資比例）理論上等於 foreignLimitPct - sharesHeldPct，但這是資料源自己算好的欄位，不保證逐筆對得上，不要自己重算去對照。",
         "operationId": "getStocksSymbolForeignShareholdingHistory",
         "parameters": [
           {
@@ -11448,17 +11448,17 @@
                       "description": "依日期新到舊排序",
                       "items": {
                         "properties": {
-                          "availableInvestPercent": {
-                            "description": "尚可投資比例（%）= foreignLimitPercent - sharesHeldPercent，理論上的關係，不保證逐筆對得上（資料源自己算的）",
+                          "availableInvestPct": {
+                            "description": "尚可投資比例（%）= foreignLimitPct - sharesHeldPct，理論上的關係，不保證逐筆對得上（資料源自己算的）",
                             "nullable": true,
                             "type": "number"
                           },
-                          "foreignLimitPercent": {
+                          "foreignLimitPct": {
                             "description": "法定外資/陸資持股上限（%），大多數股票是 100（無限制）",
                             "nullable": true,
                             "type": "number"
                           },
-                          "sharesHeldPercent": {
+                          "sharesHeldPct": {
                             "description": "外資/陸資持股比例（%）",
                             "nullable": true,
                             "type": "number"
@@ -11470,9 +11470,9 @@
                         },
                         "required": [
                           "tradeDate",
-                          "sharesHeldPercent",
-                          "foreignLimitPercent",
-                          "availableInvestPercent"
+                          "sharesHeldPct",
+                          "foreignLimitPct",
+                          "availableInvestPct"
                         ],
                         "type": "object"
                       },
@@ -11570,7 +11570,7 @@
                       "description": "依日期新到舊排序",
                       "items": {
                         "properties": {
-                          "pledgePercent": {
+                          "pledgePct": {
                             "description": "董監事及大股東股權質押比例（%）",
                             "nullable": true,
                             "type": "number"
@@ -11582,7 +11582,7 @@
                         },
                         "required": [
                           "reportDate",
-                          "pledgePercent"
+                          "pledgePct"
                         ],
                         "type": "object"
                       },

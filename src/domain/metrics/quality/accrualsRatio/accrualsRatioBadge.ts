@@ -31,6 +31,6 @@ export const accrualsRatioBadge: MetricBadge = {
     thresholdLatex: '\\mathrm{AccrualsRatio\\ Percentile} \\geq 90',
     note: 'Sloan (1996) 論文用全市場十等分（decile）排序法，最低應計項目那組即最低 10%，不是絕對數字門檻。direction 用 asc（數值越小排名越前面）。',
     denominator: 1,
-    percentileRank: { scope: 'market', direction: 'asc', topPercent: 10 },
+    percentileRank: { scope: 'market', direction: 'asc', topPct: 10 },
   },
 };
