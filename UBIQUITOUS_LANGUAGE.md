@@ -77,7 +77,7 @@
 | 公告日 | `announcement_date` | `announcementDate` | 公告日 | announce_date；月營收的 report_date | twse、tpex 處置股票的 `announce_date`（twse、tpex）。analysis 月營收的 `reportDate`、`announceDate`（analysis） |
 | 出表日 | `generated_date` | `generatedDate` | 出表日 | twse、tpex 的 report_date | twse、tpex 的 company_profile、fs、monthly_revenue、pledge 都用 `report_date`（twse、tpex）。twse 回填的月營收自行填「次月 10 日」，應改成真實公告日，不知道就 null（twse）。analysis 質押比例的 `reportDate`（analysis） |
 | 可知悉日 | — | `knowledgeDate`：analysis 認定這筆資料可以被知道的日期；查無公告日、改用期末日頂替時 `knowledgeDateIsFallback=true` | 可知悉日 | — | — |
-| 交易日 | `trade_date`：**只能是真實交易日** | `tradeDate` | 交易日 | date | twse `changed_trading_methods.trade_date` 存的是觀測日，應改 `observed_date`（twse）。sitca nav 叫 `date`（sitca） |
+| 交易日 | `trade_date`：**只能是真實（台灣）交易日**；境外基金的淨值評價日是國外市場的日子，叫 `nav_date` | `tradeDate` | 交易日 | date | twse `changed_trading_methods.trade_date` 存的是觀測日，應改 `observed_date`（twse）。sitca nav 叫 `date`（sitca） |
 | 上市日 | `listing_date` | `listingDate` | 上市（櫃）日 | listed_date | twse、tpex 用 `listed_date`（twse、tpex） |
 | 除權息日 | `ex_dividend_date`／`ex_rights_date` | `exDividendDate`／`exRightsDate` | 除息日／除權日 | ex_date＋ex_type、ex_right_date | twse 用 `ex_date`＋`ex_type`、tpex 用 `ex_right_date`（twse、tpex） |
 
@@ -95,7 +95,7 @@
 | 營收 | `revenue`（ifrs-full:Revenue；tifrs 的 OperatingRevenue 是沒有 GL 代號的標題節點，不存數字） | `revenue` | 營收（＝營業收入） | operating_revenue | — |
 | 月營收 | `current_month_revenue`、`prev_month_revenue`、`last_year_same_month_revenue`、`cumulative_revenue`、`cumulative_last_year_revenue`（千元） | 同名 camelCase（個股與類股端點都用這組） | 當月／上月／去年同月／累計／去年累計營收 | last_month_revenue、last_year_cumulative_revenue、lastYearRevenue | mops `market_monthly_revenue` 已照官方名建表（10/10）；類股端點已改（10/10 `40058581`） |
 | 財報科目 | 一律用元素名，例 `profit_loss`（ifrs-full:ProfitLoss）、`profit_loss_attributable_to_owners_of_parent`、`shortterm_borrowings`（ifrs-full:ShorttermBorrowings）。應付公司債：ifrs-full:BondsIssued 只出現在 basi、fh、ins，一般業用另一個元素，**待 mops 指定** | 同名 camelCase | 中文照券商：稅後淨利（XBRL 中文標籤「本期淨利」）、歸屬母公司淨利（XBRL「母公司業主」） | 自取的英文翻譯（netIncome、bondsPayable 等） | mops 寬表有 97 個欄位放得下元素名卻被人工改寫（例 `current_fin_assets_fvtoci`、`gains_on_disposals_of_ppe`、`adj_depreciation_expense`、`cash_per_balance_sheet`），另有 91 個人工縮寫、230 個截斷加雜湊，全部改照元素名或縮寫字典（mops，清單 10/10 已索取）。analysis 財報 port 的內部欄位名（`accountsPayable`、`bondsPayable`、`netIncome`）（analysis）。metricCode 字根不是元素名的（例 `bondsPayableToAssets`）列為候選，另走 metricCode 改名程序 |
-| 百分比 | `*_pct`，數值 0～100 | `*Pct` | — | _percent、Percent、_rate（表示 % 時） | 各服務 `*_change_percent`（twse、tpex）。analysis 的 `yoyChangePercent`、`momChangePercent`、`cumulativeChangePercent`、`sharesHeldPercent`、`pledgePercent`（analysis）。業務中台把排行百分比轉成字串（業務中台） |
+| 百分比 | `*_pct`：**單位**是百分比（1 ＝ 1%），**不是值域**——變動率、報酬率會是負數或超過 100，不要加 0～100 的 CHECK（sitca-ts 10/10 實測報酬率 −61.94～105.13） | `*Pct` | — | _percent、Percent、_rate（表示 % 時） | 各服務 `*_change_percent`（twse、tpex）。analysis 的 `yoyChangePercent`、`momChangePercent`、`cumulativeChangePercent`、`sharesHeldPercent`、`pledgePercent`（analysis）。業務中台把排行百分比轉成字串（業務中台） |
 | 金額與數量單位 | 預設：金額千元、數量股。例外的單位寫進欄名（`_lots`、`_thousand_shares`、`_ntd`）；每個數字欄位都要 COMMENT 寫明單位 | openapi 說明寫單位 | 千元、股、張 | 沒標單位 | twse、tpex 的月營收與 fs 沒標單位（twse、tpex）。`paid_in_capital` 是元（twse、tpex、mops，改 `paid_in_capital_ntd`）。tpex 成交量在 2026-10-01 前不含零股（tpex，寫進 COMMENT） |
 
 ### 二之四、API 與顯示用字
