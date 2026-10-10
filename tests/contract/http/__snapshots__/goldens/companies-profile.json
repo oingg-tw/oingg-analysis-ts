@@ -25,6 +25,7 @@
     "listedDate": "<date>",
     "listingDate": "<date>",
     "market": "TWSE",
+    "marketCode": "sii",
     "metricDataType": "<numeric-string>",
     "name": "<string>",
     "numberOfPreferenceShares": "<numeric-string>",

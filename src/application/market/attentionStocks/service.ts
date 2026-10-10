@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import type { RawAttentionHistoryNoteRow } from '@/application/ports/marketLists';
 import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
@@ -56,6 +57,7 @@ export const listAttentionStocks = async (query: AttentionStocksQuery, deps: Att
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
+    marketCode: toMarketCode(row.market),
     tradeDate: row.trade_date.toISOString().slice(0, 10),
     criteria: row.criteria,
     criteriaDetails: parseAttentionCriteria(row.criteria),

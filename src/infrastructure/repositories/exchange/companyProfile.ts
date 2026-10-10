@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import { Prisma } from '#generated/twse-export-client';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
@@ -278,7 +279,7 @@ const resolveFinancialReportTypeName = (financialReportType: string | null): str
 // - sectorName 一律從類股代碼表取（getIndustryCodes，跟 GET /companies 清單同一份），上櫃也有名稱；NON_INDUSTRY_CODES 回 null。
 // - declaredDataType 把交易所申報口徑換成 MOPS 編碼（交易所 '1' 合併 → '2'、'2' 個別 → '1'），未知代碼回 null。
 const EXCHANGE_TO_MOPS_DATA_TYPE: Record<string, '1' | '2'> = { '1': '2', '2': '1' };
-type ProfileWithoutCanonicalKeys = Omit<ExchangeCompanyProfileDetail, 'generatedDate' | 'sectorCode' | 'sectorName' | 'declaredDataType' | 'listingDate' | 'numberOfPreferenceShares'>;
+type ProfileWithoutCanonicalKeys = Omit<ExchangeCompanyProfileDetail, 'generatedDate' | 'sectorCode' | 'sectorName' | 'declaredDataType' | 'listingDate' | 'numberOfPreferenceShares' | 'marketCode'>;
 const withCanonicalProfileKeys = (d: ProfileWithoutCanonicalKeys): ExchangeCompanyProfileDetail => {
   const codes = getIndustryCodes();
   const isRealSector = d.industry !== null && !NON_INDUSTRY_CODES.has(d.industry);
@@ -289,6 +290,7 @@ const withCanonicalProfileKeys = (d: ProfileWithoutCanonicalKeys): ExchangeCompa
     sectorName: isRealSector && codes ? (codes[d.industry!] ?? null) : null,
     declaredDataType: d.financialReportType !== null ? (EXCHANGE_TO_MOPS_DATA_TYPE[d.financialReportType] ?? null) : null,
     listingDate: d.listedDate,
+    marketCode: toMarketCode(d.market, d.isEmerging),
     numberOfPreferenceShares: d.preferredStockShares,
   };
 };
@@ -469,6 +471,7 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
       sectorCode: isRealSector ? industry : null,
       sectorName: isRealSector && codes ? (codes[industry] ?? null) : null,
       isEmerging,
+      marketCode: toMarketCode(market, isEmerging),
     };
   });
 };

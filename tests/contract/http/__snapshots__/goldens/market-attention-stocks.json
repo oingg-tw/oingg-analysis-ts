@@ -14,6 +14,7 @@
           }
         ],
         "market": "TWSE",
+        "marketCode": "sii",
         "sixDayChangePct": "<number>",
         "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>",

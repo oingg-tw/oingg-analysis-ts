@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
 import { parseDispositionTimes, parseReasonShortLabel, parseDispositionPeriod } from '@/domain/market/disposedStocks/parseReason';
@@ -98,6 +99,7 @@ export const listDisposedStocks = async (query: DisposedStocksQuery, deps: Dispo
       symbol: row.symbol,
       companyName: companyNames.get(row.symbol) ?? null,
       market: row.market,
+    marketCode: toMarketCode(row.market),
       announceDate: row.announce_date.toISOString().slice(0, 10),
       announcementCount: row.announcement_count,
       reason: row.reason,

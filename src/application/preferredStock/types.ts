@@ -1,3 +1,4 @@
+import type { MarketCode } from '@/domain/market/marketCode';
 import type { YtcAssumption } from '@/domain/preferredStock/preferredStockYield';
 
 // GET /preferred-stocks 的回應形狀（application 真理來源）——http/modules/preferredStock/types.ts 的 zod
@@ -27,6 +28,7 @@ export interface PreferredStockEntry {
   isinCode: string | null;
   listedDate: string | null;
   marketType: string;
+  marketCode: MarketCode | null; // 2026-10-10 詞彙表官方市場別；marketType（中文）2026-10-24 移除
   issueDate: string | null;
   issuePrice: number | null;
   dividendRate: number | null;

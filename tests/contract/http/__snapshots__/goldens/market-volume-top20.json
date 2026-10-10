@@ -12,6 +12,7 @@
         "high": "<number>",
         "low": "<number>",
         "market": "TWSE",
+        "marketCode": "sii",
         "open": "<number>",
         "rank": "<number>",
         "symbol": "<string>",

@@ -55,8 +55,11 @@ const resolveFilterCondition = (input: EtfFilterInput): EtfFilterCondition => {
       throw new ValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
     }
   }
-  return { kind: 'categorical', definition, values: input.values };
+  // 2026-10-10 詞彙表：market 篩選值也收 MOPS TYPEK（sii／otc），換回 SQL 欄位用的 TWSE／TPEx。兩種值都收，並存到市場別改名完成。
+  const values = input.field === 'market' ? input.values.map((v) => ETF_MARKET_FILTER_ALIASES[v] ?? v) : input.values;
+  return { kind: 'categorical', definition, values };
 };
+const ETF_MARKET_FILTER_ALIASES: Record<string, string> = { sii: 'TWSE', otc: 'TPEx' };
 
 const resolveColumn = (input: EtfColumnInput): EtfColumnRef => {
   const definition = resolveEtfField(input.field);

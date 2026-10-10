@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import type { PriceChangeRankingQuery, PriceChangeRankingResult, PriceChangeRow } from './types';
 
@@ -127,6 +128,7 @@ export const calculatePriceChangeRanking = async (query: PriceChangeRankingQuery
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
+    marketCode: toMarketCode(row.market),
     tradeDate: row.tradeDate,
     previousTradeDate: row.previousTradeDate,
     close: row.close,

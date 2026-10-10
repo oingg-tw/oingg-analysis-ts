@@ -391,6 +391,15 @@
                                 ],
                                 "type": "string"
                               },
+                              "marketCode": {
+                                "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                                "enum": [
+                                  "sii",
+                                  "otc",
+                                  "rotc"
+                                ],
+                                "type": "string"
+                              },
                               "sectorCode": {
                                 "description": "2026-09-19 新增：證交所類股代碼（兩碼，跟 GET /industries/securities-sectors 同一套）；掛在非產業代碼（07/91/98/XX）的公司為 null",
                                 "nullable": true,
@@ -409,6 +418,7 @@
                               "symbol",
                               "companyName",
                               "market",
+                              "marketCode",
                               "sectorCode",
                               "sectorName",
                               "isEmerging"
@@ -3067,6 +3077,15 @@
                       ],
                       "type": "string"
                     },
+                    "marketCode": {
+                      "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                      "enum": [
+                        "sii",
+                        "otc",
+                        "rotc"
+                      ],
+                      "type": "string"
+                    },
                     "metricDataType": {
                       "description": "本服務指標對這家公司實際採用的財報口徑（MOPS dataType）：\"2\" 合併報表、\"1\" 個別報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個別報表的公司（約 249 家）用個別。要標示「個別報表」看這個欄位。",
                       "enum": [
@@ -3164,6 +3183,7 @@
                   "required": [
                     "symbol",
                     "market",
+                    "marketCode",
                     "isEmerging",
                     "reportDate",
                     "name",
@@ -7535,6 +7555,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "sixDayChangePct": {
                             "description": "以 tradeDate 為基準日的近 6 個交易日累積漲跌幅（點對點），資料不足時是 null",
                             "nullable": true,
@@ -7551,6 +7580,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "tradeDate",
                           "criteria",
                           "criteriaDetails",
@@ -7693,6 +7723,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "reason": {
                             "nullable": true,
                             "type": "string"
@@ -7720,6 +7759,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "announceDate",
                           "announcementCount",
                           "reason",
@@ -8080,6 +8120,17 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）；解析不出來時是 null",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc",
+                              null
+                            ],
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "rank": {
                             "type": "number"
                           },
@@ -8103,6 +8154,7 @@
                           "companyName",
                           "category",
                           "market",
+                          "marketCode",
                           "assetClass",
                           "isActive",
                           "belowStatutoryThreshold",
@@ -8217,6 +8269,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "rank": {
                             "type": "number"
                           },
@@ -8236,6 +8297,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "shortToMarginRatioPct",
                           "marginTodayBalance",
                           "shortTodayBalance"
@@ -8491,6 +8553,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "previousClose": {
                             "type": "number"
                           },
@@ -8513,6 +8584,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "tradeDate",
                           "previousTradeDate",
                           "close",
@@ -8553,6 +8625,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "previousClose": {
                             "type": "number"
                           },
@@ -8575,6 +8656,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "tradeDate",
                           "previousTradeDate",
                           "close",
@@ -8725,6 +8807,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "momChangePct": {
                             "nullable": true,
                             "type": "number"
@@ -8745,6 +8836,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "currentMonthRevenue",
                           "momChangePct",
                           "yoyChangePct"
@@ -8968,6 +9060,15 @@
                             ],
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc"
+                            ],
+                            "type": "string"
+                          },
                           "open": {
                             "description": "TPEx 版本沒有這個欄位，null",
                             "nullable": true,
@@ -8994,6 +9095,7 @@
                           "symbol",
                           "companyName",
                           "market",
+                          "marketCode",
                           "volume",
                           "transaction",
                           "open",
@@ -9580,7 +9682,20 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "marketCode": {
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃；不在這三種時 null",
+                            "enum": [
+                              "sii",
+                              "otc",
+                              "rotc",
+                              null
+                            ],
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "marketType": {
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 marketCode",
                             "type": "string"
                           },
                           "name": {
@@ -9656,6 +9771,7 @@
                           "isinCode",
                           "listedDate",
                           "marketType",
+                          "marketCode",
                           "issueDate",
                           "issuePrice",
                           "dividendRate",

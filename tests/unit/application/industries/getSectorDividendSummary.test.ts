@@ -5,7 +5,7 @@ import type { MetricValueQueryPort } from '@/application/ports/metricValueQuerie
 import { createTestDeps } from '../../../fakes/createTestDeps';
 
 // 2026-09-30 釘住母體規則：興櫃／無類股排除、殖利率只收最新交易日 14 天內、0（沒配息）照算。
-const company = (symbol: string, over: Partial<CompanyNameEntry> = {}): CompanyNameEntry => ({ symbol, companyName: symbol, market: 'TWSE', sectorCode: '24', sectorName: '半導體業', isEmerging: false, ...over });
+const company = (symbol: string, over: Partial<CompanyNameEntry> = {}): CompanyNameEntry => ({ symbol, companyName: symbol, market: 'TWSE', sectorCode: '24', sectorName: '半導體業', isEmerging: false, marketCode: 'sii', ...over });
 
 describe('getSectorDividendSummary', () => {
   test('興櫃與無類股不進母體；舊殖利率不計入、0 照算；成長率照收', async () => {

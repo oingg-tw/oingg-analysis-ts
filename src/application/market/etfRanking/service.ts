@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import type { RawEtfPerformanceRow } from '@/application/ports/etfData';
 import { parseEtfCategory } from '@/domain/market/etfRanking/parseCategory';
@@ -193,6 +194,7 @@ export const calculateEtfRanking = async (query: EtfRankingQuery, deps: EtfRanki
       companyName: row.companyName,
       category: row.category,
       market: categoryDetail?.market ?? null,
+      marketCode: categoryDetail?.market ? toMarketCode(categoryDetail.market) : null,
       assetClass: categoryDetail?.assetClass ?? null,
       isActive: row.isActive,
       belowStatutoryThreshold: row.belowStatutoryThreshold,

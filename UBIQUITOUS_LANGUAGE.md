@@ -268,7 +268,8 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 | — | mops | view 改成 `export.v_<複數>`（例 `market_monthly_revenue` → `v_market_monthly_revenues`） | 待核准 |
 | — | twse、tpex | `source`（市場族群）→ `market`；`financial_report_type` → `data_type`（MOPS 編碼）；`report_date` → `generated_date`；`industry` → `sector_code` 等（見第二節落差欄） | 待核准 |
 | 2026-10-10 | analysis | 對外 API 批次 1（查詢參數 timeframe、西元 fiscalYear／fiscalQuarter，05967082）、2a（15 個 *Percent → *Pct、paidInShares → numberOfSharesIssued，8e3fe418）、2b（profile 的 generatedDate／sectorCode／sectorName／declaredDataType／listingDate／numberOfPreferenceShares，securities-sectors 的 sectorCode／sectorName，875ffaaf）、2c（financial-statement 西元年季與 fiscalPeriodEndDate、歷史與溯源的 timeframe、月營收 announcementDate／sectorName、質押 generatedDate，4cb5c4d6）、3（排序 order，含 GET /metrics 徽章 percentileRank.direction → order，810da900） | 並存中，舊名 2026-10-24 移除 |
-| — | analysis | 市場別 `market`：`TWSE`／`TPEx`＋`isEmerging` → TYPEK。分兩步：先新增 `marketCode`（舊欄位並存 14 天），再改名回 `market`（`marketCode` 並存 14 天） | 已預告業務中台，等回覆 |
+| 2026-10-10 | analysis | 市場別步驟一：10 支端點回應新增 `marketCode`（sii／otc／rotc；興櫃由 isEmerging 併入），特別股清單 `marketType`（中文）→ `marketCode`；ETF 篩選的 market 篩選值兩種編碼都收 | 並存中，舊的 market／isEmerging／marketType 2026-10-24 移除 |
+| 2026-10-24（排定） | analysis | 市場別步驟二：`market` 改用 TYPEK 值，`marketCode` 並存到 2026-11-07 | 待執行 |
 | — | 業務中台、web-nuxt | `basis` → `timeframe`；型錄 `key`／`path` → `metricCode`；`name` → `companyName` 等 | 待排程（跟著 analysis） |
 
 ## 六、縮寫字典（PostgreSQL 63 字元上限用）

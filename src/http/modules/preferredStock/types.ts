@@ -1,3 +1,4 @@
+import { MARKET_CODES } from '@/domain/market/marketCode';
 import { z } from 'zod';
 import type { PreferredStockDataSource, PreferredStockEntry, PreferredStocksResult } from '@/application/preferredStock/types';
 
@@ -13,7 +14,8 @@ export const preferredStockEntrySchema = z.object({
   listedDate: z.string().nullable().meta({
     description: '"YYYY-MM-DD"。官方上市日期；查不到時（上櫃、新掛牌）改用行情裡的第一個交易日。兩者都查不到才是 null',
   }),
-  marketType: z.string(),
+  marketType: z.string().meta({ description: '已退役，2026-10-24 移除，改用 marketCode', deprecated: true }),
+  marketCode: z.enum(MARKET_CODES).nullable().meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃；不在這三種時 null' }),
   issueDate: z.string().nullable(),
   issuePrice: z.number().nullable().meta({ description: '發行價（新台幣元）' }),
   dividendRate: z.number().nullable().meta({ description: '每股固定配息金額（新台幣元），不是百分比——欄位名稱容易誤會' }),

@@ -1,3 +1,4 @@
+import { MARKET_CODES } from '@/domain/market/marketCode';
 import { z } from 'zod';
 import type { CompanyNameEntry } from '@/application/ports/companyProfiles';
 import type { CapitalStockChangeSource, CapitalStockHistoryEntry } from '@/application/ports/capitalStock';
@@ -17,6 +18,7 @@ import type { BookValueBreakdownEntry } from '@/application/companies/bookValueB
 export const companyProfileDetailSchema = z.object({
   symbol: z.string().meta({ description: '公司代號' }),
   market: z.enum(['TWSE', 'TPEx']).meta({ description: '上市（TWSE）或上櫃（TPEx）' }),
+  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
   // 2026-10-01 應 web-nuxt／bff-ts 要求：個股頁拿不到 GET /companies 清單上的 isEmerging，per-symbol 分不出上櫃與興櫃。
   // 刻意加旗標而不是把 market 擴成 'EMERGING'——把 market 當二元值的下游會把未知值默默標錯（bff-ts 實測會落到 TWSE）。
   isEmerging: z.boolean().meta({ description: '興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同' }),
@@ -80,6 +82,7 @@ export const companyNameEntrySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
   market: z.enum(['TWSE', 'TPEx']).meta({ description: '2026-09-19 新增：上市（twse-ts）或上櫃（tpex-ts）' }),
+  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
   sectorCode: z.string().nullable().meta({ description: '2026-09-19 新增：證交所類股代碼（兩碼，跟 GET /industries/securities-sectors 同一套）；掛在非產業代碼（07/91/98/XX）的公司為 null' }),
   sectorName: z.string().nullable().meta({ description: '2026-09-19 新增：類股中文名稱；sectorCode 為 null 或代碼字典尚未載入時為 null' }),
   isEmerging: z.boolean().meta({

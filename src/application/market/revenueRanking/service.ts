@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import type { RawMonthlyRevenueRow } from '@/application/ports/marketLists';
 import type { RevenueRankingQuery, RevenueRankingResult, RevenueRankingRow } from './types';
@@ -96,6 +97,7 @@ export const calculateRevenueRanking = async (query: RevenueRankingQuery, deps: 
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
+    marketCode: toMarketCode(row.market),
     currentMonthRevenue: row.current_month_revenue?.toString() ?? null,
     momChangePct: row.mom_change_percent === null ? null : Number(row.mom_change_percent),
     yoyChangePct: row.yoy_change_percent === null ? null : Number(row.yoy_change_percent),

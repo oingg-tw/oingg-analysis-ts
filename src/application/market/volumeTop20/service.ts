@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import { cumulativeChangePercentKey } from '@/application/ports/priceChange';
 import type { VolumeTop20Result, VolumeTop20Row } from './types';
@@ -86,6 +87,7 @@ export const getVolumeTop20 = async (deps: VolumeTop20Deps): Promise<VolumeTop20
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
+    marketCode: toMarketCode(row.market),
     volume: row.volume.toString(),
     transaction: row.transaction === null ? null : row.transaction.toString(),
     open: toNumber(row.open),

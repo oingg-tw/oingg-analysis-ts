@@ -1,3 +1,4 @@
+import { MARKET_CODES } from '@/domain/market/marketCode';
 import { z } from 'zod';
 
 export const etfRankingMetricSchema = z.enum([
@@ -32,6 +33,7 @@ export const etfRankingRowSchema = z.object({
   companyName: z.string().nullable().meta({ description: '發行的投信公司，不是股票上市公司，不用查 company_profile' }),
   category: z.string().nullable().meta({ description: '原始分類字串，例如「上市ETF_國外成分證券ETF」' }),
   market: z.enum(['TWSE', 'TPEx']).nullable().meta({ description: '從 category 拆出，解析不出來時是 null' }),
+  marketCode: z.enum(MARKET_CODES).nullable().meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）；解析不出來時是 null' }),
   assetClass: z.string().nullable().meta({ description: '從 category 拆出的成分類型，主動式 ETF 沒有這個概念時是 null' }),
   isActive: z.boolean().nullable().meta({ description: '是否為主動式 ETF——直接讀 sitca-ts 的 is_actively_managed 權威欄位，不是猜的' }),
   belowStatutoryThreshold: z.boolean().nullable().meta({ description: '規模是否低於法定下市門檻（下市風險近似警示）' }),

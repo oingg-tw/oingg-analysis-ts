@@ -1,3 +1,4 @@
+import type { MarketCode } from '@/domain/market/marketCode';
 // 2026-09-17 clean architecture 重構 Phase 1：公司基本資料 DTO 的 TypeScript 型別。原本由
 // http/modules/companies/types.ts 的 zod schema 用 z.infer 反推，infrastructure 的
 // companyProfile.ts 反過來 import HTTP 層的型別（依賴反轉 + 循環）。現在 application 擁有這個
@@ -52,6 +53,7 @@ export interface CompanyProfileDetail {
   declaredDataType: '1' | '2' | null; // 交易所申報的財報口徑，改用 MOPS 編碼：'2' 合併、'1' 個別（舊的 financialReportType 方向相反）
   listingDate: string | null; // 上市（櫃）日（舊名 listedDate）
   numberOfPreferenceShares: string | null; // 特別股股數（舊名 preferredStockShares）
+  marketCode: MarketCode; // MOPS TYPEK 市場別（舊的 market＋isEmerging 2026-10-24 移除）
   // 2026-09-22 新增：本服務所有指標對這家公司實際採用的財報口徑（MOPS dataType，'2' 合併／'1' 個別），來自
   // mops-ts 的 export.company_report_availability——有合併報表就永遠用合併，完全沒有才用個別（249 家）。前端要
   // 標示「個別報表」看這個欄位，不要看交易所申報的 financialReportType（兩者對 31 家不一致）。

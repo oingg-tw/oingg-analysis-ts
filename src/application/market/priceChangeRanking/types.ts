@@ -1,3 +1,4 @@
+import { MARKET_CODES } from '@/domain/market/marketCode';
 import { z } from 'zod';
 
 export const priceChangeRankingQuerySchema = z.object({
@@ -10,6 +11,7 @@ export const priceChangeRowSchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
   market: z.enum(['TWSE', 'TPEx']),
+  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
   tradeDate: z.string().meta({ description: '這筆資料採用的交易日——上市/上櫃各自的最新交易日可能不同' }),
   previousTradeDate: z.string(),
   close: z.number(),

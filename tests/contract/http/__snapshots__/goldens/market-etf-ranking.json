@@ -15,6 +15,7 @@
         "fundName": "<string>",
         "isActive": "<boolean>",
         "market": "TWSE",
+        "marketCode": "sii",
         "rank": "<number>",
         "shortName": "<string>",
         "symbol": "<numeric-string>",

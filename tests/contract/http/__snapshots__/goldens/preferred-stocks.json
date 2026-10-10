@@ -23,6 +23,7 @@
         "latestPriceDate": "<date>",
         "liquidationPreference": "<boolean>",
         "listedDate": "<date>",
+        "marketCode": "sii",
         "marketType": "<string>",
         "name": "<string>",
         "nominalDividendRatePct": "<number>",

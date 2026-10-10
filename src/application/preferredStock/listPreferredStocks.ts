@@ -1,3 +1,4 @@
+import { marketTypeToMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import { compareBySortField } from '@/domain/preferredStock/compareBySortField';
 import { solveYieldToCall, resolveYtcPeriods, resolveYtcPeriodsWithoutScheduledDate, type YtcAssumption } from '@/domain/preferredStock/preferredStockYield';
@@ -110,6 +111,7 @@ export const listPreferredStocks = async (query: ListPreferredStocksQuery, deps:
         isinCode: security.isinCode,
         listedDate: security.listedDate?.toISOString().slice(0, 10) ?? null,
         marketType: security.marketType,
+        marketCode: marketTypeToMarketCode(security.marketType),
         issueDate: right?.issueDate.toISOString().slice(0, 10) ?? null,
         issuePrice: right?.issuePrice ?? null,
         dividendRate: right?.dividendRate ?? null,

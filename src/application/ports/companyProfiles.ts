@@ -1,3 +1,4 @@
+import type { MarketCode } from '@/domain/market/marketCode';
 import type { ExchangeCompanyProfileDetail } from '@/application/companies/types';
 
 // 公司/證券基本資料 port（twse-ts/tpex-ts 兩邊的 company_profile + sitca 的 ETF 清單）——GET /companies、
@@ -32,6 +33,8 @@ export interface CompanyNameEntry {
   // 上游（mops-ts/twse-ts/tpex-ts）的「全市場」清單也一律指上市＋上櫃 1,985 家、不含興櫃。
   // 下游拿這個目錄當母體算覆蓋率時，要先扣掉 isEmerging 才會跟上游的數字對得起來。
   isEmerging: boolean;
+  // 2026-10-10 詞彙表官方市場別（MOPS TYPEK），見 domain/market/marketCode.ts。
+  marketCode: MarketCode;
 }
 
 // 普通股/特別股/ETF——web-nuxt 靠這個做導頁判斷，不靠 symbol 格式猜。

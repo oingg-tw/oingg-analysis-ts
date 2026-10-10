@@ -1,3 +1,4 @@
+import { MARKET_CODES } from '@/domain/market/marketCode';
 import { z } from 'zod';
 
 // 2026-09-13 使用者要求拔掉 mom/revenue 排行——月增率波動太大容易受季節性因素干擾、
@@ -19,6 +20,7 @@ export const revenueRankingRowSchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
   market: z.enum(['TWSE', 'TPEx']),
+  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
   currentMonthRevenue: z.string().nullable().meta({ description: 'BigInt 用字串傳遞' }),
   momChangePct: z.number().nullable(),
   yoyChangePct: z.number().nullable(),

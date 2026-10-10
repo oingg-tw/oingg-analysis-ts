@@ -5,7 +5,7 @@ import type { MetricValueQueryPort } from '@/application/ports/metricValueQuerie
 import { createTestDeps } from '../../../fakes/createTestDeps';
 
 // 2026-10-09 類股三支端點：母體排除興櫃、限制季報型非每股類、查無類股 404、sector-summary 欄位 key 用請求字串。
-const company = (symbol: string, over: Partial<CompanyNameEntry> = {}): CompanyNameEntry => ({ symbol, companyName: symbol, market: 'TWSE', sectorCode: '24', sectorName: '半導體業', isEmerging: false, ...over });
+const company = (symbol: string, over: Partial<CompanyNameEntry> = {}): CompanyNameEntry => ({ symbol, companyName: symbol, market: 'TWSE', sectorCode: '24', sectorName: '半導體業', isEmerging: false, marketCode: 'sii', ...over });
 const profiles = {
   listAllCompanyNames: async () => ({ count: 4, entries: [company('A'), company('B'), company('E', { isEmerging: true }), company('X', { sectorCode: '17', sectorName: '金融保險業' })] }),
 } as unknown as CompanyProfilePort;

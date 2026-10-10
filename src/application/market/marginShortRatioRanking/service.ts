@@ -1,3 +1,4 @@
+import { toMarketCode } from '@/domain/market/marketCode';
 import type { AppDeps } from '@/application/deps';
 import type { MarginShortRatioRankingQuery, MarginShortRatioRankingResult, MarginShortRatioRow } from './types';
 
@@ -104,6 +105,7 @@ export const calculateMarginShortRatioRanking = async (query: MarginShortRatioRa
     symbol: row.symbol,
     companyName: companyNames.get(row.symbol) ?? null,
     market: row.market,
+    marketCode: toMarketCode(row.market),
     shortToMarginRatioPct: Math.round(row.ratio * 100) / 100,
     marginTodayBalance: row.marginTodayBalance.toString(),
     shortTodayBalance: row.shortTodayBalance.toString(),
