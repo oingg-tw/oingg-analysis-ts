@@ -203,7 +203,7 @@ export const financialStatementResultSchema = z.object({
   statementType: z.enum(['balanceSheet', 'incomeStatement', 'cashFlowStatement']),
   dataType: z.enum(['1', '2']),
   subsidiaryCompanyId: z.string(),
-  fiscalYear: z.number().int().nullable().meta({ description: '西元年度，例如 2026；查無資料時為 null' }),
+  fiscalYear: z.number().int().nullable().meta({ description: '西元年度，例如 2026；查無這一季的資料時仍回顯要求的季度，完全沒有可用季度時為 null' }),
   fiscalQuarter: z.number().int().nullable().meta({ description: '季別 1-4；查無資料時為 null' }),
   fiscalPeriodEndDate: z.string().nullable().meta({ description: '財報期末日 "YYYY-MM-DD"' }),
   year: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalYear（西元）', deprecated: true }),

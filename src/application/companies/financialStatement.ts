@@ -107,8 +107,9 @@ export const getCompanyFinancialStatement = async (query: GetCompanyFinancialSta
       year: resolvedQuarter.year,
       season: resolvedQuarter.season,
       reportDate: null,
-      fiscalYear: null,
-      fiscalQuarter: null,
+      // 跟舊的 year／season 一樣回顯要求的季度（查無這一季的列，但季度本身是確定的）；業務中台 10/10 抓到一度給 null、新舊不一致。
+      fiscalYear: Number(resolvedQuarter.year) + 1911,
+      fiscalQuarter: Number(resolvedQuarter.season),
       fiscalPeriodEndDate: null,
       found: false,
       statement: null,
