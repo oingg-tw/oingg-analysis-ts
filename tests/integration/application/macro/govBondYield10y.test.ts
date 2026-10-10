@@ -14,7 +14,7 @@ test('getLatestGovBondYield10y: 應該回傳最新一個月的殖利率，跟資
   const [result, latestRows] = await Promise.all([
     getLatestGovBondYield10y(appDeps),
     govExportPrisma.$queryRaw<LatestGovBondYieldRow[]>`
-      SELECT year, month, yield_rate FROM "export"."monthly_gov_bond_yield_10y"
+      SELECT year, month, yield_rate FROM "export"."v_monthly_gov_bond_yields_10y"
       ORDER BY year DESC, month DESC LIMIT 1
     `,
   ]);

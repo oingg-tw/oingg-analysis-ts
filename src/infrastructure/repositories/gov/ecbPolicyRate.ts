@@ -15,5 +15,5 @@ export interface RawEcbPolicyRateRow {
 export const listAllEcbPolicyRatesAsc = (): Promise<RawEcbPolicyRateRow[]> =>
   govExportPrisma.$queryRaw<RawEcbPolicyRateRow[]>`
     SELECT effective_date, deposit_facility_rate, main_refinancing_rate, marginal_lending_rate, main_refinancing_is_minimum_bid
-    FROM "export"."ecb_policy_rate" ORDER BY effective_date ASC
+    FROM "export"."v_ecb_policy_rates" ORDER BY effective_date ASC
   `;

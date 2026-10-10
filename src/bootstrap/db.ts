@@ -27,7 +27,7 @@ const timed = async (label: string, connect: () => Promise<void>): Promise<void>
 const DB_PROBES: [name: string, probe: () => Promise<unknown>][] = [
   ['analysis', () => analysisPrisma.$queryRaw`SELECT 1`],
   ['mops', () => mopsExportPrisma.$queryRaw`SELECT 1 FROM "export"."quarterly_income_statement_xbrl" WHERE false`],
-  ['gov', () => govExportPrisma.$queryRaw`SELECT 1 FROM "export"."quarterly_gdp" WHERE false`],
+  ['gov', () => govExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_quarterly_gdps" WHERE false`],
   ['tpex', () => tpexExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
   ['twse', () => twseExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
   ['sitca', () => sitcaExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_etf_monthly_profiles" WHERE false`],

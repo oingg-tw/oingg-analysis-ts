@@ -12,19 +12,19 @@ let base1968: Promise<number | null> | null = null;
 export const govPriceLevel: PriceLevelPort = {
   getUsdTwdRateAsOf: async (asOf) => {
     const rows = await govExportPrisma.$queryRaw<{ interbank_closing_rate: unknown }[]>`
-      SELECT interbank_closing_rate FROM "export"."daily_usd_twd_rate"
+      SELECT interbank_closing_rate FROM "export"."v_daily_usd_twd_rates"
       WHERE trade_date <= ${asOf} AND interbank_closing_rate IS NOT NULL
       ORDER BY trade_date DESC LIMIT 1`;
     return num(rows[0]?.interbank_closing_rate);
   },
   getUsGnpDeflator: async (year, quarter) => {
     const rows = await govExportPrisma.$queryRaw<{ index_value: unknown }[]>`
-      SELECT index_value FROM "export"."quarterly_us_gnp_deflator" WHERE year = ${year} AND quarter = ${quarter}`;
+      SELECT index_value FROM "export"."v_quarterly_us_gnp_deflators" WHERE year = ${year} AND quarter = ${quarter}`;
     return num(rows[0]?.index_value);
   },
   getUsGnpDeflatorBase1968: () => {
     base1968 ??= govExportPrisma
-      .$queryRaw<{ avg: unknown }[]>`SELECT avg(index_value) AS avg FROM "export"."quarterly_us_gnp_deflator" WHERE year = 1968`
+      .$queryRaw<{ avg: unknown }[]>`SELECT avg(index_value) AS avg FROM "export"."v_quarterly_us_gnp_deflators" WHERE year = 1968`
       .then((rows) => num(rows[0]?.avg))
       .catch((error: unknown) => {
         base1968 = null;

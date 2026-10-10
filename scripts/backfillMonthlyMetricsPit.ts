@@ -19,6 +19,8 @@ import { disconnectAllDbs } from '../src/bootstrap/db';
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 const MONTHS = Number(process.env.MONTHS ?? 132);
 const LABELS = process.env.LABELS ? process.env.LABELS.split(',').map((l) => l.trim()) : Object.keys(MONTHLY_METRIC_PITS);
+// 2026-10-11 只重跑指定公司（逗號分隔），例如前一輪失敗的那批；不給就跑全部。
+const ONLY_SYMBOLS = process.env.SYMBOLS ? new Set(process.env.SYMBOLS.split(",").map((s) => s.trim())) : null;
 const pits = Object.entries(MONTHLY_METRIC_PITS).filter(([code]) => LABELS.includes(code));
 
 // 最近 N 個月的 "YYYY-MM"（由舊到新）。以「今天」為界往回推——實際算不出來的月份 compute 會回
@@ -36,7 +38,7 @@ const recentMonths = (n: number): string[] => {
 void (async () => {
   memoizeMonthlyRevenueForBackfill();
   for (const [code] of pits) await upsertMetricDefinition(metricDefinitionRegistry[code]!);
-  const symbols = (await backfillUniverse.listSymbolsWithMonthlyRevenue()).map((r) => r.symbol).slice(0, Number(process.env.SYMBOL_LIMIT ?? Infinity));
+  const symbols = (await backfillUniverse.listSymbolsWithMonthlyRevenue()).map((r) => r.symbol).filter((s) => !ONLY_SYMBOLS || ONLY_SYMBOLS.has(s)).slice(0, Number(process.env.SYMBOL_LIMIT ?? Infinity));
   const months = recentMonths(MONTHS);
   console.log(`[monthly-backfill] 指標 ${pits.map(([c]) => c).join(",")}、公司 ${symbols.length} 家 × 月份 ${months.length} 個（${months[0]} ~ ${months.at(-1)}），併發 ${CONCURRENCY}`);
 

@@ -12,5 +12,5 @@ export interface RawUsPolicyRateRow {
 // 全部歷史，依生效日升冪（application 要跟前一列相減算調整幅度）。
 export const listAllUsPolicyRatesAsc = (): Promise<RawUsPolicyRateRow[]> =>
   govExportPrisma.$queryRaw<RawUsPolicyRateRow[]>`
-    SELECT effective_date, target_upper, target_lower FROM "export"."us_policy_rate" ORDER BY effective_date ASC
+    SELECT effective_date, target_upper, target_lower FROM "export"."v_us_policy_rates" ORDER BY effective_date ASC
   `;

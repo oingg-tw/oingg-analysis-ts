@@ -14,5 +14,5 @@ export interface RawCbcPolicyRateRow {
 export const listAllCbcPolicyRatesAsc = (): Promise<RawCbcPolicyRateRow[]> =>
   govExportPrisma.$queryRaw<RawCbcPolicyRateRow[]>`
     SELECT effective_date, discount_rate, collateral_accommodation_rate, unsecured_accommodation_rate
-    FROM "export"."cbc_policy_rate" ORDER BY effective_date ASC
+    FROM "export"."v_cbc_policy_rates" ORDER BY effective_date ASC
   `;
