@@ -2502,11 +2502,6 @@
                     "entries": {
                       "items": {
                         "properties": {
-                          "announcementDate": {
-                            "description": "公告日 \"YYYY-MM-DD\"；2021-09 以前（mops 補的月份）與上櫃回填的歷史列為 null",
-                            "nullable": true,
-                            "type": "string"
-                          },
                           "cumulativeChangePct": {
                             "description": "累計營收年增率（%），來源直接算好的欄位，本服務原樣透傳",
                             "nullable": true,
@@ -2524,6 +2519,11 @@
                           },
                           "currentMonthRevenue": {
                             "description": "當月營收（新台幣千元），bigint 序列化成字串",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "generatedDate": {
+                            "description": "出表日 \"YYYY-MM-DD\"（交易所 OpenAPI 產生這份月營收資料的日期，不是公司公告日）；mops 補的月份與上櫃回填的歷史列為 null",
                             "nullable": true,
                             "type": "string"
                           },
@@ -2549,7 +2549,7 @@
                           },
                           "reportDate": {
                             "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 announcementDate",
+                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
                             "nullable": true,
                             "type": "string"
                           },
@@ -2570,7 +2570,7 @@
                         },
                         "required": [
                           "yearMonth",
-                          "announcementDate",
+                          "generatedDate",
                           "sectorName",
                           "reportDate",
                           "industry",
@@ -8417,7 +8417,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "generatedDate": {
+                            "description": "出表日 \"YYYY-MM-DD\"（交易所產生公告資料的日期，通常是公告日隔天）",
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "reportDate": {
+                            "deprecated": true,
+                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
                             "nullable": true,
                             "type": "string"
                           },
@@ -8434,6 +8441,7 @@
                           "companyName",
                           "announcementDate",
                           "announcementTime",
+                          "generatedDate",
                           "reportDate",
                           "subject",
                           "clause",

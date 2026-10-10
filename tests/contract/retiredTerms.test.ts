@@ -8,7 +8,7 @@ import { RETIRED_RESPONSE_KEYS_REMOVED_ON } from '@/http/route';
 // - 並存期內：退役名稱只能以 deprecated 的參數或欄位出現（新名稱同時存在）。
 // - 過了移除日：退役名稱一律不能出現——提醒該刪舊 key 了（http/route.ts 的 withRetiredKeys、各 schema 的 deprecated 欄位）。
 // 新增退役詞時，跟詞彙表第二節的「退役的同義詞」欄一起改。
-const RETIRED_NAMES = new Set(['basis', 'token', 'periodType', 'season', 'direction', 'sortOrder', 'paidInShares', 'industryName', 'financialReportType', 'rocFiscalYear', 'metricKey']);
+const RETIRED_NAMES = new Set(['basis', 'token', 'periodType', 'season', 'direction', 'sortOrder', 'paidInShares', 'industryName', 'financialReportType', 'rocFiscalYear', 'metricKey', 'reportDate']);
 // fieldKey 不在清單：舊 filterCatalog 的 metricKey.fieldKey 已整套刪除，現在 fieldKey 只剩溯源表項目一種意思（XBRL account_code），
 // 詞彙表第八節有寫。業務中台 screener 裡殘留的 metricKey／fieldKey 是他們那邊的改名項目。
 const isRetired = (name: string): boolean => RETIRED_NAMES.has(name) || name.endsWith('Percent');

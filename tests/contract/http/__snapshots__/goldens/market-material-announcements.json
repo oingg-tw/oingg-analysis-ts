@@ -9,6 +9,7 @@
         "companyName": "<string>",
         "description": "<string>",
         "factDate": "<date>",
+        "generatedDate": "<date>",
         "reportDate": "<date>",
         "subject": "<string>",
         "symbol": "<numeric-string>"

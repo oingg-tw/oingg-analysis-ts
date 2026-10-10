@@ -183,9 +183,9 @@ export const bookValueBreakdownEntrySchema = z.object({
 
 export const monthlyRevenueEntrySchema = z.object({
   yearMonth: z.string().meta({ description: '"YYYY-MM"' }),
-  announcementDate: z.string().nullable().meta({ description: '公告日 "YYYY-MM-DD"；2021-09 以前（mops 補的月份）與上櫃回填的歷史列為 null' }),
+  generatedDate: z.string().nullable().meta({ description: '出表日 "YYYY-MM-DD"（交易所 OpenAPI 產生這份月營收資料的日期，不是公司公告日）；mops 補的月份與上櫃回填的歷史列為 null' }),
   sectorName: z.string().nullable().meta({ description: '類股名稱（來源原樣）；mops 補的月份為 null' }),
-  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 announcementDate', deprecated: true }),
+  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 generatedDate', deprecated: true }),
   industry: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 sectorName', deprecated: true }),
   currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
   lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),

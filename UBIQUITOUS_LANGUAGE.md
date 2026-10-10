@@ -140,8 +140,8 @@
 | 月份 | `year_month`（DATE，月初那天） | `yearMonth`（"YYYY-MM"） | 月份 | TEXT "YYYYMM"、year＋month 兩欄 | sitca 的 `year_month` 是 TEXT（sitca）；gov 拆成 `year`／`month`（gov）。月頻指標的座標暫用 `fiscalYear`＋`fiscalMonth`（analysis，待定） |
 | 期別 | — | `timeframe`：`Q`／`YTD`／`TTM`／`FY`／`N/A`、`<lookbackRange>_<samplingInterval>`、`EOD`、`M` | 期別：單季／累計／近四季／年度 | basis、periodType、period、token | analysis 的 roe、roa、dupont-history、metric-provenance 用 `periodType`（analysis）。業務中台對外叫 `basis`，型錄叫 `period`（業務中台）。web-nuxt 送 `basis`，期別標籤有 4 份副本、缺 M 和 YTD（web-nuxt） |
 | 期末日 | `fiscal_period_end_date` | `fiscalPeriodEndDate` | 期末日 | mops 的 report_date、period_end_date | mops 長表 view 已經是 `fiscal_period_end_date`（`report_date AS`），寬表和底表還叫 `report_date`（mops） |
-| 公告日 | `announcement_date` | `announcementDate` | 公告日 | announce_date；月營收的 report_date | twse、tpex 處置股票的 `announce_date`（twse、tpex）。analysis 月營收的 `reportDate`、`announceDate`（analysis） |
-| 出表日 | `generated_date` | `generatedDate` | 出表日 | twse、tpex 的 report_date | twse、tpex 的 company_profile、fs、monthly_revenue、pledge 都用 `report_date`（twse、tpex）。twse 回填的月營收自行填「次月 10 日」，應改成真實公告日，不知道就 null（twse）。analysis 質押比例的 `reportDate`（analysis） |
+| 公告日 | `announcement_date`：公司或主管機關**公告**的日期 | `announcementDate` | 公告日 | announce_date | twse、tpex 處置股票的 `announce_date`（twse、tpex）。analysis 內部的 `announceDate`（analysis） |
+| 出表日 | `generated_date`：交易所 OpenAPI **產生**這份資料的日期，晚於公告日（月營收：2330 2026-08 出表 9/17、實際 9/10 公告；重大訊息：通常是公告日隔天）。**不能拿來當可知悉日** | `generatedDate` | 出表日 | twse、tpex 的 report_date（含月營收、重大訊息、質押、公司基本資料） | twse、tpex 的 company_profile、fs、monthly_revenue、pledge 都用 `report_date`（twse、tpex）。twse 回填的月營收自行填「次月 10 日」，應改成真實公告日，不知道就 null（twse）。analysis 質押比例的 `reportDate`（analysis） |
 | 可知悉日 | — | `knowledgeDate`：analysis 認定這筆資料可以被知道的日期；查無公告日、改用期末日頂替時 `knowledgeDateIsFallback=true` | 可知悉日 | — | — |
 | 交易日 | `trade_date`：**只能是真實（台灣）交易日**；境外基金的淨值評價日是國外市場的日子，叫 `nav_date` | `tradeDate` | 交易日 | date | twse `changed_trading_methods.trade_date` 存的是觀測日，應改 `observed_date`（twse）。sitca nav 叫 `date`（sitca） |
 | 上市日 | `listing_date` | `listingDate` | 上市（櫃）日 | listed_date | twse、tpex 用 `listed_date`（twse、tpex） |

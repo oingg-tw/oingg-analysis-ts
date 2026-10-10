@@ -3,12 +3,12 @@
   "body": {
     "entries": [
       {
-        "announcementDate": "<date>",
         "cumulativeChangePct": "<number>",
         "cumulativeChangePercent": "<number>",
         "cumulativeLastYearRevenue": "<numeric-string>",
         "cumulativeRevenue": "<numeric-string>",
         "currentMonthRevenue": "<numeric-string>",
+        "generatedDate": "<date>",
         "industry": "<string>",
         "lastYearSameMonthRevenue": "<numeric-string>",
         "momChangePct": "<number>",

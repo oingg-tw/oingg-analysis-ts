@@ -23,6 +23,7 @@ export const listMaterialAnnouncements = async (query: MaterialAnnouncementsQuer
     companyName: companyNames.get(row.symbol) ?? null,
     announcementDate: row.announcement_date.toISOString().slice(0, 10),
     announcementTime: row.announcement_time,
+    generatedDate: row.report_date ? row.report_date.toISOString().slice(0, 10) : null, // 2026-10-11 詞彙表：出表日
     reportDate: row.report_date ? row.report_date.toISOString().slice(0, 10) : null,
     subject: row.subject,
     clause: row.clause,
