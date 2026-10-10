@@ -1,160 +1,114 @@
-# Ubiquitous Language：oingg 生態系跨服務命名對照
+# Ubiquitous Language：oingg 生態系官方詞彙表
 
-這份文件記錄 oingg 生態系（analysis-ts + 上游來源服務 twse-ts/tpex-ts/mops-ts/gov-ts/
-sitca-ts）之間已經做過的命名對齊決策，以及 analysis-ts 內部多套指標識別系統之間的對照。
-`prisma/analysis/schema.prisma`、`prisma/govExport/schema.prisma`、
-`prisma/sitcaExport/schema.prisma`、`prisma/tpexExport/schema.prisma` 這幾份 schema
-裡有多處註解引用這份文件——**這是一份持續維護的文件，不是一次性報告**：之後任何一次
-跨服務命名對齊、或 analysis-ts 內部指標識別系統的新增/調整，都應該回來補一筆到這裡，並
-在改動的程式碼/schema 註解裡引用本檔案，不要讓「見 UBIQUITOUS_LANGUAGE.md」變成新的
-斷link。
+**這是 oingg 生態系唯一的官方詞彙表（single source of truth）。** 涵蓋範圍：
+- 上游來源服務：twse-ts、tpex-ts、mops-ts、gov-ts、sitca-ts。
+- 中游：analysis-ts。
+- 下游：業務中台（oingg-business-ts）、web-nuxt。
 
-放在 repo 根目錄（不是 `docs/`）是刻意的——`docs/` 是隨手筆記，內容可能隨時被清掉，這份
-文件是跨服務都在引用的參考資料，需要更高的持久性保證。**2026-09-07 印證過這個判斷**：
-`docs/` 底下兩份規格草案（`analysis-ts-spec.md`/`analysis-ts-spec-v0.2.md`）因為描述的
-「現況」跟「目標架構」都已經是過去式（point-in-time 架構已經全部落地、v0.2 提案裡的
-45 張舊表已經砍到剩 3 張），直接刪除；同一批清理把外部命名慣例研究資料
-[`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md)（CRSP/Compustat/
-供應商 mnemonic 對照，用來輔助命名決策的參考資料，不是本文件這種「已經做過的決策紀錄」）
-從 `docs/` 移到根目錄一起正式進版控，理由跟這份文件一樣：這是會被重複引用的參考資料，
-不該放在隨時可能被清掉的 `docs/`。**2026-09-08 已完成第一次整合**：下方「〇、與外部
-研究報告的落地檢核」逐節核對過建議報告的內容跟本專案實際程式碼的對應關係，不再是兩份
-互不相關的文件——之後建議報告如果有新增章節，或本專案新增命名決策時發現跟報告建議
-衝突/一致，都應該回來更新這個檢核表，不要讓它變成又一份一次性快照。
+2026-10-10 使用者指定由 analysis-ts 主導，全面改名。各服務沒有共用文件的機制，所以其他 repo 的 CLAUDE.md 用絕對路徑
+`C:\Users\Chuia\Documents\oingg-analysis-ts\UBIQUITOUS_LANGUAGE.md` 指向這裡，**不要複製一份**。複製的副本一定會漂移，
+`oingg-analysis-ts-twse\UBIQUITOUS_LANGUAGE.md` 就是例子。
 
-**⚠️ 已知重疊，尚未整併**：oingg-conductor-ts 那邊也維護一份涵蓋範圍幾乎一樣的跨服務命名
-決策紀錄（2026-09-06 建立，含這裡列的四項對齊決策 + 完整決策過程/dispatch 狀態），目前
-放在使用者的 Obsidian vault 裡，因為 vault 正在重整，還沒有穩定的路徑可以在這裡寫死引用
-——之後 vault 位置穩定下來，應該回來這裡補上交叉參照，並且明確分工：conductor 那份是
-「跨服務決策的完整過程紀錄」，這份是「analysis-ts 視角、給程式碼裡的 schema 註解引用」的
-精簡版，避免兩份各自漂移出不一致的內容。
+放在 repo 根目錄、不放 `docs/`：`docs/` 是隨手筆記，可能被清掉，這份是跨服務引用的參考資料。conductor 的舊版跨服務詞彙表
+（`docs/1_extracted/ubiquitous-language-glossary.md`）2026-09-06 在 vault 重整時被刪（commit `53a1af2`），
+內容已併入下方第二節與第五節。
 
-## 〇、與外部研究報告（建議報告.md）的落地檢核（2026-09-08 新增）
+## 一、治理
 
-[`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md) 是 CRSP/
-Compustat/供應商 mnemonic 的外部研究資料，本身不是決策——這裡逐節核對報告的建議跟
-analysis-ts 實際程式碼現況的對應關係，區分「已經對齊」「刻意不適用」「真正的落差」
-三種情況，避免報告內容停在「參考資料」就沒人真的核對過。
+- **誰定詞**：analysis-ts 維護這份文件。各服務發現新的命名落差，或要新增跨服務概念，就 SendMessage 給 analysis-ts，由它補進來。
+  conductor 在跨服務稽核時找出新落差，也一樣回報到這裡。
+- **定詞優先順序**（2026-10-10 使用者：「要極力以 XBRL 的名稱為主」）：
+  1. **XBRL 元素名稱**，轉成 snake_case 的規則同 mops `account_code`（`ProfitLossAttributableToOwnersOfParent` → `profit_loss_attributable_to_owners_of_parent`）。
+     - 同一概念在不同產業的元素名稱不同時（例：普通股股本，一般業 `OrdinaryShare`、金控 `CommonStock`），**優先用 ifrs-full 的 line item 元素**，不分產業；ifrs-full 沒有才用一般業（ci）的 tifrs 元素。其他產業的元素名稱列在對照欄。
+     - 查證來源：mops-ts 的 `scripts/data/taxonomy/<版本>/*.json`（`concepts`）。每個標成 XBRL 的名稱都要查得到原元素；
+       TW 分類標準沒有、照 IFRS 構詞的要標「借用 IFRS 構詞」。2026-10-10 由 mops-ts 逐列核對過（四個版本 × 六個產業入口）。
+  2. XBRL 沒有的概念，才用主管機關的官方代碼（MOPS TYPEK、MOPS `data_type`、REPORT_ID）。
+  3. 以上都沒有，才用外部研究報告的慣例或生態系既有名稱。
+  - **例外**：月營收維持 `revenue` 字根（使用者 10/10；月營收公告不是 XBRL）。剛好跟營收的元素 `ifrs-full:Revenue` 同字根。
+  - **中文**：程式裡的名稱（DB 欄位、API key）照 XBRL；使用者看到的中文照券商軟體習慣（例「稅後淨利」），下表另列 XBRL 中文標籤。
+  - **PostgreSQL 63 字元上限**：元素名放不下時，照第六節的**縮寫字典**縮，對照表也在第六節（使用者 10/10：人工縮寫＋對照表，不用截斷加雜湊）。
+    只有超過 63 字元才縮，而且一律照字典，所以任何人縮出來都一樣。
+- **其他原則**（沿用 conductor〈跨服務命名裁定原則〉）：
+  1. 語意不確定就先抽樣查實際資料驗證，不憑「聽起來比較精確」決定。
+  2. 名稱一樣但分類系統不同時，不硬併成一個名字，改成在名稱上就能分辨。
+  3. 一個名字只能有一種意思（同名不同義是最常造成靜默錯誤的形狀）。
+- **大小寫**：資料庫用 snake_case，API 的 JSON 用 camelCase，兩者是同一個詞的兩種寫法，不另外取名。
+  指標代碼（`metricCode`）有公認縮寫就用縮寫（`roe`、`eps`），沒有就用完整 camelCase，禁止自創縮寫。
+- **使用者可見的指標名稱**（`name`）只在 analysis-ts 維護，web-nuxt 直接顯示，不另存一份（見 `docs/api-conventions.md`）。
+- **改名程序**（2026-10-10 使用者核准）：
+  1. **上游 view**：view 先多輸出新欄名，舊欄名保留 → 通知 analysis-ts → analysis-ts 改讀新欄名並驗證新舊值逐列相同 → 14 天後上游移除舊欄名。
+  2. **analysis-ts 對外 API**：照 `docs/api-conventions.md`，新舊並存 14 天、附 openapi diff，再移除舊 key。
+  3. **值的編碼變了**（例如市場別、財報口徑代碼）：新欄位用新編碼，舊欄位維持舊編碼直到移除；**不在同一個欄位裡換編碼**。
+  4. **各服務的改動要該服務的使用者親自核准**：轉述的核准不算。
+  5. 全部先上 DEV；PRD 等使用者指示。
+  6. **不改名的**：
+     - metricCode：業務中台的使用者資料會被連帶刪除，要改就走 metricCode 改名程序。
+     - GCP 專案 ID：GCP 不允許改名。
+- **防退化**（第四階段加上）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
 
-| 報告章節 | 建議 | 本專案現況 | 判定 |
+## 二、官方用詞表
+
+「落差」欄記錄還沒改完的地方和負責的服務，改完就移到第五節的改名追蹤表。
+
+### 二之一、識別與分類
+
+| 概念 | 官方 DB 欄位／值 | 官方 API key／值 | 中文 | 退役的同義詞 | 落差（負責服務） |
+|---|---|---|---|---|---|
+| 證券代號 | `symbol`＝證券本身（特別股 `2881A` 有自己的 symbol）；母公司用 `company_symbol` | `symbol` | 代號 | stock_code、security_code、code、公司代號 | mops 特別股表 `symbol` 存的是母公司，特別股本身放在 `preferred_stock_code`（mops）；twse `v_fs_*` 還輸出中文欄名 `"公司代號"`（twse） |
+| 市場別 | `market` ∈ `sii` 上市／`otc` 上櫃／`rotc` 興櫃（MOPS TYPEK，唯一兩個交易所共用的官方代碼，mops 實測三種都有）；公開發行暫定 `pub`（mops 資料裡沒有，待查證 MOPS 代碼） | `market` 同值域 | 上市／上櫃／興櫃／公開發行 | TWSE／TPEx＋isEmerging、L／X／O／U、中文「上市」、拿 `source` 表示市場 | twse、tpex 用 `source` 表示市場族群；`'COMPANY_PROFILE'` 在 twse 指上市、在 tpex 指上櫃（twse、tpex）。fs 的 `market` 是 L／X／O／U（twse、tpex）。analysis API 是 `'TWSE'\|'TPEx'`＋`isEmerging`（analysis）。業務中台在缺值時預設 TWSE（業務中台） |
+| 資料出處 | `source`：**只**代表這一列來自哪份報表或哪種推導（例：`TPEX_T187AP05`、`MOPS_T21SC03`、`document`、`comparative`） | `source` | 出處 | 拿 `source` 表示市場族群 | 同上一列（twse、tpex） |
+| 類股 | `sector_code`（兩碼證交所產業類別）／`sector_name` | `sectorCode`／`sectorName` | 類股 | industry、industry_code（指類股時）、industry_name、industry_category、類股字典端點的 `{code,name}` | twse、tpex 叫 `industry`／`industry_name`；月營收的 `industry` 存的是名稱（twse、tpex）。mops 叫 `industry_category`（mops）。analysis profile 的 `industry`／`industryName` 上櫃一律 null（analysis）。同一代碼名稱不一致：14、16、17、20、33（tpex 對齊 twse） |
+| 報表格式業別 | `statement_format`（`ci`／`bd`／`fh`／`ins`／`basi`／`mim`），**不是**類股 | — | 報表格式 | industry_type | twse、tpex 的 fs 叫 `industry_type`（twse、tpex） |
+| 公司名稱 | `company_name` | `companyName` | 公司名稱 | 拿 `name`／`issuerName` 表示公司名稱 | 業務中台把 `companyName` 轉成 `name`；ETF 那處轉成 `issuerName`，要先確認是不是發行投信（業務中台） |
+| 基金統編 | `fund_tax_id` | `fundTaxId` | 基金統編 | fund_id；拿 fund_code 表示統編 | sitca fundclear 的 `fund_code` 是統編、gov `fund_code` 是基金代號、tdcc `fund_code` 是境外基金代碼，三義（sitca、gov）。投信代號 `member_code`／`company_code` 是否同一概念待驗證 |
+| 服務名稱 | repo `oingg-business-ts`；環境變數 `BUSINESS_API_KEY` | — | **業務中台**；web-nuxt 的 Nitro 叫「web-nuxt 伺服器層」 | BFF、bff、應用後端 | analysis 的 `BFF_API_KEY`、`bffAuth.ts`（analysis）；業務中台的環境變數與 Cloud Run 服務名（業務中台）；web-nuxt 的 `/api/bff`、`bffBase`，以及把 Nitro 叫 BFF（web-nuxt）；conductor vault 的「應用後端」（conductor） |
+
+### 二之二、期間與日期
+
+| 概念 | 官方 DB 欄位／值 | 官方 API key／值 | 中文 | 退役的同義詞 | 落差（負責服務） |
+|---|---|---|---|---|---|
+| 年度 | 西元：`year`／`fiscal_year`；**民國一律叫 `roc_year`** | `fiscalYear`（西元，見 api-conventions） | 年度 | 民國年也叫 year、rocFiscalYear | mops xbrl 各表、`fiscal_year` 存民國；`capital_stock_history.license_change_year` 是民國，但同表 `effective_year` 是西元（mops）。twse fs 輸出中文欄名 `"年度"`（twse）。analysis 的 financial-statement、piotroski、metric-provenance 用民國 `year`；dividend-history 有 `rocFiscalYear`（analysis） |
+| 季別 | `quarter`＝**單季**；年初累計放在 `cumulative_*` 表 | `fiscalQuarter`；FY 那一列固定是 4 | 單季／累計 | season；累計也叫 quarter | twse、tpex 的 fs 沒標明是單季還是累計（twse、tpex，待驗證）。analysis financial-statement 回 `season`（analysis）。業務中台型別寫 FY 列的 fiscalQuarter 是 null（業務中台） |
+| 月份 | `year_month`（DATE，月初那天） | `yearMonth`（"YYYY-MM"） | 月份 | TEXT "YYYYMM"、year＋month 兩欄 | sitca 的 `year_month` 是 TEXT（sitca）；gov 拆成 `year`／`month`（gov）。月頻指標的座標暫用 `fiscalYear`＋`fiscalMonth`（analysis，待定） |
+| 期別 | — | `timeframe`：`Q`／`YTD`／`TTM`／`FY`／`N/A`、`<lookbackRange>_<samplingInterval>`、`EOD`、`M` | 期別：單季／累計／近四季／年度 | basis、periodType、period、token | analysis 的 roe、roa、dupont-history、metric-provenance 用 `periodType`（analysis）。業務中台對外叫 `basis`，型錄叫 `period`（業務中台）。web-nuxt 送 `basis`，期別標籤有 4 份副本、缺 M 和 YTD（web-nuxt） |
+| 期末日 | `fiscal_period_end_date` | `fiscalPeriodEndDate` | 期末日 | mops 的 report_date、period_end_date | mops 長表 view 已經是 `fiscal_period_end_date`（`report_date AS`），寬表和底表還叫 `report_date`（mops） |
+| 公告日 | `announcement_date` | `announcementDate` | 公告日 | announce_date；月營收的 report_date | twse、tpex 處置股票的 `announce_date`（twse、tpex）。analysis 月營收的 `reportDate`、`announceDate`（analysis） |
+| 出表日 | `generated_date` | `generatedDate` | 出表日 | twse、tpex 的 report_date | twse、tpex 的 company_profile、fs、monthly_revenue、pledge 都用 `report_date`（twse、tpex）。twse 回填的月營收自行填「次月 10 日」，應改成真實公告日，不知道就 null（twse）。analysis 質押比例的 `reportDate`（analysis） |
+| 可知悉日 | — | `knowledgeDate`：analysis 認定這筆資料可以被知道的日期；查無公告日、改用期末日頂替時 `knowledgeDateIsFallback=true` | 可知悉日 | — | — |
+| 交易日 | `trade_date`：**只能是真實交易日** | `tradeDate` | 交易日 | date | twse `changed_trading_methods.trade_date` 存的是觀測日，應改 `observed_date`（twse）。sitca nav 叫 `date`（sitca） |
+| 上市日 | `listing_date` | `listingDate` | 上市（櫃）日 | listed_date | twse、tpex 用 `listed_date`（twse、tpex） |
+| 除權息日 | `ex_dividend_date`／`ex_rights_date` | `exDividendDate`／`exRightsDate` | 除息日／除權日 | ex_date＋ex_type、ex_right_date | twse 用 `ex_date`＋`ex_type`、tpex 用 `ex_right_date`（twse、tpex） |
+
+### 二之三、財報與數字
+
+| 概念 | 官方 DB 欄位／值 | 官方 API key／值 | 中文 | 退役的同義詞 | 落差（負責服務） |
+|---|---|---|---|---|---|
+| 財報口徑 | `data_type`：`'2'` 合併（MOPS REPORT_ID `C`、分類標準入口 `*-cr`）、`'1'` 個別（REPORT_ID `A`、入口 `*-ir`：**沒有子公司**的公司） | `dataType`；交易所申報的口徑叫 `declaredDataType`，用同一套編碼 | 合併／個別。**個體**財務報告（有子公司的公司另外申報的母公司報表）是第三種，mops 從沒抓過，生態系目前沒有這種資料（mops-ts 10/10 實測） | financial_report_type（交易所 '1'＝合併，方向**相反**）、report_type（中文）、financialReportType；拿「個體」稱呼 `'1'` | twse、tpex 的 `financial_report_type`（twse、tpex）。mops `company_profile.report_type` 是中文（mops）。analysis API 的 `financialReportType`（analysis）。業務中台註解混用個體與個別（業務中台）。英文 consolidated／individual 是推論，分類標準檔裡沒看到完整字樣 |
+| 已發行股數 | `number_of_shares_issued`：股本登記的實收股數，**含特別股與庫藏股**（**借用 IFRS 構詞**：ifrs-full:NumberOfSharesIssued 不在 TW 分類標準，mops 實測四版本六入口都沒有） | `numberOfSharesIssued` | 已發行股數 | paid_in_shares、issued_shares、paidInShares | mops `capital_stock_history.paid_in_shares`（t05st05 登記事件當時的數字，兩次登記之間不累積員工認股、可轉債轉換；面額欄過時時會連帶出錯，例 3093、4763、7780，**不要拿來算每股數字**）（mops）。tpex `issued_shares` 不含特別股，同名不同義（tpex）。analysis API 的 `paidInShares`，說明誤寫成「流通股數」（analysis） |
+| 普通股股數 | `number_of_ordinary_shares`（借用 IFRS 構詞） | `numberOfOrdinaryShares` | 普通股股數 | common_stock_shares | mops `company_profile.common_stock_shares`（t05st03 抓取當下的快照，只有普通股）（mops） |
+| 流通股數 | `number_of_shares_outstanding`（借用 IFRS 構詞：ifrs-full:NumberOfSharesOutstanding 不在 TW 分類標準）＝已發行股數 − 特別股股數 − 庫藏股股數（第三之一節） | `numberOfSharesOutstanding` | 流通股數 | outstandingCommonShares | 指標 `dependsOn` 與 port 名稱 `OutstandingCommonSharesPort`（analysis） |
+| 特別股 | 股本：`preference_share`（ifrs-full 沒有 line item → 一般業 tifrs-bsci-ci:PreferenceShare；金控是 tifrs-bsci-fh:PreferredStock，銀行沒有拆）；股數：`number_of_preference_shares`（分類標準沒有股數元素，借用 IFRS 構詞） | 同名 camelCase | 特別股 | preferred_stock、special_stock_shares | mops `company_profile.special_stock_shares`（mops） |
+| 普通股股本 | `ordinary_share`（ifrs-full 沒有 line item → 一般業 tifrs-bsci-ci:OrdinaryShare；金控是 CommonStock，銀行只有 IssuedCapital 合計） | — | 普通股股本 | common_stock | — |
+| 庫藏股股數 | 元素 tifrs-bsci-ci:NumberOfSharesInEntityHeldByEntityAndByItsSubsidiaries（銀行是 NumberOfTreasuryShareAcquiredByTheCompanyAndSubsidiariesUnitShare）；snake_case 有 65 字元超過上限，欄名照第六節縮寫字典 | — | 庫藏股股數 | — | mops 現名 `number_of_shares_held_by_entity_and_subsidiaries` 是人工縮的（mops，改照字典） |
+| 營收 | `revenue`（ifrs-full:Revenue；tifrs 的 OperatingRevenue 是沒有 GL 代號的標題節點，不存數字） | `revenue` | 營收（＝營業收入） | operating_revenue | — |
+| 月營收 | `current_month_revenue`、`prev_month_revenue`、`last_year_same_month_revenue`、`cumulative_revenue`、`cumulative_last_year_revenue`（千元） | 同名 camelCase（個股與類股端點都用這組） | 當月／上月／去年同月／累計／去年累計營收 | last_month_revenue、last_year_cumulative_revenue、lastYearRevenue | mops `market_monthly_revenue` 已照官方名建表（10/10）；類股端點已改（10/10 `40058581`） |
+| 財報科目 | 一律用元素名，例 `profit_loss`（ifrs-full:ProfitLoss）、`profit_loss_attributable_to_owners_of_parent`、`shortterm_borrowings`（ifrs-full:ShorttermBorrowings）。應付公司債：ifrs-full:BondsIssued 只出現在 basi、fh、ins，一般業用另一個元素，**待 mops 指定** | 同名 camelCase | 中文照券商：稅後淨利（XBRL 中文標籤「本期淨利」）、歸屬母公司淨利（XBRL「母公司業主」） | 自取的英文翻譯（netIncome、bondsPayable 等） | mops 寬表有 97 個欄位放得下元素名卻被人工改寫（例 `current_fin_assets_fvtoci`、`gains_on_disposals_of_ppe`、`adj_depreciation_expense`、`cash_per_balance_sheet`），另有 91 個人工縮寫、230 個截斷加雜湊，全部改照元素名或縮寫字典（mops，清單 10/10 已索取）。analysis 財報 port 的內部欄位名（`accountsPayable`、`bondsPayable`、`netIncome`）（analysis）。metricCode 字根不是元素名的（例 `bondsPayableToAssets`）列為候選，另走 metricCode 改名程序 |
+| 百分比 | `*_pct`，數值 0～100 | `*Pct` | — | _percent、Percent、_rate（表示 % 時） | 各服務 `*_change_percent`（twse、tpex）。analysis 的 `yoyChangePercent`、`momChangePercent`、`cumulativeChangePercent`、`sharesHeldPercent`、`pledgePercent`（analysis）。業務中台把排行百分比轉成字串（業務中台） |
+| 金額與數量單位 | 預設：金額千元、數量股。例外的單位寫進欄名（`_lots`、`_thousand_shares`、`_ntd`）；每個數字欄位都要 COMMENT 寫明單位 | openapi 說明寫單位 | 千元、股、張 | 沒標單位 | twse、tpex 的月營收與 fs 沒標單位（twse、tpex）。`paid_in_capital` 是元（twse、tpex、mops，改 `paid_in_capital_ntd`）。tpex 成交量在 2026-10-01 前不含零股（tpex，寫進 COMMENT） |
+
+### 二之四、API 與顯示用字
+
+| 概念 | 官方 | 退役的同義詞 | 落差（負責服務） |
 |---|---|---|---|
-| 一、識別碼 | PERMNO/GVKEY 式永久 surrogate key + 帶生效期間的識別碼歷史表 | 全生態系已統一用 `symbol` 當唯一鍵（見下方一、已完成對齊表），台股 symbol 由主管機關配發、極少重用，不像美股 ticker 會被回收 | **刻意不適用**：symbol reuse 在台股市場不是真實痛點，加一層永久 surrogate key 是不必要的複雜度 |
-| 二、`close` vs `last` | 分開 `close_price`（EOD）與 `last_price`（即時 quote） | 全平台只有 `closePrice`（`getStockPriceAsOf` 等）——這個生態系永遠不會有盤中逐筆/分鐘資料 | **刻意不適用**：沒有即時報價來源，`last_price` 概念不存在，`close_price` 已經是唯一且明確的語意 |
-| 二、`adjusted` 的多義 | 拆成 `close_raw`/`close_split_adj`/`close_total_return_adj` | 全平台目前**沒有任何價格調整層**——PE/PB/Beta（規劃中）等所有拿股價當輸入的指標一律用原始收盤價，沒有除權息還原、沒有 total-return adjusted 序列 | **真正的落差，但目前刻意擱置**：`exDividendNotice.ts` 只有「未來除權息預告」，沒有「歷史除權息事件」可以拿來算調整因子；等真的需要還原股價（例如報酬率類指標要跨除權息日比較）才需要引入這套三欄位命名，現在硬加只是空殼 |
-| 三、`report date` 歧義（`datadate` vs `rdq`/filing date） | 拆成 `fiscal_period_end_date` 與 `filing_date`/`announcement_date` 兩個獨立欄位 | **已完全對齊**：`reportDate`（財報期末日，=`datadate`）與 `knowledgeDate`（實際公告日，=`rdq`）在 `src/domainPitMetrics/knowledgeDate.ts`/`src/models/reportAnnouncementDate.ts` 已經是兩個嚴格分開的欄位，`knowledgeDateIsFallback` 額外標記「查無真實公告日、退回用 reportDate 頂替」的 look-ahead bias 風險——這正是報告點名「最容易造成 bug 的三個陷阱」之一，本專案是目前唯一已經徹底解決的一項 | **已對齊**，命名雖不同（`reportDate`/`knowledgeDate` vs 報告建議的 `fiscal_period_end_date`/`filing_date`）但語意完全一致，不需要改名 |
-| 三、TTM vs LTM | 擇一當 canonical，建議 `ttm` | `domainPitMetrics` 的 `basis` 欄位已採用 `'TTM'`（`src/domainPitMetrics/metricBasis.ts`），全平台只用這個字，從未出現 `LTM` | **已對齊** |
-| 四、PIT/版本化（bitemporal 設計） | `fiscal_period_end_date`/`filing_date`/`data_vintage`/`is_restated`/`source_version` | `metric_values`（`MetricValue` model）已經是 bitemporal 設計：`fiscalYear`+`fiscalQuarter`=valid time、`knowledgeDate`=transaction/knowledge time；`formulaVersion` 對應 `source_version`；沒有獨立的 `is_restated` 布林欄位，但 `writeMetricValue` 的 `updated_same_knowledge_date`/`inserted` 兩種寫入結果已經隱含「同一天重算覆蓋」vs「新公告日疊加新版本」的區分，效果等價 | **已對齊**，`is_restated` 用寫入結果分支表達而非獨立欄位，是刻意的實作選擇不是遺漏 |
-| 五、衍生指標標準命名 | `roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`ev`/`ebitda`/`fcf`/`beta`/`margin` | `domainPitMetrics` 的 `metricCode` 已經直接採用這些全球通用縮寫（`roe`/`roa`/`roic`/`roce`/`eps`/`bvps`/`evEbitda`/`fcfYield`，`beta` 目前只有 domainMetrics 舊架構版本，pitMetrics 版尚未實作，見本文件〈二、指標識別碼〉一節） | **已對齊** |
-| 六、Fama-French 因子 | `mkt_rf`/`smb`/`hml`/`rmw`/`cma`/`umd`/`rf` | 平台沒有任何因子投資/多因子模型功能 | **不適用**，非本平台範圍 |
-| 七、WRDS CCM Linking | `GVKEY`↔`LPERMNO` 橋接 + 有效期間 | 沒有 CRSP/Compustat 概念；生態系內部的跨服務橋接鍵已經是 `symbol`（見一、已完成對齊）跟 `fund_tax_id`（見二、指標識別碼、ETF 相關 join），且都沒有帶生效期間——這是台股單一市場場景，橋接鍵本身穩定，不像 CCM 要處理兩個獨立資料庫的覆蓋範圍落差 | **不適用**，場景不對應 |
-| 八、籌碼資料（台灣概念對應） | `short_to_margin_ratio`/`margin_purchase_balance`/`short_sale_balance`/`foreign_net`（買賣超） | `marginShortRatioRanking` 的 `shortToMarginRatioPct` 已對齊報告建議的 `short_to_margin_ratio`；`marginTodayBalance`/`shortTodayBalance` 概念對應 `margin_purchase_balance`/`short_sale_balance`，但命名用「Today」而非報告建議的字面對應，語意仍清楚不算落差。外資「買賣超」（`foreign_net`，net buy/sell flow）目前完全沒做——2026-09-08 twse-ts 退役了唯一涵蓋「外資持股比例」（ownership level，跟買賣超是不同概念）的 `export.foreign_holding`，`foreignHoldingRanking` 這個排行功能（`src/api/bff/market/foreignHoldingRanking/`）已經整批移除，不再有任何外資相關籌碼指標 | **部分對齊**：往後如果真的要做外資「買賣超」，metricCode/欄位名稱要用 `foreignNet`（或類似字眼），跟已經移除的舊 `sharesHeldPercent`（持股比例）概念明確區分，不要都叫「外資」混在一起 |
-| 九、市場結構詞彙 | universe/constituent/reconstitution/rebalancing | 平台沒有指數複製、成分股追蹤、universe 篩選這類功能 | **不適用**，非本平台範圍 |
-
-## 一、已完成的跨服務命名對齊
-
-| 舊名 | 新名 | 服務 | 日期 | 理由 |
-|---|---|---|---|---|
-| `stockCode` / `security_code` | `symbol` | twse-ts / tpex-ts / mops-ts / gov-ts / sitca-ts | 2026-09-04 | 同一個「股票代號」概念，五個服務原本各自叫法不同，統一成 `symbol`。 |
-| `fund_id` | `fund_tax_id` | sitca-ts（`FundExpenseRatioAnnual`） | 2026-09-04 | 跟同服務 `EtfMonthlyStatement` 既有的 `fund_tax_id`（基金統編）是同一個概念，改名前兩邊叫法不一致。 |
-| `market` | `source` | tpex-ts（`CompanyProfile`） | 2026-09-04 | 原本叫 `market`容易誤會成「TWSE/TPEx 市場別」，實際存的是上櫃/興櫃登記類別（`COMPANY_PROFILE`/`COMPANY_PROFILE_EMERGING`），改名消除歧義。 |
-| `as_of_date` | `trade_date` | analysis-ts（`BetaResult`） | 2026-09-04 | 跟其他逐日型結果表（8 支已刪除的 technicals、`MarketRatiosResult`）的日期欄位統一叫法，這是同一批表裡唯一的命名例外。 |
-
-以上四項全部是「硬切」（hard cutover，無過渡期，dev/prod 一次到位），不是漸進式雙寫。
-
-## 二、指標識別碼：三套平行系統的對照
-
-analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的識別碼系統，彼此沒有正式的程式碼
-層級對照表（各自獨立演進，只是碰巧常常同名）：
-
-1. ~~`filterCatalog.ts` 的 `metricKey.fieldKey`~~（camelCase）——**2026-09-08 整套機制
-   已經完全退場**：「每指標一表」架構的最後 3 張表（`BetaResult`／`MarketRatiosResult`／
-   `EquityRiskPremiumResult`）已經 DROP TABLE（`EquityRiskPremiumResult` 其實不算這套
-   「指標」的一員，是獨立的總經資料，但也已刪除），`filterCatalog.ts`/`filterCatalog.csv`/
-   `metricTableRegistry.ts`/`columnPresets.ts`/`GET /companies/metrics`（compute-on-miss）/
-   `POST /screener/values`/整個 `GET /screener` 系列全部刪除，不再存在。`GET /filters`
-   現在改成直接掃描 `src/domainPitMetrics/` 資料夾結構產生（見
-   `src/api/bff/filter/metricFolderCatalog.ts`），回應形狀也變了（只有
-   `categoryKey`/`metricCode`/`allowedBases`，沒有這套系統原本的 `metricKey.fieldKey`
-   camelCase 識別碼、也沒有使用者可讀的 name/description/unit 文案）。
-2. **`domainPitMetrics` 的 `metric_code` + `basis`**（snake_case metric_code）——point-in-time
-   架構（`metric_values`/`metric_definitions`，見 ROE spike）用這套，例如
-   `metric_code='roe'`、`basis='Q'`。
-3. **mops-ts XBRL account_code**（snake_case，`export.xbrl_three_statements_long` 的
-   `account_code` 欄位）——**2026-09-06 起 `domainPitMetrics` 的 `dependsOn` 改填這一套**（見下方
-   「已解決的落差」），例如 `profit_loss_attributable_to_owners_of_parent`、
-   `equity_attributable_to_owners_of_parent`。這是 mops-ts 自己把原始 XBRL 標籤整理過的
-   命名，不是 IFRS 原始 PascalCase 標籤，也不是 mops-ts 三大表（`quarterly_income_statement`/
-   `quarterly_balance_sheet`）原本的 camelCase 欄位名稱（`netIncomeAttributableToParent`
-   這種，2026-09-06 之前 `dependsOn` 填的是這一套，現在已經不用了，但三大表本身的實際
-   欄位名稱沒有變，計算邏輯依然讀這兩張表，只有 `dependsOn` 的宣告內容改變）。
-4. **mops-ts 三大表原始欄位名稱**（camelCase，`quarterly_income_statement`/
-   `quarterly_balance_sheet` 實際的表欄位，例如 `netIncomeAttributableToParent`）——
-   這是實際計算時真正查詢的欄位，涵蓋 249 家公司；跟上面第 3 套（XBRL account_code，
-   目前只涵蓋 3 家公司）是同一組會計概念的兩種不同命名系統，`dependsOn` 現在記錄的是
-   XBRL 那一套名稱，但程式碼實際查資料庫用的還是這一套 camelCase 欄位名稱——兩者的對應
-   關係見下方示範表格。
-
-### 示範：2330（台積電）115Q2 ROE 走過這幾層系統
-
-用這個 session 已經實測驗證過的真實數字（不是虛構範例）：
-
-| 層級 | 內容 |
-|---|---|
-| mops-ts 三大表原始欄位（實際計算查詢的來源，249 家公司覆蓋） | `netIncomeAttributableToParent = 706561938`（千元，淨利歸屬母公司）<br>`equityAttributableToParent = 6432518334`（千元，權益歸屬母公司） |
-| mops-ts XBRL account_code（**2026-09-06 已拿 2330 真實資料驗證過**，見下方說明） | `profit_loss_attributable_to_owners_of_parent` 對應 `netIncomeAttributableToParent`<br>`equity_attributable_to_owners_of_parent` 對應 `equityAttributableToParent` |
-| 計算結果 | ROE（單季）= 706561938 / 6432518334 × 100 ≈ **10.98%** |
-| filterCatalog 定址 | `metricKey="roe"`, `fieldKey="roeQuarterlyPct"` → `roe.roeQuarterlyPct` |
-| pitMetrics 定址 | `metric_code="roe"`, `basis="Q"` → `value=10.98`；`dependsOn=['profit_loss_attributable_to_owners_of_parent','profit_loss','equity_attributable_to_owners_of_parent','equity']` |
-
-**驗證方式**：直接查詢 mops-ts 的 `export.xbrl_three_statements_long`（2330 目前有 902
-筆不同 `account_code`），確認 `profit_loss_attributable_to_owners_of_parent`/
-`equity_attributable_to_owners_of_parent`/`assets`/`equity`/`revenue`/`profit_loss`
-這幾個名稱真實存在於 2330 的 XBRL 資料裡，不是照 IFRS 標準科目名稱推論——上一版本這裡
-寫的是 `ifrs-full:` 開頭的推論值，2026-09-06 已經拿真實資料修正掉。
-
-### 已解決的落差（原「已知落差」，2026-09-06 更新）
-
-- **`domainPitMetrics` 的 `dependsOn` 曾經只能填 mops-ts 三大表的原始欄位名稱**——因為 XBRL
-  資料當時只涵蓋測試公司 1101，沒有真實公司可以驗證對應關係。**mops-ts 2026-09-06 補上
-  2330（台積電）、2801（彰化銀行）兩家真實公司的 XBRL 資料後，這個落差已經解決**：
-  `metricDefinitionRegistry.ts` 的 `dependsOn` 陣列已經全部改成驗證過的 XBRL
-  account_code（見上方示範表格）。**2026-09-07 更新：這已經不只是宣告欄位的改動**——
-  現金流量表/資產負債表/損益表依賴的全部 PIT 指標都已經換源成「XBRL 寬表/長表優先，
-  查無資料才 fallback 舊三大表」（`balanceSheetXbrlFirst.ts`/`incomeStatementXbrlFirst.ts`/
-  `cashFlowStatementXbrlFirst.ts`），**實際計算現在真的是 XBRL 優先**，不是只有
-  `dependsOn` 這個宣告字串變了、計算來源沒變——這段話跟舊版本說的「沒有切換去讀 XBRL
-  表」已經不成立，XBRL 目前覆蓋約 745 家公司（資產負債表/損益表）、722 家（現金流量表），
-  遠超過舊三大表的 247~249 家，但不是嚴格超集合（部分公司/季度組合舊表有但 XBRL 沒有），
-  fallback 機制仍然必要。舊架構 37 張表內部存的欄位挑選紀錄（例如 `RoeResult.
-  netIncomeFieldUsed`）已經隨著 2026-09-07 那批表刪除一起消失，不再是「不動」的狀態，
-  是「已經不存在」。之後新增 `metricDefinitionRegistry` entry 時，`dependsOn`
-  應該優先查 `export.xbrl_three_statements_long`/寬表有沒有對應的 account_code 可用，
-  沒有的話才退回填三大表原始欄位名稱。
-- **2026-09-06 已解決**（原「意外發現，還沒評估細節」）：銀行業專屬指標（CAR/CET1/Tier1/
-  逾放比/備抵呆帳覆蓋率）已經直接查 mops-ts export DB 驗證過並實作完成
-  （`src/domainPitMetrics/bankAssetQuality/`、`src/domainPitMetrics/bankCapitalAdequacy/`）。**原本這裡
-  記錄的表名是錯的**：`non_performing_receivables_xbrl` 只有信用卡業務/應收帳款受讓業務
-  兩個類別，不是全行放款逾放比；真正對的表是 `bank_asset_quality_xbrl`（`category=
-  'TotalLoans'` 那一列才是全行加總，覆蓋約 19-20 檔銀行/金控股，每季都有真實值）。
-  `bank_capital_adequacy_detail_xbrl` 可用（CET1/Tier1 已算好，CAR 要自己除），但只覆蓋
-  6-7 檔股票，且監理揭露頻率本來就是半年一次（只有 Q2/Q4 有真實值，Q1/Q3 一律 null，不是
-  資料缺漏）。`eligible_capital_composition_xbrl`（3593 列僅 33 列非 null）、
-  `bank_npl_disposal_xbrl`（呆帳處分交易紀錄，不是比率）這批沒有做，涵蓋率太低/形狀不合。
-
-### 已結案（原「尚未解決的落差」，2026-09-11 更新）
-
-- ~~`metricKey`（filterCatalog）跟 `metric_code`（pitMetrics）目前只是碰巧同名~~——
-  **這條落差已經不存在**：filterCatalog 整套機制（`filterCatalog.ts`/`.csv`/
-  `metricTableRegistry.ts` 等）已於 2026-09-08 整批刪除（見上方「二、指標識別碼」
-  第 1 項），不再有 `metricKey` 這個識別碼系統可以跟 `metric_code` 碰巧同名或分家，
-  這條記錄純粹是文件沒有跟著程式碼刪除同步更新，這次一併清掉。
-
-### 持續適用的原則
-
-- **命名落差真的要解決時，優先選擇改 DB**（即使要做破壞性 migration、重新命名欄位）
-  去對齊 XBRL/國際慣例，不要蓋一層「內部命名 ↔ XBRL」的轉換層讓內部命名維持不變
-  （2026-09-06 確認）——跟本文件第一節列的四項硬切對齊決策同一種做法，不是「落差」，
-  是往後任何新落差出現時都要套用的既定原則，跟上方已結案的具體案例分開列。
+| 指標代碼 | `metricCode` | key、path、metricKey、fieldKey、Filter* | 業務中台型錄的 `key`／`path`，screener 的 `metricKey`／`fieldKey`（業務中台）。web-nuxt 的 `FilterMetric`／`FilterCategory` 型別（web-nuxt） |
+| 欄位字串 | `metricCode.timeframe`（例 `roe.TTM`） | metricCode.basis | analysis screener 的說明文字（analysis） |
+| 排序 | `order: asc\|desc` | direction、sortOrder | analysis 的 ranking、company-rank 用 `direction`，POST screener 用 `sortOrder`（analysis） |
+| 沒有值 | `nullReason` 只用 analysis 定義的值域 | 自創 sentinel | web-nuxt 的 `__no_record__` 只能留在前端內部，不能出現在 API（web-nuxt） |
+| export view 命名 | `export.v_<複數名詞>` | 單數、沒有 `v_` | sitca 沒有 `v_`；mops、gov 是單數且沒有 `v_`（mops、gov、sitca） |
+| 中文用字 | 使用者看到的中文照券商軟體：**營收**、**稅後淨利**（合併總額，含非控制權益；XBRL 中文標籤是「本期淨利」）、**歸屬母公司淨利**（另一個概念）。程式名稱照 XBRL（`revenue`、`profit_loss`、`profit_loss_attributable_to_owners_of_parent`） | 顯示用的「本期淨利」 | — |
+| 殖利率 | `dividendYield`＝交易所每日公布的殖利率；`cashDividendYield`＝近四季現金股利殖利率 | 把 dividendYield 叫「現金殖利率」 | web-nuxt 的標籤（web-nuxt） |
+| 「占」 | 用「占」 | 佔 | 指標名稱「資本支出佔營收比」（analysis） |
+| 指標名稱 | 用 analysis-ts 的 `name` | web-nuxt 手寫的 `topic` | 例：dividendCoverageRatio 兩邊名稱已經不同（web-nuxt） |
 
 ## 三、期間口徑：「第四季」只代表單季，「年報」是另一個概念（2026-09-25 使用者拍板）
 
@@ -188,7 +142,7 @@ analysis-ts 內部同時存在三套用來指涉「同一個財務指標」的�
 
 | 詞 | 定義 | 資料 |
 |---|---|---|
-| **已發行股數** | 股本變動申報的實收股數，**含特別股與庫藏股** | `capital_stock_history.paid_in_shares`（API 欄位 `paidInShares` 維持原名） |
+| **已發行股數** | 股本變動申報的實收股數，**含特別股與庫藏股** | `capital_stock_history.paid_in_shares`（API 欄位 `paidInShares`，官方名 `numberOfSharesIssued`，見第二之三節與第五節） |
 | **流通股數**（＝流通在外普通股） | 已發行股數 − 特別股股數 − 庫藏股股數。所有每股指標的分母都是這個 | port `OutstandingCommonSharesPort`；`dependsOn` 寫 `outstandingCommonShares` |
 | **特別股股數** | 權益項下特別股股本（千元）× 1000 ÷ 面額 | 一般業 `preference_share`、金控 `preferred_stock`；銀行待 mops-ts 收 |
 | **庫藏股股數** | 本公司及子公司持有本公司股份數（最近一季季末），**不是**庫藏股金額 | 一般業 `number_of_shares_held_by_entity_and_subsidiaries`，金控／銀行各自欄位 |
@@ -225,3 +179,59 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 ÷ 近四季淨利。現金流量表那一行**包含公積發放**（實測 2882 國泰金 2023 年每股 1.024 元＝111 年度公積發放 0.9 元加特別股
 股利），而且只有合計、拆不出來源，所以分子跟 `payoutRatio` 不同，文案已寫明。另外它還有「分子是付款年度、分母是
 盈餘年度」的期間錯位（見 metricNarratives 的 dividendPayoutRatio）。兩者**不要互相驗證**。
+
+## 五、改名追蹤表
+
+狀態：已完成／並存中（新舊並存，到期後移除舊名）／待核准（等該服務的使用者核准）／待排程。
+
+| 日期 | 服務 | 舊名 → 新名 | 狀態 |
+|---|---|---|---|
+| 2026-09-04 | twse、tpex、mops、gov、sitca | `stockCode`／`security_code` → `symbol` | 已完成（硬切） |
+| 2026-09-04 | sitca（`FundExpenseRatioAnnual`） | `fund_id` → `fund_tax_id` | 已完成（硬切） |
+| 2026-09-04 | tpex（`CompanyProfile`） | `market` → `source`（存的是上櫃／興櫃登記類別） | 已完成（硬切）。**10/10 起這一項本身變成落差**：市場族群的官方名是 `market`（MOPS TYPEK），`source` 只代表出處，要再拆一次 |
+| 2026-09-04 | analysis（`BetaResult`） | `as_of_date` → `trade_date` | 已完成（硬切，表已刪） |
+| 2026-09-25 | analysis（dividend-history） | `cashDividendFromCapitalReserve` → `cashDividendFromLegalReserveAndCapitalSurplus`（TIFRS `CapitalSurplus`） | 已完成 |
+| 2026-10-10 | analysis（`GET /industries/{sectorCode}/monthly-revenue-history`） | `revenue`／`lastYearRevenue`／`yoyChangePercent` → `currentMonthRevenue`／`lastYearSameMonthRevenue`／`yoyChangePct` | 已完成（端點 10/09 才上線，不設並存期，`40058581`） |
+| 2026-10-10 | mops（`market_monthly_revenue`，建表當天） | `last_month_revenue`／`last_year_cumulative_revenue` → `prev_month_revenue`／`cumulative_last_year_revenue` | 已完成（當時沒有讀取者） |
+| — | mops | xbrl 各表 `year`（民國）→ `roc_year`；寬表 `report_date` → `fiscal_period_end_date`；418 個 XBRL 欄名改成元素名或縮寫字典（第六節） | 待核准 |
+| — | mops | view 改成 `export.v_<複數>`（例 `market_monthly_revenue` → `v_market_monthly_revenues`） | 待核准 |
+| — | twse、tpex | `source`（市場族群）→ `market`；`financial_report_type` → `data_type`（MOPS 編碼）；`report_date` → `generated_date`；`industry` → `sector_code` 等（見第二節落差欄） | 待核准 |
+| — | analysis | 對外 API：`periodType` → `timeframe`；民國 `year`／`season` → `fiscalYear`／`fiscalQuarter`；`paidInShares` → `numberOfSharesIssued`；`*Percent` → `*Pct`；`direction`／`sortOrder` → `order` 等（見第二節） | 待排程（並存 14 天） |
+| — | 業務中台、web-nuxt | `basis` → `timeframe`；型錄 `key`／`path` → `metricCode`；`name` → `companyName` 等 | 待排程（跟著 analysis） |
+
+## 六、縮寫字典（PostgreSQL 63 字元上限用，草案，等 mops-ts 核對）
+
+**規則**（2026-10-10 使用者：人工縮寫＋對照表，不用截斷加雜湊）：
+1. 欄名＝元素名的 snake_case（同 mops `account_code`），明細表加 `_quarter`／`_ytd` 後綴。
+2. 組合元素 `X-X`（成員名稱跟主元素重複）先收成 `X`。
+3. 加上後綴仍超過 63 字元，才照下表**依序**套用，**一放得下就停**。所以同一個元素名，任何人縮出來都一樣。
+4. 一般縮寫優先用 IFRS 慣用說法（fvoci、fvtpl、oci、ppe、ecl、own credit risk、held for sale）。
+
+字典本體和逐欄的新舊對照（418 列）由 analysis-ts 產生，mops-ts 核對後會把字典逐條列在這裡，並把對照表放進 repo。
+草案是 session scratchpad 的 `xbrl-column-rename-proposal-2026-10-10.json`，2026-10-10 實測 253 個長名稱全部縮到 ≤63 字元。
+待解的問題：
+- 196 列在截斷時連 `_quarter`／`_ytd` 一起被切掉，要 mops 補上後綴。
+- 第一個候選元素不是 ifrs-full 的列，要改用 ifrs-full。
+
+## 七、外部研究報告的落地檢核（濃縮）
+
+[`Ubiquitous Language 建議報告.md`](Ubiquitous%20Language%20建議報告.md) 是 CRSP／Compustat／供應商慣例的參考資料，不是決策。逐節對照結果：
+
+- **已對齊**：
+  - 財報期末日和公告日分成兩個欄位：`fiscal_period_end_date`／`knowledgeDate`，查不到公告日時 `knowledgeDateIsFallback` 標記 look-ahead 風險。
+  - `TTM`，從未使用 `LTM`。
+  - 時點版本化：`metric_values` 以 `fiscalYear`＋`fiscalQuarter` 為有效時間、`knowledgeDate` 為知悉時間，`formulaVersion` 是算法版本。
+  - 衍生指標用通用縮寫（`roe`、`eps`、`bvps`、`beta`）。
+- **刻意不適用**：
+  - 永久代理鍵（PERMNO）：台股 symbol 由主管機關配發、極少重用。
+  - `last_price`：這個生態系永遠沒有盤中資料。
+  - Fama-French 因子、指數成分股：不在平台範圍。
+- **擱置**：價格調整三欄（`close_raw`、`close_split_adj`、`close_total_return_adj`）。目前每股數字換算到今天的股數基準（見 `docs/api-conventions.md`），股價不調整；真的需要報酬率序列時才引入。
+- **籌碼**：外資「買賣超」要用 `foreignNet` 這類字眼，跟持股比例 `sharesHeldPercent` 分開；`sharesHeldPercent` 改名為 `*Pct` 時一併處理。
+
+## 八、指標識別碼
+
+- **`metricCode`**（camelCase）＋ **`timeframe`** 是指標在 API 上唯一的定址方式，欄位字串寫成 `metricCode.timeframe`（例 `roe.TTM`）。
+  - 資料庫的 `metric_values` 把 timeframe 拆成 `period_type`／`lookback_range`／`sampling_interval`／`snapshot_cadence` 四欄（2026-09-08，舊的 `basis` 一欄已拆掉）。
+- **`dependsOn`** 與溯源表的 `fieldKey`：填 mops XBRL 的 `account_code`（元素名的 snake_case），不是自取的英文。非 XBRL 的輸入（例流通股數）用第二節的官方名稱。
+- 舊的 filterCatalog（`metricKey.fieldKey`）已在 2026-09-08 整套刪除。業務中台與 web-nuxt 裡殘留的 `metricKey`／`fieldKey`／`Filter*` 是退役詞，見第二節。

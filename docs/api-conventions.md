@@ -47,6 +47,10 @@
 
 ## 資料格式
 
+欄位與參數**叫什麼名字**，以全生態系官方詞彙表 [`UBIQUITOUS_LANGUAGE.md`](../UBIQUITOUS_LANGUAGE.md) 為準（2026-10-10 起）。
+例如期別參數一律 `timeframe`、年度一律西元 `fiscalYear`、公司名稱 `companyName`、財報科目照 XBRL 元素名。
+下表只管格式，不重複定義名稱。
+
 | 項目 | 慣例 |
 |---|---|
 | 公司代號 | query 參數 `symbol` |
