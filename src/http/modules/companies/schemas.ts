@@ -10,6 +10,33 @@ import { booleanQueryParam } from '@/http/schemas/queryParams';
 
 const symbolField = z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' });
 
+// 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md，使用者指定 analysis-ts 主導）：期別參數官方名 timeframe、年度一律西元
+// fiscalYear／fiscalQuarter。舊參數 periodType 與民國 year／season 照 docs/api-conventions.md 並存 14 天，到期移除；
+// 兩種都給時以新的為準。service 內部仍用 periodType 與民國 year＋season，換算只在這一層（transform），不往裡面擴散。
+export const RETIRED_QUERY_PARAMS_REMOVED_ON = '2026-10-24';
+const retired = (replacement: string) => `已退役，請改用 ${replacement}，${RETIRED_QUERY_PARAMS_REMOVED_ON} 移除。`;
+
+const timeframeParams = <T extends readonly [string, ...string[]]>(values: T, description: string) => ({
+  timeframe: z.enum(values).optional().meta({ description }),
+  periodType: z.enum(values).optional().meta({ description: retired('timeframe'), deprecated: true }),
+});
+
+const ROC_YEAR_OFFSET = 1911;
+const fiscalQuarterParams = (description: string) => ({
+  fiscalYear: z.coerce.number().int().min(1990).max(2100).optional().meta({ description: `西元年度，例如 2026；跟 fiscalQuarter 要成對提供，${description}`, example: 2026 }),
+  fiscalQuarter: z.coerce.number().int().min(1).max(4).optional().meta({ description: '季別 1-4；跟 fiscalYear 要成對提供', example: 2 }),
+  year: z.string().regex(/^\d{2,3}$/, 'year 必須是民國年數字字串，例如 "115"。').optional().meta({ description: retired('fiscalYear（西元）'), deprecated: true }),
+  season: z.enum(['1', '2', '3', '4']).optional().meta({ description: retired('fiscalQuarter'), deprecated: true }),
+});
+type FiscalQuarterInput = { fiscalYear?: number | undefined; fiscalQuarter?: number | undefined; year?: string | undefined; season?: '1' | '2' | '3' | '4' | undefined };
+const fiscalQuarterPaired = (d: FiscalQuarterInput) => (d.fiscalYear === undefined) === (d.fiscalQuarter === undefined) && (d.year === undefined) === (d.season === undefined);
+const fiscalQuarterPairedError = { message: 'fiscalYear 和 fiscalQuarter（或舊參數 year 和 season）必須成對提供，只給其中一個是無效請求。', path: ['fiscalQuarter'] };
+// 換回 service 用的民國 year＋season；新參數優先。
+const toRocYearSeason = <D extends FiscalQuarterInput>({ fiscalYear, fiscalQuarter, year, season, ...rest }: D) =>
+  fiscalYear !== undefined && fiscalQuarter !== undefined
+    ? { ...rest, year: String(fiscalYear - ROC_YEAR_OFFSET), season: String(fiscalQuarter) as '1' | '2' | '3' | '4' }
+    : { ...rest, year, season };
+
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
 // 本服務不代為決定；limit 的「上限」（最多允許幾筆）由本服務依自己扛不扛得住決定，所有請求
 // 一致——2026-09-01 使用者訂的原則。payload 很輕（每筆只有兩個字串），上限抓寬鬆一點。
@@ -51,31 +78,37 @@ export const getCompanyDividendHistoryQuerySchema = z.object({
 const ROE_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM', 'FY'] as const;
 const MAX_ROE_HISTORY_LIMIT = 40; // 10 年份季度資料，畫圖情境不需要更多
 
-export const getCompanyRoeHistoryQuerySchema = z.object({
-  symbol: symbolField,
-  periodType: z.enum(ROE_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM' }),
-  limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
-});
+export const getCompanyRoeHistoryQuerySchema = z
+  .object({
+    symbol: symbolField,
+    ...timeframeParams(ROE_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM'),
+    limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+  })
+  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'TTM' }));
 
 // ROA 這支指標目前允許的 periodType 跟 ROE 一模一樣。
 const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_ROA_HISTORY_LIMIT = 40;
 
-export const getCompanyRoaHistoryQuerySchema = z.object({
-  symbol: symbolField,
-  periodType: z.enum(ROA_HISTORY_PERIOD_TYPE_VALUES).default('TTM').meta({ description: '單季(Q)/近四季(TTM)，預設 TTM' }),
-  limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
-});
+export const getCompanyRoaHistoryQuerySchema = z
+  .object({
+    symbol: symbolField,
+    ...timeframeParams(ROA_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)，預設 TTM'),
+    limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+  })
+  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'TTM' }));
 
 // Dupont 拆解沒有 Q_ANN——dupontDecomposedRoe/equityMultiplier 都沒有這個變體。
 const DUPONT_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
 const MAX_DUPONT_HISTORY_LIMIT = 40;
 
-export const getCompanyDupontHistoryQuerySchema = z.object({
-  symbol: symbolField,
-  periodType: z.enum(DUPONT_HISTORY_PERIOD_TYPE_VALUES).default('Q').meta({ description: '單季(Q)/近四季(TTM)，預設 Q' }),
-  limit: z.coerce.number().int().min(1).max(MAX_DUPONT_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
-});
+export const getCompanyDupontHistoryQuerySchema = z
+  .object({
+    symbol: symbolField,
+    ...timeframeParams(DUPONT_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)，預設 Q'),
+    limit: z.coerce.number().int().min(1).max(MAX_DUPONT_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
+  })
+  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'Q' }));
 
 const MAX_METRIC_HISTORY_LIMIT = 40;
 
@@ -118,49 +151,41 @@ export const getCompanyMonthlyRevenueHistoryQuerySchema = z.object({
     .meta({ description: `取最近幾個月，預設 60（5 年），上限 ${MAX_MONTHLY_REVENUE_HISTORY_LIMIT}。` }),
 });
 
-// year/season 成對的季度指定——financial-statement / piotroski-breakdown / metric-provenance 三支共用同一段規則。
-const yearField = z
-  .string()
-  .regex(/^\d{2,3}$/, 'year 必須是民國年數字字串，例如 "115"。')
-  .optional();
-const seasonField = z.enum(['1', '2', '3', '4']).optional().meta({ description: '季別 1-4；跟 year 要成對提供' });
-const yearSeasonPaired = () => ({ message: 'year 和 season 必須成對提供，只給其中一個是無效請求。', path: ['season'] });
-
 export const getCompanyFinancialStatementQuerySchema = z
   .object({
     symbol: symbolField,
     statementType: z
       .enum(FINANCIAL_STATEMENT_TYPES, { error: 'statementType is required, 必須是 balanceSheet/incomeStatement/cashFlowStatement 之一。' })
       .meta({ description: '會計模式要看哪一張表：balanceSheet(資產負債表)/incomeStatement(損益表)/cashFlowStatement(現金流量表)', example: 'balanceSheet' }),
-    year: yearField.meta({ description: '民國年，例如 "115"；跟 season 要成對提供，不給就自動抓該張表最新一季', example: '115' }),
-    season: seasonField,
+    ...fiscalQuarterParams('不給就自動抓該張表最新一季'),
   })
-  .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
+  .refine(fiscalQuarterPaired, fiscalQuarterPairedError)
+  .transform(toRocYearSeason);
 
 export const getCompanyPiotroskiBreakdownQuerySchema = z
   .object({
     symbol: symbolField,
-    year: yearField.meta({ description: '民國年，例如 "115"；跟 season 要成對提供，不給就自動抓最新一季', example: '115' }),
-    season: seasonField,
+    ...fiscalQuarterParams('不給就自動抓最新一季'),
   })
-  .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
+  .refine(fiscalQuarterPaired, fiscalQuarterPairedError)
+  .transform(toRocYearSeason);
 
 // symbol 用路徑參數（不是 query），是這支端點跟其餘 /companies/* 端點刻意不同的地方，配合 web-nuxt 提議的路徑格式。
 // metricCode 用 z.enum 驗證，不支援的指標直接被 zod 擋成 400，不是隱性涵蓋所有指標，吸取 dependsOn 的教訓。
 export const getCompanyMetricProvenanceQuerySchema = z
   .object({
     metricCode: z.enum(PILOT_PROVENANCE_METRIC_CODES, { error: `metricCode is required, 目前僅支援 ${PILOT_PROVENANCE_METRIC_CODES.join('/')}。` }),
-    year: yearField.meta({ description: '民國年，例如 "115"；跟 season 要成對提供，不給就自動抓最新一季', example: '115' }),
-    season: seasonField,
+    ...fiscalQuarterParams('不給就自動抓最新一季'),
     // 2026-10-01 使用者要求「溯源表請務必都加上」：逐日（交易所三率、beta、live*）與月頻（sus）指標用日期定位，不是年季。
     asOfDate: z.iso
       .date()
       .optional()
-      .meta({ description: '逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）', example: '2026-09-29' }),
+      .meta({ description: '逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 fiscalYear/fiscalQuarter）', example: '2026-09-29' }),
     // 2026-10-01 帶頁面目前的期別；溯源表描述的期別跟它不同時回 found=false（不靜默回另一個期別的數字）。不給 = 回溯源表本來的期別（見回應的 periodType）。
-    periodType: z.enum(['Q', 'YTD', 'TTM', 'FY']).optional().meta({ description: '要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）', example: 'TTM' }),
+    ...timeframeParams(['Q', 'YTD', 'TTM', 'FY'] as const, '要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）'),
   })
-  .refine((data) => (data.year === undefined) === (data.season === undefined), yearSeasonPaired());
+  .refine(fiscalQuarterPaired, fiscalQuarterPairedError)
+  .transform(({ timeframe, periodType, ...rest }) => ({ ...toRocYearSeason(rest), periodType: timeframe ?? periodType }));
 
 export const getCompanyBadgesQuerySchema = z.object({
   symbol: symbolField,

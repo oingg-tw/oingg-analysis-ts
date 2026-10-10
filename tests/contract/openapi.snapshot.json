@@ -1366,11 +1366,25 @@
           {
             "description": "單季(Q)/近四季(TTM)，預設 Q",
             "in": "query",
+            "name": "timeframe",
+            "required": false,
+            "schema": {
+              "description": "單季(Q)/近四季(TTM)，預設 Q",
+              "enum": [
+                "Q",
+                "TTM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
+            "in": "query",
             "name": "periodType",
             "required": false,
             "schema": {
-              "default": "Q",
-              "description": "單季(Q)/近四季(TTM)，預設 Q",
+              "deprecated": true,
+              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM"
@@ -1613,24 +1627,51 @@
             }
           },
           {
-            "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓該張表最新一季",
+            "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓該張表最新一季",
+            "in": "query",
+            "name": "fiscalYear",
+            "required": false,
+            "schema": {
+              "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓該張表最新一季",
+              "example": 2026,
+              "maximum": 2100,
+              "minimum": 1990,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "季別 1-4；跟 fiscalYear 要成對提供",
+            "in": "query",
+            "name": "fiscalQuarter",
+            "required": false,
+            "schema": {
+              "description": "季別 1-4；跟 fiscalYear 要成對提供",
+              "example": 2,
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
             "in": "query",
             "name": "year",
             "required": false,
             "schema": {
-              "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓該張表最新一季",
-              "example": "115",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
               "pattern": "^\\d{2,3}$",
               "type": "string"
             }
           },
           {
-            "description": "季別 1-4；跟 year 要成對提供",
+            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
             "in": "query",
             "name": "season",
             "required": false,
             "schema": {
-              "description": "季別 1-4；跟 year 要成對提供",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
               "enum": [
                 "1",
                 "2",
@@ -2565,24 +2606,51 @@
             }
           },
           {
-            "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓最新一季",
+            "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓最新一季",
+            "in": "query",
+            "name": "fiscalYear",
+            "required": false,
+            "schema": {
+              "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓最新一季",
+              "example": 2026,
+              "maximum": 2100,
+              "minimum": 1990,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "季別 1-4；跟 fiscalYear 要成對提供",
+            "in": "query",
+            "name": "fiscalQuarter",
+            "required": false,
+            "schema": {
+              "description": "季別 1-4；跟 fiscalYear 要成對提供",
+              "example": 2,
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
             "in": "query",
             "name": "year",
             "required": false,
             "schema": {
-              "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓最新一季",
-              "example": "115",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
               "pattern": "^\\d{2,3}$",
               "type": "string"
             }
           },
           {
-            "description": "季別 1-4；跟 year 要成對提供",
+            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
             "in": "query",
             "name": "season",
             "required": false,
             "schema": {
-              "description": "季別 1-4；跟 year 要成對提供",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
               "enum": [
                 "1",
                 "2",
@@ -3112,11 +3180,25 @@
           {
             "description": "單季(Q)/近四季(TTM)，預設 TTM",
             "in": "query",
+            "name": "timeframe",
+            "required": false,
+            "schema": {
+              "description": "單季(Q)/近四季(TTM)，預設 TTM",
+              "enum": [
+                "Q",
+                "TTM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
+            "in": "query",
             "name": "periodType",
             "required": false,
             "schema": {
-              "default": "TTM",
-              "description": "單季(Q)/近四季(TTM)，預設 TTM",
+              "deprecated": true,
+              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM"
@@ -3318,11 +3400,26 @@
           {
             "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
             "in": "query",
+            "name": "timeframe",
+            "required": false,
+            "schema": {
+              "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
+              "enum": [
+                "Q",
+                "TTM",
+                "FY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
+            "in": "query",
             "name": "periodType",
             "required": false,
             "schema": {
-              "default": "TTM",
-              "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
+              "deprecated": true,
+              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM",
@@ -3963,24 +4060,51 @@
             }
           },
           {
-            "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓最新一季",
+            "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓最新一季",
+            "in": "query",
+            "name": "fiscalYear",
+            "required": false,
+            "schema": {
+              "description": "西元年度，例如 2026；跟 fiscalQuarter 要成對提供，不給就自動抓最新一季",
+              "example": 2026,
+              "maximum": 2100,
+              "minimum": 1990,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "季別 1-4；跟 fiscalYear 要成對提供",
+            "in": "query",
+            "name": "fiscalQuarter",
+            "required": false,
+            "schema": {
+              "description": "季別 1-4；跟 fiscalYear 要成對提供",
+              "example": 2,
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
             "in": "query",
             "name": "year",
             "required": false,
             "schema": {
-              "description": "民國年，例如 \"115\"；跟 season 要成對提供，不給就自動抓最新一季",
-              "example": "115",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
               "pattern": "^\\d{2,3}$",
               "type": "string"
             }
           },
           {
-            "description": "季別 1-4；跟 year 要成對提供",
+            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
             "in": "query",
             "name": "season",
             "required": false,
             "schema": {
-              "description": "季別 1-4；跟 year 要成對提供",
+              "deprecated": true,
+              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
               "enum": [
                 "1",
                 "2",
@@ -3991,12 +4115,12 @@
             }
           },
           {
-            "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）",
+            "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 fiscalYear/fiscalQuarter）",
             "in": "query",
             "name": "asOfDate",
             "required": false,
             "schema": {
-              "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 year/season）",
+              "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 fiscalYear/fiscalQuarter）",
               "example": "2026-09-29",
               "format": "date",
               "type": "string"
@@ -4005,7 +4129,7 @@
           {
             "description": "要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）",
             "in": "query",
-            "name": "periodType",
+            "name": "timeframe",
             "required": false,
             "schema": {
               "description": "要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）",
@@ -4015,7 +4139,23 @@
                 "TTM",
                 "FY"
               ],
-              "example": "TTM",
+              "type": "string"
+            }
+          },
+          {
+            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
+            "in": "query",
+            "name": "periodType",
+            "required": false,
+            "schema": {
+              "deprecated": true,
+              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
+              "enum": [
+                "Q",
+                "YTD",
+                "TTM",
+                "FY"
+              ],
               "type": "string"
             }
           }
