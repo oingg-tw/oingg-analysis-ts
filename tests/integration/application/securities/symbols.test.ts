@@ -40,9 +40,11 @@ test('getSecuritySymbols: preferredStock=exclude 應該排除特別股（結果�
   assert.ok(symbols.includes('2330'), '2330（台積電，普通股）不受影響');
 });
 
-test('getSecuritySymbols: market=TPEx + preferredStock=only 目前一定回空清單（特別股資料源只有 TWSE）', async () => {
+// 2026-10-06 起 GET /securities 補上櫃特別股（2c7fefcd），不再是空清單；改驗證回的都是特別股代號（不是四碼普通股）。
+test('getSecuritySymbols: market=TPEx + preferredStock=only 只回上櫃特別股', async () => {
   const symbols = await getSecuritySymbols({ market: 'TPEx', includeEmerging: true, excludeKy: false, preferredStock: 'only' });
-  assert.deepEqual(symbols, []);
+  assert.ok(symbols.length > 0);
+  assert.deepEqual(symbols.filter((s) => /^d{4}$/.test(s)), []);
 });
 
 test('getSecuritySymbols: includeEmerging=false 應該排除興櫃公司', async () => {

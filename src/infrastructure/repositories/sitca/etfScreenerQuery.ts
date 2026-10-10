@@ -44,7 +44,7 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       m.total_holders AS holders,
       (m.subscription_amount_twd - m.redemption_amount_twd) AS net_flow,
       m.dca_amount_twd AS dca_amount,
-      m.market_share_rate,
+      m.market_share_pct AS market_share_rate, -- 2026-10-11 sitca v_ view 改名（_pct 是單位）；對內別名不動
       m.nav_twd AS nav,
       m.statutory_aum_threshold_twd AS statutory_aum_threshold,
       m.aum_below_statutory_threshold AS below_statutory_threshold,
@@ -56,10 +56,10 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       p.return_5y,
       p.return_ytd,
       p.return_10y
-    FROM "export"."etf_monthly_profiles" b
-    JOIN "export"."etf_monthly_statements" m ON m.symbol = b.symbol AND m.year_month = b.year_month
-    JOIN "export"."etf_monthly_returns" p ON p.symbol = b.symbol AND p.year_month = b.year_month
-    WHERE b.year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_profiles" b
+    JOIN "export"."v_etf_monthly_statements" m ON m.symbol = b.symbol AND m.year_month = b.year_month
+    JOIN "export"."v_etf_monthly_returns" p ON p.symbol = b.symbol AND p.year_month = b.year_month
+    WHERE b.year_month = to_date(${yearMonth}, 'YYYYMM') -- v_ view 的 year_month 是 DATE
   )
 `;
 
@@ -72,7 +72,7 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const latestCompleteYear = new Date().getFullYear() - 1;
   const cte = Prisma.sql`
     expense AS (
-      SELECT fund_tax_id, total_rate FROM "export"."fund_annual_expense_ratios" WHERE year = ${latestCompleteYear}
+      SELECT fund_tax_id, total_expense_pct AS total_rate FROM "export"."v_fund_annual_expense_ratios" WHERE year = ${latestCompleteYear}
     )
   `;
   const join = Prisma.sql`
@@ -89,12 +89,12 @@ const buildExpenseJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
 const buildExpensePivotJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
   const yearColumns: Prisma.Sql[] = [];
   for (let year = EXPENSE_RATIO_FULL_YEAR_RANGE.start; year <= EXPENSE_RATIO_FULL_YEAR_RANGE.end; year++) {
-    yearColumns.push(Prisma.sql`MAX(CASE WHEN year = ${year} THEN total_rate END) AS ${Prisma.raw(`"expense_ratio_${year}"`)}`);
+    yearColumns.push(Prisma.sql`MAX(CASE WHEN year = ${year} THEN total_expense_pct END) AS ${Prisma.raw(`"expense_ratio_${year}"`)}`);
   }
   const cte = Prisma.sql`
     expense_pivot AS (
       SELECT fund_tax_id, ${Prisma.join(yearColumns, ', ')}
-      FROM "export"."fund_annual_expense_ratios_full_year"
+      FROM "export"."v_fund_annual_expense_ratios_full_year"
       GROUP BY fund_tax_id
     )
   `;
@@ -111,9 +111,9 @@ const buildExpenseLatestFullYearJoin = (): { cte: Prisma.Sql; join: Prisma.Sql }
   const cte = Prisma.sql`
     expense_latest AS (
       SELECT DISTINCT ON (fund_tax_id)
-        fund_tax_id, management_fee_rate, custodian_fee_rate, guarantee_fee_rate,
-        other_fee_rate, commission_rate, transaction_tax_rate, etf_trading_fee_rate
-      FROM "export"."fund_annual_expense_ratios_full_year"
+        fund_tax_id, management_fee_pct AS management_fee_rate, custodian_fee_pct AS custodian_fee_rate, guarantee_fee_pct AS guarantee_fee_rate,
+        other_fee_pct AS other_fee_rate, commission_pct AS commission_rate, transaction_tax_pct AS transaction_tax_rate, etf_trading_fee_pct AS etf_trading_fee_rate
+      FROM "export"."v_fund_annual_expense_ratios_full_year"
       ORDER BY fund_tax_id, year DESC
     )
   `;
@@ -132,9 +132,9 @@ const buildPremiumDiscountJoin = (): { cte: Prisma.Sql; join: Prisma.Sql } => {
       SELECT DISTINCT ON (n.symbol)
         n.symbol,
         CASE WHEN n.nav_value IS NOT NULL AND n.nav_value <> 0 THEN ROUND(((c.close - n.nav_value) / n.nav_value * 100)::numeric, 2) END AS premium_discount_pct
-      FROM "export"."fundclear_etf_daily_navs" n
-      JOIN "export"."etf_closing_prices" c ON c.symbol = n.symbol AND c.date = n.date
-      ORDER BY n.symbol, n.date DESC
+      FROM "export"."v_fundclear_etf_daily_navs" n
+      JOIN "export"."v_etf_closing_prices" c ON c.symbol = n.symbol AND c.trade_date = n.trade_date
+      ORDER BY n.symbol, n.trade_date DESC
     )
   `;
   const join = Prisma.sql`LEFT JOIN premium_discount ON premium_discount.symbol = base.symbol`;

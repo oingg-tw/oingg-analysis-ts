@@ -1,8 +1,12 @@
-import { test, afterAll } from 'vitest';
+import { test, afterAll, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { getCompanyProfileDetail } from '@/infrastructure/repositories/exchange/companyProfile';
+import { loadIndustryCodes } from '@/infrastructure/repositories/exchange/industryCodes';
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+
+// sectorName 從類股代碼表快取取（正式環境 bootstrap 時載入），測試要自己先載。
+beforeAll(loadIndustryCodes);
 
 test('getCompanyProfileDetail: TWSE 公司（2330）應該回傳完整基本資料，市場標記正確', async () => {
   const result = await getCompanyProfileDetail('2330');

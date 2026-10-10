@@ -521,7 +521,7 @@ interface RawTypedSecurityRow {
 
 const getEtfRows = async (): Promise<RawTypedSecurityRow[]> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string; short_name: string | null }[]>`
-    SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."etf_monthly_profiles"
+    SELECT symbol, COALESCE(security_short_name, fund_name) AS short_name FROM "export"."v_etf_monthly_profiles"
   `;
   return rows.map((r) => ({ symbol: r.symbol, shortName: r.short_name, type: 'ETF' as const }));
 };
@@ -552,7 +552,7 @@ export const countAllSecurityNames = async (): Promise<number> => {
 // 2026-10-06 除權息日曆／觀察清單的 securityType 改依證券本身判斷，跟 GET /securities 的 type=ETF 同一個依據（sitca etf_monthly_profiles），
 // 不靠代號格式猜（見上方 type 欄位的說明）。
 const listEtfSymbols = async (): Promise<Set<string>> => {
-  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."etf_monthly_profiles"`;
+  const rows = await sitcaExportPrisma.$queryRaw<{ symbol: string }[]>`SELECT DISTINCT symbol FROM "export"."v_etf_monthly_profiles"`;
   return new Set(rows.map((r) => r.symbol));
 };
 

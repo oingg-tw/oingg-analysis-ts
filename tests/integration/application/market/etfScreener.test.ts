@@ -22,10 +22,10 @@ test('runEtfScreener: exclude=true 應該保留範圍外的值', async () => {
 });
 
 test('runEtfScreener: 類別 filter（values）應該是 IN 語意', async () => {
-  const result = await runEtfScreener({ filters: [{ field: 'market', values: ['TWSE'] }], columns: [{ field: 'market' }], page: 1, pageSize: 50 }, appDeps);
+  const result = await runEtfScreener({ filters: [{ field: 'market', values: ['sii'] }], columns: [{ field: 'market' }], page: 1, pageSize: 50 }, appDeps);
   assert.ok(result.results.length > 0);
   for (const row of result.results) {
-    assert.equal(row.values.market, 'TWSE');
+    assert.equal(row.values.market, 'sii');
   }
 });
 

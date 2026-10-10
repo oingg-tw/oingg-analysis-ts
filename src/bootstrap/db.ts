@@ -30,7 +30,7 @@ const DB_PROBES: [name: string, probe: () => Promise<unknown>][] = [
   ['gov', () => govExportPrisma.$queryRaw`SELECT 1 FROM "export"."quarterly_gdp" WHERE false`],
   ['tpex', () => tpexExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
   ['twse', () => twseExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_daily_prices" WHERE false`],
-  ['sitca', () => sitcaExportPrisma.$queryRaw`SELECT 1 FROM "export"."etf_monthly_profiles" WHERE false`],
+  ['sitca', () => sitcaExportPrisma.$queryRaw`SELECT 1 FROM "export"."v_etf_monthly_profiles" WHERE false`],
 ];
 
 // 回傳查不到的庫名稱（空陣列 = 全部正常）。

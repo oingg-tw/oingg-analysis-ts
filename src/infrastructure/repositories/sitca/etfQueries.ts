@@ -45,9 +45,11 @@ export interface RawEtfPerformanceRow {
 }
 
 // etf_monthly_profiles 最新的 year_month（'YYYYMM'），etfRanking/etfScreener 都以它當「當月快照」的基準。
+// 2026-10-11 改讀 sitca 詞彙表的 v_ view：year_month 變成 DATE（該月 1 日）。對內仍用 'YYYYMM' 字串，進出 SQL 時轉換，
+// 呼叫端與快取鍵不動。
 export const getLatestEtfYearMonth = async (): Promise<string | null> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ year_month: string | null }[]>`
-    SELECT MAX(year_month) as year_month FROM "export"."etf_monthly_profiles"
+    SELECT to_char(MAX(year_month), 'YYYYMM') as year_month FROM "export"."v_etf_monthly_profiles"
   `;
   return rows[0]?.year_month ?? null;
 };
@@ -55,46 +57,46 @@ export const getLatestEtfYearMonth = async (): Promise<string | null> => {
 export const listEtfBasicInfo = (yearMonth: string): Promise<RawEtfBasicInfoRow[]> =>
   sitcaExportPrisma.$queryRaw<RawEtfBasicInfoRow[]>`
     SELECT symbol, fund_name, security_short_name, company_name, category, distribution_class_info, is_actively_managed
-    FROM "export"."etf_monthly_profiles"
-    WHERE year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_profiles"
+    WHERE year_month = to_date(${yearMonth}, 'YYYYMM')
   `;
 
 export const listEtfMonthlyStatement = (yearMonth: string): Promise<RawEtfStatementRow[]> =>
   sitcaExportPrisma.$queryRaw<RawEtfStatementRow[]>`
     SELECT symbol, fund_tax_id, aum_twd, total_holders, subscription_amount_twd, redemption_amount_twd, dca_amount_twd, aum_below_statutory_threshold
-    FROM "export"."etf_monthly_statements"
-    WHERE year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_statements"
+    WHERE year_month = to_date(${yearMonth}, 'YYYYMM')
   `;
 
 // 只補 belowStatutoryThreshold 這個顯示欄位用的精簡查詢（報酬率排行）。
 export const listEtfStatementThresholdFlags = (yearMonth: string): Promise<{ symbol: string; aum_below_statutory_threshold: boolean | null }[]> =>
   sitcaExportPrisma.$queryRaw<{ symbol: string; aum_below_statutory_threshold: boolean | null }[]>`
     SELECT symbol, aum_below_statutory_threshold
-    FROM "export"."etf_monthly_statements"
-    WHERE year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_statements"
+    WHERE year_month = to_date(${yearMonth}, 'YYYYMM')
   `;
 
 // 費用率排行要用 fund_tax_id 對 fund_annual_expense_ratios_full_year。
 export const listEtfStatementTaxIdAndThreshold = (yearMonth: string): Promise<{ symbol: string; fund_tax_id: string | null; aum_below_statutory_threshold: boolean | null }[]> =>
   sitcaExportPrisma.$queryRaw<{ symbol: string; fund_tax_id: string | null; aum_below_statutory_threshold: boolean | null }[]>`
     SELECT symbol, fund_tax_id, aum_below_statutory_threshold
-    FROM "export"."etf_monthly_statements"
-    WHERE year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_statements"
+    WHERE year_month = to_date(${yearMonth}, 'YYYYMM')
   `;
 
 export const listEtfPerformance = (yearMonth: string): Promise<RawEtfPerformanceRow[]> =>
   sitcaExportPrisma.$queryRaw<RawEtfPerformanceRow[]>`
     SELECT symbol, return_3m, return_6m, return_1y, return_2y, return_3y, return_5y, return_ytd, return_10y
-    FROM "export"."etf_monthly_returns"
-    WHERE year_month = ${yearMonth}
+    FROM "export"."v_etf_monthly_returns"
+    WHERE year_month = to_date(${yearMonth}, 'YYYYMM')
   `;
 
 // 只用「最新一個完整年度」的總費用率——sitca-ts 的 fund_annual_expense_ratios_full_year view 已用
 // 他們自己的 is_partial_year 排除掉當年新掛牌/中途清算這類只涵蓋部分期間的列。
 export const listFullYearExpenseRatios = (year: number): Promise<{ fund_tax_id: string; total_rate: number | null }[]> =>
   sitcaExportPrisma.$queryRaw<{ fund_tax_id: string; total_rate: number | null }[]>`
-    SELECT fund_tax_id, total_rate
-    FROM "export"."fund_annual_expense_ratios_full_year"
+    SELECT fund_tax_id, total_expense_pct AS total_rate
+    FROM "export"."v_fund_annual_expense_ratios_full_year"
     WHERE year = ${year}
   `;
 
@@ -102,7 +104,7 @@ export const listFullYearExpenseRatios = (year: number): Promise<{ fund_tax_id: 
 export const listDistinctEtfAssetClasses = async (): Promise<string[]> => {
   const rows = await sitcaExportPrisma.$queryRaw<{ value: string | null }[]>`
     SELECT DISTINCT substring(category from 'ETF_(.+)ETF') as value
-    FROM "export"."etf_monthly_profiles"
+    FROM "export"."v_etf_monthly_profiles"
     WHERE category ~ 'ETF_.+ETF$'
     ORDER BY 1
   `;
@@ -117,7 +119,7 @@ export const listDistinctEtfDistributionFrequencies = async (): Promise<string[]
       WHEN distribution_class_info LIKE '%不分配%' THEN '不分配'
       ELSE substring(distribution_class_info from '分配\\((.+)\\)')
     END as value
-    FROM "export"."etf_monthly_profiles"
+    FROM "export"."v_etf_monthly_profiles"
     ORDER BY 1
   `;
   return rows.map((r) => r.value).filter((v): v is string => v !== null);
@@ -131,7 +133,7 @@ const listEtfDividendsForRange = (startDate: Date, endDate: Date): Promise<RawEt
     SELECT symbol, etf_name, ex_dividend_date, record_date, payment_date, distribution_per_unit,
            composition_dividend_income_pct, composition_interest_income_pct, composition_income_equalization_pct,
            composition_realized_capital_gain_pct, composition_other_income_pct
-    FROM "export"."fundclear_etf_dividends"
+    FROM "export"."v_fundclear_etf_dividends"
     WHERE ex_dividend_date BETWEEN ${startDate} AND ${endDate}
     ORDER BY ex_dividend_date ASC, symbol ASC
   `;
@@ -142,7 +144,7 @@ const listEtfDividendsForSymbol = (symbol: string): Promise<RawEtfDividendRow[]>
     SELECT symbol, etf_name, ex_dividend_date, record_date, payment_date, distribution_per_unit,
            composition_dividend_income_pct, composition_interest_income_pct, composition_income_equalization_pct,
            composition_realized_capital_gain_pct, composition_other_income_pct
-    FROM "export"."fundclear_etf_dividends"
+    FROM "export"."v_fundclear_etf_dividends"
     WHERE symbol = ${symbol}
     ORDER BY ex_dividend_date ASC
   `;

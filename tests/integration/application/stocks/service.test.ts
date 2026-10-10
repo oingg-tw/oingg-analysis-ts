@@ -50,8 +50,9 @@ test('getStockPrices: 空陣列應該回傳空物件，不拋錯', async () => {
 // 2026-09-04 應 web-nuxt 要求新增——先動態查一檔真的有除權息預告的 symbol（表裡資料量小、
 // 內容每天變動，不能像 2330 那樣寫死一個「長期都有資料」的代號）。
 test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，內容跟真實資料一致', async () => {
-  const sample = await twseExportPrisma.$queryRaw<{ symbol: string; ex_date: Date; ex_type: string }[]>`
-    SELECT symbol, ex_date, ex_type FROM "export"."v_ex_dividend_notices" WHERE ex_date >= CURRENT_DATE ORDER BY ex_date ASC LIMIT 1
+  // 2026-10-11 twse 詞彙表：ex_date／ex_type 拆成 ex_dividend_date／ex_rights_date（跟 exDividendNotice.ts 同一個 COALESCE）。
+  const sample = await twseExportPrisma.$queryRaw<{ symbol: string; ex_date: Date }[]>`
+    SELECT symbol, COALESCE(ex_dividend_date, ex_rights_date) AS ex_date FROM "export"."v_ex_dividend_notices" WHERE COALESCE(ex_dividend_date, ex_rights_date) >= CURRENT_DATE ORDER BY COALESCE(ex_dividend_date, ex_rights_date) ASC LIMIT 1
   `;
   if (!sample[0]) return; // 表裡目前沒有未來事件時無從驗證，跳過（資料量小、每天變動）。
 
@@ -60,7 +61,7 @@ test('getExDividendNotices: 查得到的 symbol 才會出現在 notices 裡，�
   assert.ok(!('__NOT_A_REAL_SYMBOL__' in result.notices), '查無資料的 symbol 不應該出現在 notices 物件裡');
 
   const entries = result.notices[sample[0].symbol]!;
-  assert.ok(entries.some((e) => e.exDate === sample[0]!.ex_date.toISOString().slice(0, 10) && e.exType === sample[0]!.ex_type));
+  assert.ok(entries.some((e) => e.exDate === sample[0]!.ex_date.toISOString().slice(0, 10)));
   for (const entry of entries) {
     // 2026-10-06 起：還沒除息（announced），或已除息但發放日還沒到（realized、paymentDate 一定 >= 今天）。
     const today = new Date().toISOString().slice(0, 10);
@@ -81,12 +82,11 @@ test('getExDividendNotices: 空陣列應該回傳空物件，不拋錯', async (
   assert.deepEqual(result.notices, {});
 });
 
-// 2026-09-08 新增：外資持股歷史，目前只有 2330 一檔有真實資料（twse-ts 一次性回填
-// 2021-09~2026-09），其他公司回傳空陣列不是錯誤。
-test('getForeignShareholdingHistory: 2330 應該有真實的外資持股歷史資料', async () => {
-  const result = await getForeignShareholdingHistory('2330', 5, appDeps);
-  assert.equal(result.symbol, '2330');
-  assert.ok(result.entries.length > 0, '2330 應該查得到外資持股歷史');
+// 2026-09-08 新增：外資持股歷史。2026-10-08 起只查上櫃（c24bfa6e，twse 的 view 依 OpenAPI 開放範圍收掉），改用上櫃的 6488。
+test('getForeignShareholdingHistory: 上櫃 6488 應該有真實的外資持股歷史資料', async () => {
+  const result = await getForeignShareholdingHistory('6488', 5, appDeps);
+  assert.equal(result.symbol, '6488');
+  assert.ok(result.entries.length > 0, '6488 應該查得到外資持股歷史');
   assert.ok(result.entries.length <= 5, 'limit=5 應該最多回傳 5 筆');
   for (const entry of result.entries) {
     assert.match(entry.tradeDate, /^\d{4}-\d{2}-\d{2}$/);
