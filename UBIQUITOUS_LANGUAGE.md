@@ -44,6 +44,7 @@
   6. **不改名的**：
      - metricCode：業務中台的使用者資料會被連帶刪除，要改就走 metricCode 改名程序。
      - GCP 專案 ID：GCP 不允許改名。
+- **資料集歸屬**（使用者 10/10）：同一份來源只由一個服務收。data.gov.tw 的資料集一律歸 gov-ts，生態系從 gov 讀；sitca-ts 退掉重複的 11109（每日淨值）、43476（境內基金基本資料）。
 - **範圍**：這份詞彙表管的是**對外介面**，也就是各服務的 export view 和 API。內部表與欄位要不要跟著改，由該服務自己決定（sitca-ts 10/10 提出、analysis 同意：只在 view 層用別名欄位，不動表）。
 - **防退化**（第四階段加上）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
 

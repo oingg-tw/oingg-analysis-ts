@@ -6,7 +6,7 @@
 //
 // 用法：pnpm tsx scripts/backfillMonthlyMetricsPit.ts
 //   LABELS        逗號分隔的 metricCode，只跑這幾支（預設全部月頻指標）
-//   MONTHS        最多回填最近幾個月，預設 60（資料上限就是 60 個月）
+//   MONTHS        最多回填最近幾個月，預設 132（2026-10-10 月營收延長到 2016-01 起，約 128 個月）
 //   CONCURRENCY   公司層級併發數，預設 8（DB 連線池 connection_limit=5，調高效益有限）
 //   SYMBOL_LIMIT  只跑前 N 家，測試用
 import 'dotenv/config';
@@ -17,7 +17,7 @@ import { memoizeMonthlyRevenueForBackfill } from '../src/bootstrap/memoizedState
 import { disconnectAllDbs } from '../src/bootstrap/db';
 
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
-const MONTHS = Number(process.env.MONTHS ?? 60);
+const MONTHS = Number(process.env.MONTHS ?? 132);
 const LABELS = process.env.LABELS ? process.env.LABELS.split(',').map((l) => l.trim()) : Object.keys(MONTHLY_METRIC_PITS);
 const pits = Object.entries(MONTHLY_METRIC_PITS).filter(([code]) => LABELS.includes(code));
 
