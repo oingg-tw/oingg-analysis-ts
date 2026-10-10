@@ -44,6 +44,7 @@
   6. **不改名的**：
      - metricCode：業務中台的使用者資料會被連帶刪除，要改就走 metricCode 改名程序。
      - GCP 專案 ID：GCP 不允許改名。
+- **範圍**：這份詞彙表管的是**對外介面**，也就是各服務的 export view 和 API。內部表與欄位要不要跟著改，由該服務自己決定（sitca-ts 10/10 提出、analysis 同意：只在 view 層用別名欄位，不動表）。
 - **防退化**（第四階段加上）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
 
 ## 二、官方用詞表
@@ -60,8 +61,9 @@
 | 類股 | `sector_code`（兩碼證交所產業類別）／`sector_name` | `sectorCode`／`sectorName` | 類股 | industry、industry_code（指類股時）、industry_name、industry_category、類股字典端點的 `{code,name}` | twse、tpex 叫 `industry`／`industry_name`；月營收的 `industry` 存的是名稱（twse、tpex）。mops 叫 `industry_category`（mops）。analysis profile 的 `industry`／`industryName` 上櫃一律 null（analysis）。同一代碼名稱不一致：14、16、17、20、33（tpex 對齊 twse） |
 | 報表格式業別 | `statement_format`（`ci`／`bd`／`fh`／`ins`／`basi`／`mim`），**不是**類股 | — | 報表格式 | industry_type | twse、tpex 的 fs 叫 `industry_type`（twse、tpex） |
 | 公司名稱 | `company_name` | `companyName` | 公司名稱 | 拿 `name`／`issuerName` 表示公司名稱 | 業務中台把 `companyName` 轉成 `name`；ETF 那處轉成 `issuerName`，要先確認是不是發行投信（業務中台） |
+| 投信代號 | `member_code`（SITCA 稱「會員代號」，照源頭；值如 `A0047`） | `memberCode` | 投信代號 | company_code | sitca `fund_etf_daily_navs.company_code`，sitca 實測跟 `member_code` 同一個概念，不一致的兩組是新光投信併入台新投信（sitca）；gov 的 `member_code` 待抽樣確認（gov） |
 | 基金統編 | `fund_tax_id` | `fundTaxId` | 基金統編 | fund_id；拿 fund_code 表示統編 | sitca fundclear 的 `fund_code` 是統編、gov `fund_code` 是基金代號、tdcc `fund_code` 是境外基金代碼，三義（sitca、gov）。投信代號 `member_code`／`company_code` 是否同一概念待驗證 |
-| 服務名稱 | repo `oingg-business-ts`；環境變數 `BUSINESS_API_KEY` | — | **業務中台**；web-nuxt 的 Nitro 叫「web-nuxt 伺服器層」 | BFF、bff、應用後端 | analysis 的 `BFF_API_KEY`、`bffAuth.ts`（analysis）；業務中台的環境變數與 Cloud Run 服務名（業務中台）；web-nuxt 的 `/api/bff`、`bffBase`，以及把 Nitro 叫 BFF（web-nuxt）；conductor vault 的「應用後端」（conductor） |
+| 服務名稱 | repo `oingg-business-ts`；環境變數 `BUSINESS_API_KEY` | — | **業務中台**；web-nuxt 的 Nitro 叫「web-nuxt 伺服器層」 | BFF、bff、應用後端 | analysis 的 `BFF_API_KEY`、`bffAuth.ts`（analysis）；業務中台的環境變數與 Cloud Run 服務名（業務中台）；web-nuxt 的 `/api/bff`、`bffBase`，以及把 Nitro 叫 BFF（web-nuxt）。web-nuxt 實測 422 處 BFF 字樣：新寫的文字和註解不再用 BFF；設定名稱（`bffBase`、`NUXT_BFF_*`）改不改由 web-nuxt 的使用者決定；conductor vault 的「應用後端」（conductor） |
 
 ### 二之二、期間與日期
 
@@ -108,7 +110,7 @@
 | 中文用字 | 使用者看到的中文照券商軟體：**營收**、**稅後淨利**（合併總額，含非控制權益；XBRL 中文標籤是「本期淨利」）、**歸屬母公司淨利**（另一個概念）。程式名稱照 XBRL（`revenue`、`profit_loss`、`profit_loss_attributable_to_owners_of_parent`） | 顯示用的「本期淨利」 | — |
 | 殖利率 | `dividendYield`＝交易所每日公布的殖利率；`cashDividendYield`＝近四季現金股利殖利率 | 把 dividendYield 叫「現金殖利率」 | web-nuxt 的標籤（web-nuxt） |
 | 「占」 | 用「占」 | 佔 | 指標名稱「資本支出佔營收比」（analysis） |
-| 指標名稱 | 用 analysis-ts 的 `name` | web-nuxt 手寫的 `topic` | 例：dividendCoverageRatio 兩邊名稱已經不同（web-nuxt） |
+| 指標名稱 | 頁面就是那支指標時，一律用 analysis-ts 的 `name`；`topic` 只用在「同一支指標、不同頁面」需要另一個頁名時（例：負債組成頁用 debtRatio） | 頁面就是指標本身時手寫名稱 | dividendCoverageRatio 兩邊名稱不同，web-nuxt 會改用 `name`；web-nuxt 實測 54 個 topic 只有這 1 個是真的不一致（web-nuxt） |
 
 ## 三、期間口徑：「第四季」只代表單季，「年報」是另一個概念（2026-09-25 使用者拍板）
 
@@ -193,25 +195,125 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 | 2026-09-25 | analysis（dividend-history） | `cashDividendFromCapitalReserve` → `cashDividendFromLegalReserveAndCapitalSurplus`（TIFRS `CapitalSurplus`） | 已完成 |
 | 2026-10-10 | analysis（`GET /industries/{sectorCode}/monthly-revenue-history`） | `revenue`／`lastYearRevenue`／`yoyChangePercent` → `currentMonthRevenue`／`lastYearSameMonthRevenue`／`yoyChangePct` | 已完成（端點 10/09 才上線，不設並存期，`40058581`） |
 | 2026-10-10 | mops（`market_monthly_revenue`，建表當天） | `last_month_revenue`／`last_year_cumulative_revenue` → `prev_month_revenue`／`cumulative_last_year_revenue` | 已完成（當時沒有讀取者） |
-| — | mops | xbrl 各表 `year`（民國）→ `roc_year`；寬表 `report_date` → `fiscal_period_end_date`；418 個 XBRL 欄名改成元素名或縮寫字典（第六節） | 待核准 |
+| — | mops | xbrl 各表 `year`（民國）→ `roc_year`；寬表 `report_date` → `fiscal_period_end_date`；418 個 XBRL 欄名照 `UBIQUITOUS_LANGUAGE_XBRL_COLUMNS.json`（第六節） | 待核准（mops 已核對對照表） |
+| — | mops | 特別股表：先新增 `company_symbol`、`preferred_stock_symbol`，舊的 `symbol`（母公司）與 `preferred_stock_code` 並存 14 天後移除；之後再把 `preferred_stock_symbol` 改成 `symbol`（第二次並存）。同一個 view 不能同時有兩個意義不同的 `symbol`，所以分兩步 | 待核准 |
+| — | mops | `company_profile.report_type`（中文）→ `data_type`：是值的轉換，不只是改名；mops 的規則是 export 只做投影，所以改在底表和 ingest | 待核准 |
+| 2026-10-10 | twse | 上市月營收 2021-09～2026-07 刪除（當初從 MOPS _0 頁匯入、缺 -KY），只留 2026-08 起 OpenAPI 的月份；analysis 那些月份自動改由 mops 補 | DEV 已刪，PROD 待 twse 的使用者放行 |
 | — | mops | view 改成 `export.v_<複數>`（例 `market_monthly_revenue` → `v_market_monthly_revenues`） | 待核准 |
 | — | twse、tpex | `source`（市場族群）→ `market`；`financial_report_type` → `data_type`（MOPS 編碼）；`report_date` → `generated_date`；`industry` → `sector_code` 等（見第二節落差欄） | 待核准 |
 | — | analysis | 對外 API：`periodType` → `timeframe`；民國 `year`／`season` → `fiscalYear`／`fiscalQuarter`；`paidInShares` → `numberOfSharesIssued`；`*Percent` → `*Pct`；`direction`／`sortOrder` → `order` 等（見第二節） | 待排程（並存 14 天） |
 | — | 業務中台、web-nuxt | `basis` → `timeframe`；型錄 `key`／`path` → `metricCode`；`name` → `companyName` 等 | 待排程（跟著 analysis） |
 
-## 六、縮寫字典（PostgreSQL 63 字元上限用，草案，等 mops-ts 核對）
+## 六、縮寫字典（PostgreSQL 63 字元上限用）
 
-**規則**（2026-10-10 使用者：人工縮寫＋對照表，不用截斷加雜湊）：
-1. 欄名＝元素名的 snake_case（同 mops `account_code`），明細表加 `_quarter`／`_ytd` 後綴。
-2. 組合元素 `X-X`（成員名稱跟主元素重複）先收成 `X`。
-3. 加上後綴仍超過 63 字元，才照下表**依序**套用，**一放得下就停**。所以同一個元素名，任何人縮出來都一樣。
-4. 一般縮寫優先用 IFRS 慣用說法（fvoci、fvtpl、oci、ppe、ecl、own credit risk、held for sale）。
+**規則**（2026-10-10 使用者：人工縮寫＋對照表，不用截斷加雜湊；同日 mops-ts 核對後定稿為第二版）：
+0. **期間只看後綴**：明細表的 `_quarter`／`_ytd` 後綴是唯一的期間標示。元素名裡的期間字樣（`for_the_quarter_of`、`for_the_euarter_of`、`year_to_date`）一律拿掉。
+   理由（mops-ts 實測）：`ShareOfProfitLossForTheQuarterOf…AuditedOrReviewedByOtherIndependentAccountants` 名稱叫 Quarter，contextRef 卻是年初累計。
+1. 欄名＝元素名的 snake_case（同 mops `account_code`），明細表加 `_quarter`／`_ytd`。組合元素 `X-X`（成員名稱跟主元素重複）先收成 `X`。
+2. **主名加後綴的總長度**超過 63 字元，才照下表**依序**套用，**一放得下就停**。同一個元素名，任何人縮出來都一樣。
+3. 同一個元素不同維度（期初／期末、本期／前期）用「元素＋維度」，例 `equity_opening_balance`、`numerator_prior_period`。
+4. 縮寫優先用 IFRS 慣用說法：fvoci、fvtpl、oci、ppe、ecl、ac（amortised cost）、own credit risk、held for sale。
+   會看不出正負方向的縮寫不用（mops-ts 指出 `impairment_net` 不行，改用 `impairment_reversal_loss`，保留元素語序）。
 
-字典本體和逐欄的新舊對照（418 列）由 analysis-ts 產生，mops-ts 核對後會把字典逐條列在這裡，並把對照表放進 repo。
-草案是 session scratchpad 的 `xbrl-column-rename-proposal-2026-10-10.json`，2026-10-10 實測 253 個長名稱全部縮到 ≤63 字元。
-待解的問題：
-- 196 列在截斷時連 `_quarter`／`_ytd` 一起被切掉，要 mops 補上後綴。
-- 第一個候選元素不是 ifrs-full 的列，要改用 ifrs-full。
+**逐欄對照**：[`UBIQUITOUS_LANGUAGE_XBRL_COLUMNS.json`](UBIQUITOUS_LANGUAGE_XBRL_COLUMNS.json)，共 418 列，是 mops 自取或截斷的 XBRL 欄位。
+- 每列附 `current_column`、`element`、`period_suffix`、`new_column`，以及用到哪幾條規則。
+- 2026-10-10 實測：新欄名全部 ≤63 字元、同一張表內 0 撞名。
+- 後綴 202 列由 mops 用 Prisma 欄位名補齊；3 列元素名由 mops 補完整。
+- 對照表由規則產生，要改字典就重新產生整份，不手改單列。
+
+**字典**（依序套用）：
+
+| 順序 | 元素名片段 | 縮成 |
+|---|---|---|
+| 1 | `change_in_fair_value_of_financial_liability_attributable_to_change_in_credit_risk_of_liability` | `own_credit_risk_fv_change` |
+| 2 | `reversal_of_impairment_loss_impairment_loss` | `impairment_reversal_loss` |
+| 3 | `qualifying_for_cash_and_cash_equivalents_under_the_definition_of_ias7` | `cash_equivalents_ias7` |
+| 4 | `securities_purchased_under_resell_agreements` | `reverse_repo` |
+| 5 | `equivalent_issued_shares_of_advance_receipts_for_common_stock` | `shares_from_advance_receipts` |
+| 6 | `attributable_to_former_owner_due_to_reorganization_of` | `former_owner_reorg_` |
+| 7 | `in_accordance_with_the_agreement_that_exempted_from_reporting` | `exempted_by_agreement` |
+| 8 | `in_accordance_with_debt_liquidation_program_and_restructuring_program` | `debt_restructuring_program` |
+| 9 | `due_to_recognition_of_equity_component_of_convertible_bonds` | `equity_component_of_convertible_bonds` |
+| 10 | `subsidiaries_joint_ventures_and_associates` | `subs_jv_assoc` |
+| 11 | `noncurrent_assets_or_disposal_groups_classified_as_held_for_sale_and_discontinued_operations` | `held_for_sale_and_discontinued` |
+| 12 | `other_equity_interest` | `other_equity` |
+| 13 | `fair_value_through_other_comprehensive_income` | `fvoci` |
+| 14 | `fair_value_through_profit_or_loss` | `fvtpl` |
+| 15 | `other_comprehensive_income` | `oci` |
+| 16 | `property_plant_and_equipment` | `ppe` |
+| 17 | `accounted_for_using_equity_method` | `equity_method` |
+| 18 | `associates_and_joint_ventures` | `assoc_jv` |
+| 19 | `that_will_not_be_reclassified_to_profit_or_loss` | `not_reclassified_to_pl` |
+| 20 | `that_will_be_reclassified_to_profit_or_loss` | `reclassified_to_pl` |
+| 21 | `right_of_use_assets` | `rou_assets` |
+| 22 | `investments_in_debt_instruments` | `debt_instrument_investments` |
+| 23 | `investments_in_equity_instruments` | `equity_instrument_investments` |
+| 24 | `exchange_differences_on_translation` | `translation_diff` |
+| 25 | `expected_credit_losses` | `ecl` |
+| 26 | `whose_financial_statements_were_audited_or_reviewed_by_other_independent_accountants` | `audited_by_others` |
+| 27 | `whose_financial_statements_were_on_unaudited_or_unreviewed` | `unaudited` |
+| 28 | `whose_financial_statements_were_unaudited_or_unreviewed` | `unaudited` |
+| 29 | `designated_as_upon_initial_recognition` | `designated` |
+| 30 | `incremental_costs_to_obtain_contract_with_customers` | `costs_to_obtain_contracts` |
+| 31 | `disposal_groups_classified_as_held_for_sale` | `disposal_groups_held_for_sale` |
+| 32 | `borrowed_securities_and_bonds_with_resale_agreements_short_sales` | `short_sales_borrowed_securities` |
+| 33 | `in_accordance_with_ifrs9` | `ifrs9` |
+| 34 | `determined_in_accordance_with` | `per` |
+| 35 | `difference_between_consideration_and_carrying_amount` | `consideration_carrying_diff` |
+| 36 | `current_portion_of_noncurrent` | `current_portion` |
+| 37 | `defined_benefit_plans` | `db_plans` |
+| 38 | `adjustments_for_change_in_value_of` | `adj_fv_change` |
+| 39 | `due_from_the_central_bank` | `due_from_cb` |
+| 40 | `call_loans_to_banks` | `call_loans` |
+| 41 | `entities_under_common_control` | `common_control` |
+| 42 | `subsidiaries_or_other_businesses` | `subs` |
+| 43 | `financial_assets` | `fin_assets` |
+| 44 | `financial_liabilities` | `fin_liab` |
+| 45 | `financial_liability` | `fin_liab` |
+| 46 | `financial_statements` | `fs` |
+| 47 | `comprehensive_income` | `ci` |
+| 48 | `non_controlling_interests` | `nci` |
+| 49 | `attributable_to_owners_of_parent` | `attrib_to_parent` |
+| 50 | `gains_losses` | `gl` |
+| 51 | `gain_loss` | `gl` |
+| 52 | `loss_gain` | `gl` |
+| 53 | `profit_loss` | `pl` |
+| 54 | `profit_or_loss` | `pl` |
+| 55 | `impairment_loss` | `impairment` |
+| 56 | `reversal_of_impairment` | `impairment_reversal` |
+| 57 | `retrospective` | `retro` |
+| 58 | `nonoperating_income_and_expenses` | `nonop` |
+| 59 | `before_tax` | `pretax` |
+| 60 | `income_tax_relating_to_components_of` | `tax_on` |
+| 61 | `components_of` | `comp_of` |
+| 62 | `classified_as_financing_activities` | `financing` |
+| 63 | `classified_as_investing_activities` | `investing` |
+| 64 | `classified_as_operating_activities` | `operating` |
+| 65 | `commercial_papers` | `cp` |
+| 66 | `subsidiaries` | `subs` |
+| 67 | `acquired_or_disposed` | `acq_disp` |
+| 68 | `derecognition` | `derecog` |
+| 69 | `measured_at` | `at` |
+| 70 | `increase_decrease` | `change` |
+| 71 | `decrease_increase` | `change` |
+| 72 | `recognised` | `recog` |
+| 73 | `instruments` | `instr` |
+| 74 | `investments` | `inv` |
+| 75 | `liabilities` | `liab` |
+| 76 | `accounts_receivable` | `ar` |
+| 77 | `independent_accountants` | `cpa` |
+| 78 | `discontinued_operations` | `discontinued` |
+| 79 | `noncurrent` | `nc` |
+| 80 | `finance_income_or_expenses` | `finance_income_expense` |
+| 81 | `reinsurance_contracts_held` | `reinsurance_held` |
+| 82 | `insurance_product_separated_account` | `separate_account` |
+| 83 | `at_amortised_cost` | `at_ac` |
+| 84 | `debt_instrument_inv` | `debt_inv` |
+| 85 | `non_interest_income` | `nii` |
+| 86 | `non_investment_linked` | `non_inv_linked` |
+| 87 | `short_sales_borrowed_securities` | `short_sales` |
+| 88 | `and_` | （拿掉） |
+| 89 | `of_` | （拿掉） |
 
 ## 七、外部研究報告的落地檢核（濃縮）
 
