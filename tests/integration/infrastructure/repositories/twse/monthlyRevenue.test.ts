@@ -28,17 +28,20 @@ test('getMonthlyRevenueHistory: 最舊一筆（沒有更早的月份可比較）
   assert.equal(oldest.currentMonthRevenue, '70855235');
 });
 
+// 2026-10-10 twse-ts 決定刪掉上市月營收 2021-09～2026-07（當初從 MOPS _0 頁匯入、整批缺 -KY），刪完上市只剩 2026-08 起。
+// 所以「交易所優先」改用上櫃的 6488 驗證（tpex 保留歷史）：2021-09 是 tpex 的列（有類股名稱），2021-08 是 mops 補的（類股名稱 null）。
 test('getMonthlyRevenueHistory: 交易所有的月份以交易所為準，mops 只補缺的月份（年增率照交易所口徑自己算）', async () => {
-  const result = await getMonthlyRevenueHistory('2330', 132);
+  const result = await getMonthlyRevenueHistory('6488', 132);
   const sep2021 = result.entries.find((e) => e.yearMonth === '2021-09')!;
   const aug2021 = result.entries.find((e) => e.yearMonth === '2021-08')!;
 
-  assert.equal(sep2021.reportDate, '2021-10-10', '2021-09 是交易所的列，有公告日');
-  assert.equal(sep2021.yoyChangePercent, 19.67, '交易所列的 yoyChangePercent 原樣透傳');
-  assert.equal(sep2021.momChangePercent, 11.1, '上個月由 mops 補上之後，2021-09 也算得出月增率');
+  assert.equal(sep2021.industry, '半導體業', '2021-09 是交易所（tpex）的列');
+  assert.equal(sep2021.yoyChangePercent, 5.63, '交易所列的 yoyChangePercent 原樣透傳');
+  assert.equal(sep2021.momChangePercent, 4.6, '上個月由 mops 補上之後，2021-09 也算得出月增率');
+  assert.equal(aug2021.industry, null, 'mops 補的列沒有類股名稱');
   assert.equal(aug2021.reportDate, null, 'mops 補的列沒有公告日');
-  // (137427162-122878244)/122878244*100 = 11.840...% → 11.84
-  assert.equal(aug2021.yoyChangePercent, 11.84);
+  // (5147501-4555613)/4555613*100 = 12.992...% → 12.99
+  assert.equal(aug2021.yoyChangePercent, 12.99);
 });
 
 test('getMonthlyRevenueHistory: momChangePercent 手動核算過的真實數字交叉驗證', async () => {
