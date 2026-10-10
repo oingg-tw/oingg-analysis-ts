@@ -1,5 +1,6 @@
 import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 import { tpexExportPrisma } from '@/infrastructure/prisma/tpexExportClient';
+import { mopsExportPrisma } from '@/infrastructure/prisma/mopsExportClient';
 import type { MonthlyRevenueEntry, MonthlyRevenueHistoryResult, MonthlyRevenuePort } from '@/application/ports/monthlyRevenue';
 import type { CompanyMonthlyRevenue } from '@/domain/industry/sectorAggregates';
 
@@ -57,18 +58,44 @@ const round2 = (x: number): number => Math.round(x * 100) / 100;
 
 const COLUMNS = 'year_month, report_date, industry, current_month_revenue, last_year_same_month_revenue, yoy_change_percent, cumulative_revenue, cumulative_last_year_revenue, cumulative_change_percent, note';
 
+// 2026-10-10 mops-ts export.market_monthly_revenue（MOPS t21sc03 彙總表，上市＋上櫃，2016-01 起、含 -KY）補交易所缺的月份。
+// 使用者 10/10 核准：twse-ts／tpex-ts 不往前補 2021-09 以前，改由 mops-ts 破例抓 MOPS 並開表。
+// - **逐家逐月以交易所為準，mops 只補交易所沒有的 (symbol, year_month)**。重疊的 108,249 列實測只有 2 列當月營收不同
+//   （4304、3631 的 2026-07，疑似更正申報）。
+// - 補進來的不只 2021-09 以前：交易所月營收實測缺 124 家（多為 -KY），共 6,752 列近期月份。mops-ts 指出 t21sc03 的國外公司
+//   在另一個 _1 頁面，交易所只抓了 _0。
+// - mops 不存變動率（他們的規則：export 只做投影），年增率與累計年增率在這裡照交易所口徑算：去年同期 > 0 才算、兩位小數。
+//   公告日、類股名稱 mops 沒有，給 null。
+// - **倖存者偏差**（mops-ts 實測，MOPS 本身的限制）：MOPS 用「當下的公司名單」重新產生歷史頁面，已下市公司在所有歷史月份都不見。
+//   早期月份只會有「現在還在的公司」。
+const MOPS_COLUMNS = `year_month, NULL::date AS report_date, NULL::text AS industry, current_month_revenue, last_year_same_month_revenue,
+  CASE WHEN last_year_same_month_revenue > 0 THEN round((current_month_revenue - last_year_same_month_revenue) * 100.0 / last_year_same_month_revenue, 2) END AS yoy_change_percent,
+  cumulative_revenue, cumulative_last_year_revenue,
+  CASE WHEN cumulative_last_year_revenue > 0 THEN round((cumulative_revenue - cumulative_last_year_revenue) * 100.0 / cumulative_last_year_revenue, 2) END AS cumulative_change_percent,
+  note`;
+
+const yearMonthKey = (row: { year_month: Date }): string => toYearMonthString(row.year_month);
+const fillMissingMonths = <T extends { year_month: Date }>(primary: T[], fallback: T[]): T[] => {
+  const have = new Set(primary.map(yearMonthKey));
+  return [...primary, ...fallback.filter((r) => !have.has(yearMonthKey(r)))].sort((a, b) => a.year_month.getTime() - b.year_month.getTime());
+};
+
 export const getMonthlyRevenueHistory = async (symbol: string, limit: number): Promise<MonthlyRevenueHistoryResult> => {
-  const listed = await twseExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
-    `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
-    symbol
-  );
-  const rows =
+  const [listed, mops] = await Promise.all([
+    twseExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
+      `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 AND source = 'MONTHLY_REVENUE' ORDER BY year_month ASC`,
+      symbol
+    ),
+    mopsExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(`SELECT ${MOPS_COLUMNS} FROM "export"."market_monthly_revenue" WHERE symbol = $1`, symbol),
+  ]);
+  const exchange =
     listed.length > 0
       ? listed
       : await tpexExportPrisma.$queryRawUnsafe<RawMonthlyRevenueRow[]>(
           `SELECT ${COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = $1 ORDER BY year_month ASC`,
           symbol
         );
+  const rows = fillMissingMonths(exchange, mops);
 
   const total = rows.length;
   const selected = rows.slice(-limit);
@@ -108,19 +135,23 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
   return { entries, total, hasMore: total > entries.length };
 };
 
-// 2026-10-09 類股月營收彙總：一次撈一批公司（半導體約 200 家 × 60 個月），上市、上櫃各查一次。
-// 「上市有資料就只用上市」跟 getMonthlyRevenueHistory 同一條規則（上櫃那張一樣不篩 source）。
+// 2026-10-09 類股月營收彙總：一次撈一批公司（半導體約 200 家 × 60 個月），上市、上櫃、mops 各查一次。
+// 「上市有資料就只用上市」跟 getMonthlyRevenueHistory 同一條規則（上櫃那張一樣不篩 source）；
+// 10/10 起 mops 補交易所沒有的 (symbol, year_month)，規則同上。
 type RawSymbolMonthRow = { symbol: string; year_month: Date; current_month_revenue: bigint | null; last_year_same_month_revenue: bigint | null };
 const SYMBOL_MONTH_COLUMNS = 'symbol, year_month, current_month_revenue, last_year_same_month_revenue';
 
 const listMonthlyRevenueForSymbols = async (symbols: string[]): Promise<CompanyMonthlyRevenue[]> => {
   if (symbols.length === 0) return [];
-  const [listed, otc] = await Promise.all([
+  const [listed, otc, mops] = await Promise.all([
     twseExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[]) AND source = 'MONTHLY_REVENUE'`, symbols),
     tpexExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."v_monthly_revenues" WHERE symbol = ANY($1::text[])`, symbols),
+    mopsExportPrisma.$queryRawUnsafe<RawSymbolMonthRow[]>(`SELECT ${SYMBOL_MONTH_COLUMNS} FROM "export"."market_monthly_revenue" WHERE symbol = ANY($1::text[])`, symbols),
   ]);
   const listedSymbols = new Set(listed.map((r) => r.symbol));
-  return [...listed, ...otc.filter((r) => !listedSymbols.has(r.symbol))].map((r) => ({
+  const exchange = [...listed, ...otc.filter((r) => !listedSymbols.has(r.symbol))];
+  const have = new Set(exchange.map((r) => `${r.symbol}|${yearMonthKey(r)}`));
+  return [...exchange, ...mops.filter((r) => !have.has(`${r.symbol}|${yearMonthKey(r)}`))].map((r) => ({
     symbol: r.symbol,
     yearMonth: toYearMonthString(r.year_month),
     currentMonthRevenue: r.current_month_revenue,

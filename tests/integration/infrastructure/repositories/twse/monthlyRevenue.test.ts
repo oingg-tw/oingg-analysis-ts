@@ -5,27 +5,40 @@ import { twseExportPrisma } from '@/infrastructure/prisma/twseExportClient';
 
 // 2330 月營收——2026-09-23 起讀 twse-ts PROD（先前讀 DEV 庫的一次性樣本，只有 2330 之類少數公司有資料，
 // 起訖是 2021-08~2026-07；PROD 完成上市全市場回填後是 2021-09~2026-08 共 60 個月、993 家）。
+// 2026-10-10 起 mops-ts 的 market_monthly_revenue 補交易所沒有的月份（2016-01 起），2330 變成 128 個月；
+// 2021-09 以後仍以交易所的列為準（有公告日、類股名稱），2021-08 以前是 mops 補的（公告日 null）。
 // 下面的數字是換源後從 PROD 取的真實值。momChangePercent 是本服務自己用相鄰兩個月的 currentMonthRevenue
 // 反推的（來源沒有這個欄位），這裡手動核算過交叉驗證。
 
-test('getMonthlyRevenueHistory: 2330 應該有完整 60 個月資料，由舊到新排序', async () => {
-  const result = await getMonthlyRevenueHistory('2330', 60);
+test('getMonthlyRevenueHistory: 2330 從 2016-01 到 2026-08 共 128 個月，由舊到新排序', async () => {
+  const result = await getMonthlyRevenueHistory('2330', 132);
 
-  assert.equal(result.total, 60);
+  assert.equal(result.total, 128);
   assert.equal(result.hasMore, false);
-  assert.equal(result.entries.length, 60);
-  assert.equal(result.entries[0]!.yearMonth, '2021-09', '第一筆應該是最舊的月份');
-  assert.equal(result.entries[59]!.yearMonth, '2026-08', '最後一筆應該是最新的月份');
+  assert.equal(result.entries[0]!.yearMonth, '2016-01', '第一筆應該是最舊的月份（mops 補的）');
+  assert.equal(result.entries[127]!.yearMonth, '2026-08', '最後一筆應該是最新的月份');
 });
 
 test('getMonthlyRevenueHistory: 最舊一筆（沒有更早的月份可比較）momChangePercent 應該是 null', async () => {
-  const result = await getMonthlyRevenueHistory('2330', 60);
+  const result = await getMonthlyRevenueHistory('2330', 132);
   const oldest = result.entries[0]!;
 
-  assert.equal(oldest.yearMonth, '2021-09');
+  assert.equal(oldest.yearMonth, '2016-01');
   assert.equal(oldest.momChangePercent, null);
-  assert.equal(oldest.currentMonthRevenue, '152685418');
-  assert.equal(oldest.yoyChangePercent, 19.67, 'yoyChangePercent 是來源直接算好的欄位，原樣透傳');
+  assert.equal(oldest.currentMonthRevenue, '70855235');
+});
+
+test('getMonthlyRevenueHistory: 交易所有的月份以交易所為準，mops 只補缺的月份（年增率照交易所口徑自己算）', async () => {
+  const result = await getMonthlyRevenueHistory('2330', 132);
+  const sep2021 = result.entries.find((e) => e.yearMonth === '2021-09')!;
+  const aug2021 = result.entries.find((e) => e.yearMonth === '2021-08')!;
+
+  assert.equal(sep2021.reportDate, '2021-10-10', '2021-09 是交易所的列，有公告日');
+  assert.equal(sep2021.yoyChangePercent, 19.67, '交易所列的 yoyChangePercent 原樣透傳');
+  assert.equal(sep2021.momChangePercent, 11.1, '上個月由 mops 補上之後，2021-09 也算得出月增率');
+  assert.equal(aug2021.reportDate, null, 'mops 補的列沒有公告日');
+  // (137427162-122878244)/122878244*100 = 11.840...% → 11.84
+  assert.equal(aug2021.yoyChangePercent, 11.84);
 });
 
 test('getMonthlyRevenueHistory: momChangePercent 手動核算過的真實數字交叉驗證', async () => {
@@ -41,7 +54,7 @@ test('getMonthlyRevenueHistory: momChangePercent 手動核算過的真實數字�
 test('getMonthlyRevenueHistory: limit 小於總月數時，momChangePercent 仍然用完整資料反推（不受 limit 影響）', async () => {
   const limited = await getMonthlyRevenueHistory('2330', 5);
 
-  assert.equal(limited.total, 60);
+  assert.equal(limited.total, 128);
   assert.equal(limited.hasMore, true);
   assert.equal(limited.entries.length, 5);
   assert.equal(limited.entries[0]!.yearMonth, '2026-04');
@@ -72,7 +85,7 @@ test('getMonthlyRevenueHistory: 公開發行未上市的公司不該出現（sou
 test('getMonthlyRevenueHistory: 上櫃公司也要查得到（先查上市、空了再查上櫃）', async () => {
   const result = await getMonthlyRevenueHistory('6488', 60);
 
-  assert.equal(result.total, 60);
+  assert.equal(result.total, 128);
   assert.equal(result.entries[0]!.yearMonth, '2021-09');
   assert.equal(result.entries[59]!.yearMonth, '2026-08');
   assert.equal(result.entries[59]!.currentMonthRevenue, '4764363');
@@ -81,10 +94,12 @@ test('getMonthlyRevenueHistory: 上櫃公司也要查得到（先查上市、空
 
 // 上櫃歷史列的 report_date 是 NULL——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，
 // tpex-ts 選擇誠實留空。這裡釘住「是 null 而不是被填了一個假日期」。
+// 2026-10-10 改看 2021-09（tpex 回填的歷史列）：原本看最新一個月，那一列是每日排程收的、本來就有真實公告日。
 test('getMonthlyRevenueHistory: 上櫃歷史月份的 reportDate 是 null，不是假的申報日', async () => {
   const result = await getMonthlyRevenueHistory('6488', 60);
 
-  assert.equal(result.entries[59]!.reportDate, null);
+  assert.equal(result.entries[0]!.yearMonth, '2021-09');
+  assert.equal(result.entries[0]!.reportDate, null);
 });
 
 afterAll(async () => {
