@@ -91,7 +91,7 @@ const provenancePeriodType = (metricCode: string): PeriodType | null => {
 export const getCompanyMetricProvenance = async (symbol: string, { metricCode, year, season, asOfDate, periodType }: GetCompanyMetricProvenanceQuery, deps: PitDeps & Pick<AppDeps, 'reportAvailability'>): Promise<MetricProvenanceResponse> => {
   const provided = provenancePeriodType(metricCode);
   if (periodType !== undefined && provided !== null && periodType !== provided) {
-    return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: `這支指標的溯源表目前只提供 ${provided}（要求的是 ${periodType}）。`, timeframe: provided, periodType: provided };
+    return { symbol, metricCode, found: false, fiscalYear: null, fiscalQuarter: null, value: null, entries: [], methodologyNote: `這支指標的溯源表目前只提供 ${provided}（要求的是 ${periodType}）。`, timeframe: provided };
   }
   const result = await restatePerShareProvenance(
     await createProvenanceResolvers(deps)[metricCode]({
@@ -104,5 +104,5 @@ export const getCompanyMetricProvenance = async (symbol: string, { metricCode, y
     }),
     deps
   );
-  return { ...result, timeframe: provided, periodType: provided };
+  return { ...result, timeframe: provided };
 };

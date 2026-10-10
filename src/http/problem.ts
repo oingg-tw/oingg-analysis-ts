@@ -12,9 +12,7 @@ import type { ZodError } from 'zod';
 // - instance＝urn:uuid:<request id>，沿用 bff 送來的 X-Request-Id（見 bootstrap/app.ts 的 pino-http genReqId），log 用同一個 id。
 // - 驗證錯誤：errors: [{ detail, pointer }]（body，URI fragment 形式的 JSON Pointer，例如 #/columns/0/field）或
 //   [{ detail, parameter }]（query／path 參數名稱）——RFC 9457 §3 自己範例的形狀（bff 一開始用的 invalid_params 是被取代的 7807 範例）。
-// - 過渡期：舊的頂層 `message` 保留。驗證錯誤時它是「第一個欄位的錯誤訊息」——bff-ts 現在從舊 zod 樹挖出來顯示的就是這一句
-//   （analysisServiceClient.readUpstreamValidationMessage，碰到陣列會退回讀 message），所以換格式後 bff 顯示的文字不變。
-//   bff 改讀 errors／detail 後約定日期移除。
+// - 舊的頂層 `message`（2026-10-08 前的格式）2026-10-11 移除：業務中台 0564d35 起改讀 errors／detail。
 export type ProblemCode = 'unknown_metric' | 'unsupported_timeframe' | 'per_share_not_aggregatable' | 'unknown_sector';
 
 export type ProblemFieldError = { detail: string; pointer: string } | { detail: string; parameter: string };
@@ -34,7 +32,6 @@ const requestIdOf = (res: Response): string => {
 export const sendProblem = (res: Response, status: number, detail: string, options: { code?: ProblemCode; extensions?: Record<string, unknown> } = {}): void => {
   const { code, extensions = {} } = options;
   const problem = {
-    message: detail, // 過渡期舊欄位，見檔頭；extensions 可以覆寫（驗證錯誤放第一個欄位的訊息）
     ...extensions,
     type: code ? `tag:oingg.com,2026:${code.replaceAll('_', '-')}` : 'about:blank',
     title: STATUS_CODES[status] ?? 'Error',

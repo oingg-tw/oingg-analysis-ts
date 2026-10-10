@@ -21,7 +21,6 @@ export const postScreenerBodySchema = z.object({
   pageSize: z.number().int().min(1).max(200).default(50),
   sortField: z.string().min(1).optional().meta({ description: '"symbol" 或已列在 columns 裡的欄位，兩者要嘛都給要嘛都不給，沒給預設用 symbol 排序' }),
   order: z.enum(['asc', 'desc']).optional().meta({ description: '排序方向' }),
-  sortOrder: z.enum(['asc', 'desc']).optional().meta({ description: '已退役，2026-10-24 移除，改用 order', deprecated: true }),
   sectorCodes: z
     .array(z.string().min(1))
     .optional()
@@ -41,17 +40,15 @@ export const postScreenerBodySchema = z.object({
         '「全部類股減掉排除的」轉成 sectorCodes——那樣存成篩選範本後會把「排除金融」凍結成「包含這 34 個類股」，' +
         '之後新增的類股會被默默漏掉。未分類的公司不在任何類股裡，用 excludeSectorCodes 時會被保留（跟 sectorCodes 相反）。',
     }),
-}).transform(({ order, sortOrder, ...rest }) => ({ ...rest, sortOrder: order ?? sortOrder })); // 詞彙表：order 優先，sortOrder 並存到 2026-10-24
+}).transform(({ order, ...rest }) => ({ ...rest, sortOrder: order })); // 詞彙表：排序方向官方名 order，service 內部仍叫 sortOrder
 
 const splitCsv = (value: string): string[] => value.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
 
-// 2026-10-10 詞彙表（UBIQUITOUS_LANGUAGE.md）：排序方向參數官方名 order；舊名並存到 2026-10-24，兩個都給時以 order 為準。
-const orderRequired = { message: 'order is required.', path: ['order'] };
+// 2026-10-10 詞彙表（UBIQUITOUS_LANGUAGE.md）：排序方向參數官方名 order（舊名 direction／sortOrder 已於 2026-10-11 移除）。
 export const getScreenerRankingQuerySchema = z
   .object({
   field: z.string({ error: 'field is required.' }).min(1).meta({ example: 'roe.TTM' }),
-  order: z.enum(['asc', 'desc']).optional().meta({ description: '排序方向（必填，並存期間可用舊名 direction 代替）' }),
-  direction: z.enum(['asc', 'desc']).optional().meta({ description: '已退役，2026-10-24 移除，改用 order', deprecated: true }),
+  order: z.enum(['asc', 'desc'], { error: 'order is required.' }).meta({ description: '排序方向' }),
   limit: z.coerce.number().int().min(1).max(50).default(10).meta({ description: '預設 10，上限 50。' }),
   columns: z
     .string()
@@ -69,8 +66,7 @@ export const getScreenerRankingQuerySchema = z
     .meta({ description: '2026-09-20 新增。逗號分隔的證交所類股代碼，整批排除，跟 sectorCodes 互斥（兩個都給會 400），語意同 POST /screener 的 excludeSectorCodes。' })
     .transform((value) => (value ? splitCsv(value) : undefined)),
   })
-  .refine((d) => d.order !== undefined || d.direction !== undefined, orderRequired)
-  .transform(({ order, direction, ...rest }) => ({ ...rest, direction: (order ?? direction)! }));
+  .transform(({ order, ...rest }) => ({ ...rest, direction: order })); // service 內部仍叫 direction
 
 // 2026-09-16 新增——查單一公司在全市場某個欄位的排名/百分位，跟 GET /screener/ranking
 // （取前 N 名清單）是互補的兩種查詢，這支回答「這家公司自己排第幾」，不需要先知道
@@ -79,16 +75,14 @@ export const getCompanyRankQuerySchema = z
   .object({
   symbol: z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' }),
   field: z.string({ error: 'field is required.' }).min(1).meta({ description: '"metricCode.timeframe" 格式，例如 "dividendYield.EOD"，可用組合見 GET /metrics', example: 'dividendYield.EOD' }),
-  order: z.enum(['asc', 'desc']).optional().meta({ description: '必填（並存期間可用舊名 direction 代替）。desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
-  direction: z.enum(['asc', 'desc']).optional().meta({ description: '已退役，2026-10-24 移除，改用 order', deprecated: true }),
+  order: z.enum(['asc', 'desc'], { error: 'order is required.' }).meta({ description: 'desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）' }),
   excludeZero: booleanQueryParam(
     '排除值精確等於 0 的公司（不納入排名母體），預設 false。給殖利率這類「0 代表不配息，不是連續分布' +
       '裡的邊緣值」的欄位用，比照 GET /screener/distribution 的同名參數；混進一大群 0 會讓有配息公司的' +
       '排名/百分位失真。'
   ),
   })
-  .refine((d) => d.order !== undefined || d.direction !== undefined, orderRequired)
-  .transform(({ order, direction, ...rest }) => ({ ...rest, direction: (order ?? direction)! }));
+  .transform(({ order, ...rest }) => ({ ...rest, direction: order })); // service 內部仍叫 direction
 
 // 2026-09-18 新增——全市場某個欄位的分布（直方圖）。bins 預設 20，上限 100（畫面上不會有
 // 意義去切更細，且 width_bucket 每多一格就多一列 GROUP BY，沒必要放更寬）。

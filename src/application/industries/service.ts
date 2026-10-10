@@ -21,7 +21,7 @@ export type IndustriesDeps = Pick<AppDeps, 'industryReference' | 'companyProfile
 // GET /industries/tree 是不同分類體系（證交所類股 vs 財政部稅籍），刻意獨立端點，不合併。
 export const getSecuritiesIndustrySectors = async (deps: Pick<AppDeps, 'industryReference'>): Promise<SecuritiesIndustrySectorsResult> => {
   const sectors = await deps.industryReference.listSecuritiesIndustrySectors();
-  return { sectors: sectors.map((s) => ({ ...s, sectorCode: s.code, sectorName: s.name })) };
+  return { sectors: sectors.map((s) => ({ sectorCode: s.code, sectorName: s.name, companyCount: s.companyCount })) };
 };
 
 // 2026-09-30 使用者設計「產業分析圖表」（每個證交所類股一個點，Y 殖利率、X 股利 3 年成長率），彙總規則見
@@ -35,7 +35,7 @@ const YIELD_FRESHNESS_DAYS = 14;
 
 export const getSectorDividendSummary = async (deps: Pick<AppDeps, 'companyProfiles' | 'metricValueQueries'>): Promise<SectorDividendSummaryResult> => {
   const { entries } = await deps.companyProfiles.listAllCompanyNames(Number.MAX_SAFE_INTEGER, 0);
-  const companies = entries.filter((e) => !e.isEmerging && e.sectorCode !== null && e.sectorName !== null);
+  const companies = entries.filter((e) => e.market !== 'rotc' && e.sectorCode !== null && e.sectorName !== null);
   const rows = await deps.metricValueQueries.values(
     companies.map((c) => c.symbol),
     [resolveFieldOrThrow('dividendYield.EOD'), resolveFieldOrThrow('dividendGrowthRate3y.FY')]
@@ -68,7 +68,7 @@ export const getSectorDividendSummary = async (deps: Pick<AppDeps, 'companyProfi
 // company_profile 裡、不會被算進去，所以早期各期是「現存公司的歷史」（openapi 有寫）。
 const listedSectorMembers = async (deps: Pick<AppDeps, 'companyProfiles'>) => {
   const { entries } = await deps.companyProfiles.listAllCompanyNames(Number.MAX_SAFE_INTEGER, 0);
-  return entries.filter((e) => !e.isEmerging && e.sectorCode !== null && e.sectorName !== null);
+  return entries.filter((e) => e.market !== 'rotc' && e.sectorCode !== null && e.sectorName !== null);
 };
 
 const sectorOrThrow = async (sectorCode: string, deps: Pick<AppDeps, 'companyProfiles'>) => {

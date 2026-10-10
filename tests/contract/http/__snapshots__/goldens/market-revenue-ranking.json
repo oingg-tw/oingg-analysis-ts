@@ -8,14 +8,11 @@
       {
         "companyName": "<string>",
         "currentMonthRevenue": "<numeric-string>",
-        "market": "TWSE",
-        "marketCode": "sii",
+        "market": "sii",
         "momChangePct": "<number>",
-        "momChangePercent": "<number>",
         "rank": "<number>",
         "symbol": "<numeric-string>",
-        "yoyChangePct": "<number>",
-        "yoyChangePercent": "<number>"
+        "yoyChangePct": "<number>"
       }
     ],
     "warnings": [],

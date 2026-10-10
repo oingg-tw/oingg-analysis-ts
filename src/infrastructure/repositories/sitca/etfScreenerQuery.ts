@@ -35,7 +35,7 @@ const buildBaseCte = (yearMonth: string): Prisma.Sql => Prisma.sql`
       b.company_name,
       b.category,
       b.established_date,
-      CASE WHEN b.category LIKE '上市%' THEN 'TWSE' WHEN b.category LIKE '上櫃%' THEN 'TPEx' ELSE NULL END AS market,
+      CASE WHEN b.category LIKE '上市%' THEN 'sii' WHEN b.category LIKE '上櫃%' THEN 'otc' ELSE NULL END AS market,
       substring(b.category from 'ETF_(.+)ETF') AS asset_class,
       b.is_actively_managed AS is_active,
       CASE WHEN b.distribution_class_info LIKE '%不分配%' THEN '不分配' ELSE substring(b.distribution_class_info from '分配\\((.+)\\)') END AS distribution_frequency,

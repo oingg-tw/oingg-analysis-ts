@@ -15,8 +15,6 @@ import { MAX_SECTOR_SUMMARY_FIELDS } from '@/application/industries/service';
 export const securitiesIndustrySectorSchema = z.object({
   sectorCode: z.string().meta({ description: '兩碼證交所類股代碼，例如 "24"' }),
   sectorName: z.string().meta({ description: '中文類股名稱，例如「半導體業」' }),
-  code: z.string().meta({ description: '已退役，2026-10-24 移除，改用 sectorCode', deprecated: true }),
-  name: z.string().meta({ description: '已退役，2026-10-24 移除，改用 sectorName', deprecated: true }),
   companyCount: z.number().meta({ description: '這個類股底下總共幾家公司（TWSE+TPEx 加總）' }),
 });
 

@@ -25,7 +25,7 @@ test('listAttentionStocks: 清單裡不應該出現非上市/上櫃公司', asyn
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   for (const row of result.items) {
-    const companySymbols = row.market === 'TWSE' ? twseSymbols : tpexSymbols;
+    const companySymbols = row.market === 'sii' ? twseSymbols : tpexSymbols;
     assert.ok(companySymbols.has(row.symbol), `${row.symbol}（${row.market}）不在 company_profile 裡，應該已經被排除`);
   }
 });

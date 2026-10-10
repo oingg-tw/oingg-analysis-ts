@@ -31,8 +31,8 @@ export const computeRevenueYoy3m = async (query: MonthlyMetricQuery, deps: Reven
     ...monthlyGroup(),
     value: result.value,
     nullReason: result.nullReason,
-    knowledgeDate: target.reportDate ? new Date(`${target.reportDate}T00:00:00.000Z`) : statutoryDeadline(target.yearMonth),
-    knowledgeDateIsFallback: target.reportDate === null,
+    knowledgeDate: target.generatedDate ? new Date(`${target.generatedDate}T00:00:00.000Z`) : statutoryDeadline(target.yearMonth),
+    knowledgeDateIsFallback: target.generatedDate === null,
   });
   return { symbol, yearMonth: target.yearMonth, slots: { revenueYoy3m: slot } };
 };

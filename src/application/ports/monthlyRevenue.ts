@@ -9,9 +9,7 @@ export interface MonthlyRevenueEntry {
   // 2026-10-11 更正：來源的 report_date 是 OpenAPI 的「出表日期」，不是公司公告日（2330 2026-08 是 9/17，實際 9/10 公告；tpex 也定名 generated_date）。
   // 10/10 一度取名 announcementDate 是錯的——拿出表日當公告日會讓人以為資料更早可知（look-ahead）。
   generatedDate: string | null; // 出表日 "YYYY-MM-DD"
-  sectorName: string | null; // 類股名稱（2026-10-10 詞彙表官方名）
-  reportDate: string | null; // 舊名，並存到 2026-10-24
-  industry: string | null; // 舊名，並存到 2026-10-24
+  sectorName: string | null; // 類股名稱（來源原樣）
   currentMonthRevenue: string | null; // 當月營收（新台幣千元），bigint 序列化成字串
   lastYearSameMonthRevenue: string | null;
   yoyChangePct: number | null; // 來源直接算好的欄位，原樣透傳

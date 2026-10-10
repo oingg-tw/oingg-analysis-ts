@@ -4,21 +4,16 @@
     "entries": [
       {
         "cumulativeChangePct": "<number>",
-        "cumulativeChangePercent": "<number>",
         "cumulativeLastYearRevenue": "<numeric-string>",
         "cumulativeRevenue": "<numeric-string>",
         "currentMonthRevenue": "<numeric-string>",
         "generatedDate": "<date>",
-        "industry": "<string>",
         "lastYearSameMonthRevenue": "<numeric-string>",
         "momChangePct": "<number>",
-        "momChangePercent": "<number>",
         "note": "<string>",
-        "reportDate": "<date>",
         "sectorName": "<string>",
         "yearMonth": "<string>",
-        "yoyChangePct": "<number>",
-        "yoyChangePercent": "<number>"
+        "yoyChangePct": "<number>"
       }
     ],
     "hasMore": "<boolean>",

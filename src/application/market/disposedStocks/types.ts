@@ -9,8 +9,7 @@ export type DisposedStocksQuery = z.infer<typeof disposedStocksQuerySchema>;
 export const disposedStockRowSchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
-  market: z.enum(['TWSE', 'TPEx']),
-  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
+  market: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）' }),
   announceDate: z.string(),
   announcementCount: z.number().nullable().meta({ description: 'TPEx 版本沒有這個欄位，null' }),
   reason: z.string().nullable(),

@@ -22,11 +22,9 @@
                 "description": "<string>",
                 "note": "<string>",
                 "percentileRank": {
-                  "direction": "asc",
                   "order": "asc",
                   "scope": "market",
-                  "topPct": "<number>",
-                  "topPercent": "<number>"
+                  "topPct": "<number>"
                 },
                 "thresholdLatex": "<string>",
                 "value": "<number>",

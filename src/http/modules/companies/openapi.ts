@@ -70,7 +70,6 @@ const roeHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roe'),
   timeframe: z.enum(['Q', 'TTM', 'FY']),
-  periodType: z.enum(['Q', 'TTM', 'FY']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(roeHistoryEntrySchema),
 });
@@ -79,7 +78,6 @@ const roaHistoryResultSchema = z.object({
   symbol: z.string(),
   metricCode: z.literal('roa'),
   timeframe: z.enum(['Q', 'TTM']),
-  periodType: z.enum(['Q', 'TTM']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(roaHistoryEntrySchema),
 });
@@ -87,7 +85,6 @@ const roaHistoryResultSchema = z.object({
 const dupontHistoryResultSchema = z.object({
   symbol: z.string(),
   timeframe: z.enum(['Q', 'TTM']),
-  periodType: z.enum(['Q', 'TTM']).meta({ description: '已退役，2026-10-24 移除，改用 timeframe', deprecated: true }),
   ...totalHasMoreFields,
   entries: z.array(dupontHistoryEntrySchema),
 });
@@ -205,9 +202,9 @@ export const registerCompaniesOpenApi = (registry: OpenAPIRegistry): void => {
     summary: '單一公司基本資料（董事長/總經理/發言人/設立上市日期/資本額等）',
     description:
       '給個股詳情頁的公司基本資料卡片用。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。' +
-      'TWSE/TPEx 兩邊欄位範圍不完全一樣（TPEx 沒有 englishAddress/industryName），沒有的欄位回傳 null。' +
-      'paidInCapital/issuedShares/privatePlacementShares/preferredStockShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。' +
-      'financialReportTypeName 是 financialReportType 裸代碼（"1"/"2"）解出來的可讀名稱（個別財報／合併財報），未知代碼回 null。' +
+      'TWSE/TPEx 兩邊欄位範圍不完全一樣（TPEx 沒有 englishAddress），沒有的欄位回傳 null。' +
+      'paidInCapital/issuedShares/privatePlacementShares/numberOfPreferenceShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。' +
+      'financialReportTypeName 是 declaredDataType（MOPS 編碼 "2"/"1"）的可讀名稱（合併財報／個別財報），未知代碼回 null。' +
       'website 已正規化成乾淨的裸網域（去 scheme/尾斜線/www. 前綴），呼叫端不用自己再清洗一次。',
     tags: ['Companies'],
     request: { query: getCompanyProfileQuerySchema },

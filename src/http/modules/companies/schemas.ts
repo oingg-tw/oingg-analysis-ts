@@ -10,32 +10,26 @@ import { booleanQueryParam } from '@/http/schemas/queryParams';
 
 const symbolField = z.string({ error: 'symbol is required.' }).min(1).meta({ description: '公司代號', example: '2330' });
 
-// 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md，使用者指定 analysis-ts 主導）：期別參數官方名 timeframe、年度一律西元
-// fiscalYear／fiscalQuarter。舊參數 periodType 與民國 year／season 照 docs/api-conventions.md 並存 14 天，到期移除；
-// 兩種都給時以新的為準。service 內部仍用 periodType 與民國 year＋season，換算只在這一層（transform），不往裡面擴散。
-export const RETIRED_QUERY_PARAMS_REMOVED_ON = '2026-10-24';
-const retired = (replacement: string) => `已退役，請改用 ${replacement}，${RETIRED_QUERY_PARAMS_REMOVED_ON} 移除。`;
-
+// 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）：期別參數官方名 timeframe、年度一律西元 fiscalYear／fiscalQuarter。
+// 2026-10-11 舊參數 periodType 與民國 year／season 已移除（並存期提前結束，使用者決定）。service 內部仍用 periodType 與民國
+// year＋season，換算只在這一層（transform），不往裡面擴散。
 const timeframeParams = <T extends readonly [string, ...string[]]>(values: T, description: string) => ({
   timeframe: z.enum(values).optional().meta({ description }),
-  periodType: z.enum(values).optional().meta({ description: retired('timeframe'), deprecated: true }),
 });
 
 const ROC_YEAR_OFFSET = 1911;
 const fiscalQuarterParams = (description: string) => ({
   fiscalYear: z.coerce.number().int().min(1990).max(2100).optional().meta({ description: `西元年度，例如 2026；跟 fiscalQuarter 要成對提供，${description}`, example: 2026 }),
   fiscalQuarter: z.coerce.number().int().min(1).max(4).optional().meta({ description: '季別 1-4；跟 fiscalYear 要成對提供', example: 2 }),
-  year: z.string().regex(/^\d{2,3}$/, 'year 必須是民國年數字字串，例如 "115"。').optional().meta({ description: retired('fiscalYear（西元）'), deprecated: true }),
-  season: z.enum(['1', '2', '3', '4']).optional().meta({ description: retired('fiscalQuarter'), deprecated: true }),
 });
-type FiscalQuarterInput = { fiscalYear?: number | undefined; fiscalQuarter?: number | undefined; year?: string | undefined; season?: '1' | '2' | '3' | '4' | undefined };
-const fiscalQuarterPaired = (d: FiscalQuarterInput) => (d.fiscalYear === undefined) === (d.fiscalQuarter === undefined) && (d.year === undefined) === (d.season === undefined);
-const fiscalQuarterPairedError = { message: 'fiscalYear 和 fiscalQuarter（或舊參數 year 和 season）必須成對提供，只給其中一個是無效請求。', path: ['fiscalQuarter'] };
-// 換回 service 用的民國 year＋season；新參數優先。
-const toRocYearSeason = <D extends FiscalQuarterInput>({ fiscalYear, fiscalQuarter, year, season, ...rest }: D) =>
+type FiscalQuarterInput = { fiscalYear?: number | undefined; fiscalQuarter?: number | undefined };
+const fiscalQuarterPaired = (d: FiscalQuarterInput) => (d.fiscalYear === undefined) === (d.fiscalQuarter === undefined);
+const fiscalQuarterPairedError = { message: 'fiscalYear 和 fiscalQuarter 必須成對提供，只給其中一個是無效請求。', path: ['fiscalQuarter'] };
+// 換回 service 用的民國 year＋season。
+const toRocYearSeason = <D extends FiscalQuarterInput>({ fiscalYear, fiscalQuarter, ...rest }: D) =>
   fiscalYear !== undefined && fiscalQuarter !== undefined
     ? { ...rest, year: String(fiscalYear - ROC_YEAR_OFFSET), season: String(fiscalQuarter) as '1' | '2' | '3' | '4' }
-    : { ...rest, year, season };
+    : { ...rest, year: undefined, season: undefined };
 
 // limit 的「值」（這次要幾筆）由呼叫端（bff-ts）依他們的業務邏輯決定，每次請求可以不一樣，
 // 本服務不代為決定；limit 的「上限」（最多允許幾筆）由本服務依自己扛不扛得住決定，所有請求
@@ -84,7 +78,7 @@ export const getCompanyRoeHistoryQuerySchema = z
     ...timeframeParams(ROE_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM'),
     limit: z.coerce.number().int().min(1).max(MAX_ROE_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
   })
-  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'TTM' }));
+  .transform(({ timeframe, ...rest }) => ({ ...rest, periodType: timeframe ?? 'TTM' }));
 
 // ROA 這支指標目前允許的 periodType 跟 ROE 一模一樣。
 const ROA_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
@@ -96,7 +90,7 @@ export const getCompanyRoaHistoryQuerySchema = z
     ...timeframeParams(ROA_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)，預設 TTM'),
     limit: z.coerce.number().int().min(1).max(MAX_ROA_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
   })
-  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'TTM' }));
+  .transform(({ timeframe, ...rest }) => ({ ...rest, periodType: timeframe ?? 'TTM' }));
 
 // Dupont 拆解沒有 Q_ANN——dupontDecomposedRoe/equityMultiplier 都沒有這個變體。
 const DUPONT_HISTORY_PERIOD_TYPE_VALUES = ['Q', 'TTM'] as const;
@@ -108,7 +102,7 @@ export const getCompanyDupontHistoryQuerySchema = z
     ...timeframeParams(DUPONT_HISTORY_PERIOD_TYPE_VALUES, '單季(Q)/近四季(TTM)，預設 Q'),
     limit: z.coerce.number().int().min(1).max(MAX_DUPONT_HISTORY_LIMIT).default(20).meta({ description: '取最近幾期，預設 20（約 5 年季度資料），上限 40。' }),
   })
-  .transform(({ timeframe, periodType, ...rest }) => ({ ...rest, periodType: timeframe ?? periodType ?? 'Q' }));
+  .transform(({ timeframe, ...rest }) => ({ ...rest, periodType: timeframe ?? 'Q' }));
 
 const MAX_METRIC_HISTORY_LIMIT = 40;
 
@@ -185,7 +179,7 @@ export const getCompanyMetricProvenanceQuerySchema = z
     ...timeframeParams(['Q', 'YTD', 'TTM', 'FY'] as const, '要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）'),
   })
   .refine(fiscalQuarterPaired, fiscalQuarterPairedError)
-  .transform(({ timeframe, periodType, ...rest }) => ({ ...toRocYearSeason(rest), periodType: timeframe ?? periodType }));
+  .transform(({ timeframe, ...rest }) => ({ ...toRocYearSeason(rest), periodType: timeframe }));
 
 export const getCompanyBadgesQuerySchema = z.object({
   symbol: symbolField,

@@ -8,8 +8,7 @@
         "month": "<number>",
         "period": "<string>",
         "year": "<number>",
-        "yoyChangePct": "<number>",
-        "yoyChangePercent": "<number>"
+        "yoyChangePct": "<number>"
       }
     ]
   }

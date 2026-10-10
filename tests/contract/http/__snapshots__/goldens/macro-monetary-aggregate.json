@@ -5,13 +5,10 @@
       {
         "m1aAmount": "<number>",
         "m1aYoyPct": "<number>",
-        "m1aYoyPercent": "<number>",
         "m1bAmount": "<number>",
         "m1bYoyPct": "<number>",
-        "m1bYoyPercent": "<number>",
         "m2Amount": "<number>",
         "m2YoyPct": "<number>",
-        "m2YoyPercent": "<number>",
         "month": "<number>",
         "period": "<string>",
         "year": "<number>"

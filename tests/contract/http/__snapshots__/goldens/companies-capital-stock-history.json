@@ -14,10 +14,8 @@
         "effectiveDate": "<string>",
         "numberOfSharesIssued": "<numeric-string>",
         "paidInCapital": "<numeric-string>",
-        "paidInShares": "<numeric-string>",
         "remarks": "<string>",
-        "sharesChangePct": "<number>",
-        "sharesChangePercent": "<number>"
+        "sharesChangePct": "<number>"
       }
     ],
     "symbol": "<numeric-string>"

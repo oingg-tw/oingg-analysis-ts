@@ -1,4 +1,3 @@
-import { RETIRED_RESPONSE_KEYS_REMOVED_ON } from '@/http/route';
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import type { HttpModule } from '@/http/module';
@@ -40,7 +39,6 @@ const problemSchema = z
           '參數驗證失敗（400）時才有，RFC 9457 §3 的形狀：body 欄位用 pointer（URI fragment 形式的 JSON Pointer，例如 #/columns/0/field）；' +
           'query／path 參數用 parameter（例如 metricCode）。',
       }),
-    message: z.string().meta({ description: '過渡期欄位（2026-10-08 前的舊格式）：驗證錯誤時是第一個欄位的錯誤訊息，其他錯誤等於 detail。呼叫端改讀 detail／errors 後會移除。' }),
   });
 
 
@@ -75,11 +73,8 @@ export const buildOpenApiDocument = (modules: readonly HttpModule[], { port }: {
     info: {
       title: 'OINGG Ratios API',
       version: '1.0.0',
-      // 2026-10-10 詞彙表改名的並存期說明（舊 key 由 http/route.ts 的 withRetiredKeys 補上，文件只列新 key）。
-      description:
-        'API documentation for the OINGG financial-ratios service.\n\n' +
-        `欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 ${RETIRED_RESPONSE_KEYS_REMOVED_ON}）：回應同時帶舊 key（值相同），本文件只列新 key；` +
-        '舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued，GET /metrics 徽章 threshold.percentileRank 的 direction → order。',
+      // 2026-10-11 詞彙表改名的舊名稱已全部移除（提前於原訂 10/24，使用者 10/11 決定）。
+      description: 'API documentation for the OINGG financial-ratios service. 欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。',
     },
     servers: [
       {

@@ -35,11 +35,11 @@ test('getMonthlyRevenueHistory: 交易所有的月份以交易所為準，mops �
   const sep2021 = result.entries.find((e) => e.yearMonth === '2021-09')!;
   const aug2021 = result.entries.find((e) => e.yearMonth === '2021-08')!;
 
-  assert.equal(sep2021.industry, '半導體業', '2021-09 是交易所（tpex）的列');
+  assert.equal(sep2021.sectorName, '半導體業', '2021-09 是交易所（tpex）的列');
   assert.equal(sep2021.yoyChangePct, 5.63, '交易所列的 yoyChangePct 原樣透傳');
   assert.equal(sep2021.momChangePct, 4.6, '上個月由 mops 補上之後，2021-09 也算得出月增率');
-  assert.equal(aug2021.industry, null, 'mops 補的列沒有類股名稱');
-  assert.equal(aug2021.reportDate, null, 'mops 補的列沒有公告日');
+  assert.equal(aug2021.sectorName, null, 'mops 補的列沒有類股名稱');
+  assert.equal(aug2021.generatedDate, null, 'mops 補的列沒有出表日');
   // (5147501-4555613)/4555613*100 = 12.992...% → 12.99
   assert.equal(aug2021.yoyChangePct, 12.99);
 });
@@ -92,17 +92,17 @@ test('getMonthlyRevenueHistory: 上櫃公司也要查得到（先查上市、空
   assert.equal(result.entries[0]!.yearMonth, '2021-09');
   assert.equal(result.entries[59]!.yearMonth, '2026-08');
   assert.equal(result.entries[59]!.currentMonthRevenue, '4764363');
-  assert.equal(result.entries[59]!.industry, '半導體業');
+  assert.equal(result.entries[59]!.sectorName, '半導體業');
 });
 
 // 上櫃歷史列的 report_date 是 NULL——來源頁面的「出表日期」是網頁重新產生的日期不是當年申報日，
 // tpex-ts 選擇誠實留空。這裡釘住「是 null 而不是被填了一個假日期」。
 // 2026-10-10 改看 2021-09（tpex 回填的歷史列）：原本看最新一個月，那一列是每日排程收的、本來就有真實公告日。
-test('getMonthlyRevenueHistory: 上櫃歷史月份的 reportDate 是 null，不是假的申報日', async () => {
+test('getMonthlyRevenueHistory: 上櫃歷史月份的 generatedDate 是 null，不是假的出表日', async () => {
   const result = await getMonthlyRevenueHistory('6488', 60);
 
   assert.equal(result.entries[0]!.yearMonth, '2021-09');
-  assert.equal(result.entries[0]!.reportDate, null);
+  assert.equal(result.entries[0]!.generatedDate, null);
 });
 
 afterAll(async () => {

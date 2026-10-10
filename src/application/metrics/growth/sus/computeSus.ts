@@ -76,7 +76,7 @@ export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Prom
     ? calculateSus(window.map((e) => toRevenue(e.currentMonthRevenue)))
     : ({ value: null, nullReason: 'insufficient_history' } as const);
 
-  const knowledgeDate = target.reportDate ? new Date(`${target.reportDate}T00:00:00.000Z`) : statutoryDeadline(target.yearMonth);
+  const knowledgeDate = target.generatedDate ? new Date(`${target.generatedDate}T00:00:00.000Z`) : statutoryDeadline(target.yearMonth);
 
   const slot: ComputationSlot = computation({
     symbol,
@@ -89,7 +89,7 @@ export const computeSus = async (query: MonthlyMetricQuery, deps: SusDeps): Prom
     value: result.value,
     nullReason: result.nullReason,
     knowledgeDate,
-    knowledgeDateIsFallback: target.reportDate === null,
+    knowledgeDateIsFallback: target.generatedDate === null,
   });
 
   return { symbol, yearMonth: target.yearMonth, slots: { sus: slot } };

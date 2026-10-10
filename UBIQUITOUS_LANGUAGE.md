@@ -46,7 +46,7 @@
      - GCP 專案 ID：GCP 不允許改名。
 - **資料集歸屬**（使用者 10/10）：同一份來源只由一個服務收。data.gov.tw 的資料集一律歸 gov-ts，生態系從 gov 讀；sitca-ts 退掉重複的 11109（每日淨值）、43476（境內基金基本資料）。
 - **範圍**：這份詞彙表管的是**對外介面**，也就是各服務的 export view 和 API。內部表與欄位要不要跟著改，由該服務自己決定（sitca-ts 10/10 提出、analysis 同意：只在 view 層用別名欄位，不動表）。
-- **防退化**（2026-10-10 上線）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗。並存期內的舊參數列在允許清單、標上到期日。
+- **防退化**（2026-10-10 上線）：analysis-ts 的 `tests/contract/retiredTerms.test.ts` 掃 openapi 文件，出現下表的退役詞就失敗（2026-10-11 起不論有沒有標 deprecated 一律失敗）。舊查詢參數 periodType／year／season／direction／sortOrder 由 validate middleware 明確回 400 並指出新名稱，不會被默默忽略。
 
 ## 二、官方用詞表
 
@@ -202,11 +202,11 @@ LegalReserveMember／CapitalReserveMember 有期初、變動、期末），加�
 | — | mops | `company_profile.report_type`（中文）→ `data_type`：是值的轉換，不只是改名；mops 的規則是 export 只做投影，所以改在底表和 ingest | 待核准 |
 | 2026-10-10 | twse | 上市月營收 2021-09～2026-07 刪除（當初從 MOPS _0 頁匯入、缺 -KY），只留 2026-08 起 OpenAPI 的月份；analysis 那些月份自動改由 mops 補 | DEV 已刪，PROD 待 twse 的使用者放行 |
 | — | mops | view 改成 `export.v_<複數>`（例 `market_monthly_revenue` → `v_market_monthly_revenues`） | 待核准 |
-| 2026-10-10 | tpex | 第一階段上 DEV（tpex 的使用者親自核准，fb18820）：company_profiles 加 market（otc／rotc）、data_type（MOPS 編碼）、generated_date、sector_code、listing_date、paid_in_capital_ntd；monthly_revenues 加 generated_date、sector_name、*_pct；industry_codes 加 sector_code／sector_name（14、16、17、20、33 已對齊 twse 名稱）；disposed／attention 加 announcement_date；ex_right_dividends 加 ex_dividend_date／ex_rights_date；foreign_shareholdings 加 *_pct。沒有讀者的 fs view 直接改名（generated_date、statement_format、market otc／rotc）。analysis 在 DEV 獨立驗證新舊欄 0 差異 | 並存中（DEV）；analysis 等 tpex 上 PRD 後改讀，14 天從 PRD 上線起算 |
+| 2026-10-10 | tpex | 第一階段上 DEV（tpex 的使用者親自核准，fb18820）：company_profiles 加 market（otc／rotc）、data_type（MOPS 編碼）、generated_date、sector_code、listing_date、paid_in_capital_ntd；monthly_revenues 加 generated_date、sector_name、*_pct；industry_codes 加 sector_code／sector_name（14、16、17、20、33 已對齊 twse 名稱）；disposed／attention 加 announcement_date；ex_right_dividends 加 ex_dividend_date／ex_rights_date；foreign_shareholdings 加 *_pct。沒有讀者的 fs view 直接改名（generated_date、statement_format、market otc／rotc）。analysis 在 DEV 獨立驗證新舊欄 0 差異 | 已完成：上 PRD、analysis 改讀（1f67ff49）、舊欄已刪 |
 | — | twse、tpex | `source`（市場族群）→ `market`；`financial_report_type` → `data_type`（MOPS 編碼）；`report_date` → `generated_date`；`industry` → `sector_code` 等（見第二節落差欄） | 待核准 |
-| 2026-10-10 | analysis | 對外 API 批次 1（查詢參數 timeframe、西元 fiscalYear／fiscalQuarter，05967082）、2a（15 個 *Percent → *Pct、paidInShares → numberOfSharesIssued，8e3fe418）、2b（profile 的 generatedDate／sectorCode／sectorName／declaredDataType／listingDate／numberOfPreferenceShares，securities-sectors 的 sectorCode／sectorName，875ffaaf）、2c（financial-statement 西元年季與 fiscalPeriodEndDate、歷史與溯源的 timeframe、月營收 announcementDate／sectorName、質押 generatedDate，4cb5c4d6）、3（排序 order，含 GET /metrics 徽章 percentileRank.direction → order，810da900） | 並存中，舊名 2026-10-24 移除 |
-| 2026-10-10 | analysis | 市場別步驟一：10 支端點回應新增 `marketCode`（sii／otc／rotc；興櫃由 isEmerging 併入），特別股清單 `marketType`（中文）→ `marketCode`；ETF 篩選的 market 篩選值兩種編碼都收 | 並存中，舊的 market／isEmerging／marketType 2026-10-24 移除 |
-| 2026-10-24（排定） | analysis | 市場別步驟二：`market` 改用 TYPEK 值，`marketCode` 並存到 2026-11-07 | 待執行 |
+| 2026-10-10 | analysis | 對外 API 批次 1（查詢參數 timeframe、西元 fiscalYear／fiscalQuarter，05967082）、2a（15 個 *Percent → *Pct、paidInShares → numberOfSharesIssued，8e3fe418）、2b（profile 的 generatedDate／sectorCode／sectorName／declaredDataType／listingDate／numberOfPreferenceShares，securities-sectors 的 sectorCode／sectorName，875ffaaf）、2c（financial-statement 西元年季與 fiscalPeriodEndDate、歷史與溯源的 timeframe、月營收 announcementDate／sectorName、質押 generatedDate，4cb5c4d6）、3（排序 order，含 GET /metrics 徽章 percentileRank.direction → order，810da900） | 已完成：舊名 2026-10-11 提前移除（使用者決定，業務中台 DEV 已部署新版） |
+| 2026-10-10 | analysis | 市場別步驟一：10 支端點回應新增 `marketCode`（sii／otc／rotc；興櫃由 isEmerging 併入），特別股清單 `marketType`（中文）→ `marketCode`；ETF 篩選的 market 篩選值兩種編碼都收 | 已完成：2026-10-11 與步驟二一起收尾 |
+| 2026-10-11 | analysis | 市場別步驟二（提前、跳過 marketCode 過渡）：`market` 直接改用 TYPEK 值，`marketCode`／`isEmerging`／`marketType` 移除；ETF 篩選 market 值改 sii／otc，舊值 TWSE／TPEx 仍換算接受到業務中台確認使用者存的條件沒有舊值；problem+json 頂層 `message` 一併移除 | 已完成 |
 | — | 業務中台、web-nuxt | `basis` → `timeframe`；型錄 `key`／`path` → `metricCode`；`name` → `companyName` 等 | 待排程（跟著 analysis） |
 
 ## 六、縮寫字典（PostgreSQL 63 字元上限用）

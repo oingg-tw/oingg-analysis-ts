@@ -9,14 +9,13 @@ import type { MarketCode } from '@/domain/market/marketCode';
 // 慣例，避免 JS 數字精度問題。
 export interface CompanyProfileDetail {
   symbol: string;
-  market: 'TWSE' | 'TPEx';
-  isEmerging: boolean; // 2026-10-01 興櫃（market 仍是 TPEx），判斷跟 GET /companies 清單同一個（tpex company_profile.source）
-  reportDate: string | null;
+  market: MarketCode; // MOPS TYPEK：sii 上市、otc 上櫃、rotc 興櫃（2026-10-11 取代舊的 market 'TWSE'|'TPEx'＋isEmerging）
+  generatedDate: string | null; // 交易所出表日
   name: string | null;
   shortName: string | null;
   foreignRegistrationCountry: string | null;
-  industry: string | null; // 產業裸代碼，例如 "24"
-  industryName: string | null; // 可讀產業名稱；TPEx 目前沒有對應欄位，一律 null
+  sectorCode: string | null; // 證交所類股代碼，例如 "24"
+  sectorName: string | null; // 類股名稱，一律從類股代碼表取，上市上櫃都有；非產業代碼為 null
   address: string | null;
   taxId: string | null;
   chairman: string | null;
@@ -26,12 +25,12 @@ export interface CompanyProfileDetail {
   deputySpokesperson: string | null;
   phone: string | null;
   establishedDate: string | null;
-  listedDate: string | null;
+  listingDate: string | null; // 上市（櫃）日
   parValue: number | null;
   paidInCapital: string | null;
   privatePlacementShares: string | null;
-  preferredStockShares: string | null;
-  financialReportType: string | null; // 交易所「編製財務報告類型」裸代碼："1" 合併、"2" 個別（跟 MOPS dataType 相反）
+  numberOfPreferenceShares: string | null; // 特別股股數
+  declaredDataType: '1' | '2' | null; // 交易所申報的財報口徑，MOPS 編碼：'2' 合併、'1' 個別
   financialReportTypeName: string | null; // 「合併財報」/「個別財報」，未知代碼 null
   stockTransferAgency: string | null;
   transferAgencyPhone: string | null;
@@ -45,18 +44,11 @@ export interface CompanyProfileDetail {
   email: string | null;
   website: string | null; // 已正規化成裸網域（去 scheme/尾斜線/www.）
   issuedShares: string | null;
-  // 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位。上面對應的舊欄位（reportDate／industry／industryName／
-  // financialReportType／listedDate／preferredStockShares）並存到 2026-10-24 後刪除。
-  generatedDate: string | null; // 交易所出表日（舊名 reportDate）
-  sectorCode: string | null; // 證交所類股代碼（舊名 industry）
-  sectorName: string | null; // 類股名稱，一律從類股代碼表取，上櫃也有（舊的 industryName 上櫃一律 null）
-  declaredDataType: '1' | '2' | null; // 交易所申報的財報口徑，改用 MOPS 編碼：'2' 合併、'1' 個別（舊的 financialReportType 方向相反）
-  listingDate: string | null; // 上市（櫃）日（舊名 listedDate）
-  numberOfPreferenceShares: string | null; // 特別股股數（舊名 preferredStockShares）
-  marketCode: MarketCode; // MOPS TYPEK 市場別（舊的 market＋isEmerging 2026-10-24 移除）
+  // 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）改名；舊欄位（reportDate／industry／industryName／financialReportType／
+  // listedDate／preferredStockShares／isEmerging／marketCode）原訂並存到 10/24，使用者 10/11 決定提前移除。
   // 2026-09-22 新增：本服務所有指標對這家公司實際採用的財報口徑（MOPS dataType，'2' 合併／'1' 個別），來自
   // mops-ts 的 export.company_report_availability——有合併報表就永遠用合併，完全沒有才用個別（249 家）。前端要
-  // 標示「個別報表」看這個欄位，不要看交易所申報的 financialReportType（兩者對 31 家不一致）。
+  // 標示「個別報表」看這個欄位，不要看交易所申報的 declaredDataType（兩者對 31 家不一致）。
   metricDataType: '1' | '2';
 }
 

@@ -17,24 +17,17 @@ export interface CompanyNameEntry {
   symbol: string;
   companyName: string | null;
   // 2026-09-19 應 web-nuxt SEO hub 頁需求新增（/stock 總表、/industry/{sector} 要一次拿到全市場每檔的
-  // 類股跟市場，2,600 檔逐一打 profile 不可行）。market 依資料來源 DB 決定（twse-ts=TWSE、tpex-ts=TPEx）；
-  // sectorCode/sectorName 是證交所類股分類（company_profile.industry，跟 GET /industries/securities-sectors
-  // 同一套 36 個代碼與名稱），公司掛在「非產業」的代碼（07/91/98/XX，見 companyProfile.ts 的
-  // NON_INDUSTRY_CODES）時兩者皆為 null，跟 securities-sectors 排除那幾個代碼的規則一致。
-  market: 'TWSE' | 'TPEx';
+  // 類股跟市場，2,600 檔逐一打 profile 不可行）。sectorCode/sectorName 是證交所類股分類（跟 GET /industries/securities-sectors
+  // 同一套代碼與名稱），公司掛在「非產業」的代碼（07/91/98/XX，見 companyProfile.ts 的 NON_INDUSTRY_CODES）時兩者皆為 null。
+  //
+  // market 是 MOPS TYPEK（domain/market/marketCode.ts）：sii 上市、otc 上櫃、rotc 興櫃。2026-10-11 取代舊的
+  // market 'TWSE'|'TPEx'＋isEmerging 旗標（詞彙表改名，使用者決定提前結束並存期）。
+  // 這個目錄**刻意包含興櫃**（2026-09-23 使用者裁定，全部在 tpex 側）。興櫃**沒有月營收強制揭露**，SUS 這類依賴
+  // 月營收的指標對它們永遠是空的；上游（mops-ts/twse-ts/tpex-ts）的「全市場」也一律指上市＋上櫃、不含興櫃，
+  // 下游拿這個目錄當母體算覆蓋率時要先扣掉 market='rotc' 才會跟上游的數字對得起來。
+  market: MarketCode;
   sectorCode: string | null;
   sectorName: string | null;
-  // 2026-09-23 新增：這個目錄**刻意包含興櫃**（使用者裁定），所以下游必須有辦法分辨。
-  // 興櫃只存在於 TPEx 那側（tpex-ts 的 company_profile 用 source 區分：COMPANY_PROFILE 上櫃 891 家、
-  // COMPANY_PROFILE_EMERGING 興櫃 364 家）；TWSE 側恆為 false。判斷邏輯跟 listSecuritySymbols
-  // 的 isEmerging 同一套，不另外發明。
-  //
-  // 為什麼重要：興櫃公司**沒有月營收強制揭露**，所以 SUS 這類依賴月營收的指標對它們永遠是空的；
-  // 上游（mops-ts/twse-ts/tpex-ts）的「全市場」清單也一律指上市＋上櫃 1,985 家、不含興櫃。
-  // 下游拿這個目錄當母體算覆蓋率時，要先扣掉 isEmerging 才會跟上游的數字對得起來。
-  isEmerging: boolean;
-  // 2026-10-10 詞彙表官方市場別（MOPS TYPEK），見 domain/market/marketCode.ts。
-  marketCode: MarketCode;
 }
 
 // 普通股/特別股/ETF——web-nuxt 靠這個做導頁判斷，不靠 symbol 格式猜。

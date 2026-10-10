@@ -20,9 +20,9 @@ interface GoldenCase {
 const cases: GoldenCase[] = [
   { slug: 'metrics', method: 'get', path: '/metrics' },
   { slug: 'screener-post', method: 'post', path: '/screener', body: { filters: [{ field: 'roe.TTM', min: 0, max: null }], columns: [{ field: 'roe.TTM' }], page: 1, pageSize: 5 } },
-  { slug: 'screener-ranking', method: 'get', path: '/screener/ranking?field=roe.TTM&direction=desc&limit=5' },
+  { slug: 'screener-ranking', method: 'get', path: '/screener/ranking?field=roe.TTM&order=desc&limit=5' },
   { slug: 'screener-values', method: 'post', path: '/screener/values', body: { symbols: ['2330', '2317'], columns: [{ field: 'roe.TTM' }] } },
-  { slug: 'screener-company-rank', method: 'get', path: '/screener/company-rank?symbol=2330&field=dividendYield.EOD&direction=desc' },
+  { slug: 'screener-company-rank', method: 'get', path: '/screener/company-rank?symbol=2330&field=dividendYield.EOD&order=desc' },
   { slug: 'screener-distribution', method: 'get', path: '/screener/distribution?field=dividendYield.EOD&bins=10' },
   { slug: 'valuation-ranking', method: 'get', path: '/valuation/ranking?metric=peRatio&order=desc&limit=5' },
   { slug: 'stocks-quote', method: 'get', path: '/stocks/2330/quote' },
@@ -125,7 +125,6 @@ describe('固定案例（精確 body，不是形狀）', () => {
     const res = await harness.api.get('/metrics').set('X-Request-Id', REQUEST_ID);
     expect(res.status).toBe(401);
     expect(res.body).toEqual({
-      message: 'Unauthorized: missing or invalid X-Api-Key header.',
       type: 'about:blank',
       title: 'Unauthorized',
       status: 401,
@@ -137,7 +136,7 @@ describe('固定案例（精確 body，不是形狀）', () => {
   test('metricCode=beta 走 metric-history → 400（服務層驗證錯誤，沒有 code）', async () => {
     const res = await harness.api.get('/companies/metric-history?symbol=2330&metricCode=beta&timeframe=1Y_1D').set('X-Api-Key', API_KEY);
     expect(res.status).toBe(400);
-    expect(Object.keys(res.body).sort()).toEqual(['detail', 'instance', 'message', 'status', 'title', 'type']);
+    expect(Object.keys(res.body).sort()).toEqual(['detail', 'instance', 'status', 'title', 'type']);
     expect(res.body).toMatchObject({ type: 'about:blank', status: 400 });
   });
 
@@ -149,7 +148,7 @@ describe('固定案例（精確 body，不是形狀）', () => {
     { slug: '_404-companies-profile-unknown-symbol', path: '/companies/profile?symbol=9999', status: 404 },
     { slug: '_400-stocks-prices-empty-symbols', path: '/stocks/prices?symbols=', status: 400 },
     { slug: '_400-query-after-params', path: '/stocks/2330/foreign-shareholding-history?limit=0', status: 400 },
-    { slug: '_400-screener-company-rank-unknown-field', path: '/screener/company-rank?symbol=2330&field=nope.TTM&direction=desc', status: 400 },
+    { slug: '_400-screener-company-rank-unknown-field', path: '/screener/company-rank?symbol=2330&field=nope.TTM&order=desc', status: 400 },
   ];
   for (const c of exactCases) {
     test(`${c.path} → ${c.status} 精確 body`, async () => {

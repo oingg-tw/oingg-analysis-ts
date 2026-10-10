@@ -1,6 +1,5 @@
 import type { SectorDividendSummary } from '@/domain/industry/sectorDividendSummary';
 import type { QuartileSummary, SectorMonthlyRevenue, SectorPeriodSummary } from '@/domain/industry/sectorAggregates';
-import type { SecuritiesIndustrySector } from '@/application/ports/industryReference';
 
 // GET /industries/* 的回應形狀（application 真理來源）——http/modules/industries/types.ts 的 zod schema 用
 // satisfies 釘住。
@@ -9,9 +8,9 @@ import type { SecuritiesIndustrySector } from '@/application/ports/industryRefer
 // ChainClassification*/ChainCluster*/IndustryChainTree* 型別（對應已刪除的 GET /industries/
 // chain-{classification,clusters,tree} 三支端點）已移除。
 
-// 2026-10-10 詞彙表：sectorCode／sectorName 是官方名，code／name 並存到 2026-10-24 後刪除。
+// 2026-10-10 詞彙表：sectorCode／sectorName 是官方名（舊的 code／name 2026-10-11 移除）。
 export interface SecuritiesIndustrySectorsResult {
-  sectors: (SecuritiesIndustrySector & { sectorCode: string; sectorName: string })[];
+  sectors: { sectorCode: string; sectorName: string; companyCount: number }[];
 }
 
 export interface SectorDividendSummaryResult {

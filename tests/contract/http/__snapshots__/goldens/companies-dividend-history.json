@@ -29,7 +29,6 @@
         "knowledgeDate": "<date>",
         "paymentDate": "<date>",
         "payoutRatio": "<number>",
-        "rocFiscalYear": "<number>",
         "stockDividend": "<number>",
         "totalDividend": "<number>",
         "yieldAtExDate": "<number>"

@@ -9,13 +9,7 @@ import { jsonRoute } from '@/http/route';
 export const createMetricsRouter = (deps: Pick<AppDeps, 'metricValueQueries'>): Router => {
   const router = Router();
 
-  // 2026-10-10 詞彙表：徽章 threshold.percentileRank 的 direction → order，舊 key 並存到 2026-10-24（http/route.ts 的 RETIRED_RESPONSE_KEYS_REMOVED_ON）。
-  // 只在這支補，不放進全域的 withRetiredKeys：排行端點的回應也有 order（回顯查詢參數），放全域會在那些端點冒出 direction。
-  const withRetiredBadgeDirection = (categories: unknown): unknown =>
-    JSON.parse(JSON.stringify(categories), (key, value: unknown) =>
-      key === 'percentileRank' && value !== null && typeof value === 'object' && 'order' in value ? { ...value, direction: (value as { order: unknown }).order } : value
-    );
-  router.get('/metrics', ...jsonRoute({}, async () => ({ categories: withRetiredBadgeDirection(scanMetricFolderCatalog()) })));
+  router.get('/metrics', ...jsonRoute({}, async () => ({ categories: scanMetricFolderCatalog() })));
   router.get('/data-version', ...jsonRoute({}, () => getDataVersion(deps)));
 
   return router;

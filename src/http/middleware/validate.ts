@@ -25,9 +25,20 @@ export const VALIDATION_MESSAGES = {
 
 const PARTS = ['params', 'query', 'body'] as const;
 
+// 2026-10-11 詞彙表改名的舊查詢參數已移除。zod 預設會默默丟掉不認得的 key——舊參數不擋的話，?periodType=Q 會被忽略、
+// 安靜地回 TTM 預設值（看起來完全合理、零錯誤訊息），所以這幾個名字明確回 400 並指出新名稱。全部端點都沒有同名的現行參數。
+const RETIRED_QUERY_PARAMS: Record<string, string> = { periodType: 'timeframe', year: 'fiscalYear', season: 'fiscalQuarter', direction: 'order', sortOrder: 'order' };
+
 export const validate =
   (spec: ValidationSpec): RequestHandler =>
   (req, res, next) => {
+    const retired = Object.keys(req.query ?? {}).filter((k) => k in RETIRED_QUERY_PARAMS);
+    if (retired.length > 0) {
+      sendProblem(res, 400, VALIDATION_MESSAGES.query, {
+        extensions: { errors: retired.map((k) => ({ detail: `${k} 已退役，改用 ${RETIRED_QUERY_PARAMS[k]}。`, parameter: k })) },
+      });
+      return;
+    }
     const validated: Record<string, unknown> = {};
     for (const part of PARTS) {
       const schema = spec[part];
@@ -35,7 +46,7 @@ export const validate =
       const result = schema.safeParse(req[part]);
       if (!result.success) {
         sendProblem(res, 400, VALIDATION_MESSAGES[part], {
-          extensions: { errors: toProblemErrors(result.error, part === 'params' ? 'path' : part), message: result.error.issues[0]?.message ?? VALIDATION_MESSAGES[part] },
+          extensions: { errors: toProblemErrors(result.error, part === 'params' ? 'path' : part) },
         });
         return;
       }

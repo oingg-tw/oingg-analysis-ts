@@ -17,21 +17,14 @@ import type { BookValueBreakdownEntry } from '@/application/companies/bookValueB
 // 其他大數字欄位（例如 revenueRanking 的 currentMonthRevenue）同樣的慣例，避免 JS 數字精度問題。
 export const companyProfileDetailSchema = z.object({
   symbol: z.string().meta({ description: '公司代號' }),
-  market: z.enum(['TWSE', 'TPEx']).meta({ description: '上市（TWSE）或上櫃（TPEx）' }),
-  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
-  // 2026-10-01 應 web-nuxt／bff-ts 要求：個股頁拿不到 GET /companies 清單上的 isEmerging，per-symbol 分不出上櫃與興櫃。
-  // 刻意加旗標而不是把 market 擴成 'EMERGING'——把 market 當二元值的下游會把未知值默默標錯（bff-ts 實測會落到 TWSE）。
-  isEmerging: z.boolean().meta({ description: '興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同' }),
-  reportDate: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 generatedDate）', deprecated: true }),
+  // 2026-10-11 詞彙表：MOPS TYPEK 取代舊的 market 'TWSE'|'TPEx'＋isEmerging（業務中台依值辨識編碼，已確認）。
+  market: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃。興櫃只申報半年報與年報，單季指標永久為空' }),
+  generatedDate: z.string().nullable().meta({ description: '交易所出表日 "YYYY-MM-DD"' }),
   name: z.string().nullable(),
   shortName: z.string().nullable(),
   foreignRegistrationCountry: z.string().nullable(),
-  industry: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 sectorCode）', deprecated: true }),
-  // 2026-09-02 應 bff-ts/web-nuxt 要求新增——industry 是裸代碼（例如 "24"），前端顯示沒意義。
-  // TWSE company_profile 本身就有這個欄位（例如 "半導體業"），直接透傳；TPEx 的 export view
-  // 沒有對應欄位，這邊先回 null，已經去信請 tpex-ts 評估補上（見對話紀錄），避免自己猜代碼
-  // 對照表猜錯——bff-ts 明確要求「有官方對照表才給，不要亂猜」。
-  industryName: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 sectorName；這個舊欄位 TPEx 一律是 null）', deprecated: true }),
+  sectorCode: z.string().nullable().meta({ description: '證交所類股代碼，例如 "24"，同 GET /industries/securities-sectors' }),
+  sectorName: z.string().nullable().meta({ description: '類股名稱，從類股代碼表取，上市上櫃都有；非產業代碼（證券商、期貨商、第一上市外國公司等）為 null' }),
   address: z.string().nullable(),
   taxId: z.string().nullable(),
   chairman: z.string().nullable(),
@@ -41,12 +34,12 @@ export const companyProfileDetailSchema = z.object({
   deputySpokesperson: z.string().nullable(),
   phone: z.string().nullable(),
   establishedDate: z.string().nullable(),
-  listedDate: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 listingDate）', deprecated: true }),
+  listingDate: z.string().nullable().meta({ description: '上市（櫃）日 "YYYY-MM-DD"' }),
   parValue: z.number().nullable(),
   paidInCapital: z.string().nullable().meta({ description: 'BigInt 序列化成字串，避免 JS 數字精度問題' }),
   privatePlacementShares: z.string().nullable(),
-  preferredStockShares: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 numberOfPreferenceShares）', deprecated: true }),
-  financialReportType: z.string().nullable().meta({ description: '（已退役，2026-10-24 移除，改用 declaredDataType；這個舊欄位是交易所編碼 "1" 合併、"2" 個別，跟 MOPS 相反）', deprecated: true }),
+  numberOfPreferenceShares: z.string().nullable().meta({ description: '特別股股數，BigInt 序列化成字串' }),
+  declaredDataType: z.enum(['1', '2']).nullable().meta({ description: '交易所申報的財報口徑，用 MOPS 編碼："2" 合併、"1" 個別（沒有子公司）；未知代碼 null。判斷指標實際口徑請用 metricDataType' }),
   // 2026-09-02 應 bff-ts/web-nuxt 要求新增的可讀名稱；2026-09-22 修正代碼對照（原本寫反，見
   // infrastructure/repositories/exchange/companyProfile.ts 的交叉比對）。
   financialReportTypeName: z.string().nullable().meta({ description: '「合併財報」或「個別財報」，未知代碼回 null（2026-09-22 前的對照是反的）' }),
@@ -62,13 +55,6 @@ export const companyProfileDetailSchema = z.object({
   email: z.string().nullable(),
   website: z.string().nullable().meta({ description: '2026-09-04 起已正規化成裸網域（去 scheme/尾斜線/www. 前綴），方便直接接 logo 服務' }),
   issuedShares: z.string().nullable(),
-  // 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位；上面標 deprecated 的舊欄位並存到 2026-10-24。
-  generatedDate: z.string().nullable().meta({ description: '交易所出表日 "YYYY-MM-DD"' }),
-  sectorCode: z.string().nullable().meta({ description: '證交所類股代碼，例如 "24"，同 GET /industries/securities-sectors' }),
-  sectorName: z.string().nullable().meta({ description: '類股名稱，從類股代碼表取，上市上櫃都有；非產業代碼（證券商、期貨商、第一上市外國公司等）為 null' }),
-  declaredDataType: z.enum(['1', '2']).nullable().meta({ description: '交易所申報的財報口徑，用 MOPS 編碼："2" 合併、"1" 個別（沒有子公司）；未知代碼 null。判斷指標實際口徑請用 metricDataType' }),
-  listingDate: z.string().nullable().meta({ description: '上市（櫃）日 "YYYY-MM-DD"' }),
-  numberOfPreferenceShares: z.string().nullable().meta({ description: '特別股股數，BigInt 序列化成字串' }),
   metricDataType: z.enum(['1', '2']).meta({ description: '本服務指標對這家公司實際採用的財報口徑（MOPS dataType）："2" 合併報表、"1" 個別報表。來自 mops-ts 的實際資料可得性：有合併報表就用合併，結構上只申報個別報表的公司（約 249 家）用個別。要標示「個別報表」看這個欄位。' }),
   // 2026-09-17：型別的真理來源改成 application/companies/types.ts 的介面（infrastructure 的
   // companyProfile.ts 也用它，不再反過來 import HTTP 層），這裡的 schema 用 satisfies 釘住，
@@ -81,17 +67,14 @@ export type { CompanyProfileDetail };
 export const companyNameEntrySchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
-  market: z.enum(['TWSE', 'TPEx']).meta({ description: '2026-09-19 新增：上市（twse-ts）或上櫃（tpex-ts）' }),
-  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
+  market: z.enum(MARKET_CODES).meta({
+    description:
+      'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃。這份目錄**刻意包含興櫃**（約 364 家）。注意興櫃**沒有月營收強制揭露**，' +
+      '依賴月營收的指標對它們永遠是空的；上游各資料服務的「全市場」也一律指上市＋上櫃。拿這份目錄當母體算指標覆蓋率時，' +
+      "要先扣掉 market='rotc' 才會跟上游的數字對得起來。",
+  }),
   sectorCode: z.string().nullable().meta({ description: '2026-09-19 新增：證交所類股代碼（兩碼，跟 GET /industries/securities-sectors 同一套）；掛在非產業代碼（07/91/98/XX）的公司為 null' }),
   sectorName: z.string().nullable().meta({ description: '2026-09-19 新增：類股中文名稱；sectorCode 為 null 或代碼字典尚未載入時為 null' }),
-  isEmerging: z.boolean().meta({
-    description:
-      '2026-09-23 新增：是否為興櫃公司。這份目錄**刻意包含興櫃**（約 364 家，全部在 TPEx 側；TWSE 側恆為 false），' +
-      '所以需要這個旗標才能分辨。注意興櫃**沒有月營收強制揭露**，依賴月營收的指標對它們永遠是空的；' +
-      '上游各資料服務的「全市場」也一律指上市＋上櫃 1,985 家。拿這份目錄當母體算指標覆蓋率時，' +
-      '要先扣掉 isEmerging=true 才會跟上游的數字對得起來。',
-  }),
 }) satisfies z.ZodType<CompanyNameEntry>;
 
 // 2026-09-01 應 bff-ts 要求新增的 GET /companies 兩種回應形狀（依 countOnly 決定回哪一種）。
@@ -149,7 +132,6 @@ export const dividendHistoryEventSchema = z.object({
 
 export const dividendHistoryEntrySchema = z.object({
   fiscalYear: z.number().int().nullable().meta({ description: '西元，股利所屬年度（不是除息年度）。null＝公告沒填所屬年度的配發，集中成最後一列（2026-10-05 起）' }),
-  rocFiscalYear: z.number().int().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalYear（西元）', deprecated: true }),
   cashDividend: z.number().meta({ description: '該年度全部分派案的現金股利加總，元／股' }),
   cashDividendFromEarnings: z.number().meta({ description: '該年度各次「盈餘分配」加總，元／股；超過 eps 的部分來自以前年度累積的盈餘。兩個來源各自四捨五入，相加可能跟 cashDividend 差 0.01' }),
   cashDividendFromLegalReserveAndCapitalSurplus: z.number().meta({ description: '該年度各次「法定盈餘公積、資本公積發放之現金」加總，元／股' }),
@@ -185,8 +167,6 @@ export const monthlyRevenueEntrySchema = z.object({
   yearMonth: z.string().meta({ description: '"YYYY-MM"' }),
   generatedDate: z.string().nullable().meta({ description: '出表日 "YYYY-MM-DD"（交易所 OpenAPI 產生這份月營收資料的日期，不是公司公告日）；mops 補的月份與上櫃回填的歷史列為 null' }),
   sectorName: z.string().nullable().meta({ description: '類股名稱（來源原樣）；mops 補的月份為 null' }),
-  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 generatedDate', deprecated: true }),
-  industry: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 sectorName', deprecated: true }),
   currentMonthRevenue: z.string().nullable().meta({ description: '當月營收（新台幣千元），bigint 序列化成字串' }),
   lastYearSameMonthRevenue: z.string().nullable().meta({ description: '去年同月營收（新台幣千元）' }),
   yoyChangePct: z.number().nullable().meta({ description: '年增率（%），來源直接算好的欄位，本服務原樣透傳' }),
@@ -209,9 +189,6 @@ export const financialStatementResultSchema = z.object({
   fiscalYear: z.number().int().nullable().meta({ description: '西元年度，例如 2026；查無這一季的資料時仍回顯要求的季度，完全沒有可用季度時為 null' }),
   fiscalQuarter: z.number().int().nullable().meta({ description: '季別 1-4；查無資料時為 null' }),
   fiscalPeriodEndDate: z.string().nullable().meta({ description: '財報期末日 "YYYY-MM-DD"' }),
-  year: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalYear（西元）', deprecated: true }),
-  season: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalQuarter', deprecated: true }),
-  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 fiscalPeriodEndDate', deprecated: true }),
   found: z.boolean().meta({ description: 'false 代表查無該公司這張表的資料（或指定的 year/season 那一季查無資料），此時 statement 為 null' }),
   statement: z
     .record(z.string(), z.string().nullable())

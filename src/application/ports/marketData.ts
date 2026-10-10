@@ -141,8 +141,7 @@ export interface ForeignShareholdingEntry {
 }
 
 export interface StockPledgeRatioEntry {
-  generatedDate: string; // "YYYY-MM-DD"，TWSE 出表日期，不定期更新（2026-10-10 詞彙表官方名）
-  reportDate: string; // 舊名，並存到 2026-10-24
+  generatedDate: string; // "YYYY-MM-DD"，TWSE 出表日期，不定期更新
   pledgePct: number | null;
 }
 

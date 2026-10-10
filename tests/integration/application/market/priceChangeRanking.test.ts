@@ -31,7 +31,7 @@ test('calculatePriceChangeRanking: 排行裡不應該出現 ETF/衍生性商品'
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   for (const row of [...result.gainers, ...result.losers]) {
-    const companySymbols = row.market === 'TWSE' ? twseSymbols : tpexSymbols;
+    const companySymbols = row.market === 'sii' ? twseSymbols : tpexSymbols;
     assert.ok(companySymbols.has(row.symbol), `${row.symbol}（${row.market}）不在 company_profile 裡，應該已經被排除`);
   }
 });

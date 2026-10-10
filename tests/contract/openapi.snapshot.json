@@ -46,10 +46,6 @@
             "example": "urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479",
             "type": "string"
           },
-          "message": {
-            "description": "過渡期欄位（2026-10-08 前的舊格式）：驗證錯誤時是第一個欄位的錯誤訊息，其他錯誤等於 detail。呼叫端改讀 detail／errors 後會移除。",
-            "type": "string"
-          },
           "status": {
             "description": "等於 HTTP 回應的狀態碼。",
             "example": 400,
@@ -73,8 +69,7 @@
           "title",
           "status",
           "detail",
-          "instance",
-          "message"
+          "instance"
         ],
         "type": "object"
       }
@@ -88,7 +83,7 @@
     }
   },
   "info": {
-    "description": "API documentation for the OINGG financial-ratios service.\n\n欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。改名並存期（到 2026-10-24）：回應同時帶舊 key（值相同），本文件只列新 key；舊 key 對照：*Percent → *Pct（yoyChangePercent、momChangePercent、cumulativeChangePercent、changePercent、sixDayChangePercent、topPercent、sharesHeldPercent、sharesChangePercent、foreignLimitPercent、availableInvestPercent、pledgePercent、m1aYoyPercent、m1bYoyPercent、m2YoyPercent、avgTaiexYoyPercent），paidInShares → numberOfSharesIssued，GET /metrics 徽章 threshold.percentileRank 的 direction → order。",
+    "description": "API documentation for the OINGG financial-ratios service. 欄位命名以全生態系詞彙表 UBIQUITOUS_LANGUAGE.md 為準。",
     "title": "OINGG Ratios API",
     "version": "1.0.0"
   },
@@ -379,20 +374,8 @@
                                 "nullable": true,
                                 "type": "string"
                               },
-                              "isEmerging": {
-                                "description": "2026-09-23 新增：是否為興櫃公司。這份目錄**刻意包含興櫃**（約 364 家，全部在 TPEx 側；TWSE 側恆為 false），所以需要這個旗標才能分辨。注意興櫃**沒有月營收強制揭露**，依賴月營收的指標對它們永遠是空的；上游各資料服務的「全市場」也一律指上市＋上櫃 1,985 家。拿這份目錄當母體算指標覆蓋率時，要先扣掉 isEmerging=true 才會跟上游的數字對得起來。",
-                                "type": "boolean"
-                              },
                               "market": {
-                                "description": "2026-09-19 新增：上市（twse-ts）或上櫃（tpex-ts）",
-                                "enum": [
-                                  "TWSE",
-                                  "TPEx"
-                                ],
-                                "type": "string"
-                              },
-                              "marketCode": {
-                                "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                                "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃。這份目錄**刻意包含興櫃**（約 364 家）。注意興櫃**沒有月營收強制揭露**，依賴月營收的指標對它們永遠是空的；上游各資料服務的「全市場」也一律指上市＋上櫃。拿這份目錄當母體算指標覆蓋率時，要先扣掉 market='rotc' 才會跟上游的數字對得起來。",
                                 "enum": [
                                   "sii",
                                   "otc",
@@ -418,10 +401,8 @@
                               "symbol",
                               "companyName",
                               "market",
-                              "marketCode",
                               "sectorCode",
-                              "sectorName",
-                              "isEmerging"
+                              "sectorName"
                             ],
                             "type": "object"
                           },
@@ -1267,12 +1248,6 @@
                             "nullable": true,
                             "type": "number"
                           },
-                          "rocFiscalYear": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 fiscalYear（西元）",
-                            "nullable": true,
-                            "type": "integer"
-                          },
                           "stockDividend": {
                             "type": "number"
                           },
@@ -1287,7 +1262,6 @@
                         },
                         "required": [
                           "fiscalYear",
-                          "rocFiscalYear",
                           "cashDividend",
                           "cashDividendFromEarnings",
                           "cashDividendFromLegalReserveAndCapitalSurplus",
@@ -1382,21 +1356,6 @@
             "required": false,
             "schema": {
               "description": "單季(Q)/近四季(TTM)，預設 Q",
-              "enum": [
-                "Q",
-                "TTM"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
-            "in": "query",
-            "name": "periodType",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM"
@@ -1540,15 +1499,6 @@
                       "description": "= total > entries 的實際筆數，代表是否還有更早的資料沒有回傳（目前沒有 offset，無法翻頁取得）",
                       "type": "boolean"
                     },
-                    "periodType": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 timeframe",
-                      "enum": [
-                        "Q",
-                        "TTM"
-                      ],
-                      "type": "string"
-                    },
                     "symbol": {
                       "type": "string"
                     },
@@ -1567,7 +1517,6 @@
                   "required": [
                     "symbol",
                     "timeframe",
-                    "periodType",
                     "total",
                     "hasMore",
                     "entries"
@@ -1673,35 +1622,6 @@
               "minimum": 1,
               "type": "integer"
             }
-          },
-          {
-            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-            "in": "query",
-            "name": "year",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-              "pattern": "^\\d{2,3}$",
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-            "in": "query",
-            "name": "season",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-              "enum": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -1736,18 +1656,6 @@
                       "description": "false 代表查無該公司這張表的資料（或指定的 year/season 那一季查無資料），此時 statement 為 null",
                       "type": "boolean"
                     },
-                    "reportDate": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 fiscalPeriodEndDate",
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "season": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 fiscalQuarter",
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "statement": {
                       "additionalProperties": {
                         "nullable": true,
@@ -1770,12 +1678,6 @@
                     },
                     "symbol": {
                       "type": "string"
-                    },
-                    "year": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 fiscalYear（西元）",
-                      "nullable": true,
-                      "type": "string"
                     }
                   },
                   "required": [
@@ -1786,9 +1688,6 @@
                     "fiscalYear",
                     "fiscalQuarter",
                     "fiscalPeriodEndDate",
-                    "year",
-                    "season",
-                    "reportDate",
                     "found",
                     "statement"
                   ],
@@ -2527,12 +2426,6 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "industry": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 sectorName",
-                            "nullable": true,
-                            "type": "string"
-                          },
                           "lastYearSameMonthRevenue": {
                             "description": "去年同月營收（新台幣千元）",
                             "nullable": true,
@@ -2544,12 +2437,6 @@
                             "type": "number"
                           },
                           "note": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "reportDate": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
                             "nullable": true,
                             "type": "string"
                           },
@@ -2572,8 +2459,6 @@
                           "yearMonth",
                           "generatedDate",
                           "sectorName",
-                          "reportDate",
-                          "industry",
                           "currentMonthRevenue",
                           "lastYearSameMonthRevenue",
                           "yoyChangePct",
@@ -2689,35 +2574,6 @@
               "maximum": 4,
               "minimum": 1,
               "type": "integer"
-            }
-          },
-          {
-            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-            "in": "query",
-            "name": "year",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-              "pattern": "^\\d{2,3}$",
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-            "in": "query",
-            "name": "season",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-              "enum": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
-              "type": "string"
             }
           }
         ],
@@ -2938,7 +2794,7 @@
     },
     "/companies/profile": {
       "get": {
-        "description": "給個股詳情頁的公司基本資料卡片用。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。TWSE/TPEx 兩邊欄位範圍不完全一樣（TPEx 沒有 englishAddress/industryName），沒有的欄位回傳 null。paidInCapital/issuedShares/privatePlacementShares/preferredStockShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。financialReportTypeName 是 financialReportType 裸代碼（\"1\"/\"2\"）解出來的可讀名稱（個別財報／合併財報），未知代碼回 null。website 已正規化成乾淨的裸網域（去 scheme/尾斜線/www. 前綴），呼叫端不用自己再清洗一次。",
+        "description": "給個股詳情頁的公司基本資料卡片用。上市（TWSE）查無資料再查上櫃（TPEx），兩邊都查無資料回傳 404。TWSE/TPEx 兩邊欄位範圍不完全一樣（TPEx 沒有 englishAddress），沒有的欄位回傳 null。paidInCapital/issuedShares/privatePlacementShares/numberOfPreferenceShares 是資料庫的 bigint，序列化成字串，避免 JS 數字精度問題。financialReportTypeName 是 declaredDataType（MOPS 編碼 \"2\"/\"1\"）的可讀名稱（合併財報／個別財報），未知代碼回 null。website 已正規化成乾淨的裸網域（去 scheme/尾斜線/www. 前綴），呼叫端不用自己再清洗一次。",
         "operationId": "getCompaniesProfile",
         "parameters": [
           {
@@ -3014,12 +2870,6 @@
                       "nullable": true,
                       "type": "string"
                     },
-                    "financialReportType": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 declaredDataType；這個舊欄位是交易所編碼 \"1\" 合併、\"2\" 個別，跟 MOPS 相反）",
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "financialReportTypeName": {
                       "description": "「合併財報」或「個別財報」，未知代碼回 null（2026-09-22 前的對照是反的）",
                       "nullable": true,
@@ -3038,29 +2888,7 @@
                       "nullable": true,
                       "type": "string"
                     },
-                    "industry": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 sectorCode）",
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "industryName": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 sectorName；這個舊欄位 TPEx 一律是 null）",
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "isEmerging": {
-                      "description": "興櫃為 true（market 仍是 TPEx）；興櫃只申報半年報與年報，單季指標永久為空。判斷跟 GET /companies 清單的 isEmerging 相同",
-                      "type": "boolean"
-                    },
                     "issuedShares": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "listedDate": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 listingDate）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -3070,15 +2898,7 @@
                       "type": "string"
                     },
                     "market": {
-                      "description": "上市（TWSE）或上櫃（TPEx）",
-                      "enum": [
-                        "TWSE",
-                        "TPEx"
-                      ],
-                      "type": "string"
-                    },
-                    "marketCode": {
-                      "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                      "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃。興櫃只申報半年報與年報，單季指標永久為空",
                       "enum": [
                         "sii",
                         "otc",
@@ -3116,19 +2936,7 @@
                       "nullable": true,
                       "type": "string"
                     },
-                    "preferredStockShares": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 numberOfPreferenceShares）",
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "privatePlacementShares": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "reportDate": {
-                      "deprecated": true,
-                      "description": "（已退役，2026-10-24 移除，改用 generatedDate）",
                       "nullable": true,
                       "type": "string"
                     },
@@ -3183,14 +2991,12 @@
                   "required": [
                     "symbol",
                     "market",
-                    "marketCode",
-                    "isEmerging",
-                    "reportDate",
+                    "generatedDate",
                     "name",
                     "shortName",
                     "foreignRegistrationCountry",
-                    "industry",
-                    "industryName",
+                    "sectorCode",
+                    "sectorName",
                     "address",
                     "taxId",
                     "chairman",
@@ -3200,12 +3006,12 @@
                     "deputySpokesperson",
                     "phone",
                     "establishedDate",
-                    "listedDate",
+                    "listingDate",
                     "parValue",
                     "paidInCapital",
                     "privatePlacementShares",
-                    "preferredStockShares",
-                    "financialReportType",
+                    "numberOfPreferenceShares",
+                    "declaredDataType",
                     "financialReportTypeName",
                     "stockTransferAgency",
                     "transferAgencyPhone",
@@ -3219,12 +3025,6 @@
                     "email",
                     "website",
                     "issuedShares",
-                    "generatedDate",
-                    "sectorCode",
-                    "sectorName",
-                    "declaredDataType",
-                    "listingDate",
-                    "numberOfPreferenceShares",
                     "metricDataType"
                   ],
                   "type": "object"
@@ -3304,21 +3104,6 @@
             "required": false,
             "schema": {
               "description": "單季(Q)/近四季(TTM)，預設 TTM",
-              "enum": [
-                "Q",
-                "TTM"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
-            "in": "query",
-            "name": "periodType",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM"
@@ -3434,15 +3219,6 @@
                       ],
                       "type": "string"
                     },
-                    "periodType": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 timeframe",
-                      "enum": [
-                        "Q",
-                        "TTM"
-                      ],
-                      "type": "string"
-                    },
                     "symbol": {
                       "type": "string"
                     },
@@ -3462,7 +3238,6 @@
                     "symbol",
                     "metricCode",
                     "timeframe",
-                    "periodType",
                     "total",
                     "hasMore",
                     "entries"
@@ -3534,22 +3309,6 @@
             "required": false,
             "schema": {
               "description": "單季(Q)/近四季(TTM)/年度(FY，一年一列、座標為該年度第 4 季)，預設 TTM",
-              "enum": [
-                "Q",
-                "TTM",
-                "FY"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
-            "in": "query",
-            "name": "periodType",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "TTM",
@@ -3650,16 +3409,6 @@
                       ],
                       "type": "string"
                     },
-                    "periodType": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 timeframe",
-                      "enum": [
-                        "Q",
-                        "TTM",
-                        "FY"
-                      ],
-                      "type": "string"
-                    },
                     "symbol": {
                       "type": "string"
                     },
@@ -3680,7 +3429,6 @@
                     "symbol",
                     "metricCode",
                     "timeframe",
-                    "periodType",
                     "total",
                     "hasMore",
                     "entries"
@@ -4227,35 +3975,6 @@
             }
           },
           {
-            "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-            "in": "query",
-            "name": "year",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalYear（西元），2026-10-24 移除。",
-              "pattern": "^\\d{2,3}$",
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-            "in": "query",
-            "name": "season",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 fiscalQuarter，2026-10-24 移除。",
-              "enum": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
-              "type": "string"
-            }
-          },
-          {
             "description": "逐日／月頻指標用：取這一天（含）之前最近一筆；不給就取最新一筆。季報型指標忽略這個參數（用 fiscalYear/fiscalQuarter）",
             "in": "query",
             "name": "asOfDate",
@@ -4274,23 +3993,6 @@
             "required": false,
             "schema": {
               "description": "要求的期別；溯源表不提供這個期別時 found=false、methodologyNote 說明提供哪個。不給就回溯源表本來的期別（見回應 periodType）",
-              "enum": [
-                "Q",
-                "YTD",
-                "TTM",
-                "FY"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，請改用 timeframe，2026-10-24 移除。",
-            "in": "query",
-            "name": "periodType",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，請改用 timeframe，2026-10-24 移除。",
               "enum": [
                 "Q",
                 "YTD",
@@ -4584,19 +4286,6 @@
                       ],
                       "type": "string"
                     },
-                    "periodType": {
-                      "deprecated": true,
-                      "description": "已退役，2026-10-24 移除，改用 timeframe",
-                      "enum": [
-                        "Q",
-                        "YTD",
-                        "TTM",
-                        "FY",
-                        null
-                      ],
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "symbol": {
                       "type": "string"
                     },
@@ -4636,8 +4325,7 @@
                     "value",
                     "entries",
                     "methodologyNote",
-                    "timeframe",
-                    "periodType"
+                    "timeframe"
                   ],
                   "type": "object"
                 }
@@ -4847,15 +4535,6 @@
                   "sortField": {
                     "description": "不給就照 symbol 排序；要排別的欄位，那個欄位要先出現在 columns 裡",
                     "minLength": 1,
-                    "type": "string"
-                  },
-                  "sortOrder": {
-                    "deprecated": true,
-                    "description": "已退役，2026-10-24 移除，改用 order",
-                    "enum": [
-                      "asc",
-                      "desc"
-                    ],
                     "type": "string"
                   }
                 },
@@ -5432,19 +5111,9 @@
                     "sectors": {
                       "items": {
                         "properties": {
-                          "code": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 sectorCode",
-                            "type": "string"
-                          },
                           "companyCount": {
                             "description": "這個類股底下總共幾家公司（TWSE+TPEx 加總）",
                             "type": "number"
-                          },
-                          "name": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 sectorName",
-                            "type": "string"
                           },
                           "sectorCode": {
                             "description": "兩碼證交所類股代碼，例如 \"24\"",
@@ -5458,8 +5127,6 @@
                         "required": [
                           "sectorCode",
                           "sectorName",
-                          "code",
-                          "name",
                           "companyCount"
                         ],
                         "type": "object"
@@ -7549,14 +7216,7 @@
                             "type": "array"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -7580,7 +7240,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "tradeDate",
                           "criteria",
                           "criteriaDetails",
@@ -7717,14 +7376,7 @@
                             "type": "string"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -7759,7 +7411,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "announceDate",
                           "announcementCount",
                           "reason",
@@ -8111,17 +7762,7 @@
                             "type": "boolean"
                           },
                           "market": {
-                            "description": "從 category 拆出，解析不出來時是 null",
-                            "enum": [
-                              "TWSE",
-                              "TPEx",
-                              null
-                            ],
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）；解析不出來時是 null",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）；從 category 拆出，解析不出來時是 null",
                             "enum": [
                               "sii",
                               "otc",
@@ -8154,7 +7795,6 @@
                           "companyName",
                           "category",
                           "market",
-                          "marketCode",
                           "assetClass",
                           "isActive",
                           "belowStatutoryThreshold",
@@ -8263,14 +7903,7 @@
                             "type": "string"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -8297,7 +7930,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "shortToMarginRatioPct",
                           "marginTodayBalance",
                           "shortTodayBalance"
@@ -8422,12 +8054,6 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "reportDate": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
-                            "nullable": true,
-                            "type": "string"
-                          },
                           "subject": {
                             "nullable": true,
                             "type": "string"
@@ -8442,7 +8068,6 @@
                           "announcementDate",
                           "announcementTime",
                           "generatedDate",
-                          "reportDate",
                           "subject",
                           "clause",
                           "factDate",
@@ -8555,14 +8180,7 @@
                             "type": "string"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -8592,7 +8210,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "tradeDate",
                           "previousTradeDate",
                           "close",
@@ -8627,14 +8244,7 @@
                             "type": "string"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -8664,7 +8274,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "tradeDate",
                           "previousTradeDate",
                           "close",
@@ -8809,14 +8418,7 @@
                             "type": "string"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -8844,7 +8446,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "currentMonthRevenue",
                           "momChangePct",
                           "yoyChangePct"
@@ -9062,14 +8663,7 @@
                             "type": "number"
                           },
                           "market": {
-                            "enum": [
-                              "TWSE",
-                              "TPEx"
-                            ],
-                            "type": "string"
-                          },
-                          "marketCode": {
-                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）",
+                            "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）",
                             "enum": [
                               "sii",
                               "otc",
@@ -9103,7 +8697,6 @@
                           "symbol",
                           "companyName",
                           "market",
-                          "marketCode",
                           "volume",
                           "transaction",
                           "open",
@@ -9575,21 +9168,6 @@
               ],
               "type": "string"
             }
-          },
-          {
-            "description": "已退役，2026-10-24 移除，改用 order",
-            "in": "query",
-            "name": "sortOrder",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，2026-10-24 移除，改用 order",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -9690,7 +9268,7 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "marketCode": {
+                          "market": {
                             "description": "MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃；不在這三種時 null",
                             "enum": [
                               "sii",
@@ -9699,11 +9277,6 @@
                               null
                             ],
                             "nullable": true,
-                            "type": "string"
-                          },
-                          "marketType": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 marketCode",
                             "type": "string"
                           },
                           "name": {
@@ -9778,8 +9351,7 @@
                           "name",
                           "isinCode",
                           "listedDate",
-                          "marketType",
-                          "marketCode",
+                          "market",
                           "issueDate",
                           "issuePrice",
                           "dividendRate",
@@ -10038,15 +9610,6 @@
                     "description": "\"symbol\" 或已列在 columns 裡的欄位，兩者要嘛都給要嘛都不給，沒給預設用 symbol 排序",
                     "minLength": 1,
                     "type": "string"
-                  },
-                  "sortOrder": {
-                    "deprecated": true,
-                    "description": "已退役，2026-10-24 移除，改用 order",
-                    "enum": [
-                      "asc",
-                      "desc"
-                    ],
-                    "type": "string"
                   }
                 },
                 "type": "object"
@@ -10215,27 +9778,12 @@
             }
           },
           {
-            "description": "必填（並存期間可用舊名 direction 代替）。desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
+            "description": "desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
             "in": "query",
             "name": "order",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "必填（並存期間可用舊名 direction 代替）。desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，2026-10-24 移除，改用 order",
-            "in": "query",
-            "name": "direction",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，2026-10-24 移除，改用 order",
+              "description": "desc：數值越高排名越前面（例如殖利率）；asc：數值越低排名越前面（例如本益比）",
               "enum": [
                 "asc",
                 "desc"
@@ -10540,27 +10088,12 @@
             }
           },
           {
-            "description": "排序方向（必填，並存期間可用舊名 direction 代替）",
+            "description": "排序方向",
             "in": "query",
             "name": "order",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "排序方向（必填，並存期間可用舊名 direction 代替）",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "已退役，2026-10-24 移除，改用 order",
-            "in": "query",
-            "name": "direction",
-            "required": false,
-            "schema": {
-              "deprecated": true,
-              "description": "已退役，2026-10-24 移除，改用 order",
+              "description": "排序方向",
               "enum": [
                 "asc",
                 "desc"
@@ -11915,16 +11448,10 @@
                             "description": "董監事及大股東股權質押比例（%）",
                             "nullable": true,
                             "type": "number"
-                          },
-                          "reportDate": {
-                            "deprecated": true,
-                            "description": "已退役，2026-10-24 移除，改用 generatedDate",
-                            "type": "string"
                           }
                         },
                         "required": [
                           "generatedDate",
-                          "reportDate",
                           "pledgePct"
                         ],
                         "type": "object"

@@ -55,11 +55,12 @@ const resolveFilterCondition = (input: EtfFilterInput): EtfFilterCondition => {
       throw new ValidationError(`"${input.field}" 的 values 只能是 "true"/"false" 字串，收到不合法的值：${invalid.join(', ')}`);
     }
   }
-  // 2026-10-10 詞彙表：market 篩選值也收 MOPS TYPEK（sii／otc），換回 SQL 欄位用的 TWSE／TPEx。兩種值都收，並存到市場別改名完成。
+  // 2026-10-11 詞彙表：market 值改成 MOPS TYPEK（sii／otc）。舊值 TWSE／TPEx 仍換算接受——業務中台存的使用者篩選條件
+  // 可能還帶舊值（metricCode 改名時 cascade 默默刪條件的教訓），等業務中台確認掃過使用者資料再拿掉。
   const values = input.field === 'market' ? input.values.map((v) => ETF_MARKET_FILTER_ALIASES[v] ?? v) : input.values;
   return { kind: 'categorical', definition, values };
 };
-const ETF_MARKET_FILTER_ALIASES: Record<string, string> = { sii: 'TWSE', otc: 'TPEx' };
+const ETF_MARKET_FILTER_ALIASES: Record<string, string> = { TWSE: 'sii', TPEx: 'otc' };
 
 const resolveColumn = (input: EtfColumnInput): EtfColumnRef => {
   const definition = resolveEtfField(input.field);

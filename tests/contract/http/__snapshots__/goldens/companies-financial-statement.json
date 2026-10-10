@@ -6,8 +6,6 @@
     "fiscalQuarter": "<number>",
     "fiscalYear": "<number>",
     "found": "<boolean>",
-    "reportDate": "<date>",
-    "season": "<numeric-string>",
     "statement": {
       "accounts_receivable_duefrom_related_parties_net": "<numeric-string>",
       "accounts_receivable_net": "<numeric-string>",
@@ -126,7 +124,6 @@
     },
     "statementType": "balanceSheet",
     "subsidiaryCompanyId": "<string>",
-    "symbol": "<numeric-string>",
-    "year": "<numeric-string>"
+    "symbol": "<numeric-string>"
   }
 }

@@ -12,7 +12,6 @@ export const getPreferredStocksQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0).meta({ description: '跳過前面幾筆，預設 0。' }),
   sortField: z.enum(PREFERRED_STOCK_SORTABLE_FIELDS).optional().meta({ description: '依這個欄位排序，不給就維持 symbol 字母序（isin_securities 原始查詢順序）。' }),
   order: z.enum(['asc', 'desc']).optional().meta({ description: '排序方向，預設 asc；只有給了 sortField 才有作用。' }),
-  sortOrder: z.enum(['asc', 'desc']).optional().meta({ description: '已退役，2026-10-24 移除，改用 order', deprecated: true }),
 })
-  // 2026-10-10 詞彙表（UBIQUITOUS_LANGUAGE.md）：排序方向參數官方名 order；舊名並存到 2026-10-24，兩個都給時以 order 為準。
-  .transform(({ order, sortOrder, ...rest }) => ({ ...rest, sortOrder: order ?? sortOrder ?? 'asc' }));
+  // 2026-10-10 詞彙表（UBIQUITOUS_LANGUAGE.md）：排序方向參數官方名 order（舊名 direction／sortOrder 已於 2026-10-11 移除）。
+  .transform(({ order, ...rest }) => ({ ...rest, sortOrder: order ?? 'asc' }));

@@ -6,8 +6,7 @@
       {
         "companyName": "<string>",
         "marginTodayBalance": "<numeric-string>",
-        "market": "TWSE",
-        "marketCode": "sii",
+        "market": "sii",
         "rank": "<number>",
         "shortTodayBalance": "<numeric-string>",
         "shortToMarginRatioPct": "<number>",

@@ -1,5 +1,4 @@
 {
-  "message": "Too small: expected number to be >=1",
   "errors": [
     {
       "detail": "Too small: expected number to be >=1",

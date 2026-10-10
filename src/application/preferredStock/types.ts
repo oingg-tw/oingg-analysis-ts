@@ -27,8 +27,7 @@ export interface PreferredStockEntry {
   name: string;
   isinCode: string | null;
   listedDate: string | null;
-  marketType: string;
-  marketCode: MarketCode | null; // 2026-10-10 詞彙表官方市場別；marketType（中文）2026-10-24 移除
+  market: MarketCode | null; // MOPS TYPEK（2026-10-11 取代舊的中文 marketType）
   issueDate: string | null;
   issuePrice: number | null;
   dividendRate: number | null;

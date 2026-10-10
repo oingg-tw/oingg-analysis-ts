@@ -178,11 +178,11 @@ export const getSecuritySymbolSet = async (filter: SecuritySymbolsFilter): Promi
 
 interface RawTpexCompanyProfileDetailRow {
   symbol: string;
-  report_date: Date | null;
+  generated_date: Date | null;
   name: string | null;
   short_name: string | null;
   foreign_registration_country: string | null;
-  industry: string | null;
+  sector_code: string | null;
   address: string | null;
   tax_id: string | null;
   chairman: string | null;
@@ -192,12 +192,12 @@ interface RawTpexCompanyProfileDetailRow {
   deputy_spokesperson: string | null;
   phone: string | null;
   established_date: Date | null;
-  listed_date: Date | null;
+  listing_date: Date | null;
   par_value: string | null;
   paid_in_capital: bigint | null;
   private_placement_shares: bigint | null;
   preferred_stock_shares: bigint | null;
-  financial_report_type: string | null;
+  data_type: string | null;
   stock_transfer_agency: string | null;
   transfer_agency_phone: string | null;
   transfer_agency_address: string | null;
@@ -214,12 +214,11 @@ interface RawTpexCompanyProfileDetailRow {
 
 interface RawTwseCompanyProfileDetailRow {
   symbol: string;
-  report_date: Date;
+  generated_date: Date;
   name: string | null;
   short_name: string | null;
   foreign_registration_country: string | null;
-  industry: string | null;
-  industry_name: string | null;
+  sector_code: string | null;
   address: string | null;
   tax_id: string | null;
   chairman: string | null;
@@ -229,12 +228,12 @@ interface RawTwseCompanyProfileDetailRow {
   deputy_spokesperson: string | null;
   phone: string | null;
   established_date: Date | null;
-  listed_date: Date | null;
+  listing_date: Date | null;
   par_value: string | null;
   paid_in_capital: bigint | null;
   private_placement_shares: bigint | null;
   preferred_stock_shares: bigint | null;
-  financial_report_type: string | null;
+  data_type: string | null;
   stock_transfer_agency: string | null;
   transfer_agency_phone: string | null;
   transfer_agency_address: string | null;
@@ -249,52 +248,30 @@ interface RawTwseCompanyProfileDetailRow {
   issued_shares: bigint | null;
 }
 
-// 2026-10-11 改讀 twse 詞彙表新欄名（twse migration 20261011120000 已上 PRD），別名回舊欄名讓型別不動。
-const TWSE_COMPANY_PROFILE_DETAIL_COLUMNS = `symbol, generated_date AS report_date, name, short_name, foreign_registration_country, sector_code AS industry,
-  sector_name AS industry_name, address, tax_id, chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson,
-  phone, established_date, listing_date AS listed_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares, preferred_stock_shares,
-  CASE data_type WHEN '2' THEN '1' WHEN '1' THEN '2' END AS financial_report_type, stock_transfer_agency, transfer_agency_phone, transfer_agency_address, auditing_firm,
+// 2026-10-11 讀 twse 詞彙表新欄名（twse migration 20261011120000 已上 PRD）。data_type 是 MOPS 編碼（'2' 合併、'1' 個別），直接透傳成 declaredDataType。
+const TWSE_COMPANY_PROFILE_DETAIL_COLUMNS = `symbol, generated_date, name, short_name, foreign_registration_country, sector_code,
+  address, tax_id, chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson,
+  phone, established_date, listing_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares, preferred_stock_shares,
+  data_type, stock_transfer_agency, transfer_agency_phone, transfer_agency_address, auditing_firm,
   auditor1, auditor2, english_short_name, english_address, fax_number, email, website, issued_shares`;
 
-// 這 5 個 industry 代碼的 industry_name 不是真正的產業分類，是 twse-ts 自己為了說明「這代碼
-// 其實是別的訊號」加的附註文字（2026-09-02 跟 twse-ts 確認過，src/shared/industryCodes.ts
-// 的檔頭註解——XX=證券商、98=期貨商、91=第一上市外國公司身份別、07=舊產業代碼殘留，都是
-// 給工程師看的說明，不是給終端使用者看的），對外端點不透傳這幾個，回 null。13（電子工業，
-// 2007 分類改制前的舊類別）雖然也帶「（舊分類）」附註，但核心名稱本身是真正的產業名稱，
-// 不在這個清單裡，照樣透傳。
+// 這幾個類股代碼不是真正的產業分類，是 twse-ts 為了說明「這代碼其實是別的訊號」加的附註（2026-09-02 跟 twse-ts
+// 確認過）：XX=證券商、98=期貨商、91=第一上市外國公司身份別、07=舊產業代碼殘留。對外 sectorName 一律回 null；
+// 13（電子工業，2007 分類改制前的舊類別）核心名稱是真正的產業名稱，不在清單裡。
 const NON_INDUSTRY_CODES = new Set(['07', '91', '98', 'XX']);
-const resolveIndustryName = (industry: string | null, industryName: string | null): string | null =>
-  industry !== null && NON_INDUSTRY_CODES.has(industry) ? null : industryName;
 
-// 2026-09-22 修正：這個欄位是交易所公司基本資料的「編製財務報告類型」，代碼跟 MOPS 三表 dataType 的慣例
-// （'1' 個體／'2' 合併）**相反**——2026-09-02 當時把兩套代碼混為一談寫反了。用 mops-ts 的
-// export.company_report_availability（實際有沒有合併報表）交叉比對：交易所 '1' 的 2,062 家全部有合併報表、
-// 0 家只有個體；交易所 '2' 的 280 家裡 249 家只有個體報表、31 家近期有合併（母體變動的時間差）。所以
-// '1' = 合併財報、'2' = 個別財報。未知代碼一律回 null。指標實際用哪個口徑看 metricDataType（來自 mops 的
-// 實際資料），不是這個交易所申報欄位。
-const FINANCIAL_REPORT_TYPE_NAMES: Record<string, string> = { '1': '合併財報', '2': '個別財報' };
-const resolveFinancialReportTypeName = (financialReportType: string | null): string | null =>
-  financialReportType !== null ? (FINANCIAL_REPORT_TYPE_NAMES[financialReportType] ?? null) : null;
-
-// 2026-10-10 全生態系詞彙表（UBIQUITOUS_LANGUAGE.md）的官方欄位，跟舊欄位並存到 2026-10-24。
-// - sectorName 一律從類股代碼表取（getIndustryCodes，跟 GET /companies 清單同一份），上櫃也有名稱；NON_INDUSTRY_CODES 回 null。
-// - declaredDataType 把交易所申報口徑換成 MOPS 編碼（交易所 '1' 合併 → '2'、'2' 個別 → '1'），未知代碼回 null。
-const EXCHANGE_TO_MOPS_DATA_TYPE: Record<string, '1' | '2'> = { '1': '2', '2': '1' };
-type ProfileWithoutCanonicalKeys = Omit<ExchangeCompanyProfileDetail, 'generatedDate' | 'sectorCode' | 'sectorName' | 'declaredDataType' | 'listingDate' | 'numberOfPreferenceShares' | 'marketCode'>;
-const withCanonicalProfileKeys = (d: ProfileWithoutCanonicalKeys): ExchangeCompanyProfileDetail => {
+// 2026-10-10 詞彙表：sectorName 一律從類股代碼表取（getIndustryCodes，跟 GET /companies 清單、securities-sectors 同一份），
+// 上市上櫃都有名稱；2026-10-11 舊的 industryName（twse 的 sector_name 透傳、上櫃一律 null）已移除。
+const resolveSectorName = (sectorCode: string | null): string | null => {
   const codes = getIndustryCodes();
-  const isRealSector = d.industry !== null && !NON_INDUSTRY_CODES.has(d.industry);
-  return {
-    ...d,
-    generatedDate: d.reportDate,
-    sectorCode: d.industry,
-    sectorName: isRealSector && codes ? (codes[d.industry!] ?? null) : null,
-    declaredDataType: d.financialReportType !== null ? (EXCHANGE_TO_MOPS_DATA_TYPE[d.financialReportType] ?? null) : null,
-    listingDate: d.listedDate,
-    marketCode: toMarketCode(d.market, d.isEmerging),
-    numberOfPreferenceShares: d.preferredStockShares,
-  };
+  return sectorCode !== null && !NON_INDUSTRY_CODES.has(sectorCode) && codes ? (codes[sectorCode] ?? null) : null;
 };
+
+// 交易所申報的財報口徑。2026-10-11 起上游 view 直接給 MOPS 編碼的 data_type（'2' 合併、'1' 個別）；舊的交易所編碼
+// financial_report_type 方向相反，2026-09-22 曾因混用兩套寫反過。指標實際用哪個口徑看 metricDataType（mops 的實際
+// 資料可得性），不是這個申報欄位（兩者對 31 家不一致）。未知代碼一律 null。
+const DATA_TYPE_NAMES: Record<string, string> = { '2': '合併財報', '1': '個別財報' };
+const toDeclaredDataType = (dataType: string | null): '1' | '2' | null => (dataType === '1' || dataType === '2' ? dataType : null);
 
 // 2026-09-04 應 web-nuxt/conductor 要求新增：website 欄位的格式在源頭就不一致，統一在資料離開本服務之前
 // 清洗一次，不讓每個消費端各自防禦性處理。2026-09-23 搬去 domain/shared/normalizeWebsite.ts（純字串函式 +
@@ -314,16 +291,15 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
   );
   const twseRow = twseRows[0];
   if (twseRow) {
-    return withCanonicalProfileKeys({
+    return {
       symbol: twseRow.symbol,
-      market: 'TWSE',
-      isEmerging: false,
-      reportDate: twseRow.report_date.toISOString().slice(0, 10),
+      market: 'sii',
+      generatedDate: twseRow.generated_date.toISOString().slice(0, 10),
       name: twseRow.name,
       shortName: twseRow.short_name,
       foreignRegistrationCountry: twseRow.foreign_registration_country,
-      industry: twseRow.industry,
-      industryName: resolveIndustryName(twseRow.industry, twseRow.industry_name),
+      sectorCode: twseRow.sector_code,
+      sectorName: resolveSectorName(twseRow.sector_code),
       address: twseRow.address,
       taxId: twseRow.tax_id,
       chairman: twseRow.chairman,
@@ -333,13 +309,13 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
       deputySpokesperson: twseRow.deputy_spokesperson,
       phone: twseRow.phone,
       establishedDate: twseRow.established_date?.toISOString().slice(0, 10) ?? null,
-      listedDate: twseRow.listed_date?.toISOString().slice(0, 10) ?? null,
+      listingDate: twseRow.listing_date?.toISOString().slice(0, 10) ?? null,
       parValue: twseRow.par_value ? Number(twseRow.par_value) : null,
       paidInCapital: twseRow.paid_in_capital?.toString() ?? null,
       privatePlacementShares: twseRow.private_placement_shares?.toString() ?? null,
-      preferredStockShares: twseRow.preferred_stock_shares?.toString() ?? null,
-      financialReportType: twseRow.financial_report_type,
-      financialReportTypeName: resolveFinancialReportTypeName(twseRow.financial_report_type),
+      numberOfPreferenceShares: twseRow.preferred_stock_shares?.toString() ?? null,
+      declaredDataType: toDeclaredDataType(twseRow.data_type),
+      financialReportTypeName: twseRow.data_type !== null ? (DATA_TYPE_NAMES[twseRow.data_type] ?? null) : null,
       stockTransferAgency: twseRow.stock_transfer_agency,
       transferAgencyPhone: twseRow.transfer_agency_phone,
       transferAgencyAddress: twseRow.transfer_agency_address,
@@ -352,32 +328,31 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
       email: twseRow.email,
       website: normalizeWebsiteDomain(twseRow.website),
       issuedShares: twseRow.issued_shares?.toString() ?? null,
-    });
+    };
   }
 
   const tpexRows = await tpexExportPrisma.$queryRaw<RawTpexCompanyProfileDetailRow[]>`
-    SELECT symbol, generated_date AS report_date, name, short_name, foreign_registration_country, sector_code AS industry, address, tax_id,
+    SELECT symbol, generated_date, name, short_name, foreign_registration_country, sector_code, address, tax_id,
       chairman, general_manager, spokesperson, spokesperson_title, deputy_spokesperson, phone,
-      established_date, listing_date AS listed_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares,
-      preferred_stock_shares, CASE data_type WHEN '2' THEN '1' WHEN '1' THEN '2' END AS financial_report_type, stock_transfer_agency, transfer_agency_phone,
+      established_date, listing_date, par_value, paid_in_capital_ntd AS paid_in_capital, private_placement_shares,
+      preferred_stock_shares, data_type, stock_transfer_agency, transfer_agency_phone,
       transfer_agency_address, auditing_firm, auditor1, auditor2, english_short_name, fax_number,
       email, website, issued_shares, market
-      -- 2026-10-11 改讀 tpex 詞彙表新欄名（tpex fb18820 上 PRD），舊欄位等 analysis 驗證完就可以刪（data_type 是 MOPS 編碼，這裡換回交易所編碼給舊的 financialReportType；那個 API 欄位 10/24 前移除後就直接用 data_type）
+      -- 2026-10-11 讀 tpex 詞彙表新欄名（tpex fb18820 上 PRD）；market 是 MOPS TYPEK（otc 上櫃、rotc 興櫃）
     FROM "export"."v_company_profiles" WHERE symbol = ${symbol} LIMIT 1
   `;
   const tpexRow = tpexRows[0];
   if (!tpexRow) return null;
 
-  return withCanonicalProfileKeys({
+  return {
     symbol: tpexRow.symbol,
-    market: 'TPEx',
-    isEmerging: tpexRow.market === TPEX_EMERGING_MARKET,
-    reportDate: tpexRow.report_date?.toISOString().slice(0, 10) ?? null,
+    market: toMarketCode('TPEx', tpexRow.market === TPEX_EMERGING_MARKET),
+    generatedDate: tpexRow.generated_date?.toISOString().slice(0, 10) ?? null,
     name: tpexRow.name,
     shortName: tpexRow.short_name,
     foreignRegistrationCountry: tpexRow.foreign_registration_country,
-    industry: tpexRow.industry,
-    industryName: null, // TPEx 的 export.company_profile 沒有這個欄位，見上面 CompanyProfileDetail 的說明。
+    sectorCode: tpexRow.sector_code,
+    sectorName: resolveSectorName(tpexRow.sector_code),
     address: tpexRow.address,
     taxId: tpexRow.tax_id,
     chairman: tpexRow.chairman,
@@ -387,13 +362,13 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
     deputySpokesperson: tpexRow.deputy_spokesperson,
     phone: tpexRow.phone,
     establishedDate: tpexRow.established_date?.toISOString().slice(0, 10) ?? null,
-    listedDate: tpexRow.listed_date?.toISOString().slice(0, 10) ?? null,
+    listingDate: tpexRow.listing_date?.toISOString().slice(0, 10) ?? null,
     parValue: tpexRow.par_value ? Number(tpexRow.par_value) : null,
     paidInCapital: tpexRow.paid_in_capital?.toString() ?? null,
     privatePlacementShares: tpexRow.private_placement_shares?.toString() ?? null,
-    preferredStockShares: tpexRow.preferred_stock_shares?.toString() ?? null,
-    financialReportType: tpexRow.financial_report_type,
-    financialReportTypeName: resolveFinancialReportTypeName(tpexRow.financial_report_type),
+    numberOfPreferenceShares: tpexRow.preferred_stock_shares?.toString() ?? null,
+    declaredDataType: toDeclaredDataType(tpexRow.data_type),
+    financialReportTypeName: tpexRow.data_type !== null ? (DATA_TYPE_NAMES[tpexRow.data_type] ?? null) : null,
     stockTransferAgency: tpexRow.stock_transfer_agency,
     transferAgencyPhone: tpexRow.transfer_agency_phone,
     transferAgencyAddress: tpexRow.transfer_agency_address,
@@ -406,7 +381,7 @@ export const getCompanyProfileDetail = async (symbol: string): Promise<ExchangeC
     email: tpexRow.email,
     website: normalizeWebsiteDomain(tpexRow.website),
     issuedShares: tpexRow.issued_shares?.toString() ?? null,
-  });
+  };
 };
 
 // 給 screener/ranking 這類「多公司陣列」回應補公司名稱用（2026-09-01 新增）——只查這次結果
@@ -469,11 +444,9 @@ const dedupeBySymbol = (rows: DedupeRow[]): CompanyNameEntry[] => {
     return {
       symbol,
       companyName: shortName,
-      market,
+      market: toMarketCode(market, isEmerging),
       sectorCode: isRealSector ? industry : null,
       sectorName: isRealSector && codes ? (codes[industry] ?? null) : null,
-      isEmerging,
-      marketCode: toMarketCode(market, isEmerging),
     };
   });
 };

@@ -123,8 +123,6 @@ export const getMonthlyRevenueHistory = async (symbol: string, limit: number): P
       yearMonth,
       generatedDate: toDateString(row.report_date),
       sectorName: row.industry,
-      reportDate: toDateString(row.report_date),
-      industry: row.industry,
       currentMonthRevenue: currentMonthRevenue === null ? null : currentMonthRevenue.toString(),
       lastYearSameMonthRevenue: row.last_year_same_month_revenue === null ? null : row.last_year_same_month_revenue.toString(),
       yoyChangePct: toDecimalNumber(row.yoy_change_percent),

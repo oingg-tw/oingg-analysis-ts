@@ -144,7 +144,7 @@ export const NUMERIC_FIELDS_FEE_BREAKDOWN: Record<string, NumericFieldDefinition
 Object.assign(NUMERIC_FIELDS, NUMERIC_FIELDS_FEE_BREAKDOWN);
 
 export const CATEGORICAL_FIELDS: Record<string, CategoricalFieldDefinition> = {
-  market: { kind: 'categorical', field: 'market', label: '市場別', categoryKey: 'identity', sqlColumn: 'market', staticValues: ['TWSE', 'TPEx'] },
+  market: { kind: 'categorical', field: 'market', label: '市場別', categoryKey: 'identity', sqlColumn: 'market', staticValues: ['sii', 'otc'] },
   // assetClass 的選項不寫死——之後 sitca-ts 分類異動（例如新增一種成分類型）會直接反映在
   // GET /etf-screener/filters，不用改程式碼，見 service.ts 的 getFilterCatalog。
   assetClass: { kind: 'categorical', field: 'assetClass', label: '資產類型', categoryKey: 'identity', sqlColumn: 'asset_class' },

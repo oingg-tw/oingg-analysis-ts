@@ -114,7 +114,7 @@ const evaluateWarning = (warning: NonNullable<MetricBadge['threshold']['warning'
 const resolveCandidateSymbols = async (symbol: string, scope: 'market' | 'sector', deps: EvaluateCompanyBadgesDeps): Promise<string[] | null | undefined> => {
   if (scope === 'market') return null;
   const profile = await deps.companyProfiles.getCompanyProfileDetail(symbol);
-  const sectorCode = profile?.industry ?? null;
+  const sectorCode = profile?.sectorCode ?? null;
   if (!sectorCode || !deps.industryReference.isValidSecuritiesSectorCode(sectorCode)) return undefined;
   const members = await deps.industryReference.listCompaniesBySectorCodes([sectorCode]);
   return [...members];

@@ -37,7 +37,7 @@ test('calculateMarginShortRatioRanking: 排行裡不應該出現 ETF/衍生性�
     getSecuritySymbolSet({ market: 'TPEx', preferredStock: 'exclude' }),
   ]);
   for (const row of result.rankings) {
-    const companySymbols = row.market === 'TWSE' ? twseCompanySymbols : tpexCompanySymbols;
+    const companySymbols = row.market === 'sii' ? twseCompanySymbols : tpexCompanySymbols;
     assert.ok(companySymbols.has(row.symbol), `${row.symbol}（${row.market}）不在 company_profile 裡，應該已經被排除`);
   }
 });
@@ -52,7 +52,7 @@ test('calculateMarginShortRatioRanking: 取夠大的 limit 時，應該同時看
   const tpexCount = Number(tpexCountRows[0]?.cnt ?? 0);
   if (tpexCount === 0) return; // tpex-ts 這個 dataset 還沒有資料時無從驗證，跳過。
 
-  const hasTpex = result.rankings.some((row) => row.market === 'TPEx');
+  const hasTpex = result.rankings.some((row) => row.market === 'otc');
   assert.ok(hasTpex, '合併結果裡應該有上櫃公司（沒有代表還是只查了 TWSE），也可能是 TPEx 券資比排名剛好都排不進 limit 內，先確認資料量再判斷');
 });
 

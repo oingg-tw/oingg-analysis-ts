@@ -62,7 +62,6 @@ export interface DividendHistoryEvent {
 
 export interface DividendHistoryEntry {
   fiscalYear: number | null; // 西元，股利所屬年度；null＝mops 公告沒填所屬年度的配發（集中成最後一列，見 getCompanyDividendHistory）
-  rocFiscalYear: number | null;
   cashDividend: number;
   cashDividendFromEarnings: number; // 該年度各次加總，元／股
   cashDividendFromLegalReserveAndCapitalSurplus: number; // 該年度各次加總，元／股
@@ -148,7 +147,6 @@ export const getCompanyDividendHistory = async (symbol: string, deps: DividendHi
       const yieldComplete = cashEvents.length > 0 && cashEvents.every((e) => e.yieldAtExDate !== null);
       return {
         fiscalYear,
-        rocFiscalYear,
         cashDividend,
         cashDividendFromEarnings,
         cashDividendFromLegalReserveAndCapitalSurplus,

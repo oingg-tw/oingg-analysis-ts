@@ -98,8 +98,7 @@ export const listDisposedStocks = async (query: DisposedStocksQuery, deps: Dispo
     return {
       symbol: row.symbol,
       companyName: companyNames.get(row.symbol) ?? null,
-      market: row.market,
-    marketCode: toMarketCode(row.market),
+      market: toMarketCode(row.market),
       announceDate: row.announce_date.toISOString().slice(0, 10),
       announcementCount: row.announcement_count,
       reason: row.reason,

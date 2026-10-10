@@ -11,8 +11,7 @@ export type AttentionStocksQuery = z.infer<typeof attentionStocksQuerySchema>;
 export const attentionStockRowSchema = z.object({
   symbol: z.string(),
   companyName: z.string().nullable(),
-  market: z.enum(['TWSE', 'TPEx']),
-  marketCode: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼；舊的 market 與 isEmerging 2026-10-24 移除，之後 marketCode 改名回 market）' }),
+  market: z.enum(MARKET_CODES).meta({ description: 'MOPS TYPEK 市場別：sii 上市、otc 上櫃、rotc 興櫃（2026-10-10 詞彙表官方編碼）' }),
   tradeDate: z.string(),
   criteria: z.string().nullable().meta({ description: '原始中文說明，可能包含多個原因子句直接串接' }),
   criteriaDetails: z.array(attentionCriteriaDetailSchema).meta({ description: '從 criteria 解析出的結構化資料，解析失敗時是空陣列' }),

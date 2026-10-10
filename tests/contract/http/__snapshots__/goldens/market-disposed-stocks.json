@@ -12,13 +12,11 @@
         "dispositionPeriod": "<string>",
         "dispositionStartDate": "<date>",
         "linkInformation": "<string>",
-        "market": "TWSE",
-        "marketCode": "sii",
+        "market": "sii",
         "reason": "<string>",
         "reasonShort": "<null>",
         "reasonTimes": "<number>",
         "sixDayChangePct": "<number>",
-        "sixDayChangePercent": "<number>",
         "symbol": "<numeric-string>"
       }
     ],

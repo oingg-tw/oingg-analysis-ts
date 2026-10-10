@@ -61,7 +61,7 @@ describe('getCompanyDividendHistory', () => {
       row({ rocFiscalYear: null, cashDividendFromEarnings: 1.5, exDividendDate: day('2026-08-19') }),
     ];
     const { entries } = await getCompanyDividendHistory('2496', depsFor(rows, {}, {}));
-    expect(entries.map((e) => [e.fiscalYear, e.rocFiscalYear, e.cashDividend])).toEqual([[2024, 113, 3], [null, null, 1.5]]);
+    expect(entries.map((e) => [e.fiscalYear, e.cashDividend])).toEqual([[2024, 3], [null, 1.5]]);
   });
 
   test('查無分派紀錄 → entries 空陣列，不碰 EPS/股價', async () => {
@@ -87,7 +87,6 @@ describe('getCompanyDividendHistory', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
       fiscalYear: 2024,
-      rocFiscalYear: 113,
       cashDividend: 16,
       cashDividendFromEarnings: 16,
       cashDividendFromLegalReserveAndCapitalSurplus: 0,

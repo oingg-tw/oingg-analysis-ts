@@ -7,7 +7,6 @@
     "rank": "<number>",
     "symbol": "<numeric-string>",
     "topPct": "<number>",
-    "topPercent": "<number>",
     "totalCount": "<number>",
     "value": "<number>"
   }

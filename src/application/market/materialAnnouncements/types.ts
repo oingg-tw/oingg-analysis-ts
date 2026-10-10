@@ -11,7 +11,6 @@ export const materialAnnouncementRowSchema = z.object({
   announcementDate: z.string(),
   announcementTime: z.string().nullable().meta({ description: '原始字串格式（例如 "70003"），不是標準 HH:MM:SS' }),
   generatedDate: z.string().nullable().meta({ description: '出表日 "YYYY-MM-DD"（交易所產生公告資料的日期，通常是公告日隔天）' }),
-  reportDate: z.string().nullable().meta({ description: '已退役，2026-10-24 移除，改用 generatedDate', deprecated: true }),
   subject: z.string().nullable(),
   clause: z.string().nullable(),
   factDate: z.string().nullable(),

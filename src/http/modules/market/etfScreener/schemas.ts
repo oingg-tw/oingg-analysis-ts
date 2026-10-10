@@ -23,5 +23,4 @@ export const postEtfScreenerBodySchema = z.object({
   pageSize: z.number().int().min(1).max(200).default(50),
   sortField: z.string().min(1).optional().meta({ description: '不給就照 symbol 排序；要排別的欄位，那個欄位要先出現在 columns 裡' }),
   order: z.enum(['asc', 'desc']).optional().meta({ description: '排序方向' }),
-  sortOrder: z.enum(['asc', 'desc']).optional().meta({ description: '已退役，2026-10-24 移除，改用 order', deprecated: true }),
-}).transform(({ order, sortOrder, ...rest }) => ({ ...rest, sortOrder: order ?? sortOrder })); // 詞彙表：order 優先，sortOrder 並存到 2026-10-24
+}).transform(({ order, ...rest }) => ({ ...rest, sortOrder: order })); // 詞彙表：排序方向官方名 order，service 內部仍叫 sortOrder

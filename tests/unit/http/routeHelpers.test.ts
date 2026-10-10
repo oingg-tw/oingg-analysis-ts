@@ -84,14 +84,21 @@ describe('validate()', () => {
     expect(res.payload).toMatchObject({ status: 400, detail: VALIDATION_MESSAGES.params, errors: [{ parameter: 'symbol', detail: expect.any(String) }] });
   });
 
-  test('query 錯 → 400 problem+json：errors 用 parameter 指名、舊的頂層 message 是第一個欄位的訊息（bff 過渡期照舊顯示）', async () => {
+  test('query 錯 → 400 problem+json：errors 用 parameter 指名、沒有舊的頂層 message', async () => {
     const res = fakeRes();
     await run(validate(spec), fakeReq({ params: { symbol: '2330' }, query: { limit: '0' } }), res);
     expect(res.statusCode).toBe(400);
     expect(res.contentType).toBe('application/problem+json');
-    const payload = res.payload as { errors: { detail: string }[]; message: string };
     expect(res.payload).toMatchObject({ type: 'about:blank', title: 'Bad Request', status: 400, detail: 'Invalid query parameters.', instance: 'urn:uuid:req-test-0001', errors: [{ parameter: 'limit' }] });
-    expect(payload.message).toBe(payload.errors[0]!.detail);
+    expect(res.payload).not.toHaveProperty('message');
+  });
+
+  test('退役的查詢參數（periodType 等）→ 400 並指出新名稱，不是被默默忽略後回預設值', async () => {
+    const res = fakeRes();
+    const { nextCalled } = await run(validate(spec), fakeReq({ params: { symbol: '2330' }, query: { limit: '5', periodType: 'Q' } }), res);
+    expect(nextCalled).toBe(false);
+    expect(res.statusCode).toBe(400);
+    expect(res.payload).toMatchObject({ detail: VALIDATION_MESSAGES.query, errors: [{ parameter: 'periodType', detail: 'periodType 已退役，改用 timeframe。' }] });
   });
 
   test('body 錯 → 400，errors 用 URI fragment 形式的 JSON Pointer（含 ~0／~1 跳脫）', async () => {
@@ -149,7 +156,7 @@ describe('createErrorHandler()', () => {
     const res = fakeRes();
     createErrorHandler({ isProduction: false })(new NotFoundError('查無公司代號 9999（上市、上櫃都沒有登記資料）。'), fakeReq({}), res as unknown as Response, () => {});
     expect(res.statusCode).toBe(404);
-    expect(res.payload).toEqual({ message: '查無公司代號 9999（上市、上櫃都沒有登記資料）。', type: 'about:blank', title: 'Not Found', status: 404, detail: '查無公司代號 9999（上市、上櫃都沒有登記資料）。', instance: 'urn:uuid:req-test-0001' });
+    expect(res.payload).toEqual({ type: 'about:blank', title: 'Not Found', status: 404, detail: '查無公司代號 9999（上市、上櫃都沒有登記資料）。', instance: 'urn:uuid:req-test-0001' });
 
     const res400 = fakeRes();
     createErrorHandler({ isProduction: true })(new ValidationError('"nope.TTM" 不是可查詢的欄位', 'unknown_metric'), fakeReq({}), res400 as unknown as Response, () => {});
@@ -172,24 +179,5 @@ describe('createErrorHandler()', () => {
     createErrorHandler({ isProduction: true })(Object.assign(new Error('bad input'), { status: 422 }), fakeReq({}), withStatus as unknown as Response, () => {});
     expect(withStatus.statusCode).toBe(422);
     expect(withStatus.payload).toMatchObject({ status: 422, title: 'Unprocessable Entity', detail: 'bad input' });
-  });
-});
-
-// 2026-10-10 詞彙表改名的並存期：新 key 照常回傳，另外補上舊 key（值相同）；巢狀物件與陣列也要補，Date 這類非一般物件不動，
-// 已經有舊 key 的物件不覆蓋。
-describe('withRetiredKeys', () => {
-  test('補上舊 key（巢狀、陣列），其他欄位原樣', async () => {
-    const { withRetiredKeys } = await import('@/http/route');
-    const date = new Date('2026-10-10');
-    expect(withRetiredKeys({ entries: [{ yoyChangePct: 5, other: 1 }], nested: { numberOfSharesIssued: '10' }, at: date })).toEqual({
-      entries: [{ yoyChangePct: 5, yoyChangePercent: 5, other: 1 }],
-      nested: { numberOfSharesIssued: '10', paidInShares: '10' },
-      at: date,
-    });
-  });
-
-  test('物件本來就有舊 key 時不覆蓋', async () => {
-    const { withRetiredKeys } = await import('@/http/route');
-    expect(withRetiredKeys({ changePct: 1, changePercent: 2 })).toEqual({ changePct: 1, changePercent: 2 });
   });
 });
