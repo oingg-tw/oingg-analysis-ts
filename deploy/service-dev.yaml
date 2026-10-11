@@ -87,5 +87,12 @@ spec:
                 secretKeyRef:
                   name: UPSTREAM-KEY-TPEX
                   key: latest
+            # 2026-10-11 接上 twse（使用者同意）：twse-outbound-push@oingg-twse 有 dev 服務 invoker＋讀這把金鑰；
+            # 已用 gcloud run services update --update-secrets 套到 revision -f477937-twsekey，這裡補記。
+            - name: UPSTREAM_KEY_TWSE
+              valueFrom:
+                secretKeyRef:
+                  name: UPSTREAM-KEY-TWSE
+                  key: latest
             - name: UPSTREAM_PROCESSOR_JOB
               value: projects/oingg-analysis/locations/asia-southeast1/jobs/oingg-analysis-ts-upstream-dev
