@@ -68,6 +68,7 @@ const cases: GoldenCase[] = [
   { slug: 'macro-cbc-policy-rate', method: 'get', path: '/macro/cbc-policy-rate?from=2022-01-01' },
   { slug: 'macro-us-policy-rate', method: 'get', path: '/macro/us-policy-rate?from=2022-01-01' },
   { slug: 'macro-business-cycle-indicator', method: 'get', path: '/macro/business-cycle-indicator?from=2026-01' },
+  { slug: 'macro-business-cycle-reference-dates', method: 'get', path: '/macro/business-cycle-reference-dates' },
   { slug: 'macro-monetary-aggregate', method: 'get', path: '/macro/monetary-aggregate?from=2026-01' },
   { slug: 'macro-stock-market-summary', method: 'get', path: '/macro/stock-market-summary?from=2026-01' },
   { slug: 'macro-gov-bond-yield-10y-history', method: 'get', path: '/macro/gov-bond-yield-10y-history?from=2026-01' },

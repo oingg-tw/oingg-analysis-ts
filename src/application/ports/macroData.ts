@@ -139,6 +139,21 @@ export interface FiveMajorBankRateMonth {
   baseLendingRate: number | null; // 基準放款利率 %
 }
 
+// 2026-10-11 國發會景氣循環基準日期（gov-ts v_business_cycle_reference_dates，web-nuxt 景氣循環頁經業務中台要，使用者核准）。
+// 日期是月精度，infrastructure 直接給 'YYYY-MM'。尚未認定的欄位（最新一次循環的高峰、谷底、月數）是 null，不是錯誤。
+// supplementedFields 列出 gov-ts 依國發會新聞稿補值的欄位名，值就是下面這幾個 camelCase 欄位名，所以欄位名不能改。
+export interface BusinessCycleReferenceCycle {
+  cycleNo: number; // 第幾次循環
+  troughStart: string | null; // 循環起點（前一次循環的谷底）'YYYY-MM'
+  peak: string | null;
+  troughEnd: string | null; // 循環終點（本次谷底）
+  expansionMonths: number | null;
+  contractionMonths: number | null;
+  totalMonths: number | null;
+  supplementedFields: string[];
+  supplementSource: string | null;
+}
+
 export type UsdTwdInterval = 'daily' | 'weekly' | 'monthly';
 
 export interface MacroSeriesPort {
@@ -150,4 +165,5 @@ export interface MacroSeriesPort {
   listCpiAsc(category: string): Promise<CpiMonth[]>;
   listGdpAsc(category: string): Promise<GdpQuarter[]>;
   listFiveMajorBankRatesAsc(): Promise<FiveMajorBankRateMonth[]>;
+  listBusinessCycleReferenceCyclesAsc(): Promise<BusinessCycleReferenceCycle[]>; // 依循環序號由舊到新
 }

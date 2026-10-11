@@ -1,7 +1,7 @@
 import type { AppDeps } from '@/application/deps';
 import type { UsdTwdInterval } from '@/application/ports/macroData';
 import { toMonthPeriod, toQuarterPeriod } from './period';
-import type { BusinessCycleResult, CpiResult, FiveMajorBankRateResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, StockMarketSummaryResult, UsdTwdRateResult } from './types';
+import type { BusinessCycleReferenceDatesResult, BusinessCycleResult, CpiResult, FiveMajorBankRateResult, GdpResult, GovBondYield10yHistoryResult, MonetaryAggregateResult, StockMarketSummaryResult, UsdTwdRateResult } from './types';
 
 // 2026-09-22 web-nuxt「總經特區」：側邊欄放各總經指標跟大盤對照。六支都是 gov-ts export view 的純轉發
 // （bff 沒有 DB 直連，只有這條路；使用者拍板整批做），唯一的加工是把 (year, month)/(year, quarter) 組成
@@ -16,6 +16,11 @@ export const getBusinessCycleIndicators = async (query: { from?: string }, deps:
   const rows = await deps.macroSeries.listBusinessCycleIndicatorsAsc();
   return { entries: fromFilter(rows.map((r) => ({ period: toMonthPeriod(r.year, r.month), ...r })), query.from) };
 };
+
+// 2026-10-11 web-nuxt 景氣循環頁（經業務中台，使用者核准）：表格分欄起點／高峰／終點、長期走勢圖把收縮期畫成陰影帶。純轉發。
+export const getBusinessCycleReferenceDates = async (deps: MacroSeriesDeps): Promise<BusinessCycleReferenceDatesResult> => ({
+  entries: await deps.macroSeries.listBusinessCycleReferenceCyclesAsc(),
+});
 
 export const getMonetaryAggregates = async (query: { from?: string }, deps: MacroSeriesDeps): Promise<MonetaryAggregateResult> => {
   const rows = await deps.macroSeries.listMonetaryAggregatesAsc();

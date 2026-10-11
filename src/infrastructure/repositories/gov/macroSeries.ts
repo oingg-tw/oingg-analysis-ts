@@ -10,6 +10,24 @@ const num = (v: unknown): number | null => (v === null || v === undefined ? null
 const TRUNC_UNIT: Record<Exclude<UsdTwdInterval, 'daily'>, string> = { weekly: 'week', monthly: 'month' };
 
 export const govMacroSeries: MacroSeriesPort = {
+  listBusinessCycleReferenceCyclesAsc: async () =>
+    (
+      await govExportPrisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT cycle_no, to_char(trough_start, 'YYYY-MM') AS trough_start, to_char(peak, 'YYYY-MM') AS peak, to_char(trough_end, 'YYYY-MM') AS trough_end,
+               expansion_months, contraction_months, total_months, supplemented_fields, supplement_source
+        FROM "export"."v_business_cycle_reference_dates" ORDER BY cycle_no ASC`
+    ).map((r) => ({
+      cycleNo: Number(r.cycle_no),
+      troughStart: (r.trough_start as string | null) ?? null,
+      peak: (r.peak as string | null) ?? null,
+      troughEnd: (r.trough_end as string | null) ?? null,
+      expansionMonths: num(r.expansion_months),
+      contractionMonths: num(r.contraction_months),
+      totalMonths: num(r.total_months),
+      supplementedFields: (r.supplemented_fields as string[] | null) ?? [],
+      supplementSource: (r.supplement_source as string | null) ?? null,
+    })),
+
   listBusinessCycleIndicatorsAsc: async () =>
     (
       await govExportPrisma.$queryRaw<Record<string, unknown>[]>`

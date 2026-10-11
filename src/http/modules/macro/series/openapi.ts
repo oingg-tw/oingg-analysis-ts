@@ -1,5 +1,5 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { businessCycleResultSchema, cpiResultSchema, fiveMajorBankRateResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, stockMarketSummaryResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
+import { businessCycleReferenceDatesResultSchema, businessCycleResultSchema, cpiResultSchema, fiveMajorBankRateResultSchema, gdpResultSchema, govBondYield10yHistoryResultSchema, monetaryAggregateResultSchema, stockMarketSummaryResultSchema, usdTwdRateResultSchema } from '@/application/macro/series/types';
 import { cpiQuerySchema, gdpQuerySchema, monthlySeriesQuerySchema, usdTwdRateQuerySchema } from './schemas';
 
 const SOURCE_NOTE = '資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。';
@@ -13,6 +13,17 @@ export const registerMacroSeriesOpenApi = (registry: OpenAPIRegistry): void => {
     tags: ['Macro'],
     request: { query: monthlySeriesQuerySchema },
     responses: { 200: { description: '由舊到新，查無資料時 entries 是空陣列。', content: { 'application/json': { schema: businessCycleResultSchema } } } },
+  });
+  registry.registerPath({
+    method: 'get',
+    path: '/macro/business-cycle-reference-dates',
+    summary: '國發會景氣循環基準日期（歷次循環的起點、高峰、終點）',
+    description:
+      '國發會認定的歷次景氣循環，第 1 次（1954-11 起）到最新一次。每次循環的起點是前一次的谷底、終點是本次谷底；' +
+      '最新一次循環尚未認定的高峰、終點與月數是 null。國發會基準日期表還沒更新、但已發新聞稿認定的欄位，由 gov-ts 補上，' +
+      `列在 supplementedFields，依據在 supplementSource。${SOURCE_NOTE}`,
+    tags: ['Macro'],
+    responses: { 200: { description: '依循環序號由舊到新。', content: { 'application/json': { schema: businessCycleReferenceDatesResultSchema } } } },
   });
   registry.registerPath({
     method: 'get',

@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "entries": [
+      {
+        "contractionMonths": "<number>",
+        "cycleNo": "<number>",
+        "expansionMonths": "<number>",
+        "peak": "<string>",
+        "supplementedFields": [
+          "troughEnd"
+        ],
+        "supplementSource": "<string>",
+        "totalMonths": "<number>",
+        "troughEnd": "<string>",
+        "troughStart": "<string>"
+      }
+    ]
+  }
+}

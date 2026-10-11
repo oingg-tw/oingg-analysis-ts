@@ -5625,6 +5625,119 @@
         ]
       }
     },
+    "/macro/business-cycle-reference-dates": {
+      "get": {
+        "description": "國發會認定的歷次景氣循環，第 1 次（1954-11 起）到最新一次。每次循環的起點是前一次的谷底、終點是本次谷底；最新一次循環尚未認定的高峰、終點與月數是 null。國發會基準日期表還沒更新、但已發新聞稿認定的欄位，由 gov-ts 補上，列在 supplementedFields，依據在 supplementSource。資料來源是 gov-ts 的 export view（央行／主計總處統計資料庫，gov-ts 每月 5 日重抓），本服務只讀、純轉發，不做交叉計算。",
+        "operationId": "getMacroBusinessCycleReferenceDates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "entries": {
+                      "description": "依循環序號由舊到新",
+                      "items": {
+                        "properties": {
+                          "contractionMonths": {
+                            "description": "收縮期月數（高峰到終點）；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "integer"
+                          },
+                          "cycleNo": {
+                            "description": "第幾次景氣循環（國發會編號）",
+                            "type": "integer"
+                          },
+                          "expansionMonths": {
+                            "description": "擴張期月數（起點到高峰）；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "integer"
+                          },
+                          "peak": {
+                            "description": "\"YYYY-MM\"，高峰；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "supplementSource": {
+                            "description": "補值依據（新聞稿標題與網址），沒有補值時為 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "supplementedFields": {
+                            "description": "gov-ts 依國發會新聞稿補上的欄位名（就是本物件的欄位名，例如 \"troughEnd\"），其餘欄位來自國發會基準日期表；沒有補值時是空陣列",
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "totalMonths": {
+                            "description": "全循環月數；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "integer"
+                          },
+                          "troughEnd": {
+                            "description": "\"YYYY-MM\"，循環終點，即本次谷底（也是下一次循環的起點）；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "troughStart": {
+                            "description": "\"YYYY-MM\"，循環起點，即前一次循環的谷底；尚未認定時為 null",
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "cycleNo",
+                          "troughStart",
+                          "peak",
+                          "troughEnd",
+                          "expansionMonths",
+                          "contractionMonths",
+                          "totalMonths",
+                          "supplementedFields",
+                          "supplementSource"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "依循環序號由舊到新。"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "沒帶或帶錯 X-Api-Key。"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "伺服器錯誤（正式環境 detail 是固定文字，用 instance 對 log）。"
+          }
+        },
+        "summary": "國發會景氣循環基準日期（歷次循環的起點、高峰、終點）",
+        "tags": [
+          "Macro"
+        ]
+      }
+    },
     "/macro/cbc-policy-rate": {
       "get": {
         "description": "事件型序列：一列就是一次利率調整的生效日，不是逐日/逐月快照，直接當圖上的事件標記用（例如疊在 /market/taiex-daily-price 或個股 daily-price-history 上）。資料來源是 gov-ts 的 export.cbc_policy_rate（央行統計資料庫 EG28D01en，1989-04-01 起，本服務只讀），本服務唯一的加工是 changeBp（重貼現率相對前一次的變動，基點）。某一天的利率水準 = 生效日 <= 該日的最後一筆（階梯函數）。只有生效日、沒有理監事會決議日。",

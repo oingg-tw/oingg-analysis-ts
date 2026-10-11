@@ -95,3 +95,19 @@ export const gdpEntrySchema = z.object({
 });
 export const gdpResultSchema = z.object({ category: z.string(), entries: z.array(gdpEntrySchema).meta(entriesMeta) });
 export type GdpResult = z.infer<typeof gdpResultSchema>;
+
+// 2026-10-11 國發會景氣循環基準日期（見 ports/macroData.ts 的 BusinessCycleReferenceCycle）。
+const yearMonth = (description: string) => z.string().nullable().meta({ description: `"YYYY-MM"，${description}；尚未認定時為 null` });
+export const businessCycleReferenceCycleSchema = z.object({
+  cycleNo: z.number().int().meta({ description: '第幾次景氣循環（國發會編號）' }),
+  troughStart: yearMonth('循環起點，即前一次循環的谷底'),
+  peak: yearMonth('高峰'),
+  troughEnd: yearMonth('循環終點，即本次谷底（也是下一次循環的起點）'),
+  expansionMonths: z.number().int().nullable().meta({ description: '擴張期月數（起點到高峰）；尚未認定時為 null' }),
+  contractionMonths: z.number().int().nullable().meta({ description: '收縮期月數（高峰到終點）；尚未認定時為 null' }),
+  totalMonths: z.number().int().nullable().meta({ description: '全循環月數；尚未認定時為 null' }),
+  supplementedFields: z.array(z.string()).meta({ description: 'gov-ts 依國發會新聞稿補上的欄位名（就是本物件的欄位名，例如 "troughEnd"），其餘欄位來自國發會基準日期表；沒有補值時是空陣列' }),
+  supplementSource: z.string().nullable().meta({ description: '補值依據（新聞稿標題與網址），沒有補值時為 null' }),
+});
+export const businessCycleReferenceDatesResultSchema = z.object({ entries: z.array(businessCycleReferenceCycleSchema).meta({ description: '依循環序號由舊到新' }) });
+export type BusinessCycleReferenceDatesResult = z.infer<typeof businessCycleReferenceDatesResultSchema>;
