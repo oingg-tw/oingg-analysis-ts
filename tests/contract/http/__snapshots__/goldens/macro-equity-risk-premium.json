@@ -26,11 +26,11 @@
       "startYear": "<number>"
     },
     "supplySide": {
-      "dividendYield": "<null>",
+      "dividendYield": "<number>",
       "dividendYieldCompanyCount": "<number>",
-      "dividendYieldMarketCapCoverage": "<null>",
+      "dividendYieldMarketCapCoverage": "<number>",
       "dividendYieldTradeDate": "<date>",
-      "erp": "<null>",
+      "erp": "<number>",
       "expectedInflation": "<number>",
       "gdpQuarters": "<number>",
       "inflationMonths": "<number>",
