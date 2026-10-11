@@ -9,7 +9,10 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const nonEmpty = z.string().min(1);
+// 2026-10-11 trim：UPSTREAM-KEY-TWSE 是在 Windows Git Bash 用 openssl 建的，結尾帶 \r（tr -d '\n' 只去掉 \n），
+// Secret Manager 原樣掛成環境變數，跟 header 裡的值永遠比不上（twse 推送一直 401）。header 帶不了換行，
+// 所以讀環境變數時一律去頭尾空白，之後誰用什麼工具建 secret 都不會再踩。
+const nonEmpty = z.string().trim().min(1);
 
 const envSchema = z
   .object({
